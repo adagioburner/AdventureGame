@@ -1,0 +1,347 @@
+{
+  "sheet": "Plains_PlainsMovement_sheet.png",
+  "cell_width": 353,
+  "cell_height": 408,
+  "sprites": [
+    {
+      "id": "Plains_PlainsMovement_01",
+      "x": 0,
+      "y": 0,
+      "width": 353,
+      "height": 408,
+      "anchor": {
+        "x": 176,
+        "y": 396
+      },
+      "source_box_in_original": [
+        121,
+        56,
+        266,
+        295
+      ]
+    },
+    {
+      "id": "Plains_PlainsMovement_02",
+      "x": 353,
+      "y": 0,
+      "width": 353,
+      "height": 408,
+      "anchor": {
+        "x": 176,
+        "y": 396
+      },
+      "source_box_in_original": [
+        430,
+        39,
+        226,
+        288
+      ]
+    },
+    {
+      "id": "Plains_PlainsMovement_03",
+      "x": 706,
+      "y": 0,
+      "width": 353,
+      "height": 408,
+      "anchor": {
+        "x": 176,
+        "y": 396
+      },
+      "source_box_in_original": [
+        713,
+        22,
+        304,
+        317
+      ]
+    },
+    {
+      "id": "Plains_PlainsMovement_04",
+      "x": 1059,
+      "y": 0,
+      "width": 353,
+      "height": 408,
+      "anchor": {
+        "x": 176,
+        "y": 396
+      },
+      "source_box_in_original": [
+        1077,
+        78,
+        268,
+        251
+      ]
+    },
+    {
+      "id": "Plains_PlainsMovement_05",
+      "x": 0,
+      "y": 408,
+      "width": 353,
+      "height": 408,
+      "anchor": {
+        "x": 176,
+        "y": 396
+      },
+      "source_box_in_original": [
+        99,
+        370,
+        271,
+        300
+      ]
+    },
+    {
+      "id": "Plains_PlainsMovement_06",
+      "x": 353,
+      "y": 408,
+      "width": 353,
+      "height": 408,
+      "anchor": {
+        "x": 176,
+        "y": 396
+      },
+      "source_box_in_original": [
+        417,
+        343,
+        329,
+        325
+      ]
+    },
+    {
+      "id": "Plains_PlainsMovement_07",
+      "x": 706,
+      "y": 408,
+      "width": 353,
+      "height": 408,
+      "anchor": {
+        "x": 176,
+        "y": 396
+      },
+      "source_box_in_original": [
+        821,
+        358,
+        285,
+        291
+      ]
+    },
+    {
+      "id": "Plains_PlainsMovement_08",
+      "x": 1059,
+      "y": 408,
+      "width": 353,
+      "height": 408,
+      "anchor": {
+        "x": 176,
+        "y": 396
+      },
+      "source_box_in_original": [
+        1167,
+        399,
+        208,
+        246
+      ]
+    },
+    {
+      "id": "Plains_PlainsMovement_09",
+      "x": 0,
+      "y": 816,
+      "width": 353,
+      "height": 408,
+      "anchor": {
+        "x": 176,
+        "y": 396
+      },
+      "source_box_in_original": [
+        704,
+        653,
+        293,
+        284
+      ]
+    },
+    {
+      "id": "Plains_PlainsMovement_10",
+      "x": 353,
+      "y": 816,
+      "width": 353,
+      "height": 408,
+      "anchor": {
+        "x": 176,
+        "y": 396
+      },
+      "source_box_in_original": [
+        1092,
+        646,
+        173,
+        275
+      ]
+    },
+    {
+      "id": "Plains_PlainsMovement_11",
+      "x": 706,
+      "y": 816,
+      "width": 353,
+      "height": 408,
+      "anchor": {
+        "x": 176,
+        "y": 396
+      },
+      "source_box_in_original": [
+        70,
+        682,
+        275,
+        258
+      ]
+    },
+    {
+      "id": "Plains_PlainsMovement_12",
+      "x": 1059,
+      "y": 816,
+      "width": 353,
+      "height": 408,
+      "anchor": {
+        "x": 176,
+        "y": 396
+      },
+      "source_box_in_original": [
+        399,
+        679,
+        249,
+        253
+      ]
+    },
+    {
+      "id": "Plains_PlainsMovement_13",
+      "x": 0,
+      "y": 1224,
+      "width": 353,
+      "height": 408,
+      "anchor": {
+        "x": 176,
+        "y": 396
+      },
+      "source_box_in_original": [
+        46,
+        962,
+        285,
+        350
+      ]
+    },
+    {
+      "id": "Plains_PlainsMovement_14",
+      "x": 353,
+      "y": 1224,
+      "width": 353,
+      "height": 408,
+      "anchor": {
+        "x": 176,
+        "y": 396
+      },
+      "source_box_in_original": [
+        1044,
+        948,
+        251,
+        307
+      ]
+    },
+    {
+      "id": "Plains_PlainsMovement_15",
+      "x": 706,
+      "y": 1224,
+      "width": 353,
+      "height": 408,
+      "anchor": {
+        "x": 176,
+        "y": 396
+      },
+      "source_box_in_original": [
+        398,
+        995,
+        251,
+        303
+      ]
+    },
+    {
+      "id": "Plains_PlainsMovement_16",
+      "x": 1059,
+      "y": 1224,
+      "width": 353,
+      "height": 408,
+      "anchor": {
+        "x": 176,
+        "y": 396
+      },
+      "source_box_in_original": [
+        723,
+        983,
+        273,
+        315
+      ]
+    },
+    {
+      "id": "Plains_PlainsMovement_17",
+      "x": 0,
+      "y": 1632,
+      "width": 353,
+      "height": 408,
+      "anchor": {
+        "x": 176,
+        "y": 396
+      },
+      "source_box_in_original": [
+        1115,
+        1249,
+        274,
+        384
+      ]
+    },
+    {
+      "id": "Plains_PlainsMovement_18",
+      "x": 353,
+      "y": 1632,
+      "width": 353,
+      "height": 408,
+      "anchor": {
+        "x": 176,
+        "y": 396
+      },
+      "source_box_in_original": [
+        42,
+        1334,
+        294,
+        273
+      ]
+    },
+    {
+      "id": "Plains_PlainsMovement_19",
+      "x": 706,
+      "y": 1632,
+      "width": 353,
+      "height": 408,
+      "anchor": {
+        "x": 176,
+        "y": 396
+      },
+      "source_box_in_original": [
+        417,
+        1341,
+        298,
+        249
+      ]
+    },
+    {
+      "id": "Plains_PlainsMovement_20",
+      "x": 1059,
+      "y": 1632,
+      "width": 353,
+      "height": 408,
+      "anchor": {
+        "x": 176,
+        "y": 396
+      },
+      "source_box_in_original": [
+        750,
+        1301,
+        303,
+        357
+      ]
+    }
+  ]
+}

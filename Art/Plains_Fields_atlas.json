@@ -1,0 +1,126 @@
+{
+  "sheet": "Plains_Fields_sheet.png",
+  "cell_width": 422,
+  "cell_height": 313,
+  "sprites": [
+    {
+      "id": "Plains_Fields_01",
+      "x": 0,
+      "y": 0,
+      "width": 422,
+      "height": 313,
+      "anchor": {
+        "x": 211,
+        "y": 301
+      },
+      "source_box_in_original": [
+        153,
+        122,
+        394,
+        281
+      ]
+    },
+    {
+      "id": "Plains_Fields_02",
+      "x": 422,
+      "y": 0,
+      "width": 422,
+      "height": 313,
+      "anchor": {
+        "x": 211,
+        "y": 301
+      },
+      "source_box_in_original": [
+        703,
+        90,
+        388,
+        242
+      ]
+    },
+    {
+      "id": "Plains_Fields_03",
+      "x": 844,
+      "y": 0,
+      "width": 422,
+      "height": 313,
+      "anchor": {
+        "x": 210,
+        "y": 301
+      },
+      "source_box_in_original": [
+        130,
+        490,
+        397,
+        239
+      ]
+    },
+    {
+      "id": "Plains_Fields_04",
+      "x": 1266,
+      "y": 0,
+      "width": 422,
+      "height": 313,
+      "anchor": {
+        "x": 210,
+        "y": 301
+      },
+      "source_box_in_original": [
+        655,
+        458,
+        395,
+        242
+      ]
+    },
+    {
+      "id": "Plains_Fields_05",
+      "x": 0,
+      "y": 313,
+      "width": 422,
+      "height": 313,
+      "anchor": {
+        "x": 211,
+        "y": 301
+      },
+      "source_box_in_original": [
+        1276,
+        492,
+        396,
+        241
+      ]
+    },
+    {
+      "id": "Plains_Fields_06",
+      "x": 422,
+      "y": 313,
+      "width": 422,
+      "height": 313,
+      "anchor": {
+        "x": 211,
+        "y": 301
+      },
+      "source_box_in_original": [
+        107,
+        896,
+        398,
+        289
+      ]
+    },
+    {
+      "id": "Plains_Fields_07",
+      "x": 844,
+      "y": 313,
+      "width": 422,
+      "height": 313,
+      "anchor": {
+        "x": 210,
+        "y": 301
+      },
+      "source_box_in_original": [
+        689,
+        862,
+        383,
+        277
+      ]
+    }
+  ]
+}

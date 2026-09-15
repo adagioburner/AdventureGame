@@ -1,0 +1,160 @@
+{
+  "sheet": "Forest_MountainMovement_sheet.png",
+  "cell_width": 544,
+  "cell_height": 465,
+  "sprites": [
+    {
+      "id": "Forest_MountainMovement_01",
+      "x": 0,
+      "y": 0,
+      "width": 544,
+      "height": 465,
+      "anchor": {
+        "x": 272,
+        "y": 453
+      },
+      "source_box_in_original": [
+        114,
+        109,
+        234,
+        418
+      ]
+    },
+    {
+      "id": "Forest_MountainMovement_02",
+      "x": 544,
+      "y": 0,
+      "width": 544,
+      "height": 465,
+      "anchor": {
+        "x": 272,
+        "y": 453
+      },
+      "source_box_in_original": [
+        472,
+        128,
+        470,
+        360
+      ]
+    },
+    {
+      "id": "Forest_MountainMovement_03",
+      "x": 1088,
+      "y": 0,
+      "width": 544,
+      "height": 465,
+      "anchor": {
+        "x": 271,
+        "y": 453
+      },
+      "source_box_in_original": [
+        1047,
+        146,
+        395,
+        337
+      ]
+    },
+    {
+      "id": "Forest_MountainMovement_04",
+      "x": 1632,
+      "y": 0,
+      "width": 544,
+      "height": 465,
+      "anchor": {
+        "x": 271,
+        "y": 453
+      },
+      "source_box_in_original": [
+        95,
+        586,
+        377,
+        361
+      ]
+    },
+    {
+      "id": "Forest_MountainMovement_05",
+      "x": 0,
+      "y": 465,
+      "width": 544,
+      "height": 465,
+      "anchor": {
+        "x": 271,
+        "y": 453
+      },
+      "source_box_in_original": [
+        548,
+        557,
+        397,
+        369
+      ]
+    },
+    {
+      "id": "Forest_MountainMovement_06",
+      "x": 544,
+      "y": 465,
+      "width": 544,
+      "height": 465,
+      "anchor": {
+        "x": 271,
+        "y": 453
+      },
+      "source_box_in_original": [
+        1143,
+        580,
+        369,
+        308
+      ]
+    },
+    {
+      "id": "Forest_MountainMovement_07",
+      "x": 1088,
+      "y": 465,
+      "width": 544,
+      "height": 465,
+      "anchor": {
+        "x": 271,
+        "y": 453
+      },
+      "source_box_in_original": [
+        159,
+        1124,
+        287,
+        353
+      ]
+    },
+    {
+      "id": "Forest_MountainMovement_08",
+      "x": 1632,
+      "y": 465,
+      "width": 544,
+      "height": 465,
+      "anchor": {
+        "x": 271,
+        "y": 453
+      },
+      "source_box_in_original": [
+        633,
+        1098,
+        379,
+        403
+      ]
+    },
+    {
+      "id": "Forest_MountainMovement_09",
+      "x": 0,
+      "y": 930,
+      "width": 544,
+      "height": 465,
+      "anchor": {
+        "x": 272,
+        "y": 453
+      },
+      "source_box_in_original": [
+        1129,
+        1063,
+        520,
+        441
+      ]
+    }
+  ]
+}

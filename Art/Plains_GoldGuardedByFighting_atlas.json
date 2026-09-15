@@ -1,0 +1,75 @@
+{
+  "sheet": "Plains_Gold_sheet.png",
+  "cell_width": 660,
+  "cell_height": 627,
+  "sprites": [
+    {
+      "id": "Plains_Gold_01",
+      "x": 0,
+      "y": 0,
+      "width": 660,
+      "height": 627,
+      "anchor": {
+        "x": 330,
+        "y": 615
+      },
+      "source_box_in_original": [
+        784,
+        42,
+        628,
+        603
+      ]
+    },
+    {
+      "id": "Plains_Gold_02",
+      "x": 660,
+      "y": 0,
+      "width": 660,
+      "height": 627,
+      "anchor": {
+        "x": 330,
+        "y": 615
+      },
+      "source_box_in_original": [
+        38,
+        141,
+        636,
+        430
+      ]
+    },
+    {
+      "id": "Plains_Gold_03",
+      "x": 1320,
+      "y": 0,
+      "width": 660,
+      "height": 627,
+      "anchor": {
+        "x": 329,
+        "y": 615
+      },
+      "source_box_in_original": [
+        779,
+        659,
+        635,
+        555
+      ]
+    },
+    {
+      "id": "Plains_Gold_04",
+      "x": 1980,
+      "y": 0,
+      "width": 660,
+      "height": 627,
+      "anchor": {
+        "x": 330,
+        "y": 615
+      },
+      "source_box_in_original": [
+        68,
+        724,
+        592,
+        500
+      ]
+    }
+  ]
+}

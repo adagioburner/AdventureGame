@@ -1,0 +1,262 @@
+{
+  "sheet": "Plains_GrassRocks_sheet.png",
+  "cell_width": 315,
+  "cell_height": 386,
+  "sprites": [
+    {
+      "id": "Plains_GrassRocks_01",
+      "x": 0,
+      "y": 0,
+      "width": 315,
+      "height": 386,
+      "anchor": {
+        "x": 157,
+        "y": 374
+      },
+      "source_box_in_original": [
+        184,
+        108,
+        161,
+        362
+      ]
+    },
+    {
+      "id": "Plains_GrassRocks_02",
+      "x": 315,
+      "y": 0,
+      "width": 315,
+      "height": 386,
+      "anchor": {
+        "x": 157,
+        "y": 374
+      },
+      "source_box_in_original": [
+        428,
+        153,
+        186,
+        302
+      ]
+    },
+    {
+      "id": "Plains_GrassRocks_03",
+      "x": 630,
+      "y": 0,
+      "width": 315,
+      "height": 386,
+      "anchor": {
+        "x": 157,
+        "y": 374
+      },
+      "source_box_in_original": [
+        670,
+        174,
+        235,
+        311
+      ]
+    },
+    {
+      "id": "Plains_GrassRocks_04",
+      "x": 945,
+      "y": 0,
+      "width": 315,
+      "height": 386,
+      "anchor": {
+        "x": 157,
+        "y": 374
+      },
+      "source_box_in_original": [
+        988,
+        224,
+        291,
+        212
+      ]
+    },
+    {
+      "id": "Plains_GrassRocks_05",
+      "x": 0,
+      "y": 386,
+      "width": 315,
+      "height": 386,
+      "anchor": {
+        "x": 157,
+        "y": 374
+      },
+      "source_box_in_original": [
+        183,
+        564,
+        179,
+        200
+      ]
+    },
+    {
+      "id": "Plains_GrassRocks_06",
+      "x": 315,
+      "y": 386,
+      "width": 315,
+      "height": 386,
+      "anchor": {
+        "x": 157,
+        "y": 374
+      },
+      "source_box_in_original": [
+        467,
+        566,
+        147,
+        202
+      ]
+    },
+    {
+      "id": "Plains_GrassRocks_07",
+      "x": 630,
+      "y": 386,
+      "width": 315,
+      "height": 386,
+      "anchor": {
+        "x": 157,
+        "y": 374
+      },
+      "source_box_in_original": [
+        713,
+        610,
+        231,
+        150
+      ]
+    },
+    {
+      "id": "Plains_GrassRocks_08",
+      "x": 945,
+      "y": 386,
+      "width": 315,
+      "height": 386,
+      "anchor": {
+        "x": 157,
+        "y": 374
+      },
+      "source_box_in_original": [
+        1103,
+        592,
+        108,
+        169
+      ]
+    },
+    {
+      "id": "Plains_GrassRocks_09",
+      "x": 0,
+      "y": 772,
+      "width": 315,
+      "height": 386,
+      "anchor": {
+        "x": 157,
+        "y": 374
+      },
+      "source_box_in_original": [
+        199,
+        894,
+        106,
+        158
+      ]
+    },
+    {
+      "id": "Plains_GrassRocks_10",
+      "x": 315,
+      "y": 772,
+      "width": 315,
+      "height": 386,
+      "anchor": {
+        "x": 157,
+        "y": 374
+      },
+      "source_box_in_original": [
+        483,
+        871,
+        101,
+        158
+      ]
+    },
+    {
+      "id": "Plains_GrassRocks_11",
+      "x": 630,
+      "y": 772,
+      "width": 315,
+      "height": 386,
+      "anchor": {
+        "x": 157,
+        "y": 374
+      },
+      "source_box_in_original": [
+        729,
+        875,
+        206,
+        154
+      ]
+    },
+    {
+      "id": "Plains_GrassRocks_12",
+      "x": 945,
+      "y": 772,
+      "width": 315,
+      "height": 386,
+      "anchor": {
+        "x": 157,
+        "y": 374
+      },
+      "source_box_in_original": [
+        1086,
+        884,
+        123,
+        135
+      ]
+    },
+    {
+      "id": "Plains_GrassRocks_13",
+      "x": 0,
+      "y": 1158,
+      "width": 315,
+      "height": 386,
+      "anchor": {
+        "x": 157,
+        "y": 374
+      },
+      "source_box_in_original": [
+        207,
+        1160,
+        79,
+        91
+      ]
+    },
+    {
+      "id": "Plains_GrassRocks_14",
+      "x": 315,
+      "y": 1158,
+      "width": 315,
+      "height": 386,
+      "anchor": {
+        "x": 157,
+        "y": 374
+      },
+      "source_box_in_original": [
+        480,
+        1156,
+        94,
+        77
+      ]
+    },
+    {
+      "id": "Plains_GrassRocks_15",
+      "x": 630,
+      "y": 1158,
+      "width": 315,
+      "height": 386,
+      "anchor": {
+        "x": 157,
+        "y": 374
+      },
+      "source_box_in_original": [
+        757,
+        1158,
+        98,
+        74
+      ]
+    }
+  ]
+}

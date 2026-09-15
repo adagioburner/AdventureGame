@@ -1,0 +1,160 @@
+{
+  "sheet": "Plains_Magic_sheet.png",
+  "cell_width": 457,
+  "cell_height": 587,
+  "sprites": [
+    {
+      "id": "Plains_Magic_01",
+      "x": 0,
+      "y": 0,
+      "width": 457,
+      "height": 587,
+      "anchor": {
+        "x": 228,
+        "y": 575
+      },
+      "source_box_in_original": [
+        570,
+        30,
+        394,
+        501
+      ]
+    },
+    {
+      "id": "Plains_Magic_02",
+      "x": 457,
+      "y": 0,
+      "width": 457,
+      "height": 587,
+      "anchor": {
+        "x": 228,
+        "y": 575
+      },
+      "source_box_in_original": [
+        185,
+        138,
+        316,
+        300
+      ]
+    },
+    {
+      "id": "Plains_Magic_03",
+      "x": 914,
+      "y": 0,
+      "width": 457,
+      "height": 587,
+      "anchor": {
+        "x": 228,
+        "y": 575
+      },
+      "source_box_in_original": [
+        1060,
+        92,
+        302,
+        391
+      ]
+    },
+    {
+      "id": "Plains_Magic_04",
+      "x": 1371,
+      "y": 0,
+      "width": 457,
+      "height": 587,
+      "anchor": {
+        "x": 228,
+        "y": 575
+      },
+      "source_box_in_original": [
+        180,
+        508,
+        289,
+        394
+      ]
+    },
+    {
+      "id": "Plains_Magic_05",
+      "x": 0,
+      "y": 587,
+      "width": 457,
+      "height": 587,
+      "anchor": {
+        "x": 228,
+        "y": 575
+      },
+      "source_box_in_original": [
+        568,
+        563,
+        433,
+        426
+      ]
+    },
+    {
+      "id": "Plains_Magic_06",
+      "x": 457,
+      "y": 587,
+      "width": 457,
+      "height": 587,
+      "anchor": {
+        "x": 228,
+        "y": 575
+      },
+      "source_box_in_original": [
+        1099,
+        557,
+        308,
+        349
+      ]
+    },
+    {
+      "id": "Plains_Magic_07",
+      "x": 914,
+      "y": 587,
+      "width": 457,
+      "height": 587,
+      "anchor": {
+        "x": 228,
+        "y": 575
+      },
+      "source_box_in_original": [
+        170,
+        1096,
+        370,
+        406
+      ]
+    },
+    {
+      "id": "Plains_Magic_08",
+      "x": 1371,
+      "y": 587,
+      "width": 457,
+      "height": 587,
+      "anchor": {
+        "x": 228,
+        "y": 575
+      },
+      "source_box_in_original": [
+        660,
+        1022,
+        259,
+        563
+      ]
+    },
+    {
+      "id": "Plains_Magic_09",
+      "x": 0,
+      "y": 1174,
+      "width": 457,
+      "height": 587,
+      "anchor": {
+        "x": 228,
+        "y": 575
+      },
+      "source_box_in_original": [
+        1090,
+        1037,
+        370,
+        517
+      ]
+    }
+  ]
+}

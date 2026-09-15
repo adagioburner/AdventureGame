@@ -1,0 +1,194 @@
+{
+  "sheet": "plains_fighting_sheet.png",
+  "cell_width": 447,
+  "cell_height": 576,
+  "sprites": [
+    {
+      "id": "plains_fighting_01",
+      "x": 0,
+      "y": 0,
+      "width": 447,
+      "height": 576,
+      "anchor": {
+        "x": 223,
+        "y": 564
+      },
+      "source_box_in_original": [
+        72,
+        37,
+        293,
+        479
+      ]
+    },
+    {
+      "id": "plains_fighting_02",
+      "x": 447,
+      "y": 0,
+      "width": 447,
+      "height": 576,
+      "anchor": {
+        "x": 223,
+        "y": 564
+      },
+      "source_box_in_original": [
+        450,
+        21,
+        209,
+        539
+      ]
+    },
+    {
+      "id": "plains_fighting_03",
+      "x": 894,
+      "y": 0,
+      "width": 447,
+      "height": 576,
+      "anchor": {
+        "x": 223,
+        "y": 564
+      },
+      "source_box_in_original": [
+        1224,
+        35,
+        198,
+        443
+      ]
+    },
+    {
+      "id": "plains_fighting_04",
+      "x": 1341,
+      "y": 0,
+      "width": 447,
+      "height": 576,
+      "anchor": {
+        "x": 223,
+        "y": 564
+      },
+      "source_box_in_original": [
+        819,
+        82,
+        273,
+        377
+      ]
+    },
+    {
+      "id": "plains_fighting_05",
+      "x": 0,
+      "y": 576,
+      "width": 447,
+      "height": 576,
+      "anchor": {
+        "x": 223,
+        "y": 564
+      },
+      "source_box_in_original": [
+        67,
+        562,
+        270,
+        456
+      ]
+    },
+    {
+      "id": "plains_fighting_06",
+      "x": 447,
+      "y": 576,
+      "width": 447,
+      "height": 576,
+      "anchor": {
+        "x": 223,
+        "y": 564
+      },
+      "source_box_in_original": [
+        431,
+        566,
+        295,
+        497
+      ]
+    },
+    {
+      "id": "plains_fighting_07",
+      "x": 894,
+      "y": 576,
+      "width": 447,
+      "height": 576,
+      "anchor": {
+        "x": 223,
+        "y": 564
+      },
+      "source_box_in_original": [
+        812,
+        553,
+        337,
+        470
+      ]
+    },
+    {
+      "id": "plains_fighting_08",
+      "x": 1341,
+      "y": 576,
+      "width": 447,
+      "height": 576,
+      "anchor": {
+        "x": 223,
+        "y": 564
+      },
+      "source_box_in_original": [
+        1315,
+        531,
+        177,
+        520
+      ]
+    },
+    {
+      "id": "plains_fighting_09",
+      "x": 0,
+      "y": 1152,
+      "width": 447,
+      "height": 576,
+      "anchor": {
+        "x": 223,
+        "y": 564
+      },
+      "source_box_in_original": [
+        165,
+        1112,
+        281,
+        398
+      ]
+    },
+    {
+      "id": "plains_fighting_10",
+      "x": 447,
+      "y": 1152,
+      "width": 447,
+      "height": 576,
+      "anchor": {
+        "x": 223,
+        "y": 564
+      },
+      "source_box_in_original": [
+        664,
+        1090,
+        202,
+        481
+      ]
+    },
+    {
+      "id": "plains_fighting_11",
+      "x": 894,
+      "y": 1152,
+      "width": 447,
+      "height": 576,
+      "anchor": {
+        "x": 223,
+        "y": 564
+      },
+      "source_box_in_original": [
+        1026,
+        1034,
+        423,
+        552
+      ]
+    }
+  ]
+}

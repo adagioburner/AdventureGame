@@ -1,0 +1,262 @@
+{
+  "sheet": "trees_sheet.png",
+  "cell_width": 415,
+  "cell_height": 564,
+  "sprites": [
+    {
+      "id": "trees_01",
+      "x": 0,
+      "y": 0,
+      "width": 415,
+      "height": 564,
+      "anchor": {
+        "x": 207,
+        "y": 552
+      },
+      "source_box_in_original": [
+        20,
+        27,
+        239,
+        516
+      ]
+    },
+    {
+      "id": "trees_02",
+      "x": 415,
+      "y": 0,
+      "width": 415,
+      "height": 564,
+      "anchor": {
+        "x": 207,
+        "y": 552
+      },
+      "source_box_in_original": [
+        300,
+        29,
+        391,
+        514
+      ]
+    },
+    {
+      "id": "trees_03",
+      "x": 830,
+      "y": 0,
+      "width": 415,
+      "height": 564,
+      "anchor": {
+        "x": 207,
+        "y": 552
+      },
+      "source_box_in_original": [
+        733,
+        33,
+        335,
+        524
+      ]
+    },
+    {
+      "id": "trees_04",
+      "x": 1245,
+      "y": 0,
+      "width": 415,
+      "height": 564,
+      "anchor": {
+        "x": 207,
+        "y": 552
+      },
+      "source_box_in_original": [
+        1124,
+        56,
+        264,
+        498
+      ]
+    },
+    {
+      "id": "trees_05",
+      "x": 0,
+      "y": 564,
+      "width": 415,
+      "height": 564,
+      "anchor": {
+        "x": 207,
+        "y": 552
+      },
+      "source_box_in_original": [
+        1492,
+        5,
+        242,
+        540
+      ]
+    },
+    {
+      "id": "trees_06",
+      "x": 415,
+      "y": 564,
+      "width": 415,
+      "height": 564,
+      "anchor": {
+        "x": 207,
+        "y": 552
+      },
+      "source_box_in_original": [
+        34,
+        552,
+        235,
+        505
+      ]
+    },
+    {
+      "id": "trees_07",
+      "x": 830,
+      "y": 564,
+      "width": 415,
+      "height": 564,
+      "anchor": {
+        "x": 207,
+        "y": 552
+      },
+      "source_box_in_original": [
+        408,
+        568,
+        228,
+        494
+      ]
+    },
+    {
+      "id": "trees_08",
+      "x": 1245,
+      "y": 564,
+      "width": 415,
+      "height": 564,
+      "anchor": {
+        "x": 207,
+        "y": 552
+      },
+      "source_box_in_original": [
+        747,
+        574,
+        354,
+        540
+      ]
+    },
+    {
+      "id": "trees_09",
+      "x": 0,
+      "y": 1128,
+      "width": 415,
+      "height": 564,
+      "anchor": {
+        "x": 207,
+        "y": 552
+      },
+      "source_box_in_original": [
+        1204,
+        597,
+        191,
+        506
+      ]
+    },
+    {
+      "id": "trees_10",
+      "x": 415,
+      "y": 1128,
+      "width": 415,
+      "height": 564,
+      "anchor": {
+        "x": 207,
+        "y": 552
+      },
+      "source_box_in_original": [
+        1508,
+        582,
+        241,
+        516
+      ]
+    },
+    {
+      "id": "trees_11",
+      "x": 830,
+      "y": 1128,
+      "width": 415,
+      "height": 564,
+      "anchor": {
+        "x": 207,
+        "y": 552
+      },
+      "source_box_in_original": [
+        51,
+        1090,
+        240,
+        506
+      ]
+    },
+    {
+      "id": "trees_12",
+      "x": 1245,
+      "y": 1128,
+      "width": 415,
+      "height": 564,
+      "anchor": {
+        "x": 207,
+        "y": 552
+      },
+      "source_box_in_original": [
+        402,
+        1110,
+        232,
+        481
+      ]
+    },
+    {
+      "id": "trees_13",
+      "x": 0,
+      "y": 1692,
+      "width": 415,
+      "height": 564,
+      "anchor": {
+        "x": 207,
+        "y": 552
+      },
+      "source_box_in_original": [
+        821,
+        1110,
+        198,
+        527
+      ]
+    },
+    {
+      "id": "trees_14",
+      "x": 415,
+      "y": 1692,
+      "width": 415,
+      "height": 564,
+      "anchor": {
+        "x": 207,
+        "y": 552
+      },
+      "source_box_in_original": [
+        1192,
+        1124,
+        247,
+        538
+      ]
+    },
+    {
+      "id": "trees_15",
+      "x": 830,
+      "y": 1692,
+      "width": 415,
+      "height": 564,
+      "anchor": {
+        "x": 207,
+        "y": 552
+      },
+      "source_box_in_original": [
+        1475,
+        1152,
+        347,
+        441
+      ]
+    }
+  ]
+}

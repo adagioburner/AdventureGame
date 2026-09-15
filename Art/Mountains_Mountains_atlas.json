@@ -1,0 +1,160 @@
+{
+  "sheet": "Mountains_Mountains_sheet.png",
+  "cell_width": 693,
+  "cell_height": 505,
+  "sprites": [
+    {
+      "id": "Mountains_Mountains_01",
+      "x": 0,
+      "y": 0,
+      "width": 693,
+      "height": 505,
+      "anchor": {
+        "x": 346,
+        "y": 493
+      },
+      "source_box_in_original": [
+        103,
+        88,
+        641,
+        481
+      ]
+    },
+    {
+      "id": "Mountains_Mountains_02",
+      "x": 693,
+      "y": 0,
+      "width": 693,
+      "height": 505,
+      "anchor": {
+        "x": 346,
+        "y": 493
+      },
+      "source_box_in_original": [
+        796,
+        147,
+        669,
+        403
+      ]
+    },
+    {
+      "id": "Mountains_Mountains_03",
+      "x": 1386,
+      "y": 0,
+      "width": 693,
+      "height": 505,
+      "anchor": {
+        "x": 346,
+        "y": 493
+      },
+      "source_box_in_original": [
+        1554,
+        126,
+        561,
+        369
+      ]
+    },
+    {
+      "id": "Mountains_Mountains_04",
+      "x": 2079,
+      "y": 0,
+      "width": 693,
+      "height": 505,
+      "anchor": {
+        "x": 346,
+        "y": 493
+      },
+      "source_box_in_original": [
+        1565,
+        637,
+        497,
+        384
+      ]
+    },
+    {
+      "id": "Mountains_Mountains_05",
+      "x": 0,
+      "y": 505,
+      "width": 693,
+      "height": 505,
+      "anchor": {
+        "x": 346,
+        "y": 493
+      },
+      "source_box_in_original": [
+        146,
+        684,
+        581,
+        351
+      ]
+    },
+    {
+      "id": "Mountains_Mountains_06",
+      "x": 693,
+      "y": 505,
+      "width": 693,
+      "height": 505,
+      "anchor": {
+        "x": 346,
+        "y": 493
+      },
+      "source_box_in_original": [
+        856,
+        730,
+        501,
+        305
+      ]
+    },
+    {
+      "id": "Mountains_Mountains_07",
+      "x": 1386,
+      "y": 505,
+      "width": 693,
+      "height": 505,
+      "anchor": {
+        "x": 346,
+        "y": 493
+      },
+      "source_box_in_original": [
+        207,
+        1195,
+        598,
+        349
+      ]
+    },
+    {
+      "id": "Mountains_Mountains_08",
+      "x": 2079,
+      "y": 505,
+      "width": 693,
+      "height": 505,
+      "anchor": {
+        "x": 346,
+        "y": 493
+      },
+      "source_box_in_original": [
+        896,
+        1185,
+        529,
+        305
+      ]
+    },
+    {
+      "id": "Mountains_Mountains_09",
+      "x": 0,
+      "y": 1010,
+      "width": 693,
+      "height": 505,
+      "anchor": {
+        "x": 346,
+        "y": 493
+      },
+      "source_box_in_original": [
+        1546,
+        1148,
+        503,
+        351
+      ]
+    }
+  ]
+}

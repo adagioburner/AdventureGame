@@ -1,0 +1,126 @@
+{
+  "sheet": "Mountains_GoldMagic_sheet.png",
+  "cell_width": 693,
+  "cell_height": 783,
+  "sprites": [
+    {
+      "id": "Mountains_GoldMagic_01",
+      "x": 0,
+      "y": 0,
+      "width": 693,
+      "height": 783,
+      "anchor": {
+        "x": 346,
+        "y": 771
+      },
+      "source_box_in_original": [
+        566,
+        65,
+        164,
+        431
+      ]
+    },
+    {
+      "id": "Mountains_GoldMagic_02",
+      "x": 693,
+      "y": 0,
+      "width": 693,
+      "height": 783,
+      "anchor": {
+        "x": 346,
+        "y": 771
+      },
+      "source_box_in_original": [
+        871,
+        51,
+        271,
+        521
+      ]
+    },
+    {
+      "id": "Mountains_GoldMagic_03",
+      "x": 1386,
+      "y": 0,
+      "width": 693,
+      "height": 783,
+      "anchor": {
+        "x": 346,
+        "y": 771
+      },
+      "source_box_in_original": [
+        1170,
+        66,
+        669,
+        317
+      ]
+    },
+    {
+      "id": "Mountains_GoldMagic_04",
+      "x": 2079,
+      "y": 0,
+      "width": 693,
+      "height": 783,
+      "anchor": {
+        "x": 346,
+        "y": 771
+      },
+      "source_box_in_original": [
+        208,
+        127,
+        229,
+        313
+      ]
+    },
+    {
+      "id": "Mountains_GoldMagic_05",
+      "x": 0,
+      "y": 783,
+      "width": 693,
+      "height": 783,
+      "anchor": {
+        "x": 346,
+        "y": 771
+      },
+      "source_box_in_original": [
+        76,
+        511,
+        527,
+        759
+      ]
+    },
+    {
+      "id": "Mountains_GoldMagic_06",
+      "x": 693,
+      "y": 783,
+      "width": 693,
+      "height": 783,
+      "anchor": {
+        "x": 346,
+        "y": 771
+      },
+      "source_box_in_original": [
+        1343,
+        635,
+        472,
+        444
+      ]
+    },
+    {
+      "id": "Mountains_GoldMagic_07",
+      "x": 1386,
+      "y": 783,
+      "width": 693,
+      "height": 783,
+      "anchor": {
+        "x": 346,
+        "y": 771
+      },
+      "source_box_in_original": [
+        675,
+        713,
+        611,
+        359
+      ]
+    }
+  ]
+}

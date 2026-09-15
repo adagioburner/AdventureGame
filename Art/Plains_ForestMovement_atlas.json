@@ -1,0 +1,211 @@
+{
+  "sheet": "Plains_ForestMovement_sheet.png",
+  "cell_width": 553,
+  "cell_height": 490,
+  "sprites": [
+    {
+      "id": "Plains_ForestMovement_01",
+      "x": 0,
+      "y": 0,
+      "width": 553,
+      "height": 490,
+      "anchor": {
+        "x": 276,
+        "y": 478
+      },
+      "source_box_in_original": [
+        178,
+        48,
+        529,
+        362
+      ]
+    },
+    {
+      "id": "Plains_ForestMovement_02",
+      "x": 553,
+      "y": 0,
+      "width": 553,
+      "height": 490,
+      "anchor": {
+        "x": 276,
+        "y": 478
+      },
+      "source_box_in_original": [
+        826,
+        48,
+        254,
+        354
+      ]
+    },
+    {
+      "id": "Plains_ForestMovement_03",
+      "x": 1106,
+      "y": 0,
+      "width": 553,
+      "height": 490,
+      "anchor": {
+        "x": 276,
+        "y": 478
+      },
+      "source_box_in_original": [
+        1191,
+        43,
+        368,
+        360
+      ]
+    },
+    {
+      "id": "Plains_ForestMovement_04",
+      "x": 1659,
+      "y": 0,
+      "width": 553,
+      "height": 490,
+      "anchor": {
+        "x": 276,
+        "y": 478
+      },
+      "source_box_in_original": [
+        213,
+        461,
+        258,
+        328
+      ]
+    },
+    {
+      "id": "Plains_ForestMovement_05",
+      "x": 0,
+      "y": 490,
+      "width": 553,
+      "height": 490,
+      "anchor": {
+        "x": 276,
+        "y": 478
+      },
+      "source_box_in_original": [
+        542,
+        429,
+        519,
+        371
+      ]
+    },
+    {
+      "id": "Plains_ForestMovement_06",
+      "x": 553,
+      "y": 490,
+      "width": 553,
+      "height": 490,
+      "anchor": {
+        "x": 276,
+        "y": 478
+      },
+      "source_box_in_original": [
+        1148,
+        425,
+        346,
+        354
+      ]
+    },
+    {
+      "id": "Plains_ForestMovement_07",
+      "x": 1106,
+      "y": 490,
+      "width": 553,
+      "height": 490,
+      "anchor": {
+        "x": 276,
+        "y": 478
+      },
+      "source_box_in_original": [
+        189,
+        836,
+        322,
+        328
+      ]
+    },
+    {
+      "id": "Plains_ForestMovement_08",
+      "x": 1659,
+      "y": 490,
+      "width": 553,
+      "height": 490,
+      "anchor": {
+        "x": 276,
+        "y": 478
+      },
+      "source_box_in_original": [
+        586,
+        836,
+        416,
+        399
+      ]
+    },
+    {
+      "id": "Plains_ForestMovement_09",
+      "x": 0,
+      "y": 980,
+      "width": 553,
+      "height": 490,
+      "anchor": {
+        "x": 276,
+        "y": 478
+      },
+      "source_box_in_original": [
+        1091,
+        831,
+        359,
+        363
+      ]
+    },
+    {
+      "id": "Plains_ForestMovement_10",
+      "x": 553,
+      "y": 980,
+      "width": 553,
+      "height": 490,
+      "anchor": {
+        "x": 276,
+        "y": 478
+      },
+      "source_box_in_original": [
+        209,
+        1229,
+        342,
+        439
+      ]
+    },
+    {
+      "id": "Plains_ForestMovement_11",
+      "x": 1106,
+      "y": 980,
+      "width": 553,
+      "height": 490,
+      "anchor": {
+        "x": 276,
+        "y": 478
+      },
+      "source_box_in_original": [
+        680,
+        1252,
+        364,
+        428
+      ]
+    },
+    {
+      "id": "Plains_ForestMovement_12",
+      "x": 1659,
+      "y": 980,
+      "width": 553,
+      "height": 490,
+      "anchor": {
+        "x": 276,
+        "y": 478
+      },
+      "source_box_in_original": [
+        1136,
+        1223,
+        418,
+        466
+      ]
+    }
+  ]
+}
