@@ -11,6 +11,10 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
+**Answered so far:** Q1 and Q12 are settled and implemented. Q2 was answered but
+the answer is arithmetically inconsistent with `REMOTENESS_WEIGHT = 4`, so it is
+still open with a specific follow-up. Q3–Q11 and Q13 are outstanding.
+
 ---
 
 ## A. The four known open items (GDD.md §12)
@@ -26,45 +30,86 @@ Nothing below was resolved by picking something reasonable.
 
 ## B. Questions — I need an answer before these can be written
 
-### Q1. What exactly is a POI's per-walk remoteness score? (§5.1) — **blocking**
+### Q1. ~~What exactly is a POI's per-walk remoteness score?~~ — **answered, implemented**
 
-§5.1 fixes the walk, the distance metric and the normalisation, but not the
-score itself. Three readings are all consistent with the text, and they produce
-materially different remoteness fields:
+[SOURCE §5.1, chat] "A POI's score is the sum of the length of the segment that
+lead to it during the walk, and the segment that lead out of it. For the first
+POI it's double the length of the first segment, and for the last one it's double
+the length of the last segment."
 
-1. the cumulative walk cost when the POI was first reached;
-2. the cost of the single leg that reached it;
-3. its ordinal position in the visit sequence.
+Implemented as `segmentSumRemotenessScorer()`. For POIs `P1 … Pn` over segments
+`s1 … sn`, where `si` is the leg that arrived at `Pi`:
 
-"Distance for 'closest' and for **walk-segment lengths** uses the same weighted
-terrain cost" suggests cost rather than ordinal, but doesn't separate (1) from (2).
+```
+score(P1) = 2 × s1
+score(Pi) = si + s(i+1)    for 1 < i < n
+score(Pn) = 2 × sn
+```
 
-This is load-bearing: remoteness feeds both guard strength (§5.2) and reward
-stacking (§4.3), so getting it wrong silently mis-balances every map.
+Summed across all `REMOTENESS_SIMULATION_RUNS` walks, then min-max normalised.
+Sum vs. mean doesn't matter — they differ by a constant and normalisation is
+invariant under it.
 
-**Routed as:** `RemotenessScorer` is injected into `computeRemoteness`;
-`defaultRemotenessScorer()` throws rather than shipping a guess.
-`packages/sim/src/remoteness.ts`
+This changed the `RemotenessScorer` interface: it now has `beginWalk` /
+`endWalk`, since "first POI" and "last POI" are only meaningful against walk
+boundaries.
 
-### Q2. How does §5.2's proportionality become an actual guard strength? — **blocking**
+**One wrinkle, flagged not resolved.** "Double the length of the first segment"
+is implemented literally as `2 × s1`, where `s1` is the leg in from the random
+plains start. It could instead have meant the first *inter-POI* segment
+(`P1 → P2`), discarding the start leg — which would make both boundary cases
+symmetric ("missing one neighbour, so double the one you have"), whereas the
+literal reading has `P1` ignore a real outgoing segment. The two differ only in
+the first POI's score, so roughly 1–2% of a POI's total over 100 runs. Cheap to
+switch: it's the `i === 0` branch in `packages/sim/src/remoteness.ts`.
 
-`guard_strength + remoteness × REMOTENESS_WEIGHT ∝ reward` is a proportionality,
-and the pipeline forces the direction of the derivation (§4.3 fixes gold amounts
-first, so guard strength is the unknown). Missing: the constant of
-proportionality, the rounding, and what happens outside `GUARD_STRENGTH` (2–10).
+### Q2. How does §5.2's proportionality become a guard strength? — **answered, but the answer doesn't close**
 
-Taking §5.2's own anchor literally — 1 gold at remoteness 1 ↔ guard 4 at
-remoteness 0, both giving 4 — implies a scale of 4 per gold unit, which sends a
-10-gold POI to strength 40. So something has to give: clamp at 10, a non-linear
-scale, or a cap on gold per POI. Which one is a design call.
+[SOURCE §5.2, chat] "1 gold with maximum remoteness is unguarded; the maximum
+gold with maximum remoteness has maximum guard strength (10). The other guard
+values are distributed proportionally within this range."
 
-Related: the anchor describes "1 gold **unguarded**", but §4.4 says every gold
-POI is guarded and `GUARD_STRENGTH_MIN` is 2, so strength 0 isn't reachable. I
-read the anchor as an illustration of relative difficulty rather than an
-assignment rule, but flagging in case it was meant literally.
+Those two anchors can't both hold. Writing §5.2 as an equation,
+`guard = k × gold − remoteness × W` with `W = REMOTENESS_WEIGHT = 4`:
 
-**Routed as:** `pending.GUARD_STRENGTH_SCALE` (throws on read);
-`guardStrengthFor()` takes the scale as a parameter.
+| Anchor | Equation | Gives |
+|---|---|---|
+| A — 1 gold, r = 1, guard 0 | `0 = k × 1 − 4` | `k = 4` |
+| B — G_max gold, r = 1, guard 10 | `10 = k × G_max − 4` | `k × G_max = 14` |
+
+Together they require **`G_max = 3.5`**. The largest gold stack a single POI can
+hold is an integer in [2, 11] — from §4.2's rows plus §4.3's baseline-then-
+distribute (mountain fighting-guarded gold is 20 units over 10 POIs, so up to 11
+on one POI; plains up to 9; forest up to 2). So it is never 3.5.
+
+Satisfying both anchors needs a non-zero intercept instead, e.g.
+`guard = 10 × (gold − 1)/(G_max − 1) + (1 − r) × W`. That hits both anchors
+exactly — but difficulty then runs 4 → 14 across the whole gold range, a ratio of
+3.5 whatever `G_max` is, so difficulty is no longer *proportional* to gold and
+§5.2's `∝` becomes an approximation.
+
+**So: keep §5.2's strict proportionality, or keep both anchors — not both.**
+
+Three things needed either way:
+
+1. Which of the two? (Proportionality → `k = 4` from anchor A, and max-gold POIs
+   clamp at 10. Both anchors → `∝` becomes approximate.)
+2. Is `G_max` a **config cap** on gold per POI, or the **observed maximum** on
+   the generated map? If observed, guard strengths become map-relative — the same
+   POI gets a different guard on a map that happened to stack 11 gold somewhere.
+3. Guard *decreases* with remoteness (§5.2's trade-off, confirmed by §5.2's
+   original anchor), so anchor B describes max gold at its **least**-guarded
+   remoteness. Any less-remote max-gold POI then wants 14, above
+   `GUARD_STRENGTH.max` of 10. Clamp there, or was the remoteness direction
+   meant the other way round?
+
+Also to reconcile: "unguarded" means strength 0, but `GUARD_STRENGTH_MIN` is 2
+and §4.4 says "every gold POI on every terrain is guarded, none are exempt".
+Does the minimum become 0, or does 2–10 stand with unguarded as a separate case?
+(The data model already allows `guard: null`, so no structural change either way.)
+
+**Routed as:** `pending.GUARD_STRENGTH_SCALE` still throws on read;
+`guardStrengthFor()` carries the full arithmetic in its doc comment.
 `packages/mapgen/src/rewards/guards.ts`
 
 ### Q3. What exactly is "a tie for the win"? (§1)
@@ -182,17 +227,19 @@ now so the swap stays a one-liner.
 **Routed as:** `hybridGoldAndSkillsEvaluator(balancingConstant)` exists as a
 named seam and throws. `packages/ai/src/policies/evaluators.ts`
 
-### Q12. Where do players start on the map? (§6) — **blocking**
+### Q12. ~~Where do players start on the map?~~ — **answered, implemented**
 
-I can't find this anywhere. §6 specifies seat order, per-seat starting stamina
-and fixed turn order; §5.1's "random plains position" is about balancing walks,
-not players. But a game can't begin without a starting node per player.
+[SOURCE §6, chat] "The players start at a random spot of the plains that is not
+a POI. All players start from the same spot."
 
-Sub-questions, whichever way you go: same node for everyone or different ones?
-Plains only? Away from POIs? Deterministic from the map seed?
+Implemented as `chooseStartingNode(map, rng)` in `@adventure/core` — uniform over
+plains nodes that hold no POI, one node shared by every seat. Several players on
+one node is already unrestricted (§8), so nothing special was needed to let them
+all stand there.
 
-**Routed as:** `PlayerState.position` exists; `SetupFlow.start()` throws with
-this note. `packages/session/src/setup.ts`
+Its `Rng` is derived from the map seed rather than an ambient one, so the
+starting node replays from `(seed, params)` along with the map itself.
+`SetupFlow.start()` is no longer blocked.
 
 ### Q13. Is a zero-length move a legal action? (§7 vs §8)
 

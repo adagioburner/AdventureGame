@@ -209,8 +209,10 @@ The comment says not to add a clamp — it would mask a broken `current_count`
 rather than protect anything.
 
 Guard strengths (§5.2) are solved *after* units are final, since §4.3 fixes the
-gold amount and §5.2 leaves guard strength as the unknown. Blocked on
-[Q2](./OPEN_QUESTIONS.md#q2).
+gold amount and §5.2 leaves guard strength as the unknown. Still blocked on
+[Q2](./OPEN_QUESTIONS.md#q2): two anchors were supplied, and they turn out to be
+mutually inconsistent with `REMOTENESS_WEIGHT = 4` — the arithmetic is in the
+question and in `guardStrengthFor()`'s doc comment.
 
 ---
 
@@ -232,9 +234,13 @@ makes explicit: §5.1's walk is pure geometry — turn structure, stamina and
 skills play no part — while a rollout leg is a sequence of real turns. What they
 share is the target chooser and the cost metric, which is what §9 asks for.
 
-The remoteness *scorer* is injected and has no default — see
-[Q1](./OPEN_QUESTIONS.md#q1). Rollout termination and opponent behaviour are
-injected too — [Q6](./OPEN_QUESTIONS.md#q6).
+The remoteness *scorer* is still injected — the scoring rule is now specified
+and implemented as `segmentSumRemotenessScorer()` (a POI scores its inbound plus
+its outbound segment; first and last POI double the one they have), but keeping
+it behind the interface means a variant stays a one-liner. The interface carries
+`beginWalk`/`endWalk`, because "first POI" and "last POI" are only meaningful
+against walk boundaries. Rollout termination and opponent behaviour have no
+default — [Q6](./OPEN_QUESTIONS.md#q6).
 
 **There is one distance metric in the whole repo.** `terrainStepCost` in
 `core/path.ts` (1 plains / 2 forest / 3 mountain, charged on *entering* a node,
@@ -365,8 +371,9 @@ message in the protocol at all.
 `SetupFlow` implements §6.1: GM sets player count, users request to join, GM
 accepts or rejects (which allocates the next seat and thereby fixes turn order,
 per §6's explicit "whatever is most convenient"), each player picks name and
-avatar, GM starts. `start()` is blocked on [Q12](./OPEN_QUESTIONS.md#q12) —
-starting positions are unspecified.
+avatar, GM starts. All seats start on one shared node — a random plains node
+holding no POI, via `chooseStartingNode`, drawn from an `Rng` derived from the
+map seed so it replays with the map.
 
 `@adventure/protocol` holds the wire contract as plain data: `ClientMessage` /
 `ServerMessage` unions, lobby and setup types, `BoardPost`, and the `AuthProvider`
@@ -442,7 +449,7 @@ Each of these is independently implementable against the shapes above:
 5. §4.3 assignment — the weight function is already written.
 6. Step 5 Smooth — needs [Q4](./OPEN_QUESTIONS.md#q4).
 7. `checkVictory` — needs [Q3](./OPEN_QUESTIONS.md#q3).
-8. Remoteness — needs [Q1](./OPEN_QUESTIONS.md#q1).
-9. Guard strengths — needs [Q2](./OPEN_QUESTIONS.md#q2).
-10. `SetupFlow.start` — needs [Q12](./OPEN_QUESTIONS.md#q12).
+8. Remoteness — scorer is written; needs `closestPoiCandidates` (item 1) to run.
+9. `SetupFlow.start` — starting positions are settled; needs the rest of setup.
+10. Guard strengths — still needs [Q2](./OPEN_QUESTIONS.md#q2).
 11. MCTS — needs [Q6](./OPEN_QUESTIONS.md#q6) and §12.2.

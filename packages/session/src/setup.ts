@@ -44,15 +44,11 @@ export class SetupFlow {
    * GM-only. Generates the map from `mapSeed` via `MapService` and builds the
    * initial `GameState`.
    *
-   * **Blocked on a gap, not a stub**: GDD.md never says where players start on
-   * the map. Seat order, starting stamina and turn order are all specified;
-   * the starting node is not. See OPEN_QUESTIONS Q12 — this one has to be
-   * answered before a game can actually begin.
+   * [SOURCE §6, chat] Every player starts on the same node: a random plains
+   * node that is not a POI, via `chooseStartingNode` in `@adventure/core`. Draw
+   * its `Rng` from the map seed so the starting node replays with the map.
    */
   start(_by: UserId): Promise<void> {
-    throw new NotImplementedError(
-      'SetupFlow.start — player starting positions are unspecified',
-      'GDD.md §6 / docs/OPEN_QUESTIONS.md Q12',
-    );
+    throw new NotImplementedError('SetupFlow.start', 'GDD.md §6.1');
   }
 }

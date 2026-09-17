@@ -1,5 +1,5 @@
 import type { GameConfig } from '@adventure/config';
-import { NotImplementedError, type MapGraph, type NodeId, type Rng } from '@adventure/core';
+import type { MapGraph, NodeId, Rng } from '@adventure/core';
 import { runWalk, type WalkDriver, type WalkVisit } from './walk.ts';
 import type { PoiCandidate } from './candidates.ts';
 
@@ -10,34 +10,85 @@ import type { PoiCandidate } from './candidates.ts';
  * been visited once per walk. [...] Run `REMOTENESS_SIMULATION_RUNS` walks,
  * normalize the resulting per-POI scores to [0, 1]."
  *
- * Everything in that paragraph is implemented below **except one thing**: what
- * a POI's per-walk score actually *is*. The GDD fixes the walk, the metric and
- * the normalisation, but never says whether a POI scores the cumulative walk
- * cost when it was first reached, the cost of the single leg that reached it,
- * or its ordinal position in the visit sequence. Those give materially
- * different remoteness fields, and remoteness feeds both guard strength (§5.2)
- * and reward stacking (§4.3), so it is not a detail.
+ * [SOURCE §5.1, chat] The per-POI score, which §5.1 itself left unstated: "a
+ * POI's score is the sum of the length of the segment that lead to it during
+ * the walk, and the segment that lead out of it. For the first POI it's double
+ * the length of the first segment, and for the last one it's double the length
+ * of the last segment."
  *
- * Hence: injected, with no default shipped. See OPEN_QUESTIONS Q1.
+ * A scorer therefore needs walk boundaries, not just a stream of arrivals —
+ * hence `beginWalk` / `endWalk`, which is what the "first POI" and "last POI"
+ * cases are defined against.
  */
 export interface RemotenessScorer {
-  /** Called once per POI arrival, across all `REMOTENESS_SIMULATION_RUNS` walks. */
+  /** Start of one of the `REMOTENESS_SIMULATION_RUNS` walks. */
+  beginWalk(): void;
+  /** Called once per POI arrival, in walk order. */
   record(visit: WalkVisit): void;
+  /** End of a walk — where the "last POI" rule is applied. */
+  endWalk(): void;
   /** Raw (un-normalised) score per POI, after every walk has finished. */
   finish(): ReadonlyMap<NodeId, number>;
 }
 
 /**
- * Deliberately not implemented — picking one of the three readings above would
- * be inventing a design decision. Supply a scorer explicitly once the designer
- * has answered Q1.
+ * The scorer specified above.
+ *
+ * For a walk that visits POIs `P1 … Pn` over segments `s1 … sn`, where `si` is
+ * the leg that arrived at `Pi` (so `s1` is the leg from the random plains
+ * start):
+ *
+ *   score(P1) = 2 × s1                      // first POI
+ *   score(Pi) = si + s(i+1)   for 1 < i < n // segment in + segment out
+ *   score(Pn) = 2 × sn                      // last POI, no segment out
+ *
+ * A single-POI walk hits both boundary cases and scores `2 × s1` once.
+ *
+ * Scores accumulate as a **sum** across all walks rather than a mean. With a
+ * fixed run count the two differ by a constant factor, and min-max
+ * normalisation to [0, 1] is invariant under that, so the distinction cannot
+ * affect any downstream rule.
+ *
+ * One wrinkle worth knowing about, flagged to the designer rather than
+ * resolved: "double the length of the first segment" reads literally as `2 × s1`
+ * where `s1` is the leg in from the random plains start, which is what is
+ * implemented. It could instead have meant the first *inter-POI* segment
+ * (`P1 → P2`), discarding the start leg — that reading makes both boundary
+ * cases symmetric ("missing one neighbour, so double the one you have"). The
+ * two differ only in the first POI's score, so roughly 1-2% of a POI's total
+ * over 100 runs. See OPEN_QUESTIONS Q1.
  */
-export function defaultRemotenessScorer(): RemotenessScorer {
-  throw new NotImplementedError(
-    'defaultRemotenessScorer — the per-POI score definition is unspecified',
-    'GDD.md §5.1 / docs/OPEN_QUESTIONS.md Q1',
-  );
+export function segmentSumRemotenessScorer(): RemotenessScorer {
+  const totals = new Map<NodeId, number>();
+  let walk: WalkVisit[] = [];
+
+  return {
+    beginWalk() {
+      walk = [];
+    },
+    record(visit) {
+      walk.push(visit);
+    },
+    endWalk() {
+      const lastIndex = walk.length - 1;
+      for (let i = 0; i <= lastIndex; i++) {
+        const arrival = walk[i];
+        if (arrival === undefined) continue;
+        const departure = walk[i + 1];
+        const score =
+          i === 0 || departure === undefined
+            ? 2 * arrival.legCost // first POI, or last POI (no segment out)
+            : arrival.legCost + departure.legCost;
+        totals.set(arrival.target, (totals.get(arrival.target) ?? 0) + score);
+      }
+      walk = [];
+    },
+    finish: () => totals,
+  };
 }
+
+/** The scorer §5.1 calls for. Named separately so a variant stays a one-liner. */
+export const defaultRemotenessScorer = segmentSumRemotenessScorer;
 
 /** Cursor for the remoteness walk: where we are and what we have seen. */
 interface RemotenessCursor {
@@ -102,7 +153,9 @@ export function computeRemoteness(
     // [SOURCE §1.2] "start at a random plains position" — any plains node, not
     // necessarily a POI.
     const start: RemotenessCursor = { at: rng.pick(plainsNodes), unvisited: new Set(poiNodes) };
+    scorer.beginWalk();
     runWalk(graph, start, remotenessDriver((visit) => scorer.record(visit)), config, rng, poiNodes.length + 1);
+    scorer.endWalk();
   }
 
   return normalizeToUnitRange(scorer.finish());

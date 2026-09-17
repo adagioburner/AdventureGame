@@ -68,8 +68,10 @@ export const DEFAULT_ENGINEERING_CONFIG: EngineeringConfig = {
     ),
     GUARD_STRENGTH_SCALE: pending(
       'GDD.md §5.2',
-      'What constant of proportionality (and rounding/clamping rule) turns ' +
-        '`guard_strength + remoteness × REMOTENESS_WEIGHT ∝ reward` into an integer in GUARD_STRENGTH?',
+      'The two supplied anchors (1 gold at max remoteness unguarded; max gold at max remoteness ' +
+        'at strength 10) require a max gold-per-POI of 3.5, which is unreachable — so §5.2 can keep ' +
+        'strict proportionality or both anchors, not both. Which, and is G_max a config cap or the ' +
+        "map's observed maximum?",
     ),
     GAME_MASTER_ABSENCE_POLICY: pending(
       'GDD.md §12.4',

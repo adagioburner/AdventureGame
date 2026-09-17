@@ -2,7 +2,7 @@ import type { Ruleset } from '@adventure/config';
 import type { NodeId } from './ids.ts';
 import type { MapGraph } from './graph.ts';
 import type { Poi } from './poi.ts';
-import type { Seed } from './rng.ts';
+import type { Rng, Seed } from './rng.ts';
 
 /**
  * The generated world: everything §2.1 produces, and nothing that changes
@@ -33,4 +33,27 @@ export function poiAt(map: GameMap, node: NodeId): Poi | undefined {
 /** [SOURCE §2] Total gold units placed on the map. Used by the win check (§1). */
 export function totalGoldUnits(map: GameMap): number {
   return map.pois.reduce((sum, poi) => sum + (poi.reward.kind === 'gold' ? poi.reward.units : 0), 0);
+}
+
+/**
+ * [SOURCE §6, chat] "the players start at a random spot of the plains that is
+ * not a POI. All players start from the same spot."
+ *
+ * One node for every player, so `PlayerState.position` is identical for all
+ * seats at turn 1. Multiple players sharing a node is already unrestricted
+ * (§8), so nothing special is needed to let them all stand there.
+ *
+ * Call this with an `Rng` derived from `map.seed` (`createRng(map.seed).fork(...)`)
+ * rather than an ambient one, so the starting node is reproducible from
+ * `(seed, params)` along with the rest of the map — §1.3 wants replays to
+ * reconstruct from the seed alone.
+ */
+export function chooseStartingNode(map: GameMap, rng: Rng): NodeId {
+  const candidates = map.graph.nodes
+    .filter((node) => node.terrain === 'plains' && !map.poiByNode.has(node.id))
+    .map((node) => node.id);
+  if (candidates.length === 0) {
+    throw new RangeError('no non-POI plains node available as a starting position');
+  }
+  return rng.pick(candidates);
 }
