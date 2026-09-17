@@ -1,0 +1,14 @@
+{
+  "name": "@adventure/server",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@adventure/ai": "workspace:*",
+    "@adventure/config": "workspace:*",
+    "@adventure/core": "workspace:*",
+    "@adventure/mapgen": "workspace:*",
+    "@adventure/protocol": "workspace:*",
+    "@adventure/session": "workspace:*"
+  }
+}
