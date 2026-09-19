@@ -1,0 +1,23 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "paths": {
+      "@adventure/config": ["./packages/config/src/index.ts"],
+      "@adventure/config/*": ["./packages/config/src/*"],
+      "@adventure/core": ["./packages/core/src/index.ts"],
+      "@adventure/core/*": ["./packages/core/src/*"],
+      "@adventure/mapgen": ["./packages/mapgen/src/index.ts"],
+      "@adventure/mapgen/*": ["./packages/mapgen/src/*"],
+      "@adventure/sim": ["./packages/sim/src/index.ts"],
+      "@adventure/sim/*": ["./packages/sim/src/*"],
+      "@adventure/ai": ["./packages/ai/src/index.ts"],
+      "@adventure/ai/*": ["./packages/ai/src/*"],
+      "@adventure/protocol": ["./packages/protocol/src/index.ts"],
+      "@adventure/protocol/*": ["./packages/protocol/src/*"],
+      "@adventure/session": ["./packages/session/src/index.ts"],
+      "@adventure/session/*": ["./packages/session/src/*"]
+    }
+  },
+  "include": ["./packages/*/src/**/*.ts", "apps/*/src/**/*.ts", "tools/*/src/**/*.ts"]
+}
