@@ -21,10 +21,12 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
   },
   pois: {
     POI_COUNT: { plains: 25, forest: 20, mountain: 15 },
-    GUARD_STRENGTH: { min: 2, max: 10 },
+    // §11 says 2; [SOURCE §5.2, chat] caps the formula at 0, where 0 = unguarded.
+    GUARD_STRENGTH: { min: 0, max: 10 },
   },
   balancing: {
     REMOTENESS_WEIGHT: 4,
+    GOLD_WEIGHT: 3,
     REMOTENESS_WEIGHT_FOR_DISTRIBUTION: 2,
     CLOSE_CANDIDATE_COUNT: 5,
     REMOTENESS_SIMULATION_RUNS: 100,
@@ -65,13 +67,6 @@ export const DEFAULT_ENGINEERING_CONFIG: EngineeringConfig = {
     EDGE_PRUNE_JITTER: pending(
       'GDD.md §2.1 step 3',
       'Edges are pruned "longest-first, with jitter" — how much jitter, and applied how?',
-    ),
-    GUARD_STRENGTH_SCALE: pending(
-      'GDD.md §5.2',
-      'The two supplied anchors (1 gold at max remoteness unguarded; max gold at max remoteness ' +
-        'at strength 10) require a max gold-per-POI of 3.5, which is unreachable — so §5.2 can keep ' +
-        'strict proportionality or both anchors, not both. Which, and is G_max a config cap or the ' +
-        "map's observed maximum?",
     ),
     GAME_MASTER_ABSENCE_POLICY: pending(
       'GDD.md §12.4',

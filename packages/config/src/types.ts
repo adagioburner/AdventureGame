@@ -47,18 +47,46 @@ export interface MapConfig {
 export interface PoiConfig {
   /** §11 `POI_COUNT` — fixed target, 25 plains / 20 forest / 15 mountain. */
   readonly POI_COUNT: PerTerrain<number>;
-  /** §11 `GUARD_STRENGTH_MIN` / `MAX` — fixed, 2–10 (revisit later). */
+  /**
+   * §11 `GUARD_STRENGTH_MIN` / `MAX`. §11's table says 2–10, but [SOURCE §5.2,
+   * chat] superseded the minimum: the guard-strength formula is "capped between
+   * 0 and 10", and 0 is a meaningful outcome — it means the POI ends up
+   * unguarded ("1 gold with maximum remoteness is unguarded"). So the range is
+   * 0–10 here.
+   *
+   * Consequence, recorded rather than resolved: §4.4's "every gold POI on every
+   * terrain is guarded, none are exempt" no longer holds for low-gold,
+   * high-remoteness POIs. The data model already allows `guard: null`, so
+   * nothing structural changes.
+   */
   readonly GUARD_STRENGTH: IntRange;
 }
 
 /** §11 rows covering the balancing model (§4.3, §5). */
 export interface BalancingConfig {
   /**
-   * §11 `REMOTENESS_WEIGHT` — tunable (play-test).
-   * [SOURCE §1.2, chat] §5.2: `guard_strength + remoteness × REMOTENESS_WEIGHT
-   * ∝ reward`.
+   * §11 `REMOTENESS_WEIGHT` — tunable (play-test). The remoteness term of the
+   * §5.2 guard-strength formula; see `GOLD_WEIGHT`.
    */
   readonly REMOTENESS_WEIGHT: number;
+  /**
+   * `GOLD_WEIGHT` — tunable. **Not in §11's table**: added by the designer in
+   * review, in the same "to be fine-tuned later" spirit as §11's own rows, so
+   * it lives here rather than in `EngineeringConfig`.
+   *
+   * [SOURCE §5.2, chat] It resolves §5.2's proportionality into a concrete
+   * formula:
+   *
+   *   `guard_strength = gold × GOLD_WEIGHT − remoteness × REMOTENESS_WEIGHT`,
+   *   capped to `GUARD_STRENGTH`.
+   *
+   * Default 3. Note what the current pair of constants implies: with
+   * `GOLD_WEIGHT = 3` and `REMOTENESS_WEIGHT = 4`, any POI holding 5 or more
+   * gold caps at 10 for every remoteness value (5 × 3 − 4 = 11 > 10), so
+   * remoteness stops discounting the guard once a stack gets that large.
+   * Stated as an observation for tuning, not a recommendation.
+   */
+  readonly GOLD_WEIGHT: number;
   /**
    * §11 `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` — tunable (play-test).
    * §4.3 step 3 only. Deliberately distinct from `REMOTENESS_WEIGHT`.
@@ -129,7 +157,11 @@ export interface AiConfig {
   readonly MCTS_TIME_BUDGET_PER_MOVE_MS: number;
 }
 
-/** The whole of GDD.md §11, and nothing that is not in GDD.md §11. */
+/**
+ * GDD.md §11's table, plus constants the *designer* has added to it in review
+ * (currently `GOLD_WEIGHT`). Nothing the implementation invented on its own —
+ * that lives in `EngineeringConfig`.
+ */
 export interface GameConfig {
   readonly map: MapConfig;
   readonly pois: PoiConfig;
@@ -242,12 +274,6 @@ export interface PendingConfig {
    * is not given. `@adventure/mapgen` step 3 takes it as an injected parameter.
    */
   readonly EDGE_PRUNE_JITTER: PendingValue<number>;
-  /**
-   * §5.2. The proportionality constant (and rounding/clamping rule) that turns
-   * `guard_strength + remoteness × REMOTENESS_WEIGHT ∝ reward` into an actual
-   * integer guard strength in `GUARD_STRENGTH`. See OPEN_QUESTIONS Q2.
-   */
-  readonly GUARD_STRENGTH_SCALE: PendingValue<number>;
   /**
    * §7.3 / §12.4. No fallback is described for a game master who disconnects.
    * A duration here would be a design decision; the session layer instead

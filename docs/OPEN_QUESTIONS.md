@@ -11,9 +11,8 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** Q1 and Q12 are settled and implemented. Q2 was answered but
-the answer is arithmetically inconsistent with `REMOTENESS_WEIGHT = 4`, so it is
-still open with a specific follow-up. Q3–Q11 and Q13 are outstanding.
+**Answered so far:** Q1, Q2 and Q12 are settled and implemented. Q3–Q11, Q13 and
+the new Q2a (does guard strength round?) are outstanding.
 
 ---
 
@@ -63,54 +62,58 @@ literal reading has `P1` ignore a real outgoing segment. The two differ only in
 the first POI's score, so roughly 1–2% of a POI's total over 100 runs. Cheap to
 switch: it's the `i === 0` branch in `packages/sim/src/remoteness.ts`.
 
-### Q2. How does §5.2's proportionality become a guard strength? — **answered, but the answer doesn't close**
+### Q2. ~~How does §5.2's proportionality become a guard strength?~~ — **answered, implemented**
 
-[SOURCE §5.2, chat] "1 gold with maximum remoteness is unguarded; the maximum
-gold with maximum remoteness has maximum guard strength (10). The other guard
-values are distributed proportionally within this range."
+[SOURCE §5.2, chat] "Proceed with the following formula for the guard strength:
+`amount_of_gold * GOLD_WEIGHT - remoteness * REMOTENESS_WEIGHT`, capped between
+0 and 10. Set `GOLD_WEIGHT = 3` (to be fine tuned later)."
 
-Those two anchors can't both hold. Writing §5.2 as an equation,
-`guard = k × gold − remoteness × W` with `W = REMOTENESS_WEIGHT = 4`:
+Implemented as `guardStrengthFor()`. `GOLD_WEIGHT` is a new config row — added
+by the designer, so it sits in `GameConfig.balancing` alongside §11's own rows,
+not in `EngineeringConfig`.
 
-| Anchor | Equation | Gives |
-|---|---|---|
-| A — 1 gold, r = 1, guard 0 | `0 = k × 1 − 4` | `k = 4` |
-| B — G_max gold, r = 1, guard 10 | `10 = k × G_max − 4` | `k × G_max = 14` |
+Two knock-on changes this answer makes to earlier text, recorded rather than
+re-decided:
 
-Together they require **`G_max = 3.5`**. The largest gold stack a single POI can
-hold is an integer in [2, 11] — from §4.2's rows plus §4.3's baseline-then-
-distribute (mountain fighting-guarded gold is 20 units over 10 POIs, so up to 11
-on one POI; plains up to 9; forest up to 2). So it is never 3.5.
+- **`GUARD_STRENGTH` is now 0–10, not §11's 2–10.** The cap was given as "0 and
+  10", and 0 is meaningful: it is what "1 gold with maximum remoteness is
+  unguarded" produces (`1×3 − 1×4 = −1`, capped to 0).
+- **§4.4's "every gold POI is guarded, none are exempt" no longer holds.** Any
+  POI whose formula result caps at 0 is unguarded. The data model already allows
+  `guard: null`, so nothing structural changes.
 
-Satisfying both anchors needs a non-zero intercept instead, e.g.
-`guard = 10 × (gold − 1)/(G_max − 1) + (1 − r) × W`. That hits both anchors
-exactly — but difficulty then runs 4 → 14 across the whole gold range, a ratio of
-3.5 whatever `G_max` is, so difficulty is no longer *proportional* to gold and
-§5.2's `∝` becomes an approximation.
+The engine still never inspects the reward kind — §4.4 requires guarding to work
+on any kind, so the formula reads the POI's reward `units`. For v1 content the
+two coincide, because the §4.2 table only guards gold.
 
-**So: keep §5.2's strict proportionality, or keep both anchors — not both.**
+What the current constants do, as an observation for tuning rather than a
+recommendation:
 
-Three things needed either way:
+| gold | r=0 | r=0.25 | r=0.5 | r=0.75 | r=1 |
+|---|---|---|---|---|---|
+| 1 | 3 | 2 | 1 | 0 | 0 |
+| 2 | 6 | 5 | 4 | 3 | 2 |
+| 3 | 9 | 8 | 7 | 6 | 5 |
+| 4 | 10 | 10 | 10 | 9 | 8 |
+| ≥5 | 10 | 10 | 10 | 10 | 10 |
 
-1. Which of the two? (Proportionality → `k = 4` from anchor A, and max-gold POIs
-   clamp at 10. Both anchors → `∝` becomes approximate.)
-2. Is `G_max` a **config cap** on gold per POI, or the **observed maximum** on
-   the generated map? If observed, guard strengths become map-relative — the same
-   POI gets a different guard on a map that happened to stack 11 gold somewhere.
-3. Guard *decreases* with remoteness (§5.2's trade-off, confirmed by §5.2's
-   original anchor), so anchor B describes max gold at its **least**-guarded
-   remoteness. Any less-remote max-gold POI then wants 14, above
-   `GUARD_STRENGTH.max` of 10. Clamp there, or was the remoteness direction
-   meant the other way round?
+So remoteness stops discounting the guard once a stack reaches 5 gold. Reachable
+stacks per §4.2 row are 1–9 (plains), 1–2 (forest), 1–11 (mountain/fighting),
+1–6 (mountain/magic), so the plains and mountain rows can produce POIs pinned at
+the cap.
 
-Also to reconcile: "unguarded" means strength 0, but `GUARD_STRENGTH_MIN` is 2
-and §4.4 says "every gold POI on every terrain is guarded, none are exempt".
-Does the minimum become 0, or does 2–10 stand with unguarded as a separate case?
-(The data model already allows `guard: null`, so no structural change either way.)
+### Q2a. Is guard strength rounded? (§5.2, §4.4)
 
-**Routed as:** `pending.GUARD_STRENGTH_SCALE` still throws on read;
-`guardStrengthFor()` carries the full arithmetic in its doc comment.
-`packages/mapgen/src/rewards/guards.ts`
+Small leftover from Q2. Remoteness is continuous in [0, 1], so the formula gives
+continuous results — 1 gold at remoteness 0.4 is guard 1.4. The cap was
+specified but no rounding rule was.
+
+§8's `roll + skill > guard_strength` works either way; what is affected is the
+number §4.4 shows beside the node ("a red number ... indicating guard strength").
+Round, floor, ceil, or display to one decimal?
+
+**Routed as:** implemented exactly as specified — continuous, capped — so
+nothing is invented. Adding rounding later is one line in `guardStrengthFor()`.
 
 ### Q3. What exactly is "a tie for the win"? (§1)
 

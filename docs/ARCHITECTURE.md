@@ -209,10 +209,19 @@ The comment says not to add a clamp — it would mask a broken `current_count`
 rather than protect anything.
 
 Guard strengths (§5.2) are solved *after* units are final, since §4.3 fixes the
-gold amount and §5.2 leaves guard strength as the unknown. Still blocked on
-[Q2](./OPEN_QUESTIONS.md#q2): two anchors were supplied, and they turn out to be
-mutually inconsistent with `REMOTENESS_WEIGHT = 4` — the arithmetic is in the
-question and in `guardStrengthFor()`'s doc comment.
+gold amount and §5.2 leaves guard strength as the unknown:
+
+```
+guard_strength = units × GOLD_WEIGHT − remoteness × REMOTENESS_WEIGHT,  capped to GUARD_STRENGTH
+```
+
+`GOLD_WEIGHT` (default 3) is a designer-added config row. The cap is 0–10, which
+supersedes §11's `GUARD_STRENGTH_MIN` of 2 — a capped result of 0 means the POI
+is unguarded, so §4.4's "none are exempt" no longer holds. The formula reads the
+POI's reward `units` rather than testing for gold, keeping §4.4's requirement
+that guarding work on any kind. See [Q2](./OPEN_QUESTIONS.md#q2), and
+[Q2a](./OPEN_QUESTIONS.md#q2a) for the one leftover: rounding is unspecified, so
+the result is left continuous.
 
 ---
 
@@ -451,5 +460,5 @@ Each of these is independently implementable against the shapes above:
 7. `checkVictory` — needs [Q3](./OPEN_QUESTIONS.md#q3).
 8. Remoteness — scorer is written; needs `closestPoiCandidates` (item 1) to run.
 9. `SetupFlow.start` — starting positions are settled; needs the rest of setup.
-10. Guard strengths — still needs [Q2](./OPEN_QUESTIONS.md#q2).
+10. Guard strengths — formula is written; needs remoteness (item 8) to run.
 11. MCTS — needs [Q6](./OPEN_QUESTIONS.md#q6) and §12.2.

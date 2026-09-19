@@ -1,67 +1,69 @@
 import type { GameConfig } from '@adventure/config';
-import { NotImplementedError } from '@adventure/core';
+import type { NodeId } from '@adventure/core';
 import type { PoiAssignment } from '../types.ts';
 
 /**
  * §5.2 — "`guard_strength + remoteness × REMOTENESS_WEIGHT ∝ reward`, where
  * `reward` is the gold amount being protected."
  *
- * Direction of the derivation is forced by the pipeline: §4.3 has already fixed
- * each POI's gold amount, so guard strength is the unknown and is solved for.
+ * [SOURCE §5.2, chat] Resolved into a concrete formula by the designer:
  *
- * [SOURCE §5.2, chat] Two anchors were supplied to pin the scale: "1 gold with
- * maximum remoteness is unguarded; the maximum gold with maximum remoteness has
- * maximum guard strength (10). The other guard values are distributed
- * proportionally within this range."
+ *   `guard_strength = amount_of_gold × GOLD_WEIGHT − remoteness × REMOTENESS_WEIGHT`
  *
- * **Still unimplemented, because those two anchors cannot both hold.** Writing
- * §5.2 as an equation, `guard = k × gold − remoteness × W`:
+ * capped between 0 and 10 (`GUARD_STRENGTH`), with `GOLD_WEIGHT = 3` to be
+ * fine-tuned later. Direction of the derivation is forced by the pipeline: §4.3
+ * has already fixed each POI's gold amount, so guard strength is the unknown.
  *
- *   anchor A (1 gold, r = 1, guard 0):      0 = k × 1 − 4       →  k = 4
- *   anchor B (G_max gold, r = 1, guard 10): 10 = k × G_max − 4  →  k × G_max = 14
+ * Two things this function deliberately does *not* do:
  *
- * Together those require `G_max = 3.5`. The largest gold stack one POI can hold
- * is an integer in [2, 11] (from §4.2's rows plus §4.3's baseline-then-
- * distribute), so it is never 3.5 and the two anchors are inconsistent under
- * strict proportionality.
+ *  - **It never inspects the reward kind.** §4.4 requires that guarding work on
+ *    any kind, "gold only" being a v1 content choice rather than an engine
+ *    constraint, so the formula reads `assignment.units` — the POI's reward
+ *    amount — not "the gold amount". For v1 content the two are identical,
+ *    because the §4.2 table only ever guards gold.
+ *  - **It does not round.** Remoteness is continuous in [0, 1], so the result
+ *    is continuous too, and the designer specified a cap but no rounding rule.
+ *    §8's `roll + skill > guard_strength` works either way; only the number §4.4
+ *    displays beside the node is affected. See OPEN_QUESTIONS Q2a.
  *
- * Satisfying both anchors instead needs a non-zero intercept, e.g.
- * `guard = 10 × (gold − 1)/(G_max − 1) + (1 − r) × W`. That hits both anchors
- * exactly, but then difficulty runs 4 → 14 across the whole gold range, a ratio
- * of 3.5 regardless of `G_max` — so difficulty is no longer *proportional* to
- * gold, and §5.2's `∝` becomes an approximation.
- *
- * So the choice is: keep §5.2's proportionality, or keep both anchors. Either
- * way a third problem remains — since guard *decreases* with remoteness (§5.2's
- * trade-off), anchor B describes max gold at its least-guarded remoteness, so
- * any less-remote max-gold POI wants 14, above `GUARD_STRENGTH.max` of 10.
- *
- * See OPEN_QUESTIONS Q2 for the follow-up put to the designer, including
- * whether `G_max` is a config cap or the observed per-map maximum, and how
- * "unguarded" (0) relates to `GUARD_STRENGTH.min` of 2 and §4.4's "every gold
- * POI is guarded, none are exempt".
+ * A capped result of 0 means the POI ends up **unguarded** — [SOURCE §5.2, chat]
+ * "1 gold with maximum remoteness is unguarded", which under these constants is
+ * exactly `1 × 3 − 1 × 4 = −1`, capped to 0.
  */
-export function guardStrengthFor(
-  _assignment: PoiAssignment,
-  _remoteness: number,
-  _config: GameConfig,
-  _scale: number,
-): number {
-  throw new NotImplementedError('guardStrengthFor', 'GDD.md §5.2 / docs/OPEN_QUESTIONS.md Q2');
+export function guardStrengthFor(assignment: PoiAssignment, remoteness: number, config: GameConfig): number {
+  const raw = assignment.units * config.balancing.GOLD_WEIGHT - remoteness * config.balancing.REMOTENESS_WEIGHT;
+  const { min, max } = config.pois.GUARD_STRENGTH;
+  return Math.min(max, Math.max(min, raw));
 }
 
 /**
- * Apply §5.2 to every guarded POI.
+ * Apply §5.2 to every POI the §4.2 table assigned a guard type.
  *
- * [SOURCE §1.1, chat] Which POIs are guarded comes entirely from the §4.2 table
- * (v1: every gold POI, nothing else). This function reads `guardType` from the
- * assignment and never inspects the reward kind — §4.4 requires that guarding
- * work on any kind, so "gold only" must not appear in the engine.
+ * [SOURCE §1.1, chat] Which POIs carry a guard comes entirely from that table
+ * (v1: every gold POI, nothing else), so this reads `guardType` and never the
+ * reward kind.
+ *
+ * `guardStrength` stays `null` for an unguarded group. A POI whose formula
+ * result caps at 0 keeps its `guardType` here but is sealed into the finished
+ * map with `guard: null`, since a strength of 0 is what "unguarded" means.
+ * That makes §4.4's "every gold POI is guarded, none are exempt" no longer hold
+ * for low-gold, high-remoteness POIs — a knowing consequence of the formula,
+ * not an engine decision.
  */
 export function assignGuardStrengths(
-  _assignments: readonly PoiAssignment[],
-  _config: GameConfig,
-  _scale: number,
+  assignments: readonly PoiAssignment[],
+  remoteness: ReadonlyMap<NodeId, number>,
+  config: GameConfig,
 ): void {
-  throw new NotImplementedError('assignGuardStrengths', 'GDD.md §4.4, §5.2');
+  for (const assignment of assignments) {
+    if (assignment.guardType === null) {
+      assignment.guardStrength = null;
+      continue;
+    }
+    const score = remoteness.get(assignment.node);
+    if (score === undefined) {
+      throw new RangeError(`no remoteness score for POI node ${assignment.node}`);
+    }
+    assignment.guardStrength = guardStrengthFor(assignment, score, config);
+  }
 }
