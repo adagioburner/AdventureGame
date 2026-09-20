@@ -23,8 +23,14 @@ carries a provenance tag — `[SOURCE §x]`, `[SOURCE §x, chat]`, `[INFERRED §
 ## Status
 
 First architecture pass. Data models, component boundaries and interfaces are in
-place and typecheck; gameplay logic, map generation and MCTS are deliberately
-unimplemented. Unfinished seams throw `NotImplementedError` carrying the GDD
+place and typecheck; gameplay logic, map generation and the MCTS search loop are
+deliberately unimplemented.
+
+All four of GDD.md §12's open items are now decided: Durable Objects for the
+session layer with map generation and AI on the game master's machine (§12.1),
+UCT over the 10 closest unclaimed POIs (§12.2), the message board as ordinary
+game state (§12.3), and no fallback for a disconnected game master — the game
+stalls (§12.4). Unfinished seams throw `NotImplementedError` carrying the GDD
 section to implement against; unmade *design* decisions throw
 `UnresolvedDesignError` instead, and have no defaults to fall back on.
 

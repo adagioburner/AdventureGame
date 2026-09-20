@@ -155,6 +155,37 @@ export interface CombatConfig {
 export interface AiConfig {
   /** §11 `MCTS_TIME_BUDGET_PER_MOVE` — tunable, 10 seconds. Milliseconds. */
   readonly MCTS_TIME_BUDGET_PER_MOVE_MS: number;
+  /**
+   * `MCTS_NODE_EXPANSION_PRUNING` — tunable, default 10. Not in §11's original
+   * table; added by the designer when resolving §12.2.
+   *
+   * [SOURCE §12.2, chat] "We will prune the number of next POIs to be used to
+   * expand any node to a value, MCTS_NODE_EXPANSION_PRUNING = 10 (to be tuned).
+   * These 10 POIs to explore will be the closest at the time (among those that
+   * have not been claimed at that point of time in the game)."
+   *
+   * Note this is the *same* ranking the rollout policy and the remoteness walk
+   * use — `closestPoiCandidates` in `@adventure/sim` — just with a different K.
+   * The tree takes all K as branches; the rollout picks one uniformly from
+   * `CLOSE_CANDIDATE_COUNT` (5). One kernel, three callers.
+   */
+  readonly MCTS_NODE_EXPANSION_PRUNING: number;
+  /**
+   * `MCTS_EXPLORATION_CONSTANT` — tunable, default √2.
+   *
+   * [SOURCE §12.2, chat] "For everything else please use sensible defaults that
+   * are recommended for standard MCTS implementations." √2 is UCB1's textbook
+   * constant, so UCT with c = √2 is that default.
+   *
+   * **Tuning caveat, flagged not resolved:** UCB1 derives c = √2 assuming
+   * rewards lie in [0, 1]. The backpropagated value here is a player's gold
+   * after rollout (§9), which ranges over roughly 0–45 on a v1 map. At that
+   * scale the exploitation term dwarfs the exploration term and the search will
+   * behave almost greedily. Standard practice is to normalise values into
+   * [0, 1] or to raise c to match the reward range. Both are tuning decisions,
+   * so nothing is normalised silently — see OPEN_QUESTIONS Q14.
+   */
+  readonly MCTS_EXPLORATION_CONSTANT: number;
 }
 
 /**
@@ -261,30 +292,18 @@ export interface EngineeringConfig {
   readonly pending: PendingConfig;
 }
 
-/** Every unresolved value, in one place. Mirrors `docs/OPEN_QUESTIONS.md`. */
+/**
+ * Every unresolved value, in one place. Mirrors `docs/OPEN_QUESTIONS.md`.
+ *
+ * All four of GDD.md §12's open items are now decided, so what remains here is
+ * one gap found during implementation rather than anything §12 listed.
+ */
 export interface PendingConfig {
-  /**
-   * §12.2 / §11 last row. The tree/selection policy and its exploration
-   * constant. `@adventure/ai` ships a `TreePolicy` *interface* and no default
-   * implementation; this is the config half of the same hole.
-   */
-  readonly MCTS_TREE_POLICY: PendingValue<{ readonly name: string; readonly explorationConstant: number }>;
   /**
    * §5.1. "Remove edges longest-first, **with jitter**" — the jitter magnitude
    * is not given. `@adventure/mapgen` step 3 takes it as an injected parameter.
    */
   readonly EDGE_PRUNE_JITTER: PendingValue<number>;
-  /**
-   * §7.3 / §12.4. No fallback is described for a game master who disconnects.
-   * A duration here would be a design decision; the session layer instead
-   * exposes a `GameMasterAbsencePolicy` port with no default.
-   */
-  readonly GAME_MASTER_ABSENCE_POLICY: PendingValue<string>;
-  /**
-   * §7.1 / §12.3. Message board persistence and scope (per-game vs.
-   * cross-game, retention).
-   */
-  readonly MESSAGE_BOARD_RETENTION: PendingValue<string>;
 }
 
 /** Everything needed to generate and run a game, in three separated layers. */

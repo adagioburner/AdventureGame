@@ -1,12 +1,15 @@
 /**
  * `@adventure/ai` — the MCTS player of GDD.md §9.
  *
- * Everything §9 specifies is implemented behind a named seam; everything §12.2
- * leaves open is an interface with no default implementation, so a build that
- * needs the tree policy fails loudly instead of quietly using someone's guess.
+ * §12.2 is now decided: the tree branches over the `MCTS_NODE_EXPANSION_PRUNING`
+ * closest unclaimed POIs, and everything else follows standard MCTS practice —
+ * UCT selection with √2, most-visited child as the final move. Both ship here
+ * as named, swappable defaults rather than as hard-coded behaviour, because the
+ * designer expects to experiment with the evaluator and the policies alike.
  */
 export * from './types.ts';
 export * from './mcts.ts';
 export * from './runner.ts';
 export { closestPoiRolloutPolicy } from './policies/rollout.ts';
+export { uctTreePolicy, closestUnclaimedPoiEnumerator, unclaimedPoiNodesOf } from './policies/tree.ts';
 export { goldAfterSimulationEvaluator, hybridGoldAndSkillsEvaluator } from './policies/evaluators.ts';

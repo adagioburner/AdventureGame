@@ -1,17 +1,18 @@
 import type { Ruleset } from '@adventure/config';
 import type { DiceSource, GameId, GameMap, GameState, PlayerId, Seed, UserId } from '@adventure/core';
 import type { AiPlayer } from '@adventure/ai';
-import type { BoardPost, ServerMessage } from '@adventure/protocol';
+import type { ServerMessage } from '@adventure/protocol';
 
 /**
  * The session layer's ports. Every one of these is an interface with no
  * implementation in this package.
  *
- * [OPEN §12.1] Hosting is undecided, so the rule here is absolute: this package
- * imports nothing runtime-specific — no WebSocket, no KV, no SQL, no Durable
- * Object, no `setTimeout`. If Cloudflare, Node, Deno or a plain in-memory test
- * harness each supply these six ports, the same session code runs on all of
- * them, and changing the answer to §12.1 is an adapter swap in `apps/server`.
+ * [SOURCE §12.1, chat] Hosting is now decided — Durable Objects — "with
+ * flexible architecture to swap it for something else if DO don't fit the
+ * bill". These ports are that flexibility, so the rule here stays absolute:
+ * this package imports nothing runtime-specific — no WebSocket, no KV, no SQL,
+ * no Durable Object, no `setTimeout`. The DO is an adapter in `apps/server`,
+ * and swapping it means writing a different adapter, not touching this package.
  */
 
 /** Persistence for one game's authoritative state. */
@@ -32,22 +33,27 @@ export interface Clock {
 }
 
 /**
- * [SOURCE §1.3] Map generation is deterministic in `(seed, ruleset)`, and it is
- * the single most CPU-expensive thing in the system apart from MCTS — a
- * rejected attempt reruns the whole pipeline, and step 7 runs
- * `REMOTENESS_SIMULATION_RUNS` full-map walks. Behind a port so it can be a
- * local call, a queued job or a separate service without touching this layer;
- * and because generation is reproducible, a store only ever has to keep the
- * seed.
+ * [SOURCE §12.1, chat] "Map generation and player AI run on the game master's
+ * machine." So the server never executes the §2.1 pipeline. The Durable Object
+ * adapter implements this port as a **round trip to the game master's client**:
+ * send `gm.requestMapGeneration`, await `gm.mapGenerated`.
+ *
+ * The session core is unaware of any of that — which is the point of the port,
+ * and why moving generation back server-side later would change one adapter.
  */
 export interface MapService {
   generate(seed: Seed, ruleset: Ruleset): Promise<GameMap>;
 }
 
 /**
- * [SOURCE §5, chat] 10 seconds of CPU per AI move. Behind a port for the same
- * reason as `MapService`, and with more urgency — see `docs/STACK.md` on why
- * this is the component that most constrains the hosting choice.
+ * [SOURCE §12.1, chat] Also on the game master's machine. The DO adapter
+ * implements this as a round trip too: send `gm.requestAiMove`, await
+ * `gm.aiMove`.
+ *
+ * This is why `AiPlayer.chooseAction` was already async and behind a port: 10
+ * seconds of CPU per move (§9) never belonged in a request handler, and it now
+ * does not even run on the server. On the GM's machine it belongs in a Web
+ * Worker so the search does not freeze that player's own UI.
  */
 export interface AiService {
   playerFor(gameId: GameId, player: PlayerId): Promise<AiPlayer>;
@@ -66,51 +72,37 @@ export interface DiceService {
 }
 
 /**
- * [OPEN §12.3] Message board persistence and scope.
+ * §12.4 is decided, and the decision is that there is no fallback.
  *
- * The port exists so the feature can be built; the *policy* does not, because
- * nobody has chosen it. Note `scope` is not a parameter of any method here —
- * whether the store is per-game or cross-game is entirely the adapter's
- * business, and no caller can tell the difference.
+ * [SOURCE §12.4, chat] "The game cannot proceed for a player that cannot
+ * establish connection with the game state server. If the game master
+ * disconnects there is no one to force the next turn so the game stalls as
+ * well."
+ *
+ * So there is no policy port here any more — nothing is configurable, because
+ * nothing happens. A GM-only request with no game master connected is answered
+ * `game_master_unavailable` and the game waits.
+ *
+ * Note the reach of this, which follows from §12.1 rather than §12.4 itself:
+ * with map generation and MCTS on the game master's machine, a disconnected GM
+ * blocks not only forced turns but **every AI turn and map creation**. An
+ * all-AI game still cannot advance without the GM online. Recorded as a
+ * consequence of the two answers together, not as a new question.
  */
-export interface MessageBoardStore {
-  post(post: BoardPost): Promise<void>;
-  recent(gameId: GameId, limit: number): Promise<readonly BoardPost[]>;
-}
+export const GAME_MASTER_ABSENCE_BEHAVIOUR = 'stall' as const;
 
 /**
- * [OPEN §12.4] "What happens if the game master disconnects or is otherwise
- * unavailable mid-game — the role cannot be transferred (§6.1), and no fallback
- * for GM absence is described."
- *
- * Routed around by naming the decision rather than making it. Every GM-only
- * path in `GameSession` consults this port when the game master is absent;
- * there is no implementation, so wiring one up is a deliberate act and the
- * default behaviour is a loud failure rather than a quiet invented rule.
- *
- * Note what the port does *not* offer: no `transferGameMaster`. §6.1 says the
- * role cannot be transferred in v1, so the obvious fix is not silently
- * available to whoever implements this.
+ * Six ports, down from eight: §12.3 removed `MessageBoardStore` (the board is
+ * game state, so `GameStore` already covers it) and §12.4 removed
+ * `GameMasterAbsencePolicy` (there is no fallback to configure).
  */
-export interface GameMasterAbsencePolicy {
-  readonly name: string;
-  /** Called when a GM-only action is needed and the game master is not present. */
-  onGameMasterUnavailable(gameId: GameId): Promise<GameMasterFallback>;
-}
-
-export type GameMasterFallback =
-  | { readonly kind: 'reject' }
-  | { readonly kind: 'wait' }
-  /** Anything else is a design decision nobody has made. */
-  | { readonly kind: 'unresolved'; readonly gdd: 'GDD.md §12.4' };
-
 export interface SessionPorts {
   readonly games: GameStore;
   readonly broadcaster: Broadcaster;
   readonly clock: Clock;
+  /** Round-trips to the game master's client; see the interface. */
   readonly maps: MapService;
+  /** Round-trips to the game master's client; see the interface. */
   readonly ai: AiService;
   readonly dice: DiceService;
-  readonly board: MessageBoardStore;
-  readonly gmAbsence: GameMasterAbsencePolicy;
 }

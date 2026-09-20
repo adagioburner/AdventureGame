@@ -45,6 +45,9 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
   },
   ai: {
     MCTS_TIME_BUDGET_PER_MOVE_MS: 10_000,
+    MCTS_NODE_EXPANSION_PRUNING: 10,
+    // UCB1's textbook constant. See the tuning caveat on the field.
+    MCTS_EXPLORATION_CONSTANT: Math.SQRT2,
   },
 };
 
@@ -60,21 +63,9 @@ export const DEFAULT_ENGINEERING_CONFIG: EngineeringConfig = {
   MAX_GENERATION_ATTEMPTS: 50,
   POISSON_RADIUS_FACTOR: 0.85,
   pending: {
-    MCTS_TREE_POLICY: pending(
-      'GDD.md §12.2 (and the last row of §11)',
-      'Which tree/selection policy does MCTS use, and with what exploration constant?',
-    ),
     EDGE_PRUNE_JITTER: pending(
       'GDD.md §2.1 step 3',
       'Edges are pruned "longest-first, with jitter" — how much jitter, and applied how?',
-    ),
-    GAME_MASTER_ABSENCE_POLICY: pending(
-      'GDD.md §12.4',
-      'What happens when the game master disconnects or is unavailable mid-game?',
-    ),
-    MESSAGE_BOARD_RETENTION: pending(
-      'GDD.md §12.3',
-      'Is the message board per-game or cross-game, and what is its retention?',
     ),
   },
 };

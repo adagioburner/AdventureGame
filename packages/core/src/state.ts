@@ -2,6 +2,7 @@ import type { GameId, NodeId, PlayerId, Seat } from './ids.ts';
 import type { GameMap } from './gamemap.ts';
 import type { MovementAllowance, PlayerState } from './player.ts';
 import type { PoiRuntimeState } from './poi.ts';
+import type { BoardPost } from './messageboard.ts';
 
 export type GameStatus = 'setup' | 'in_progress' | 'finished';
 
@@ -37,6 +38,12 @@ export interface GameState {
   readonly turn: TurnState;
   /** Parallel to `map.pois`. */
   readonly poiRuntime: readonly PoiRuntimeState[];
+  /**
+   * [SOURCE §12.3, chat] The message board is game state, with no distinction
+   * from the rest of it — so it is persisted, replayed and broadcast by exactly
+   * the same machinery, and needs no store or retention policy of its own.
+   */
+  readonly messageBoard: readonly BoardPost[];
   readonly status: GameStatus;
   /** Empty until `status === 'finished'`; more than one entry on a shared win. */
   readonly winners: readonly PlayerId[];

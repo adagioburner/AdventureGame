@@ -2,6 +2,7 @@ import type { RewardKind } from '@adventure/config';
 import type { NodeId, PlayerId, Seat } from './ids.ts';
 import type { ControlMode } from './player.ts';
 import type { Reward } from './reward.ts';
+import type { BoardPost } from './messageboard.ts';
 
 /**
  * [SOURCE §2] "A turn is: move, then (if the turn ends on a POI) interact
@@ -51,7 +52,18 @@ export interface ForceTurnAction {
   readonly player: PlayerId;
 }
 
-export type GameAction = TurnAction | SetControlAction | ResignAction | ForceTurnAction;
+/**
+ * [SOURCE §12.3, chat] The message board is game state, so posting to it is a
+ * state change and therefore a `GameAction` — it goes through `applyAction`
+ * like everything else rather than down a side channel.
+ */
+export interface PostMessageAction {
+  readonly kind: 'post_message';
+  readonly player: PlayerId;
+  readonly body: string;
+}
+
+export type GameAction = TurnAction | SetControlAction | ResignAction | ForceTurnAction | PostMessageAction;
 
 /** [SOURCE §2] One `GUARD_DIE` roll. Supplied by the caller — see `DiceSource`. */
 export interface DieRoll {
@@ -99,4 +111,5 @@ export type GameEvent =
   | { readonly type: 'control_changed'; readonly player: PlayerId; readonly control: ControlMode }
   | { readonly type: 'resigned'; readonly player: PlayerId }
   | { readonly type: 'turn_ended'; readonly player: PlayerId; readonly nextSeat: Seat }
+  | { readonly type: 'message_posted'; readonly post: BoardPost }
   | { readonly type: 'game_won'; readonly winners: readonly PlayerId[] };

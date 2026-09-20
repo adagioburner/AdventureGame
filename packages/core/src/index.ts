@@ -13,6 +13,7 @@ export * from './rng.ts';
 export * from './graph.ts';
 export * from './reward.ts';
 export * from './poi.ts';
+export * from './messageboard.ts';
 export * from './gamemap.ts';
 export * from './player.ts';
 export * from './path.ts';

@@ -11,21 +11,30 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** Q1, Q2 and Q12 are settled and implemented. Q3–Q11, Q13 and
-the new Q2a (does guard strength round?) are outstanding.
+**Answered so far:** all four of GDD.md §12's own open items, plus Q1, Q2 and
+Q12. Outstanding: Q2a (guard-strength rounding), Q3–Q11, Q13, and four new
+sub-questions thrown off by the §12 answers — Q14 (UCB1 reward scale), Q15 (map
+upload vs. regenerate), Q16 (is rest a branch?), Q17 (macro-action or single
+turn?). Q16 and Q17 are the two blocking `search()`.
 
 ---
 
-## A. The four known open items (GDD.md §12)
+## A. The four known open items (GDD.md §12) — **all answered**
 
-| # | Item | How it's routed | Where |
-|---|---|---|---|
-| §12.1 | Hosting / infrastructure | Session layer has **zero** runtime dependencies — no transport, storage, socket or timer. Six ports (`GameStore`, `Broadcaster`, `Clock`, `MapService`, `AiService`, `DiceService`) plus two policy ports. In-memory adapters exist to prove the ports are sufficient; a Durable Objects adapter is a documented placeholder that imports nothing Cloudflare-specific. My recommendation, for you to confirm or reject, is in `STACK.md`. | `packages/session/src/ports.ts`, `apps/server/src/adapters/` |
-| §12.2 | MCTS tree/selection policy | `TreePolicy` is an interface with `select` + `bestChild`; UCT, PUCT, ε-greedy, RAVE and a flat bandit all fit it unchanged, so the interface commits to nothing. **No implementation ships.** Matching config hole is `pending.MCTS_TREE_POLICY`. See also Q10 — the tree's *action enumeration* is a second hole in the same place. | `packages/ai/src/types.ts`, `packages/config/src/defaults.ts` |
-| §12.3 | Message board persistence/scope | `MessageBoardStore` port with `post`/`recent` and **no `scope` parameter** — per-game vs. cross-game is invisible to every caller, so either answer is an adapter. Retention lives only in the adapter. `BoardPost` carries `gameId` so a per-game board needs no schema change. | `packages/session/src/ports.ts`, `packages/protocol/src/messageboard.ts` |
-| §12.4 | Game master disconnects | `GameMasterAbsencePolicy` port, consulted on every GM-only path, with no implementation — so the default behaviour is a loud failure, not an invented rule. Deliberately offers **no** `transferGameMaster` method, since §6.1 says the role cannot be transferred in v1 and I didn't want the obvious wrong fix to be one keystroke away. | `packages/session/src/ports.ts` |
+| # | Decision | What it changed in the code |
+|---|---|---|
+| §12.1 | [SOURCE, chat] "Durable Objects, with flexible architecture to swap it for something else if DO don't fit the bill. Everything else, i.e. map generation and player AI, runs on the game master's machine." | The DO becomes one adapter behind `SessionPorts`; `packages/session` still imports no transport, storage, socket or timer, so the swap stays an adapter. `MapService` and `AiService` keep their interfaces but the DO implements them as **round trips to the GM's client** (`gm.requestMapGeneration`/`gm.mapGenerated`, `gm.requestAiMove`/`gm.aiMove`). See `docs/STACK.md` for what the choice costs. |
+| §12.2 | [SOURCE, chat] `MCTS_NODE_EXPANSION_PRUNING = 10`; branches are the closest unclaimed POIs at that point in the game; "for everything else please use sensible defaults that are recommended for standard MCTS implementations." | `closestUnclaimedPoiEnumerator()` and `uctTreePolicy()` ship as named, swappable defaults. The enumerator calls the same `closestPoiCandidates` as the remoteness walk and the rollout policy — three consumers, one kernel. Two sub-questions remain: Q16, Q17. |
+| §12.3 | [SOURCE, chat] "The message board should be part of the game state and as such persistent along with the rest of the game. There is no difference between the message board state and other game state." | `BoardPost` moved into `@adventure/core`; `GameState.messageBoard` holds it; posting is a `PostMessageAction` through `applyAction`, the single writer. `MessageBoardStore` and the `board.posts` message are **deleted** — no store, no retention policy, no separate channel. |
+| §12.4 | [SOURCE, chat] "The game cannot proceed for a player that cannot establish connection with the game state server. If the game master disconnects there is no one to force the next turn so the game stalls as well." | `GameMasterAbsencePolicy` **deleted** — there is no fallback to configure. A GM-only request with no GM connected is answered `game_master_unavailable` and the game waits. |
 
----
+**One consequence of §12.1 and §12.4 together, worth stating because it is
+stronger than either alone:** with map generation and MCTS on the game master's
+machine, a disconnected GM blocks not just forced turns but every AI turn and
+map creation. Even an all-AI game cannot advance while the GM is offline. That
+follows from the two answers; it is recorded, not re-opened.
+
+`SessionPorts` is down from eight ports to six as a result.
 
 ## B. Questions — I need an answer before these can be written
 
@@ -205,17 +214,11 @@ i.e. regenerate — the only option that breaks neither stated rule. But note §
 step 8 lists exactly two rejection reasons, so this is an addition to the spec
 and I'd rather you chose it than inherited it.
 
-### Q10. The tree policy also needs an action enumeration (§12.2)
+### Q10. ~~The tree policy also needs an action enumeration~~ — **answered with §12.2**
 
-Flagging that §12.2 is slightly bigger than it looks. Selection is one hole; the
-other is what the tree *branches over*. The legal action set at a node is "rest,
-or move along any path", which is far too wide to expand directly, and §9's
-rollout policy (random target among the K closest POIs) is explicitly a *rollout*
-policy, not necessarily the tree's. Whatever answers §12.2 will probably answer
-this at the same time — I just didn't want it to surface later as a surprise.
-
-**Routed as:** `ActionEnumerator` interface, no default.
-`packages/ai/src/types.ts`
+Both halves came together as predicted: `MCTS_NODE_EXPANSION_PRUNING = 10`
+closest unclaimed POIs for expansion, standard MCTS defaults for selection. What
+the answer did *not* settle became Q16 and Q17.
 
 ### Q11. In the planned hybrid evaluator, what is "number of skills"? (§9)
 
@@ -258,6 +261,73 @@ now than after MCTS is written.
 what that means. `packages/core/src/action.ts`
 
 ---
+
+---
+
+## B2. New sub-questions thrown off by the §12 answers
+
+### Q14. UCB1's √2 assumes rewards in [0, 1]; gold is not (§12.2)
+
+Not a design gap — a tuning note that will bite on the first run, so better said
+now than discovered as "the AI plays greedily".
+
+UCT's textbook `c = √2` is derived for values normalised to [0, 1]. The
+backpropagated value here is a player's gold after rollout (§9), roughly 0–45 on
+a v1 map. At that scale the exploitation term dwarfs the exploration term and
+the search will behave almost greedily — the tree will barely explore.
+
+Standard practice is either to normalise values into [0, 1] before backpropagating
+(dividing by, say, total gold on the map) or to raise `c` to match the reward
+range. Both are tuning choices with different behaviour, so nothing is
+normalised silently.
+
+**Routed as:** `MCTS_EXPLORATION_CONSTANT` is config (default √2) and the caveat
+is on the field; `uctTreePolicy()` implements the standard formula unchanged.
+
+### Q15. Does every client regenerate the map, or does the GM upload it? (§12.1)
+
+"Map generation runs on the game master's machine" settles *who computes*, not
+*what travels*. Because generation is deterministic in `(seed, ruleset)`, two
+designs work:
+
+- **GM uploads the finished map** (what the protocol currently assumes):
+  `gm.mapGenerated` carries the whole `GameMap`; everyone else receives it as
+  state. Straightforward, but the payload is ~240 nodes + ~300 edges + 60 POIs.
+- **DO stores only the seed** and each client regenerates locally: near-zero
+  bandwidth, but it means map generation runs on *every* machine, not just the
+  GM's — which reads against the instruction.
+
+I took the first, since it is the one that matches what you said.
+
+### Q16. Is "rest" also an MCTS branch? (§12.2 vs §7)
+
+§12.2 prunes "the number of next POIs to be used to expand any node", which
+settles the move branches. §7's action space is move **or rest**, and rest is not
+a POI, so it is not currently enumerated.
+
+That matters for a player who is out of stamina: with only POI targets as
+branches, the search has nothing to pick. Should `closestUnclaimedPoiEnumerator`
+also emit a rest branch — always, or only when no target is reachable this turn?
+
+**Routed as:** not enumerated, as specified. One line to add.
+
+### Q17. Is a POI target a macro-action or a single turn? (§12.2)
+
+The branches are POI targets, but a target several turns away has to become a
+`TurnAction` somehow. Two readings, both consistent with everything specified:
+
+- **Macro-action:** expanding a branch advances the state until the player
+  arrives at that POI (several turns, interaction included). Shallow tree, few
+  nodes per second, each node a meaningful decision — and it matches how the
+  rollout already works.
+- **Single turn:** expanding advances one turn toward the target. Deeper tree,
+  many more nodes, most of them not real decisions.
+
+They give very different searches. This is the last thing blocking `search()`
+from being written.
+
+**Routed as:** `search()` throws with this note; the tree, policies, enumerator
+and node types are all written and do not depend on the answer.
 
 ## C. Decisions I made that are *implementation*, not design
 

@@ -1,6 +1,6 @@
 import { NotImplementedError, type GameId, type UserId } from '@adventure/core';
 import type { ClientMessage } from '@adventure/protocol';
-import type { SessionPorts } from './ports.ts';
+import { GAME_MASTER_ABSENCE_BEHAVIOUR, type SessionPorts } from './ports.ts';
 
 /**
  * One live game. Single-writer by construction: every message for a game is
@@ -63,8 +63,15 @@ export class GameSession {
     throw new NotImplementedError('GameSession.resign', 'GDD.md §7.3');
   }
 
-  /** Consulted on every GM-only path; see `GameMasterAbsencePolicy` (§12.4). */
-  protected gmAbsencePolicy() {
-    return this.ports.gmAbsence;
+  /**
+   * [SOURCE §12.4, chat] A GM-only request with no game master connected is
+   * rejected with `game_master_unavailable` and the game waits. There is no
+   * timeout, no fallback and no transfer — §6.1 rules transfer out for v1.
+   *
+   * [SOURCE §12.1, chat] The same applies to AI turns and map generation, which
+   * run on the game master's machine: `runAiTurn` cannot proceed either.
+   */
+  protected requiresGameMaster(): typeof GAME_MASTER_ABSENCE_BEHAVIOUR {
+    return GAME_MASTER_ABSENCE_BEHAVIOUR;
   }
 }

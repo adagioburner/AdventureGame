@@ -1,22 +1,13 @@
-import type { GameId, PlayerId } from '@adventure/core';
-
 /**
- * [SOURCE §4] "A message board lets human players post messages visible to
- * everyone."
+ * The message board is **game state**, not a protocol concern.
  *
- * [OPEN §12.3] Persistence and scope — per-game vs. cross-game, retention — are
- * not specified. Routed around, not decided: the post carries a `gameId`, so a
- * per-game board needs no change and a cross-game board only needs the store to
- * ignore that field. Retention lives entirely in the `MessageBoardStore` port
- * (`@adventure/session`), which has no default implementation, so no retention
- * behaviour is baked into the protocol or the client.
+ * [SOURCE §12.3, chat] "The message board should be part of the game state and
+ * as such persistent along with the rest of the game. There is no difference
+ * between the message board state and other game state."
  *
- * "human players post" — the engine never posts on an AI player's behalf.
+ * So `BoardPost` is defined in `@adventure/core` alongside `GameState`, and is
+ * re-exported here only so protocol consumers have one import site. Posts reach
+ * clients inside `game.state` / `game.events` like any other state change;
+ * there is no separate board message, store or retention policy.
  */
-export interface BoardPost {
-  readonly id: string;
-  readonly gameId: GameId;
-  readonly author: PlayerId;
-  readonly body: string;
-  readonly postedAt: number;
-}
+export type { BoardPost } from '@adventure/core';

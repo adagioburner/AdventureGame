@@ -316,10 +316,22 @@ separable:
 
 | Seam | Status |
 |---|---|
-| `RolloutPolicy` | **Specified** (§9). `closestPoiRolloutPolicy()` is a thin wrapper over `@adventure/sim`; swappable because you expect to experiment. |
+| `RolloutPolicy` | **Specified** (§9). `closestPoiRolloutPolicy()` is a thin wrapper over `@adventure/sim`. |
 | `NodeEvaluator` | **Specified default** (§9): gold after simulation. `goldAfterSimulationEvaluator()`. |
-| `TreePolicy` | **Open** (§12.2). Interface only — `select(node, rng)` + `bestChild(root)`. No implementation ships. |
-| `ActionEnumerator` | **Open** — the second half of §12.2; see [Q10](./OPEN_QUESTIONS.md#q10). |
+| `TreePolicy` | **Decided** (§12.2): UCT, `MCTS_EXPLORATION_CONSTANT` = √2, most-visited child as the final move. `uctTreePolicy()`. |
+| `ActionEnumerator` | **Decided** (§12.2): the `MCTS_NODE_EXPANSION_PRUNING` (10) closest *unclaimed* POIs, recomputed per node. `closestUnclaimedPoiEnumerator()`. |
+
+The enumerator is worth a second look, because it completes the sharing story:
+it calls the same `closestPoiCandidates` that the remoteness walk and the
+rollout policy call. Three consumers, one ranking kernel, differing only in K
+(10 for tree expansion, `CLOSE_CANDIDATE_COUNT` = 5 for rollouts, all POIs for
+remoteness) and in what they do with the ranked list.
+
+Two details of §12.2's answer are still open and block `search()` from being
+written: whether **rest** is also a branch ([Q16](./OPEN_QUESTIONS.md#q16)), and
+whether targeting a POI advances the state by one turn or by the whole journey
+([Q17](./OPEN_QUESTIONS.md#q17)). A tuning caveat on √2 is
+[Q14](./OPEN_QUESTIONS.md#q14).
 
 One signature detail worth flagging, because it is the kind of thing that is
 expensive to change later:
@@ -359,8 +371,24 @@ single biggest constraint on the hosting decision; see `STACK.md`.
 
 `packages/session`. Decoupled from hosting by construction: it imports **no**
 transport, storage engine, socket, or timer. Everything arrives through
-`SessionPorts` — `GameStore`, `Broadcaster`, `Clock`, `MapService`, `AiService`,
-`DiceService`, `MessageBoardStore`, `GameMasterAbsencePolicy`.
+`SessionPorts` — now six: `GameStore`, `Broadcaster`, `Clock`, `MapService`,
+`AiService`, `DiceService`.
+
+§12's answers removed two of the original eight. `MessageBoardStore` is gone
+because the board is game state (§12.3), so `GameStore` already persists it.
+`GameMasterAbsencePolicy` is gone because §12.4 decided there is no fallback to
+configure: a GM-only request with no game master connected is answered
+`game_master_unavailable` and the game waits.
+
+`MapService` and `AiService` survive as interfaces but have moved house.
+[SOURCE §12.1, chat] map generation and the MCTS search run on the **game
+master's machine**, so the Durable Object adapter implements both as round trips
+to the GM's client. The session core never learns this — which is what the ports
+were for.
+
+That composition has a consequence stronger than §12.4 states on its own: with
+AI on the GM's machine, a disconnected game master blocks not just forced turns
+but every AI turn and map creation, so even an all-AI game cannot advance.
 
 `GameSession` is single-writer per `gameId`: every message for a game is handled
 in order, so the authoritative state never needs locking. That shape is the main
@@ -461,4 +489,4 @@ Each of these is independently implementable against the shapes above:
 8. Remoteness — scorer is written; needs `closestPoiCandidates` (item 1) to run.
 9. `SetupFlow.start` — starting positions are settled; needs the rest of setup.
 10. Guard strengths — formula is written; needs remoteness (item 8) to run.
-11. MCTS — needs [Q6](./OPEN_QUESTIONS.md#q6) and §12.2.
+11. MCTS `search()` — policies are written; needs [Q16](./OPEN_QUESTIONS.md#q16), [Q17](./OPEN_QUESTIONS.md#q17) and [Q6](./OPEN_QUESTIONS.md#q6).

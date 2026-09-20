@@ -1,11 +1,15 @@
-# Tech stack — a recommendation for you to confirm
+# Tech stack
 
-Hosting and infrastructure are explicitly open (GDD.md §12.1), so **nothing here
-is a committed choice.** The code is written so that every item below can change
-without a rewrite: the engine packages import no runtime APIs, and the session
-layer reaches the outside world only through `SessionPorts`.
+**§12.1 is decided.** [SOURCE §12.1, chat] "We confirm using Durable Objects,
+with flexible architecture to swap it for something else if DO don't fit the
+bill. Everything else, i.e. map generation and player AI, runs on the game
+master's machine."
 
-What follows is what I'd pick, and why, plus a straight answer on Durable Objects.
+The rest of this file is the reasoning that led there, what the decision costs,
+and the items still open for confirmation. The swap-out flexibility is real and
+structural: engine packages import no runtime APIs, and the session layer
+reaches the outside world only through `SessionPorts`, of which the DO is one
+adapter.
 
 ---
 
@@ -66,8 +70,8 @@ Two components are CPU-bound, and they are very different:
 
 | Component | Cost | Where it should run |
 |---|---|---|
-| Map generation | Once per game. Delaunay and flood fill are trivial at 240 nodes; the remoteness pass dominates — `REMOTENESS_SIMULATION_RUNS` (100) walks × ~60 legs, each leg a partial Dijkstra over 240 nodes, so order 6,000 small searches, times the retry count. Likely tens to a few hundred ms. **Measure it before assuming.** | Fine almost anywhere, including inside a session actor. |
-| MCTS | 10 s of CPU **per AI move** (§9). A 60-turn game with two AI players is on the order of 20 CPU-minutes. | Must be off the request path and off any actor that also serves players. |
+| Map generation | Once per game. Delaunay and flood fill are trivial at 240 nodes; the remoteness pass dominates — `REMOTENESS_SIMULATION_RUNS` (100) walks × ~60 legs, each leg a partial Dijkstra over 240 nodes, so order 6,000 small searches, times the retry count. Likely tens to a few hundred ms. **Measure it before assuming.** | **Decided (§12.1): the game master's machine.** |
+| MCTS | 10 s of CPU **per AI move** (§9). A 60-turn game with two AI players is on the order of 20 CPU-minutes. | **Decided (§12.1): the game master's machine**, in a Web Worker. |
 
 Because generation is deterministic in `(seed, ruleset)`, a store only ever has
 to persist the seed — the map can be regenerated on load instead of serialised.
@@ -75,78 +79,62 @@ That is worth taking advantage of whatever the host.
 
 ---
 
-## 5. Cloudflare Durable Objects — split verdict
+## 5. Durable Objects — the decision, and what it costs
 
-**Yes for the session layer. No for the AI.** In more detail:
+**Confirmed: DO for the session layer, GM's machine for map generation and AI.**
+That is the split this document argued for, with one change — the compute does
+not go to a second service, it goes to the game master's browser.
 
-### Where it fits well
+### What the DO gives us
 
-- **One DO per `gameId` gives exactly the concurrency model `GameSession`
-  already assumes.** Single-writer, strongly consistent, no locking, no external
-  coordination. This is the single best structural argument for DOs here, and
-  it's a real one — it's the part of multiplayer backends that is usually fiddly,
+- **One DO per `gameId` is exactly the concurrency model `GameSession` already
+  assumes.** Single-writer, strongly consistent, no locking, no external
+  coordination. This is the part of multiplayer backends that is usually fiddly,
   and it comes for free.
 - **WebSocket Hibernation suits a turn-based game unusually well.** Players in a
-  2–5 player turn-based game idle for minutes at a time. Hibernation means idle
-  games cost approximately nothing while keeping connections open, which is
-  precisely the wrong-shaped workload for a conventional always-on server
-  process.
+  2–5 player game idle for minutes; hibernation means idle games cost
+  approximately nothing while keeping connections open.
 - **Transactional storage is co-located** with the object that owns the state,
-  so `GameStore` is a thin adapter and there's no cache-coherency question.
-- **Message board (§12.3) fits either answer.** Per-game → DO storage. Cross-game
-  → a D1 or KV binding. The `MessageBoardStore` port hides which, so this choice
-  doesn't have to be made now.
-- Global placement near the game's creator is a genuine latency win for a game
-  whose players may be scattered.
+  so `GameStore` is a thin adapter with no cache-coherency question. §12.3 makes
+  the message board part of that same state, so it needs no storage of its own.
 
-### Where it doesn't fit
+### What moving compute to the GM's machine gives us
 
-- **A DO is single-threaded.** Running a 10-second MCTS search inside the game's
-  own DO would block every other message for that game for ten seconds —
-  including the message board and, worse, §7.1's out-of-turn planning, which is
-  specifically the feature that lets other players do something useful while
-  someone else is thinking. The AI turn would freeze the one thing designed to
-  make waiting bearable.
-- **Workers bill by CPU time**, and 10 CPU-seconds per AI move is a lot of it.
-  Even where the per-invocation CPU ceiling is configurable upward on paid plans,
-  sustained CPU-bound compute is against the grain of an edge runtime — this is a
-  pricing-model mismatch, not just a limit to raise.
-- **The balancing harness wants a plain process.** Thousands of maps and
-  self-play batches belong in Node on a workstation or in CI, not on workerd.
-  (This costs nothing today, because the engine packages are runtime-neutral.)
+- **The CPU objection disappears entirely.** A 10-second MCTS search never runs
+  in the DO, so it can neither block that game's other messages nor accrue
+  Workers CPU billing. Map generation likewise.
+- `AiPlayer.chooseAction` was already async and behind a port, so the session
+  core is unchanged by this. The DO adapter implements `MapService` and
+  `AiService` as round trips to the GM's client (`gm.requestMapGeneration` /
+  `gm.mapGenerated`, `gm.requestAiMove` / `gm.aiMove`).
 
-### What I'd actually propose
+### What it costs
 
-- Session, lobby, setup, turn sequencing, message board → **Durable Objects**,
-  one per game, with the Hibernation API.
-- `AiService` → a **separate compute home**: Cloudflare Containers if you want to
-  stay on one platform, or a small Node service (or queue worker) elsewhere. The
-  DO calls it and awaits a `TurnAction`; `AiPlayer` is already async precisely
-  for this.
-- `MapService` → either, once measured. Simplest is in the DO at game start.
-- Auth → Workers has WebCrypto, so PBKDF2 password hashing is available natively;
-  argon2/bcrypt would need WASM. Worth knowing before committing, though
-  `AuthProvider` makes it swappable either way.
+- **The game master's machine is now a hard dependency for progress**, not just
+  for GM controls. §12.4 accepts the stall for forced turns; §12.1 widens it —
+  with AI on the GM's machine, a disconnected GM also blocks every AI turn and
+  map creation. An all-AI game cannot advance without the GM online. That is the
+  two answers composed, and worth stating plainly because it is stronger than
+  either alone.
+- **MCTS must not run on the GM's UI thread.** 10 s × the number of AI seats,
+  each turn, in the browser. A Web Worker is not optional here.
+- **AI strength now varies with the GM's hardware.** A fixed 10-second budget
+  buys very different search on a laptop than on a workstation, so AI difficulty
+  is not reproducible across games. If that matters, the budget could be
+  expressed in rollouts rather than seconds — a design question, not mine to
+  decide.
+- **Trust.** The GM's client computes AI moves and the map; the DO takes them on
+  faith. Fine for a friendly game, worth knowing before any competitive use.
 
-**If you'd rather not split the deployment**, the honest alternative is a single
-long-lived Node service with an in-process queue keyed by `gameId` (same
-single-writer property, by construction) and a worker thread pool for MCTS. It
-is less elegant at idle, cheaper to reason about, and one deployment instead of
-two. Given AI players are a headline feature rather than an afterthought, this
-is a defensible first choice — and the ports mean starting here and moving to
-DOs later is an adapter, not a rewrite.
+### If DO turns out not to fit
 
-### What I'd want measured before you commit either way
+The swap is an adapter. `packages/session` imports no transport, storage, socket
+or timer, and the in-memory adapters in `apps/server/src/adapters/memory.ts`
+exist to keep proving that. The nearest alternative remains a single long-lived
+Node service with an in-process queue keyed by `gameId` — same single-writer
+property, one deployment, no hibernation saving.
 
-1. Wall-clock map generation for one map, and at `REMOTENESS_SIMULATION_RUNS`
-   of 50 / 100 / 200 — this also answers §5.1's own "if 100 proves too slow".
-2. Rollouts per second in TypeScript, to see what 10 seconds actually buys once
-   a tree policy exists (§12.2).
-3. Serialised `GameState` size, to confirm seed-only persistence is worth it.
-
----
-
-## 6. Summary of what I'm asking you to confirm
+## 6. Summary — decided, and still to confirm
 
 | Choice | My recommendation | Reversibility |
 |---|---|---|
@@ -154,6 +142,7 @@ DOs later is an adapter, not a rewrite.
 | Client map rendering | PixiJS (canvas/WebGL) | Easy — behind `MapRenderer` |
 | Client chrome | React + Vite | Easy |
 | Delaunay | `delaunator` | Easy — one step |
-| Session host | Durable Objects, one per game | Easy — adapter only |
-| AI compute host | Separate from the session host | Easy — behind `AiService` |
-| Single-service alternative | Node + per-game queue + worker threads | Easy — adapter only |
+| Session host | **Decided: Durable Objects, one per game** | Easy — adapter only |
+| Map generation + AI host | **Decided: the game master's machine** | Easy — behind `MapService` / `AiService` |
+| MCTS off the GM's UI thread | Web Worker | Easy |
+| AI budget in seconds vs. rollouts | Seconds, per §11 — but it makes AI strength hardware-dependent | Config |
