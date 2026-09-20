@@ -1,5 +1,5 @@
 import type { DiceSource, GameState, PlayerId, Rng } from '@adventure/core';
-import type { OpponentRolloutPolicy, PoiCandidate, RolloutCursor, RolloutTermination } from '@adventure/sim';
+import type { PoiCandidate, RolloutCursor, RolloutTermination } from '@adventure/sim';
 
 /** A node of the search tree. One node per game state reached in the tree. */
 export interface MctsNode {
@@ -107,8 +107,11 @@ export interface MctsOptions {
   readonly actions: ActionEnumerator;
   readonly rollout: RolloutPolicy;
   readonly evaluator: NodeEvaluator;
+  /**
+   * [SOURCE §9, chat] Every seat is simulated by the same rollout policy, so
+   * there is no separate opponent model to inject — only when to stop.
+   */
   readonly termination: RolloutTermination;
-  readonly opponents: OpponentRolloutPolicy;
   readonly dice: DiceSource;
   readonly rng: Rng;
   /** §11 `MCTS_TIME_BUDGET_PER_MOVE` — 10 s. */

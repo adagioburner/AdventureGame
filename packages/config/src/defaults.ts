@@ -1,4 +1,4 @@
-import type { EngineeringConfig, GameConfig, PendingValue } from './types.ts';
+import type { EngineeringConfig, GameConfig } from './types.ts';
 
 /**
  * GDD.md §11 "Configuration Parameters", transcribed with no substitutions.
@@ -18,9 +18,11 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     VALLEY_COUNT: { min: 2, max: 4 },
     VALLEY_WIDTH: 1,
     VALLEY_LENGTH: { min: 5, max: 12 },
+    EDGE_PRUNE_JITTER: 10,
   },
   pois: {
     POI_COUNT: { plains: 25, forest: 20, mountain: 15 },
+    OVERFLOW_LEAF_STAMINA_UNITS: 1,
     // §11 says 2; [SOURCE §5.2, chat] caps the formula at 0, where 0 = unguarded.
     GUARD_STRENGTH: { min: 0, max: 10 },
   },
@@ -51,10 +53,6 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
   },
 };
 
-function pending<T>(gdd: string, question: string): PendingValue<T> {
-  return { __pending: true, gdd, question, value: null };
-}
-
 /**
  * Implementation-only knobs. Nothing here comes from GDD.md, and the `pending`
  * block holds values nobody has decided yet — reading one throws.
@@ -62,10 +60,6 @@ function pending<T>(gdd: string, question: string): PendingValue<T> {
 export const DEFAULT_ENGINEERING_CONFIG: EngineeringConfig = {
   MAX_GENERATION_ATTEMPTS: 50,
   POISSON_RADIUS_FACTOR: 0.85,
-  pending: {
-    EDGE_PRUNE_JITTER: pending(
-      'GDD.md §2.1 step 3',
-      'Edges are pruned "longest-first, with jitter" — how much jitter, and applied how?',
-    ),
-  },
+  // Every design value is decided; see the note on `PendingConfig`.
+  pending: {},
 };

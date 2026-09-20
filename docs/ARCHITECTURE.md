@@ -121,10 +121,15 @@ Four details from the GDD that are easy to get wrong, and are pinned in code:
   lowered it on purpose along the plains boundary, so re-testing would reject
   nearly every map. The step's doc comment says "do not tighten this step".
 - **Compactness is enforced only inside step 5**, which loops until it is
-  satisfied.
+  satisfied. [SOURCE §2.1 step 5, chat] `area` counts a region's nodes and
+  `boundary` counts those touching another terrain — the convention that
+  reproduces the 4π circle reference. Whether that is measured per terrain or
+  per connected region is [Q4a](./OPEN_QUESTIONS.md#q4a); both helpers ship.
 - **Step 3's rejection is per-removal, not per-attempt.** A removal that
   disconnects the graph or pushes leaf count out of range is skipped and pruning
   continues. That is a different mechanism from step 8's whole-map rejection.
+  The "jitter" is `EDGE_PRUNE_JITTER` = 10: each removal draws uniformly among
+  the 10 longest edges still present, rather than taking the single longest.
 - **Planarity is never re-checked.** Guaranteed by Delaunay at step 2, and no
   later step adds an edge — so there is no planarity predicate in the repo.
 - **Valley nodes are recorded even though the exemption is vacuous.** §2.1 says
@@ -137,6 +142,16 @@ Step 7 is the one composite step, and its internal order is forced by data flow
 (`[INFERRED §1.3/§4.3]`): select POI nodes → compute remoteness → assign kinds
 and units → assign guard strengths. Remoteness can run there because it depends
 only on POI *positions*, never on their rewards.
+
+Two things settled about placement. "Approximately equal distances" (§3) is a
+goal, not a procedure, and [SOURCE §3, chat] the answer is to prototype both
+farthest-point sampling and graph-space Poisson-disc and compare them in the
+harness — so `PoiPlacementStrategy` stays a seam with two implementations to
+build. And a terrain can hold more leaves than its `POI_COUNT` quota, since leaf
+count is not apportioned by terrain; [SOURCE §9, chat] the surplus leaves become
+*additional* POIs carrying `stamina`. That means total POI count is no longer
+fixed at 60, it gives §4.1's otherwise-unplaced `stamina` kind a home, and it
+removed the `poi_quota_unsatisfiable` rejection entirely.
 
 ---
 
@@ -212,7 +227,7 @@ Guard strengths (§5.2) are solved *after* units are final, since §4.3 fixes th
 gold amount and §5.2 leaves guard strength as the unknown:
 
 ```
-guard_strength = units × GOLD_WEIGHT − remoteness × REMOTENESS_WEIGHT,  capped to GUARD_STRENGTH
+guard_strength = ceil(units × GOLD_WEIGHT − remoteness × REMOTENESS_WEIGHT),  capped to GUARD_STRENGTH
 ```
 
 `GOLD_WEIGHT` (default 3) is a designer-added config row. The cap is 0–10, which
@@ -236,7 +251,7 @@ what actually differs rather than by who calls it:
 | `candidates.ts` | **The shared kernel.** Rank eligible POIs by weighted terrain cost; pick uniformly among the `CLOSE_CANDIDATE_COUNT` closest. Both §5.1 and §9 are exactly these two operations. |
 | `walk.ts` | The generic loop, plus `WalkDriver<TCursor>` — the three things that differ: which POIs are *eligible*, what *advancing* to a target means, and when the walk is *done*. |
 | `remoteness.ts` | §5.1's driver: eligible = unvisited, advance = move straight there charging path cost, done = all POIs visited. Runs `REMOTENESS_SIMULATION_RUNS` walks from a random plains node, then min-max normalises to [0,1]. |
-| `rollout.ts` | §9's driver: eligible = unclaimed, advance = play real turns through `applyAction` (so allowance, stamina, guard rolls and turn boundaries all apply), done = injected. |
+| `rollout.ts` | §9's driver: eligible = unclaimed, advance = play real turns through `applyAction` (so allowance, stamina, guard rolls and turn boundaries all apply), done = terminal game state. |
 
 Neither consumer contains a copy of the other's logic. The distinction the split
 makes explicit: §5.1's walk is pure geometry — turn structure, stamina and
@@ -248,8 +263,11 @@ and implemented as `segmentSumRemotenessScorer()` (a POI scores its inbound plus
 its outbound segment; first and last POI double the one they have), but keeping
 it behind the interface means a variant stays a one-liner. The interface carries
 `beginWalk`/`endWalk`, because "first POI" and "last POI" are only meaningful
-against walk boundaries. Rollout termination and opponent behaviour have no
-default — [Q6](./OPEN_QUESTIONS.md#q6).
+against walk boundaries. [SOURCE §9, chat] every seat is simulated by this one policy — there is no
+separate opponent model, which deleted an interface — and a rollout plays to a
+terminal state (`playToCompletionTermination`), the standard MCTS default. The
+cost of full playouts against a 10-second budget is flagged in
+[Q6](./OPEN_QUESTIONS.md#q6) rather than pre-empted with a depth cap.
 
 **There is one distance metric in the whole repo.** `terrainStepCost` in
 `core/path.ts` (1 plains / 2 forest / 3 mountain, charged on *entering* a node,
@@ -304,8 +322,11 @@ Notable rule consequences already encoded:
 - A failed guard roll has no cost, so `InteractionResolution` has no penalty field.
 - Die rolls are passed in, never drawn inside the engine.
 
-Win condition (§1) is blocked on [Q3](./OPEN_QUESTIONS.md#q3);
-`unclaimedGoldUnits()` is implemented.
+Win condition (§1) is implemented. [SOURCE §1, chat] "Players can be tied for the
+win only when there is no more gold left on the map" resolves the clause that
+did not compose on its own: a single leader wins when
+`max − runnerUp > unclaimedGold`, and tied leaders share exactly when no gold
+remains.
 
 ---
 
@@ -484,9 +505,9 @@ Each of these is independently implementable against the shapes above:
 3. `resolveMovement` / `previewPath` — §8's worked example is the test case.
 4. `resolveInteraction` — §8.
 5. §4.3 assignment — the weight function is already written.
-6. Step 5 Smooth — needs [Q4](./OPEN_QUESTIONS.md#q4).
-7. `checkVictory` — needs [Q3](./OPEN_QUESTIONS.md#q3).
+6. Step 5 Smooth — measurement is written; pick per-terrain or per-region ([Q4a](./OPEN_QUESTIONS.md#q4a)).
+7. Step 7 placement — build both strategies and compare them in the harness.
 8. Remoteness — scorer is written; needs `closestPoiCandidates` (item 1) to run.
 9. `SetupFlow.start` — starting positions are settled; needs the rest of setup.
-10. Guard strengths — formula is written; needs remoteness (item 8) to run.
+10. Guard strengths — written; needs remoteness (item 8) to run.
 11. MCTS `search()` — policies are written; needs [Q16](./OPEN_QUESTIONS.md#q16), [Q17](./OPEN_QUESTIONS.md#q17) and [Q6](./OPEN_QUESTIONS.md#q6).

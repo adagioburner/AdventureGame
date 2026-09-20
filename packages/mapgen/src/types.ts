@@ -65,12 +65,14 @@ export interface GenerationContext {
   readonly remotenessScorer: () => RemotenessScorer;
 }
 
-/** Why an attempt was thrown away. Only §2.1's own rejection reasons appear. */
-export type RejectionReason =
-  | 'disconnected'
-  | 'leaf_count_out_of_range'
-  | 'terrain_share_unreachable'
-  | 'poi_quota_unsatisfiable';
+/**
+ * Why an attempt was thrown away. Only §2.1's own rejection reasons appear.
+ *
+ * `poi_quota_unsatisfiable` used to live here, for a terrain with more leaves
+ * than its `POI_COUNT`. [SOURCE §3/§9, chat] settled that without a rejection:
+ * surplus leaves become stamina POIs, so the case no longer aborts an attempt.
+ */
+export type RejectionReason = 'disconnected' | 'leaf_count_out_of_range' | 'terrain_share_unreachable';
 
 export class GenerationRejected extends Error {
   readonly reason: RejectionReason;

@@ -1,4 +1,5 @@
 import { NotImplementedError, type NodeId } from '@adventure/core';
+import type { Terrain } from '@adventure/config';
 import type { GenerationStep, MapDraft } from '../types.ts';
 
 /**
@@ -28,21 +29,49 @@ export const placePoisStep: GenerationStep = {
  * leaf nodes are assigned POI status first, remaining POIs distributed randomly
  * among the rest." Counts per terrain come from `POI_COUNT` (25/20/15).
  *
- * Two things the next session needs from the designer before this is finished:
- *
- *  - "approximately equal distances" names a goal, not a procedure. Farthest-
- *    point sampling and graph-space Poisson-disc both satisfy the phrase and
- *    give visibly different maps. Left as a strategy seam. OPEN_QUESTIONS Q8.
- *  - Leaf count is 30–45 and leaves must all be POIs, but leaves are not
- *    distributed across terrains in the 25/20/15 proportions — a map can
- *    perfectly legally put 17 leaves in the mountains, which already exceeds
- *    the mountain quota of 15. GDD.md does not say which rule yields.
- *    OPEN_QUESTIONS Q9. Until answered, this throws
- *    `GenerationRejected('poi_quota_unsatisfiable')` so the map regenerates —
- *    the only option that breaks neither stated rule, but note that §2.1 step 8
- *    lists only two rejection reasons, so this is an addition, not the spec.
+ * [SOURCE §3, chat] "Let us prototype and choose" — so "approximately equal
+ * distances" stays a strategy seam with more than one implementation, and the
+ * balancing harness compares them on real maps. Two candidates to build:
+ * farthest-point sampling and Poisson-disc in graph space. Both satisfy the
+ * phrase and give visibly different maps.
  */
 export interface PoiPlacementStrategy {
   readonly name: string;
-  select(draft: MapDraft): readonly NodeId[];
+  /** POI nodes for one terrain, excluding the leaves already forced in. */
+  select(draft: MapDraft, terrain: Terrain, forced: readonly NodeId[], count: number): readonly NodeId[];
+}
+
+/**
+ * Surplus leaves.
+ *
+ * §3 forces every leaf to be a POI, but leaf count (30–45) is not apportioned
+ * across terrains in the 25/20/15 proportions, so a terrain can legally hold
+ * more leaves than its quota — e.g. 17 leaves in the mountains against a quota
+ * of 15.
+ *
+ * [SOURCE §3/§9, chat] "Fill the extra leaf nodes with stamina rewards." So the
+ * §4.2 quota is satisfied exactly as written and the surplus leaves become
+ * *additional* POIs outside the table, each carrying `stamina`. Two things
+ * follow:
+ *
+ *  - a map can hold slightly more than 60 POIs, and total POI count is no
+ *    longer fixed;
+ *  - `stamina`, which appears in §4.1's seven kinds but in no §4.2 row, finally
+ *    has a home — [SOURCE §4.2, chat] "proceed now without stamina, add later
+ *    as a config edit", and this is the one place it is placed meanwhile.
+ *
+ * These POIs are unguarded: §4.2 is what decides guarding (v1 guards gold only),
+ * and they are not in it. They are ordinary POIs otherwise — the remoteness
+ * walk visits them and the AI targets them like any other.
+ *
+ * How many units each is not specified; see `OVERFLOW_LEAF_STAMINA_UNITS` and
+ * OPEN_QUESTIONS Q9a.
+ */
+export function overflowLeafPois(
+  _draft: MapDraft,
+  _terrain: Terrain,
+  _leaves: readonly NodeId[],
+  _quota: number,
+): readonly NodeId[] {
+  throw new NotImplementedError('overflowLeafPois', 'GDD.md §3 / §4.2, chat');
 }

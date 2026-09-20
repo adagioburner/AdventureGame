@@ -11,11 +11,14 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, plus Q1, Q2 and
-Q12. Outstanding: Q2a (guard-strength rounding), Q3–Q11, Q13, and four new
-sub-questions thrown off by the §12 answers — Q14 (UCB1 reward scale), Q15 (map
-upload vs. regenerate), Q16 (is rest a branch?), Q17 (macro-action or single
-turn?). Q16 and Q17 are the two blocking `search()`.
+**Answered so far:** all four of GDD.md §12's own open items, plus Q1–Q10 and
+Q12. `pending` in the config is empty for the first time.
+
+**Outstanding:** Q11 (hybrid evaluator, future experiment), Q13 (zero-length
+move), Q14 (UCB1 reward scale), Q15 (map upload vs. regenerate), Q16 and Q17
+(the two blocking `search()`), plus two new sub-questions from this round —
+Q4a (compactness per terrain or per region?) and Q9a (stamina units per surplus
+leaf?).
 
 ---
 
@@ -111,141 +114,123 @@ stacks per §4.2 row are 1–9 (plains), 1–2 (forest), 1–11 (mountain/fighti
 1–6 (mountain/magic), so the plains and mountain rows can produce POIs pinned at
 the cap.
 
-### Q2a. Is guard strength rounded? (§5.2, §4.4)
+### Q2a. ~~Is guard strength rounded?~~ — **answered, implemented**
 
-Small leftover from Q2. Remoteness is continuous in [0, 1], so the formula gives
-continuous results — 1 gold at remoteness 0.4 is guard 1.4. The cap was
-specified but no rounding rule was.
+[SOURCE §5.2, chat] "Guard strength is rounded up." `Math.ceil` before the cap;
+ceiling before or after gives the same answer for every reachable input, since
+the cap bounds are integers.
 
-§8's `roll + skill > guard_strength` works either way; what is affected is the
-number §4.4 shows beside the node ("a red number ... indicating guard strength").
-Round, floor, ceil, or display to one decimal?
+### Q3. ~~What exactly is "a tie for the win"?~~ — **answered, implemented**
 
-**Routed as:** implemented exactly as specified — continuous, capped — so
-nothing is invented. Adding rounding later is one line in `guardStrengthFor()`.
+[SOURCE §1, chat] "Players can be tied for the win only when there is no more
+gold left on the map." That makes §1's two clauses consistent: a lead of 0 can
+only win when the threshold it must exceed is also 0.
 
-### Q3. What exactly is "a tie for the win"? (§1)
+`checkVictory()` now implements it — one leader wins when
+`max − runnerUp > unclaimedGold`; tied leaders share exactly when no gold
+remains. Checked against seven worked cases.
 
-"A player wins once their gold lead over every other player exceeds the amount
-of gold still unclaimed; a tie for the win results in shared victory."
+### Q4. ~~What do "boundary" and "area" count?~~ — **answered, implemented**
 
-Under a literal reading the two clauses can't both hold: if two players are tied
-at the top, each one's lead over the other is 0, which never exceeds a
-non-negative remaining amount — so a tie for the win could never arise. It only
-works if tied leaders are evaluated as a *bloc* against the best other player.
-That's the reading I'd expect you mean, but it's a reading, so I haven't written it.
+[SOURCE §2.1 step 5, chat] "Yes, counting nodes is the right approach." `area` is
+the region's node count, `boundary` the count of its nodes touching another
+terrain — the convention that reproduces the stated 4π reference.
 
-Secondary: under the bloc reading, two tied leaders could be declared joint
-winners while unclaimed gold remains that would have broken the tie. Intended?
+### Q4a. Is compactness measured per terrain, or per connected region?
 
-**Routed as:** `checkVictory()` throws with this note attached.
-`packages/core/src/rules/victory.ts`
+A fork the node-counting answer doesn't settle, and it moves the threshold by
+about 2×.
 
-### Q4. What do "boundary" and "area" count in `compactness = boundary² / area`? (§2.1 step 5)
+§2.1 step 4 seeds "1 or 2 seeds per terrain", so a terrain can occupy two
+separate regions. Measured as one set, two equal blobs give
+`(2B)²/2A = 2B²/A` ≈ 8π ≈ **25** — sitting exactly on `COMPACTNESS_MAX`.
+Measured per component, each gives ≈ 13, comfortably under.
 
-Your circle reference (4π ≈ 13) is only reproduced by counting **nodes** for
-both: a unit-density disc has πr² nodes and 2πr boundary nodes → 4π. Counting
-boundary *edges* on a Delaunay mesh lands several times higher, which would put
-`COMPACTNESS_MAX = 25` out of reach.
+So the same map either barely passes or easily passes depending on the reading,
+and `COMPACTNESS_MAX = 25` is a value you intend to tune against whichever it is.
 
-That derivation is strong enough that I'm fairly confident, but since the whole
-Smooth loop terminates on it — and `COMPACTNESS_MAX` is a number you intend to
-tune against it — I'd rather you confirm than have me assume.
+**Routed as:** `regionMetrics(graph, nodeSet)` takes any node set, and both
+`terrainNodes()` and `terrainRegions()` ship, so the Smooth step is one line
+either way.
 
-**Routed as:** `compactness()` implements the formula verbatim; `regionMetrics()`,
-which decides the counting convention, throws. `packages/core/src/graph.ts`
+### Q5. ~~`stamina` appears in no §4.2 row~~ — **answered**
 
-### Q5. `stamina` is a reward kind in §4.1 but appears in no row of §4.2
+[SOURCE §4.2, chat] "Proceed now without stamina, add later as a config edit.
+One possibility is to have extra leaf nodes filled with stamina rewards." The
+§4.2 table is unchanged; stamina's only placement for now is the surplus-leaf
+rule of Q9.
 
-Six of the seven kinds appear in the reward table; stamina doesn't, so v1 places
-no stamina rewards on any map. Deliberate (the white-heart icon exists for a
-later version), or an omission from the table?
+### Q6. When does an MCTS rollout stop? — **half answered**
 
-If it was meant to be there, note it also changes the POI-count columns, since
-they currently sum exactly to 25/20/15.
+You answered the opponent half: [SOURCE §9, chat] "During MCTS rollout moves are
+simulated for all players, AI and human." That removed a whole interface —
+`OpponentRolloutPolicy` is deleted, every seat is driven by the one rollout
+policy, and `subject` now only says whose gold is read at the end.
 
-**Routed as:** the engine supports the kind fully; only the content table omits
-it, so adding a row later is a config edit. `packages/config/src/content.ts`
+**To answer your question back:** that was half of it. The other half was *when
+the rollout stops* — a fixed turn horizon, all POIs claimed, the win condition
+firing, or something else. Your §12.2 instruction to use standard MCTS defaults
+covers it: standard rollouts play to a terminal state, and with Q3 answered this
+game reliably reaches one. So `playToCompletionTermination()` ships as the
+default.
 
-### Q6. When does an MCTS rollout stop, and what do the other players do during it? (§9)
+Flagging the cost rather than pre-empting it: a full playout over ~60 POIs with
+multi-turn journeys is not cheap against a 10-second budget, and if rollouts
+prove too slow the usual fix is a turn or depth cap. That changes what the
+backpropagated value means, so it stays a config-free seam until you want it.
 
-§9 gives the rollout policy and the backpropagated value ("gold after rollout")
-but not the terminal condition — fixed turn horizon, all POIs claimed, the §1 win
-condition firing, something else. It also doesn't say how the non-simulated seats
-behave during a rollout, and "the simulated player's gold" only means something
-relative to what the opponents did.
+### Q7. ~~How much jitter in the edge-pruning order?~~ — **answered, implemented**
 
-Both choices affect what MCTS optimises *and* how many rollouts fit in the
-10-second budget, so they're not incidental.
+[SOURCE §2.1 step 3, chat] "We can choose randomly from the longest
+EDGE_PRUNE_JITTER = 10 edges." Now a real `MapConfig` row, so `pending` is
+**empty** for the first time.
 
-**Routed as:** `RolloutTermination` and `OpponentRolloutPolicy` are injected,
-with no defaults. `packages/sim/src/rollout.ts`
+### Q8. ~~What procedure gives POIs "approximately equal distances"?~~ — **answered**
 
-### Q7. How much jitter in the edge-pruning order? (§2.1 step 3)
+[SOURCE §3, chat] "Let us prototype and choose." `PoiPlacementStrategy` stays a
+seam with two implementations to build — farthest-point sampling and graph-space
+Poisson-disc — and `tools/balance` compares them on real maps.
 
-"Remove edges longest-first, with jitter" — the magnitude isn't given, and it's
-the knob that controls how grid-like the road network looks. It isn't in §11's
-table either, so I haven't invented a row for it.
+### Q9. ~~What gives when a terrain has more leaves than its POI quota?~~ — **answered**
 
-**Routed as:** `pending.EDGE_PRUNE_JITTER` (throws on read), passed into step 3.
+[SOURCE §9, chat] "Fill the extra leaf nodes with stamina rewards." The §4.2
+quota is met exactly as written, and surplus leaves become *additional* POIs
+outside the table carrying stamina. Consequences, all recorded rather than
+re-decided: a map can hold slightly more than 60 POIs; the
+`poi_quota_unsatisfiable` rejection is **deleted**, since the case no longer
+aborts generation; and these POIs are unguarded, because §4.2 is what decides
+guarding and they are not in it.
 
-### Q8. What procedure gives POIs "approximately equal distances"? (§3)
+### Q9a. How many stamina units per surplus leaf?
 
-That names a goal, not a method. Farthest-point sampling and graph-space
-Poisson-disc both satisfy the phrase and give visibly different maps. Happy to
-implement whichever you prefer, or to prototype both against the balancing
-harness if you'd rather decide from pictures.
-
-**Routed as:** `PoiPlacementStrategy` seam, no default.
-`packages/mapgen/src/steps/7-place-pois.ts`
-
-### Q9. What gives when a terrain has more leaf nodes than its POI quota? (§3 vs §11)
-
-Every leaf must be a POI, leaf count is 30–45, and per-terrain POI counts are
-fixed at 25/20/15. Nothing distributes leaves across terrains in those
-proportions — a legal map can put 17 leaves in the mountains, exceeding the
-mountain quota of 15. Unlikely per map, near-certain across a few thousand.
-
-Options I can see: regenerate the map, let the quota flex, or move the excess
-quota between terrains. Each is a different design statement.
-
-**Routed as:** currently throws `GenerationRejected('poi_quota_unsatisfiable')`,
-i.e. regenerate — the only option that breaks neither stated rule. But note §2.1
-step 8 lists exactly two rejection reasons, so this is an addition to the spec
-and I'd rather you chose it than inherited it.
+Not specified. `OVERFLOW_LEAF_STAMINA_UNITS` is 1, because §4.3 step 2 gives
+every POI one guaranteed unit and no §4.2 row covers these — but that is an
+analogy, not a deduction, so it is a config row rather than a constant. Change
+it in one place if 1 is wrong.
 
 ### Q10. ~~The tree policy also needs an action enumeration~~ — **answered with §12.2**
 
-Both halves came together as predicted: `MCTS_NODE_EXPANSION_PRUNING = 10`
-closest unclaimed POIs for expansion, standard MCTS defaults for selection. What
-the answer did *not* settle became Q16 and Q17.
+Both halves came together as predicted. What the answer did *not* settle became
+Q16 and Q17.
 
 ### Q11. In the planned hybrid evaluator, what is "number of skills"? (§9)
 
 `average(gold after simulation, gold now + (number of skills) × balancing_constant)`
 — is "number of skills" the sum of the five skill levels, or a count of how many
 are non-zero? They diverge sharply once a player stacks one skill. And
-`balancing_constant` has no value and isn't in §11.
+`balancing_constant` has no value.
 
 Low priority — it's a future experiment, not v1 — but the seam is built for it
 now so the swap stays a one-liner.
 
 **Routed as:** `hybridGoldAndSkillsEvaluator(balancingConstant)` exists as a
-named seam and throws. `packages/ai/src/policies/evaluators.ts`
+named seam and throws.
 
 ### Q12. ~~Where do players start on the map?~~ — **answered, implemented**
 
 [SOURCE §6, chat] "The players start at a random spot of the plains that is not
-a POI. All players start from the same spot."
-
-Implemented as `chooseStartingNode(map, rng)` in `@adventure/core` — uniform over
-plains nodes that hold no POI, one node shared by every seat. Several players on
-one node is already unrestricted (§8), so nothing special was needed to let them
-all stand there.
-
-Its `Rng` is derived from the map seed rather than an ambient one, so the
-starting node replays from `(seed, params)` along with the map itself.
-`SetupFlow.start()` is no longer blocked.
+a POI. All players start from the same spot." `chooseStartingNode(map, rng)`,
+with its `Rng` derived from the map seed so the start point replays with the map.
 
 ### Q13. Is a zero-length move a legal action? (§7 vs §8)
 
@@ -254,15 +239,14 @@ POI implies re-attempting it without moving. §7 defines a turn as move-then-
 interact, or rest. So is "stay put and re-roll" expressed as a move with an empty
 path, and does interaction then re-trigger?
 
-Minor, but it changes the action space the AI searches, so it's cheaper to settle
-now than after MCTS is written.
+Minor, but it changes the action space the AI searches.
 
 **Routed as:** `MoveAction.path` permits an empty array; nothing yet depends on
-what that means. `packages/core/src/action.ts`
+what that means.
 
 ---
 
----
+## B2.---
 
 ## B2. New sub-questions thrown off by the §12 answers
 

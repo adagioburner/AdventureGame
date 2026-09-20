@@ -41,12 +41,38 @@ export interface MapConfig {
   readonly VALLEY_WIDTH: number;
   /** §11 `VALLEY_LENGTH` — fixed, 5–12 nodes long. */
   readonly VALLEY_LENGTH: IntRange;
+  /**
+   * `EDGE_PRUNE_JITTER` — tunable, default 10. Not in §11's original table.
+   *
+   * [SOURCE §2.1 step 3, chat] "We can choose randomly from the longest
+   * EDGE_PRUNE_JITTER = 10 edges." That is what "longest-first, with jitter"
+   * means: each removal picks uniformly among the 10 longest edges still
+   * present, rather than strictly the longest.
+   *
+   * 1 would be strict longest-first with no jitter at all.
+   */
+  readonly EDGE_PRUNE_JITTER: number;
 }
 
 /** §11 rows covering POI counts and guard strength (§3, §4.4). */
 export interface PoiConfig {
   /** §11 `POI_COUNT` — fixed target, 25 plains / 20 forest / 15 mountain. */
   readonly POI_COUNT: PerTerrain<number>;
+  /**
+   * `OVERFLOW_LEAF_STAMINA_UNITS` — how many stamina units a leaf POI gets when
+   * a terrain has more leaves than its `POI_COUNT` quota. Not in §11.
+   *
+   * [SOURCE §5/§9, chat] "Fill the extra leaf nodes with stamina rewards" —
+   * which both settles what to do with surplus leaves (§3 forces every leaf to
+   * be a POI) and gives the otherwise-unused `stamina` kind of §4.1 a home.
+   *
+   * **The amount was not specified.** 1 is used here because §4.3 step 2 gives
+   * every POI one guaranteed unit and no §4.2 row covers these POIs, so one
+   * unit is the only figure the existing rules suggest — but that is an
+   * analogy, not a deduction, so it is a config row to confirm rather than a
+   * constant. See OPEN_QUESTIONS Q9a.
+   */
+  readonly OVERFLOW_LEAF_STAMINA_UNITS: number;
   /**
    * §11 `GUARD_STRENGTH_MIN` / `MAX`. §11's table says 2–10, but [SOURCE §5.2,
    * chat] superseded the minimum: the guard-strength formula is "capped between
@@ -293,17 +319,16 @@ export interface EngineeringConfig {
 }
 
 /**
- * Every unresolved value, in one place. Mirrors `docs/OPEN_QUESTIONS.md`.
+ * Unresolved design values.
  *
- * All four of GDD.md §12's open items are now decided, so what remains here is
- * one gap found during implementation rather than anything §12 listed.
+ * **Currently empty** — every open item from GDD.md §12, and every gap found
+ * while building against it, has now been decided. The machinery stays because
+ * it is the mechanism that keeps "undecided" from decaying into "whatever the
+ * first implementer typed": a new gap becomes a `PendingValue` here, and
+ * `resolvePending()` throws on it with the GDD reference attached.
  */
 export interface PendingConfig {
-  /**
-   * §5.1. "Remove edges longest-first, **with jitter**" — the jitter magnitude
-   * is not given. `@adventure/mapgen` step 3 takes it as an injected parameter.
-   */
-  readonly EDGE_PRUNE_JITTER: PendingValue<number>;
+  readonly [key: string]: PendingValue<unknown> | undefined;
 }
 
 /** Everything needed to generate and run a game, in three separated layers. */

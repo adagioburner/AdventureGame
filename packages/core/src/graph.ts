@@ -1,6 +1,5 @@
 import type { Terrain } from '@adventure/config';
 import type { NodeId } from './ids.ts';
-import { NotImplementedError } from './errors.ts';
 
 /** A point in `MAP_COORDINATE_SPACE`. [SOURCE §1.3, chat] No real-world scale. */
 export interface Point {
@@ -77,31 +76,76 @@ export function isConnected(graph: MapGraph): boolean {
 }
 
 /**
- * Per-terrain-region measurements feeding `compactness` (§2.1 step 5).
+ * Measurements feeding `compactness` (§2.1 step 5).
  *
- * `compactness = boundary² / area` is the GDD's formula verbatim. What is NOT
- * in the GDD is the *measurement convention* — what "boundary" and "area"
- * count on a graph. The stated circle reference (4π ≈ 13) is only reproduced
- * by counting **nodes** for both: a unit-density disc has area πr² nodes and
- * 2πr boundary nodes, giving 4π; counting boundary *edges* on a Delaunay mesh
- * lands several times higher, well above `COMPACTNESS_MAX` = 25.
- *
- * That derivation is strong but it is still a reading, so this function is
- * left unimplemented rather than committed to. See docs/OPEN_QUESTIONS.md Q4.
+ * [SOURCE §2.1 step 5, chat] "Yes, counting nodes is the right approach" — so
+ * **area** is the region's node count and **boundary** is the count of its
+ * nodes that touch a node of another terrain. That is the convention the
+ * stated circle reference reproduces: a unit-density disc has πr² nodes and
+ * 2πr boundary nodes, giving `boundary²/area = 4π ≈ 13`.
  */
 export interface RegionMetrics {
   readonly area: number;
   readonly boundary: number;
 }
 
-export function regionMetrics(_graph: MapGraph, _terrain: Terrain): RegionMetrics {
-  throw new NotImplementedError(
-    'regionMetrics — the boundary/area counting convention is unconfirmed',
-    'GDD.md §2.1 step 5 / docs/OPEN_QUESTIONS.md Q4',
-  );
+export function regionMetrics(graph: MapGraph, region: ReadonlySet<NodeId>): RegionMetrics {
+  let boundary = 0;
+  for (const node of region) {
+    for (const neighbour of neighbours(graph, node)) {
+      if (!region.has(neighbour)) {
+        boundary++;
+        break;
+      }
+    }
+  }
+  return { area: region.size, boundary };
 }
 
 /** [SOURCE §1.3] `compactness = boundary² / area`. */
 export function compactness(metrics: RegionMetrics): number {
   return (metrics.boundary * metrics.boundary) / metrics.area;
+}
+
+/** Every node of one terrain, across however many regions it occupies. */
+export function terrainNodes(graph: MapGraph, terrain: Terrain): Set<NodeId> {
+  const nodes = new Set<NodeId>();
+  for (const node of graph.nodes) if (node.terrain === terrain) nodes.add(node.id);
+  return nodes;
+}
+
+/**
+ * A terrain's connected components — §2.1 step 4 seeds "1 or 2 seeds per
+ * terrain", so a terrain can legitimately occupy two separate regions.
+ *
+ * Which of these the Smooth step measures is a real fork and is **not settled**:
+ * measuring a terrain's nodes as one set versus per component differs by a
+ * factor of about 2 for two equal blobs — two discs measured together give
+ * `(2B)²/2A = 2B²/A`, i.e. ~8π ≈ 25, which sits exactly on `COMPACTNESS_MAX`,
+ * while each disc measured alone gives ~13. So the threshold is either
+ * comfortably met or barely met depending on the reading. See
+ * OPEN_QUESTIONS Q4a; both helpers are here so either is one line.
+ */
+export function terrainRegions(graph: MapGraph, terrain: Terrain): Set<NodeId>[] {
+  const all = terrainNodes(graph, terrain);
+  const seen = new Set<NodeId>();
+  const regions: Set<NodeId>[] = [];
+  for (const start of all) {
+    if (seen.has(start)) continue;
+    const region = new Set<NodeId>([start]);
+    const queue: NodeId[] = [start];
+    seen.add(start);
+    for (let head = 0; head < queue.length; head++) {
+      const current = queue[head] as NodeId;
+      for (const next of neighbours(graph, current)) {
+        if (all.has(next) && !seen.has(next)) {
+          seen.add(next);
+          region.add(next);
+          queue.push(next);
+        }
+      }
+    }
+    regions.push(region);
+  }
+  return regions;
 }

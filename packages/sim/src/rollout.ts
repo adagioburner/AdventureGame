@@ -7,7 +7,6 @@ import {
   type PlayerId,
   type Rng,
 } from '@adventure/core';
-import type { PoiCandidate } from './candidates.ts';
 import type { WalkDriver } from './walk.ts';
 
 /**
@@ -20,8 +19,13 @@ import type { WalkDriver } from './walk.ts';
  * is advance through the *real* rules: a chosen target is walked toward with
  * `applyAction`, respecting movement allowance and stamina (§7), triggering
  * automatic POI interaction and guard rolls (§8) on arrival, and taking as many
- * turns as that needs. So a rollout leg is a sequence of real turns, not a
- * teleport.
+ * turns as that needs.
+ *
+ * [SOURCE §9, chat] "During MCTS rollout moves are simulated for all players,
+ * AI and human." So every seat is driven by this one policy — there is no
+ * separate opponent model, and the earlier `OpponentRolloutPolicy` seam is
+ * gone. The rollout simply plays whichever seat is active, in turn order, until
+ * it terminates.
  */
 export interface RolloutCursor {
   readonly state: GameState;
@@ -30,32 +34,38 @@ export interface RolloutCursor {
 }
 
 /**
- * When a rollout stops.
+ * When a rollout stops: at a terminal game state.
  *
- * **Unspecified in GDD.md.** §9 fixes the rollout policy and the backpropagated
- * value ("the simulated player's gold amount after rollout") but never says
- * after *what* — a fixed turn horizon, all POIs claimed, the §1 win condition
- * firing, or something else. The choice changes both what MCTS optimises and
- * how expensive a rollout is against the 10-second budget, so it is injected
- * with no default. See OPEN_QUESTIONS Q6.
+ * [SOURCE §12.2, chat] "For everything else please use sensible defaults that
+ * are recommended for standard MCTS implementations", and [SOURCE §9, chat]
+ * "this is the standard implementation of MCTS scoring of nodes". Standard
+ * rollouts run to a terminal state, and this game has one: the §1 win condition,
+ * which — given [SOURCE §1, chat] that ties resolve once no gold remains — is
+ * guaranteed to fire by the time every gold POI is claimed. So a rollout plays
+ * until `status === 'finished'`, or until no POI is left to target.
+ *
+ * Kept behind an interface anyway, because it is also the obvious lever if
+ * rollouts prove too slow: full playouts over ~60 POIs with multi-turn journeys
+ * are not cheap against a 10-second budget, and the usual mitigation is a turn
+ * or depth cap. That would be a design change (it changes what the value
+ * means), so it is not applied pre-emptively. See OPEN_QUESTIONS Q6.
  */
 export interface RolloutTermination {
   isTerminal(cursor: RolloutCursor, legsTaken: number): boolean;
 }
 
-/**
- * Also unspecified: §9 describes the rollout policy for "the simulated player",
- * and does not say how the other seats behave during a rollout. Injected for
- * the same reason. See OPEN_QUESTIONS Q6.
- */
-export interface OpponentRolloutPolicy {
-  chooseTarget(cursor: RolloutCursor, seat: number, rng: Rng): PoiCandidate | null;
+/** The standard terminal test: play the game out. */
+export function playToCompletionTermination(): RolloutTermination {
+  return {
+    isTerminal(cursor: RolloutCursor): boolean {
+      return cursor.state.status === 'finished';
+    },
+  };
 }
 
 export interface RolloutOptions {
   readonly config: GameConfig;
   readonly termination: RolloutTermination;
-  readonly opponents: OpponentRolloutPolicy;
   readonly dice: DiceSource;
   readonly rng: Rng;
 }
@@ -65,18 +75,23 @@ export function unclaimedPoiNodes(_state: GameState): ReadonlySet<NodeId> {
   throw new NotImplementedError('unclaimedPoiNodes', 'GDD.md §4.5 / §9');
 }
 
-/** The `WalkDriver` that plugs the real rules into the shared walk loop. */
+/**
+ * The `WalkDriver` that plugs the real rules into the shared walk loop.
+ *
+ * Note it advances *the active seat*, not `cursor.subject` — every player is
+ * simulated, and `subject` only says whose gold is read at the end.
+ */
 export function rolloutDriver(_options: RolloutOptions): WalkDriver<RolloutCursor> {
-  throw new NotImplementedError('rolloutDriver', 'GDD.md §9 / docs/OPEN_QUESTIONS.md Q6');
+  throw new NotImplementedError('rolloutDriver', 'GDD.md §9');
 }
 
 /**
- * Run one rollout and return the value to backpropagate.
+ * Run one rollout and return the terminal cursor.
  *
  * [SOURCE §5, chat] "Backpropagated value: the simulated player's gold amount
- * after rollout, by default." The "by default" is why this is a plain function
- * returning the state — the *evaluation* of that state is a separate, swappable
- * concern; see `NodeEvaluator` in `@adventure/ai`.
+ * after rollout, by default." The "by default" is why this returns the state
+ * rather than a number — evaluating it is a separate, swappable concern; see
+ * `NodeEvaluator` in `@adventure/ai`.
  */
 export function runRollout(_start: RolloutCursor, _options: RolloutOptions): RolloutCursor {
   throw new NotImplementedError('runRollout', 'GDD.md §9');

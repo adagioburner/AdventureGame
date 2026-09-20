@@ -34,3 +34,4 @@ export {
   validateStep,
 };
 export type { PoiPlacementStrategy } from './7-place-pois.ts';
+export { overflowLeafPois } from './7-place-pois.ts';

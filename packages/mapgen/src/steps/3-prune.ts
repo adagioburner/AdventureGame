@@ -10,9 +10,10 @@ import type { GenerationStep } from '../types.ts';
  *  - The rejection here is *per removal* — a bad removal is skipped and the
  *    pruning continues; it does not abort the attempt. (Step 8's rejection,
  *    which does abort, is a different test on the finished map.)
- *  - The jitter magnitude is not specified anywhere in GDD.md. It is read from
- *    `engineering.pending.EDGE_PRUNE_JITTER`, which throws until the designer
- *    supplies one. See OPEN_QUESTIONS Q7.
+ *  - [SOURCE §2.1 step 3, chat] The jitter: "we can choose randomly from the
+ *    longest EDGE_PRUNE_JITTER = 10 edges". So each removal draws uniformly
+ *    among the 10 longest edges still present, rather than taking the single
+ *    longest. `EDGE_PRUNE_JITTER = 1` would be strict longest-first.
  */
 export const pruneStep: GenerationStep = {
   id: '3-prune',

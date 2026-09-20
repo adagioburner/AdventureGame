@@ -21,10 +21,11 @@ import type { PoiAssignment } from '../types.ts';
  *    constraint, so the formula reads `assignment.units` — the POI's reward
  *    amount — not "the gold amount". For v1 content the two are identical,
  *    because the §4.2 table only ever guards gold.
- *  - **It does not round.** Remoteness is continuous in [0, 1], so the result
- *    is continuous too, and the designer specified a cap but no rounding rule.
- *    §8's `roll + skill > guard_strength` works either way; only the number §4.4
- *    displays beside the node is affected. See OPEN_QUESTIONS Q2a.
+ *  - **It rounds up.** [SOURCE §5.2, chat] "Guard strength is rounded up."
+ *    Ceiling before or after the cap gives the same answer for every reachable
+ *    input, since the cap bounds are integers; it is applied before, so the cap
+ *    is the last word. Rounding up makes guards marginally stronger than the
+ *    raw formula, which is the designer's call.
  *
  * A capped result of 0 means the POI ends up **unguarded** — [SOURCE §5.2, chat]
  * "1 gold with maximum remoteness is unguarded", which under these constants is
@@ -33,7 +34,7 @@ import type { PoiAssignment } from '../types.ts';
 export function guardStrengthFor(assignment: PoiAssignment, remoteness: number, config: GameConfig): number {
   const raw = assignment.units * config.balancing.GOLD_WEIGHT - remoteness * config.balancing.REMOTENESS_WEIGHT;
   const { min, max } = config.pois.GUARD_STRENGTH;
-  return Math.min(max, Math.max(min, raw));
+  return Math.min(max, Math.max(min, Math.ceil(raw)));
 }
 
 /**

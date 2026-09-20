@@ -21,19 +21,37 @@ export function unclaimedGoldUnits(state: GameState): number {
  * exceeds the amount of gold still unclaimed on the map [evaluated each time a
  * POI with gold is claimed]; a tie for the win results in shared victory."
  *
- * Left unimplemented on purpose. The two clauses do not compose under a literal
- * reading: if two players are tied at the top, each one's lead over the other
- * is 0, which never exceeds a non-negative amount of unclaimed gold, so a
- * "tie for the win" could never arise at all. The sentence only makes sense if
- * tied leaders are evaluated as a bloc against the best *other* player — but
- * that is a reading, not something the GDD states. See OPEN_QUESTIONS Q3.
+ * [SOURCE §1, chat] The tie clause, which did not compose on its own: "players
+ * can be tied for the win only when there is no more gold left on the map."
+ * That makes the two clauses consistent — a lead of 0 can only win when the
+ * threshold it must exceed is also 0.
  *
- * Returns the winners (one, or several on a shared victory), or an empty array
- * if nobody has won yet.
+ * So:
+ *   - one player at the top → they win when `max − runnerUp > unclaimedGold`;
+ *   - several tied at the top → shared victory exactly when no gold remains.
+ *
+ * "lead over every other player" is the lead over the *best* other player, so
+ * the runner-up is the only one that matters.
+ *
+ * Returns the winners (several on a shared victory), or an empty array if
+ * nobody has won yet.
  */
-export function checkVictory(_state: GameState): readonly PlayerId[] {
-  throw new NotImplementedError(
-    'checkVictory — tie-for-the-win semantics unconfirmed',
-    'GDD.md §1 / docs/OPEN_QUESTIONS.md Q3',
-  );
+export function checkVictory(state: GameState): readonly PlayerId[] {
+  const unclaimed = unclaimedGoldUnits(state);
+  const byGoldDescending = [...state.players].sort((a, b) => b.stats.gold - a.stats.gold);
+
+  const leader = byGoldDescending[0];
+  if (leader === undefined) return [];
+
+  const leaders = state.players.filter((player) => player.stats.gold === leader.stats.gold);
+  if (leaders.length > 1) {
+    // Tied at the top: a win only once nothing is left to break the tie.
+    return unclaimed === 0 ? leaders.map((player) => player.id) : [];
+  }
+
+  const runnerUp = byGoldDescending[1];
+  // A lone player has no one to lead; `PLAYER_COUNT.min` is 2, so this is defensive.
+  if (runnerUp === undefined) return [leader.id];
+
+  return leader.stats.gold - runnerUp.stats.gold > unclaimed ? [leader.id] : [];
 }
