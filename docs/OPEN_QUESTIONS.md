@@ -16,9 +16,8 @@ Q12. `pending` in the config is empty for the first time.
 
 **Outstanding:** Q11 (hybrid evaluator, future experiment), Q13 (zero-length
 move), Q14 (UCB1 reward scale), Q15 (map upload vs. regenerate), Q16 and Q17
-(the two blocking `search()`), plus two new sub-questions from this round —
-Q4a (compactness per terrain or per region?) and Q9a (stamina units per surplus
-leaf?).
+(the two blocking `search()`), plus
+Q9a (stamina units per surplus leaf?).
 
 ---
 
@@ -136,22 +135,25 @@ remains. Checked against seven worked cases.
 the region's node count, `boundary` the count of its nodes touching another
 terrain — the convention that reproduces the stated 4π reference.
 
-### Q4a. Is compactness measured per terrain, or per connected region?
+### Q4a. ~~Compactness per terrain, or per connected component?~~ — **answered, implemented**
 
-A fork the node-counting answer doesn't settle, and it moves the threshold by
-about 2×.
+[SOURCE §2.1 step 5, chat] "Compactness is measured per connected component."
+`terrainCompactness()` returns one value per component and
+`meetsCompactnessTarget()` is the Smooth loop's exit test.
 
-§2.1 step 4 seeds "1 or 2 seeds per terrain", so a terrain can occupy two
-separate regions. Measured as one set, two equal blobs give
-`(2B)²/2A = 2B²/A` ≈ 8π ≈ **25** — sitting exactly on `COMPACTNESS_MAX`.
-Measured per component, each gives ≈ 13, comfortably under.
+Two properties of the resulting rule, worth having in hand when you tune
+`COMPACTNESS_MAX`:
 
-So the same map either barely passes or easily passes depending on the reading,
-and `COMPACTNESS_MAX = 25` is a value you intend to tune against whichever it is.
+- a **rounded blob sits at ~4π ≈ 13 whatever its size** — area and boundary
+  scale as r² and r, so size doesn't move the number, only shape does;
+- for any component where every node touches another terrain (thin or small),
+  boundary equals area, so **compactness equals the node count**. At 25 that
+  tolerates a thin or speckled region of up to 24 nodes, and a single stray node
+  scores 1 — passing trivially. Small stragglers are cleared by Smooth's "flip
+  isolated nodes" behaviour, not by the threshold.
 
-**Routed as:** `regionMetrics(graph, nodeSet)` takes any node set, and both
-`terrainNodes()` and `terrainRegions()` ship, so the Smooth step is one line
-either way.
+So 25 leaves roughly 2× headroom over a circle, and its practical meaning is
+"thin regions up to 24 nodes are allowed".
 
 ### Q5. ~~`stamina` appears in no §4.2 row~~ — **answered**
 

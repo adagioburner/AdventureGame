@@ -118,13 +118,9 @@ export function terrainNodes(graph: MapGraph, terrain: Terrain): Set<NodeId> {
  * A terrain's connected components — §2.1 step 4 seeds "1 or 2 seeds per
  * terrain", so a terrain can legitimately occupy two separate regions.
  *
- * Which of these the Smooth step measures is a real fork and is **not settled**:
- * measuring a terrain's nodes as one set versus per component differs by a
- * factor of about 2 for two equal blobs — two discs measured together give
- * `(2B)²/2A = 2B²/A`, i.e. ~8π ≈ 25, which sits exactly on `COMPACTNESS_MAX`,
- * while each disc measured alone gives ~13. So the threshold is either
- * comfortably met or barely met depending on the reading. See
- * OPEN_QUESTIONS Q4a; both helpers are here so either is one line.
+ * [SOURCE §2.1 step 5, chat] "Compactness is measured per connected component."
+ * So the Smooth step checks each component separately rather than a terrain's
+ * nodes as one set — see `terrainCompactness`.
  */
 export function terrainRegions(graph: MapGraph, terrain: Terrain): Set<NodeId>[] {
   const all = terrainNodes(graph, terrain);
@@ -148,4 +144,34 @@ export function terrainRegions(graph: MapGraph, terrain: Terrain): Set<NodeId>[]
     regions.push(region);
   }
   return regions;
+}
+
+/**
+ * Compactness of each connected component of a terrain, per [SOURCE §2.1
+ * step 5, chat].
+ *
+ * Two things worth knowing when tuning `COMPACTNESS_MAX`, both consequences of
+ * node counting on a component:
+ *
+ *  - A **rounded blob sits at ~4π ≈ 13 whatever its size**, because area and
+ *    boundary scale as r² and r. Size does not move the number; shape does.
+ *  - For a component where *every* node touches another terrain — anything thin
+ *    or small — boundary equals area, so **compactness equals the node count**.
+ *    `COMPACTNESS_MAX = 25` therefore tolerates a thin or speckled region of up
+ *    to 24 nodes, and a single stray node scores 1, passing trivially. Small
+ *    stragglers are removed by Smooth's "flip isolated nodes to their
+ *    majority-neighbour terrain", not by the threshold.
+ */
+export function terrainCompactness(graph: MapGraph, terrain: Terrain): number[] {
+  return terrainRegions(graph, terrain).map((region) => compactness(regionMetrics(graph, region)));
+}
+
+/**
+ * The §2.1 step 5 test: every component of every terrain under the maximum.
+ *
+ * Equivalent to "the worst component is under the maximum", which is what this
+ * returns the negation of. An empty terrain vacuously passes.
+ */
+export function meetsCompactnessTarget(graph: MapGraph, terrain: Terrain, maximum: number): boolean {
+  return terrainCompactness(graph, terrain).every((value) => value < maximum);
 }

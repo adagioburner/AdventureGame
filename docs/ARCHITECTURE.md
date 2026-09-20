@@ -123,8 +123,11 @@ Four details from the GDD that are easy to get wrong, and are pinned in code:
 - **Compactness is enforced only inside step 5**, which loops until it is
   satisfied. [SOURCE §2.1 step 5, chat] `area` counts a region's nodes and
   `boundary` counts those touching another terrain — the convention that
-  reproduces the 4π circle reference. Whether that is measured per terrain or
-  per connected region is [Q4a](./OPEN_QUESTIONS.md#q4a); both helpers ship.
+  reproduces the 4π circle reference, and [SOURCE §2.1 step 5, chat] it is
+  measured **per connected component** — `meetsCompactnessTarget()` is the
+  loop's exit test. Two properties fall out: a rounded blob scores ~13 whatever
+  its size, and a thin or small component scores exactly its node count, so
+  `COMPACTNESS_MAX = 25` means "thin regions up to 24 nodes are tolerated".
 - **Step 3's rejection is per-removal, not per-attempt.** A removal that
   disconnects the graph or pushes leaf count out of range is skipped and pruning
   continues. That is a different mechanism from step 8's whole-map rejection.
@@ -505,7 +508,7 @@ Each of these is independently implementable against the shapes above:
 3. `resolveMovement` / `previewPath` — §8's worked example is the test case.
 4. `resolveInteraction` — §8.
 5. §4.3 assignment — the weight function is already written.
-6. Step 5 Smooth — measurement is written; pick per-terrain or per-region ([Q4a](./OPEN_QUESTIONS.md#q4a)).
+6. Step 5 Smooth — the measurement and its exit test are written; the flip loop is not.
 7. Step 7 placement — build both strategies and compare them in the harness.
 8. Remoteness — scorer is written; needs `closestPoiCandidates` (item 1) to run.
 9. `SetupFlow.start` — starting positions are settled; needs the rest of setup.
