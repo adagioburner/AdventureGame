@@ -11,10 +11,10 @@ import type { MctsNode, MctsOptions } from './types.ts';
  *   expand    — take one untried branch from `node.untried` and realise it
  *               through `applyAction` in `@adventure/core`, so the tree only
  *               ever contains states the real rules produced. Branches come
- *               from `ActionEnumerator`: the `MCTS_NODE_EXPANSION_PRUNING`
- *               closest *unclaimed* POIs, recomputed at that node's state,
- *               plus a rest branch when fewer than
- *               `MIN_REACHABLE_NODES_FOR_REST` of them are reachable this turn.
+ *               from `ActionEnumerator`: the `CLOSE_CANDIDATE_COUNT` closest
+ *               *unclaimed* POIs, recomputed at that node's state, plus a rest
+ *               branch when fewer than `MIN_REACHABLE_NODES_FOR_REST` of them
+ *               are reachable this turn.
  *               A target branch is a macro-action — `macroAdvanceToTarget` —
  *               so one edge can span several turns.
  *   simulate  — `rollout.run`, which is §5.1's random walk driven through the

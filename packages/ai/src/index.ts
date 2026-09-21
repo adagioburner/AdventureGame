@@ -1,7 +1,7 @@
 /**
  * `@adventure/ai` — the MCTS player of GDD.md §9.
  *
- * §12.2 is now decided: the tree branches over the `MCTS_NODE_EXPANSION_PRUNING`
+ * §12.2 is now decided: the tree branches over the `CLOSE_CANDIDATE_COUNT`
  * closest unclaimed POIs, and everything else follows standard MCTS practice —
  * UCT selection with √2, most-visited child as the final move. Both ship here
  * as named, swappable defaults rather than as hard-coded behaviour, because the

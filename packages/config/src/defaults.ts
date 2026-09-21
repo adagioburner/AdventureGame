@@ -30,7 +30,7 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     REMOTENESS_WEIGHT: 4,
     GOLD_WEIGHT: 3,
     REMOTENESS_WEIGHT_FOR_DISTRIBUTION: 2,
-    CLOSE_CANDIDATE_COUNT: 5,
+    CLOSE_CANDIDATE_COUNT: 10,
     REMOTENESS_SIMULATION_RUNS: 100,
   },
   movement: {
@@ -47,7 +47,6 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
   },
   ai: {
     MCTS_TIME_BUDGET_PER_MOVE_MS: 10_000,
-    MCTS_NODE_EXPANSION_PRUNING: 10,
     // UCB1's textbook constant. See the tuning caveat on the field.
     MCTS_EXPLORATION_CONSTANT: Math.SQRT2,
     MIN_REACHABLE_NODES_FOR_REST: 3,

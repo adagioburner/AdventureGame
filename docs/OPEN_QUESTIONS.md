@@ -11,7 +11,9 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, and Q1–Q17.
+**Answered so far:** all four of GDD.md §12's own open items, and Q1–Q19.
+Q18 is not in this branch: it is the hybrid evaluator's gold/skills weight,
+answered on PR #5 and arriving with it.
 `pending` in the config is empty.
 
 **Outstanding: none.** Every question in this register is answered, including
@@ -29,7 +31,7 @@ order; items 1–5 there depend on nothing unresolved.
 | # | Decision | What it changed in the code |
 |---|---|---|
 | §12.1 | [SOURCE, chat] "Durable Objects, with flexible architecture to swap it for something else if DO don't fit the bill. Everything else, i.e. map generation and player AI, runs on the game master's machine." | The DO becomes one adapter behind `SessionPorts`; `packages/session` still imports no transport, storage, socket or timer, so the swap stays an adapter. `MapService` and `AiService` keep their interfaces but the DO implements them as **round trips to the GM's client** (`gm.requestMapGeneration`/`gm.mapGenerated`, `gm.requestAiMove`/`gm.aiMove`). See `docs/STACK.md` for what the choice costs. |
-| §12.2 | [SOURCE, chat] `MCTS_NODE_EXPANSION_PRUNING = 10`; branches are the closest unclaimed POIs at that point in the game; "for everything else please use sensible defaults that are recommended for standard MCTS implementations." | `closestUnclaimedPoiEnumerator()` and `uctTreePolicy()` ship as named, swappable defaults. The enumerator calls the same `closestPoiCandidates` as the remoteness walk and the rollout policy — three consumers, one kernel. Two sub-questions remain: Q16, Q17. |
+| §12.2 | [SOURCE, chat] Branches are the closest unclaimed POIs at that point in the game; "for everything else please use sensible defaults that are recommended for standard MCTS implementations." The K was `MCTS_NODE_EXPANSION_PRUNING = 10`, **superseded** — see Q19. | `closestUnclaimedPoiEnumerator()` and `uctTreePolicy()` ship as named, swappable defaults. The enumerator calls the same `closestPoiCandidates` as the remoteness walk and the rollout policy — three consumers, one kernel, one K. Sub-questions: Q16, Q17, Q19. |
 | §12.3 | [SOURCE, chat] "The message board should be part of the game state and as such persistent along with the rest of the game. There is no difference between the message board state and other game state." | `BoardPost` moved into `@adventure/core`; `GameState.messageBoard` holds it; posting is a `PostMessageAction` through `applyAction`, the single writer. `MessageBoardStore` and the `board.posts` message are **deleted** — no store, no retention policy, no separate channel. |
 | §12.4 | [SOURCE, chat] "The game cannot proceed for a player that cannot establish connection with the game state server. If the game master disconnects there is no one to force the next turn so the game stalls as well." | `GameMasterAbsencePolicy` **deleted** — there is no fallback to configure. A GM-only request with no GM connected is answered `game_master_unavailable` and the game waits. |
 
@@ -293,9 +295,12 @@ least MIN_REACHABLE_NODES_FOR_REST = 3 POIs reachable in one turn." Both halves
 are in `closestUnclaimedPoiEnumerator`.
 
 One implementation detail worth stating: reachability is counted over the
-**pruned** target list, not every POI on the map. A reachable POI outside the
-closest 10 is not a branch the search can take, so counting it would let rest be
+**pruned** target list, not every POI on the map. A reachable POI outside that
+list is not a branch the search can take, so counting it would let rest be
 pruned on the strength of an option that does not exist in the tree.
+
+`MIN_REACHABLE_NODES_FOR_REST` survives Q19 unchanged: that collapsed the two
+Ks, and this is a threshold on reachability, not a K.
 
 The reachability test itself is injected (`TurnReachability`) because it needs
 `previewPath`, which is not written yet. The rule is.
@@ -321,6 +326,36 @@ commits one turn at a time.
 clause that cannot transfer is "or claimed by a different player": a remoteness
 walk has a single walker and no players, and remoteness is a property of the map,
 so no game state can cut a leg short.
+
+### Q19. ~~Two constants for one ranking?~~ — **answered, implemented**
+
+[SOURCE §12.2, review] On the `docs/RULES.md` PR, reading back that the tree
+pruned to `MCTS_NODE_EXPANSION_PRUNING` = 10 while the rollout and the
+remoteness walk used `CLOSE_CANDIDATE_COUNT` = 5: "We don't really need two
+different constants here. We will prune the tree by the CLOSE_CANDIDATE_COUNT,
+plus one branch for resting."
+
+So `MCTS_NODE_EXPANSION_PRUNING` is **deleted** from `AiConfig`, and
+`closestUnclaimedPoiEnumerator` prunes to `CLOSE_CANDIDATE_COUNT` — one K for
+all three callers of `closestPoiCandidates`, and tuning it now moves the tree
+and the rollout together.
+
+This also removed a latent inconsistency rather than only a constant.
+`closestPoiCandidates` caps its own result at `CLOSE_CANDIDATE_COUNT`, so the
+enumerator's `slice(0, MCTS_NODE_EXPANSION_PRUNING)` could never have widened it
+to 10 — the tree would have branched over 5 whatever that constant said. The
+slice is gone with it; the kernel's cap is the only cap.
+
+The rest branch is untouched: `MIN_REACHABLE_NODES_FOR_REST` = 3 still gates it
+(Q16), since it is a threshold on reachability rather than a second K.
+
+**Follow-up: the value moved.** [SOURCE §1.2, chat] With one constant now
+serving all three callers, the designer raised it from 5 to **10** — "we don't
+want to risk pruning out good moves early on". The numbers above are what was
+true when the two constants were collapsed, not the current default. Worth
+knowing that this is no longer only an AI knob: §5.1's remoteness walk reads the
+same constant, so the change moves remoteness scores, and through §5.2 the guard
+strengths and reward stacking of every generated map.
 
 ---
 

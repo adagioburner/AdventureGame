@@ -5,8 +5,9 @@ movement and combat resolution, MCTS-driven AI players, a web client, and a
 lightweight multiplayer backend.
 
 **[`GDD.md`](./GDD.md) is the single source of truth.** Every statement in it
-carries a provenance tag — `[SOURCE §x]`, `[SOURCE §x, chat]`, `[INFERRED §x]`,
-`[OPEN]` — and the same discipline applies to this repo:
+carries a provenance tag — `[SOURCE §x]`, `[SOURCE §x, chat]`,
+`[SOURCE §x, review]`, `[INFERRED §x]`, `[OPEN]` — and the same discipline
+applies to this repo:
 
 - If GDD.md doesn't say it, it isn't decided. That covers gameplay rules,
   balancing numbers and UI behaviour, not just the items listed in §12.

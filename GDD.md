@@ -1,6 +1,6 @@
 # Game Design Document — Multiplayer Turn-Based Adventure Game
 
-Status: v1 design, consolidated from `Annotated_Design_Document.md` (the traceability record — original text plus every clarification, in full, with typo/naming history preserved). This file is the clean version for implementation: typo corrections, superseded terminology, and clarifications that only confirmed an already-obvious reading have been left out. **Every statement is still tagged with its provenance** — `[SOURCE §x]`, `[SOURCE §x, chat]`, `[INFERRED]`, or `[OPEN]` — so nothing here is invented. `[OPEN]` items are genuinely undecided; do not fill them in. See §12 before writing code that touches those areas.
+Status: v1 design, consolidated from `Annotated_Design_Document.md` (the traceability record — original text plus every clarification, in full, with typo/naming history preserved). This file is the clean version for implementation: typo corrections, superseded terminology, and clarifications that only confirmed an already-obvious reading have been left out. **Every statement is still tagged with its provenance** — `[SOURCE §x]`, `[SOURCE §x, chat]`, `[SOURCE §x, review]`, `[INFERRED]`, or `[OPEN]` — so nothing here is invented. `[SOURCE §x, review]` is a decision the designer made reviewing a pull request, superseding or extending what §x said; the superseded text is kept alongside it, tagged as it was. `[OPEN]` items are genuinely undecided; do not fill them in. See §12 before writing code that touches those areas.
 
 ---
 
@@ -121,7 +121,7 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so this denomina
 
 [SOURCE §1.2] Computed via simulated random walks: start at a random plains position, repeatedly move to one of the `CLOSE_CANDIDATE_COUNT` closest unvisited POIs (chosen at random among them), until every POI has been visited once per walk. Distance for "closest" and for walk-segment lengths uses the same weighted terrain cost as movement: 1 plains / 2 forest / 3 mountain per step [SOURCE §1.2, chat: the one distance metric used throughout the design — also for the UI's shortest-path display, §7, and the AI's own POI targeting, §9]. Run `REMOTENESS_SIMULATION_RUNS` walks, normalize the resulting per-POI scores to **[0, 1]**.
 
-[SOURCE §1.2, chat] `CLOSE_CANDIDATE_COUNT` = **5**; `REMOTENESS_SIMULATION_RUNS` = **100** (expected to change if 100 proves too imprecise or too slow). This random-walk code is shared with the AI player's MCTS rollout policy (§9).
+[SOURCE §1.2, chat] `CLOSE_CANDIDATE_COUNT` = **10**, raised from 5 once §9's MCTS tree began pruning to this same constant: "we don't want to risk pruning out good moves early on". Note it now sets the search's branching factor as well as this walk's candidate set, so it is no longer a remoteness-only knob — changing it moves generated maps and AI play together. `REMOTENESS_SIMULATION_RUNS` = **100** (expected to change if 100 proves too imprecise or too slow). This random-walk code is shared with the AI player's MCTS rollout policy (§9).
 
 ### 5.2 Guard-strength / remoteness formula
 
@@ -197,7 +197,26 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so this denomina
 
 [SOURCE §5, chat] Rollout/simulation policy: choose a random target among the `CLOSE_CANDIDATE_COUNT` closest POIs, using the same weighted-terrain-cost random-walk code as §5.1.
 
-[SOURCE §5, chat] Backpropagated value: the simulated player's gold amount after rollout, by default. The tree-node evaluation function must be easily swappable — a planned future experiment is a hybrid `average(gold after simulation, gold now + (number of skills) × balancing_constant, at the node being evaluated)`.
+[SOURCE §5, review] Backpropagated value: there are **three kinds of node evaluation**, and the tree-node evaluation function must be easily swappable between them.
+
+| Evaluation | What it reads | Value |
+|---|---|---|
+| **Simulated** | the rolled-out state | "We simulate random moves until all gold is exhausted" (§9's rollout policy above), then take the simulated player's gold. |
+| **Estimated** | the node being evaluated | Current gold plus current skills, with no rollout at all, weighted by how far the game has run. |
+| **Hybrid** | both | The average of the estimated value and the simulated one. |
+
+[SOURCE §5, review] **v1 uses the simulated evaluation**; estimated and hybrid are there to experiment with afterwards.
+
+[SOURCE §5, review] The estimate's weight between gold and skills is not a tuned constant — it moves with the game, because "skills are important at the beginning of the game, and are worthless at the end":
+
+```
+value = gold/total_gold × progress + skills/total_skills × (1 − progress)
+        progress = gold claimed by all players / total_gold
+```
+
+At the opening almost no gold is claimed, so `progress` ≈ 0 and the skill term carries the value; by the end `progress` ≈ 1 and only gold counts. `skills` is the **sum of the player's skill levels** [SOURCE §5, chat], not a count of the skills they hold.
+
+> This supersedes the earlier form of the experiment, `average(gold after simulation, gold now + (number of skills) × balancing_constant, at the node being evaluated)` [SOURCE §5, chat]. Its two halves became the hybrid and the estimated evaluation respectively, and `balancing_constant` is gone — what it tuned by hand is now `progress`, which the game state supplies.
 
 [SOURCE §5, chat] Time budget per AI move: starting value **10 seconds**.
 
@@ -239,7 +258,7 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `GUARD_STRENGTH_MIN` / `MAX` | 2 / 10 | fixed (revisit later) |
 | `REMOTENESS_WEIGHT` | 4 | tunable (play-test) — guard/remoteness balance, §5.2 |
 | `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` | 2 | tunable (play-test) — reward stacking, §4.3 |
-| `CLOSE_CANDIDATE_COUNT` | 5 | tunable |
+| `CLOSE_CANDIDATE_COUNT` | 10 | tunable — one K for §5.1's walk, §9's rollout and §9's tree |
 | `REMOTENESS_SIMULATION_RUNS` | 100 | tunable |
 | `STAMINA_COST` (plains/forest/mountain) | 1 / 2 / 3 | fixed |
 | `REST_STAMINA_GAIN` | 5 | tunable |
