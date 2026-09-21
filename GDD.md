@@ -1,6 +1,6 @@
 # Game Design Document — Multiplayer Turn-Based Adventure Game
 
-Status: v1 design, consolidated from `Annotated_Design_Document.md` (the traceability record — original text plus every clarification, in full, with typo/naming history preserved). This file is the clean version for implementation: typo corrections, superseded terminology, and clarifications that only confirmed an already-obvious reading have been left out. **Every statement is still tagged with its provenance** — `[SOURCE §x]`, `[SOURCE §x, chat]`, `[INFERRED]`, or `[OPEN]` — so nothing here is invented. `[OPEN]` items are genuinely undecided; do not fill them in. See §12 before writing code that touches those areas.
+Status: v1 design, consolidated from `Annotated_Design_Document.md` (the traceability record — original text plus every clarification, in full, with typo/naming history preserved). This file is the clean version for implementation: typo corrections, superseded terminology, and clarifications that only confirmed an already-obvious reading have been left out. **Every statement is still tagged with its provenance** — `[SOURCE §x]`, `[SOURCE §x, chat]`, `[SOURCE §x, review]`, `[INFERRED]`, or `[OPEN]` — so nothing here is invented. `[SOURCE §x, review]` is a decision the designer made reviewing a pull request, superseding or extending what §x said; the superseded text is kept alongside it, tagged as it was. `[OPEN]` items are genuinely undecided; do not fill them in. See §12 before writing code that touches those areas.
 
 ---
 
@@ -197,7 +197,26 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so this denomina
 
 [SOURCE §5, chat] Rollout/simulation policy: choose a random target among the `CLOSE_CANDIDATE_COUNT` closest POIs, using the same weighted-terrain-cost random-walk code as §5.1.
 
-[SOURCE §5, chat] Backpropagated value: the simulated player's gold amount after rollout, by default. The tree-node evaluation function must be easily swappable — a planned future experiment is a hybrid `average(gold after simulation, gold now + (number of skills) × balancing_constant, at the node being evaluated)`.
+[SOURCE §5, review] Backpropagated value: there are **three kinds of node evaluation**, and the tree-node evaluation function must be easily swappable between them.
+
+| Evaluation | What it reads | Value |
+|---|---|---|
+| **Simulated** | the rolled-out state | "We simulate random moves until all gold is exhausted" (§9's rollout policy above), then take the simulated player's gold. |
+| **Estimated** | the node being evaluated | Current gold plus current skills, with no rollout at all, weighted by how far the game has run. |
+| **Hybrid** | both | The average of the estimated value and the simulated one. |
+
+[SOURCE §5, review] **v1 uses the simulated evaluation**; estimated and hybrid are there to experiment with afterwards.
+
+[SOURCE §5, review] The estimate's weight between gold and skills is not a tuned constant — it moves with the game, because "skills are important at the beginning of the game, and are worthless at the end":
+
+```
+value = gold/total_gold × progress + skills/total_skills × (1 − progress)
+        progress = gold claimed by all players / total_gold
+```
+
+At the opening almost no gold is claimed, so `progress` ≈ 0 and the skill term carries the value; by the end `progress` ≈ 1 and only gold counts. `skills` is the **sum of the player's skill levels** [SOURCE §5, chat], not a count of the skills they hold.
+
+> This supersedes the earlier form of the experiment, `average(gold after simulation, gold now + (number of skills) × balancing_constant, at the node being evaluated)` [SOURCE §5, chat]. Its two halves became the hybrid and the estimated evaluation respectively, and `balancing_constant` is gone — what it tuned by hand is now `progress`, which the game state supplies.
 
 [SOURCE §5, chat] Time budget per AI move: starting value **10 seconds**.
 
