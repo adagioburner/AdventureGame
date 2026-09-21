@@ -162,12 +162,23 @@ what remains. Termination sits behind an interface because a turn or depth cap
 is the obvious lever if rollouts prove slow, and it would change what the
 backpropagated value means (`packages/sim/src/rollout.ts`).
 
-**What comes back.** By default, the subject's gold after the rollout, divided
-by the total gold placed on the map so the value lands in [0, 1]
-(`packages/ai/src/policies/evaluators.ts`). That normalisation is coupled to
-`MCTS_EXPLORATION_CONSTANT` = √2, which UCB1's derivation assumes: change one
-and revisit the other. A hybrid evaluator that also credits skill levels is
-written and available to swap in.
+**What comes back.** There are three kinds of node evaluation, and they are
+worth keeping apart (`packages/ai/src/policies/evaluators.ts`):
+
+- **simulated** — the subject's gold once the rollout above has run to gold
+  exhaustion. `goldAfterSimulationEvaluator()`, and §9's default.
+- **estimated** — no rollout at all: the subject's gold and skills as they stand
+  at the node being evaluated, combined into one number. Its weighting is being
+  revised; see `docs/OPEN_QUESTIONS.md`.
+- **hybrid** — the average of the two, `(afterSimulation + estimated) / 2`.
+  `hybridGoldAndSkillsEvaluator()`.
+
+Estimated is not a standalone function today; it exists as the second half of
+the hybrid, which currently weights skills with a fixed `balancingConstant`.
+Whatever the weighting, every evaluator returns a value in [0, 1] — the shipped
+ones by dividing by the total gold placed on the map — and that normalisation is
+coupled to `MCTS_EXPLORATION_CONSTANT` = √2, which UCB1's derivation assumes:
+change one and revisit the other.
 
 **Around the rollout**, the search selects with UCT, expands one untried branch
 at a time through `applyAction`, and returns the most-visited child of the root
