@@ -38,7 +38,7 @@ export function totalGoldUnits(map: GameMap): number {
 /**
  * Total skill units placed on the map, summed over the five `SKILL_KINDS`.
  *
- * [SOURCE §9, PR #5 review] The denominator of Q18's skill term: "sum of
+ * [SOURCE §9, review] The denominator of Q18's skill term: "sum of
  * player's skill levels / total skills available". Read as the skill units the
  * map actually holds, the exact parallel of `totalGoldUnits`, so the term
  * reaches 1 when one player has claimed every skill POI.

@@ -345,7 +345,7 @@ so no game state can cut a leg short.
 
 Two answers in two rounds, both from the same review.
 
-**The formula.** [SOURCE §9, PR #5 review] The weight is not a constant — it
+**The formula.** [SOURCE §9, review] The weight is not a constant — it
 moves with the game. "The weight coefficient for the average determines how
 important we think the skills are wrt actual gold. The best solution is to make
 this coefficient change with time (skills are important at the beginning of the
@@ -356,7 +356,7 @@ value = gold/total_gold × progress + skills/total_skills × (1 − progress)
         progress = gold claimed by all players / total_gold
 ```
 
-**Where it belongs.** [SOURCE §9, PR #5 review] Not in the hybrid — in an
+**Where it belongs.** [SOURCE §9, review] Not in the hybrid — in an
 *estimated* evaluator, one of three kinds the designer distinguishes:
 
 | Evaluation | What it does |
@@ -398,7 +398,7 @@ POI. The alternative — a theoretical maximum skill level per player — would 
 the term mean something different and never reach 1. Changing it later is a
 one-line change to `totalSkillUnits`.
 
-**What v1 uses.** [SOURCE §9, PR #5 review] "The plan is to use the simulated
+**What v1 uses.** [SOURCE §9, review] "The plan is to use the simulated
 rollout for node evaluation in v1, and then experiment with other evaluators."
 So `simulatedRolloutEvaluator()` — §9's specified default — is the one the first
 release runs, and the other two exist to be switched in afterwards. That is why

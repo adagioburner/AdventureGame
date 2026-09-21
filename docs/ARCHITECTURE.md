@@ -393,7 +393,7 @@ evaluate(node: MctsNode, rolledOut: RolloutCursor, subject: PlayerId): number
 
 The evaluator receives **both** the rolled-out result and the node being
 evaluated, which is what lets all three kinds of evaluation sit behind one
-interface. [SOURCE §9, PR #5 review] The three, and what each looks at
+interface. [SOURCE §9, review] The three, and what each looks at
 (see [Q18](./OPEN_QUESTIONS.md#q18)):
 
 | Evaluation | Reads | |
@@ -424,7 +424,7 @@ simulated value is too; so the hybrid's average is as well, which is what
 [Q14](./OPEN_QUESTIONS.md#q14) needs for UCB1's √2. And `balancingConstant` is
 gone, because what it tuned by hand is `progress`.
 
-[SOURCE §9, PR #5 review] **v1 runs the simulated one**; the other two are
+[SOURCE §9, review] **v1 runs the simulated one**; the other two are
 there to experiment with once it works, which is why `SearchOptions.evaluator`
 is injected rather than defaulted.
 

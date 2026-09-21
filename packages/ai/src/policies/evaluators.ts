@@ -11,7 +11,7 @@ import type { RolloutCursor } from '@adventure/sim';
 import type { MctsNode, NodeEvaluator } from '../types.ts';
 
 /**
- * [SOURCE §9, PR #5 review] There are **three** kinds of node evaluation, and
+ * [SOURCE §9, review] There are **three** kinds of node evaluation, and
  * the hybrid is built from the other two rather than being a formula of its
  * own:
  *
@@ -27,7 +27,7 @@ import type { MctsNode, NodeEvaluator } from '../types.ts';
  * `MCTS_EXPLORATION_CONSTANT`: the first two by construction, and the average
  * of two such values trivially.
  *
- * [SOURCE §9, PR #5 review] **v1 uses the simulated one.** It is §9's specified
+ * [SOURCE §9, review] **v1 uses the simulated one.** It is §9's specified
  * default and the only one the first release is expected to run; the estimated
  * and hybrid evaluators exist to be experimented with afterwards, which is why
  * `SearchOptions.evaluator` is injected rather than defaulted.
@@ -61,7 +61,7 @@ function normalisedSkills(state: GameState, subject: PlayerId): number {
  * How far the game has run, as a fraction of the gold on the map: 0 at the
  * opening, 1 once nothing is left to claim.
  *
- * [SOURCE §9, PR #5 review] Q18's weight between gold and skills. A map with no
+ * [SOURCE §9, review] Q18's weight between gold and skills. A map with no
  * gold on it has nothing left to claim by definition, so it reads as 1 — the
  * same answer `unclaimedGoldUnits` of 0 gives everywhere else.
  */
@@ -86,7 +86,7 @@ export function simulatedRolloutEvaluator(): NodeEvaluator {
 }
 
 /**
- * **Estimated.** [SOURCE §9, PR #5 review] Q18's formula: what the subject
+ * **Estimated.** [SOURCE §9, review] Q18's formula: what the subject
  * holds *right now*, with gold and skills weighted by how far the game has run.
  *
  *   value = gold/total_gold × progress + skills/total_skills × (1 − progress)
@@ -117,7 +117,7 @@ export function estimatedGoldAndSkillsEvaluator(): NodeEvaluator {
 }
 
 /**
- * **Hybrid.** [SOURCE §9, PR #5 review] "The average of the two" — the
+ * **Hybrid.** [SOURCE §9, review] "The average of the two" — the
  * simulated evaluation and the estimated one, in equal measure, as
  * `(afterSimulation + now) / 2` always did.
  *

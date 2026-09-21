@@ -116,7 +116,7 @@ export interface RolloutPolicy {
  * after simulation, gold now + (number of skills) × balancing_constant, at the
  * node being evaluated)`."
  *
- * [SOURCE §9, PR #5 review] That `balancing_constant` form is superseded, and
+ * [SOURCE §9, review] That `balancing_constant` form is superseded, and
  * the quote is kept for provenance only: the second term is now the *estimated*
  * evaluation, whose gold/skills weight moves with the game instead of being
  * tuned. See Q18 in `docs/OPEN_QUESTIONS.md`, and `policies/evaluators.ts` for
