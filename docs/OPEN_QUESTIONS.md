@@ -11,7 +11,9 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, and Q1–Q17.
+**Answered so far:** all four of GDD.md §12's own open items, and Q1–Q19.
+Q18 is not in this branch: it is the hybrid evaluator's gold/skills weight,
+answered on PR #5 and arriving with it.
 `pending` in the config is empty.
 
 **Outstanding: none.** Every question in this register is answered, including
@@ -29,7 +31,7 @@ order; items 1–5 there depend on nothing unresolved.
 | # | Decision | What it changed in the code |
 |---|---|---|
 | §12.1 | [SOURCE, chat] "Durable Objects, with flexible architecture to swap it for something else if DO don't fit the bill. Everything else, i.e. map generation and player AI, runs on the game master's machine." | The DO becomes one adapter behind `SessionPorts`; `packages/session` still imports no transport, storage, socket or timer, so the swap stays an adapter. `MapService` and `AiService` keep their interfaces but the DO implements them as **round trips to the GM's client** (`gm.requestMapGeneration`/`gm.mapGenerated`, `gm.requestAiMove`/`gm.aiMove`). See `docs/STACK.md` for what the choice costs. |
-| §12.2 | [SOURCE, chat] Branches are the closest unclaimed POIs at that point in the game; "for everything else please use sensible defaults that are recommended for standard MCTS implementations." The K was `MCTS_NODE_EXPANSION_PRUNING = 10`, **superseded** — see Q18. | `closestUnclaimedPoiEnumerator()` and `uctTreePolicy()` ship as named, swappable defaults. The enumerator calls the same `closestPoiCandidates` as the remoteness walk and the rollout policy — three consumers, one kernel, one K. Sub-questions: Q16, Q17, Q18. |
+| §12.2 | [SOURCE, chat] Branches are the closest unclaimed POIs at that point in the game; "for everything else please use sensible defaults that are recommended for standard MCTS implementations." The K was `MCTS_NODE_EXPANSION_PRUNING = 10`, **superseded** — see Q19. | `closestUnclaimedPoiEnumerator()` and `uctTreePolicy()` ship as named, swappable defaults. The enumerator calls the same `closestPoiCandidates` as the remoteness walk and the rollout policy — three consumers, one kernel, one K. Sub-questions: Q16, Q17, Q19. |
 | §12.3 | [SOURCE, chat] "The message board should be part of the game state and as such persistent along with the rest of the game. There is no difference between the message board state and other game state." | `BoardPost` moved into `@adventure/core`; `GameState.messageBoard` holds it; posting is a `PostMessageAction` through `applyAction`, the single writer. `MessageBoardStore` and the `board.posts` message are **deleted** — no store, no retention policy, no separate channel. |
 | §12.4 | [SOURCE, chat] "The game cannot proceed for a player that cannot establish connection with the game state server. If the game master disconnects there is no one to force the next turn so the game stalls as well." | `GameMasterAbsencePolicy` **deleted** — there is no fallback to configure. A GM-only request with no GM connected is answered `game_master_unavailable` and the game waits. |
 
@@ -297,7 +299,7 @@ One implementation detail worth stating: reachability is counted over the
 list is not a branch the search can take, so counting it would let rest be
 pruned on the strength of an option that does not exist in the tree.
 
-`MIN_REACHABLE_NODES_FOR_REST` survives Q18 unchanged: that collapsed the two
+`MIN_REACHABLE_NODES_FOR_REST` survives Q19 unchanged: that collapsed the two
 Ks, and this is a threshold on reachability, not a K.
 
 The reachability test itself is injected (`TurnReachability`) because it needs
@@ -325,7 +327,7 @@ clause that cannot transfer is "or claimed by a different player": a remoteness
 walk has a single walker and no players, and remoteness is a property of the map,
 so no game state can cut a leg short.
 
-### Q18. ~~Two constants for one ranking?~~ — **answered, implemented**
+### Q19. ~~Two constants for one ranking?~~ — **answered, implemented**
 
 [SOURCE §12.2, review] On the `docs/RULES.md` PR, reading back that the tree
 pruned to `MCTS_NODE_EXPANSION_PRUNING` = 10 while the rollout and the

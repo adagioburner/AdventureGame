@@ -352,7 +352,7 @@ separable:
 The enumerator is worth a second look, because it completes the sharing story:
 it calls the same `closestPoiCandidates` that the remoteness walk and the
 rollout policy call. Three consumers, one ranking kernel and — since the
-designer collapsed the tree's own constant into it (Q18) — one K,
+designer collapsed the tree's own constant into it (Q19) — one K,
 `CLOSE_CANDIDATE_COUNT` = 5. They differ only in what they do with the ranked
 list: the tree makes every candidate a branch, the rollout picks one uniformly,
 remoteness walks to its pick.
