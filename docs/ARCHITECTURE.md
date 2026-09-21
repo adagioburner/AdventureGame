@@ -390,36 +390,40 @@ evaluate(node: MctsNode, rolledOut: RolloutCursor, subject: PlayerId): number
 ```
 
 The evaluator receives **both** the rolled-out result and the node being
-evaluated. Your planned hybrid — `average(gold after simulation, gold now +
-(number of skills) × balancing_constant, at the node being evaluated)` — needs
-"gold now ... at the node being evaluated", which an evaluator that only saw the
-rollout result could not express. `hybridGoldAndSkillsEvaluator()` is written
-against exactly that: [Q11](./OPEN_QUESTIONS.md#q11) settled that "number of
-skills" is the sum of all five skill levels rather than a count of skills held,
-and both halves are normalised by total map gold per
-[Q14](./OPEN_QUESTIONS.md#q14) — which puts `balancingConstant` in units of
-*gold per skill level*.
+evaluated, which is what lets `hybridGoldAndSkillsEvaluator()` exist at all: it
+needs the decision point's own position, not just where the rollout ended.
 
-**That formula has since been superseded, and the shipped function has not
-caught up yet** — see [Q18](./OPEN_QUESTIONS.md#q18). The weight between gold
-and skills should not be a fixed constant: [SOURCE §9, PR #5 review] "skills are
-important at the beginning of the game, and are worthless at the end", so the
-weight moves with how far the game has run:
+[SOURCE §9, PR #5 review] The hybrid weighs the player's gold against the
+player's skills, and the weight is not a tuned constant — it moves with the
+game, because "skills are important at the beginning of the game, and are
+worthless at the end" (see [Q18](./OPEN_QUESTIONS.md#q18)):
 
 ```
 value = gold/total_gold × progress + skills/total_skills × (1 − progress)
         progress = gold claimed by all players / total_gold
 ```
 
-Two properties worth having in hand. Both terms are already in [0, 1] and the
-two weights sum to 1, so the result stays in [0, 1] without the separate divisor
-Q14 added — the normalisation UCB1 needs comes out of the shape of the formula.
-And `balancingConstant` disappears: what it was tuning is now `progress`, which
-the game state supplies.
+At the opening almost no gold is claimed, so `progress` ≈ 0 and the skill term
+carries the value; by the end `progress` ≈ 1 and only gold counts.
+[Q11](./OPEN_QUESTIONS.md#q11) still decides the skill numerator — the sum of
+all five skill levels, not a count of skills held. Two properties fall out of
+the shape rather than out of a constant: both terms are in [0, 1] and the two
+weights sum to 1, so the value is in [0, 1] as [Q14](./OPEN_QUESTIONS.md#q14)
+requires for UCB1's √2, and `balancingConstant` is gone, because what it tuned
+is `progress`.
 
-Implementing it is **low priority** ([SOURCE, PR #5 review]), so
-`goldAfterSimulationEvaluator()` remains §9's default and
-`hybridGoldAndSkillsEvaluator()` keeps the Q11/Q14 formula in the meantime.
+The formula is written for one position while an evaluator sees two, so the
+implementation is explicit about where each quantity is read: **gold** from the
+rolled-out state, which is the term the simulation exists to produce; **skills**
+and **progress** from the node. Progress cannot come from the rollout — rollouts
+end when no unclaimed gold remains (Q6), so it would always be 1, the skill term
+would always vanish, and the hybrid would be `goldAfterSimulationEvaluator()`
+under another name.
+
+`totalSkillUnits()` joins `totalGoldUnits()` in `@adventure/core` as the skill
+term's divisor, and the five skill kinds are now one list (`SKILL_KINDS` in
+`@adventure/config`) shared by that helper and the evaluator, so the numerator
+and denominator cannot drift apart.
 
 `search()` documents the four phases (select / expand / simulate / backprop) and
 the `MCTS_TIME_BUDGET_PER_MOVE` loop, and throws: the loop itself is still to be

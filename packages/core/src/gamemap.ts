@@ -1,4 +1,4 @@
-import type { Ruleset } from '@adventure/config';
+import { SKILL_KINDS, type Ruleset } from '@adventure/config';
 import type { NodeId } from './ids.ts';
 import type { MapGraph } from './graph.ts';
 import type { Poi } from './poi.ts';
@@ -33,6 +33,21 @@ export function poiAt(map: GameMap, node: NodeId): Poi | undefined {
 /** [SOURCE §2] Total gold units placed on the map. Used by the win check (§1). */
 export function totalGoldUnits(map: GameMap): number {
   return map.pois.reduce((sum, poi) => sum + (poi.reward.kind === 'gold' ? poi.reward.units : 0), 0);
+}
+
+/**
+ * Total skill units placed on the map, summed over the five `SKILL_KINDS`.
+ *
+ * [SOURCE §9, PR #5 review] The denominator of Q18's skill term: "sum of
+ * player's skill levels / total skills available". Read as the skill units the
+ * map actually holds, the exact parallel of `totalGoldUnits`, so the term
+ * reaches 1 when one player has claimed every skill POI.
+ */
+export function totalSkillUnits(map: GameMap): number {
+  return map.pois.reduce(
+    (sum, poi) => sum + (SKILL_KINDS.some((kind) => kind === poi.reward.kind) ? poi.reward.units : 0),
+    0,
+  );
 }
 
 /**

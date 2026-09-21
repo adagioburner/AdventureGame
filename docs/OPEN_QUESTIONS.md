@@ -14,11 +14,11 @@ Nothing below was resolved by picking something reasonable.
 **Answered so far:** all four of GDD.md §12's own open items, and Q1–Q19.
 `pending` in the config is empty.
 
-**Outstanding: nothing blocking.** Every question in this register is answered,
-including the three readings that were held open for confirmation — Q1's
-first-segment wrinkle, Q13 and Q17 — and the config's `pending` block is empty.
-Q18 carries one reading I had to pick, what "total skills available" divides by;
-it is flagged on PR #5 and blocks nothing, since Q18 is itself low priority.
+**Outstanding: none.** Every question in this register is answered, including
+the three readings that were held open for confirmation — Q1's first-segment
+wrinkle, Q13 and Q17 — and the config's `pending` block is empty. Q18 names one
+reading it had to pick, what "total skills available" divides by; it is
+implemented under the stated reading and flagged on PR #5.
 
 The next session's work is implementation against a settled spec rather than
 more design review. `docs/ARCHITECTURE.md` §11 lists what to pick up and in what
@@ -251,9 +251,8 @@ skill level* — a natural thing to tune.
 **The answer above still stands; the formula around it does not.** Q18 replaces
 the fixed `balancingConstant` with a weight that moves as gold is claimed, and
 divides the skill term by total skills rather than by total gold. "Sum of skill
-levels, not a count of skills" is what carries over. The shipped function has
-not been rewritten — Q18 is low priority — so it is the one place in the repo
-still computing the superseded formula.
+levels, not a count of skills" is what carries over, and it is what the
+implemented evaluator uses for the skill numerator.
 
 ### Q12. ~~Where do players start on the map?~~ — **answered, implemented**
 
@@ -334,7 +333,7 @@ clause that cannot transfer is "or claimed by a different player": a remoteness
 walk has a single walker and no players, and remoteness is a property of the map,
 so no game state can cut a leg short.
 
-### Q18. ~~Is the hybrid evaluator's gold/skills weight a constant?~~ — **answered, not yet implemented**
+### Q18. ~~Is the hybrid evaluator's gold/skills weight a constant?~~ — **answered, implemented**
 
 [SOURCE §9, PR #5 review] No — it moves with the game. "The weight coefficient
 for the average determines how important we think the skills are wrt actual
@@ -349,7 +348,8 @@ value = gold/total_gold × progress + skills/total_skills × (1 − progress)
 
 This **supersedes Q11 and Q14's version of the hybrid**, which averaged the two
 halves with a fixed `balancingConstant` and normalised both by total map gold.
-Three consequences:
+`hybridGoldAndSkillsEvaluator()` implements it and no longer takes a
+`balancingConstant`. Three consequences:
 
 - `balancingConstant` goes away. What it was tuning is `progress`, which the
   game state already supplies, so there is no constant left to fine-tune.
@@ -361,20 +361,30 @@ Three consequences:
   claimed, so `progress` ≈ 0 and skills carry the value; by the end `progress`
   ≈ 1 and only gold counts.
 
-`totalGoldUnits(map)` and `unclaimedGoldUnits(state)` already give `total_gold`
-and, by subtraction, gold claimed by all players.
+`totalGoldUnits(map)` and `unclaimedGoldUnits(state)` gave `total_gold` and, by
+subtraction, gold claimed by all players. `totalSkillUnits(map)` is new, and the
+five skill kinds moved into `SKILL_KINDS` in `@adventure/config` so the skill
+term's numerator and denominator read the same list.
 
 **One reading I picked, flagged on PR #5 rather than assumed silently:**
-`total_skills` is read as the sum of skill units *placed on the map*, the exact
-parallel of `totalGoldUnits`. The alternative — a theoretical maximum skill
-level per player — would make the term mean something different and never reach
-1. No helper for it exists yet either way.
+`total_skills` is the sum of skill units *placed on the map*, the exact parallel
+of `totalGoldUnits`, so the term reaches 1 when one player holds every skill
+POI. The alternative — a theoretical maximum skill level per player — would make
+the term mean something different and never reach 1. Changing it later is a
+one-line change to `totalSkillUnits`.
 
-[SOURCE, PR #5 review] "Implementing and using `hybridGoldAndSkillsEvaluator()`
-is low priority", and this is recorded "for planning future enhancements". So
-the shipped function still carries the Q11/Q14 formula and
-`goldAfterSimulationEvaluator()` remains §9's default; nothing here blocks the
-§11 pick-up list.
+**Which state each quantity is read from**, since the formula is written for one
+position and a `NodeEvaluator` sees two. Gold comes from the **rolled-out
+state** — the term the simulation exists to produce, as in
+`goldAfterSimulationEvaluator`. Skills and progress come from the **node being
+evaluated**: the decision point's own position, which is the thing the hybrid
+was shaped to be able to see. Progress in particular *cannot* come from the
+rollout, because rollouts end when no unclaimed gold remains (Q6) — progress
+there is always 1, the skill term would always vanish, and the hybrid would be
+`goldAfterSimulationEvaluator` under another name.
+
+`goldAfterSimulationEvaluator()` remains §9's specified default; the hybrid is
+the alternative the designer planned, now available to switch to.
 
 ### Q19. ~~Two constants for one ranking?~~ — **answered, implemented**
 
