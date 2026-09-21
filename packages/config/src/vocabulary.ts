@@ -30,6 +30,24 @@ export const REWARD_KINDS = [
 export type RewardKind = (typeof REWARD_KINDS)[number];
 
 /**
+ * [SOURCE §6] The five of those seven kinds that are *skills* — the three
+ * movement skills plus fighting and magic. Gold is the objective and stamina a
+ * resource, so neither is a skill.
+ *
+ * Lives here rather than in a consumer because two of them now need the same
+ * list and must not drift: `totalSkillUnits` (the denominator of Q18's skill
+ * term) and the evaluator that sums a player's levels for its numerator.
+ */
+export const SKILL_KINDS = [
+  'plains_move',
+  'forest_move',
+  'mountain_move',
+  'fighting',
+  'magic',
+] as const satisfies readonly RewardKind[];
+export type SkillKind = (typeof SKILL_KINDS)[number];
+
+/**
  * [SOURCE §4.4] A guard is fighting-gated (red) or magic-gated (purple).
  * Guard type is a property of the *guard*, not of the reward kind — see the
  * note on `RewardGroupSpec` about why gold's guard split is a sub-partition of

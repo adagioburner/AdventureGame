@@ -12,4 +12,8 @@ export * from './mcts.ts';
 export * from './runner.ts';
 export { closestPoiRolloutPolicy } from './policies/rollout.ts';
 export { uctTreePolicy, closestUnclaimedPoiEnumerator, unclaimedPoiNodesOf } from './policies/tree.ts';
-export { goldAfterSimulationEvaluator, hybridGoldAndSkillsEvaluator } from './policies/evaluators.ts';
+export {
+  simulatedRolloutEvaluator,
+  estimatedGoldAndSkillsEvaluator,
+  hybridGoldAndSkillsEvaluator,
+} from './policies/evaluators.ts';

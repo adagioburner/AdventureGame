@@ -116,11 +116,16 @@ export interface RolloutPolicy {
  * after simulation, gold now + (number of skills) × balancing_constant, at the
  * node being evaluated)`."
  *
- * Note the signature takes both the rolled-out cursor *and* the node being
- * evaluated: the planned hybrid needs "gold now ... at the node being
- * evaluated", so an evaluator that only saw the rollout result could not
- * express it. Getting that right now is the whole point of making this a seam
- * before anything is implemented against it.
+ * [SOURCE §9, review] That `balancing_constant` form is superseded, and
+ * the quote is kept for provenance only: the second term is now the *estimated*
+ * evaluation, whose gold/skills weight moves with the game instead of being
+ * tuned. See Q18 in `docs/OPEN_QUESTIONS.md`, and `policies/evaluators.ts` for
+ * the three that ship — simulated, estimated and hybrid.
+ *
+ * The signature takes both the rolled-out cursor *and* the node being
+ * evaluated, which is what lets all three sit behind this one interface: the
+ * simulated one reads the rollout, the estimated one reads the node, and the
+ * hybrid averages them.
  */
 export interface NodeEvaluator {
   readonly name: string;

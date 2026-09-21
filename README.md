@@ -53,7 +53,7 @@ packages/
   core/       Domain model + rules engine. Pure; no I/O, clock or Math.random.
   mapgen/     GDD §2.1's eight-step pipeline, §4.3 assignment, §5.2 guards.
   sim/        The one random-walk implementation, shared by §5.1 and §9.
-  ai/         MCTS. Rollout and evaluator are seams; tree policy is open (§12.2).
+  ai/         MCTS. Rollout, evaluator and tree policy are seams, all decided.
   protocol/   Client/server wire contract and the auth port. Plain data.
   session/    Turn sequencing, authority, setup flow. Eight ports, no runtime deps.
 apps/

@@ -237,9 +237,12 @@ guard_strength = ceil(units × GOLD_WEIGHT − remoteness × REMOTENESS_WEIGHT),
 supersedes §11's `GUARD_STRENGTH_MIN` of 2 — a capped result of 0 means the POI
 is unguarded, so §4.4's "none are exempt" no longer holds. The formula reads the
 POI's reward `units` rather than testing for gold, keeping §4.4's requirement
-that guarding work on any kind. See [Q2](./OPEN_QUESTIONS.md#q2), and
-[Q2a](./OPEN_QUESTIONS.md#q2a) for the one leftover: rounding is unspecified, so
-the result is left continuous.
+that guarding work on any kind. See [Q2](./OPEN_QUESTIONS.md#q2) for the
+formula and [Q2a](./OPEN_QUESTIONS.md#q2a) for the rounding: [SOURCE §5.2, chat]
+"guard strength is rounded up", so the `ceil` above is the answer rather than a
+placeholder. It is applied before the cap, which makes the cap the last word;
+ceiling before or after agrees on every reachable input anyway, since the cap
+bounds are integers.
 
 ---
 
@@ -339,13 +342,13 @@ remains.
 
 ## 7. AI player (§9)
 
-`packages/ai`. Four interfaces, so the specified parts and the open part are
-separable:
+`packages/ai`. Four interfaces, so each part stays separately swappable. All
+four are now decided — two by §9 directly, two by §12.2:
 
 | Seam | Status |
 |---|---|
 | `RolloutPolicy` | **Specified** (§9). `closestPoiRolloutPolicy()` is a thin wrapper over `@adventure/sim`. |
-| `NodeEvaluator` | **Specified default** (§9): gold after simulation. `goldAfterSimulationEvaluator()`. |
+| `NodeEvaluator` | **Specified default** (§9): the simulated rollout, which is what v1 runs. Three ship — simulated, estimated and hybrid; see below. |
 | `TreePolicy` | **Decided** (§12.2): UCT, `MCTS_EXPLORATION_CONSTANT` = √2, most-visited child as the final move. `uctTreePolicy()`. |
 | `ActionEnumerator` | **Decided** (§12.2): the `CLOSE_CANDIDATE_COUNT` (10) closest *unclaimed* POIs, recomputed per node, **plus a rest branch** when fewer than `MIN_REACHABLE_NODES_FOR_REST` (3) of them are reachable this turn. `closestUnclaimedPoiEnumerator()`. |
 
@@ -369,15 +372,17 @@ enough to search in ten seconds: a node is a real decision point, not a single
 step. `search()` returns only the *first* turn of the chosen branch, since the
 session layer commits one turn at a time.
 
-**Values are normalised.** [SOURCE §9, chat] both evaluators divide gold by the
-total gold placed on the map, putting every backpropagated value in [0, 1] —
-which is what makes `MCTS_EXPLORATION_CONSTANT` = √2 correct, since UCB1's
-derivation assumes that range. The two settings are coupled; changing one
-without the other breaks the exploration/exploitation balance.
+**Values are normalised.** The invariant every evaluator holds to is the
+*range*: a backpropagated value is always in [0, 1], which is what makes
+`MCTS_EXPLORATION_CONSTANT` = √2 correct, since UCB1's derivation assumes it.
+How each one gets there differs. [SOURCE §9, chat] gold terms divide by the
+total gold placed on the map; the estimated evaluator's skill term divides by
+the total skill units placed, and its two terms are combined by weights summing
+to 1. The two settings are coupled; changing normalisation without revisiting
+the constant breaks the exploration/exploitation balance.
 
-The hybrid evaluator is now complete too: [SOURCE §9, chat] "number of skills"
-is the **sum of the five skill levels**, which puts its `balancingConstant` in
-units of gold per skill level.
+[SOURCE §9, chat] "Number of skills" in that skill term is the **sum of the five
+skill levels** rather than a count of skills held.
 
 One signature detail worth flagging, because it is the kind of thing that is
 expensive to change later:
@@ -387,16 +392,60 @@ evaluate(node: MctsNode, rolledOut: RolloutCursor, subject: PlayerId): number
 ```
 
 The evaluator receives **both** the rolled-out result and the node being
-evaluated. Your planned hybrid — `average(gold after simulation, gold now +
-(number of skills) × balancing_constant, at the node being evaluated)` — needs
-"gold now ... at the node being evaluated", which an evaluator that only saw the
-rollout result could not express. `hybridGoldAndSkillsEvaluator()` exists as a
-named seam and throws, pending [Q11](./OPEN_QUESTIONS.md#q11).
+evaluated, which is what lets all three kinds of evaluation sit behind one
+interface. [SOURCE §9, review] The three, and what each looks at
+(see [Q18](./OPEN_QUESTIONS.md#q18)):
+
+| Evaluation | Reads | |
+|---|---|---|
+| **Simulated** | the rolled-out state | §9's specified default: play random moves until the gold is exhausted, take the subject's gold. `simulatedRolloutEvaluator()`. |
+| **Estimated** | the node | What the subject holds now, gold against skills. No rollout. `estimatedGoldAndSkillsEvaluator()`. |
+| **Hybrid** | both | The average of the two. `hybridGoldAndSkillsEvaluator()`. |
+
+The estimate is where the designer's formula lives. Its weight between gold and
+skills is not a tuned constant — it moves with the game, because "skills are
+important at the beginning of the game, and are worthless at the end":
+
+```
+value = gold/total_gold × progress + skills/total_skills × (1 − progress)
+        progress = gold claimed by all players / total_gold
+```
+
+At the opening almost no gold is claimed, so `progress` ≈ 0 and the skill term
+carries the value; by the end `progress` ≈ 1 and only gold counts. Every
+quantity is read from the node, which is what makes `progress` meaningful here:
+it moves across the tree, whereas a rollout by definition ends with no
+unclaimed gold left (Q6). [Q11](./OPEN_QUESTIONS.md#q11) still decides the skill
+numerator — the sum of all five skill levels, not a count of skills held.
+
+Two properties fall out of the shape rather than out of a constant. The estimate
+is in [0, 1], because both its terms are and its two weights sum to 1; the
+simulated value is too; so the hybrid's average is as well, which is what
+[Q14](./OPEN_QUESTIONS.md#q14) needs for UCB1's √2. And `balancingConstant` is
+gone, because what it tuned by hand is `progress`.
+
+[SOURCE §9, review] **v1 runs the simulated one**; the other two are
+there to experiment with once it works, which is why `SearchOptions.evaluator`
+is injected rather than defaulted.
+
+One thing for whoever writes `search()`'s simulate phase: the estimated
+evaluator never reads `rolledOut`, so a search configured with it would pay for
+a rollout and throw it away. Skipping the rollout when the evaluator does not
+use it is a search-level optimisation, not an evaluator change — the interface
+deliberately hands over both, and only the evaluator knows which it wants.
+
+The hybrid is **composed from the other two** rather than reimplementing either,
+so a change to one cannot leave it computing something else.
+`totalSkillUnits()` joins `totalGoldUnits()` in `@adventure/core` as the skill
+term's divisor, and the five skill kinds are now one list (`SKILL_KINDS` in
+`@adventure/config`) shared by that helper and the evaluator, so the numerator
+and denominator cannot drift apart.
 
 `search()` documents the four phases (select / expand / simulate / backprop) and
-the `MCTS_TIME_BUDGET_PER_MOVE` loop, and throws — two of the four phases depend
-on §12.2, and the other two are specified, which is precisely why they sit
-behind their own interfaces instead of inside the function.
+the `MCTS_TIME_BUDGET_PER_MOVE` loop, and throws: the loop itself is still to be
+written (§11 item 11). Every policy it drives is decided — two phases by §9, two
+by §12.2 — which is precisely why they sit behind their own interfaces instead
+of inside the function.
 
 The session layer sees only:
 
