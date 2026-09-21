@@ -278,12 +278,18 @@ another attempt and recovering stamina.
 
 ## B2. Sub-questions thrown off by the §12 answers
 
-### Q14. ~~UCB1's √2 assumes rewards in [0, 1]~~ — **answered, implemented; see Q18 for the hybrid**
+### Q14. ~~UCB1's √2 assumes rewards in [0, 1]~~ — **answered, implemented; Q18 changes how the estimate gets there**
 
 [SOURCE §9, chat] "Yes, we can normalize by dividing over total gold on the
-map." Both evaluators divide by `totalGoldUnits(map)`, so every backpropagated
+map." Every gold term divides by `totalGoldUnits(map)`, so every backpropagated
 value sits in [0, 1] and √2 is the correct constant. The divisor is gold
 *placed*, fixed for the whole game, so values stay comparable across a search.
+
+The answer holds for all three evaluators, but Q18 gave the estimated one a
+second denominator: its skill term divides by `totalSkillUnits(map)`, and the
+two terms are combined by weights summing to 1, so it lands in [0, 1] without
+gold's divisor having to carry it. The simulated evaluator is unchanged, and the
+hybrid averages two values already in [0, 1].
 
 The two settings are now coupled: changing the normalisation without revisiting
 `MCTS_EXPLORATION_CONSTANT` breaks the exploration/exploitation balance. Noted

@@ -372,15 +372,15 @@ enough to search in ten seconds: a node is a real decision point, not a single
 step. `search()` returns only the *first* turn of the chosen branch, since the
 session layer commits one turn at a time.
 
-**Values are normalised.** [SOURCE §9, chat] both evaluators divide gold by the
+**Values are normalised.** [SOURCE §9, chat] every evaluator divides gold by the
 total gold placed on the map, putting every backpropagated value in [0, 1] —
 which is what makes `MCTS_EXPLORATION_CONSTANT` = √2 correct, since UCB1's
 derivation assumes that range. The two settings are coupled; changing one
 without the other breaks the exploration/exploitation balance.
 
-The hybrid evaluator is now complete too: [SOURCE §9, chat] "number of skills"
-is the **sum of the five skill levels**, which puts its `balancingConstant` in
-units of gold per skill level.
+The skill term has its own divisor, the total skill units placed, and
+[SOURCE §9, chat] "number of skills" is the **sum of the five skill levels**
+rather than a count of skills held.
 
 One signature detail worth flagging, because it is the kind of thing that is
 expensive to change later:
