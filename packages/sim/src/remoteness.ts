@@ -34,29 +34,26 @@ export interface RemotenessScorer {
 /**
  * The scorer specified above.
  *
- * For a walk that visits POIs `P1 … Pn` over segments `s1 … sn`, where `si` is
- * the leg that arrived at `Pi` (so `s1` is the leg from the random plains
- * start):
+ * [SOURCE §5.1, chat] The segments that count are the ones **between POIs**;
+ * the leg in from the random plains start is discarded. That makes both
+ * boundary cases the same rule — "missing one neighbour, so double the one you
+ * have" — rather than having the first POI ignore a real outgoing segment.
  *
- *   score(P1) = 2 × s1                      // first POI
- *   score(Pi) = si + s(i+1)   for 1 < i < n // segment in + segment out
- *   score(Pn) = 2 × sn                      // last POI, no segment out
+ * For a walk visiting `P1 … Pn` over inter-POI segments `t1 … t(n−1)`, where
+ * `ti` runs from `Pi` to `P(i+1)`:
  *
- * A single-POI walk hits both boundary cases and scores `2 × s1` once.
+ *   score(P1) = 2 × t1                      // no segment in
+ *   score(Pi) = t(i−1) + ti   for 1 < i < n // segment in + segment out
+ *   score(Pn) = 2 × t(n−1)                  // no segment out
+ *
+ * A walk visiting a single POI has no inter-POI segment at all and scores 0.
+ * It cannot arise on a real map (every POI is visited once per walk, and there
+ * are 60+), but the arithmetic has to be defined.
  *
  * Scores accumulate as a **sum** across all walks rather than a mean. With a
  * fixed run count the two differ by a constant factor, and min-max
  * normalisation to [0, 1] is invariant under that, so the distinction cannot
  * affect any downstream rule.
- *
- * One wrinkle worth knowing about, flagged to the designer rather than
- * resolved: "double the length of the first segment" reads literally as `2 × s1`
- * where `s1` is the leg in from the random plains start, which is what is
- * implemented. It could instead have meant the first *inter-POI* segment
- * (`P1 → P2`), discarding the start leg — that reading makes both boundary
- * cases symmetric ("missing one neighbour, so double the one you have"). The
- * two differ only in the first POI's score, so roughly 1-2% of a POI's total
- * over 100 runs. See OPEN_QUESTIONS Q1.
  */
 export function segmentSumRemotenessScorer(): RemotenessScorer {
   const totals = new Map<NodeId, number>();
@@ -74,11 +71,24 @@ export function segmentSumRemotenessScorer(): RemotenessScorer {
       for (let i = 0; i <= lastIndex; i++) {
         const arrival = walk[i];
         if (arrival === undefined) continue;
-        const departure = walk[i + 1];
-        const score =
-          i === 0 || departure === undefined
-            ? 2 * arrival.legCost // first POI, or last POI (no segment out)
-            : arrival.legCost + departure.legCost;
+
+        // `walk[i].legCost` is the leg that arrived at Pi. For i = 0 that is
+        // the leg in from the random plains start, which does not count — so
+        // the first POI has no inbound segment.
+        const inbound = i === 0 ? null : arrival.legCost;
+        const outbound = walk[i + 1]?.legCost ?? null;
+
+        let score: number;
+        if (inbound === null && outbound === null) {
+          score = 0; // single-POI walk: no inter-POI segment exists
+        } else if (inbound === null) {
+          score = 2 * (outbound as number); // first POI
+        } else if (outbound === null) {
+          score = 2 * inbound; // last POI
+        } else {
+          score = inbound + outbound;
+        }
+
         totals.set(arrival.target, (totals.get(arrival.target) ?? 0) + score);
       }
       walk = [];

@@ -14,18 +14,13 @@ Nothing below was resolved by picking something reasonable.
 **Answered so far:** all four of GDD.md §12's own open items, and Q1–Q17.
 `pending` in the config is empty.
 
-**Outstanding: one unconfirmed reading.** Q13 and Q17, both previously held open
-for confirmation, are now confirmed. What remains is the wrinkle under Q1, which
-has not been answered: whether "double the length of the first segment" means
-the leg in from the random plains start (implemented) or the first inter-POI
-segment. It moves only the first POI's score — roughly 1–2% of a POI's total
-over 100 runs — and it is the `i === 0` branch in
-`packages/sim/src/remoteness.ts`.
+**Outstanding: none.** Every question in this register is answered, including
+the three readings that were held open for confirmation — Q1's first-segment
+wrinkle, Q13 and Q17 — and the config's `pending` block is empty.
 
-Everything else is settled and the config's `pending` block is empty, so the
-next session's work is implementation against a settled spec rather than more
-design review. `docs/ARCHITECTURE.md` §11 lists what to pick up and in what
-order.
+The next session's work is implementation against a settled spec rather than
+more design review. `docs/ARCHITECTURE.md` §11 lists what to pick up and in what
+order; items 1–5 there depend on nothing unresolved.
 
 ---
 
@@ -52,34 +47,32 @@ follows from the two answers; it is recorded, not re-opened.
 
 [SOURCE §5.1, chat] "A POI's score is the sum of the length of the segment that
 lead to it during the walk, and the segment that lead out of it. For the first
-POI it's double the length of the first segment, and for the last one it's double
-the length of the last segment."
+POI it's double the length of the first segment, and for the last one it's
+double the length of the last segment."
 
-Implemented as `segmentSumRemotenessScorer()`. For POIs `P1 … Pn` over segments
-`s1 … sn`, where `si` is the leg that arrived at `Pi`:
+On the follow-up: the segments that count are the ones **between POIs** — the
+leg in from the random plains start is discarded, so both boundary cases are the
+same rule, "missing one neighbour, so double the one you have".
+
+Implemented as `segmentSumRemotenessScorer()`. For POIs `P1 … Pn` over inter-POI
+segments `t1 … t(n−1)`, where `ti` runs from `Pi` to `P(i+1)`:
 
 ```
-score(P1) = 2 × s1
-score(Pi) = si + s(i+1)    for 1 < i < n
-score(Pn) = 2 × sn
+score(P1) = 2 × t1
+score(Pi) = t(i−1) + ti     for 1 < i < n
+score(Pn) = 2 × t(n−1)
 ```
 
 Summed across all `REMOTENESS_SIMULATION_RUNS` walks, then min-max normalised.
 Sum vs. mean doesn't matter — they differ by a constant and normalisation is
-invariant under it.
+invariant under it. A single-POI walk has no inter-POI segment and scores 0; it
+cannot arise on a real map, but the arithmetic is defined.
 
-This changed the `RemotenessScorer` interface: it now has `beginWalk` /
-`endWalk`, since "first POI" and "last POI" are only meaningful against walk
-boundaries.
+Verified against four worked cases, including one confirming the start leg has
+no effect on any score.
 
-**One wrinkle, flagged not resolved.** "Double the length of the first segment"
-is implemented literally as `2 × s1`, where `s1` is the leg in from the random
-plains start. It could instead have meant the first *inter-POI* segment
-(`P1 → P2`), discarding the start leg — which would make both boundary cases
-symmetric ("missing one neighbour, so double the one you have"), whereas the
-literal reading has `P1` ignore a real outgoing segment. The two differ only in
-the first POI's score, so roughly 1–2% of a POI's total over 100 runs. Cheap to
-switch: it's the `i === 0` branch in `packages/sim/src/remoteness.ts`.
+This changed the `RemotenessScorer` interface: it has `beginWalk` / `endWalk`,
+since "first POI" and "last POI" are only meaningful against walk boundaries.
 
 ### Q2. ~~How does §5.2's proportionality become a guard strength?~~ — **answered, implemented**
 

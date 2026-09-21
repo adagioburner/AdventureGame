@@ -261,9 +261,10 @@ makes explicit: §5.1's walk is pure geometry — turn structure, stamina and
 skills play no part — while a rollout leg is a sequence of real turns. What they
 share is the target chooser and the cost metric, which is what §9 asks for.
 
-The remoteness *scorer* is still injected — the scoring rule is now specified
-and implemented as `segmentSumRemotenessScorer()` (a POI scores its inbound plus
-its outbound segment; first and last POI double the one they have), but keeping
+The remoteness *scorer* is still injected — the scoring rule is specified and
+implemented as `segmentSumRemotenessScorer()` (a POI scores its inbound plus its
+outbound **inter-POI** segment, with the first and last POI doubling the one
+they have; the leg in from the random plains start is discarded) — but keeping
 it behind the interface means a variant stays a one-liner. The interface carries
 `beginWalk`/`endWalk`, because "first POI" and "last POI" are only meaningful
 against walk boundaries. [SOURCE §9, chat] every seat is simulated by this one policy — there is no
