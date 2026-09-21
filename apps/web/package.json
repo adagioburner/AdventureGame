@@ -1,0 +1,11 @@
+{
+  "name": "@adventure/web",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@adventure/config": "workspace:*",
+    "@adventure/core": "workspace:*",
+    "@adventure/protocol": "workspace:*"
+  }
+}

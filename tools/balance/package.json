@@ -1,0 +1,13 @@
+{
+  "name": "@adventure/balance",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@adventure/ai": "workspace:*",
+    "@adventure/config": "workspace:*",
+    "@adventure/core": "workspace:*",
+    "@adventure/mapgen": "workspace:*",
+    "@adventure/sim": "workspace:*"
+  }
+}

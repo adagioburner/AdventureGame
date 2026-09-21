@@ -1,0 +1,141 @@
+import type { GameConfig } from '@adventure/config';
+import type { GameState, NodeId, PlayerId, Rng } from '@adventure/core';
+import { closestPoiCandidates } from '@adventure/sim';
+import type { ActionEnumerator, MctsBranch, MctsNode, TreePolicy, TurnReachability } from '../types.ts';
+
+/**
+ * [SOURCE §12.2, chat] "For everything else please use sensible defaults that
+ * are recommended for standard MCTS implementations."
+ *
+ * That default is UCT — UCB1 applied to the tree:
+ *
+ *   value(child) = child.totalValue / child.visits
+ *                + c × sqrt( ln(parent.visits) / child.visits )
+ *
+ * with an unvisited child taken first (its term is infinite). The final move is
+ * the **most-visited** child rather than the highest-valued one — the "robust
+ * child" rule, which is the standard recommendation because visit counts are
+ * far less noisy than value estimates at the end of a fixed time budget.
+ *
+ * Ties are broken with the injected `Rng`, so a search is reproducible from its
+ * seed like everything else in this repo.
+ *
+ * √2 is the right constant here because the evaluators normalise values into
+ * [0, 1] by dividing by total map gold (OPEN_QUESTIONS Q14) — the range UCB1's
+ * derivation assumes. The two settings are coupled.
+ */
+export function uctTreePolicy(explorationConstant: number): TreePolicy {
+  return {
+    name: 'uct',
+
+    select(node: MctsNode, rng: Rng): MctsNode {
+      if (node.children.length === 0) {
+        throw new RangeError('uctTreePolicy.select called on a node with no children');
+      }
+      return argMaxWithRandomTieBreak(
+        node.children,
+        (child) =>
+          child.visits === 0
+            ? Number.POSITIVE_INFINITY
+            : child.totalValue / child.visits +
+              explorationConstant * Math.sqrt(Math.log(node.visits) / child.visits),
+        rng,
+      );
+    },
+
+    bestChild(root: MctsNode): MctsNode {
+      // Robust child: most visits, mean value as the tiebreak. Deterministic —
+      // no `Rng` is threaded here, and the final move should not be a coin flip.
+      let best: MctsNode | null = null;
+      for (const child of root.children) {
+        if (best === null || beats(child, best)) best = child;
+      }
+      if (best === null) {
+        throw new RangeError('uctTreePolicy.bestChild called on a node with no children');
+      }
+      return best;
+    },
+  };
+}
+
+function meanValue(node: MctsNode): number {
+  return node.visits === 0 ? 0 : node.totalValue / node.visits;
+}
+
+function beats(candidate: MctsNode, incumbent: MctsNode): boolean {
+  if (candidate.visits !== incumbent.visits) return candidate.visits > incumbent.visits;
+  return meanValue(candidate) > meanValue(incumbent);
+}
+
+function argMaxWithRandomTieBreak<T>(items: readonly T[], score: (item: T) => number, rng: Rng): T {
+  let best: T[] = [];
+  let bestScore = Number.NEGATIVE_INFINITY;
+  for (const item of items) {
+    const value = score(item);
+    if (value > bestScore) {
+      bestScore = value;
+      best = [item];
+    } else if (value === bestScore) {
+      best.push(item);
+    }
+  }
+  const first = best[0];
+  if (first === undefined) throw new RangeError('argMax over an empty collection');
+  return best.length === 1 ? first : rng.pick(best);
+}
+
+/**
+ * [SOURCE §12.2, chat] "These 10 POIs to explore will be the closest at the
+ * time (among those that have not been claimed at that point of time in the
+ * game)", plus: "rest is a branch as well. Let us prune it if there are at
+ * least MIN_REACHABLE_NODES_FOR_REST = 3 POIs reachable in one turn."
+ *
+ * Both halves are here. Targets are recomputed per node against that node's
+ * state, so a POI claimed earlier in the searched line is no longer a branch
+ * further down it; and the rest branch is added only when fewer than
+ * `MIN_REACHABLE_NODES_FOR_REST` of those targets can actually be reached this
+ * turn — which is exactly when a player is stamina-bound and resting is worth
+ * considering.
+ *
+ * Note the reachability test runs over the pruned target list, not every POI on
+ * the map: a distant reachable POI outside the closest 10 is not a branch, so
+ * counting it would let rest be pruned on the strength of a target the search
+ * cannot take.
+ */
+export function closestUnclaimedPoiEnumerator(
+  config: GameConfig,
+  reachability: TurnReachability,
+): ActionEnumerator {
+  return {
+    name: 'closest-unclaimed-pois+rest',
+    enumerate(state: GameState, subject: PlayerId): readonly MctsBranch[] {
+      const player = state.players.find((candidate) => candidate.id === subject);
+      if (player === undefined) throw new RangeError(`no such player ${subject}`);
+
+      const eligible = unclaimedPoiNodesOf(state);
+      const ranked = closestPoiCandidates(state.map.graph, player.position, eligible, config);
+      const targets = ranked.slice(0, config.ai.MCTS_NODE_EXPANSION_PRUNING);
+
+      const branches: MctsBranch[] = targets.map((target) => ({ kind: 'target', target }));
+
+      const reachable = targets.filter((target) =>
+        reachability.isReachableThisTurn(state, subject, target),
+      ).length;
+      if (reachable < config.ai.MIN_REACHABLE_NODES_FOR_REST) {
+        branches.push({ kind: 'rest' });
+      }
+      return branches;
+    },
+  };
+}
+
+/** POIs whose reward is still unclaimed (§4.5) — the eligible target set. */
+export function unclaimedPoiNodesOf(state: GameState): ReadonlySet<NodeId> {
+  const nodes = new Set<NodeId>();
+  for (let index = 0; index < state.map.pois.length; index++) {
+    const poi = state.map.pois[index];
+    if (poi === undefined) continue;
+    if (state.poiRuntime[index]?.claimedBy === null) nodes.add(poi.node);
+  }
+  return nodes;
+}
