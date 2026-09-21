@@ -61,7 +61,7 @@ export interface GenerationContext {
    */
   readonly rng: Rng;
   readonly seed: Seed;
-  /** Injected because its definition is still open — see OPEN_QUESTIONS Q1. */
+  /** Injected so a scoring variant stays a one-liner; see OPEN_QUESTIONS Q1. */
   readonly remotenessScorer: () => RemotenessScorer;
 }
 

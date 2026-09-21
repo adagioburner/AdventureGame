@@ -14,10 +14,18 @@ Nothing below was resolved by picking something reasonable.
 **Answered so far:** all four of GDD.md §12's own open items, and Q1–Q17.
 `pending` in the config is empty.
 
-**Outstanding:** Q11 (hybrid evaluator, future experiment), Q13 (zero-length
-move), Q14 (UCB1 reward scale), Q15 (map upload vs. regenerate), Q16 and Q17
-(the two blocking `search()`), plus
-Q9a (stamina units per surplus leaf?).
+**Outstanding: one unconfirmed reading.** Q13 and Q17, both previously held open
+for confirmation, are now confirmed. What remains is the wrinkle under Q1, which
+has not been answered: whether "double the length of the first segment" means
+the leg in from the random plains start (implemented) or the first inter-POI
+segment. It moves only the first POI's score — roughly 1–2% of a POI's total
+over 100 runs — and it is the `i === 0` branch in
+`packages/sim/src/remoteness.ts`.
+
+Everything else is settled and the config's `pending` block is empty, so the
+next session's work is implementation against a settled spec rather than more
+design review. `docs/ARCHITECTURE.md` §11 lists what to pick up and in what
+order.
 
 ---
 
@@ -207,14 +215,17 @@ guarding and they are not in it.
 
 [SOURCE §9a, chat] "One stamina per leaf." `OVERFLOW_LEAF_STAMINA_UNITS = 1`.
 
-Worth measuring before relying on this as *the* route stamina reaches the map:
-you expected ~5 stamina points, and the total is not fixed — **it can well be
-zero.** Leaf count is 30–45 against quotas of 25/20/15 over terrain shares of
-45%/30%/25%, so a proportional spread (≈20/13/11 at 45 leaves) overflows nothing
-at all. Overflow needs leaves concentrated in one terrain at roughly 1.3–2× its
-area share, which happens but is not the typical map. The harness should report
-the distribution; if stamina needs to be reliably present, §4.2's "add later as
-a config edit" is the route that delivers it.
+On my flag that the total can be zero — a proportional spread of 30–45 leaves
+over quotas of 25/20/15 overflows nothing at all — [SOURCE §4.2, chat]: "right
+now the configuration for stamina is 0, but we may change the rewards balance
+and add a non-zero default number of stamina rewards." So surplus-leaf stamina
+is incidental, and the §4.2 table is where stamina arrives properly when the
+balance changes.
+
+Worth knowing for that edit: adding a stamina row is a config change but **not a
+purely additive one**. Each terrain's `poiCount` column must sum to
+`POI_COUNT[terrain]`, so giving stamina POIs means taking them from another kind
+on that terrain. `validateRuleset` catches it either way.
 
 ### Q10. ~~The tree policy also needs an action enumeration~~ — **answered with §12.2**
 
@@ -238,23 +249,17 @@ skill level* — a natural thing to tune.
 a POI. All players start from the same spot." `chooseStartingNode(map, rng)`,
 with its `Rng` derived from the map seed so the start point replays with the map.
 
-### Q13. ~~Is a zero-length move a legal action?~~ — **answered**
+### Q13. ~~Is a zero-length move a legal action?~~ — **answered, confirmed**
 
 [SOURCE §7/§8, chat] "A zero-length move is legal, one can use it to fight the
-same guard again. When one rests to regain stamina, that is also a zero length
-move."
+same guard again", and on the follow-up: "resting means taking no action,
+including no interaction with a POI, so it is different."
 
 `MoveAction.path` may be empty, and §8's "remain stationed on the node" is
 expressed that way: the turn still ends on the POI, so interaction re-triggers
-and the player gets another roll.
-
-**One reading recorded, because it is a real decision rather than a formality:**
-rest and a zero-length move both leave the player in place but stay *distinct
-actions*, since §7 gives rest "no movement/interaction". So a player camped on a
-guarded POI chooses each turn between another attempt (zero-length move, no
-stamina) and recovering (rest, `REST_STAMINA_GAIN`, no roll) — rather than
-getting both. If you meant rest to re-roll the guard too, say so; that would
-make rest strictly dominant on such a node, which is why I read it the other way.
+and the player gets another roll. Rest stays a distinct action with no
+interaction, so a player camped on a guarded POI chooses each turn between
+another attempt and recovering stamina.
 
 ---
 
@@ -292,27 +297,27 @@ pruned on the strength of an option that does not exist in the tree.
 The reachability test itself is injected (`TurnReachability`) because it needs
 `previewPath`, which is not written yet. The rule is.
 
-### Q17. ~~Macro-action or single turn?~~ — **answered, implemented**
+### Q17. ~~Macro-action or single turn?~~ — **answered, confirmed**
 
 [SOURCE §9, chat] "Selecting a POI is a macro-action during simulation rollout.
 The simulated player keeps moving to the chosen POI without making new decision
-until it's reached or claimed by a different player."
+until it's reached or claimed by a different player." Confirmed on the follow-up
+to cover **tree expansion** as well, so a tree edge and a rollout leg mean the
+same thing and node values compose.
 
 `macroAdvanceToTarget` ends on exactly three conditions — `arrived`,
 `target_claimed_by_other`, `terminal` — with every turn in between going through
 `applyAction`, and the other seats taking their own turns as they come. One
-macro-action is one tree edge, which is what keeps the tree shallow enough to
-search in ten seconds: a node is a real decision point rather than a single step.
+macro-action is one tree edge, which keeps the tree shallow enough to search in
+ten seconds: a node is a real decision point, not a single step. `search()`
+returns only the first turn of the chosen branch, since the session layer
+commits one turn at a time.
 
-`search()` returns only the **first turn** of the chosen branch, since the
-session layer commits one turn at a time; the rest is re-derived on the AI's
-next turn.
-
-**One reading to confirm, cheap to change:** you specified the macro-action
-"during simulation rollout". Tree expansion uses the same semantics here,
-because a tree edge and a rollout leg have to mean the same thing for node
-values to compose — but that is inferred from the rollout answer rather than
-stated for the tree.
+[SOURCE §9, chat] "The same holds for remoteness calculation." It already did —
+§5.1's walk commits to a target and makes no new decision on the way. The one
+clause that cannot transfer is "or claimed by a different player": a remoteness
+walk has a single walker and no players, and remoteness is a property of the map,
+so no game state can cut a leg short.
 
 ---
 

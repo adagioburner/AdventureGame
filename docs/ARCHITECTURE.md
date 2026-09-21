@@ -351,11 +351,14 @@ rollout policy call. Three consumers, one ranking kernel, differing only in K
 (10 for tree expansion, `CLOSE_CANDIDATE_COUNT` = 5 for rollouts, all POIs for
 remoteness) and in what they do with the ranked list.
 
-**A branch is a macro-action.** [SOURCE §9, chat] taking a target means "the
-simulated player keeps moving to the chosen POI without making new decision
-until it's reached or claimed by a different player", so one tree edge spans
-several turns and ends on one of three outcomes — `arrived`,
-`target_claimed_by_other`, `terminal`. That is what keeps the tree shallow
+**A branch is a macro-action**, in the tree and in the rollout alike. [SOURCE §9,
+chat] taking a target means "the simulated player keeps moving to the chosen POI
+without making new decision until it's reached or claimed by a different
+player", so one tree edge spans several turns and ends on one of three
+outcomes — `arrived`, `target_claimed_by_other`, `terminal`. The same commitment
+governs §5.1's remoteness walk, which already worked this way; only the
+"claimed by another player" exit has no counterpart there, since that walk has
+no players in it. That is what keeps the tree shallow
 enough to search in ten seconds: a node is a real decision point, not a single
 step. `search()` returns only the *first* turn of the chosen branch, since the
 session layer commits one turn at a time.

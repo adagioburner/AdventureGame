@@ -106,6 +106,13 @@ function remotenessDriver(onVisit: (visit: WalkVisit) => void): WalkDriver<Remot
     // charges the weighted path cost. Turn structure, stamina and skills play
     // no part here — that is what distinguishes it from the §9 rollout, which
     // shares the target chooser but advances through the real rules.
+    //
+    // [SOURCE §9, chat] The macro-action commitment holds here too: once a
+    // target is chosen the walker goes there and makes no new decision on the
+    // way, which is exactly what this does. The rollout's other exit — "or
+    // claimed by a different player" — has no counterpart, because a remoteness
+    // walk has a single walker and no players at all. Remoteness is a property
+    // of the map, so nothing about a game state can cut a leg short.
     advance: (cursor, target: PoiCandidate) => {
       cumulative += target.cost;
       onVisit({ target: target.node, legCost: target.cost, cumulativeCost: cumulative, order: order++ });

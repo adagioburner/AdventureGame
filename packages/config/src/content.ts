@@ -12,8 +12,15 @@ import type { GameContent, RewardTable } from './types.ts';
  *      group one guaranteed unit before step 3 distributes the remainder.
  *
  * Note what is *absent*: `stamina` appears in §4.1's seven reward kinds but in
- * no row of §4.2, so v1 content places no stamina rewards on the map. The
- * engine supports the kind regardless. Flagged as OPEN_QUESTIONS Q5.
+ * no row of §4.2. [SOURCE §4.2, chat] that is deliberate — "right now the
+ * configuration for stamina is 0, but we may change the rewards balance and add
+ * a non-zero default number of stamina rewards". The only stamina a v1 map
+ * carries is incidental, from surplus leaf nodes (§3/§9, chat).
+ *
+ * Adding a stamina row later is a config edit, but **not a purely additive
+ * one**: invariant 1 requires each terrain's `poiCount` column to sum to
+ * `POI_COUNT[terrain]`, so giving stamina POIs means taking them from another
+ * kind on that terrain. `validateRuleset` catches it either way.
  */
 export const DEFAULT_REWARD_TABLE: RewardTable = {
   plains: [

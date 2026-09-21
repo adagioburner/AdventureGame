@@ -64,8 +64,7 @@ export interface PoiPlacementStrategy {
  * and they are not in it. They are ordinary POIs otherwise — the remoteness
  * walk visits them and the AI targets them like any other.
  *
- * How many units each is not specified; see `OVERFLOW_LEAF_STAMINA_UNITS` and
- * OPEN_QUESTIONS Q9a.
+ * [SOURCE §9a, chat] One stamina unit each — `OVERFLOW_LEAF_STAMINA_UNITS`.
  */
 export function overflowLeafPois(
   _draft: MapDraft,

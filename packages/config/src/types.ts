@@ -68,14 +68,15 @@ export interface PoiConfig {
    *
    * [SOURCE §9a, chat] "One stamina per leaf" — confirmed.
    *
-   * How much stamina a map ends up carrying therefore depends on how many
-   * leaves overflow, which is **not fixed and can well be zero**. Leaf count is
-   * 30–45 against quotas of 25/20/15 over terrain shares of 45%/30%/25%, so a
-   * proportional spread of leaves (≈20/13/11 at 45 leaves) overflows nothing.
-   * Overflow needs leaves concentrated in one terrain at roughly 1.3–2× its
-   * area share. Worth measuring in the balancing harness before relying on this
-   * as the way stamina reaches the map — §4.2's "add later as a config edit" is
-   * the route that delivers it reliably.
+   * How much stamina a map carries therefore depends on how many leaves
+   * overflow, which is not fixed and can well be zero — a proportional spread
+   * of 30–45 leaves over quotas of 25/20/15 overflows nothing at all.
+   *
+   * [SOURCE §4.2, chat] That is accepted: "right now the configuration for
+   * stamina is 0, but we may change the rewards balance and add a non-zero
+   * default number of stamina rewards." So surplus-leaf stamina is incidental,
+   * and the §4.2 table is where stamina will arrive properly when the balance
+   * changes.
    */
   readonly OVERFLOW_LEAF_STAMINA_UNITS: number;
   /**

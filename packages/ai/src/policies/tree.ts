@@ -20,9 +20,9 @@ import type { ActionEnumerator, MctsBranch, MctsNode, TreePolicy, TurnReachabili
  * Ties are broken with the injected `Rng`, so a search is reproducible from its
  * seed like everything else in this repo.
  *
- * See the caveat on `MCTS_EXPLORATION_CONSTANT`: UCB1's √2 assumes values in
- * [0, 1], and gold is not. That is a tuning matter (OPEN_QUESTIONS Q14), not a
- * reason to deviate from the standard formula here.
+ * √2 is the right constant here because the evaluators normalise values into
+ * [0, 1] by dividing by total map gold (OPEN_QUESTIONS Q14) — the range UCB1's
+ * derivation assumes. The two settings are coupled.
  */
 export function uctTreePolicy(explorationConstant: number): TreePolicy {
   return {

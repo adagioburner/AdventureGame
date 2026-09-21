@@ -29,11 +29,10 @@ import type { MctsNode, MctsOptions } from './types.ts';
  * rest of a macro-action is re-derived on the AI's next turn, when the search
  * runs again from the new state.
  *
- * One reading to confirm: [SOURCE §9, chat] specified the macro-action "during
- * simulation rollout". Tree expansion uses the same semantics here, because a
- * tree edge and a rollout leg have to mean the same thing for node values to
- * compose — but that is an inference from the rollout answer, not something
- * stated for the tree. See OPEN_QUESTIONS Q17.
+ * [SOURCE §9, chat] Tree expansion uses the same macro-action semantics as the
+ * rollout — confirmed, so a tree edge and a rollout leg mean the same thing and
+ * node values compose. The same commitment also governs the §5.1 remoteness
+ * walk, which already worked this way.
  */
 export function search(_root: GameState, _options: MctsOptions): TurnAction {
   throw new NotImplementedError('MCTS search', 'GDD.md §9, §12.2');

@@ -50,13 +50,9 @@ export function runMapBatch(_options: BatchOptions): readonly MapGenerationRepor
 /**
  * Play AI-vs-AI games to completion and report outcomes.
  *
- * Blocked until §12.2 is answered — without a tree policy there is no AI to
- * play with. The signature is here so the rest of the harness can be built and
- * the seam is visible.
+ * The policies, evaluators and branch rules all exist now; what this waits on is
+ * `search()`'s four-phase loop and `macroAdvanceToTarget`, not a design answer.
  */
 export function runSelfPlayBatch(_options: BatchOptions): never {
-  throw new NotImplementedError(
-    'runSelfPlayBatch — requires the MCTS tree policy',
-    'GDD.md §12.2 / docs/OPEN_QUESTIONS.md Q10',
-  );
+  throw new NotImplementedError('runSelfPlayBatch — requires MCTS search()', 'GDD.md §9');
 }

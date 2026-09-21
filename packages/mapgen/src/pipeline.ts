@@ -7,7 +7,7 @@ import { GenerationRejected, type GenerationContext, type MapDraft } from './typ
 export interface GenerateMapOptions {
   readonly seed: Seed;
   readonly ruleset: Ruleset;
-  /** Injected because the scoring rule is still open — OPEN_QUESTIONS Q1. */
+  /** Injected so a scoring variant stays a one-liner; see OPEN_QUESTIONS Q1. */
   readonly remotenessScorer: () => RemotenessScorer;
 }
 

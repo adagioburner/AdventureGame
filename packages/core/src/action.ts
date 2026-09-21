@@ -30,6 +30,9 @@ export interface RestAction {
 }
 
 /**
+ * [SOURCE §7, chat] "Resting means taking no action, including no interaction
+ * with a POI, so it is different."
+ *
  * Rest and a zero-length move both leave the player where they are, but they
  * are **not** the same action, and the difference is a real decision for a
  * player camped on a guarded POI:
