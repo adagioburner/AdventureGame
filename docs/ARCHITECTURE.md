@@ -372,15 +372,17 @@ enough to search in ten seconds: a node is a real decision point, not a single
 step. `search()` returns only the *first* turn of the chosen branch, since the
 session layer commits one turn at a time.
 
-**Values are normalised.** [SOURCE §9, chat] every evaluator divides gold by the
-total gold placed on the map, putting every backpropagated value in [0, 1] —
-which is what makes `MCTS_EXPLORATION_CONSTANT` = √2 correct, since UCB1's
-derivation assumes that range. The two settings are coupled; changing one
-without the other breaks the exploration/exploitation balance.
+**Values are normalised.** The invariant every evaluator holds to is the
+*range*: a backpropagated value is always in [0, 1], which is what makes
+`MCTS_EXPLORATION_CONSTANT` = √2 correct, since UCB1's derivation assumes it.
+How each one gets there differs. [SOURCE §9, chat] gold terms divide by the
+total gold placed on the map; the estimated evaluator's skill term divides by
+the total skill units placed, and its two terms are combined by weights summing
+to 1. The two settings are coupled; changing normalisation without revisiting
+the constant breaks the exploration/exploitation balance.
 
-The skill term has its own divisor, the total skill units placed, and
-[SOURCE §9, chat] "number of skills" is the **sum of the five skill levels**
-rather than a count of skills held.
+[SOURCE §9, chat] "Number of skills" in that skill term is the **sum of the five
+skill levels** rather than a count of skills held.
 
 One signature detail worth flagging, because it is the kind of thing that is
 expensive to change later:
@@ -425,6 +427,12 @@ gone, because what it tuned by hand is `progress`.
 [SOURCE §9, PR #5 review] **v1 runs the simulated one**; the other two are
 there to experiment with once it works, which is why `SearchOptions.evaluator`
 is injected rather than defaulted.
+
+One thing for whoever writes `search()`'s simulate phase: the estimated
+evaluator never reads `rolledOut`, so a search configured with it would pay for
+a rollout and throw it away. Skipping the rollout when the evaluator does not
+use it is a search-level optimisation, not an evaluator change — the interface
+deliberately hands over both, and only the evaluator knows which it wants.
 
 The hybrid is **composed from the other two** rather than reimplementing either,
 so a change to one cannot leave it computing something else.

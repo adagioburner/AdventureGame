@@ -201,12 +201,12 @@ export interface AiConfig {
    * are recommended for standard MCTS implementations." √2 is UCB1's textbook
    * constant, so UCT with c = √2 is that default.
    *
-   * √2 is only the right constant because values are normalised: [SOURCE §9,
-   * chat] every evaluator divides gold by the total gold on the map, putting
-   * every backpropagated value in [0, 1], which is exactly what UCB1's
-   * derivation assumes. (The estimated evaluator's skill term has its own
-   * divisor and its weights sum to 1, so it lands in the same range; see Q18.)
-   * Changing one without the other will break the exploration/exploitation
+   * √2 is only the right constant because every evaluator returns a value in
+   * [0, 1], which is exactly what UCB1's derivation assumes. The invariant is
+   * that range, not any one divisor: [SOURCE §9, chat] gold terms divide by the
+   * total gold on the map, while the estimated evaluator's skill term divides
+   * by total skill units and its weights sum to 1 (Q18). Changing normalisation
+   * without revisiting this constant will break the exploration/exploitation
    * balance.
    */
   readonly MCTS_EXPLORATION_CONSTANT: number;
