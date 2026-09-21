@@ -1,0 +1,143 @@
+lockfileVersion: '9.0'
+
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
+importers:
+
+  .:
+    devDependencies:
+      typescript:
+        specifier: ^6.0.0
+        version: 6.0.3
+
+  apps/server:
+    dependencies:
+      '@adventure/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
+      '@adventure/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@adventure/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@adventure/mapgen':
+        specifier: workspace:*
+        version: link:../../packages/mapgen
+      '@adventure/protocol':
+        specifier: workspace:*
+        version: link:../../packages/protocol
+      '@adventure/session':
+        specifier: workspace:*
+        version: link:../../packages/session
+
+  apps/web:
+    dependencies:
+      '@adventure/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@adventure/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@adventure/protocol':
+        specifier: workspace:*
+        version: link:../../packages/protocol
+
+  packages/ai:
+    dependencies:
+      '@adventure/config':
+        specifier: workspace:*
+        version: link:../config
+      '@adventure/core':
+        specifier: workspace:*
+        version: link:../core
+      '@adventure/sim':
+        specifier: workspace:*
+        version: link:../sim
+
+  packages/config: {}
+
+  packages/core:
+    dependencies:
+      '@adventure/config':
+        specifier: workspace:*
+        version: link:../config
+
+  packages/mapgen:
+    dependencies:
+      '@adventure/config':
+        specifier: workspace:*
+        version: link:../config
+      '@adventure/core':
+        specifier: workspace:*
+        version: link:../core
+      '@adventure/sim':
+        specifier: workspace:*
+        version: link:../sim
+
+  packages/protocol:
+    dependencies:
+      '@adventure/config':
+        specifier: workspace:*
+        version: link:../config
+      '@adventure/core':
+        specifier: workspace:*
+        version: link:../core
+
+  packages/session:
+    dependencies:
+      '@adventure/ai':
+        specifier: workspace:*
+        version: link:../ai
+      '@adventure/config':
+        specifier: workspace:*
+        version: link:../config
+      '@adventure/core':
+        specifier: workspace:*
+        version: link:../core
+      '@adventure/mapgen':
+        specifier: workspace:*
+        version: link:../mapgen
+      '@adventure/protocol':
+        specifier: workspace:*
+        version: link:../protocol
+
+  packages/sim:
+    dependencies:
+      '@adventure/config':
+        specifier: workspace:*
+        version: link:../config
+      '@adventure/core':
+        specifier: workspace:*
+        version: link:../core
+
+  tools/balance:
+    dependencies:
+      '@adventure/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
+      '@adventure/config':
+        specifier: workspace:*
+        version: link:../../packages/config
+      '@adventure/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@adventure/mapgen':
+        specifier: workspace:*
+        version: link:../../packages/mapgen
+      '@adventure/sim':
+        specifier: workspace:*
+        version: link:../../packages/sim
+
+packages:
+
+  typescript@6.0.3:
+    resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
+    engines: {node: '>=14.17'}
+    hasBin: true
+
+snapshots:
+
+  typescript@6.0.3: {}
