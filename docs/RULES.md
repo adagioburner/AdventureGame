@@ -166,7 +166,7 @@ backpropagated value means (`packages/sim/src/rollout.ts`).
 worth keeping apart (`packages/ai/src/policies/evaluators.ts`):
 
 - **simulated** — the subject's gold once the rollout above has run to gold
-  exhaustion. `goldAfterSimulationEvaluator()`. This is §9's specified default
+  exhaustion. `simulatedRolloutEvaluator()`. This is §9's specified default
   and the one v1 uses; the other two are there to experiment with.
 - **estimated** — no rollout at all: the subject's gold and skills as they stand
   at the node being evaluated, weighted by how far the game has run, so skills
