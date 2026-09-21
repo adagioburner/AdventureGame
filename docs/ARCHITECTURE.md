@@ -254,7 +254,7 @@ what actually differs rather than by who calls it:
 | `candidates.ts` | **The shared kernel.** Rank eligible POIs by weighted terrain cost; pick uniformly among the `CLOSE_CANDIDATE_COUNT` closest. Both §5.1 and §9 are exactly these two operations. |
 | `walk.ts` | The generic loop, plus `WalkDriver<TCursor>` — the three things that differ: which POIs are *eligible*, what *advancing* to a target means, and when the walk is *done*. |
 | `remoteness.ts` | §5.1's driver: eligible = unvisited, advance = move straight there charging path cost, done = all POIs visited. Runs `REMOTENESS_SIMULATION_RUNS` walks from a random plains node, then min-max normalises to [0,1]. |
-| `rollout.ts` | §9's driver: eligible = unclaimed, advance = play real turns through `applyAction` (so allowance, stamina, guard rolls and turn boundaries all apply), done = terminal game state. |
+| `rollout.ts` | §9's driver: eligible = unclaimed POIs of any kind, advance = play real turns through `applyAction` (so allowance, stamina, guard rolls and turn boundaries all apply), done = no unclaimed gold left. |
 
 Neither consumer contains a copy of the other's logic. The distinction the split
 makes explicit: §5.1's walk is pure geometry — turn structure, stamina and
@@ -268,10 +268,13 @@ they have; the leg in from the random plains start is discarded) — but keeping
 it behind the interface means a variant stays a one-liner. The interface carries
 `beginWalk`/`endWalk`, because "first POI" and "last POI" are only meaningful
 against walk boundaries. [SOURCE §9, chat] every seat is simulated by this one policy — there is no
-separate opponent model, which deleted an interface — and a rollout plays to a
-terminal state (`playToCompletionTermination`), the standard MCTS default. The
-cost of full playouts against a 10-second budget is flagged in
-[Q6](./OPEN_QUESTIONS.md#q6) rather than pre-empted with a depth cap.
+separate opponent model, which deleted an interface — and a rollout stops **when
+no unclaimed gold remains** (`goldExhaustedTermination`). That is deliberately
+not "all POIs claimed": since gold is the only thing anyone wins with (§1), a
+goldless state is decided, so rollouts end with skill and stamina POIs still on
+the map and skip simulating a settled tail. The terminal test also stops on a
+finished game, because §1's win condition can fire earlier, when a leader's lead
+already exceeds what remains.
 
 **There is one distance metric in the whole repo.** `terrainStepCost` in
 `core/path.ts` (1 plains / 2 forest / 3 mountain, charged on *entering* a node,

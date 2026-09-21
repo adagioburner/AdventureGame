@@ -1,6 +1,7 @@
 import type { GameConfig } from '@adventure/config';
 import {
   NotImplementedError,
+  unclaimedGoldUnits,
   type DiceSource,
   type GameState,
   type NodeId,
@@ -38,31 +39,38 @@ export interface RolloutCursor {
 }
 
 /**
- * When a rollout stops: at a terminal game state.
+ * When a rollout stops.
  *
- * [SOURCE §12.2, chat] "For everything else please use sensible defaults that
- * are recommended for standard MCTS implementations", and [SOURCE §9, chat]
- * "this is the standard implementation of MCTS scoring of nodes". Standard
- * rollouts run to a terminal state, and this game has one: the §1 win condition,
- * which — given [SOURCE §1, chat] that ties resolve once no gold remains — is
- * guaranteed to fire by the time every gold POI is claimed. So a rollout plays
- * until `status === 'finished'`, or until no POI is left to target.
+ * [SOURCE §9, chat] "The rollout stops when there is no gold rewards left on
+ * the map." Since §1 makes gold the only thing anyone wins with, a state with
+ * none left is decided, and simulating the tail where players hoover up the
+ * remaining skill and stamina POIs buys the search nothing. Note that is the
+ * rule — **not** "all POIs claimed": a rollout ends with skill and stamina POIs
+ * still on the map, which is the point, and saves real time against the
+ * 10-second budget.
  *
- * Kept behind an interface anyway, because it is also the obvious lever if
- * rollouts prove too slow: full playouts over ~60 POIs with multi-turn journeys
- * are not cheap against a 10-second budget, and the usual mitigation is a turn
- * or depth cap. That would be a design change (it changes what the value
- * means), so it is not applied pre-emptively. See OPEN_QUESTIONS Q6.
+ * `goldExhaustedTermination` also stops on a finished game, which the engine
+ * imposes rather than the designer: §1's win condition can fire *earlier* than
+ * gold exhaustion, when a leader's lead already exceeds what is left. At that
+ * point the game is over and there is nothing further to simulate. Gold
+ * exhaustion implies a finished game (a tie resolves once nothing remains to
+ * break it, §1 chat), so in practice the first clause is the one that bites.
+ *
+ * Kept behind an interface because it is also the obvious lever if rollouts
+ * prove too slow — a turn or depth cap is the usual mitigation, and it would
+ * change what the backpropagated value means, so it is not applied
+ * pre-emptively.
  */
 export interface RolloutTermination {
   isTerminal(cursor: RolloutCursor, legsTaken: number): boolean;
 }
 
-/** The standard terminal test: play the game out. */
-export function playToCompletionTermination(): RolloutTermination {
+/** The specified terminal test: no unclaimed gold left, or the game is over. */
+export function goldExhaustedTermination(): RolloutTermination {
   return {
     isTerminal(cursor: RolloutCursor): boolean {
-      return cursor.state.status === 'finished';
+      if (cursor.state.status === 'finished') return true;
+      return unclaimedGoldUnits(cursor.state) === 0;
     },
   };
 }

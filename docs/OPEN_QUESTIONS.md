@@ -163,24 +163,34 @@ One possibility is to have extra leaf nodes filled with stamina rewards." The
 §4.2 table is unchanged; stamina's only placement for now is the surplus-leaf
 rule of Q9.
 
-### Q6. When does an MCTS rollout stop? — **half answered**
+### Q6. ~~When does an MCTS rollout stop, and what do the other players do?~~ — **answered, implemented**
 
-You answered the opponent half: [SOURCE §9, chat] "During MCTS rollout moves are
-simulated for all players, AI and human." That removed a whole interface —
+Both halves answered, in two rounds.
+
+**Opponents.** [SOURCE §9, chat] "During MCTS rollout moves are simulated for
+all players, AI and human." That removed a whole interface —
 `OpponentRolloutPolicy` is deleted, every seat is driven by the one rollout
 policy, and `subject` now only says whose gold is read at the end.
 
-**To answer your question back:** that was half of it. The other half was *when
-the rollout stops* — a fixed turn horizon, all POIs claimed, the win condition
-firing, or something else. Your §12.2 instruction to use standard MCTS defaults
-covers it: standard rollouts play to a terminal state, and with Q3 answered this
-game reliably reaches one. So `playToCompletionTermination()` ships as the
-default.
+**Termination.** [SOURCE §9, chat] "The rollout stops when there is no gold
+rewards left on the map." Since §1 makes gold the only thing anyone wins with, a
+state with none left is decided, and simulating the tail where players collect
+the remaining skill and stamina POIs buys the search nothing. Worth being
+explicit that this is *not* "all POIs claimed": a rollout ends with skill and
+stamina POIs still on the map, which is the point, and saves real time against
+the 10-second budget.
 
-Flagging the cost rather than pre-empting it: a full playout over ~60 POIs with
-multi-turn journeys is not cheap against a 10-second budget, and if rollouts
-prove too slow the usual fix is a turn or depth cap. That changes what the
-backpropagated value means, so it stays a config-free seam until you want it.
+`goldExhaustedTermination()` also stops on a finished game. That clause comes
+from the engine rather than from the answer: §1's win condition can fire
+*earlier* than gold exhaustion, when a leader's lead already exceeds what
+remains, and at that point there is nothing left to simulate. Gold exhaustion
+implies a finished game (Q3: a tie resolves once nothing remains to break it),
+so the gold clause is the one that bites in practice.
+
+The cost note stands as a forward-looking flag rather than an open question: if
+rollouts prove too slow, a turn or depth cap is the usual mitigation, and it
+would change what the backpropagated value means — so it is a seam, not a
+default.
 
 ### Q7. ~~How much jitter in the edge-pruning order?~~ — **answered, implemented**
 
