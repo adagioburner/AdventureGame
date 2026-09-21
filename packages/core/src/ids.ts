@@ -20,3 +20,6 @@ export const asUserId = (s: string): UserId => s as UserId;
 
 /** 1-based seat number. Turn order is fixed at game start (§6). */
 export type Seat = number;
+
+// deliberate type error to verify branch protection
+const __verifyProtection: number = "not a number";
