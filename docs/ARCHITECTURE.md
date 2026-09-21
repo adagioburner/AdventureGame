@@ -393,11 +393,33 @@ The evaluator receives **both** the rolled-out result and the node being
 evaluated. Your planned hybrid — `average(gold after simulation, gold now +
 (number of skills) × balancing_constant, at the node being evaluated)` — needs
 "gold now ... at the node being evaluated", which an evaluator that only saw the
-rollout result could not express. `hybridGoldAndSkillsEvaluator()` is written:
-[Q11](./OPEN_QUESTIONS.md#q11) settled that "number of skills" is the sum of all
-five skill levels rather than a count of skills held, and both halves are
-normalised by total map gold per [Q14](./OPEN_QUESTIONS.md#q14) — which puts
-`balancingConstant` in units of *gold per skill level*.
+rollout result could not express. `hybridGoldAndSkillsEvaluator()` is written
+against exactly that: [Q11](./OPEN_QUESTIONS.md#q11) settled that "number of
+skills" is the sum of all five skill levels rather than a count of skills held,
+and both halves are normalised by total map gold per
+[Q14](./OPEN_QUESTIONS.md#q14) — which puts `balancingConstant` in units of
+*gold per skill level*.
+
+**That formula has since been superseded, and the shipped function has not
+caught up yet** — see [Q18](./OPEN_QUESTIONS.md#q18). The weight between gold
+and skills should not be a fixed constant: [SOURCE §9, PR #5 review] "skills are
+important at the beginning of the game, and are worthless at the end", so the
+weight moves with how far the game has run:
+
+```
+value = gold/total_gold × progress + skills/total_skills × (1 − progress)
+        progress = gold claimed by all players / total_gold
+```
+
+Two properties worth having in hand. Both terms are already in [0, 1] and the
+two weights sum to 1, so the result stays in [0, 1] without the separate divisor
+Q14 added — the normalisation UCB1 needs comes out of the shape of the formula.
+And `balancingConstant` disappears: what it was tuning is now `progress`, which
+the game state supplies.
+
+Implementing it is **low priority** ([SOURCE, PR #5 review]), so
+`goldAfterSimulationEvaluator()` remains §9's default and
+`hybridGoldAndSkillsEvaluator()` keeps the Q11/Q14 formula in the meantime.
 
 `search()` documents the four phases (select / expand / simulate / backprop) and
 the `MCTS_TIME_BUDGET_PER_MOVE` loop, and throws: the loop itself is still to be
