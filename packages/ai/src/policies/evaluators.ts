@@ -16,7 +16,7 @@ import type { MctsNode, NodeEvaluator } from '../types.ts';
  * own:
  *
  *  - **simulated** — play random moves until the gold is exhausted, and read
- *    the subject's gold. `goldAfterSimulationEvaluator()`.
+ *    the subject's gold. `simulatedRolloutEvaluator()`.
  *  - **estimated** — the subject's *current* gold and skills, weighted by Q18's
  *    formula. Looks at the node only; no rollout.
  *    `estimatedGoldAndSkillsEvaluator()`.
@@ -26,6 +26,11 @@ import type { MctsNode, NodeEvaluator } from '../types.ts';
  * All three land in [0, 1], which is what Q14 needs for `√2` to be the right
  * `MCTS_EXPLORATION_CONSTANT`: the first two by construction, and the average
  * of two such values trivially.
+ *
+ * [SOURCE §9, PR #5 review] **v1 uses the simulated one.** It is §9's specified
+ * default and the only one the first release is expected to run; the estimated
+ * and hybrid evaluators exist to be experimented with afterwards, which is why
+ * `SearchOptions.evaluator` is injected rather than defaulted.
  */
 
 /**
@@ -70,9 +75,9 @@ function goldProgress(state: GameState): number {
  * **Simulated.** [SOURCE §5, chat] §9's specified default: "the simulated
  * player's gold amount after rollout", normalised per Q14.
  */
-export function goldAfterSimulationEvaluator(): NodeEvaluator {
+export function simulatedRolloutEvaluator(): NodeEvaluator {
   return {
-    name: 'gold-after-simulation',
+    name: 'simulated-rollout',
     evaluate(_node: MctsNode, rolledOut: RolloutCursor, subject: PlayerId): number {
       const player = playerById(rolledOut.state, subject);
       return normalisedGold(rolledOut.state, player.stats.gold);
@@ -120,7 +125,7 @@ export function estimatedGoldAndSkillsEvaluator(): NodeEvaluator {
  * a change to one cannot leave the hybrid computing something else.
  */
 export function hybridGoldAndSkillsEvaluator(): NodeEvaluator {
-  const simulated = goldAfterSimulationEvaluator();
+  const simulated = simulatedRolloutEvaluator();
   const estimated = estimatedGoldAndSkillsEvaluator();
 
   return {

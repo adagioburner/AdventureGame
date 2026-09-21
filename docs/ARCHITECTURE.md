@@ -348,7 +348,7 @@ four are now decided — two by §9 directly, two by §12.2:
 | Seam | Status |
 |---|---|
 | `RolloutPolicy` | **Specified** (§9). `closestPoiRolloutPolicy()` is a thin wrapper over `@adventure/sim`. |
-| `NodeEvaluator` | **Specified default** (§9): gold after simulation. Three ship — simulated, estimated and hybrid; see below. |
+| `NodeEvaluator` | **Specified default** (§9): the simulated rollout, which is what v1 runs. Three ship — simulated, estimated and hybrid; see below. |
 | `TreePolicy` | **Decided** (§12.2): UCT, `MCTS_EXPLORATION_CONSTANT` = √2, most-visited child as the final move. `uctTreePolicy()`. |
 | `ActionEnumerator` | **Decided** (§12.2): the `CLOSE_CANDIDATE_COUNT` (10) closest *unclaimed* POIs, recomputed per node, **plus a rest branch** when fewer than `MIN_REACHABLE_NODES_FOR_REST` (3) of them are reachable this turn. `closestUnclaimedPoiEnumerator()`. |
 
@@ -396,7 +396,7 @@ interface. [SOURCE §9, PR #5 review] The three, and what each looks at
 
 | Evaluation | Reads | |
 |---|---|---|
-| **Simulated** | the rolled-out state | §9's specified default: play random moves until the gold is exhausted, take the subject's gold. `goldAfterSimulationEvaluator()`. |
+| **Simulated** | the rolled-out state | §9's specified default: play random moves until the gold is exhausted, take the subject's gold. `simulatedRolloutEvaluator()`. |
 | **Estimated** | the node | What the subject holds now, gold against skills. No rollout. `estimatedGoldAndSkillsEvaluator()`. |
 | **Hybrid** | both | The average of the two. `hybridGoldAndSkillsEvaluator()`. |
 
@@ -421,6 +421,10 @@ is in [0, 1], because both its terms are and its two weights sum to 1; the
 simulated value is too; so the hybrid's average is as well, which is what
 [Q14](./OPEN_QUESTIONS.md#q14) needs for UCB1's √2. And `balancingConstant` is
 gone, because what it tuned by hand is `progress`.
+
+[SOURCE §9, PR #5 review] **v1 runs the simulated one**; the other two are
+there to experiment with once it works, which is why `SearchOptions.evaluator`
+is injected rather than defaulted.
 
 The hybrid is **composed from the other two** rather than reimplementing either,
 so a change to one cannot leave it computing something else.

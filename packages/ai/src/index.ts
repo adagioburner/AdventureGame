@@ -13,7 +13,7 @@ export * from './runner.ts';
 export { closestPoiRolloutPolicy } from './policies/rollout.ts';
 export { uctTreePolicy, closestUnclaimedPoiEnumerator, unclaimedPoiNodesOf } from './policies/tree.ts';
 export {
-  goldAfterSimulationEvaluator,
+  simulatedRolloutEvaluator,
   estimatedGoldAndSkillsEvaluator,
   hybridGoldAndSkillsEvaluator,
 } from './policies/evaluators.ts';

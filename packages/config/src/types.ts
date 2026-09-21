@@ -202,10 +202,12 @@ export interface AiConfig {
    * constant, so UCT with c = √2 is that default.
    *
    * √2 is only the right constant because values are normalised: [SOURCE §9,
-   * chat] the evaluators divide gold by the total gold on the map, putting
+   * chat] every evaluator divides gold by the total gold on the map, putting
    * every backpropagated value in [0, 1], which is exactly what UCB1's
-   * derivation assumes. Changing one without the other will break the
-   * exploration/exploitation balance.
+   * derivation assumes. (The estimated evaluator's skill term has its own
+   * divisor and its weights sum to 1, so it lands in the same range; see Q18.)
+   * Changing one without the other will break the exploration/exploitation
+   * balance.
    */
   readonly MCTS_EXPLORATION_CONSTANT: number;
   /**

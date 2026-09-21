@@ -361,7 +361,7 @@ value = gold/total_gold × progress + skills/total_skills × (1 − progress)
 
 | Evaluation | What it does |
 |---|---|
-| **Simulated** | "We simulate random moves until all gold is exhausted." §9's specified default. `goldAfterSimulationEvaluator()`. |
+| **Simulated** | "We simulate random moves until all gold is exhausted." §9's specified default. `simulatedRolloutEvaluator()`. |
 | **Estimated** | "Current gold plus current skills, averaged as per the new formula" — the formula above, read entirely from the node. `estimatedGoldAndSkillsEvaluator()`. |
 | **Hybrid** | "The average of the two", as `(afterSimulation + now) / 2` always did. `hybridGoldAndSkillsEvaluator()`. |
 
@@ -398,8 +398,20 @@ POI. The alternative — a theoretical maximum skill level per player — would 
 the term mean something different and never reach 1. Changing it later is a
 one-line change to `totalSkillUnits`.
 
-`goldAfterSimulationEvaluator()` remains §9's specified default; the other two
-are the alternatives the designer planned, now available to switch to.
+**What v1 uses.** [SOURCE §9, PR #5 review] "The plan is to use the simulated
+rollout for node evaluation in v1, and then experiment with other evaluators."
+So `simulatedRolloutEvaluator()` — §9's specified default — is the one the first
+release runs, and the other two exist to be switched in afterwards. That is why
+`SearchOptions.evaluator` is injected with no default: choosing between them is
+a caller's decision, not a hard-coded one.
+
+The three are named the same way everywhere, in the register, in
+`docs/ARCHITECTURE.md` §7 and in the code: **simulated**
+(`simulatedRolloutEvaluator()`), **estimated**
+(`estimatedGoldAndSkillsEvaluator()`) and **hybrid**
+(`hybridGoldAndSkillsEvaluator()`). The simulated one was called
+`goldAfterSimulationEvaluator()` until this PR, which left the code and the
+design using different words for the same thing.
 
 ### Q19. ~~Two constants for one ranking?~~ — **answered, implemented**
 
