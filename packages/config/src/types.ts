@@ -126,8 +126,15 @@ export interface BalancingConfig {
   readonly REMOTENESS_WEIGHT_FOR_DISTRIBUTION: number;
   /**
    * §11 `CLOSE_CANDIDATE_COUNT` — tunable.
-   * Used by the shared random walk (§5.1) and, identically, by the MCTS
-   * rollout policy (§9).
+   * Used by the shared random walk (§5.1), by the MCTS rollout policy (§9)
+   * and, identically, by MCTS tree expansion.
+   *
+   * [SOURCE §12.2, review] The tree originally had a K of its own,
+   * `MCTS_NODE_EXPANSION_PRUNING` = 10. The designer removed it: "We don't
+   * really need two different constants here. We will prune the tree by the
+   * CLOSE_CANDIDATE_COUNT, plus one branch for resting." So all three callers
+   * of `closestPoiCandidates` now share this one number, and tuning it moves
+   * the rollout and the tree together — which is the point.
    */
   readonly CLOSE_CANDIDATE_COUNT: number;
   /** §11 `REMOTENESS_SIMULATION_RUNS` — tunable (100). */
@@ -188,21 +195,6 @@ export interface AiConfig {
   /** §11 `MCTS_TIME_BUDGET_PER_MOVE` — tunable, 10 seconds. Milliseconds. */
   readonly MCTS_TIME_BUDGET_PER_MOVE_MS: number;
   /**
-   * `MCTS_NODE_EXPANSION_PRUNING` — tunable, default 10. Not in §11's original
-   * table; added by the designer when resolving §12.2.
-   *
-   * [SOURCE §12.2, chat] "We will prune the number of next POIs to be used to
-   * expand any node to a value, MCTS_NODE_EXPANSION_PRUNING = 10 (to be tuned).
-   * These 10 POIs to explore will be the closest at the time (among those that
-   * have not been claimed at that point of time in the game)."
-   *
-   * Note this is the *same* ranking the rollout policy and the remoteness walk
-   * use — `closestPoiCandidates` in `@adventure/sim` — just with a different K.
-   * The tree takes all K as branches; the rollout picks one uniformly from
-   * `CLOSE_CANDIDATE_COUNT` (5). One kernel, three callers.
-   */
-  readonly MCTS_NODE_EXPANSION_PRUNING: number;
-  /**
    * `MCTS_EXPLORATION_CONSTANT` — tunable, default √2.
    *
    * [SOURCE §12.2, chat] "For everything else please use sensible defaults that
@@ -225,6 +217,10 @@ export interface AiConfig {
    * So the tree gets a rest branch alongside the POI targets, dropped whenever
    * the player already has three or more targets they can actually reach this
    * turn — resting is only worth searching when movement is constrained.
+   *
+   * [SOURCE §12.2, review] Untouched by the removal of
+   * `MCTS_NODE_EXPANSION_PRUNING`: that collapsed the two Ks, and this is a
+   * threshold on reachability, not a K.
    *
    * Counts reachable POI *targets*, despite the name saying nodes; the name is
    * the designer's.

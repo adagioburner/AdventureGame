@@ -56,17 +56,22 @@ export interface TreePolicy {
  * Which branches the tree expands at a node.
  *
  * [SOURCE §12.2, chat] "We will prune the number of next POIs to be used to
- * expand any node to a value, MCTS_NODE_EXPANSION_PRUNING = 10 (to be tuned).
- * These 10 POIs to explore will be the closest at the time (among those that
- * have not been claimed at that point of time in the game)."
+ * expand any node [...] These POIs to explore will be the closest at the time
+ * (among those that have not been claimed at that point of time in the game)."
  *
  * So a branch is a *POI target*, recomputed at each node against that node's
  * own game state — "closest at the time", "not been claimed at that point in
  * time" — and not a fixed list from the root.
  *
+ * [SOURCE §12.2, review] How many is `CLOSE_CANDIDATE_COUNT`: "We don't really
+ * need two different constants here. We will prune the tree by the
+ * CLOSE_CANDIDATE_COUNT, plus one branch for resting." The tree's own
+ * `MCTS_NODE_EXPANSION_PRUNING` is gone.
+ *
  * This reuses `closestPoiCandidates` from `@adventure/sim`, the same ranking
  * the remoteness walk (§5.1) and the rollout policy (§9) use. Three callers,
- * one kernel; only K and what they do with the result differ.
+ * one kernel, one K; only what they do with the result differs — the tree takes
+ * every candidate as a branch, the rollout picks one uniformly.
  *
  * [SOURCE §12.2, chat] Rest is a branch too — "let us prune it if there are at
  * least MIN_REACHABLE_NODES_FOR_REST = 3 POIs reachable in one turn" — so the

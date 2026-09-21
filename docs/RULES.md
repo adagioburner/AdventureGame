@@ -142,13 +142,14 @@ edge and one rollout leg mean the same thing and node values compose — and the
 tree stays shallow enough to search within the time budget, because a node is a
 real decision point rather than a single step.
 
-**Targets are the K closest unclaimed POIs, picked uniformly at random.** Ranking
-is by the weighted terrain cost above, and the whole thing — rank, then pick
-uniformly among the nearest K — is written once in
+**Targets are the `CLOSE_CANDIDATE_COUNT` closest eligible POIs, picked
+uniformly at random.** Ranking is by the weighted terrain cost above, and the
+whole thing — rank, then pick uniformly among the nearest K — is written once in
 `packages/sim/src/candidates.ts` and shared by three callers: the remoteness
-walk (§5.1, K = `CLOSE_CANDIDATE_COUNT` = 5, over *unvisited* POIs), the rollout
-policy (§9, K = 5, over *unclaimed* POIs) and tree expansion
-(K = `MCTS_NODE_EXPANSION_PRUNING` = 10). Only K and eligibility differ.
+walk (§5.1, over *unvisited* POIs), the rollout policy (§9, over *unclaimed*
+POIs) and tree expansion (also unclaimed). They share the one K as well, so
+tuning `CLOSE_CANDIDATE_COUNT` moves all three together; what differs is
+eligibility, and what each does with the ranked list.
 
 **A rollout stops when no gold rewards are left on the map.** That is the rule,
 and it is specifically *not* "all POIs claimed": a rollout ends with skill and
@@ -171,7 +172,8 @@ written and available to swap in.
 **Around the rollout**, the search selects with UCT, expands one untried branch
 at a time through `applyAction`, and returns the most-visited child of the root
 ("robust child") once `MCTS_TIME_BUDGET_PER_MOVE` (10 s) is spent. Branches at a
-node are the 10 closest unclaimed POIs *recomputed against that node's state*,
+node are those same `CLOSE_CANDIDATE_COUNT` closest unclaimed POIs, *recomputed
+against that node's state*,
 plus a rest branch, added only when fewer than `MIN_REACHABLE_NODES_FOR_REST`
 (3) of those targets are reachable this turn — which is exactly when a player is
 stamina-bound and resting is worth searching. `search()` returns only the

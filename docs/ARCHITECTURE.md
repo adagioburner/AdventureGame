@@ -347,13 +347,15 @@ separable:
 | `RolloutPolicy` | **Specified** (§9). `closestPoiRolloutPolicy()` is a thin wrapper over `@adventure/sim`. |
 | `NodeEvaluator` | **Specified default** (§9): gold after simulation. `goldAfterSimulationEvaluator()`. |
 | `TreePolicy` | **Decided** (§12.2): UCT, `MCTS_EXPLORATION_CONSTANT` = √2, most-visited child as the final move. `uctTreePolicy()`. |
-| `ActionEnumerator` | **Decided** (§12.2): the `MCTS_NODE_EXPANSION_PRUNING` (10) closest *unclaimed* POIs, recomputed per node, **plus a rest branch** when fewer than `MIN_REACHABLE_NODES_FOR_REST` (3) of them are reachable this turn. `closestUnclaimedPoiEnumerator()`. |
+| `ActionEnumerator` | **Decided** (§12.2): the `CLOSE_CANDIDATE_COUNT` (5) closest *unclaimed* POIs, recomputed per node, **plus a rest branch** when fewer than `MIN_REACHABLE_NODES_FOR_REST` (3) of them are reachable this turn. `closestUnclaimedPoiEnumerator()`. |
 
 The enumerator is worth a second look, because it completes the sharing story:
 it calls the same `closestPoiCandidates` that the remoteness walk and the
-rollout policy call. Three consumers, one ranking kernel, differing only in K
-(10 for tree expansion, `CLOSE_CANDIDATE_COUNT` = 5 for rollouts, all POIs for
-remoteness) and in what they do with the ranked list.
+rollout policy call. Three consumers, one ranking kernel and — since the
+designer collapsed the tree's own constant into it (Q18) — one K,
+`CLOSE_CANDIDATE_COUNT` = 5. They differ only in what they do with the ranked
+list: the tree makes every candidate a branch, the rollout picks one uniformly,
+remoteness walks to its pick.
 
 **A branch is a macro-action**, in the tree and in the rollout alike. [SOURCE §9,
 chat] taking a target means "the simulated player keeps moving to the chosen POI

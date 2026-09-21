@@ -85,10 +85,16 @@ function argMaxWithRandomTieBreak<T>(items: readonly T[], score: (item: T) => nu
 }
 
 /**
- * [SOURCE §12.2, chat] "These 10 POIs to explore will be the closest at the
- * time (among those that have not been claimed at that point of time in the
- * game)", plus: "rest is a branch as well. Let us prune it if there are at
- * least MIN_REACHABLE_NODES_FOR_REST = 3 POIs reachable in one turn."
+ * [SOURCE §12.2, chat] "These POIs to explore will be the closest at the time
+ * (among those that have not been claimed at that point of time in the game)",
+ * plus: "rest is a branch as well. Let us prune it if there are at least
+ * MIN_REACHABLE_NODES_FOR_REST = 3 POIs reachable in one turn."
+ *
+ * [SOURCE §12.2, review] How many is `CLOSE_CANDIDATE_COUNT`, the same K the
+ * rollout policy and the remoteness walk use: "We don't really need two
+ * different constants here. We will prune the tree by the CLOSE_CANDIDATE_COUNT,
+ * plus one branch for resting." The tree's own `MCTS_NODE_EXPANSION_PRUNING` is
+ * gone.
  *
  * Both halves are here. Targets are recomputed per node against that node's
  * state, so a POI claimed earlier in the searched line is no longer a branch
@@ -98,7 +104,7 @@ function argMaxWithRandomTieBreak<T>(items: readonly T[], score: (item: T) => nu
  * considering.
  *
  * Note the reachability test runs over the pruned target list, not every POI on
- * the map: a distant reachable POI outside the closest 10 is not a branch, so
+ * the map: a distant reachable POI outside that list is not a branch, so
  * counting it would let rest be pruned on the strength of a target the search
  * cannot take.
  */
@@ -112,9 +118,10 @@ export function closestUnclaimedPoiEnumerator(
       const player = state.players.find((candidate) => candidate.id === subject);
       if (player === undefined) throw new RangeError(`no such player ${subject}`);
 
+      // `closestPoiCandidates` already returns at most `CLOSE_CANDIDATE_COUNT`,
+      // so this *is* the pruned target list; there is no second cap to apply.
       const eligible = unclaimedPoiNodesOf(state);
-      const ranked = closestPoiCandidates(state.map.graph, player.position, eligible, config);
-      const targets = ranked.slice(0, config.ai.MCTS_NODE_EXPANSION_PRUNING);
+      const targets = closestPoiCandidates(state.map.graph, player.position, eligible, config);
 
       const branches: MctsBranch[] = targets.map((target) => ({ kind: 'target', target }));
 
