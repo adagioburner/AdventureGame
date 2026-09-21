@@ -237,9 +237,12 @@ guard_strength = ceil(units × GOLD_WEIGHT − remoteness × REMOTENESS_WEIGHT),
 supersedes §11's `GUARD_STRENGTH_MIN` of 2 — a capped result of 0 means the POI
 is unguarded, so §4.4's "none are exempt" no longer holds. The formula reads the
 POI's reward `units` rather than testing for gold, keeping §4.4's requirement
-that guarding work on any kind. See [Q2](./OPEN_QUESTIONS.md#q2), and
-[Q2a](./OPEN_QUESTIONS.md#q2a) for the one leftover: rounding is unspecified, so
-the result is left continuous.
+that guarding work on any kind. See [Q2](./OPEN_QUESTIONS.md#q2) for the
+formula and [Q2a](./OPEN_QUESTIONS.md#q2a) for the rounding: [SOURCE §5.2, chat]
+"guard strength is rounded up", so the `ceil` above is the answer rather than a
+placeholder. It is applied before the cap, which makes the cap the last word;
+ceiling before or after agrees on every reachable input anyway, since the cap
+bounds are integers.
 
 ---
 
@@ -339,8 +342,8 @@ remains.
 
 ## 7. AI player (§9)
 
-`packages/ai`. Four interfaces, so the specified parts and the open part are
-separable:
+`packages/ai`. Four interfaces, so each part stays separately swappable. All
+four are now decided — two by §9 directly, two by §12.2:
 
 | Seam | Status |
 |---|---|
@@ -390,13 +393,17 @@ The evaluator receives **both** the rolled-out result and the node being
 evaluated. Your planned hybrid — `average(gold after simulation, gold now +
 (number of skills) × balancing_constant, at the node being evaluated)` — needs
 "gold now ... at the node being evaluated", which an evaluator that only saw the
-rollout result could not express. `hybridGoldAndSkillsEvaluator()` exists as a
-named seam and throws, pending [Q11](./OPEN_QUESTIONS.md#q11).
+rollout result could not express. `hybridGoldAndSkillsEvaluator()` is written:
+[Q11](./OPEN_QUESTIONS.md#q11) settled that "number of skills" is the sum of all
+five skill levels rather than a count of skills held, and both halves are
+normalised by total map gold per [Q14](./OPEN_QUESTIONS.md#q14) — which puts
+`balancingConstant` in units of *gold per skill level*.
 
 `search()` documents the four phases (select / expand / simulate / backprop) and
-the `MCTS_TIME_BUDGET_PER_MOVE` loop, and throws — two of the four phases depend
-on §12.2, and the other two are specified, which is precisely why they sit
-behind their own interfaces instead of inside the function.
+the `MCTS_TIME_BUDGET_PER_MOVE` loop, and throws: the loop itself is still to be
+written (§11 item 11). Every policy it drives is decided — two phases by §9, two
+by §12.2 — which is precisely why they sit behind their own interfaces instead
+of inside the function.
 
 The session layer sees only:
 
