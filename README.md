@@ -26,7 +26,9 @@ First architecture pass. Data models, component boundaries and interfaces are in
 place and typecheck; gameplay logic, map generation and the MCTS search loop are
 deliberately unimplemented.
 
-All four of GDD.md §12's open items are now decided: Durable Objects for the
+Every open question raised in this pass is answered — GDD.md §12's four items
+and the thirteen gaps found while building against it. The config's `pending`
+block is empty. The §12 decisions: Durable Objects for the
 session layer with map generation and AI on the game master's machine (§12.1),
 UCT over the 10 closest unclaimed POIs (§12.2), the message board as ordinary
 game state (§12.3), and no fallback for a disconnected game master — the game

@@ -50,6 +50,7 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     MCTS_NODE_EXPANSION_PRUNING: 10,
     // UCB1's textbook constant. See the tuning caveat on the field.
     MCTS_EXPLORATION_CONSTANT: Math.SQRT2,
+    MIN_REACHABLE_NODES_FOR_REST: 3,
   },
 };
 

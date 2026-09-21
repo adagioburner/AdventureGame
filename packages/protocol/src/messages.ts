@@ -71,11 +71,11 @@ export type ClientMessage =
    * machine." These two carry the results back.
    *
    * The GM's client generates the map from the seed and uploads it; the server
-   * does not run the §2.1 pipeline. (Generation is deterministic in
-   * `(seed, ruleset)`, so sending only the seed and having every client
-   * regenerate would also work and cost far less bandwidth — but that moves
-   * generation onto every machine, not just the GM's, so it is not assumed.
-   * See OPEN_QUESTIONS Q15.)
+   * does not run the §2.1 pipeline. [SOURCE §12.1, chat] "Both strategies work.
+   * Let[']s send the map over to all players, this is less error prone" — so the
+   * finished `GameMap` travels, rather than each client regenerating from the
+   * seed. Determinism still buys replay and debugging; it just is not used to
+   * save bandwidth here.
    */
   | { readonly type: 'gm.mapGenerated'; readonly gameId: GameId; readonly map: GameMap }
   /** The GM's client answering a `gm.requestAiMove`, with the searched move. */

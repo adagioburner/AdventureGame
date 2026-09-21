@@ -2,20 +2,33 @@ import type { DiceSource, GameState, PlayerId, Rng } from '@adventure/core';
 import type { PoiCandidate, RolloutCursor, RolloutTermination } from '@adventure/sim';
 
 /** A node of the search tree. One node per game state reached in the tree. */
+/**
+ * One branch of the search tree.
+ *
+ * [SOURCE §12.2, chat] Branches are POI targets, plus a rest branch when the
+ * player has fewer than `MIN_REACHABLE_NODES_FOR_REST` targets reachable this
+ * turn.
+ */
+export type MctsBranch =
+  | { readonly kind: 'target'; readonly target: PoiCandidate }
+  | { readonly kind: 'rest' };
+
 export interface MctsNode {
   readonly state: GameState;
   /**
-   * The POI this branch targets; `null` at the root.
+   * The branch that produced this state; `null` at the root.
    *
-   * [SOURCE §12.2, chat] The tree branches over *POI targets*, not raw turn
-   * actions — see `ActionEnumerator`. The chosen target is converted into a
-   * concrete `TurnAction` only at the top, by `search()`.
+   * [SOURCE §12.2/§9, chat] Taking a target branch is a **macro-action**: "the
+   * simulated player keeps moving to the chosen POI without making new decision
+   * until it's reached or claimed by a different player". So one edge of the
+   * tree can span several turns, and `search()` returns only the *first* turn's
+   * `TurnAction` from the branch it picks.
    */
-  readonly action: PoiCandidate | null;
+  readonly action: MctsBranch | null;
   readonly parent: MctsNode | null;
   readonly children: MctsNode[];
-  /** Targets not yet expanded from this node, per the `ActionEnumerator`. */
-  readonly untried: PoiCandidate[];
+  /** Branches not yet expanded from this node, per the `ActionEnumerator`. */
+  readonly untried: MctsBranch[];
   visits: number;
   /** Sum of backpropagated values; the evaluator decides what a value means. */
   totalValue: number;
@@ -55,16 +68,25 @@ export interface TreePolicy {
  * the remoteness walk (§5.1) and the rollout policy (§9) use. Three callers,
  * one kernel; only K and what they do with the result differ.
  *
- * Two things the answer does not settle, flagged rather than invented:
- *  - whether **rest** (§7's other turn action) is also a branch. It is not
- *    enumerated here, since the instruction speaks only of POIs, but a player
- *    who is out of stamina has nothing else to do. OPEN_QUESTIONS Q16.
- *  - whether targeting a POI is a **macro-action** (advance until arrival,
- *    possibly several turns) or one turn's step toward it. OPEN_QUESTIONS Q17.
+ * [SOURCE §12.2, chat] Rest is a branch too — "let us prune it if there are at
+ * least MIN_REACHABLE_NODES_FOR_REST = 3 POIs reachable in one turn" — so the
+ * rest branch appears only when the player is movement-constrained enough for
+ * recovering stamina to be worth searching.
  */
 export interface ActionEnumerator {
   readonly name: string;
-  enumerate(state: GameState, subject: PlayerId): readonly PoiCandidate[];
+  enumerate(state: GameState, subject: PlayerId): readonly MctsBranch[];
+}
+
+/**
+ * "Reachable in one turn" for the rest-pruning rule — can this player actually
+ * arrive at that target within this turn's allowance and stamina (§7)?
+ *
+ * Injected because it is the one part of the rule that needs `previewPath` from
+ * `@adventure/core`, which is not written yet. The rule itself is.
+ */
+export interface TurnReachability {
+  isReachableThisTurn(state: GameState, subject: PlayerId, target: PoiCandidate): boolean;
 }
 
 /**

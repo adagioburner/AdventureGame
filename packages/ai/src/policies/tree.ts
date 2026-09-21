@@ -1,7 +1,7 @@
 import type { GameConfig } from '@adventure/config';
 import type { GameState, NodeId, PlayerId, Rng } from '@adventure/core';
-import { closestPoiCandidates, type PoiCandidate } from '@adventure/sim';
-import type { ActionEnumerator, MctsNode, TreePolicy } from '../types.ts';
+import { closestPoiCandidates } from '@adventure/sim';
+import type { ActionEnumerator, MctsBranch, MctsNode, TreePolicy, TurnReachability } from '../types.ts';
 
 /**
  * [SOURCE §12.2, chat] "For everything else please use sensible defaults that
@@ -87,20 +87,44 @@ function argMaxWithRandomTieBreak<T>(items: readonly T[], score: (item: T) => nu
 /**
  * [SOURCE §12.2, chat] "These 10 POIs to explore will be the closest at the
  * time (among those that have not been claimed at that point of time in the
- * game)."
+ * game)", plus: "rest is a branch as well. Let us prune it if there are at
+ * least MIN_REACHABLE_NODES_FOR_REST = 3 POIs reachable in one turn."
  *
- * Recomputed per node against that node's state, so a POI claimed earlier in
- * the searched line is no longer a branch further down it.
+ * Both halves are here. Targets are recomputed per node against that node's
+ * state, so a POI claimed earlier in the searched line is no longer a branch
+ * further down it; and the rest branch is added only when fewer than
+ * `MIN_REACHABLE_NODES_FOR_REST` of those targets can actually be reached this
+ * turn — which is exactly when a player is stamina-bound and resting is worth
+ * considering.
+ *
+ * Note the reachability test runs over the pruned target list, not every POI on
+ * the map: a distant reachable POI outside the closest 10 is not a branch, so
+ * counting it would let rest be pruned on the strength of a target the search
+ * cannot take.
  */
-export function closestUnclaimedPoiEnumerator(config: GameConfig): ActionEnumerator {
+export function closestUnclaimedPoiEnumerator(
+  config: GameConfig,
+  reachability: TurnReachability,
+): ActionEnumerator {
   return {
-    name: 'closest-unclaimed-pois',
-    enumerate(state: GameState, subject: PlayerId): readonly PoiCandidate[] {
+    name: 'closest-unclaimed-pois+rest',
+    enumerate(state: GameState, subject: PlayerId): readonly MctsBranch[] {
       const player = state.players.find((candidate) => candidate.id === subject);
       if (player === undefined) throw new RangeError(`no such player ${subject}`);
+
       const eligible = unclaimedPoiNodesOf(state);
       const ranked = closestPoiCandidates(state.map.graph, player.position, eligible, config);
-      return ranked.slice(0, config.ai.MCTS_NODE_EXPANSION_PRUNING);
+      const targets = ranked.slice(0, config.ai.MCTS_NODE_EXPANSION_PRUNING);
+
+      const branches: MctsBranch[] = targets.map((target) => ({ kind: 'target', target }));
+
+      const reachable = targets.filter((target) =>
+        reachability.isReachableThisTurn(state, subject, target),
+      ).length;
+      if (reachable < config.ai.MIN_REACHABLE_NODES_FOR_REST) {
+        branches.push({ kind: 'rest' });
+      }
+      return branches;
     },
   };
 }

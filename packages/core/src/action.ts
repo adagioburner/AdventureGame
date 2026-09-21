@@ -13,7 +13,14 @@ import type { BoardPost } from './messageboard.ts';
 export interface MoveAction {
   readonly kind: 'move';
   readonly player: PlayerId;
-  /** Nodes to enter, in order, excluding the player's current node. */
+  /**
+   * Nodes to enter, in order, excluding the player's current node.
+   *
+   * [SOURCE §7/§8, chat] **An empty path is legal** — "one can use it to fight
+   * the same guard again". That is how §8's "remain stationed on the node" is
+   * expressed: a turn with no movement still ends on a POI, so interaction
+   * re-triggers and the player gets another roll against the guard.
+   */
   readonly path: readonly NodeId[];
 }
 
@@ -21,6 +28,21 @@ export interface RestAction {
   readonly kind: 'rest';
   readonly player: PlayerId;
 }
+
+/**
+ * Rest and a zero-length move both leave the player where they are, but they
+ * are **not** the same action, and the difference is a real decision for a
+ * player camped on a guarded POI:
+ *
+ *  - zero-length move → interaction re-triggers, so another roll at the guard,
+ *    and no stamina gained (§8);
+ *  - rest → `REST_STAMINA_GAIN` stamina, and explicitly "no
+ *    movement/interaction" (§7), so no roll.
+ *
+ * Each turn on that node is therefore a choice between another attempt and
+ * recovering stamina, rather than both at once.
+ */
+export const ZERO_LENGTH_MOVE_PATH: readonly NodeId[] = [];
 
 export type TurnAction = MoveAction | RestAction;
 

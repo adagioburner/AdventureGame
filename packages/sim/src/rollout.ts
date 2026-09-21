@@ -26,6 +26,10 @@ import type { WalkDriver } from './walk.ts';
  * separate opponent model, and the earlier `OpponentRolloutPolicy` seam is
  * gone. The rollout simply plays whichever seat is active, in turn order, until
  * it terminates.
+ *
+ * [SOURCE §9, chat] Choosing a target is a **macro-action**: "the simulated
+ * player keeps moving to the chosen POI without making new decision until it's
+ * reached or claimed by a different player." See `macroAdvanceToTarget`.
  */
 export interface RolloutCursor {
   readonly state: GameState;
@@ -95,4 +99,40 @@ export function rolloutDriver(_options: RolloutOptions): WalkDriver<RolloutCurso
  */
 export function runRollout(_start: RolloutCursor, _options: RolloutOptions): RolloutCursor {
   throw new NotImplementedError('runRollout', 'GDD.md §9');
+}
+
+/** Why a macro-action stopped. */
+export type MacroAdvanceOutcome =
+  | 'arrived'
+  | 'target_claimed_by_other'
+  | 'terminal';
+
+/**
+ * Walk the active player toward `target` across as many turns as it takes,
+ * making no new decision on the way.
+ *
+ * [SOURCE §9, chat] "The simulated player keeps moving to the chosen POI
+ * without making new decision until it's reached or claimed by a different
+ * player." So it ends on exactly three conditions:
+ *
+ *   `arrived`                 — the player reached the POI (and §8's automatic
+ *                               interaction has resolved);
+ *   `target_claimed_by_other` — another player claimed it first, so the
+ *                               commitment lapses and the caller picks again;
+ *   `terminal`                — the game finished mid-journey.
+ *
+ * Every turn in between goes through `applyAction`, so allowance, stamina,
+ * guard rolls and turn order all apply exactly as in a real game — and the
+ * other seats take their own turns in between, since all players are simulated.
+ *
+ * This is one macro-action = one tree edge, which is why the tree stays shallow
+ * enough to be searched in ten seconds: a node is a real decision point rather
+ * than a single step.
+ */
+export function macroAdvanceToTarget(
+  _cursor: RolloutCursor,
+  _target: NodeId,
+  _options: RolloutOptions,
+): { readonly cursor: RolloutCursor; readonly outcome: MacroAdvanceOutcome } {
+  throw new NotImplementedError('macroAdvanceToTarget', 'GDD.md §9, chat');
 }

@@ -11,8 +11,8 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, plus Q1–Q10 and
-Q12. `pending` in the config is empty for the first time.
+**Answered so far:** all four of GDD.md §12's own open items, and Q1–Q17.
+`pending` in the config is empty.
 
 **Outstanding:** Q11 (hybrid evaluator, future experiment), Q13 (zero-length
 move), Q14 (UCB1 reward scale), Q15 (map upload vs. regenerate), Q16 and Q17
@@ -203,30 +203,34 @@ re-decided: a map can hold slightly more than 60 POIs; the
 aborts generation; and these POIs are unguarded, because §4.2 is what decides
 guarding and they are not in it.
 
-### Q9a. How many stamina units per surplus leaf?
+### Q9a. ~~How many stamina units per surplus leaf?~~ — **answered**
 
-Not specified. `OVERFLOW_LEAF_STAMINA_UNITS` is 1, because §4.3 step 2 gives
-every POI one guaranteed unit and no §4.2 row covers these — but that is an
-analogy, not a deduction, so it is a config row rather than a constant. Change
-it in one place if 1 is wrong.
+[SOURCE §9a, chat] "One stamina per leaf." `OVERFLOW_LEAF_STAMINA_UNITS = 1`.
+
+Worth measuring before relying on this as *the* route stamina reaches the map:
+you expected ~5 stamina points, and the total is not fixed — **it can well be
+zero.** Leaf count is 30–45 against quotas of 25/20/15 over terrain shares of
+45%/30%/25%, so a proportional spread (≈20/13/11 at 45 leaves) overflows nothing
+at all. Overflow needs leaves concentrated in one terrain at roughly 1.3–2× its
+area share, which happens but is not the typical map. The harness should report
+the distribution; if stamina needs to be reliably present, §4.2's "add later as
+a config edit" is the route that delivers it.
 
 ### Q10. ~~The tree policy also needs an action enumeration~~ — **answered with §12.2**
 
 Both halves came together as predicted. What the answer did *not* settle became
 Q16 and Q17.
 
-### Q11. In the planned hybrid evaluator, what is "number of skills"? (§9)
+### Q11. ~~In the hybrid evaluator, what is "number of skills"?~~ — **answered, implemented**
 
-`average(gold after simulation, gold now + (number of skills) × balancing_constant)`
-— is "number of skills" the sum of the five skill levels, or a count of how many
-are non-zero? They diverge sharply once a player stacks one skill. And
-`balancing_constant` has no value.
+[SOURCE §9, chat] "The sum of all skill levels" — so fighting 3 + magic 1
+contributes 4, not 2. Summed over the five skills (three movement, fighting,
+magic); gold is the objective and stamina a resource, so neither counts.
 
-Low priority — it's a future experiment, not v1 — but the seam is built for it
-now so the swap stays a one-liner.
-
-**Routed as:** `hybridGoldAndSkillsEvaluator(balancingConstant)` exists as a
-named seam and throws.
+`hybridGoldAndSkillsEvaluator(balancingConstant)` is now fully written. Both
+halves are normalised by total map gold per Q14, which keeps the average over
+two comparable quantities and puts `balancingConstant` in units of *gold per
+skill level* — a natural thing to tune.
 
 ### Q12. ~~Where do players start on the map?~~ — **answered, implemented**
 
@@ -234,86 +238,83 @@ named seam and throws.
 a POI. All players start from the same spot." `chooseStartingNode(map, rng)`,
 with its `Rng` derived from the map seed so the start point replays with the map.
 
-### Q13. Is a zero-length move a legal action? (§7 vs §8)
+### Q13. ~~Is a zero-length move a legal action?~~ — **answered**
 
-§8 says a player may "remain stationed on the node", which for a failed guarded
-POI implies re-attempting it without moving. §7 defines a turn as move-then-
-interact, or rest. So is "stay put and re-roll" expressed as a move with an empty
-path, and does interaction then re-trigger?
+[SOURCE §7/§8, chat] "A zero-length move is legal, one can use it to fight the
+same guard again. When one rests to regain stamina, that is also a zero length
+move."
 
-Minor, but it changes the action space the AI searches.
+`MoveAction.path` may be empty, and §8's "remain stationed on the node" is
+expressed that way: the turn still ends on the POI, so interaction re-triggers
+and the player gets another roll.
 
-**Routed as:** `MoveAction.path` permits an empty array; nothing yet depends on
-what that means.
+**One reading recorded, because it is a real decision rather than a formality:**
+rest and a zero-length move both leave the player in place but stay *distinct
+actions*, since §7 gives rest "no movement/interaction". So a player camped on a
+guarded POI chooses each turn between another attempt (zero-length move, no
+stamina) and recovering (rest, `REST_STAMINA_GAIN`, no roll) — rather than
+getting both. If you meant rest to re-roll the guard too, say so; that would
+make rest strictly dominant on such a node, which is why I read it the other way.
 
 ---
 
-## B2.---
+## B2. Sub-questions thrown off by the §12 answers
 
-## B2. New sub-questions thrown off by the §12 answers
+### Q14. ~~UCB1's √2 assumes rewards in [0, 1]~~ — **answered, implemented**
 
-### Q14. UCB1's √2 assumes rewards in [0, 1]; gold is not (§12.2)
+[SOURCE §9, chat] "Yes, we can normalize by dividing over total gold on the
+map." Both evaluators divide by `totalGoldUnits(map)`, so every backpropagated
+value sits in [0, 1] and √2 is the correct constant. The divisor is gold
+*placed*, fixed for the whole game, so values stay comparable across a search.
 
-Not a design gap — a tuning note that will bite on the first run, so better said
-now than discovered as "the AI plays greedily".
+The two settings are now coupled: changing the normalisation without revisiting
+`MCTS_EXPLORATION_CONSTANT` breaks the exploration/exploitation balance. Noted
+on both config fields.
 
-UCT's textbook `c = √2` is derived for values normalised to [0, 1]. The
-backpropagated value here is a player's gold after rollout (§9), roughly 0–45 on
-a v1 map. At that scale the exploitation term dwarfs the exploration term and
-the search will behave almost greedily — the tree will barely explore.
+### Q15. ~~Regenerate the map per client, or upload it?~~ — **answered**
 
-Standard practice is either to normalise values into [0, 1] before backpropagating
-(dividing by, say, total gold on the map) or to raise `c` to match the reward
-range. Both are tuning choices with different behaviour, so nothing is
-normalised silently.
+[SOURCE §12.1, chat] "Both strategies work. Let[']s send the map over to all
+players, this is less error prone." `gm.mapGenerated` carries the finished
+`GameMap` — which is what the protocol already assumed. Determinism still buys
+replay and debugging; it just is not used to save bandwidth.
 
-**Routed as:** `MCTS_EXPLORATION_CONSTANT` is config (default √2) and the caveat
-is on the field; `uctTreePolicy()` implements the standard formula unchanged.
+### Q16. ~~Is "rest" also an MCTS branch?~~ — **answered, implemented**
 
-### Q15. Does every client regenerate the map, or does the GM upload it? (§12.1)
+[SOURCE §12.2, chat] "Rest is a branch as well. Let us prune it if there are at
+least MIN_REACHABLE_NODES_FOR_REST = 3 POIs reachable in one turn." Both halves
+are in `closestUnclaimedPoiEnumerator`.
 
-"Map generation runs on the game master's machine" settles *who computes*, not
-*what travels*. Because generation is deterministic in `(seed, ruleset)`, two
-designs work:
+One implementation detail worth stating: reachability is counted over the
+**pruned** target list, not every POI on the map. A reachable POI outside the
+closest 10 is not a branch the search can take, so counting it would let rest be
+pruned on the strength of an option that does not exist in the tree.
 
-- **GM uploads the finished map** (what the protocol currently assumes):
-  `gm.mapGenerated` carries the whole `GameMap`; everyone else receives it as
-  state. Straightforward, but the payload is ~240 nodes + ~300 edges + 60 POIs.
-- **DO stores only the seed** and each client regenerates locally: near-zero
-  bandwidth, but it means map generation runs on *every* machine, not just the
-  GM's — which reads against the instruction.
+The reachability test itself is injected (`TurnReachability`) because it needs
+`previewPath`, which is not written yet. The rule is.
 
-I took the first, since it is the one that matches what you said.
+### Q17. ~~Macro-action or single turn?~~ — **answered, implemented**
 
-### Q16. Is "rest" also an MCTS branch? (§12.2 vs §7)
+[SOURCE §9, chat] "Selecting a POI is a macro-action during simulation rollout.
+The simulated player keeps moving to the chosen POI without making new decision
+until it's reached or claimed by a different player."
 
-§12.2 prunes "the number of next POIs to be used to expand any node", which
-settles the move branches. §7's action space is move **or rest**, and rest is not
-a POI, so it is not currently enumerated.
+`macroAdvanceToTarget` ends on exactly three conditions — `arrived`,
+`target_claimed_by_other`, `terminal` — with every turn in between going through
+`applyAction`, and the other seats taking their own turns as they come. One
+macro-action is one tree edge, which is what keeps the tree shallow enough to
+search in ten seconds: a node is a real decision point rather than a single step.
 
-That matters for a player who is out of stamina: with only POI targets as
-branches, the search has nothing to pick. Should `closestUnclaimedPoiEnumerator`
-also emit a rest branch — always, or only when no target is reachable this turn?
+`search()` returns only the **first turn** of the chosen branch, since the
+session layer commits one turn at a time; the rest is re-derived on the AI's
+next turn.
 
-**Routed as:** not enumerated, as specified. One line to add.
+**One reading to confirm, cheap to change:** you specified the macro-action
+"during simulation rollout". Tree expansion uses the same semantics here,
+because a tree edge and a rollout leg have to mean the same thing for node
+values to compose — but that is inferred from the rollout answer rather than
+stated for the tree.
 
-### Q17. Is a POI target a macro-action or a single turn? (§12.2)
-
-The branches are POI targets, but a target several turns away has to become a
-`TurnAction` somehow. Two readings, both consistent with everything specified:
-
-- **Macro-action:** expanding a branch advances the state until the player
-  arrives at that POI (several turns, interaction included). Shallow tree, few
-  nodes per second, each node a meaningful decision — and it matches how the
-  rollout already works.
-- **Single turn:** expanding advances one turn toward the target. Deeper tree,
-  many more nodes, most of them not real decisions.
-
-They give very different searches. This is the last thing blocking `search()`
-from being written.
-
-**Routed as:** `search()` throws with this note; the tree, policies, enumerator
-and node types are all written and do not depend on the answer.
+---
 
 ## C. Decisions I made that are *implementation*, not design
 

@@ -343,7 +343,7 @@ separable:
 | `RolloutPolicy` | **Specified** (§9). `closestPoiRolloutPolicy()` is a thin wrapper over `@adventure/sim`. |
 | `NodeEvaluator` | **Specified default** (§9): gold after simulation. `goldAfterSimulationEvaluator()`. |
 | `TreePolicy` | **Decided** (§12.2): UCT, `MCTS_EXPLORATION_CONSTANT` = √2, most-visited child as the final move. `uctTreePolicy()`. |
-| `ActionEnumerator` | **Decided** (§12.2): the `MCTS_NODE_EXPANSION_PRUNING` (10) closest *unclaimed* POIs, recomputed per node. `closestUnclaimedPoiEnumerator()`. |
+| `ActionEnumerator` | **Decided** (§12.2): the `MCTS_NODE_EXPANSION_PRUNING` (10) closest *unclaimed* POIs, recomputed per node, **plus a rest branch** when fewer than `MIN_REACHABLE_NODES_FOR_REST` (3) of them are reachable this turn. `closestUnclaimedPoiEnumerator()`. |
 
 The enumerator is worth a second look, because it completes the sharing story:
 it calls the same `closestPoiCandidates` that the remoteness walk and the
@@ -351,11 +351,24 @@ rollout policy call. Three consumers, one ranking kernel, differing only in K
 (10 for tree expansion, `CLOSE_CANDIDATE_COUNT` = 5 for rollouts, all POIs for
 remoteness) and in what they do with the ranked list.
 
-Two details of §12.2's answer are still open and block `search()` from being
-written: whether **rest** is also a branch ([Q16](./OPEN_QUESTIONS.md#q16)), and
-whether targeting a POI advances the state by one turn or by the whole journey
-([Q17](./OPEN_QUESTIONS.md#q17)). A tuning caveat on √2 is
-[Q14](./OPEN_QUESTIONS.md#q14).
+**A branch is a macro-action.** [SOURCE §9, chat] taking a target means "the
+simulated player keeps moving to the chosen POI without making new decision
+until it's reached or claimed by a different player", so one tree edge spans
+several turns and ends on one of three outcomes — `arrived`,
+`target_claimed_by_other`, `terminal`. That is what keeps the tree shallow
+enough to search in ten seconds: a node is a real decision point, not a single
+step. `search()` returns only the *first* turn of the chosen branch, since the
+session layer commits one turn at a time.
+
+**Values are normalised.** [SOURCE §9, chat] both evaluators divide gold by the
+total gold placed on the map, putting every backpropagated value in [0, 1] —
+which is what makes `MCTS_EXPLORATION_CONSTANT` = √2 correct, since UCB1's
+derivation assumes that range. The two settings are coupled; changing one
+without the other breaks the exploration/exploitation balance.
+
+The hybrid evaluator is now complete too: [SOURCE §9, chat] "number of skills"
+is the **sum of the five skill levels**, which puts its `balancingConstant` in
+units of gold per skill level.
 
 One signature detail worth flagging, because it is the kind of thing that is
 expensive to change later:
@@ -513,4 +526,4 @@ Each of these is independently implementable against the shapes above:
 8. Remoteness — scorer is written; needs `closestPoiCandidates` (item 1) to run.
 9. `SetupFlow.start` — starting positions are settled; needs the rest of setup.
 10. Guard strengths — written; needs remoteness (item 8) to run.
-11. MCTS `search()` — policies are written; needs [Q16](./OPEN_QUESTIONS.md#q16), [Q17](./OPEN_QUESTIONS.md#q17) and [Q6](./OPEN_QUESTIONS.md#q6).
+11. MCTS `search()` — every policy, evaluator and branch rule is written; the four-phase loop and `macroAdvanceToTarget` are not.

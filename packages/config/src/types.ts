@@ -66,11 +66,16 @@ export interface PoiConfig {
    * which both settles what to do with surplus leaves (§3 forces every leaf to
    * be a POI) and gives the otherwise-unused `stamina` kind of §4.1 a home.
    *
-   * **The amount was not specified.** 1 is used here because §4.3 step 2 gives
-   * every POI one guaranteed unit and no §4.2 row covers these POIs, so one
-   * unit is the only figure the existing rules suggest — but that is an
-   * analogy, not a deduction, so it is a config row to confirm rather than a
-   * constant. See OPEN_QUESTIONS Q9a.
+   * [SOURCE §9a, chat] "One stamina per leaf" — confirmed.
+   *
+   * How much stamina a map ends up carrying therefore depends on how many
+   * leaves overflow, which is **not fixed and can well be zero**. Leaf count is
+   * 30–45 against quotas of 25/20/15 over terrain shares of 45%/30%/25%, so a
+   * proportional spread of leaves (≈20/13/11 at 45 leaves) overflows nothing.
+   * Overflow needs leaves concentrated in one terrain at roughly 1.3–2× its
+   * area share. Worth measuring in the balancing harness before relying on this
+   * as the way stamina reaches the map — §4.2's "add later as a config edit" is
+   * the route that delivers it reliably.
    */
   readonly OVERFLOW_LEAF_STAMINA_UNITS: number;
   /**
@@ -203,15 +208,27 @@ export interface AiConfig {
    * are recommended for standard MCTS implementations." √2 is UCB1's textbook
    * constant, so UCT with c = √2 is that default.
    *
-   * **Tuning caveat, flagged not resolved:** UCB1 derives c = √2 assuming
-   * rewards lie in [0, 1]. The backpropagated value here is a player's gold
-   * after rollout (§9), which ranges over roughly 0–45 on a v1 map. At that
-   * scale the exploitation term dwarfs the exploration term and the search will
-   * behave almost greedily. Standard practice is to normalise values into
-   * [0, 1] or to raise c to match the reward range. Both are tuning decisions,
-   * so nothing is normalised silently — see OPEN_QUESTIONS Q14.
+   * √2 is only the right constant because values are normalised: [SOURCE §9,
+   * chat] the evaluators divide gold by the total gold on the map, putting
+   * every backpropagated value in [0, 1], which is exactly what UCB1's
+   * derivation assumes. Changing one without the other will break the
+   * exploration/exploitation balance.
    */
   readonly MCTS_EXPLORATION_CONSTANT: number;
+  /**
+   * `MIN_REACHABLE_NODES_FOR_REST` — tunable, default 3. Not in §11.
+   *
+   * [SOURCE §12.2, chat] "Rest is a branch as well. Let us prune it if there
+   * are at least MIN_REACHABLE_NODES_FOR_REST = 3 POIs reachable in one turn."
+   *
+   * So the tree gets a rest branch alongside the POI targets, dropped whenever
+   * the player already has three or more targets they can actually reach this
+   * turn — resting is only worth searching when movement is constrained.
+   *
+   * Counts reachable POI *targets*, despite the name saying nodes; the name is
+   * the designer's.
+   */
+  readonly MIN_REACHABLE_NODES_FOR_REST: number;
 }
 
 /**
