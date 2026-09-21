@@ -349,6 +349,14 @@ slice is gone with it; the kernel's cap is the only cap.
 The rest branch is untouched: `MIN_REACHABLE_NODES_FOR_REST` = 3 still gates it
 (Q16), since it is a threshold on reachability rather than a second K.
 
+**Follow-up: the value moved.** [SOURCE §1.2, chat] With one constant now
+serving all three callers, the designer raised it from 5 to **10** — "we don't
+want to risk pruning out good moves early on". The numbers above are what was
+true when the two constants were collapsed, not the current default. Worth
+knowing that this is no longer only an AI knob: §5.1's remoteness walk reads the
+same constant, so the change moves remoteness scores, and through §5.2 the guard
+strengths and reward stacking of every generated map.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design
