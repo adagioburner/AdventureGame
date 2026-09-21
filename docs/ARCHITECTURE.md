@@ -348,7 +348,7 @@ four are now decided — two by §9 directly, two by §12.2:
 | Seam | Status |
 |---|---|
 | `RolloutPolicy` | **Specified** (§9). `closestPoiRolloutPolicy()` is a thin wrapper over `@adventure/sim`. |
-| `NodeEvaluator` | **Specified default** (§9): gold after simulation. `goldAfterSimulationEvaluator()`. |
+| `NodeEvaluator` | **Specified default** (§9): gold after simulation. Three ship — simulated, estimated and hybrid; see below. |
 | `TreePolicy` | **Decided** (§12.2): UCT, `MCTS_EXPLORATION_CONSTANT` = √2, most-visited child as the final move. `uctTreePolicy()`. |
 | `ActionEnumerator` | **Decided** (§12.2): the `CLOSE_CANDIDATE_COUNT` (10) closest *unclaimed* POIs, recomputed per node, **plus a rest branch** when fewer than `MIN_REACHABLE_NODES_FOR_REST` (3) of them are reachable this turn. `closestUnclaimedPoiEnumerator()`. |
 
@@ -390,13 +390,19 @@ evaluate(node: MctsNode, rolledOut: RolloutCursor, subject: PlayerId): number
 ```
 
 The evaluator receives **both** the rolled-out result and the node being
-evaluated, which is what lets `hybridGoldAndSkillsEvaluator()` exist at all: it
-needs the decision point's own position, not just where the rollout ended.
+evaluated, which is what lets all three kinds of evaluation sit behind one
+interface. [SOURCE §9, PR #5 review] The three, and what each looks at
+(see [Q18](./OPEN_QUESTIONS.md#q18)):
 
-[SOURCE §9, PR #5 review] The hybrid weighs the player's gold against the
-player's skills, and the weight is not a tuned constant — it moves with the
-game, because "skills are important at the beginning of the game, and are
-worthless at the end" (see [Q18](./OPEN_QUESTIONS.md#q18)):
+| Evaluation | Reads | |
+|---|---|---|
+| **Simulated** | the rolled-out state | §9's specified default: play random moves until the gold is exhausted, take the subject's gold. `goldAfterSimulationEvaluator()`. |
+| **Estimated** | the node | What the subject holds now, gold against skills. No rollout. `estimatedGoldAndSkillsEvaluator()`. |
+| **Hybrid** | both | The average of the two. `hybridGoldAndSkillsEvaluator()`. |
+
+The estimate is where the designer's formula lives. Its weight between gold and
+skills is not a tuned constant — it moves with the game, because "skills are
+important at the beginning of the game, and are worthless at the end":
 
 ```
 value = gold/total_gold × progress + skills/total_skills × (1 − progress)
@@ -404,22 +410,20 @@ value = gold/total_gold × progress + skills/total_skills × (1 − progress)
 ```
 
 At the opening almost no gold is claimed, so `progress` ≈ 0 and the skill term
-carries the value; by the end `progress` ≈ 1 and only gold counts.
-[Q11](./OPEN_QUESTIONS.md#q11) still decides the skill numerator — the sum of
-all five skill levels, not a count of skills held. Two properties fall out of
-the shape rather than out of a constant: both terms are in [0, 1] and the two
-weights sum to 1, so the value is in [0, 1] as [Q14](./OPEN_QUESTIONS.md#q14)
-requires for UCB1's √2, and `balancingConstant` is gone, because what it tuned
-is `progress`.
+carries the value; by the end `progress` ≈ 1 and only gold counts. Every
+quantity is read from the node, which is what makes `progress` meaningful here:
+it moves across the tree, whereas a rollout by definition ends with no
+unclaimed gold left (Q6). [Q11](./OPEN_QUESTIONS.md#q11) still decides the skill
+numerator — the sum of all five skill levels, not a count of skills held.
 
-The formula is written for one position while an evaluator sees two, so the
-implementation is explicit about where each quantity is read: **gold** from the
-rolled-out state, which is the term the simulation exists to produce; **skills**
-and **progress** from the node. Progress cannot come from the rollout — rollouts
-end when no unclaimed gold remains (Q6), so it would always be 1, the skill term
-would always vanish, and the hybrid would be `goldAfterSimulationEvaluator()`
-under another name.
+Two properties fall out of the shape rather than out of a constant. The estimate
+is in [0, 1], because both its terms are and its two weights sum to 1; the
+simulated value is too; so the hybrid's average is as well, which is what
+[Q14](./OPEN_QUESTIONS.md#q14) needs for UCB1's √2. And `balancingConstant` is
+gone, because what it tuned by hand is `progress`.
 
+The hybrid is **composed from the other two** rather than reimplementing either,
+so a change to one cannot leave it computing something else.
 `totalSkillUnits()` joins `totalGoldUnits()` in `@adventure/core` as the skill
 term's divisor, and the five skill kinds are now one list (`SKILL_KINDS` in
 `@adventure/config`) shared by that helper and the evaluator, so the numerator

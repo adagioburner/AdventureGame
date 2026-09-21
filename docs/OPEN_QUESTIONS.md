@@ -249,10 +249,12 @@ two comparable quantities and puts `balancingConstant` in units of *gold per
 skill level* — a natural thing to tune.
 
 **The answer above still stands; the formula around it does not.** Q18 replaces
-the fixed `balancingConstant` with a weight that moves as gold is claimed, and
-divides the skill term by total skills rather than by total gold. "Sum of skill
-levels, not a count of skills" is what carries over, and it is what the
-implemented evaluator uses for the skill numerator.
+the fixed `balancingConstant` with a weight that moves as gold is claimed,
+divides the skill term by total skills rather than by total gold, and moves the
+whole thing into the *estimated* evaluator, leaving the hybrid as the average of
+simulated and estimated. "Sum of skill levels, not a count of skills" is what
+carries over, and it is the skill numerator
+`estimatedGoldAndSkillsEvaluator()` uses.
 
 ### Q12. ~~Where do players start on the map?~~ — **answered, implemented**
 
@@ -335,31 +337,48 @@ so no game state can cut a leg short.
 
 ### Q18. ~~Is the hybrid evaluator's gold/skills weight a constant?~~ — **answered, implemented**
 
-[SOURCE §9, PR #5 review] No — it moves with the game. "The weight coefficient
-for the average determines how important we think the skills are wrt actual
-gold. The best solution is to make this coefficient change with time (skills are
-important at the beginning of the game, and are worthless at the end)." The
-formula to record:
+Two answers in two rounds, both from the same review.
+
+**The formula.** [SOURCE §9, PR #5 review] The weight is not a constant — it
+moves with the game. "The weight coefficient for the average determines how
+important we think the skills are wrt actual gold. The best solution is to make
+this coefficient change with time (skills are important at the beginning of the
+game, and are worthless at the end)."
 
 ```
 value = gold/total_gold × progress + skills/total_skills × (1 − progress)
         progress = gold claimed by all players / total_gold
 ```
 
-This **supersedes Q11 and Q14's version of the hybrid**, which averaged the two
-halves with a fixed `balancingConstant` and normalised both by total map gold.
-`hybridGoldAndSkillsEvaluator()` implements it and no longer takes a
-`balancingConstant`. Three consequences:
+**Where it belongs.** [SOURCE §9, PR #5 review] Not in the hybrid — in an
+*estimated* evaluator, one of three kinds the designer distinguishes:
+
+| Evaluation | What it does |
+|---|---|
+| **Simulated** | "We simulate random moves until all gold is exhausted." §9's specified default. `goldAfterSimulationEvaluator()`. |
+| **Estimated** | "Current gold plus current skills, averaged as per the new formula" — the formula above, read entirely from the node. `estimatedGoldAndSkillsEvaluator()`. |
+| **Hybrid** | "The average of the two", as `(afterSimulation + now) / 2` always did. `hybridGoldAndSkillsEvaluator()`. |
+
+So the formula is a property of a *position*, not of the rollout, and the hybrid
+stays what it always was: half simulated, half estimated. The implementation
+composes it from the other two evaluators rather than reimplementing either.
+
+This **supersedes Q11 and Q14's version of the estimated half**, which added
+gold to skills scaled by a fixed `balancingConstant` and normalised both by
+total map gold. Three consequences:
 
 - `balancingConstant` goes away. What it was tuning is `progress`, which the
   game state already supplies, so there is no constant left to fine-tune.
 - **Q14's normalisation is satisfied by the shape rather than by a divisor.**
-  Both terms sit in [0, 1] and the weights sum to 1, so the value is in [0, 1]
-  and `MCTS_EXPLORATION_CONSTANT` = √2 stays correct. The coupling Q14 flagged
+  The estimate's two terms sit in [0, 1] and its weights sum to 1; the simulated
+  value is in [0, 1] already; so the hybrid's average is too, and
+  `MCTS_EXPLORATION_CONSTANT` = √2 stays correct. The coupling Q14 flagged
   between the two settings is unchanged in kind.
 - The weights run the way the designer described: at the start almost no gold is
   claimed, so `progress` ≈ 0 and skills carry the value; by the end `progress`
-  ≈ 1 and only gold counts.
+  ≈ 1 and only gold counts. `progress` is meaningful precisely because the
+  estimate reads the node — a rollout ends with no unclaimed gold left (Q6), so
+  measured there it would always be 1.
 
 `totalGoldUnits(map)` and `unclaimedGoldUnits(state)` gave `total_gold` and, by
 subtraction, gold claimed by all players. `totalSkillUnits(map)` is new, and the
@@ -373,18 +392,8 @@ POI. The alternative — a theoretical maximum skill level per player — would 
 the term mean something different and never reach 1. Changing it later is a
 one-line change to `totalSkillUnits`.
 
-**Which state each quantity is read from**, since the formula is written for one
-position and a `NodeEvaluator` sees two. Gold comes from the **rolled-out
-state** — the term the simulation exists to produce, as in
-`goldAfterSimulationEvaluator`. Skills and progress come from the **node being
-evaluated**: the decision point's own position, which is the thing the hybrid
-was shaped to be able to see. Progress in particular *cannot* come from the
-rollout, because rollouts end when no unclaimed gold remains (Q6) — progress
-there is always 1, the skill term would always vanish, and the hybrid would be
-`goldAfterSimulationEvaluator` under another name.
-
-`goldAfterSimulationEvaluator()` remains §9's specified default; the hybrid is
-the alternative the designer planned, now available to switch to.
+`goldAfterSimulationEvaluator()` remains §9's specified default; the other two
+are the alternatives the designer planned, now available to switch to.
 
 ### Q19. ~~Two constants for one ranking?~~ — **answered, implemented**
 
