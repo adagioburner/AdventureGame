@@ -68,9 +68,18 @@ Art/          Placeholder art. Reference only — nothing in the repo reads it,
 ## Working on it
 
 ```sh
-npm run typecheck     # tsc --noEmit across every package
+pnpm install          # once; installs the pinned TypeScript
+pnpm run typecheck    # tsc --noEmit across every package
 ```
 
-No install is required to typecheck (the workspace has no runtime dependencies
-yet). Dependencies land when the first implementation pass needs them — see
+`pnpm-lock.yaml` pins the compiler, and `packageManager` in `package.json` pins
+pnpm itself, so local and CI run the same tools.
+
+**CI** (`.github/workflows/ci.yml`) runs the typecheck on every pull request and
+on every push to `main`. It installs with `--frozen-lockfile`, so a dependency
+change that isn't reflected in the lockfile fails the build rather than being
+silently applied.
+
+The engine packages still have no *runtime* dependencies — TypeScript is the
+only devDependency. More land when the first implementation pass needs them; see
 `docs/STACK.md`.

@@ -1,0 +1,40 @@
+name: CI
+
+# Every pull request, plus main itself so the default branch's status is always
+# known — a PR that is green against a red main is not actually green.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# A new push to a PR makes the previous run irrelevant; don't pay for it.
+# Never cancel a run on main, whose status is the thing other runs are judged
+# against.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  typecheck:
+    name: Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # The pnpm version comes from `packageManager` in package.json, so it
+      # cannot drift from what contributors run locally.
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      # --frozen-lockfile fails rather than silently updating pnpm-lock.yaml,
+      # so CI runs the exact TypeScript the lockfile pins.
+      - run: pnpm install --frozen-lockfile
+
+      - run: pnpm run typecheck
