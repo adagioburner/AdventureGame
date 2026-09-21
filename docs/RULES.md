@@ -168,17 +168,15 @@ worth keeping apart (`packages/ai/src/policies/evaluators.ts`):
 - **simulated** — the subject's gold once the rollout above has run to gold
   exhaustion. `goldAfterSimulationEvaluator()`, and §9's default.
 - **estimated** — no rollout at all: the subject's gold and skills as they stand
-  at the node being evaluated, combined into one number. Its weighting is being
-  revised; see `docs/OPEN_QUESTIONS.md`.
-- **hybrid** — the average of the two, `(afterSimulation + estimated) / 2`.
-  `hybridGoldAndSkillsEvaluator()`.
+  at the node being evaluated, weighted by how far the game has run, so skills
+  count for most at the opening and gold for everything at the end.
+  `estimatedGoldAndSkillsEvaluator()`; the formula is in the register.
+- **hybrid** — the average of the two, composed from them rather than
+  reimplementing either. `hybridGoldAndSkillsEvaluator()`.
 
-Estimated is not a standalone function today; it exists as the second half of
-the hybrid, which currently weights skills with a fixed `balancingConstant`.
-Whatever the weighting, every evaluator returns a value in [0, 1] — the shipped
-ones by dividing by the total gold placed on the map — and that normalisation is
-coupled to `MCTS_EXPLORATION_CONSTANT` = √2, which UCB1's derivation assumes:
-change one and revisit the other.
+Every evaluator returns a value in [0, 1], which is what makes
+`MCTS_EXPLORATION_CONSTANT` = √2 right: UCB1's derivation assumes that range, so
+changing one means revisiting the other.
 
 **Around the rollout**, the search selects with UCT, expands one untried branch
 at a time through `applyAction`, and returns the most-visited child of the root
