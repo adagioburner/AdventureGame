@@ -166,7 +166,8 @@ backpropagated value means (`packages/sim/src/rollout.ts`).
 worth keeping apart (`packages/ai/src/policies/evaluators.ts`):
 
 - **simulated** — the subject's gold once the rollout above has run to gold
-  exhaustion. `goldAfterSimulationEvaluator()`, and §9's default.
+  exhaustion. `goldAfterSimulationEvaluator()`. This is §9's specified default
+  and the one v1 uses; the other two are there to experiment with.
 - **estimated** — no rollout at all: the subject's gold and skills as they stand
   at the node being evaluated, weighted by how far the game has run, so skills
   count for most at the opening and gold for everything at the end.
@@ -176,7 +177,10 @@ worth keeping apart (`packages/ai/src/policies/evaluators.ts`):
 
 Every evaluator returns a value in [0, 1], which is what makes
 `MCTS_EXPLORATION_CONSTANT` = √2 right: UCB1's derivation assumes that range, so
-changing one means revisiting the other.
+changing one means revisiting the other. They do not all reach that range the
+same way — simulated divides gold by the total gold on the map, estimated adds
+two ratios under weights that sum to 1 — so what a new evaluator has to
+preserve is the range itself, not a particular divisor.
 
 **Around the rollout**, the search selects with UCT, expands one untried branch
 at a time through `applyAction`, and returns the most-visited child of the root
