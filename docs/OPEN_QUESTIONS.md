@@ -14,10 +14,13 @@ Nothing below was resolved by picking something reasonable.
 **Answered so far:** all four of GDD.md §12's own open items, and Q1–Q26.
 `pending` in the config is empty.
 
-**Outstanding: one — [Q27](#q27).** Building phase 1 turned up that
+**Outstanding: two — [Q27](#q27) and [Q29](#q29).** Building phase 1 turned up that
 `COMPACTNESS_MAX` never binds on a map of ~240 nodes and 300 edges, so §2.1's
-Smooth step does nothing at the current constants. It is a tuning question, not
-a blocker: generation works and the code implements §2.1 literally. Everything
+Smooth step does nothing at the current constants. Reviewing it turned up the
+second: §4.3 does put bigger reward stacks on more remote POIs, but only 58% of
+the time, and Andrei may want that to be a rule rather than a tendency. Both are
+tuning questions rather than blockers: generation works and the code implements
+§2.1 and §4.3 literally. Everything
 else in this register is answered, and so is every reading that was held open
 for confirmation — Q1's first-segment wrinkle, Q13, Q17, and, as of
 2026-09-22, Q18's own pick of what "total skills available" divides by
@@ -722,6 +725,54 @@ in by one that is already at its share cannot be fixed by a straight transfer,
 so the regrowth also trades: the neighbour hands a node over and takes one back
 from a terrain that has a surplus. Without that trade the shares stuck as much
 as ten points out on the odd map.
+
+### Q29. Should a bigger reward stack *always* sit on a more remote POI? — **asking**
+
+Andrei, on PR #10: *"Is distribution of rewards correlated with the remoteness
+score? E.g. if a node has P4 and another P1, we definitely want the first one to
+be more remote."*
+
+**Measured answer: yes, and the direction is right on every row, but it is a
+tendency rather than a rule.** Over 200 maps, within a §4.2 row (so like for
+like — the same kind, guard and terrain):
+
+- Spearman ρ between units and remoteness: **0.141**.
+- Take any two POIs in the same row with different stacks: the bigger stack is
+  the more remote one **57.8%** of the time. Chance would be 50%.
+- His example, `plains_move`: a P1 sits at mean remoteness 0.18, P2 at 0.21,
+  P3 at 0.22, P4 at 0.25. Mountain gold is the steepest row — 0.43 / 0.52 /
+  0.60 / 0.64 — and no row runs backwards.
+
+**Raising `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` helps, but saturates.** It is a
+§11 "tunable (play-test)" row, so this costs no code; measured over 100 maps
+each, the share of pairs in the wanted order goes 57.8% at the default 2, then
+59.9% (w=4), 62.3% (w=8), 63.6% (w=16), 65.1% (w=32). ρ goes 0.141 → 0.310
+across the same range.
+
+**Why it plateaus, and it is not the constant's fault.** §4.3 step 3 is a
+*weighted random draw*, one unit at a time, and §4.2 hands most rows barely more
+units than POIs — `plains_move` is 20 units over 10 POIs, `fighting` 15 over 8 —
+so there are only about as many spare units as POIs to spread them over. With
+that few draws the variance dominates however hard remoteness leans on the
+weights. As `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` grows the `current_count` term
+in the denominator becomes negligible and the draw tends toward pure
+remoteness-weighting, which is still a draw.
+
+Three ways out, none of them the implementer's to pick:
+
+1. **Leave it.** A soft bias may be what is wanted: a guaranteed ordering makes
+   the map readable — a player who sees a big stack knows exactly how far in it
+   is, and can infer remoteness without exploring.
+2. **Raise `REMOTENESS_WEIGHT_FOR_DISTRIBUTION`** to 8 or 16 for a firmer lean
+   at no structural cost. Buys ~5 points of pair agreement.
+3. **Make step 3 deterministic** — sort a row's POIs by remoteness and deal the
+   spare units from the remote end, so the ordering is guaranteed by
+   construction. This is a **design change to §4.3**, not a tuning: it would
+   replace the weighted draw, and it removes the per-seed variety that the draw
+   currently gives two maps with the same seed-independent structure.
+
+Nothing is blocked on the answer; the current behaviour is §4.3 implemented as
+written.
 
 ---
 
