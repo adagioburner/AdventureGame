@@ -19,5 +19,5 @@
       "@adventure/session/*": ["./packages/session/src/*"]
     }
   },
-  "include": ["./packages/*/src/**/*.ts", "apps/*/src/**/*.ts", "tools/*/src/**/*.ts"]
+  "include": ["./packages/*/src/**/*.ts", "apps/*/src/**/*.ts", "tools/*/src/**/*.ts", "./vitest.config.ts"]
 }

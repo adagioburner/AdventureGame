@@ -1,8 +1,9 @@
 # Implementation plan
 
-Status: **draft for review.** This plan is derived from the five-step order
-Andrei proposed, checked against the design of record and against what is
-actually in the repo today. Nothing here is implemented yet.
+Status: **agreed; phase 0 done, phase 1 next.** This plan is derived from the
+five-step order Andrei proposed, checked against the design of record and
+against what is actually in the repo today. Phase 0 landed the test harness;
+everything from phase 1 on is still seams.
 
 The design of record is [`GDD.md`](../GDD.md), with
 [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) for component boundaries,
@@ -116,7 +117,7 @@ half needs the AI, so it sits at the end of phase 5.
 
 | Phase | What lands | Andrei's step |
 |---|---|---|
-| [0](#phase-0--test-and-check-infrastructure) | Vitest, `pnpm test`, second CI check | new |
+| [0](#phase-0--test-and-check-infrastructure) ✅ | Vitest, `pnpm test`, second CI check | new |
 | [1](#phase-1--map-generation) | Distance metric, the eight pipeline steps, rewards, guards, a human-viewable map dump, the map harness | 1 |
 | [2](#phase-2--rules-engine-headless) | §7/§8 movement, interaction, turn order, victory — pure, tested | part of 2 |
 | [3](#phase-3--art-binding-and-the-isometric-renderer) | Atlas loader, reward-kind-to-sheet mapping, isometric projection, draw layers | new |
@@ -131,7 +132,7 @@ Phases 0–2 are strictly sequential. Phase 3 can start any time after phase 0
 
 ---
 
-## Phase 0 — test and check infrastructure
+## Phase 0 — test and check infrastructure — **done**
 
 Small, and everything after it reports into it.
 
@@ -157,6 +158,25 @@ Small, and everything after it reports into it.
 
 **Done when:** `pnpm test` runs, passes with one trivial test, and CI shows two
 required checks.
+
+**What actually landed.** All five, with the proposals in 2, 3 and 5 taken as
+written and now recorded in [`docs/STACK.md`](./STACK.md) §3 rather than only
+here. Two departures worth knowing:
+
+- **More than one trivial test.** A harness that asserts nothing proves
+  nothing, so it arrived with 59 tests over the parts of the repo that are
+  already implemented — the PRNG, the graph predicates, `validateRuleset` and
+  `resolvePending`, and the §5.2 guard-strength formula. None of them touch a
+  `NotImplementedError` seam, so none of them pre-empt a later phase.
+- **The first golden file is the PRNG stream, not a map summary**, because
+  `generateMap` still throws. It is the right foundation anyway: every map
+  snapshot rests on that stream, so if `golden/rng/sfc32-seed-adventure.txt`
+  moves, no other golden diff means anything until that one is explained. Map
+  summaries join it in phase 1.
+
+Making the Test check **required on `main`** is a repository setting and the one
+part of phase 0 that cannot land in a commit — Andrei sets it beside Typecheck
+under Settings → Branches.
 
 ---
 

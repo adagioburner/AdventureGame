@@ -38,3 +38,22 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       - run: pnpm run typecheck
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # `vitest run`, never watch mode. A golden-file mismatch fails here
+      # rather than rewriting the committed snapshot — see golden/README.md.
+      - run: pnpm test

@@ -63,6 +63,25 @@ Poisson-disc sampling (step 1) is a dozen lines and stays in-repo.
 - **Vitest** for tests. Determinism from `(seed, params)` makes golden-seed
   snapshots the natural way to test map generation, and a fake `Clock` plus a
   seeded `Rng` make the AI and the session layer testable without mocks.
+  **Installed**, with `pnpm test`, as phase 0 of
+  [`docs/IMPLEMENTATION_PLAN.md`](./IMPLEMENTATION_PLAN.md). Three conventions
+  came with it:
+  - **Tests live beside the module they cover**, as `*.test.ts` inside each
+    package's `src/`. They then import through the same relative `.ts` paths the
+    modules already use, so there is no build step and no second tsconfig, and
+    the existing `tsconfig.json` include already typechecks them.
+  - **Golden-seed snapshots live in `golden/`** at the repo root, one text file
+    per snapshot, written with Vitest's `toMatchFileSnapshot()`. See
+    [`golden/README.md`](../golden/README.md) — in particular that a golden
+    diff is a finding to explain, and `pnpm run test:update-golden` is only for
+    once you have decided which kind.
+  - **`vitest run` in CI, never watch mode**, as a second required check beside
+    Typecheck.
+- **No linter or formatter, for now.** Not a design question; a contributor one.
+  `strict` plus `noUncheckedIndexedAccess` plus `exactOptionalPropertyTypes` is
+  already doing the load-bearing work, and a formatter diff across every file
+  would bury the first real implementation PR under whitespace. Revisit once
+  the engine has code in it rather than seams.
 
 ## 4. Where the CPU lives — the decision that actually matters
 
