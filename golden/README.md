@@ -48,6 +48,12 @@ Then read the diff before committing it.
   POI, with each POI's reward, group, guard and remoteness. Written by
   `tools/balance/src/golden.test.ts` through `formatMapSummary`, the same
   record format the harness prints.
+- `games/` — a whole game played through the rules engine, one line per turn:
+  what was walked, what it cost, and every guard roll with the skill it was
+  added to and the strength it was compared against. Written by
+  `tools/balance/src/playthrough.test.ts`, and printed by `pnpm game <seed>`.
+  It is an exact function of the map seed and a *separate* die seed, so a diff
+  here with `maps/` unchanged means a rule moved rather than a map.
 
 **Why the map summary and not the SVG.** `pnpm map <seed>` also draws the map,
 and committing that drawing would look like the more useful snapshot. It is

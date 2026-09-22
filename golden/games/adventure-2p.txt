@@ -1,0 +1,163 @@
+# adventure — 2-player playthrough. See golden/README.md before updating.
+meta dice_seed=dice-adventure start_node=178 pois=60 gold_units=45
+player p1 seat=1 stamina=30
+player p2 seat=2 stamina=40
+turn   1 p1 move 2/2 -> 141 stam-2 poi 141 magicx2 unguarded TAKEN | stam=28 gold=0
+turn   2 p2 move 4/4 -> 148 stam-4 poi 148 plains_movex1 unguarded TAKEN | stam=36 gold=0
+turn   3 p1 move 6/6 -> 218 stam-6 poi 218 plains_movex3 unguarded TAKEN | stam=22 gold=0
+turn   4 p2 move 6/6 -> 73 stam-5 poi 73 forest_movex1 unguarded TAKEN | stam=31 gold=0
+turn   5 p1 move 11/11 -> 102 stam-8 poi 102 magicx1 unguarded TAKEN | stam=14 gold=0
+turn   6 p2 move 6/6 -> 59 stam-5 poi 59 forest_movex2 unguarded TAKEN | stam=26 gold=0
+turn   7 p1 move 8/8 -> 61 stam-5 poi 61 forest_movex2 unguarded TAKEN | stam=9 gold=0
+turn   8 p2 move 6/6 -> 119 stam-5 poi 119 forest_movex2 unguarded TAKEN | stam=21 gold=0
+turn   9 p1 move 5/5 -> 39 stam-2 poi 39 plains_movex2 unguarded TAKEN | stam=7 gold=0
+turn  10 p2 move 10/10 -> 75 stam-9 poi 75 magicx2 unguarded TAKEN | stam=12 gold=0
+turn  11 p1 move 9/9 -> 0 stam-4 poi 0 forest_movex3 unguarded TAKEN | stam=3 gold=0
+turn  12 p2 move 5/5 -> 108 stam-4 poi 108 plains_movex3 unguarded TAKEN | stam=8 gold=0
+turn  13 p1 move 8/16 -> 64 stam-3 | stam=0 gold=0
+turn  14 p2 move 10/12 -> 129 stam-6 | stam=2 gold=0
+turn  15 p1 move 5/8 -> 183 stam-0 | stam=0 gold=0
+turn  16 p2 rest stam+5 | stam=7 gold=0
+turn  17 p1 move 1/3 -> 129 stam-0 | stam=0 gold=0
+turn  18 p2 move 2/2 -> 174 stam-6 poi 174 goldx1 fighting:3 roll 1+0 kept | stam=1 gold=0
+turn  19 p1 rest stam+5 | stam=5 gold=0
+turn  20 p2 move 0/0 -> 174 stam-0 poi 174 goldx1 fighting:3 roll 1+0 kept | stam=1 gold=0
+turn  21 p1 move 1/2 -> 175 stam-3 | stam=2 gold=0
+turn  22 p2 move 0/0 -> 174 stam-0 poi 174 goldx1 fighting:3 roll 6+0 TAKEN | stam=1 gold=1
+turn  23 p1 rest stam+5 | stam=7 gold=0
+turn  24 p2 rest stam+5 | stam=6 gold=1
+turn  25 p1 move 3/3 -> 186 stam-6 poi 186 plains_movex1 unguarded TAKEN | stam=1 gold=0
+turn  26 p2 move 2/11 -> 222 stam-6 | stam=0 gold=1
+turn  27 p1 rest stam+5 | stam=6 gold=0
+turn  28 p2 rest stam+5 | stam=5 gold=1
+turn  29 p1 move 4/4 -> 138 stam-6 poi 138 plains_movex1 unguarded TAKEN | stam=0 gold=0
+turn  30 p2 move 7/9 -> 230 stam-5 | stam=0 gold=1
+turn  31 p1 move 5/5 -> 149 stam-0 poi 149 magicx1 unguarded TAKEN | stam=0 gold=0
+turn  32 p2 move 2/2 -> 193 stam-0 poi 193 forest_movex2 unguarded TAKEN | stam=0 gold=1
+turn  33 p1 move 1/3 -> 137 stam-0 | stam=0 gold=0
+turn  34 p2 move 2/4 -> 230 stam-0 | stam=0 gold=1
+turn  35 p1 rest stam+5 | stam=5 gold=0
+turn  36 p2 rest stam+5 | stam=5 gold=1
+turn  37 p1 move 1/2 -> 238 stam-3 | stam=2 gold=0
+turn  38 p2 move 1/2 -> 229 stam-3 | stam=2 gold=1
+turn  39 p1 rest stam+5 | stam=7 gold=0
+turn  40 p2 rest stam+5 | stam=7 gold=1
+turn  41 p1 move 1/1 -> 172 stam-3 poi 172 goldx1 fighting:3 roll 5+0 TAKEN | stam=4 gold=1
+turn  42 p2 move 1/1 -> 221 stam-3 poi 221 goldx2 magic:6 roll 2+2 kept | stam=4 gold=1
+turn  43 p1 move 3/5 -> 230 stam-3 | stam=1 gold=1
+turn  44 p2 move 0/0 -> 221 stam-0 poi 221 goldx2 magic:6 roll 4+2 kept | stam=4 gold=1
+turn  45 p1 rest stam+5 | stam=6 gold=1
+turn  46 p2 move 0/0 -> 221 stam-0 poi 221 goldx2 magic:6 roll 5+2 TAKEN | stam=4 gold=3
+turn  47 p1 move 3/3 -> 228 stam-6 poi 228 plains_movex2 unguarded TAKEN | stam=0 gold=1
+turn  48 p2 move 4/8 -> 212 stam-3 | stam=1 gold=3
+turn  49 p1 rest stam+5 | stam=5 gold=1
+turn  50 p2 rest stam+5 | stam=6 gold=3
+turn  51 p1 move 1/9 -> 221 stam-3 | stam=2 gold=1
+turn  52 p2 move 2/4 -> 176 stam-6 | stam=0 gold=3
+turn  53 p1 rest stam+5 | stam=7 gold=1
+turn  54 p2 rest stam+5 | stam=5 gold=3
+turn  55 p1 move 5/8 -> 190 stam-6 | stam=1 gold=1
+turn  56 p2 move 1/2 -> 189 stam-3 | stam=2 gold=3
+turn  57 p1 rest stam+5 | stam=6 gold=1
+turn  58 p2 rest stam+5 | stam=7 gold=3
+turn  59 p1 move 2/3 -> 189 stam-6 | stam=0 gold=1
+turn  60 p2 move 1/1 -> 204 stam-3 poi 204 goldx2 magic:5 roll 6+2 TAKEN | stam=4 gold=5
+turn  61 p1 rest stam+5 | stam=5 gold=1
+turn  62 p2 move 1/3 -> 189 stam-3 | stam=1 gold=5
+turn  63 p1 move 1/2 -> 207 stam-3 | stam=2 gold=1
+turn  64 p2 rest stam+5 | stam=6 gold=5
+turn  65 p1 rest stam+5 | stam=7 gold=1
+turn  66 p2 move 2/2 -> 209 stam-6 poi 209 goldx2 fighting:4 roll 1+0 kept | stam=0 gold=5
+turn  67 p1 move 1/1 -> 209 stam-3 poi 209 goldx2 fighting:4 roll 1+0 kept | stam=4 gold=1
+turn  68 p2 move 0/0 -> 209 stam-0 poi 209 goldx2 fighting:4 roll 1+0 kept | stam=0 gold=5
+turn  69 p1 move 0/0 -> 209 stam-0 poi 209 goldx2 fighting:4 roll 2+0 kept | stam=4 gold=1
+turn  70 p2 move 0/0 -> 209 stam-0 poi 209 goldx2 fighting:4 roll 1+0 kept | stam=0 gold=5
+turn  71 p1 move 0/0 -> 209 stam-0 poi 209 goldx2 fighting:4 roll 6+0 TAKEN | stam=4 gold=3
+turn  72 p2 rest stam+5 | stam=5 gold=5
+turn  73 p1 move 1/13 -> 207 stam-3 | stam=1 gold=3
+turn  74 p2 move 1/13 -> 207 stam-3 | stam=2 gold=5
+turn  75 p1 rest stam+5 | stam=6 gold=3
+turn  76 p2 rest stam+5 | stam=7 gold=5
+turn  77 p1 move 2/12 -> 176 stam-6 | stam=0 gold=3
+turn  78 p2 move 2/12 -> 176 stam-6 | stam=1 gold=5
+turn  79 p1 rest stam+5 | stam=5 gold=3
+turn  80 p2 rest stam+5 | stam=6 gold=5
+turn  81 p1 move 4/10 -> 186 stam-3 | stam=2 gold=3
+turn  82 p2 move 5/10 -> 199 stam-6 | stam=0 gold=5
+turn  83 p1 rest stam+5 | stam=7 gold=3
+turn  84 p2 rest stam+5 | stam=5 gold=5
+turn  85 p1 move 4/6 -> 138 stam-6 | stam=1 gold=3
+turn  86 p2 move 3/5 -> 138 stam-3 | stam=2 gold=5
+turn  87 p1 rest stam+5 | stam=6 gold=3
+turn  88 p2 rest stam+5 | stam=7 gold=5
+turn  89 p1 move 2/2 -> 115 stam-6 poi 115 goldx2 magic:6 roll 3+4 TAKEN | stam=0 gold=5
+turn  90 p2 move 7/7 -> 164 stam-5 poi 164 plains_movex2 unguarded TAKEN | stam=2 gold=5
+turn  91 p1 rest stam+5 | stam=5 gold=5
+turn  92 p2 move 3/8 -> 159 stam-0 | stam=2 gold=5
+turn  93 p1 move 1/6 -> 128 stam-3 | stam=2 gold=5
+turn  94 p2 rest stam+5 | stam=7 gold=5
+turn  95 p1 rest stam+5 | stam=7 gold=5
+turn  96 p2 move 2/5 -> 154 stam-6 | stam=1 gold=5
+turn  97 p1 move 2/5 -> 154 stam-6 | stam=1 gold=5
+turn  98 p2 rest stam+5 | stam=6 gold=5
+turn  99 p1 rest stam+5 | stam=6 gold=5
+turn 100 p2 move 3/3 -> 142 stam-6 poi 142 forest_movex3 unguarded TAKEN | stam=0 gold=5
+turn 101 p1 move 5/5 -> 105 stam-3 poi 105 fightingx1 unguarded TAKEN | stam=3 gold=5
+turn 102 p2 rest stam+5 | stam=5 gold=5
+turn 103 p1 move 4/4 -> 51 stam-0 poi 51 goldx1 fighting:3 roll 4+1 TAKEN | stam=3 gold=6
+turn 104 p2 move 1/3 -> 152 stam-3 | stam=2 gold=5
+turn 105 p1 move 1/1 -> 47 stam-0 poi 47 magicx1 unguarded TAKEN | stam=3 gold=6
+turn 106 p2 rest stam+5 | stam=7 gold=5
+turn 107 p1 move 4/4 -> 55 stam-0 poi 55 fightingx1 unguarded TAKEN | stam=3 gold=6
+turn 108 p2 move 2/2 -> 156 stam-6 poi 156 goldx2 fighting:5 roll 6+0 TAKEN | stam=1 gold=7
+turn 109 p1 move 3/3 -> 53 stam-0 poi 53 fightingx1 unguarded TAKEN | stam=3 gold=6
+turn 110 p2 move 2/2 -> 160 stam-0 poi 160 magicx3 unguarded TAKEN | stam=1 gold=7
+turn 111 p1 move 3/3 -> 35 stam-0 poi 35 fightingx1 unguarded TAKEN | stam=3 gold=6
+turn 112 p2 move 1/8 -> 157 stam-0 | stam=1 gold=7
+turn 113 p1 move 3/3 -> 22 stam-0 poi 22 mountain_movex2 unguarded TAKEN | stam=3 gold=6
+turn 114 p2 rest stam+5 | stam=6 gold=7
+turn 115 p1 move 4/4 -> 12 stam-0 poi 12 mountain_movex2 unguarded TAKEN | stam=3 gold=6
+turn 116 p2 move 2/7 -> 162 stam-6 | stam=0 gold=7
+turn 117 p1 move 5/5 -> 8 stam-0 poi 8 mountain_movex3 unguarded TAKEN | stam=3 gold=6
+turn 118 p2 rest stam+5 | stam=5 gold=7
+turn 119 p1 move 4/4 -> 21 stam-0 poi 21 fightingx2 unguarded TAKEN | stam=3 gold=6
+turn 120 p2 move 5/5 -> 81 stam-3 poi 81 plains_movex3 unguarded TAKEN | stam=2 gold=7
+turn 121 p1 move 2/2 -> 45 stam-0 poi 45 fightingx5 unguarded TAKEN | stam=3 gold=6
+turn 122 p2 move 3/14 -> 97 stam-0 | stam=2 gold=7
+turn 123 p1 move 6/7 -> 6 stam-2 | stam=1 gold=6
+turn 124 p2 rest stam+5 | stam=7 gold=7
+turn 125 p1 move 1/1 -> 11 stam-0 poi 11 fightingx2 unguarded TAKEN | stam=1 gold=6
+turn 126 p2 move 2/11 -> 152 stam-6 | stam=1 gold=7
+turn 127 p1 move 5/9 -> 13 stam-0 | stam=1 gold=6
+turn 128 p2 rest stam+5 | stam=6 gold=7
+turn 129 p1 move 4/4 -> 25 stam-0 poi 25 mountain_movex2 unguarded TAKEN | stam=1 gold=6
+turn 130 p2 move 9/9 -> 40 stam-3 poi 40 mountain_movex1 unguarded TAKEN | stam=3 gold=7
+turn 131 p1 move 5/5 -> 41 stam-0 poi 41 mountain_movex2 unguarded TAKEN | stam=1 gold=6
+turn 132 p2 move 10/10 -> 91 stam-0 poi 91 mountain_movex1 unguarded TAKEN | stam=3 gold=7
+turn 133 p1 move 5/18 -> 38 stam-0 | stam=1 gold=6
+turn 134 p2 move 3/3 -> 93 stam-0 poi 93 plains_movex2 unguarded TAKEN | stam=3 gold=7
+turn 135 p1 move 7/11 -> 87 stam-0 | stam=1 gold=6
+turn 136 p2 move 4/4 -> 94 stam-0 poi 94 fightingx2 unguarded TAKEN | stam=3 gold=7
+turn 137 p1 move 4/4 -> 110 stam-0 poi 110 goldx1 fighting:3 roll 4+13 TAKEN | stam=1 gold=7
+turn 138 p2 move 5/5 -> 130 stam-0 poi 130 mountain_movex2 unguarded TAKEN | stam=3 gold=7
+turn 139 p1 move 5/5 -> 58 stam-0 poi 58 goldx1 fighting:2 roll 2+13 TAKEN | stam=1 gold=8
+turn 140 p2 move 14/14 -> 112 stam-0 poi 112 goldx2 fighting:4 roll 4+2 TAKEN | stam=3 gold=9
+turn 141 p1 move 9/17 -> 51 stam-0 | stam=1 gold=8
+turn 142 p2 move 15/19 -> 111 stam-2 | stam=1 gold=9
+turn 143 p1 move 8/8 -> 134 stam-0 poi 134 goldx2 fighting:6 roll 1+13 TAKEN | stam=1 gold=10
+turn 144 p2 move 7/9 -> 151 stam-0 | stam=1 gold=9
+turn 145 p1 move 6/6 -> 161 stam-0 poi 161 goldx2 fighting:6 roll 5+13 TAKEN | stam=1 gold=12
+turn 146 p2 move 9/9 -> 143 stam-0 poi 143 goldx2 fighting:5 roll 2+2 kept | stam=1 gold=9
+turn 147 p1 move 11/12 -> 215 stam-1 | stam=0 gold=12
+turn 148 p2 move 0/0 -> 143 stam-0 poi 143 goldx2 fighting:5 roll 2+2 kept | stam=1 gold=9
+turn 149 p1 move 1/1 -> 231 stam-0 poi 231 goldx6 fighting:10 roll 6+13 TAKEN | stam=0 gold=18
+turn 150 p2 move 0/0 -> 143 stam-0 poi 143 goldx2 fighting:5 roll 6+2 TAKEN | stam=1 gold=11
+turn 151 p1 move 5/5 -> 223 stam-0 poi 223 goldx2 magic:4 roll 3+5 TAKEN | stam=0 gold=20
+turn 152 p2 move 4/4 -> 150 stam-0 poi 150 goldx2 magic:5 roll 1+5 TAKEN | stam=1 gold=13
+turn 153 p1 move 10/10 -> 168 stam-0 poi 168 goldx2 fighting:4 roll 3+13 TAKEN | stam=0 gold=22
+turn 154 p2 move 6/13 -> 217 stam-0 | stam=1 gold=13
+turn 155 p1 move 12/12 -> 216 stam-0 poi 216 goldx4 fighting:9 roll 6+13 TAKEN WON p1 | stam=0 gold=26
+ended victory after 155 turns
+final p1 gold=26 stamina=0 pm=9 fm=5 mm=11 f=13 m=5
+final p2 gold=13 stamina=1 pm=11 fm=10 mm=4 f=2 m=5
+winners p1

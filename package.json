@@ -9,7 +9,8 @@
     "test:watch": "vitest",
     "test:update-golden": "vitest run -u",
     "map": "node tools/balance/src/cli.ts map",
-    "map:batch": "node tools/balance/src/cli.ts batch"
+    "map:batch": "node tools/balance/src/cli.ts batch",
+    "game": "node tools/balance/src/cli.ts game"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

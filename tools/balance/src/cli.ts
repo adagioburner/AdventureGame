@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { DEFAULT_RULESET } from '@adventure/config';
 import type { Seed } from '@adventure/core';
 import { generateAndReport, runMapBatch } from './index.ts';
+import { formatPlaythrough, playGame } from './playthrough.ts';
 import { formatBatchReport, formatMapReport } from './report.ts';
 import { renderMapSvg } from './svg.ts';
 
@@ -21,12 +22,14 @@ function main(argv: readonly string[]): number {
 
   if (command === 'map') return renderOne(rest);
   if (command === 'batch') return renderBatch(rest);
+  if (command === 'game') return playOne(rest);
 
   process.stderr.write(
     [
       'usage:',
       '  pnpm map [<seed>] [--json]    one map: a report, and out/maps/<seed>.svg',
       '  pnpm map:batch [<n>]          n seeds: the §11 distributions, no files',
+      '  pnpm game [<seed>]            play one map to a winner: the turn-by-turn transcript',
       '',
     ].join('\n'),
   );
@@ -60,6 +63,24 @@ function renderOne(args: readonly string[]): number {
   // Last line, so it can be pasted straight into a browser.
   process.stdout.write(`${svgPath}\n`);
   return 0;
+}
+
+/**
+ * One whole game, headless, through `applyAction` — the rules engine (§7, §8)
+ * doing what the map generator's `pnpm map` does for §2.1. The driver is the
+ * deliberately dumb one in `playthrough.ts`, not an AI: §9's player is phase 5.
+ */
+function playOne(args: readonly string[]): number {
+  const given = args.find((argument) => !argument.startsWith('--'));
+  const seed: Seed = given ?? randomSeed();
+  if (given === undefined) process.stdout.write(`seed ${seed} (generated; pass it back to reproduce this game)\n\n`);
+
+  const run = playGame(
+    { seed, diceSeed: `dice-${seed}`, playerCount: 2, maxTurns: 2000 },
+    DEFAULT_RULESET,
+  );
+  process.stdout.write(formatPlaythrough(run));
+  return run.endedBy === 'victory' ? 0 : 1;
 }
 
 function renderBatch(args: readonly string[]): number {
