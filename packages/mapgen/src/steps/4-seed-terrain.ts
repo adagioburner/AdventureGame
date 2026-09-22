@@ -1,6 +1,7 @@
 import { TERRAINS, type Terrain } from '@adventure/config';
 import { asNodeId, degree, type NodeId } from '@adventure/core';
 import { draftAsGraph } from '../graphops.ts';
+import { bestGrowthCandidate, hopDistances, rebalanceTerrainShares, terrainTargets } from '../terraingrowth.ts';
 import { GenerationRejected, type GenerationContext, type GenerationStep, type MapDraft } from '../types.ts';
 
 /**
@@ -29,15 +30,26 @@ import { GenerationRejected, type GenerationContext, type GenerationStep, type M
  *     branch, is sealed after a handful of nodes; a seed at a junction, far
  *     from the others, is not. Measured over 24 seeds this is what brings the
  *     share error down from around 9 points per terrain to around 3.
- *  3. **Which frontier node** — the one with the most neighbours already of
- *     this terrain (§2.1's own bias), then the one closest to the region's
- *     existing nodes, then a draw from the PRNG. Growing shallowest-first
- *     spreads a region evenly instead of letting it run off down one branch,
- *     which is the other half of not getting sealed.
+ *  3. **Which frontier node** — `bestGrowthCandidate`, shared with step 6:
+ *     the one with the most neighbours already of this terrain (§2.1's own
+ *     bias), then the one closest to the region's existing nodes, then a draw
+ *     from the PRNG. Growing shallowest-first spreads a region evenly instead
+ *     of letting it run off down one branch, which is the other half of not
+ *     getting sealed.
  *
- * A region that is sealed off anyway simply stops, and the terrains still
- * growing take what is left. That is not a rejection: §2.1 calls the shares
- * approximate, and §2.1 step 5 is the step that answers for a region's shape.
+ * A region sealed off anyway simply stops, and the terrains still growing take
+ * what is left — which is why the fill on its own finishes well wide of the
+ * shares, overshooting on plains, the largest quota and so the last one still
+ * growing. So the fill is only half the step. `rebalanceTerrainShares` then
+ * moves nodes from whichever terrain is over its share to whichever is under,
+ * which *cannot* be sealed off — the surplus terrain is by definition still
+ * everywhere — and that is what finally satisfies the "until area shares are
+ * approximately 45 / 30 / 25" the step is named for. Measured over 40 seeds,
+ * the pipeline without it finished with the mountain share anywhere from 6.4%
+ * to 31.0%; with it, 21.8% to 25.2%.
+ *
+ * None of this is a rejection: §2.1 calls the shares approximate, and §2.1
+ * step 5 is the step that answers for a region's shape.
  * `terrain_share_unreachable` is kept for the one case that truly cannot
  * proceed — a graph too small to seed every terrain at all.
  */
@@ -97,30 +109,20 @@ export const seedTerrainStep: GenerationStep = {
     // step 8 would reject as disconnected — falls to plains, §2.1's majority
     // terrain.
     draft.terrain = assigned.map((terrain) => terrain ?? 'plains');
+
+    // Nothing to protect yet: the valleys do not exist until step 6.
+    rebalanceTerrainShares(
+      draft.terrain,
+      draft.adjacency,
+      terrainTargets(nodeCount, TERRAIN_AREA_SHARE),
+      new Set(),
+      rng,
+    );
   },
 };
 
 function allNodes(count: number): NodeId[] {
   return Array.from({ length: count }, (_, index) => asNodeId(index));
-}
-
-/** Hop distance from a set of sources to every node; `Infinity` where unreachable. */
-function hopDistances(draft: MapDraft, sources: readonly NodeId[]): number[] {
-  const distance = new Array<number>(draft.positions.length).fill(Number.POSITIVE_INFINITY);
-  const queue: NodeId[] = [];
-  for (const source of sources) {
-    distance[source] = 0;
-    queue.push(source);
-  }
-  for (let head = 0; head < queue.length; head++) {
-    const node = queue[head] as NodeId;
-    for (const neighbour of draft.adjacency[node] ?? []) {
-      if ((distance[neighbour] as number) !== Number.POSITIVE_INFINITY) continue;
-      distance[neighbour] = (distance[node] as number) + 1;
-      queue.push(neighbour);
-    }
-  }
-  return distance;
 }
 
 /** The candidate furthest (in hops) from every seed placed so far; ties drawn from the PRNG. */
@@ -130,7 +132,7 @@ function farthestFrom(
   pool: readonly NodeId[],
   rng: GenerationContext['rng'],
 ): NodeId {
-  const distance = hopDistances(draft, seeds);
+  const distance = hopDistances(draft.adjacency, seeds);
   let best: NodeId[] = [];
   let bestDistance = -1;
   for (const candidate of pool) {
@@ -200,30 +202,5 @@ function bestFrontierNode(
   for (let index = 0; index < assigned.length; index++) {
     if (assigned[index] === terrain) own.push(asNodeId(index));
   }
-  const depth = hopDistances(draft, own);
-
-  let best: NodeId[] = [];
-  let bestScore = Number.NEGATIVE_INFINITY;
-
-  for (let index = 0; index < assigned.length; index++) {
-    if (assigned[index] !== null) continue;
-    const node = asNodeId(index);
-    let same = 0;
-    for (const neighbour of draft.adjacency[node] ?? []) {
-      if (assigned[neighbour] === terrain) same++;
-    }
-    if (same === 0) continue;
-
-    // Same-terrain neighbours dominate; depth only separates nodes that tie on
-    // them. The node count bounds any depth, so this cannot invert the ranking.
-    const score = same * (assigned.length + 1) - (depth[node] as number);
-    if (score > bestScore) {
-      bestScore = score;
-      best = [node];
-    } else if (score === bestScore) {
-      best.push(node);
-    }
-  }
-
-  return best.length === 0 ? null : rng.pick(best);
+  return bestGrowthCandidate(draft.adjacency, own, (node) => assigned[node] === null, rng);
 }

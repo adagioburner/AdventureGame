@@ -471,10 +471,11 @@ joins `golden/rng/`.
 
 Measured over 40 seeds (`pnpm map:batch 40`, 7.8 s): **every seed generates on
 the first attempt**, 229–248 nodes, exactly 300 edges, 31–45 leaves, 60–63 POIs.
-Terrain shares average 46 / 31 / 23 against §2.1's 45 / 30 / 25. Remoteness
-spans [0, 1] on every map and §4.2 reconciles exactly, row by row.
+Terrain shares on the **finished** map run 44.8–48.1% plains, 29.8–30.2% forest
+and 21.8–25.2% mountain against §2.1's 45 / 30 / 25. Remoteness spans [0, 1] on
+every map and §4.2 reconciles exactly, row by row.
 
-Five things worth knowing, three of them only visible once the pipeline ran:
+Six things worth knowing, four of them only visible once the pipeline ran:
 
 - **A pruned map is nearly a tree.** ~240 nodes and 300 edges is a mean degree
   of 2.5. Almost every surprise below follows from that, and it is worth
@@ -488,8 +489,19 @@ Five things worth knowing, three of them only visible once the pipeline ran:
 - **Terrain regions get sealed off** — on a near-tree, a region can find every
   node next to it already taken long before it reaches its share. Step 4 answers
   that with farthest-point seed placement on junction nodes and shallowest-first
-  growth; see the note on the step. Per-map shares still vary widely (mountain
-  ran 11–35% over 40 seeds); the *mean* is what §2.1's "approximately" buys.
+  growth; see the note on the step. That alone still left the finished mountain
+  share anywhere from 6.4% to 31.0% across 40 seeds, which is what
+  [Q28](./OPEN_QUESTIONS.md#q28) then fixed.
+- **The shares are a property of the finished map**
+  ([Q28](./OPEN_QUESTIONS.md#q28), Andrei on PR #10). Step 6 carves forest and
+  mountain into plains after step 4 has hit its shares, so the map a player is
+  handed drifted badly — `adventure` finished 65 / 26 / 9 — and because §4.2
+  fixes the POI count per terrain, whatever terrain shrank also crowded its
+  POIs: two thirds of every mountain node on that map carried one. Step 6 now
+  ends by growing the short terrains back into plains, leaving the carved
+  fingers and their mouths alone, and the same growth finishes step 4. Over the
+  same 40 seeds that moved plains from 32.9–66.8% to 44.8–48.1%, forest from
+  17.5–45.7% to 29.8–30.2%, and mountain from 6.4–31.0% to 21.8–25.2%.
 - **`POISSON_RADIUS_FACTOR` was recalibrated**, 0.85 → 0.815. It is an
   `EngineeringConfig` knob whose whole purpose is hitting the node budget, and
   0.85 — a guess made before a sampler existed — yields ~220 nodes against

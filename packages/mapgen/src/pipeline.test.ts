@@ -242,6 +242,37 @@ describe('terrain', () => {
       for (const terrain of TERRAINS) expect(present.has(terrain)).toBe(true);
     }
   }, 30000);
+
+  // [SOURCE §2.1, chat] The shares are a statement about the map a player is
+  // handed, so they are measured here on the sealed map — after step 6 has cut
+  // its valleys, not on the draft step 4 leaves behind. Before step 6 paid the
+  // valleys back, `adventure` finished 65 / 26 / 9 against 45 / 30 / 25.
+  it('holds §2.1 step 4 area shares in the finished map, valleys and all', () => {
+    const { TERRAIN_AREA_SHARE } = DEFAULT_RULESET.config.map;
+    for (const seed of SEEDS) {
+      const map = mapOf(seed);
+      const total = map.graph.nodes.length;
+      for (const terrain of TERRAINS) {
+        const share = map.graph.nodes.filter((node) => node.terrain === terrain).length / total;
+        expect(Math.abs(share - TERRAIN_AREA_SHARE[terrain])).toBeLessThan(0.05);
+      }
+    }
+  }, 30000);
+
+  // §4.2 fixes the POI count per terrain, so a terrain that loses nodes crowds
+  // its POIs together. This is the reading that made the skew visible.
+  it('keeps POI density comparable across the three terrains', () => {
+    for (const seed of SEEDS) {
+      const map = mapOf(seed);
+      const poiNodes = new Set(map.pois.map((poi) => poi.node));
+      const spacing = TERRAINS.map((terrain) => {
+        const nodes = map.graph.nodes.filter((node) => node.terrain === terrain);
+        const pois = nodes.filter((node) => poiNodes.has(node.id)).length;
+        return nodes.length / pois;
+      });
+      expect(Math.max(...spacing) / Math.min(...spacing)).toBeLessThan(2);
+    }
+  }, 30000);
 });
 
 describe('regeneration', () => {

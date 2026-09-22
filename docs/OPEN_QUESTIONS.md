@@ -688,6 +688,43 @@ read remoteness, not compactness.
 
 ---
 
+### Q28. ~~Are §2.1's terrain shares measured before or after the valleys are carved?~~ — **answered: the finished map**
+
+Andrei, reviewing PR #10: *"Because of the valleys the count of nodes of each
+terrain has been skewed heavily towards plains, right? The mountains are
+overcrowded with POI while Plains have huge empty spaces. ... We need to keep
+close to the original balance of nodes in the final map, not before the valleys
+have been carved."*
+
+Both halves of his reading were right, and the second one is the consequence of
+the first. §2.1 step 6 converts forest and mountain nodes into plains *after*
+step 4 has hit its shares, so the map a player is handed drifts; `adventure`
+finished 65 / 26 / 9 against 45 / 30 / 25. And because §4.2 fixes the POI count
+per terrain — 25 plains, 20 forest, 15 mountain, whatever the node counts turn
+out to be — every node the valleys take out of mountain also packs mountain's
+POIs closer together. On that map two thirds of every mountain node carried a
+POI while plains ran one per 6.2 nodes; `saltmarch` was one per 1.7.
+
+Recorded in `GDD.md` §2.1 as [SOURCE §2.1, review] and implemented: step 6 ends
+by growing whatever terrain is short back into plains, leaving the carved
+fingers and the plains node each one opens from untouched, and the same growth
+finishes step 4, whose flood fill cannot reach the shares on its own. Measured
+over 40 seeds, the finished map now runs 44.8–48.1% plains, 29.8–30.2% forest
+and 21.8–25.2% mountain. The same 40 seeds through the old pipeline ran
+32.9–66.8% plains, 17.5–45.7% forest and 6.4–31.0% mountain. POI spacing sits
+between one per 2.9 and one per 4.9 nodes on every terrain.
+
+Two knock-on facts worth knowing rather than re-deriving. Plains compactness
+rises — 6.8 on `adventure` against 0.9 before — because plains is now genuinely
+corridor-shaped where a valley runs; that is what a valley is, and it is still
+far inside `COMPACTNESS_MAX`, so [Q27](#q27) is unchanged. And a terrain walled
+in by one that is already at its share cannot be fixed by a straight transfer,
+so the regrowth also trades: the neighbour hands a node over and takes one back
+from a terrain that has a surplus. Without that trade the shares stuck as much
+as ten points out on the odd map.
+
+---
+
 ## C. Decisions I made that are *implementation*, not design
 
 Listed so you can veto any that read as design to you.
@@ -704,4 +741,5 @@ Listed so you can veto any that read as design to you.
 | `POISSON_RADIUS_FACTOR` recalibrated 0.85 → 0.815 | An `EngineeringConfig` knob, documented as existing purely "for making step 1 hit its node budget". 0.85 was a guess made before there was a sampler; measured, it yields ~220 nodes against §11's `MAP_NODE_COUNT` of 240. 0.815 centres the yield on 240. No §11 value changed. |
 | Farthest-point seed placement in §2.1 step 4, on nodes of degree ≥ 3 | §2.1 fixes the seed *count* (1 or 2 per terrain) and says nothing about placement. On a near-tree graph a seed down a branch is walled in after a few nodes and its terrain never reaches its share; measured, this choice cuts the share error from ~9 points per terrain to ~3. |
 | Surplus leaves drawn by shuffle | §3 forces every leaf to be a POI and §4.2 fixes how many POIs a terrain's table rows get; nothing says *which* leaves fall inside the quota when a terrain has more leaves than it. Drawn from the map's own stream. |
+| Growing terrain by *trading* when a region is walled in (Q28) | §2.1 asks for the shares and says nothing about how to reach them. A region enclosed by a terrain already at its share cannot take a node without pushing that terrain under; the two-step trade keeps both at their targets and still reduces the total deviation, so the pass terminates. |
 | `GenerationObserver` on `generateMap` | Diagnostics only, for `tools/balance`. §11 wants compactness measured both after Smooth and after Carve Valleys, and `valleyNodes` is draft-only — neither belongs in the `GameMap` that Q15 sends to every client. |

@@ -298,6 +298,10 @@ describe('step 6 — carve valleys', () => {
 
     const after = draftAfter('6-carve-valleys', 'adventure');
     expect(after.valleyNodes.size).toBeGreaterThan(0);
+    // Also the regression test for the regrowth that follows carving: it may
+    // not take a corridor back, and locking only the carved nodes is not
+    // enough — a valley is cut *out of* the boundary, so the plains node it
+    // opens from is the frontier the regrowth reaches for first.
     for (const node of after.valleyNodes) {
       expect(after.terrain[node]).toBe('plains');
       expect(nonPlainsBefore.has(node)).toBe(true);

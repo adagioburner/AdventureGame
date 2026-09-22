@@ -26,8 +26,8 @@ export function formatMapReport(report: MapGenerationReport, ruleset: Ruleset): 
   lines.push(`valley nodes          ${report.valleyNodes.length}`);
   lines.push('');
   lines.push(`terrain share (§2.1 step 4 target ${TERRAINS.map((t) => percent(mapConfig.TERRAIN_AREA_SHARE[t])).join(' / ')})`);
-  lines.push(`  after smooth        ${TERRAINS.map((t) => percent(report.terrainSharesAfterSmooth[t])).join(' / ')}`);
-  lines.push(`  after valleys       ${TERRAINS.map((t) => percent(report.terrainShares[t])).join(' / ')}`);
+  lines.push(`  finished map        ${TERRAINS.map((t) => percent(report.terrainShares[t])).join(' / ')}`);
+  lines.push(`  before the valleys  ${TERRAINS.map((t) => percent(report.terrainSharesAfterSmooth[t])).join(' / ')}`);
   lines.push('');
   lines.push(`compactness, worst component per terrain (COMPACTNESS_MAX ${mapConfig.COMPACTNESS_MAX})`);
   lines.push(`  after smooth        ${TERRAINS.map((t) => fixed(report.compactnessAfterSmooth[t])).join(' / ')}`);
@@ -59,11 +59,13 @@ export function formatBatchReport(reports: readonly MapGenerationReport[], rules
   lines.push(spread('valley nodes', reports.map((r) => r.valleyNodes.length), '2-4 x 5-12'));
   lines.push('');
 
+  // The finished map, not the draft before step 6 — the share targets are a
+  // statement about the map a player is handed. See §2.1 step 6.
   for (const terrain of TERRAINS) {
     lines.push(
       spread(
         `${terrain} share %`,
-        reports.map((r) => (r.terrainSharesAfterSmooth[terrain] as number) * 100),
+        reports.map((r) => (r.terrainShares[terrain] as number) * 100),
         percent(mapConfig.TERRAIN_AREA_SHARE[terrain]),
       ),
     );

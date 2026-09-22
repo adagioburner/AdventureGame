@@ -1,8 +1,8 @@
 # adventure — generated map summary. See golden/README.md before updating.
 meta attempts=1 nodes=239 edges=300 pois=60
-terrain plains nodes=156
-terrain forest nodes=61
-terrain mountain nodes=22
+terrain plains nodes=107
+terrain forest nodes=72
+terrain mountain nodes=60
 node 0 plains x=97619 y=967284
 node 1 forest x=83628 y=892398
 node 2 plains x=152732 y=943799
@@ -25,37 +25,37 @@ node 18 plains x=310516 y=986474
 node 19 plains x=289076 y=860902
 node 20 plains x=167963 y=995254
 node 21 forest x=285943 y=783839
-node 22 plains x=13788 y=588145
+node 22 forest x=13788 y=588145
 node 23 forest x=111886 y=680544
 node 24 forest x=229568 y=741542
 node 25 forest x=198376 y=659501
 node 26 plains x=268952 y=940302
 node 27 forest x=178571 y=567011
-node 28 plains x=70411 y=610129
+node 28 forest x=70411 y=610129
 node 29 plains x=369730 y=920702
 node 30 plains x=343574 y=828309
 node 31 forest x=77988 y=547570
-node 32 plains x=17575 y=522099
+node 32 forest x=17575 y=522099
 node 33 forest x=248450 y=502641
 node 34 forest x=150874 y=795349
 node 35 forest x=68623 y=452331
 node 36 forest x=119619 y=582153
-node 37 plains x=75670 y=369683
+node 37 forest x=75670 y=369683
 node 38 forest x=113833 y=501440
 node 39 plains x=408472 y=976321
-node 40 plains x=134754 y=432404
+node 40 forest x=134754 y=432404
 node 41 forest x=263694 y=612996
 node 42 forest x=194293 y=514076
 node 43 forest x=168820 y=353417
-node 44 plains x=15754 y=464114
+node 44 forest x=15754 y=464114
 node 45 forest x=286212 y=705013
-node 46 plains x=25516 y=406943
+node 46 forest x=25516 y=406943
 node 47 plains x=241897 y=339742
 node 48 forest x=141218 y=633191
 node 49 plains x=347560 y=639866
-node 50 plains x=240371 y=429299
-node 51 plains x=286365 y=383035
-node 52 plains x=119547 y=329110
+node 50 forest x=240371 y=429299
+node 51 forest x=286365 y=383035
+node 52 forest x=119547 y=329110
 node 53 forest x=8566 y=323533
 node 54 plains x=212762 y=264183
 node 55 forest x=104130 y=275668
@@ -65,8 +65,8 @@ node 58 forest x=6291 y=237467
 node 59 plains x=496729 y=979086
 node 60 plains x=389918 y=864914
 node 61 plains x=359541 y=735774
-node 62 forest x=260575 y=189139
-node 63 plains x=167141 y=292945
+node 62 plains x=260575 y=189139
+node 63 forest x=167141 y=292945
 node 64 plains x=427915 y=812047
 node 65 plains x=486894 y=746198
 node 66 plains x=332281 y=296443
@@ -77,7 +77,7 @@ node 70 forest x=135129 y=205615
 node 71 plains x=498361 y=863207
 node 72 plains x=579445 y=960795
 node 73 plains x=552627 y=673793
-node 74 plains x=299182 y=446601
+node 74 forest x=299182 y=446601
 node 75 plains x=322327 y=577601
 node 76 plains x=432882 y=759224
 node 77 forest x=72375 y=140766
@@ -86,162 +86,162 @@ node 79 plains x=482624 y=803265
 node 80 forest x=249219 y=128872
 node 81 plains x=366714 y=387758
 node 82 forest x=235708 y=557041
-node 83 forest x=349010 y=148430
-node 84 forest x=322642 y=202862
+node 83 plains x=349010 y=148430
+node 84 plains x=322642 y=202862
 node 85 plains x=591244 y=723241
 node 86 plains x=545873 y=782278
-node 87 forest x=209827 y=204166
+node 87 plains x=209827 y=204166
 node 88 plains x=414695 y=604838
-node 89 plains x=188891 y=410268
+node 89 forest x=188891 y=410268
 node 90 forest x=200530 y=103907
 node 91 forest x=434150 y=141460
 node 92 forest x=131066 y=113760
-node 93 forest x=308511 y=93693
+node 93 plains x=308511 y=93693
 node 94 forest x=255902 y=44633
 node 95 plains x=602938 y=861181
 node 96 plains x=384729 y=274841
 node 97 plains x=389324 y=217472
 node 98 plains x=377336 y=329839
 node 99 plains x=598541 y=788283
-node 100 plains x=334467 y=504359
+node 100 forest x=334467 y=504359
 node 101 plains x=518588 y=608180
 node 102 plains x=604673 y=621397
 node 103 forest x=165890 y=64160
-node 104 forest x=354749 y=57012
-node 105 plains x=422491 y=510655
+node 104 plains x=354749 y=57012
+node 105 forest x=422491 y=510655
 node 106 plains x=467782 y=626213
-node 107 forest x=384072 y=103361
+node 107 plains x=384072 y=103361
 node 108 plains x=552198 y=562361
 node 109 plains x=487229 y=565869
 node 110 forest x=190627 y=15672
-node 111 plains x=419371 y=433110
+node 111 forest x=419371 y=433110
 node 112 forest x=114197 y=14122
 node 113 forest x=22608 y=167723
-node 114 plains x=682114 y=561761
-node 115 plains x=495910 y=470362
+node 114 mountain x=682114 y=561761
+node 115 mountain x=495910 y=470362
 node 116 plains x=682386 y=826946
 node 117 plains x=651542 y=783179
-node 118 plains x=475120 y=321901
+node 118 mountain x=475120 y=321901
 node 119 plains x=684753 y=901989
 node 120 plains x=376832 y=563220
 node 121 plains x=524623 y=913300
 node 122 forest x=25486 y=93277
-node 123 plains x=455946 y=383628
+node 123 forest x=455946 y=383628
 node 124 plains x=553005 y=836364
 node 125 forest x=460270 y=61830
-node 126 plains x=377457 y=466148
+node 126 forest x=377457 y=466148
 node 127 forest x=366559 y=5640
-node 128 plains x=558356 y=485788
+node 128 mountain x=558356 y=485788
 node 129 plains x=769846 y=772713
 node 130 forest x=467701 y=2662
 node 131 plains x=626951 y=925012
 node 132 forest x=302719 y=4536
-node 133 plains x=602837 y=439290
-node 134 plains x=564104 y=329255
+node 133 mountain x=602837 y=439290
+node 134 mountain x=564104 y=329255
 node 135 plains x=663675 y=447048
-node 136 plains x=751944 y=492662
+node 136 mountain x=751944 y=492662
 node 137 plains x=741873 y=388182
 node 138 plains x=614073 y=519053
-node 139 plains x=550750 y=421473
+node 139 mountain x=550750 y=421473
 node 140 forest x=73394 y=71120
 node 141 plains x=688113 y=981871
 node 142 plains x=555017 y=242554
 node 143 mountain x=624972 y=181023
 node 144 plains x=624939 y=254250
-node 145 plains x=441909 y=235329
+node 145 mountain x=441909 y=235329
 node 146 plains x=631857 y=322582
-node 147 plains x=658295 y=393368
+node 147 mountain x=658295 y=393368
 node 148 plains x=824920 y=779511
-node 149 mountain x=708903 y=330836
+node 149 plains x=708903 y=330836
 node 150 mountain x=608970 y=95441
 node 151 plains x=671184 y=506369
-node 152 plains x=496320 y=273305
+node 152 mountain x=496320 y=273305
 node 153 plains x=619616 y=994766
-node 154 plains x=522415 y=367787
+node 154 mountain x=522415 y=367787
 node 155 forest x=48524 y=20857
-node 156 plains x=530379 y=175530
+node 156 mountain x=530379 y=175530
 node 157 plains x=533231 y=119955
 node 158 plains x=757700 y=893430
 node 159 plains x=603703 y=372385
 node 160 plains x=552468 y=44995
-node 161 plains x=704238 y=614931
-node 162 plains x=491512 y=216110
+node 161 mountain x=704238 y=614931
+node 162 mountain x=491512 y=216110
 node 163 plains x=659930 y=670475
 node 164 plains x=686953 y=257307
 node 165 mountain x=683612 y=175981
 node 166 forest x=406884 y=42836
 node 167 mountain x=706058 y=121163
 node 168 mountain x=626360 y=1694
-node 169 mountain x=757557 y=239152
+node 169 plains x=757557 y=239152
 node 170 mountain x=697884 y=30542
-node 171 mountain x=764878 y=306037
-node 172 plains x=802858 y=471557
+node 171 plains x=764878 y=306037
+node 172 mountain x=802858 y=471557
 node 173 plains x=672712 y=723667
-node 174 plains x=753364 y=668602
-node 175 plains x=773744 y=717832
-node 176 plains x=893110 y=721670
+node 174 mountain x=753364 y=668602
+node 175 mountain x=773744 y=717832
+node 176 mountain x=893110 y=721670
 node 177 plains x=743301 y=829159
 node 178 plains x=780777 y=947648
 node 179 plains x=818708 y=888790
 node 180 mountain x=668626 y=78046
 node 181 plains x=844165 y=936861
-node 182 plains x=838168 y=315649
+node 182 mountain x=838168 y=315649
 node 183 plains x=717137 y=774020
-node 184 plains x=819315 y=637959
-node 185 mountain x=800481 y=186134
+node 184 mountain x=819315 y=637959
+node 185 plains x=800481 y=186134
 node 186 plains x=769868 y=595913
-node 187 plains x=825687 y=375196
+node 187 mountain x=825687 y=375196
 node 188 mountain x=755635 y=69997
-node 189 plains x=922492 y=780793
-node 190 plains x=903776 y=665310
+node 189 mountain x=922492 y=780793
+node 190 mountain x=903776 y=665310
 node 191 plains x=741814 y=993085
-node 192 plains x=864453 y=249754
+node 192 mountain x=864453 y=249754
 node 193 plains x=911880 y=343846
-node 194 mountain x=741528 y=183666
+node 194 plains x=741528 y=183666
 node 195 plains x=715243 y=435814
 node 196 plains x=897854 y=936848
 node 197 mountain x=785407 y=21133
 node 198 plains x=926137 y=999448
-node 199 plains x=734774 y=546983
+node 199 mountain x=734774 y=546983
 node 200 plains x=866381 y=992345
 node 201 plains x=817829 y=572689
-node 202 plains x=966184 y=733134
+node 202 mountain x=966184 y=733134
 node 203 mountain x=797653 y=118507
-node 204 plains x=895987 y=847716
-node 205 plains x=858864 y=523962
+node 204 mountain x=895987 y=847716
+node 205 mountain x=858864 y=523962
 node 206 plains x=866470 y=612998
-node 207 plains x=996598 y=819832
-node 208 plains x=963285 y=648376
-node 209 plains x=979156 y=889151
+node 207 mountain x=996598 y=819832
+node 208 mountain x=963285 y=648376
+node 209 mountain x=979156 y=889151
 node 210 plains x=904110 y=434777
-node 211 plains x=923412 y=271652
+node 211 mountain x=923412 y=271652
 node 212 plains x=928155 y=606124
 node 213 mountain x=839313 y=29310
 node 214 mountain x=844078 y=82768
-node 215 mountain x=846029 y=152688
+node 215 plains x=846029 y=152688
 node 216 mountain x=930940 y=189647
-node 217 plains x=810099 y=257367
+node 217 mountain x=810099 y=257367
 node 218 plains x=980051 y=973153
 node 219 plains x=910671 y=556426
-node 220 plains x=840512 y=434006
-node 221 plains x=988654 y=536468
-node 222 plains x=828367 y=697524
+node 220 mountain x=840512 y=434006
+node 221 mountain x=988654 y=536468
+node 222 mountain x=828367 y=697524
 node 223 mountain x=921673 y=12280
-node 224 plains x=982518 y=111707
-node 225 plains x=982279 y=50927
+node 224 mountain x=982518 y=111707
+node 225 mountain x=982279 y=50927
 node 226 mountain x=898343 y=60812
 node 227 plains x=965031 y=352500
 node 228 plains x=998151 y=588843
-node 229 plains x=959848 y=478947
+node 229 mountain x=959848 y=478947
 node 230 plains x=965208 y=424906
-node 231 mountain x=893909 y=130687
-node 232 plains x=988758 y=282515
-node 233 plains x=994632 y=163075
+node 231 plains x=893909 y=130687
+node 232 mountain x=988758 y=282515
+node 233 mountain x=994632 y=163075
 node 234 plains x=813685 y=990442
-node 235 plains x=977097 y=223299
-node 236 plains x=998844 y=688332
+node 235 mountain x=977097 y=223299
+node 236 mountain x=998844 y=688332
 node 237 plains x=906786 y=495308
-node 238 plains x=790016 y=414470
+node 238 mountain x=790016 y=414470
 edge 0 2
 edge 1 6
 edge 1 7
@@ -542,63 +542,63 @@ edge 229 230
 edge 229 237
 edge 232 235
 edge 233 235
-poi 0 plains magic units=3 group=magic/unguarded guard=none remoteness=0.679482
-poi 1 forest fighting units=1 group=fighting/unguarded guard=none remoteness=0.661467
-poi 8 forest fighting units=2 group=fighting/unguarded guard=none remoteness=0.702548
-poi 11 forest mountain_move units=3 group=mountain_move/unguarded guard=none remoteness=0.777900
-poi 12 forest fighting units=1 group=fighting/unguarded guard=none remoteness=0.513840
-poi 21 forest gold units=1 group=gold/fighting guard=none remoteness=0.888181
-poi 25 forest fighting units=3 group=fighting/unguarded guard=none remoteness=0.518673
-poi 31 forest mountain_move units=1 group=mountain_move/unguarded guard=none remoteness=0.276582
-poi 39 plains plains_move units=2 group=plains_move/unguarded guard=none remoteness=0.339411
-poi 40 plains gold units=5 group=gold/fighting guard=fighting:10 remoteness=0.225615
-poi 41 forest mountain_move units=1 group=mountain_move/unguarded guard=none remoteness=0.660149
-poi 45 forest mountain_move units=2 group=mountain_move/unguarded guard=none remoteness=0.997583
-poi 53 forest gold units=1 group=gold/fighting guard=fighting:2 remoteness=0.286467
-poi 57 plains magic units=1 group=magic/unguarded guard=none remoteness=0.219464
-poi 58 forest gold units=2 group=gold/fighting guard=fighting:4 remoteness=0.611819
-poi 59 plains magic units=2 group=magic/unguarded guard=none remoteness=0.347540
-poi 61 plains forest_move units=1 group=forest_move/unguarded guard=none remoteness=0.255053
-poi 62 forest fighting units=2 group=fighting/unguarded guard=none remoteness=0.202329
-poi 70 forest gold units=1 group=gold/fighting guard=fighting:2 remoteness=0.286248
-poi 73 plains magic units=2 group=magic/unguarded guard=none remoteness=0.182337
-poi 81 plains magic units=1 group=magic/unguarded guard=none remoteness=0.339851
-poi 91 forest mountain_move units=3 group=mountain_move/unguarded guard=none remoteness=0.560193
-poi 93 forest mountain_move units=2 group=mountain_move/unguarded guard=none remoteness=0.634886
-poi 94 forest fighting units=3 group=fighting/unguarded guard=none remoteness=1.000000
-poi 102 plains magic units=1 group=magic/unguarded guard=none remoteness=0.221661
-poi 105 plains plains_move units=1 group=plains_move/unguarded guard=none remoteness=0.125439
-poi 110 forest fighting units=1 group=fighting/unguarded guard=none remoteness=0.470123
-poi 112 forest fighting units=2 group=fighting/unguarded guard=none remoteness=0.755272
-poi 115 plains plains_move units=2 group=plains_move/unguarded guard=none remoteness=0.042619
-poi 119 plains forest_move units=3 group=forest_move/unguarded guard=none remoteness=0.287566
-poi 122 forest mountain_move units=2 group=mountain_move/unguarded guard=none remoteness=0.412127
-poi 130 forest mountain_move units=1 group=mountain_move/unguarded guard=none remoteness=0.672232
-poi 141 plains plains_move units=3 group=plains_move/unguarded guard=none remoteness=0.215290
-poi 142 plains forest_move units=2 group=forest_move/unguarded guard=none remoteness=0.112039
-poi 143 mountain gold units=2 group=gold/magic guard=magic:5 remoteness=0.422232
-poi 148 plains plains_move units=1 group=plains_move/unguarded guard=none remoteness=0.013840
-poi 149 mountain gold units=2 group=gold/fighting guard=fighting:6 remoteness=0.052285
-poi 150 mountain gold units=2 group=gold/fighting guard=fighting:3 remoteness=0.753076
-poi 160 plains forest_move units=2 group=forest_move/unguarded guard=none remoteness=0.270870
-poi 161 plains forest_move units=1 group=forest_move/unguarded guard=none remoteness=0.063269
-poi 164 plains plains_move units=2 group=plains_move/unguarded guard=none remoteness=0.204086
-poi 165 mountain gold units=2 group=gold/fighting guard=fighting:5 remoteness=0.268673
-poi 167 mountain gold units=1 group=gold/fighting guard=fighting:2 remoteness=0.297671
-poi 168 mountain gold units=1 group=gold/magic guard=none remoteness=0.904657
-poi 169 mountain gold units=3 group=gold/magic guard=magic:9 remoteness=0.041520
-poi 170 mountain gold units=4 group=gold/fighting guard=fighting:10 remoteness=0.673111
-poi 171 mountain gold units=3 group=gold/magic guard=magic:9 remoteness=0.029218
-poi 174 plains forest_move units=3 group=forest_move/unguarded guard=none remoteness=0.000000
-poi 185 mountain gold units=3 group=gold/fighting guard=fighting:9 remoteness=0.222979
-poi 188 mountain gold units=1 group=gold/fighting guard=fighting:2 remoteness=0.441344
-poi 193 plains plains_move units=2 group=plains_move/unguarded guard=none remoteness=0.146749
-poi 204 plains plains_move units=2 group=plains_move/unguarded guard=none remoteness=0.206942
-poi 209 plains plains_move units=2 group=plains_move/unguarded guard=none remoteness=0.303383
-poi 213 mountain gold units=1 group=gold/fighting guard=none remoteness=0.908612
-poi 216 mountain gold units=1 group=gold/fighting guard=fighting:2 remoteness=0.322935
-poi 218 plains gold units=5 group=gold/fighting guard=fighting:10 remoteness=0.431239
-poi 223 mountain gold units=1 group=gold/magic guard=none remoteness=0.838093
-poi 225 plains forest_move units=3 group=forest_move/unguarded guard=none remoteness=0.433656
-poi 228 plains plains_move units=3 group=plains_move/unguarded guard=none remoteness=0.221002
-poi 231 mountain gold units=3 group=gold/fighting guard=fighting:7 remoteness=0.545475
+poi 0 plains forest_move units=2 group=forest_move/unguarded guard=none remoteness=0.530677
+poi 8 forest mountain_move units=1 group=mountain_move/unguarded guard=none remoteness=0.720254
+poi 11 forest gold units=1 group=gold/fighting guard=fighting:1 remoteness=0.607473
+poi 12 forest mountain_move units=2 group=mountain_move/unguarded guard=none remoteness=0.436647
+poi 21 forest fighting units=3 group=fighting/unguarded guard=none remoteness=0.703709
+poi 22 forest mountain_move units=2 group=mountain_move/unguarded guard=none remoteness=0.238246
+poi 25 forest mountain_move units=2 group=mountain_move/unguarded guard=none remoteness=0.492348
+poi 35 forest fighting units=3 group=fighting/unguarded guard=none remoteness=0.139253
+poi 39 plains plains_move units=3 group=plains_move/unguarded guard=none remoteness=0.200607
+poi 40 forest fighting units=1 group=fighting/unguarded guard=none remoteness=0.146284
+poi 41 forest fighting units=2 group=fighting/unguarded guard=none remoteness=0.424514
+poi 45 forest gold units=1 group=gold/fighting guard=none remoteness=0.787123
+poi 47 plains magic units=1 group=magic/unguarded guard=none remoteness=0.008548
+poi 51 forest fighting units=2 group=fighting/unguarded guard=none remoteness=0.091273
+poi 53 forest fighting units=1 group=fighting/unguarded guard=none remoteness=0.136219
+poi 55 forest mountain_move units=1 group=mountain_move/unguarded guard=none remoteness=0.114573
+poi 57 plains gold units=6 group=gold/fighting guard=fighting:10 remoteness=0.157452
+poi 58 forest mountain_move units=2 group=mountain_move/unguarded guard=none remoteness=0.312147
+poi 59 plains forest_move units=3 group=forest_move/unguarded guard=none remoteness=0.110989
+poi 61 plains forest_move units=1 group=forest_move/unguarded guard=none remoteness=0.226251
+poi 73 plains forest_move units=3 group=forest_move/unguarded guard=none remoteness=0.073349
+poi 75 plains magic units=2 group=magic/unguarded guard=none remoteness=0.249690
+poi 81 plains plains_move units=2 group=plains_move/unguarded guard=none remoteness=0.430718
+poi 91 forest gold units=1 group=gold/fighting guard=fighting:3 remoteness=0.156349
+poi 93 plains plains_move units=1 group=plains_move/unguarded guard=none remoteness=0.128085
+poi 94 forest mountain_move units=3 group=mountain_move/unguarded guard=none remoteness=0.396939
+poi 102 plains magic units=2 group=magic/unguarded guard=none remoteness=0.143803
+poi 105 forest fighting units=2 group=fighting/unguarded guard=none remoteness=0.215911
+poi 108 plains plains_move units=2 group=plains_move/unguarded guard=none remoteness=0.273542
+poi 110 forest mountain_move units=2 group=mountain_move/unguarded guard=none remoteness=0.248035
+poi 112 forest gold units=2 group=gold/fighting guard=fighting:4 remoteness=0.544740
+poi 115 mountain gold units=5 group=gold/magic guard=magic:10 remoteness=0.201710
+poi 119 plains forest_move units=4 group=forest_move/unguarded guard=none remoteness=0.206122
+poi 130 forest fighting units=1 group=fighting/unguarded guard=none remoteness=0.335310
+poi 134 mountain gold units=3 group=gold/fighting guard=fighting:9 remoteness=0.093203
+poi 138 plains plains_move units=2 group=plains_move/unguarded guard=none remoteness=0.038743
+poi 141 plains magic units=1 group=magic/unguarded guard=none remoteness=0.163794
+poi 142 plains forest_move units=1 group=forest_move/unguarded guard=none remoteness=0.235765
+poi 143 mountain gold units=1 group=gold/fighting guard=fighting:2 remoteness=0.252723
+poi 148 plains plains_move units=2 group=plains_move/unguarded guard=none remoteness=0.000000
+poi 149 plains magic units=3 group=magic/unguarded guard=none remoteness=0.038191
+poi 150 mountain gold units=2 group=gold/fighting guard=fighting:5 remoteness=0.447539
+poi 156 mountain gold units=1 group=gold/magic guard=magic:2 remoteness=0.391286
+poi 160 plains magic units=1 group=magic/unguarded guard=none remoteness=0.597546
+poi 161 mountain gold units=1 group=gold/magic guard=magic:3 remoteness=0.149042
+poi 164 plains plains_move units=1 group=plains_move/unguarded guard=none remoteness=0.168482
+poi 168 mountain gold units=2 group=gold/fighting guard=fighting:4 remoteness=0.678616
+poi 172 mountain gold units=1 group=gold/fighting guard=fighting:3 remoteness=0.057080
+poi 174 mountain gold units=1 group=gold/fighting guard=fighting:3 remoteness=0.085895
+poi 186 plains plains_move units=1 group=plains_move/unguarded guard=none remoteness=0.019164
+poi 193 plains forest_move units=1 group=forest_move/unguarded guard=none remoteness=0.135806
+poi 204 mountain gold units=2 group=gold/fighting guard=fighting:5 remoteness=0.445333
+poi 209 mountain gold units=2 group=gold/magic guard=magic:4 remoteness=0.632842
+poi 216 mountain gold units=2 group=gold/fighting guard=fighting:3 remoteness=0.763822
+poi 218 plains plains_move units=3 group=plains_move/unguarded guard=none remoteness=0.307183
+poi 221 mountain gold units=2 group=gold/fighting guard=fighting:6 remoteness=0.203088
+poi 223 mountain gold units=1 group=gold/magic guard=magic:1 remoteness=0.572177
+poi 225 mountain gold units=4 group=gold/fighting guard=fighting:8 remoteness=1.000000
+poi 228 plains plains_move units=3 group=plains_move/unguarded guard=none remoteness=0.255756
+poi 231 plains gold units=4 group=gold/fighting guard=fighting:10 remoteness=0.161726

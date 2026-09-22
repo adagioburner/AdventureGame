@@ -593,7 +593,9 @@ tunable — `COMPACTNESS_MAX`, `REMOTENESS_WEIGHT`,
 especially `REMOTENESS_SIMULATION_RUNS`, which §5.1 explicitly expects to change
 "if 100 proves too imprecise or too slow".
 
-`runMapBatch` reports leaf counts, terrain shares, compactness both after Smooth
+`runMapBatch` reports leaf counts, terrain shares of the **finished** map
+(§2.1's targets are a statement about what a player is handed, not about the
+draft before the valleys are cut — Q28), compactness both after Smooth
 and after Carve Valleys (the latter expected to be worse, by design), remoteness
 and guard-strength histograms. `runSelfPlayBatch` is blocked on §12.2.
 

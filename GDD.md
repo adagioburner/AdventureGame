@@ -37,6 +37,8 @@ Status: v1 design, consolidated from `Annotated_Design_Document.md` (the traceab
 7. **Place POIs** — node selection and reward assignment; see §3 and §4.
 8. **Validate** — reject and regenerate the whole map if: disconnected, or leaf count outside 30–45.
 
+> [SOURCE §2.1, review] **The area shares in step 4 are a property of the finished map, not of the draft step 4 hands on.** Carve Valleys converts nodes out of forest and mountain into plains, so measuring the shares before it runs lets the finished map drift a long way from 45 / 30 / 25 — over 40 seeds the finished mountain share ran from 6.4% to 31.0%, and one seed finished 65 / 26 / 9. Step 6 therefore ends by growing whatever terrain is now short back into plains, leaving the carved fingers and the plains node each one opens from untouched. The same growth also finishes step 4, whose flood fill cannot reach the shares on its own: a region on a graph this sparse is routinely sealed off, every neighbouring node already claimed, while it is still far short. Because §4.2 fixes the POI count per terrain, a terrain that loses nodes also crowds its POIs — the skew that made this visible had two thirds of every mountain node carrying a POI.
+
 > [SOURCE §1.3, chat] Compactness is *not* re-checked at the Validate step: Carve Valleys deliberately reduces compactness along the plains boundary immediately before this step runs, so re-checking it here would fail generation almost every time. Compactness is already enforced inside the Smooth step itself (step 5 loops until it's satisfied).
 
 ---
@@ -249,7 +251,7 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `MAP_EDGE_COUNT` | ~300 | fixed target |
 | `MAP_COORDINATE_SPACE` | e.g. 1,000,000 units | arbitrary, implementer's choice |
 | `LEAF_COUNT_MIN` / `MAX` | 30 / 45 | fixed |
-| `TERRAIN_AREA_SHARE` (plains/forest/mountain) | 45% / 30% / 25% | approximate target |
+| `TERRAIN_AREA_SHARE` (plains/forest/mountain) | 45% / 30% / 25% | approximate target, measured on the finished map [SOURCE §2.1, review] |
 | `COMPACTNESS_MAX` | 25 | tunable (play-test) |
 | `VALLEY_COUNT` | 2–4 | fixed |
 | `VALLEY_WIDTH` | 1 node | fixed |
