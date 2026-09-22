@@ -226,6 +226,17 @@ in the algorithm.
 
    Re-weighted after every single unit — that is what makes the `current_count`
    term self-damping.
+4. **Swap pairs toward remoteness** ([Q29](./OPEN_QUESTIONS.md#q29), Andrei on
+   PR #10). Draw `REWARD_SWAP_PASSES × (POIs in the row)` pairs from the group
+   and exchange their unit counts whenever the larger stack sits on the less
+   remote POI. Step 3's draw leaned the right way only 57% of the time and
+   weighting it harder saturates near 65%; this takes it to 96%. It is
+   deliberately **not** run to completion — a full ordering would make every map
+   readable off its stacks alone.
+
+   A swap only ever exchanges two stacks *inside* one group, so §4.2's row
+   totals, the row's POI count and step 2's guaranteed unit are preserved by
+   construction. There is no invariant here to re-check afterwards.
 
 `distributionWeight()` is implemented (it's fully specified) and its doc comment
 records why **no floor, clamp or epsilon is needed**: since remoteness ∈ [0,1],
@@ -234,8 +245,9 @@ the denominator equals `current_count + (1 − remoteness) × W`, i.e. a value �
 The comment says not to add a clamp — it would mask a broken `current_count`
 rather than protect anything.
 
-Guard strengths (§5.2) are solved *after* units are final, since §4.3 fixes the
-gold amount and §5.2 leaves guard strength as the unknown:
+Guard strengths (§5.2) are solved *after* units are final — after step 4's
+swaps, not just step 3's draw — since §4.3 fixes the gold amount and §5.2
+leaves guard strength as the unknown:
 
 ```
 guard_strength = ceil(units × GOLD_WEIGHT − remoteness × REMOTENESS_WEIGHT),  capped to GUARD_STRENGTH
@@ -243,7 +255,10 @@ guard_strength = ceil(units × GOLD_WEIGHT − remoteness × REMOTENESS_WEIGHT),
 
 `GOLD_WEIGHT` (default 3) is a designer-added config row. The cap is 0–10, which
 supersedes §11's `GUARD_STRENGTH_MIN` of 2 — a capped result of 0 means the POI
-is unguarded, so §4.4's "none are exempt" no longer holds. The formula reads the
+is unguarded, so §4.4's "none are exempt" no longer holds. It very nearly does
+again since step 4 landed: reaching the cap needs a 1-unit stack at remoteness
+≥ 0.5, which is exactly what step 4 moves, and unguarded gold fell from 3.3%
+of gold POIs to 0.2% (58 of 60 maps have none). The formula reads the
 POI's reward `units` rather than testing for gold, keeping §4.4's requirement
 that guarding work on any kind. See [Q2](./OPEN_QUESTIONS.md#q2) for the
 formula and [Q2a](./OPEN_QUESTIONS.md#q2a) for the rounding: [SOURCE §5.2, chat]

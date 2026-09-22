@@ -29,11 +29,9 @@ That is phase 1 of [`docs/IMPLEMENTATION_PLAN.md`](./docs/IMPLEMENTATION_PLAN.md
 on top of phase 0's test harness. Gameplay logic (§7, §8) and the MCTS search
 loop (§9) are still seams.
 
-Every design question is answered except two, both turned up by phase 1:
+Every design question is answered except one, turned up by phase 1:
 [Q27](./docs/OPEN_QUESTIONS.md) — `COMPACTNESS_MAX` never binds on a graph this
-sparse, so §2.1's Smooth step currently does nothing — and
-[Q29](./docs/OPEN_QUESTIONS.md) — §4.3 puts bigger reward stacks on more remote
-POIs only 58% of the time, which may want to be a rule rather than a tendency. The config's `pending`
+sparse, so §2.1's Smooth step currently does nothing. The config's `pending`
 block is empty. The §12 decisions: Durable Objects for the
 session layer with map generation and AI on the game master's machine (§12.1),
 UCT over the 10 closest unclaimed POIs (§12.2), the message board as ordinary

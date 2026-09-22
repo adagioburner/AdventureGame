@@ -11,16 +11,16 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, and Q1–Q26.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, and Q28–Q29.
 `pending` in the config is empty.
 
-**Outstanding: two — [Q27](#q27) and [Q29](#q29).** Building phase 1 turned up that
+**Outstanding: one — [Q27](#q27).** Building phase 1 turned up that
 `COMPACTNESS_MAX` never binds on a map of ~240 nodes and 300 edges, so §2.1's
-Smooth step does nothing at the current constants. Reviewing it turned up the
-second: §4.3 does put bigger reward stacks on more remote POIs, but only 58% of
-the time, and Andrei may want that to be a rule rather than a tendency. Both are
-tuning questions rather than blockers: generation works and the code implements
-§2.1 and §4.3 literally. Everything
+Smooth step does nothing at the current constants. It is a tuning question
+rather than a blocker: generation works and the code implements §2.1 literally.
+[Q29](#q29), the other thing reviewing phase 1 turned up, is answered — §4.3
+leaned bigger stacks toward remote POIs only 57% of the time, and Andrei's swap
+pass is now §4.3 step 4, which takes it to 96%. Everything
 else in this register is answered, and so is every reading that was held open
 for confirmation — Q1's first-segment wrinkle, Q13, Q17, and, as of
 2026-09-22, Q18's own pick of what "total skills available" divides by
@@ -664,8 +664,11 @@ dense 2D lattice, where a region of radius *r* holds about π*r*² nodes and abo
 2π*r* of them sit on its edge. A finished map is not a lattice: §2.1 prunes to
 ~240 nodes and 300 edges, a mean degree of **2.5**, which is nearly a tree. On
 a graph like that a terrain region's boundary is a handful of nodes whatever its
-size, so `boundary² / area` comes out around **0.4 on average and 3.4 at worst**
-over 40 seeds — against a threshold of 25.
+size, so `boundary² / area` comes out around **1.0 on average and 4.5 at worst**
+over 40 seeds — against a threshold of 25. (Those are the figures after
+[Q28](#q28); before step 6 grew the short terrains back, they were 0.4 and 3.4.
+A terrain that a valley runs through is genuinely corridor-shaped, which is
+what a valley is, so the rise is the fix working rather than a regression.)
 
 What that costs: nothing is broken, but one of the eight pipeline steps is inert,
 and the speckle it exists to clean up survives into the finished map. Flood fill
@@ -726,53 +729,82 @@ so the regrowth also trades: the neighbour hands a node over and takes one back
 from a terrain that has a surplus. Without that trade the shares stuck as much
 as ten points out on the odd map.
 
-### Q29. Should a bigger reward stack *always* sit on a more remote POI? — **asking**
+### Q29. Should a bigger reward stack *always* sit on a more remote POI? — **answered 2026-09-22**
 
 Andrei, on PR #10: *"Is distribution of rewards correlated with the remoteness
 score? E.g. if a node has P4 and another P1, we definitely want the first one to
 be more remote."*
 
-**Measured answer: yes, and the direction is right on every row, but it is a
-tendency rather than a rule.** Over 200 maps, within a §4.2 row (so like for
-like — the same kind, guard and terrain):
+**What the measurement found.** Over 200 maps, within a §4.2 row (so like for
+like — the same kind, guard and terrain), §4.3 did lean the right way, but only
+as a tendency:
 
 - Spearman ρ between units and remoteness: **0.141**.
-- Take any two POIs in the same row with different stacks: the bigger stack is
-  the more remote one **57.8%** of the time. Chance would be 50%.
-- His example, `plains_move`: a P1 sits at mean remoteness 0.18, P2 at 0.21,
-  P3 at 0.22, P4 at 0.25. Mountain gold is the steepest row — 0.43 / 0.52 /
-  0.60 / 0.64 — and no row runs backwards.
+- Take any two POIs in the same row with different stacks: the bigger stack was
+  the more remote one **57.1%** of the time. Chance is 50%.
+- His example, `plains_move`: a P1 sat at mean remoteness 0.18, P2 at 0.21,
+  P3 at 0.22, P4 at 0.25. Mountain gold was the steepest row — 0.43 / 0.52 /
+  0.60 / 0.64 — and no row ran backwards.
+- Raising `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` helped but saturated: 57.8% at
+  the default 2, then 59.9% (w=4), 62.3% (w=8), 63.6% (w=16), 65.1% (w=32).
+  §4.3 step 3 is a *weighted random draw*, one unit at a time, and §4.2 hands
+  most rows barely more spare units than POIs — `plains_move` is 20 units over
+  10 POIs — so with that few draws the variance dominates however hard
+  remoteness leans on the weights.
 
-**Raising `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` helps, but saturates.** It is a
-§11 "tunable (play-test)" row, so this costs no code; measured over 100 maps
-each, the share of pairs in the wanted order goes 57.8% at the default 2, then
-59.9% (w=4), 62.3% (w=8), 63.6% (w=16), 65.1% (w=32). ρ goes 0.141 → 0.310
-across the same range.
+**His answer:** *"we can distribute rewards without much regard for remoteness,
+and then for a number of times consider pairs of POIs with the same type of
+reward and swap their rewards if they do not correlate with their remoteness. We
+don't have to do complete ordering, doing that a number of times will raise the
+correlation enough. It would be nice to run a simulation and see how many times
+we need to do that to get the correlation to 90%."*
 
-**Why it plateaus, and it is not the constant's fault.** §4.3 step 3 is a
-*weighted random draw*, one unit at a time, and §4.2 hands most rows barely more
-units than POIs — `plains_move` is 20 units over 10 POIs, `fighting` 15 over 8 —
-so there are only about as many spare units as POIs to spread them over. With
-that few draws the variance dominates however hard remoteness leans on the
-weights. As `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` grows the `current_count` term
-in the denominator becomes negligible and the draw tends toward pure
-remoteness-weighting, which is still a draw.
+**The simulation, 200 maps, agreement between stack size and remoteness:**
 
-Three ways out, none of them the implementer's to pick:
+| Passes | Pooled agreement | Spearman ρ | Maps under 90%, read one at a time | Worst map |
+|---|---|---|---|---|
+| 0 | 57.1% | 0.14 | 200 / 200 | 39.0% |
+| 2 | 87.0% | 0.70 | 158 / 200 | 76.2% |
+| **3** | **91.8%** | 0.78 | 54 / 200 | 81.0% |
+| **5** | **96.3%** | 0.85 | **0 / 200** | 91.0% |
+| 10 | 99.2% | 0.89 | 0 / 200 | 96.4% |
 
-1. **Leave it.** A soft bias may be what is wanted: a guaranteed ordering makes
-   the map readable — a player who sees a big stack knows exactly how far in it
-   is, and can infer remoteness without exploring.
-2. **Raise `REMOTENESS_WEIGHT_FOR_DISTRIBUTION`** to 8 or 16 for a firmer lean
-   at no structural cost. Buys ~5 points of pair agreement.
-3. **Make step 3 deterministic** — sort a row's POIs by remoteness and deal the
-   spare units from the remote end, so the ordering is guaranteed by
-   construction. This is a **design change to §4.3**, not a tuning: it would
-   replace the weighted draw, and it removes the per-seed variety that the draw
-   currently gives two maps with the same seed-independent structure.
+A "pass" is one pair draw per POI in the row, so a whole map at 5 passes draws
+about 300 pairs and swaps about 27 of them — roughly one draw in eleven finds
+something to fix. **Three passes clears his 90% across a batch; five clears it
+on every single map of 200 read on its own**, which is the reading a player
+gets, so the default is **5**. Generated with and without step 4, the four
+seeds the tests use read 59.9 → 99.2 (`adventure`), 73.2 → 96.9 (`alpha`),
+58.3 → 98.6 (`beta`) and 60.9 → 96.5 (`gamma`).
 
-Nothing is blocked on the answer; the current behaviour is §4.3 implemented as
-written.
+**What shipped:** §4.3 gains a **step 4**, tagged `[SOURCE §4.3, review]`, and
+§11 gains `REWARD_SWAP_PASSES = 5` as a tunable. `swapGroupTowardRemoteness` in
+`packages/mapgen/src/rewards/assign.ts` runs it, right after step 3's draw and
+before §5.2 reads the stacks for guard strength.
+
+Three things worth knowing about it:
+
+- **`REMOTENESS_WEIGHT_FOR_DISTRIBUTION` is left at 2.** His "without much
+  regard for remoteness" reads as permission, not an instruction, and the
+  measurement says the choice barely matters once step 4 runs: at 3 passes it is
+  91.8% with the weight at 2 against 91.2% with it at 0. Leaving it keeps §4.3
+  step 3 exactly as the GDD writes it. Say the word and it goes to 0.
+- **Nothing in §4.2 moves.** A swap exchanges two stacks *inside* one row, so
+  the row's total units, its POI count and step 2's guaranteed unit all survive
+  untouched — verified on the sealed map, and generation still takes ~195 ms.
+- **Unguarded gold all but disappears, which is a real side effect.** §5.2 caps
+  guard strength at 0, and the only way to reach the cap is a 1-unit stack at
+  remoteness ≥ 0.5 — precisely what step 4 moves. Over 60 maps, gold POIs
+  sealing unguarded fall from **3.3%** to **0.2%**, and 58 of those 60 maps have
+  none at all. That pushes §4.4's "every gold POI is guarded, none are exempt"
+  back toward literally true, and mean guard strength is unchanged at 4.6. If
+  the occasional unguarded remote 1-gold was wanted as a treat, that is a
+  separate decision about §5.2's constants, not about step 4.
+
+**Not taken:** making step 3 itself deterministic — sorting a row by remoteness
+and dealing spare units from the remote end. It would guarantee the ordering by
+construction, but it removes the per-seed variety, which is the thing his "we
+don't have to do complete ordering" preserves.
 
 ---
 

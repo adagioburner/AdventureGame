@@ -475,14 +475,14 @@ Terrain shares on the **finished** map run 44.8–48.1% plains, 29.8–30.2% for
 and 21.8–25.2% mountain against §2.1's 45 / 30 / 25. Remoteness spans [0, 1] on
 every map and §4.2 reconciles exactly, row by row.
 
-Six things worth knowing, four of them only visible once the pipeline ran:
+Seven things worth knowing, five of them only visible once the pipeline ran:
 
 - **A pruned map is nearly a tree.** ~240 nodes and 300 edges is a mean degree
   of 2.5. Almost every surprise below follows from that, and it is worth
   carrying into any later reasoning about the graph.
 - **The Smooth step is inert at the current constants**, because
   `COMPACTNESS_MAX = 25` never binds on a graph that sparse — measured
-  compactness is 0.4 on average, 3.4 at worst. §2.1 is implemented literally
+  compactness is 1.0 on average, 4.5 at worst. §2.1 is implemented literally
   ("flip *until* it falls below"), so the loop exits before it starts. This is
   the one question phase 1 raised:
   [Q27](./OPEN_QUESTIONS.md#q27). Nothing downstream depends on the answer.
@@ -502,6 +502,17 @@ Six things worth knowing, four of them only visible once the pipeline ran:
   fingers and their mouths alone, and the same growth finishes step 4. Over the
   same 40 seeds that moved plains from 32.9–66.8% to 44.8–48.1%, forest from
   17.5–45.7% to 29.8–30.2%, and mountain from 6.4–31.0% to 21.8–25.2%.
+- **Bigger reward stacks now sit on more remote POIs as a rule**
+  ([Q29](./OPEN_QUESTIONS.md#q29), Andrei on PR #10). §4.3's weighted draw put
+  the bigger of two stacks in a row on the more remote POI only 57% of the time,
+  and raising `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` saturates near 65% because
+  the draw is random and §4.2 leaves most rows barely more spare units than
+  POIs. §4.3 gains a **step 4**: draw `REWARD_SWAP_PASSES × (POIs in the row)`
+  pairs and exchange their stacks when the larger one is the less remote. At the
+  default 5 passes that reads 96.3% over 200 maps, and every one of those 200
+  clears 90% on its own. Its side effect is worth carrying into phase 3: gold
+  POIs sealing *unguarded* fall from 3.3% to 0.2%, because §5.2 only caps to 0
+  for a 1-unit stack on a remote node.
 - **`POISSON_RADIUS_FACTOR` was recalibrated**, 0.85 → 0.815. It is an
   `EngineeringConfig` knob whose whole purpose is hitting the node budget, and
   0.85 — a guess made before a sampler existed — yields ~220 nodes against

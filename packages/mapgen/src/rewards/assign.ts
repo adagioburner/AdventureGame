@@ -105,6 +105,62 @@ export function distributeGroupUnits(
   }
 }
 
+/**
+ * §4.3 step 4 — "Draw `REWARD_SWAP_PASSES × (POIs in the row)` pairs of POIs
+ * from within the same group, and swap the two POIs' unit counts whenever the
+ * larger stack is sitting on the less remote of the two."
+ *
+ * [SOURCE §4.3, review] Step 3 leans the right way but only weakly: over 200
+ * maps the bigger of two stacks in a row was the more remote one 57.1% of the
+ * time, and raising `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` saturates near 65%,
+ * because step 3 is a random draw and §4.2 gives most rows barely more spare
+ * units than POIs. So the correlation is repaired afterwards rather than
+ * weighted harder for. Agreement by pass count, same 200 maps: 2 → 86.8%,
+ * 3 → 91.8%, 5 → 96.3%, 10 → 99.3%.
+ *
+ * **Deliberately not a sort.** Andrei: "we don't have to do complete ordering".
+ * Run to completion this would order every row by remoteness exactly, and the
+ * same map would hold no surprises twice; stopped early it leaves the map its
+ * variety. That is why the pass count is a constant rather than a loop on the
+ * agreement it achieves.
+ *
+ * A swap only exchanges two stacks *inside* one group, so the row's total units
+ * (§4.2), its POI count and step 2's guaranteed unit are all untouched by
+ * construction — there is nothing here that can put a row out of balance.
+ */
+export function swapGroupTowardRemoteness(
+  group: readonly PoiAssignment[],
+  remoteness: ReadonlyMap<NodeId, number>,
+  config: GameConfig,
+  rng: Rng,
+): void {
+  if (group.length < 2) return;
+
+  const scores = group.map((assignment) => remotenessOf(remoteness, assignment.node));
+  const draws = config.balancing.REWARD_SWAP_PASSES * group.length;
+
+  for (let draw = 0; draw < draws; draw++) {
+    const left = rng.nextInt(group.length);
+    // A second draw over the remaining indices, shifted past `left`, so the
+    // pair is always two distinct POIs and no draw is spent on a POI and
+    // itself.
+    let right = rng.nextInt(group.length - 1);
+    if (right >= left) right++;
+
+    const first = group[left] as PoiAssignment;
+    const second = group[right] as PoiAssignment;
+    const byUnits = first.units - second.units;
+    const byRemoteness = (scores[left] as number) - (scores[right] as number);
+    // Strictly disagreeing only: equal stacks and equal remoteness are nothing
+    // to repair, and swapping them would churn the map for no gain.
+    if (byUnits * byRemoteness >= 0) continue;
+
+    const units = first.units;
+    first.units = second.units;
+    second.units = units;
+  }
+}
+
 function remotenessOf(remoteness: ReadonlyMap<NodeId, number>, node: NodeId): number {
   const score = remoteness.get(node);
   if (score === undefined) throw new RangeError(`no remoteness score for POI node ${node}`);
@@ -134,6 +190,7 @@ export function assignRewards(draft: MapDraft, ruleset: Ruleset, rng: Rng): void
       const group = groups.slice(cursor, cursor + row.poiCount);
       cursor += row.poiCount;
       distributeGroupUnits(group, row, draft.remoteness, ruleset.config, rng);
+      swapGroupTowardRemoteness(group, draft.remoteness, ruleset.config, rng);
     }
     draft.assignments.push(...groups);
   }

@@ -208,8 +208,23 @@ describe('§5.2 — guard strengths', () => {
     // [SOURCE §5.2, chat] "1 gold with maximum remoteness is unguarded":
     // 1 × GOLD_WEIGHT − 1 × REMOTENESS_WEIGHT = −1, capped to 0. Such a POI
     // still belongs to a guarded row, which is how §4.2 keeps reconciling.
+    //
+    // Generated without §4.3 step 4, because step 4 is very nearly the rule
+    // against this POI existing: the only way past the cap is a 1-unit stack at
+    // remoteness ≥ 0.5, and moving small stacks off remote POIs is exactly what
+    // step 4 does. Measured over 60 maps, unguarded gold falls from 3.3% of all
+    // gold POIs at 0 passes to 0.2% at the default 5, and 58 of those 60 maps
+    // have none at all — so asking the default seeds for one is asking for a
+    // coincidence. The sealing path still has to work when it does happen.
+    const noSwaps: Ruleset = {
+      ...DEFAULT_RULESET,
+      config: {
+        ...DEFAULT_RULESET.config,
+        balancing: { ...DEFAULT_RULESET.config.balancing, REWARD_SWAP_PASSES: 0 },
+      },
+    };
     const unguardedGold = SEEDS.flatMap((seed) =>
-      mapOf(seed).pois.filter((poi) => poi.reward.kind === 'gold' && poi.guard === null),
+      mapOf(seed, noSwaps).pois.filter((poi) => poi.reward.kind === 'gold' && poi.guard === null),
     );
     expect(unguardedGold.length).toBeGreaterThan(0);
     for (const poi of unguardedGold) {
@@ -218,6 +233,18 @@ describe('§5.2 — guard strengths', () => {
         poi.reward.units * DEFAULT_RULESET.config.balancing.GOLD_WEIGHT -
         poi.remoteness * DEFAULT_RULESET.config.balancing.REMOTENESS_WEIGHT;
       expect(Math.ceil(raw)).toBeLessThanOrEqual(0);
+    }
+  }, 30000);
+
+  // The same statement the other way round, on the map a player actually gets:
+  // an unguarded gold POI is now the exception rather than a regular feature,
+  // which pushes §4.4's "every gold POI is guarded, none are exempt" back
+  // toward literally true. Registered for Andrei as part of Q29.
+  it('leaves almost no gold unguarded once §4.3 step 4 has run', () => {
+    for (const seed of SEEDS) {
+      const gold = mapOf(seed).pois.filter((poi) => poi.group.guard !== null);
+      const unguarded = gold.filter((poi) => poi.guard === null);
+      expect(unguarded.length / gold.length).toBeLessThan(0.02);
     }
   }, 30000);
 });
@@ -271,6 +298,42 @@ describe('terrain', () => {
         return nodes.length / pois;
       });
       expect(Math.max(...spacing) / Math.min(...spacing)).toBeLessThan(2);
+    }
+  }, 30000);
+
+  // [SOURCE §4.3, review] The whole point of §4.3 step 4, on the map a player
+  // is handed. Step 3's weighting alone left this at 57.1% over 200 maps; with
+  // the default 5 passes the same batch reads 96.3%, and the worst single map
+  // of the 200 reads 91.0%. Andrei named 90% as satisfactory, so that is what
+  // this holds each seed to — per map, not pooled, since pooling would let one
+  // badly ordered map hide behind three good ones.
+  it('puts the bigger reward stacks on the more remote POIs, §4.3 step 4', () => {
+    for (const seed of SEEDS) {
+      const map = mapOf(seed);
+      const rows = new Map<string, typeof map.pois>();
+      for (const poi of map.pois) {
+        if (poi.group.kind === 'stamina') continue; // a surplus leaf, not a §4.2 row
+        const key = `${poi.terrain}/${rewardGroupKeyOf(poi.group)}`;
+        rows.set(key, [...(rows.get(key) ?? []), poi]);
+      }
+
+      let agree = 0;
+      let pairs = 0;
+      for (const row of rows.values()) {
+        for (let left = 0; left < row.length; left++) {
+          for (let right = left + 1; right < row.length; right++) {
+            const first = row[left] as (typeof row)[number];
+            const second = row[right] as (typeof row)[number];
+            if (first.reward.units === second.reward.units) continue;
+            pairs++;
+            const byRemoteness = first.remoteness - second.remoteness;
+            if ((first.reward.units - second.reward.units) * byRemoteness > 0) agree++;
+          }
+        }
+      }
+
+      expect(pairs).toBeGreaterThan(50);
+      expect(agree / pairs).toBeGreaterThan(0.9);
     }
   }, 30000);
 });

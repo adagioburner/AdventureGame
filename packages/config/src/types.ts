@@ -125,6 +125,23 @@ export interface BalancingConfig {
    */
   readonly REMOTENESS_WEIGHT_FOR_DISTRIBUTION: number;
   /**
+   * §11 `REWARD_SWAP_PASSES` — tunable (play-test). §4.3 step 4 only.
+   *
+   * How many pair draws each §4.2 row gets, as a multiple of the number of POIs
+   * in the row: a row of 10 POIs and 5 passes draws 50 pairs.
+   *
+   * [SOURCE §4.3, review] Step 3's weighted draw leans the right way but only
+   * weakly — measured over 200 maps, the bigger of two stacks in the same row
+   * was the more remote one 57.1% of the time, and raising
+   * `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` saturates near 65% because the draw is
+   * random and most rows have barely more spare units than POIs. Step 4 fixes
+   * that by repair rather than by weighting. Measured agreement by pass count:
+   * 0 → 57.1%, 2 → 86.8%, 3 → 91.8%, 5 → 96.3%, 10 → 99.3%. Three clears
+   * Andrei's 90% across a batch; the default of 5 clears it on all but one map
+   * in 200 taken one at a time.
+   */
+  readonly REWARD_SWAP_PASSES: number;
+  /**
    * §11 `CLOSE_CANDIDATE_COUNT` — tunable.
    * Used by the shared random walk (§5.1), by the MCTS rollout policy (§9)
    * and, identically, by MCTS tree expansion.
