@@ -86,6 +86,15 @@ export interface PostMessageAction {
   readonly kind: 'post_message';
   readonly player: PlayerId;
   readonly body: string;
+  /**
+   * The post's identity and timestamp are supplied by the caller, because the
+   * engine has no clock and no id source — it is pure and deterministic, and
+   * `Clock` is a session-layer port for exactly this reason. So the session
+   * stamps a post as it builds the action, and `applyAction` only appends it,
+   * which also keeps a replayed game's board identical to the original's.
+   */
+  readonly id: string;
+  readonly postedAt: number;
 }
 
 export type GameAction = TurnAction | SetControlAction | ResignAction | ForceTurnAction | PostMessageAction;
