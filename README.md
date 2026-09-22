@@ -65,6 +65,9 @@ tools/
               seed reproducibility).
 Art/          Placeholder art. Reference only — nothing in the repo reads it,
               and asset extraction/sizing/icon mapping are out of scope for now.
+              `Art/tools/make_placeholders.py` regenerates the stand-in sheets
+              that were produced rather than supplied; their atlases carry
+              `"placeholder": true`.
 ```
 
 ## Working on it

@@ -1,0 +1,191 @@
+{
+  "sheet": "Dice_d6_sheet.png",
+  "cell_width": 192,
+  "cell_height": 192,
+  "placeholder": true,
+  "notes": "Placeholder for GDD.md \u00a710's die-roll animation. GUARD_DIE is a d6 (\u00a711). Play the eight 'tumble' sprites as a seamless loop while the roll is in flight, then hold the 'face' sprite whose `value` equals the roll the engine returned. No tumble frame may be read as the result. Drawn flat rather than isometric on purpose: the roll is UI shown over the board (\u00a78), not a thing standing on a node, so its anchor is the sprite centre, unlike the ground-contact anchors on the terrain and POI sheets.",
+  "sprites": [
+    {
+      "id": "Dice_d6_Tumble_01",
+      "x": 0,
+      "y": 0,
+      "width": 192,
+      "height": 192,
+      "anchor": {
+        "x": 96,
+        "y": 96
+      },
+      "frame": 0,
+      "role": "tumble"
+    },
+    {
+      "id": "Dice_d6_Tumble_02",
+      "x": 192,
+      "y": 0,
+      "width": 192,
+      "height": 192,
+      "anchor": {
+        "x": 96,
+        "y": 96
+      },
+      "frame": 1,
+      "role": "tumble"
+    },
+    {
+      "id": "Dice_d6_Tumble_03",
+      "x": 384,
+      "y": 0,
+      "width": 192,
+      "height": 192,
+      "anchor": {
+        "x": 96,
+        "y": 96
+      },
+      "frame": 2,
+      "role": "tumble"
+    },
+    {
+      "id": "Dice_d6_Tumble_04",
+      "x": 576,
+      "y": 0,
+      "width": 192,
+      "height": 192,
+      "anchor": {
+        "x": 96,
+        "y": 96
+      },
+      "frame": 3,
+      "role": "tumble"
+    },
+    {
+      "id": "Dice_d6_Tumble_05",
+      "x": 768,
+      "y": 0,
+      "width": 192,
+      "height": 192,
+      "anchor": {
+        "x": 96,
+        "y": 96
+      },
+      "frame": 4,
+      "role": "tumble"
+    },
+    {
+      "id": "Dice_d6_Tumble_06",
+      "x": 960,
+      "y": 0,
+      "width": 192,
+      "height": 192,
+      "anchor": {
+        "x": 96,
+        "y": 96
+      },
+      "frame": 5,
+      "role": "tumble"
+    },
+    {
+      "id": "Dice_d6_Tumble_07",
+      "x": 1152,
+      "y": 0,
+      "width": 192,
+      "height": 192,
+      "anchor": {
+        "x": 96,
+        "y": 96
+      },
+      "frame": 6,
+      "role": "tumble"
+    },
+    {
+      "id": "Dice_d6_Tumble_08",
+      "x": 1344,
+      "y": 0,
+      "width": 192,
+      "height": 192,
+      "anchor": {
+        "x": 96,
+        "y": 96
+      },
+      "frame": 7,
+      "role": "tumble"
+    },
+    {
+      "id": "Dice_d6_Face_1",
+      "x": 0,
+      "y": 192,
+      "width": 192,
+      "height": 192,
+      "anchor": {
+        "x": 96,
+        "y": 96
+      },
+      "value": 1,
+      "role": "face"
+    },
+    {
+      "id": "Dice_d6_Face_2",
+      "x": 192,
+      "y": 192,
+      "width": 192,
+      "height": 192,
+      "anchor": {
+        "x": 96,
+        "y": 96
+      },
+      "value": 2,
+      "role": "face"
+    },
+    {
+      "id": "Dice_d6_Face_3",
+      "x": 384,
+      "y": 192,
+      "width": 192,
+      "height": 192,
+      "anchor": {
+        "x": 96,
+        "y": 96
+      },
+      "value": 3,
+      "role": "face"
+    },
+    {
+      "id": "Dice_d6_Face_4",
+      "x": 576,
+      "y": 192,
+      "width": 192,
+      "height": 192,
+      "anchor": {
+        "x": 96,
+        "y": 96
+      },
+      "value": 4,
+      "role": "face"
+    },
+    {
+      "id": "Dice_d6_Face_5",
+      "x": 768,
+      "y": 192,
+      "width": 192,
+      "height": 192,
+      "anchor": {
+        "x": 96,
+        "y": 96
+      },
+      "value": 5,
+      "role": "face"
+    },
+    {
+      "id": "Dice_d6_Face_6",
+      "x": 960,
+      "y": 192,
+      "width": 192,
+      "height": 192,
+      "anchor": {
+        "x": 96,
+        "y": 96
+      },
+      "value": 6,
+      "role": "face"
+    }
+  ]
+}

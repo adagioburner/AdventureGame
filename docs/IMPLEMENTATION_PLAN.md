@@ -13,6 +13,12 @@ plan needs something the design does not say, it asks rather than choosing —
 see [Questions](#questions) at the end. It invents no rules, no constants and
 no defaults.
 
+Andrei answered three of the five questions on 2026-09-22, and they are folded
+into the phases below: the AI budget stays in seconds, hotseat is 2 players,
+and he is supplying the missing placeholder art, of which the die-roll
+animation and the road brush are in this change. P4 and P5 are still open and
+neither blocks starting.
+
 Where the repo stands: the architecture pass landed data models, component
 boundaries and interfaces that typecheck. Thirty-odd seams throw
 `NotImplementedError` carrying the GDD section to implement against, and
@@ -90,7 +96,8 @@ purpose: nothing in the repo reads `Art/`, and `Poi.artVariant` is only "a
 stable per-POI random index" with no decision about what it indexes into. The
 sheets in `Art/` are already cut into atlases with per-sprite anchors, so the
 work is small and well-defined, but it is real work and it has gaps in the
-supplied assets. Phase 3 below, and question [P1](#p1-art-gaps).
+supplied assets. Phase 3 below, and question
+[P1](#p1-art-gaps--answered-two-assets-generated).
 
 **Tuning the balancing constants is not in any of the five steps.** §11 marks
 six parameters tunable by play-test — `COMPACTNESS_MAX`, `REMOTENESS_WEIGHT`,
@@ -356,14 +363,19 @@ phase 2.
    `*_atlas.json` carries `sheet`, `cell_width`, `cell_height` and a `sprites`
    array of `{id, x, y, width, height, anchor, source_box_in_original}`. So the
    loader is a thin typed reader plus a sprite-id index — no cutting, no
-   packing.
+   packing. Three fields are optional and only some sheets carry them:
+   `placeholder: true` marks stand-in art, and on the road brush each sprite
+   carries `tiles: "horizontal"` and `centerline_y`. The loader should keep
+   them rather than drop them, since they are what tells it a sprite is a
+   repeatable stroke instead of a one-shot image.
 2. **The reward-kind-to-sheet mapping.** Eight POI sheets are named by
    `(terrain, kind[, guard])`: `Plains_PlainsMovement`, `Plains_ForestMovement`,
    `Plains_Magic`, `Plains_GoldGuardedByFighting`, `Forest_MountainMovement`,
    `Forest_Fighting`, `Mountains_GoldGuardedByFighting`,
    `Mountains_GoldGuardedByMagic`. That is exactly §4.2's rows *minus* forest
-   gold — see [P1](#p1-art-gaps). Four dressing sheets cover the eye candy:
-   `Plains_Fields`, `Plains_GrassRocks`, `Forest_Trees`, `Mountains_Mountains`.
+   gold — see [P1](#p1-art-gaps--answered-two-assets-generated). Four dressing
+   sheets cover the eye candy: `Plains_Fields`, `Plains_GrassRocks`,
+   `Forest_Trees`, `Mountains_Mountains`.
 3. **`Poi.artVariant` becomes an index** into the chosen sheet's `sprites`
    array, modulo its length, so a POI's picture is stable across reloads and
    replays and no sheet's sprite count is baked into the generator.
@@ -380,7 +392,14 @@ phase 2.
    movement) and `plains.png` is the green foot (forest movement). The mapping
    must be written against the pictures, not the filenames, and the filenames
    are worth fixing. A stack of N units draws N overlapping icons (§4.1).
-7. **Dependencies.** `docs/STACK.md` §3 chose Vite + React for the chrome and
+7. **Road edges.** §2 draws edges as "road/path-styled", and
+   `Roads_Brush_atlas.json` supplies three stroke widths. Each is one tile of a
+   stroke: rotate it to the edge's bearing and repeat it from node to node. Its
+   centreline is deliberately near-flat and `centerline_y` says where that line
+   sits, so a straight edge draws straight; the organic look comes from the
+   width varying along the tile. Which width a given edge gets is not something
+   the design assigns, so phase 3 can pick one and leave the other two unused.
+8. **Dependencies.** `docs/STACK.md` §3 chose Vite + React for the chrome and
    PixiJS for the map. `apps/web` currently declares no framework dependency at
    all, so this phase is where Vite, React and PixiJS enter the lockfile, along
    with a dev server script and a build script.
@@ -398,8 +417,10 @@ numbers in red or purple, and reward icons.
 `enter()` for any seat that is not active. Duplicating the client to remove one
 feature would guarantee drift.
 
-1. **Local setup.** Player count (fixed for now — see [P3](#p3-hotseat-scope)),
-   a name and a figurine per player, starting stamina by seat
+1. **Local setup.** **Two seats** — Andrei fixed the hotseat count at 2, which
+   exercises turn order and both victory cases, and `PLAYER_COUNT` (2–5) stays
+   untouched in config because this is a hotseat constraint, not a change to the
+   game's range. A name and a figurine per player, starting stamina by seat
    (`STARTING_STAMINA_BASE` + (seat − 1) × `STARTING_STAMINA_INCREMENT`), all
    seats starting on one shared plains node with no POI via `chooseStartingNode`
    from an `Rng` derived from the map seed.
@@ -419,9 +440,12 @@ feature would guarantee drift.
 6. **Dice.** Hotseat has no server, so it needs a local `DiceSource`. Keep it
    behind the interface the engine already takes, because online play must take
    rolls from the server's separate die stream — a client-side dice source that
-   leaks into the online path would be a real bug. §10's die-roll animation
-   asset does not exist yet ([P1](#p1-art-gaps)); the UI should show the roll,
-   the skill added and the guard strength it was compared against regardless.
+   leaks into the online path would be a real bug. §10's die-roll animation is
+   now in `Art/`: loop the eight `Dice_d6_Tumble_*` sprites while the roll is in
+   flight, then hold the `Dice_d6_Face_*` sprite whose `value` matches what the
+   engine returned. No tumble frame may be held as the result — none of them is
+   axis-aligned, so none reads as settled. Show the roll, the skill added and
+   the guard strength it was compared against either way.
 7. **Turn hand-off, game end and the win.** Pass control to the next seat,
    detect the end through the engine (never recompute it in the UI), and show
    the winner or the shared victory.
@@ -472,7 +496,10 @@ is already written; the loop is not.
    the six parameters §11 marks tunable, with `REMOTENESS_SIMULATION_RUNS`
    called out by §5.1 as expected to change "if 100 proves too imprecise or too
    slow". Measure map generation's cost while here — `docs/STACK.md` §4 says the
-   remoteness pass dominates and to measure it rather than assume.
+   remoteness pass dominates and to measure it rather than assume. Because the
+   AI budget stays in wall-clock seconds (P2), a self-play result is only
+   comparable to another run on the same machine, so record the machine beside
+   the numbers.
 
 **Tests:** a rollout terminates when gold is exhausted with skill and stamina
 POIs still on the map; a macro-action that has its target claimed underneath it
@@ -586,10 +613,11 @@ player's move.
    alone. Worth surfacing in the UI so a stalled game is legible rather than
    mysterious.
 4. **AI seats at setup** — including AI players in a game from the setup screen.
-5. **AI settings** — thinking time per turn. `MCTS_TIME_BUDGET_PER_MOVE_MS` is
-   config; a per-game override needs a path through the protocol. See
-   [P2](#p2-ai-budget-in-seconds-or-rollouts) on whether the budget should be
-   seconds at all.
+5. **AI settings** — thinking time per turn, in seconds: Andrei confirmed the
+   budget stays wall-clock rather than a rollout count, because the game is for
+   fun rather than for a consistently strong AI.
+   `MCTS_TIME_BUDGET_PER_MOVE_MS` is config, so a per-game override needs a
+   path through the protocol.
 6. **Handover** — an AI takes over a resigned seat so play continues, and the GM
    may switch any player between human and AI control at will. Only the GM hands
    control back to a human.
@@ -612,14 +640,24 @@ already, but a v1 *content* choice per §4.4).
 
 ## Questions
 
-Five things this plan could not settle from the documents. None of them blocks
-starting phase 0 or phase 1. They are numbered P1–P5 here and would be
-registered as Q20 onward in
-[`docs/OPEN_QUESTIONS.md`](./OPEN_QUESTIONS.md) once answered.
+Five things this plan could not settle from the documents. **P1, P2 and P3 were
+answered on 2026-09-22**; P4 and P5 are still open and neither blocks starting
+phase 0 or phase 1. All five would be registered as Q20 onward in
+[`docs/OPEN_QUESTIONS.md`](./OPEN_QUESTIONS.md), the three answered ones
+carrying the answers below.
 
-### P1. Art gaps
+### P1. ~~Art gaps~~ — **answered; two assets generated**
 
-Six §10 asset groups appear to be missing from `Art/`, and one POI sheet:
+[SOURCE chat, 2026-09-22] "I will add the missing placeholder art before we
+start implementing the plan." So phases 3 and 4 are written against the full
+set and need no fallback. Two of the gaps are closed in this change, at his
+request — `Art/Dice_d6_sheet.png` + `Dice_d6_atlas.json` and
+`Art/Roads_Brush_sheet.png` + `Roads_Brush_atlas.json`, both regenerable with
+`python3 Art/tools/make_placeholders.py`. They carry `"placeholder": true` so a
+loader, or a person, can tell stand-in art from the real thing. The rest of the
+list below is Andrei's to supply:
+
+Six §10 asset groups were missing from `Art/`, and one POI sheet:
 
 - **Forest gold.** Eight POI sheets cover eight of §4.2's nine rows. There is no
   sheet for forest's 4 fighting-guarded gold POIs, although plains' and
@@ -627,37 +665,44 @@ Six §10 asset groups appear to be missing from `Art/`, and one POI sheet:
 - **Stamina POIs.** Surplus leaves become stamina POIs, on any terrain, and no
   sheet covers them.
 - **Character figurines** to choose from at setup, and player avatars.
-- **Die-roll animation.**
-- **Terrain textures** for the three terrains, and the road/path brush pattern.
-  (`Art/Icons/roads.png` is not it — it is the brown wagon wheel, i.e. §4.1's
+- ~~**Die-roll animation.**~~ Generated: eight tumble frames to loop while the
+  roll is in flight, then the six resting faces, one per `GUARD_DIE` value.
+- **Terrain textures** for the three terrains. (The **road/path brush pattern**
+  is generated: three stroke widths, each tiling horizontally with no seam,
+  with a deliberately flat centreline so a straight edge draws straight.
+  `Art/Icons/roads.png` is not it — it is the brown wagon wheel, i.e. §4.1's
   plains-movement reward icon. `Art/Icons/plains.png` is the green foot, i.e.
   the forest-movement icon. All seven reward icons are present; two are just
-  misnamed.)
+  misnamed, and renaming them is worth doing before phase 3 reads them.)
 - **Move-prospect visuals** — path highlight, destination cross, waypoint
   marker.
 
-Are these coming, or should phases 3 and 4 stand in something placeholder
-(reuse a sibling sheet, draw the markers as vectors) and swap the real assets in
-later? The renderer does not care either way; the plan just needs to say which.
+### P2. ~~AI budget in seconds or rollouts?~~ — **answered: seconds**
 
-### P2. AI budget in seconds or rollouts?
+`docs/STACK.md` §5 flagged this and left it as a design question: a fixed
+10-second budget buys very different search on a laptop than on a workstation,
+so with MCTS on the GM's machine, AI strength is not reproducible across games.
+A budget in rollouts would fix that at the cost of a variable turn length.
 
-`docs/STACK.md` §5 flagged this and explicitly left it as a design question: a
-fixed 10-second budget buys very different search on a laptop than on a
-workstation, so with MCTS on the GM's machine, AI strength is not reproducible
-across games. Expressing the budget in rollouts instead would make it
-reproducible, at the cost of a variable turn length. §9 and §11 both say
-seconds, so seconds is what the plan assumes — confirm, or switch it, since it
-changes phase 8's settings UI and the meaning of a self-play comparison in
-phase 5.
+[SOURCE chat, 2026-09-22] "Let's stick to the seconds budget for AI, the
+purpose of this game is fun, not the strongest and most consistent AI." So
+`MCTS_TIME_BUDGET_PER_MOVE_MS` stays as it is, §9 and §11 stand unchanged, and
+`docs/STACK.md` §5's "AI difficulty is not reproducible across games" is an
+accepted cost rather than an open item. One consequence for phase 5: a self-play
+comparison is only meaningful between runs on the same machine, so the harness
+should record the machine alongside the result.
 
-### P3. Hotseat scope
+### P3. ~~Hotseat scope~~ — **answered: 2 players**
 
-Step 2 says "a (temporarily) fixed number of players". Two questions: which
-number (2 is the smallest thing that exercises turn order and the win
-condition), and does a hotseat game need to survive a page reload? Persisting it
-to `localStorage` is small, but it is a feature the design does not mention, and
-without it a closed tab loses the game.
+[SOURCE chat, 2026-09-22] "2 players is a good enough number and exercises all
+necessary functionality." Phase 4 fixes the hotseat seat count at 2.
+`PLAYER_COUNT` (2–5) stays untouched in config — this is a temporary
+constraint in the hotseat mode, not a change to the game's range, and phase 6's
+setup flow is where the GM picks a count for real.
+
+Left unanswered, and not worth blocking on: whether a hotseat game should
+survive a page reload. Persisting to `localStorage` is small but the design does
+not mention it, so phase 4 does not, and a closed tab loses the game.
 
 ### P4. Q18, still open in fact
 
