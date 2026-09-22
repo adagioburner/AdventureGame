@@ -1,0 +1,48 @@
+{
+  "sheet": "Roads_Brush_sheet.png",
+  "cell_width": 256,
+  "cell_height": 64,
+  "placeholder": true,
+  "notes": "Placeholder for GDD.md \u00a710's road/path brush pattern \u2014 the edges \u00a72 describes as 'road/path-styled'. Each sprite is one tile of a stroke: repeat it along an edge to any length. Every wobble in it has an integer period over `cell_width`, so a tile abuts a copy of itself with no seam. `anchor` is the left end of the centreline and `centerline_y` is where that line sits, so a renderer rotates the tile to the edge's bearing and lays it from node to node. Three widths are supplied to tell a main route from a faint one; nothing in the design assigns them yet, so picking per edge is open. `Art/Icons/roads.png` is NOT this: it is the brown wagon wheel, i.e. \u00a74.1's plains-movement reward icon.",
+  "sprites": [
+    {
+      "id": "Roads_Track",
+      "x": 0,
+      "y": 0,
+      "width": 256,
+      "height": 64,
+      "anchor": {
+        "x": 0,
+        "y": 32
+      },
+      "tiles": "horizontal",
+      "centerline_y": 32
+    },
+    {
+      "id": "Roads_Path",
+      "x": 0,
+      "y": 64,
+      "width": 256,
+      "height": 64,
+      "anchor": {
+        "x": 0,
+        "y": 32
+      },
+      "tiles": "horizontal",
+      "centerline_y": 32
+    },
+    {
+      "id": "Roads_Trail",
+      "x": 0,
+      "y": 128,
+      "width": 256,
+      "height": 64,
+      "anchor": {
+        "x": 0,
+        "y": 32
+      },
+      "tiles": "horizontal",
+      "centerline_y": 32
+    }
+  ]
+}

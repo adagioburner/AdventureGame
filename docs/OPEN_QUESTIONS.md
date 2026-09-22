@@ -11,18 +11,20 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, and Q1–Q19.
+**Answered so far:** all four of GDD.md §12's own open items, and Q1–Q25.
 `pending` in the config is empty.
 
-**Outstanding: none.** Every question in this register is answered, including
-the three readings that were held open for confirmation — Q1's first-segment
-wrinkle, Q13 and Q17 — and the config's `pending` block is empty. Q18 names one
-reading it had to pick, what "total skills available" divides by; it is
-implemented under the stated reading and flagged on PR #5.
+**Outstanding: none.** Every question in this register is answered, and so is
+every reading that was held open for confirmation — Q1's first-segment wrinkle,
+Q13, Q17, and, as of 2026-09-22, Q18's own pick of what "total skills
+available" divides by ([Q24](#q24)). The config's `pending` block is empty.
 
 The next session's work is implementation against a settled spec rather than
-more design review. `docs/ARCHITECTURE.md` §11 lists what to pick up and in what
-order; items 1–5 there depend on nothing unresolved.
+more design review. `docs/IMPLEMENTATION_PLAN.md` is the build order;
+`docs/ARCHITECTURE.md` §11 lists the seams it draws on.
+
+Q20–Q23 came out of writing that plan rather than the architecture pass, and
+sit in their own section below.
 
 ---
 
@@ -398,6 +400,9 @@ POI. The alternative — a theoretical maximum skill level per player — would 
 the term mean something different and never reach 1. Changing it later is a
 one-line change to `totalSkillUnits`.
 
+**Confirmed, 2026-09-22.** That reading shipped as a pick rather than an answer
+and is now the designer's own: see [Q24](#q24). No code changed.
+
 **What v1 uses.** [SOURCE §9, review] "The plan is to use the simulated
 rollout for node evaluation in v1, and then experiment with other evaluators."
 So `simulatedRolloutEvaluator()` — §9's specified default — is the one the first
@@ -442,6 +447,166 @@ true when the two constants were collapsed, not the current default. Worth
 knowing that this is no longer only an AI knob: §5.1's remoteness walk reads the
 same constant, so the change moves remoteness scores, and through §5.2 the guard
 strengths and reward stacking of every generated map.
+
+---
+
+## B3. Questions from the implementation-planning pass
+
+Six gaps found while turning GDD.md and the architecture into a phased build
+order (`docs/IMPLEMENTATION_PLAN.md`), all answered by the designer on
+2026-09-22. None of them changed a rule; they settled scope and content, Q24
+confirmed a reading Q18 had had to pick, and Q25 confirmed §5.1 unchanged while
+narrowing how much code two components should expect to share.
+
+### Q20. ~~Which §10 art assets are coming, and which need standing in?~~ — **answered**
+
+Writing the art-binding phase turned up six §10 asset groups absent from `Art/`
+and one POI sheet: forest's 4 fighting-guarded gold POIs (the other eight rows
+of §4.2 each have a sheet), the stamina POIs that surplus leaves create,
+character figurines and player avatars, the die-roll animation, the three
+terrain textures, the road/path brush, and the move-prospect visuals (path
+highlight, destination cross, waypoint marker).
+
+Also worth recording, because it misleads: all seven §4.1 reward icons *are*
+present, but two filenames do not describe their contents — `Art/Icons/roads.png`
+is the brown wagon wheel (plains movement) and `Art/Icons/plains.png` is the
+green foot (forest movement). There is no road-brush asset in `Icons/` at all.
+Any art mapping must be written against the pictures, not the names. This
+contradicts GDD.md §4.1's `[INFERRED §6]` line that the supplied icons "match
+this table with no discrepancies": the *set* matches, the names do not.
+
+[SOURCE chat, 2026-09-22] "I will add the missing placeholder art before we
+start implementing the plan." So the phases assume the full set and need no
+fallback path. Two of the gaps were closed on request in the same pass —
+`Art/Dice_d6_*` and `Art/Roads_Brush_*`, generated rather than supplied and
+marked `"placeholder": true` in their atlases,
+regenerable with `Art/tools/make_placeholders.py`.
+
+**Two of the POI gaps borrow an existing sheet meanwhile.** [SOURCE §10,
+review] "Mountain gold placeholder images can be used" for forest's gold POIs,
+and "Plaines movement placeholder images can be used" for the stamina POIs that
+surplus leaves create. So the art mapping is not one sheet per §4.2 row: two
+rows point at a sheet belonging to another row. Keep those two substitutions in
+one table rather than scattered through the renderer, so dropping in a real
+sheet is a one-line edit. [SOURCE §10, review] The die-roll animation "will be
+provided" too, so the generated one is a stand-in rather than the final asset.
+
+### Q21. ~~Is the AI's time budget wall-clock seconds or a rollout count?~~ — **answered: seconds**
+
+`docs/STACK.md` §5 raised this and left it open: with the MCTS search on the
+game master's machine (§12.1), a fixed 10-second budget buys very different
+search on a laptop than on a workstation, so AI strength is not reproducible
+across games. A budget expressed in rollouts would fix that, at the cost of a
+variable turn length.
+
+[SOURCE chat, 2026-09-22] "Let's stick to the seconds budget for AI, the purpose
+of this game is fun, not the strongest and most consistent AI."
+
+So `MCTS_TIME_BUDGET_PER_MOVE_MS` stands, §9 and §11 are unchanged, and
+`docs/STACK.md` §5's "AI difficulty is not reproducible across games" is an
+accepted cost rather than an open item. One consequence for the balancing
+harness: a self-play result is only comparable to another run on the same
+machine, so `runSelfPlayBatch` should record the machine beside the numbers.
+
+### Q22. ~~How many seats does hotseat fix, while the count is temporary?~~ — **answered: 2**
+
+[SOURCE chat, 2026-09-22] "2 players is a good enough number and exercises all
+necessary functionality." Two seats also exercise both victory cases — a clear
+leader and a tie with no gold left — and turn order.
+
+`PLAYER_COUNT` (2–5) is untouched: this is a constraint of the hotseat mode
+while the setup flow does not exist yet, not a change to the game's range.
+§6.1's flow is where a game master picks a count for real.
+
+Left unasked and not worth blocking on: whether a hotseat game survives a page
+reload. Persisting it is small but the design does not mention it, so the plan
+does not either, and a closed tab loses the game.
+
+### Q23. ~~Build both POI placement strategies, or one?~~ — **answered: farthest-point only, seam kept**
+
+`docs/ARCHITECTURE.md` §3 read §3's "approximately equal distances" as a goal
+rather than a procedure and left `PoiPlacementStrategy` a seam with *both*
+farthest-point sampling and graph-space Poisson-disc to build and compare in
+the harness — two implementations for one shipped behaviour.
+
+[SOURCE chat, 2026-09-22] "use farthest point sampling, we'll switch if that
+looks bad, which I doubt."
+
+So farthest-point sampling is the one to write, and the seam stays, so adding
+the other is a one-liner rather than a rewrite. The judgement of "looks bad"
+belongs to `runMapBatch` over many seeds: POI spacing in the map dump, and the
+shape of the remoteness histogram. This supersedes §3's "two implementations to
+build"; the superseded reading is kept above as it was written.
+
+### Q24. ~~Is Q18's "total skills available" the units on the map, or a per-player maximum?~~ — **answered: the units on the map**
+
+Q18 had to pick a reading to be implementable and said so. The pick was the sum
+of skill units *placed on the map* — the exact parallel of `totalGoldUnits` —
+rather than a theoretical maximum skill level per player. It shipped on PR #5
+under that reading, flagged, and was put to the designer twice more.
+
+[SOURCE §9, review] "There is no set per-player maximum, none of the skills are
+capped by any hardcoded number. So the total # of units place on the map are
+going to be used."
+
+So `totalSkillUnits()` in `packages/core/src/gamemap.ts` stands exactly as
+written and **no code changes**. The confirmation matters for what the
+estimated evaluator *means*: its skill term reaches 1 precisely when one player
+holds every skill POI on the map, which is what keeps it commensurable with the
+gold term and the whole evaluator inside [0, 1] — the range
+`MCTS_EXPLORATION_CONSTANT` = √2 assumes ([Q14](#q14)). It also agrees with §6's
+"per-player stats, uncapped": a per-player maximum would have had to be invented,
+and §11 has no row for one.
+
+### Q25. ~~Does the remoteness walk track visited POIs?~~ — **answered, confirmed: yes**
+
+Raised on PR #6, reviewing the line that says `closestPoiCandidates` is shared
+by "the remoteness walk over *unvisited* POIs, the rollout policy over
+*unclaimed* POIs". [SOURCE §5.1, review] "we do not track which POIs have been
+visited. As long as a POI is unclaimed it is a valid target for the next walk
+destination."
+
+That is true of the **§9 rollout**, and is what `rollout.ts` already specifies.
+Applied to the **§5.1 remoteness walk** it does not compose, for three reasons
+worth keeping because they are not obvious:
+
+1. The unvisited set is that walk's *termination condition* — §5.1's "until
+   every POI has been visited once per walk", `remotenessDriver.done` is
+   `cursor.unvisited.size === 0`. Remoteness walks run inside §2.1 step 7,
+   before any player exists, so nothing is ever claimed and an unclaimed-only
+   eligibility set never shrinks.
+2. The per-POI score is "the inbound inter-POI segment plus the outbound one",
+   with the first and last POI doubling the single segment they have. That is
+   defined against a walk visiting each POI exactly once.
+3. Remoteness feeds guard strengths (§5.2) and reward stacking (§4.3), so a
+   change here moves every generated map, not just a number.
+
+Put back to the designer rather than applied. [SOURCE §5.1, review] "of course,
+during the remoteness walk we can track which nodes are visited." **So §5.1
+stands exactly as written and nothing changed** — `remotenessDriver` keeps its
+unvisited set, and `rollout.ts` keeps its unclaimed one.
+
+**The useful half of the answer is about code sharing.** [SOURCE §9, review]
+"my prediction is that code between the remoteness walk and the rollouts will
+be hard to share anyway, they are very different. We may end up sharing code
+for choosing the next target only."
+
+The architecture pass shares two things: `candidates.ts` (the target chooser)
+and `walk.ts` (a generic loop plus `WalkDriver`). The first is what §5.1 and §9
+actually name. The second already strains at four points — `WalkDriver.advance`
+returns `TCursor | null` and so cannot express `MacroAdvanceOutcome`; `runWalk`
+records every leg as `{target.node, target.cost}`, which is the Dijkstra
+estimate rather than the real turns' cost and is simply wrong when a target is
+claimed by someone else en route; `WalkResult.visits` exists for the remoteness
+scorer and a rollout consumes none of it; and `WalkDriver.done(cursor)` cannot
+supply the `legsTaken` that `RolloutTermination.isTerminal` takes for a future
+depth cap.
+
+So the expectation for phase 5 is: keep `candidates.ts` shared, and let the
+rollout have its own loop over `macroAdvanceToTarget` rather than being bent
+through `runWalk`. `docs/ARCHITECTURE.md` §5's "one shared component" stays
+true of the target chooser and the one distance metric, which is what §9 asks
+for; it is the generic loop that is not expected to survive.
 
 ---
 

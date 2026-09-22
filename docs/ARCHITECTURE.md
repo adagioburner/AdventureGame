@@ -147,10 +147,15 @@ and units → assign guard strengths. Remoteness can run there because it depend
 only on POI *positions*, never on their rewards.
 
 Two things settled about placement. "Approximately equal distances" (§3) is a
-goal, not a procedure, and [SOURCE §3, chat] the answer is to prototype both
+goal, not a procedure, and [SOURCE §3, chat] the answer was to prototype both
 farthest-point sampling and graph-space Poisson-disc and compare them in the
 harness — so `PoiPlacementStrategy` stays a seam with two implementations to
-build. And a terrain can hold more leaves than its `POI_COUNT` quota, since leaf
+build. [SOURCE chat, review] That is now narrowed: "use farthest point
+sampling, we'll switch if that looks bad, which I doubt", so only
+farthest-point sampling gets written and the seam stays for the switch. See
+[Q23](./OPEN_QUESTIONS.md#q23).
+
+And a terrain can hold more leaves than its `POI_COUNT` quota, since leaf
 count is not apportioned by terrain; [SOURCE §9, chat] the surplus leaves become
 *additional* POIs carrying `stamina`. That means total POI count is no longer
 fixed at 60, it gives §4.1's otherwise-unplaced `stamina` kind a home, and it
@@ -255,12 +260,14 @@ what actually differs rather than by who calls it:
 | File | Role |
 |---|---|
 | `candidates.ts` | **The shared kernel.** Rank eligible POIs by weighted terrain cost; pick uniformly among the `CLOSE_CANDIDATE_COUNT` closest. Both §5.1 and §9 are exactly these two operations. |
-| `walk.ts` | The generic loop, plus `WalkDriver<TCursor>` — the three things that differ: which POIs are *eligible*, what *advancing* to a target means, and when the walk is *done*. |
+| `walk.ts` | The generic loop, plus `WalkDriver<TCursor>` — the three things that differ: which POIs are *eligible*, what *advancing* to a target means, and when the walk is *done*. [SOURCE §9, review] Not expected to survive the rollout: "we may end up sharing code for choosing the next target only". See [Q25](./OPEN_QUESTIONS.md#q25). |
 | `remoteness.ts` | §5.1's driver: eligible = unvisited, advance = move straight there charging path cost, done = all POIs visited. Runs `REMOTENESS_SIMULATION_RUNS` walks from a random plains node, then min-max normalises to [0,1]. |
 | `rollout.ts` | §9's driver: eligible = unclaimed POIs of any kind, advance = play real turns through `applyAction` (so allowance, stamina, guard rolls and turn boundaries all apply), done = no unclaimed gold left. |
 
-Neither consumer contains a copy of the other's logic. The distinction the split
-makes explicit: §5.1's walk is pure geometry — turn structure, stamina and
+Neither consumer contains a copy of the other's logic. If the generic loop does
+give way ([Q25](./OPEN_QUESTIONS.md#q25)), `candidates.ts` and the one distance
+metric are what stay shared — which is what §9 asks for. The distinction the
+split makes explicit: §5.1's walk is pure geometry — turn structure, stamina and
 skills play no part — while a rollout leg is a sequence of real turns. What they
 share is the target chooser and the cost metric, which is what §9 asks for.
 
@@ -580,7 +587,9 @@ Each of these is independently implementable against the shapes above:
 4. `resolveInteraction` — §8.
 5. §4.3 assignment — the weight function is already written.
 6. Step 5 Smooth — the measurement and its exit test are written; the flip loop is not.
-7. Step 7 placement — build both strategies and compare them in the harness.
+7. Step 7 placement — farthest-point sampling behind `PoiPlacementStrategy`; the
+   second strategy is not wanted unless the maps disappoint
+   ([Q23](./OPEN_QUESTIONS.md#q23)).
 8. Remoteness — scorer is written; needs `closestPoiCandidates` (item 1) to run.
 9. `SetupFlow.start` — starting positions are settled; needs the rest of setup.
 10. Guard strengths — written; needs remoteness (item 8) to run.

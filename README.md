@@ -44,6 +44,7 @@ section to implement against; unmade *design* decisions throw
 | [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Component breakdown, data models, layering |
 | [`docs/STACK.md`](./docs/STACK.md) | Tech-stack recommendation (unconfirmed), incl. a verdict on Durable Objects |
 | [`docs/OPEN_QUESTIONS.md`](./docs/OPEN_QUESTIONS.md) | Every open item, how it was routed around, and the questions outstanding |
+| [`docs/IMPLEMENTATION_PLAN.md`](./docs/IMPLEMENTATION_PLAN.md) | The phased build order, what lands in each phase, and how each is tested |
 
 ## Layout
 
@@ -64,6 +65,9 @@ tools/
               seed reproducibility).
 Art/          Placeholder art. Reference only — nothing in the repo reads it,
               and asset extraction/sizing/icon mapping are out of scope for now.
+              `Art/tools/make_placeholders.py` regenerates the stand-in sheets
+              that were produced rather than supplied; their atlases carry
+              `"placeholder": true`.
 ```
 
 ## Working on it
