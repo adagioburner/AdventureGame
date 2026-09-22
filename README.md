@@ -73,18 +73,34 @@ Art/          Placeholder art. Reference only — nothing in the repo reads it,
 ## Working on it
 
 ```sh
-pnpm install          # once; installs the pinned TypeScript
-pnpm run typecheck    # tsc --noEmit across every package
+pnpm install              # once; installs the pinned TypeScript and Vitest
+pnpm run typecheck        # tsc --noEmit across every package
+pnpm test                 # vitest run
+pnpm run test:watch       # the same, watching
+pnpm run test:update-golden
 ```
 
 `pnpm-lock.yaml` pins the compiler, and `packageManager` in `package.json` pins
 pnpm itself, so local and CI run the same tools.
 
-**CI** (`.github/workflows/ci.yml`) runs the typecheck on every pull request and
-on every push to `main`. It installs with `--frozen-lockfile`, so a dependency
-change that isn't reflected in the lockfile fails the build rather than being
-silently applied.
+Tests sit beside the module they cover as `*.test.ts`; golden files live in
+`golden/`, whose README explains when updating one is legitimate.
 
-The engine packages still have no *runtime* dependencies — TypeScript is the
-only devDependency. More land when the first implementation pass needs them; see
-`docs/STACK.md`.
+**CI** (`.github/workflows/ci.yml`) runs two jobs, Typecheck and Test, on every
+pull request and on every push to `main`. It installs with `--frozen-lockfile`,
+so a dependency change that isn't reflected in the lockfile fails the build
+rather than being silently applied.
+
+The engine packages still have no *runtime* dependencies — TypeScript and
+Vitest are the only devDependencies. More land when the first implementation
+pass needs them; see `docs/STACK.md`.
+
+## Looking at a generated map
+
+Nothing generates one yet — `generateMap` throws until phase 1. The two
+commands that will produce a map, and which phase each arrives in, are written
+down in
+[`docs/IMPLEMENTATION_PLAN.md` §2](docs/IMPLEMENTATION_PLAN.md#2-seeing-a-map--what-a-reviewer-types):
+`pnpm map <seed>` for the generator's diagnostic SVG, and `pnpm dev` for the
+in-game isometric view. They are two different drawings of the same map and are
+not meant to look alike.

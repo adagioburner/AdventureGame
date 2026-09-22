@@ -541,7 +541,7 @@ message type — which is the "swappable without a rewrite" requirement.
 | `state/client.ts` | `ClientGameStore` and the `Transport` seam |
 | `modes/` | Online vs. hotseat as a flag on one UI |
 
-Two decisions worth stating:
+Three decisions worth stating:
 
 - **The client computes no rules.** `previewPath` comes from `@adventure/core` —
   the same accounting the server commits — so the green/yellow/grey colouring
@@ -554,6 +554,25 @@ Two decisions worth stating:
   Everything else (pan, zoom, preview, End Turn, prominent current-player name
   and avatar, character highlight) is the same UI. Duplicating the client to
   remove one feature would guarantee drift.
+- **There are two views of a map, and only one of them is the game.** The
+  generator's SVG dump is a *diagnostic* view: top-down, flat-coloured, drawn
+  from the generator's own fields so a human can check that a map came out the
+  way §2.1 says it should. It is a developer tool, never shipped to a player and
+  never part of the client. The in-game map is a different drawing of the same
+  `GameMap`: isometric, node images and dressing from `Art/`, reward icons and
+  guard numbers, roads as brush strokes — the map as §1.3 and §7.1 describe it
+  to a player. The two are not variants of one renderer and are not expected to
+  look alike.
+
+  The consequence worth writing down: **`GameMap` carries fields the player must
+  not see.** [Q15](./OPEN_QUESTIONS.md#q15) sends the sealed map to every
+  client, so `Poi.remoteness`, `Poi.group`, `Poi.artVariant` and
+  `GameMap.attempts` all arrive in the browser. `remoteness` in particular is an
+  input to §4.3's reward assignment and §5.2's guard strength, so showing it
+  would hand a player the generator's own difficulty scoring. The in-game
+  renderer draws **none** of them, except `artVariant` used as what it is — a
+  sprite index. They stay on the wire because the AI player (§9) runs
+  client-side and consumes them; that is not permission to draw them.
 
 Art binding is **out of scope** and marked so: nothing reads `Art/`, and
 `Poi.artVariant` is only a stable per-POI random index. What it indexes into —
