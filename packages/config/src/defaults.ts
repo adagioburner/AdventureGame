@@ -59,7 +59,7 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
  */
 export const DEFAULT_ENGINEERING_CONFIG: EngineeringConfig = {
   MAX_GENERATION_ATTEMPTS: 50,
-  POISSON_RADIUS_FACTOR: 0.85,
+  POISSON_RADIUS_FACTOR: 0.815,
   // Every design value is decided; see the note on `PendingConfig`.
   pending: {},
 };

@@ -153,7 +153,10 @@ harness — so `PoiPlacementStrategy` stays a seam with two implementations to
 build. [SOURCE chat, review] That is now narrowed: "use farthest point
 sampling, we'll switch if that looks bad, which I doubt", so only
 farthest-point sampling gets written and the seam stays for the switch. See
-[Q23](./OPEN_QUESTIONS.md#q23).
+[Q23](./OPEN_QUESTIONS.md#q23). Phase 1 built it as
+`farthestPointPlacement` over the one weighted-cost metric, seeded by the
+leaves §3 forces in, so filler POIs land in the gaps the leaves leave;
+`pnpm map <seed>` is where it would be seen to look bad.
 
 And a terrain can hold more leaves than its `POI_COUNT` quota, since leaf
 count is not apportioned by terrain; [SOURCE §9, chat] the surplus leaves become
@@ -598,18 +601,14 @@ and guard-strength histograms. `runSelfPlayBatch` is blocked on §12.2.
 
 ## 11. What the next session can pick up
 
-Each of these is independently implementable against the shapes above:
+Phase 1 closed items 1, 2 and 5–8 and 10 below — the one distance metric, all
+eight pipeline steps, §4.3 assignment, §5.2 guard strengths, and `sealMap`. What
+is left, each independently implementable against the shapes above:
 
-1. `shortestPath` + `closestPoiCandidates` (one Dijkstra, deterministic tie-break) — unblocks the UI preview, remoteness and rollouts at once.
-2. Mapgen steps 1–4 and 6 — no open items.
-3. `resolveMovement` / `previewPath` — §8's worked example is the test case.
-4. `resolveInteraction` — §8.
-5. §4.3 assignment — the weight function is already written.
-6. Step 5 Smooth — the measurement and its exit test are written; the flip loop is not.
-7. Step 7 placement — farthest-point sampling behind `PoiPlacementStrategy`; the
-   second strategy is not wanted unless the maps disappoint
-   ([Q23](./OPEN_QUESTIONS.md#q23)).
-8. Remoteness — scorer is written; needs `closestPoiCandidates` (item 1) to run.
-9. `SetupFlow.start` — starting positions are settled; needs the rest of setup.
-10. Guard strengths — written; needs remoteness (item 8) to run.
-11. MCTS `search()` — every policy, evaluator and branch rule is written; the four-phase loop and `macroAdvanceToTarget` are not.
+1. `resolveMovement` / `previewPath` — §8's worked example is the test case.
+2. `resolveInteraction` — §8.
+3. `SetupFlow.start` — starting positions are settled; needs the rest of setup.
+4. MCTS `search()` — every policy, evaluator and branch rule is written; the four-phase loop and `macroAdvanceToTarget` are not.
+5. The player-facing renderer (§9 above) and the art binding it needs.
+
+`grep -rn NotImplementedError packages apps tools` remains the live worklist.

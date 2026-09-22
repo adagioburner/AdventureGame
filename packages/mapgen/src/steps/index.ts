@@ -34,4 +34,4 @@ export {
   validateStep,
 };
 export type { PoiPlacementStrategy } from './7-place-pois.ts';
-export { overflowLeafPois } from './7-place-pois.ts';
+export { overflowLeafPois, farthestPointPlacement, DEFAULT_POI_PLACEMENT } from './7-place-pois.ts';

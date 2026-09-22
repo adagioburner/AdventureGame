@@ -7,7 +7,9 @@
  * any map from its seed rather than storing geometry.
  */
 export * from './types.ts';
+export * from './graphops.ts';
 export * from './pipeline.ts';
 export * from './steps/index.ts';
 export { distributionWeight, partitionPoisIntoGroups, distributeGroupUnits, assignRewards } from './rewards/assign.ts';
+export { meetsCompactness } from './steps/5-smooth.ts';
 export { guardStrengthFor, assignGuardStrengths } from './rewards/guards.ts';

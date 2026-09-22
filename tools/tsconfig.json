@@ -1,0 +1,13 @@
+{
+  // `tools/` is the one place that runs on Node and nowhere else, so it is the
+  // one program that gets Node's globals — `process`, `console`, `node:fs`.
+  // Keeping it a separate program is what stops `packages/` picking them up by
+  // accident: those run in the browser too. There is no build step either way;
+  // Node 22 strips the types and runs the source (docs/STACK.md §3).
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["./*/src/**/*.ts"]
+}

@@ -39,14 +39,16 @@ anything else. I'd measure before doing either.
 ## 2. Workspace: pnpm monorepo
 
 Already set up: `packages/*` + `apps/*` + `tools/*`, one `tsconfig.base.json`,
-path-mapped `@adventure/*` imports, one `npm run typecheck` over everything.
-Engine packages carry **zero runtime dependencies**, which matters for
-determinism as much as portability — fewer places for a library update to change
-a generated map.
+path-mapped `@adventure/*` imports, and `pnpm run typecheck` over everything —
+two `tsc` programs since phase 1, one for `packages/` and `apps/` and one for
+`tools/`, for the reason given in §3.
 
-The one library I'd add: `delaunator` for §2.1 step 2. Delaunay is a solved
-problem and a hand-rolled version is a determinism risk, not a feature.
-Poisson-disc sampling (step 1) is a dozen lines and stays in-repo.
+Engine packages carry **one runtime dependency**, which matters for determinism
+as much as portability — fewer places for a library update to change a generated
+map. That one is `delaunator`, added in phase 1 for §2.1 step 2 and used by
+`@adventure/mapgen` alone: Delaunay is a solved problem and a hand-rolled
+version is a determinism risk, not a feature. Poisson-disc sampling (step 1) is
+a dozen lines and stayed in-repo, as predicted.
 
 ## 3. Client: Vite + React for chrome, PixiJS for the map
 
@@ -68,8 +70,8 @@ Poisson-disc sampling (step 1) is a dozen lines and stays in-repo.
   came with it:
   - **Tests live beside the module they cover**, as `*.test.ts` inside each
     package's `src/`. They then import through the same relative `.ts` paths the
-    modules already use, so there is no build step and no second tsconfig, and
-    the existing `tsconfig.json` include already typechecks them.
+    modules already use, so there is no build step, and the `tsconfig.json`
+    include already typechecks them.
   - **Golden-seed snapshots live in `golden/`** at the repo root, one text file
     per snapshot, written with Vitest's `toMatchFileSnapshot()`. See
     [`golden/README.md`](../golden/README.md) — in particular that a golden
@@ -77,6 +79,21 @@ Poisson-disc sampling (step 1) is a dozen lines and stays in-repo.
     once you have decided which kind.
   - **`vitest run` in CI, never watch mode**, as a second required check beside
     Typecheck.
+- **`tools/` typechecks as its own program.** Phase 1 gave `tools/balance` a
+  CLI, and a CLI needs `process`, `console` and `node:fs`. Rather than adding
+  `@types/node` to every program — the engine packages run in a browser as well
+  as on a server, and nothing in them may quietly reach for a Node API —
+  `tsconfig.base.json` sets `"types": []` and `tools/tsconfig.json` opts back
+  in with `"types": ["node"]`. `pnpm run typecheck` runs both programs. This is
+  a *typechecking* split only: there is still no build step, and Node 22 strips
+  the types and runs the source either way.
+- **`delaunator` is the first runtime dependency**, in `@adventure/mapgen`
+  alone, for §2.1 step 2. A correct incremental Delaunay is a great deal of
+  subtle floating-point geometry, and this is the smallest well-tested
+  implementation of it; its output is a deterministic function of the point
+  list, which is what §1.3 needs. The edge list it produces is sorted into
+  `(a, b)` order before anything downstream sees it, so no later step depends
+  on the library's internal triangle ordering either.
 - **No linter or formatter, for now.** Not a design question; a contributor one.
   `strict` plus `noUncheckedIndexedAccess` plus `exactOptionalPropertyTypes` is
   already doing the load-bearing work, and a formatter diff across every file
@@ -89,7 +106,7 @@ Two components are CPU-bound, and they are very different:
 
 | Component | Cost | Where it should run |
 |---|---|---|
-| Map generation | Once per game. Delaunay and flood fill are trivial at 240 nodes; the remoteness pass dominates — `REMOTENESS_SIMULATION_RUNS` (100) walks × ~60 legs, each leg a partial Dijkstra over 240 nodes, so order 6,000 small searches, times the retry count. Likely tens to a few hundred ms. **Measure it before assuming.** | **Decided (§12.1): the game master's machine.** |
+| Map generation | Once per game. **Measured in phase 1: ~200 ms per map**, one attempt, over 40 seeds (`pnpm map:batch 40` → 7.8 s). The estimate held: Delaunay and flood fill are trivial at 240 nodes and the remoteness pass dominates — `REMOTENESS_SIMULATION_RUNS` (100) walks × ~60 legs, each leg a partial Dijkstra over 240 nodes. No seed has yet needed a second attempt. | **Decided (§12.1): the game master's machine.** |
 | MCTS | 10 s of CPU **per AI move** (§9). A 60-turn game with two AI players is on the order of 20 CPU-minutes. | **Decided (§12.1): the game master's machine**, in a Web Worker. |
 
 Because generation is deterministic in `(seed, ruleset)`, a store only ever has

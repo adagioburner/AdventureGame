@@ -14,18 +14,22 @@ Nothing below was resolved by picking something reasonable.
 **Answered so far:** all four of GDD.md §12's own open items, and Q1–Q26.
 `pending` in the config is empty.
 
-**Outstanding: none.** Every question in this register is answered, and so is
-every reading that was held open for confirmation — Q1's first-segment wrinkle,
-Q13, Q17, and, as of 2026-09-22, Q18's own pick of what "total skills
-available" divides by ([Q24](#q24)) and whether the §2 avatar is its own asset
-([Q26](#q26)). The config's `pending` block is empty.
+**Outstanding: one — [Q27](#q27).** Building phase 1 turned up that
+`COMPACTNESS_MAX` never binds on a map of ~240 nodes and 300 edges, so §2.1's
+Smooth step does nothing at the current constants. It is a tuning question, not
+a blocker: generation works and the code implements §2.1 literally. Everything
+else in this register is answered, and so is every reading that was held open
+for confirmation — Q1's first-segment wrinkle, Q13, Q17, and, as of
+2026-09-22, Q18's own pick of what "total skills available" divides by
+([Q24](#q24)) and whether the §2 avatar is its own asset ([Q26](#q26)). The
+config's `pending` block is empty.
 
-The next session's work is implementation against a settled spec rather than
-more design review. `docs/IMPLEMENTATION_PLAN.md` is the build order;
-`docs/ARCHITECTURE.md` §11 lists the seams it draws on.
+`docs/IMPLEMENTATION_PLAN.md` is the build order; `docs/ARCHITECTURE.md` §11
+lists the seams it draws on.
 
 Q20–Q26 came out of writing that plan, and of the art landing against it,
-rather than the architecture pass, and sit in their own section below.
+rather than the architecture pass, and sit in their own section below. Q27 came
+out of running the pipeline for the first time.
 
 ---
 
@@ -642,6 +646,46 @@ delete both it and the tool when the real set lands. Phase 3 scales the box
 into the avatar frame — there is no second PNG, so nothing is upscaled on disk
 and nothing has to be kept in step with the figurine sheet.
 
+<a id="q27"></a>
+### Q27. Should `COMPACTNESS_MAX` be retuned? The Smooth step currently does nothing — **asking**
+
+§2.1 step 5 says: "flip isolated nodes to their majority-neighbour terrain
+**until** `compactness = boundary² / area` falls below `COMPACTNESS_MAX`", with
+[SOURCE §1.3, chat] giving a circle reference of 4π ≈ 13 and a starting value
+of 25. The code implements that literally. The consequence, which only shows up
+once the step is run on a real map, is that **the condition already holds
+before the loop starts**, so no node is ever flipped.
+
+The measurement is not wrong; the reference is. A circle scoring 4π assumes a
+dense 2D lattice, where a region of radius *r* holds about π*r*² nodes and about
+2π*r* of them sit on its edge. A finished map is not a lattice: §2.1 prunes to
+~240 nodes and 300 edges, a mean degree of **2.5**, which is nearly a tree. On
+a graph like that a terrain region's boundary is a handful of nodes whatever its
+size, so `boundary² / area` comes out around **0.4 on average and 3.4 at worst**
+over 40 seeds — against a threshold of 25.
+
+What that costs: nothing is broken, but one of the eight pipeline steps is inert,
+and the speckle it exists to clean up survives into the finished map. Flood fill
+with §2.1's same-terrain bias already produces reasonably blobby regions, so the
+maps look sane (`pnpm map adventure`), but they are not smoothed.
+
+Three ways out, none of them the implementer's to pick:
+
+1. **Lower `COMPACTNESS_MAX`** to something that binds at this density — the
+   batch report suggests the interesting range is roughly 1 to 3. It is a §11
+   "tunable (play-test)" row, so this is the cheapest change and needs no code.
+2. **Change what compactness measures** — counting boundary *edges* rather than
+   boundary *nodes* would scale with the graph's own density. [SOURCE §2.1 step
+   5, chat] settled on nodes ("yes, counting nodes is the right approach"), so
+   this would be a reversal rather than a tuning.
+3. **Leave it.** If the regions look right, an inert step is only a tidiness
+   problem, and step 5 becomes load-bearing again if `MAP_EDGE_COUNT` ever rises.
+
+`pnpm map:batch 50` prints the compactness distribution both after Smooth and
+after Carve Valleys, so whichever you pick can be checked against real maps.
+Nothing downstream depends on the answer: reward assignment and guard strengths
+read remoteness, not compactness.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design
@@ -657,3 +701,7 @@ Listed so you can veto any that read as design to you.
 | Remoteness computed inside step 7, between POI placement and reward assignment | Forced by data flow: §4.3 step 3 consumes remoteness, and remoteness depends only on POI positions. |
 | sfc32 PRNG, string seeds | §1.3 requires reproducibility, not a specific algorithm. |
 | `Poi.artVariant` as an opaque stable index | §3 says a POI has an image; what the index means is left entirely to a later art-binding decision. Nothing reads `Art/`. |
+| `POISSON_RADIUS_FACTOR` recalibrated 0.85 → 0.815 | An `EngineeringConfig` knob, documented as existing purely "for making step 1 hit its node budget". 0.85 was a guess made before there was a sampler; measured, it yields ~220 nodes against §11's `MAP_NODE_COUNT` of 240. 0.815 centres the yield on 240. No §11 value changed. |
+| Farthest-point seed placement in §2.1 step 4, on nodes of degree ≥ 3 | §2.1 fixes the seed *count* (1 or 2 per terrain) and says nothing about placement. On a near-tree graph a seed down a branch is walled in after a few nodes and its terrain never reaches its share; measured, this choice cuts the share error from ~9 points per terrain to ~3. |
+| Surplus leaves drawn by shuffle | §3 forces every leaf to be a POI and §4.2 fixes how many POIs a terrain's table rows get; nothing says *which* leaves fall inside the quota when a terrain has more leaves than it. Drawn from the map's own stream. |
+| `GenerationObserver` on `generateMap` | Diagnostics only, for `tools/balance`. §11 wants compactness measured both after Smooth and after Carve Valleys, and `valleyNodes` is draft-only — neither belongs in the `GameMap` that Q15 sends to every client. |

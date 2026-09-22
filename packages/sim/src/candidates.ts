@@ -1,5 +1,5 @@
 import type { GameConfig } from '@adventure/config';
-import { NotImplementedError, type MapGraph, type NodeId, type Rng } from '@adventure/core';
+import { dijkstra, type MapGraph, type NodeId, type Rng } from '@adventure/core';
 
 /**
  * THE shared kernel.
@@ -30,17 +30,33 @@ export interface PoiCandidate {
  * The `CLOSE_CANDIDATE_COUNT` cheapest eligible POIs from `from`, ascending by
  * cost. Fewer than K are returned when fewer remain eligible.
  *
- * Implementation note: a single Dijkstra from `from`, stopped once K eligible
- * POIs have been settled. Ties must break deterministically (lowest node id)
- * so a given `(seed, params)` always yields the identical walk.
+ * One `dijkstra` from `from`, stopped once K eligible POIs have been settled.
+ * Because that search settles in `(cost, node id)` order, the list comes out
+ * ascending by cost with the lowest node id first among equal costs, and a
+ * given `(seed, params)` always yields the identical walk.
+ *
+ * `from` itself counts when it is eligible, at cost 0. That only arises on the
+ * first leg of a remoteness walk, whose random plains start may happen to be an
+ * unvisited POI; the alternative — skipping it — would leave a POI the walk can
+ * never return to, since §5.1 only ever moves *away* from where it stands.
  */
 export function closestPoiCandidates(
-  _graph: MapGraph,
-  _from: NodeId,
-  _eligible: ReadonlySet<NodeId>,
-  _config: GameConfig,
+  graph: MapGraph,
+  from: NodeId,
+  eligible: ReadonlySet<NodeId>,
+  config: GameConfig,
 ): readonly PoiCandidate[] {
-  throw new NotImplementedError('closestPoiCandidates', 'GDD.md §5.1 / §9');
+  const wanted = config.balancing.CLOSE_CANDIDATE_COUNT;
+  if (wanted <= 0 || eligible.size === 0) return [];
+
+  const found: PoiCandidate[] = [];
+  dijkstra(graph, from, config, {
+    stopWhen: (node, cost) => {
+      if (eligible.has(node)) found.push({ node, cost });
+      return found.length >= wanted;
+    },
+  });
+  return found;
 }
 
 /**

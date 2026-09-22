@@ -1,9 +1,9 @@
 # Implementation plan
 
-Status: **agreed; phase 0 done, phase 1 next.** This plan is derived from the
+Status: **agreed; phases 0 and 1 done, phase 2 next.** This plan is derived from the
 five-step order Andrei proposed, checked against the design of record and
-against what is actually in the repo today. Phase 0 landed the test harness;
-everything from phase 1 on is still seams.
+against what is actually in the repo today. Phase 0 landed the test harness and
+phase 1 the map generator; everything from phase 2 on is still seams.
 
 The design of record is [`GDD.md`](../GDD.md), with
 [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) for component boundaries,
@@ -25,8 +25,9 @@ five are registered as Q20–Q24 in
 than this plan is where the repo records a decision.
 
 Where the repo stands: the architecture pass landed data models, component
-boundaries and interfaces that typecheck. Thirty-odd seams throw
-`NotImplementedError` carrying the GDD section to implement against, and
+boundaries and interfaces that typecheck, and phases 0 and 1 have turned the
+first of the seams into code. The rest still throw `NotImplementedError`
+carrying the GDD section to implement against, and
 `grep -rn NotImplementedError packages apps tools` is the live worklist. Every
 phase below is written as "turn these named seams into code", not as "design
 this".
@@ -118,7 +119,7 @@ half needs the AI, so it sits at the end of phase 5.
 | Phase | What lands | Andrei's step |
 |---|---|---|
 | [0](#phase-0--test-and-check-infrastructure) ✅ | Vitest, `pnpm test`, second CI check | new |
-| [1](#phase-1--map-generation) | Distance metric, the eight pipeline steps, rewards, guards, a human-viewable map dump, the map harness | 1 |
+| [1](#phase-1--map-generation) ✅ | Distance metric, the eight pipeline steps, rewards, guards, a human-viewable map dump, the map harness | 1 |
 | [2](#phase-2--rules-engine-headless) | §7/§8 movement, interaction, turn order, victory — pure, tested | part of 2 |
 | [3](#phase-3--art-binding-and-the-isometric-renderer) | Atlas loader, reward-kind-to-sheet mapping, isometric projection, draw layers | new |
 | [4](#phase-4--hotseat-ui) | Pan/zoom, move mode, path preview, End Turn, Rest, stats, game end | 2 |
@@ -143,13 +144,11 @@ because they are the two different views §9 of `ARCHITECTURE.md` now separates.
 
 ```sh
 pnpm install          # once
-pnpm run typecheck    # tsc --noEmit across every package
+pnpm run typecheck    # both programs: packages + apps, then tools
 pnpm test             # vitest run
 ```
 
-No map comes out of that yet: `generateMap` still throws `NotImplementedError`.
-
-### 2.1 After phase 1 — the diagnostic SVG
+### 2.1 After phase 1 — the diagnostic SVG — **works now**
 
 ```sh
 pnpm map adventure            # one map from the seed "adventure"
@@ -177,7 +176,7 @@ committed SVG would snapshot the same map a second time and churn on every
 cosmetic change to the renderer.
 
 **No extra runner is needed, and that is worth stating because it is not
-obvious.** Every workspace package sets `"main": "src/index.ts"`, and the
+obvious.** (Confirmed in phase 1: both scripts are one-line `node` invocations.) Every workspace package sets `"main": "src/index.ts"`, and the
 codebase uses no `enum` and no `namespace`, so Node 22's built-in type
 stripping runs the tools directly: `node tools/balance/src/cli.ts` resolves
 `@adventure/core` and runs it with no `tsx`, no `ts-node` and no build step.
@@ -253,7 +252,7 @@ under Settings → Branches.
 
 ---
 
-## Phase 1 — map generation
+## Phase 1 — map generation — **done**
 
 Delivers: a generated map, reproducible from `(seed, ruleset)`, viewable as a
 picture, and a harness that reports whether the parameters came out as §11
@@ -428,6 +427,44 @@ batch of seeds with no unexplained rejections; the same seed gives a
 byte-identical map twice; the SVG of a handful of seeds looks like §2's
 description (rounded terrain regions, plains valleys, POIs on every leaf); and
 the harness's report sits within §11's targets.
+
+### What actually landed
+
+All of 1a–1e, with the proposals in 1b and 1d taken as written: `delaunator`
+for step 2, SVG from `tools/balance` for the dump. `pnpm map <seed>` and
+`pnpm map:batch <n>` are the §2.1 surface, plain `node` with no TypeScript
+runner as §2 said they could be. 157 tests pass; `golden/maps/adventure.txt`
+joins `golden/rng/`.
+
+Measured over 40 seeds (`pnpm map:batch 40`, 7.8 s): **every seed generates on
+the first attempt**, 229–248 nodes, exactly 300 edges, 31–45 leaves, 60–63 POIs.
+Terrain shares average 46 / 31 / 23 against §2.1's 45 / 30 / 25. Remoteness
+spans [0, 1] on every map and §4.2 reconciles exactly, row by row.
+
+Five things worth knowing, three of them only visible once the pipeline ran:
+
+- **A pruned map is nearly a tree.** ~240 nodes and 300 edges is a mean degree
+  of 2.5. Almost every surprise below follows from that, and it is worth
+  carrying into any later reasoning about the graph.
+- **The Smooth step is inert at the current constants**, because
+  `COMPACTNESS_MAX = 25` never binds on a graph that sparse — measured
+  compactness is 0.4 on average, 3.4 at worst. §2.1 is implemented literally
+  ("flip *until* it falls below"), so the loop exits before it starts. This is
+  the one question phase 1 raised:
+  [Q27](./OPEN_QUESTIONS.md#q27). Nothing downstream depends on the answer.
+- **Terrain regions get sealed off** — on a near-tree, a region can find every
+  node next to it already taken long before it reaches its share. Step 4 answers
+  that with farthest-point seed placement on junction nodes and shallowest-first
+  growth; see the note on the step. Per-map shares still vary widely (mountain
+  ran 11–35% over 40 seeds); the *mean* is what §2.1's "approximately" buys.
+- **`POISSON_RADIUS_FACTOR` was recalibrated**, 0.85 → 0.815. It is an
+  `EngineeringConfig` knob whose whole purpose is hitting the node budget, and
+  0.85 — a guess made before a sampler existed — yields ~220 nodes against
+  `MAP_NODE_COUNT`'s 240. No §11 value changed.
+- **`tools/` typechecks as its own program now.** A CLI needs `process` and
+  `node:fs`, and the engine packages must not get Node's globals by accident;
+  `pnpm run typecheck` runs both `tsconfig.json` and `tools/tsconfig.json`.
+  See [`docs/STACK.md`](./STACK.md) §3.
 
 ---
 

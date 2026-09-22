@@ -1,5 +1,5 @@
-import type { GameConfig, RewardGroupSpec, Terrain } from '@adventure/config';
-import { NotImplementedError, type NodeId, type Rng } from '@adventure/core';
+import { TERRAINS, type GameConfig, type RewardGroupSpec, type Ruleset, type Terrain } from '@adventure/config';
+import type { NodeId, Rng } from '@adventure/core';
 import type { MapDraft, PoiAssignment } from '../types.ts';
 
 /**
@@ -33,14 +33,42 @@ export function distributionWeight(currentCount: number, remoteness: number, con
  *
  * Mountain contributes two groups that share `kind: 'gold'` and differ only by
  * guard type — the sub-partition, not an extra kind.
+ *
+ * Which POI lands in which group is a shuffle: §4.2 fixes how many POIs each
+ * row gets, and nothing in §3 or §4 says *which* ones, so the draw is the one
+ * thing that decides it. Rows are consumed in table order, so the shuffle is
+ * the only source of variation.
  */
 export function partitionPoisIntoGroups(
-  _terrain: Terrain,
-  _poiNodes: readonly NodeId[],
-  _rows: readonly RewardGroupSpec[],
-  _rng: Rng,
+  terrain: Terrain,
+  poiNodes: readonly NodeId[],
+  rows: readonly RewardGroupSpec[],
+  rng: Rng,
 ): readonly PoiAssignment[] {
-  throw new NotImplementedError('partitionPoisIntoGroups', 'GDD.md §4.3 step 1');
+  const wanted = rows.reduce((sum, row) => sum + row.poiCount, 0);
+  if (wanted !== poiNodes.length) {
+    throw new RangeError(
+      `§4.2 gives ${terrain} ${wanted} POIs but ${poiNodes.length} were placed; the table and POI_COUNT disagree`,
+    );
+  }
+
+  const pool = rng.shuffle(poiNodes);
+  const assignments: PoiAssignment[] = [];
+  let cursor = 0;
+  for (const row of rows) {
+    for (let index = 0; index < row.poiCount; index++) {
+      assignments.push({
+        node: pool[cursor++] as NodeId,
+        terrain,
+        kind: row.kind,
+        guardType: row.guard,
+        // §4.3 step 2's guaranteed unit; step 3 adds the rest.
+        units: 1,
+        guardStrength: null,
+      });
+    }
+  }
+  return assignments;
 }
 
 /**
@@ -53,18 +81,62 @@ export function partitionPoisIntoGroups(
  *
  * One at a time and re-weighted after every unit — that is what makes the
  * self-damping term (`current_count` in the denominator) do anything at all.
+ * Step 2's unit is already on the assignment when it arrives here, from
+ * `partitionPoisIntoGroups`.
  */
 export function distributeGroupUnits(
-  _group: readonly PoiAssignment[],
-  _row: RewardGroupSpec,
-  _remoteness: ReadonlyMap<NodeId, number>,
-  _config: GameConfig,
-  _rng: Rng,
+  group: readonly PoiAssignment[],
+  row: RewardGroupSpec,
+  remoteness: ReadonlyMap<NodeId, number>,
+  config: GameConfig,
+  rng: Rng,
 ): void {
-  throw new NotImplementedError('distributeGroupUnits', 'GDD.md §4.3 steps 2-3');
+  if (group.length === 0) return;
+  const remainder = row.totalUnits - row.poiCount;
+  if (remainder < 0) {
+    throw new RangeError(`§4.2 row ${row.kind}/${row.guard ?? 'unguarded'} has fewer units than POIs`);
+  }
+
+  for (let unit = 0; unit < remainder; unit++) {
+    const weights = group.map((assignment) =>
+      distributionWeight(assignment.units, remotenessOf(remoteness, assignment.node), config),
+    );
+    rng.weightedPick(group, weights).units += 1;
+  }
 }
 
-/** Run §4.3 for every terrain and every row of §4.2. */
-export function assignRewards(_draft: MapDraft, _config: GameConfig, _rng: Rng): void {
-  throw new NotImplementedError('assignRewards', 'GDD.md §4.2, §4.3');
+function remotenessOf(remoteness: ReadonlyMap<NodeId, number>, node: NodeId): number {
+  const score = remoteness.get(node);
+  if (score === undefined) throw new RangeError(`no remoteness score for POI node ${node}`);
+  return score;
+}
+
+/**
+ * Run §4.3 for every terrain and every row of §4.2.
+ *
+ * POIs that already carry an assignment are left alone. That is how the surplus
+ * leaves of §3 stay out of the table: step 7 gives them their stamina before
+ * calling this, precisely because §4.2 has no row for them, and the §4.2 quota
+ * is then satisfied by exactly the POIs the table accounts for.
+ */
+export function assignRewards(draft: MapDraft, ruleset: Ruleset, rng: Rng): void {
+  const spoken = new Set(draft.assignments.map((assignment) => assignment.node));
+
+  for (const terrain of TERRAINS) {
+    const rows = ruleset.content.REWARD_TABLE[terrain];
+    const nodes = draft.poiNodes.filter(
+      (node) => !spoken.has(node) && draft.terrain[node] === terrain,
+    );
+    const groups = partitionPoisIntoGroups(terrain, nodes, rows, rng);
+
+    let cursor = 0;
+    for (const row of rows) {
+      const group = groups.slice(cursor, cursor + row.poiCount);
+      cursor += row.poiCount;
+      distributeGroupUnits(group, row, draft.remoteness, ruleset.config, rng);
+    }
+    draft.assignments.push(...groups);
+  }
+
+  draft.assignments.sort((left, right) => left.node - right.node);
 }

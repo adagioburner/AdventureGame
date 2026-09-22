@@ -44,6 +44,21 @@ Then read the diff before committing it.
   rests on: if `sfc32-seed-adventure.txt` moves, every generated map has moved
   too, and no other golden file's diff means anything until this one is
   explained.
+- `maps/` — a whole generated map, as text: one line per node, per edge and per
+  POI, with each POI's reward, group, guard and remoteness. Written by
+  `tools/balance/src/golden.test.ts` through `formatMapSummary`, the same
+  record format the harness prints.
 
-Map summaries join this directory in phase 1, when `generateMap` stops throwing
-`NotImplementedError` — see `docs/IMPLEMENTATION_PLAN.md`.
+**Why the map summary and not the SVG.** `pnpm map <seed>` also draws the map,
+and committing that drawing would look like the more useful snapshot. It is
+not: it would capture the same map a second time, and it would churn on every
+cosmetic change to the renderer — a nudged label or a new legend line would
+show up as a map diff. The summary moves only when generation moves. The SVG
+stays in `out/`, which is gitignored.
+
+**What a map diff usually means.** Generation draws from one stream through all
+eight pipeline steps, so a step reordered, a step taking an extra draw, or a
+constant changed anywhere ahead of it shifts every number in this file at once.
+A diff of a handful of lines is a narrow change; a diff of the whole file is a
+change to the stream, and `golden/rng/` will say whether the PRNG itself moved
+or whether something upstream in the pipeline is drawing differently.

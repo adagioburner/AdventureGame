@@ -1,4 +1,5 @@
-import { asNodeId, isConnected, leafNodes, type MapGraph } from '@adventure/core';
+import { isConnected, leafNodes } from '@adventure/core';
+import { draftAsGraph } from '../graphops.ts';
 import { GenerationRejected, type GenerationStep, type MapDraft } from '../types.ts';
 
 /**
@@ -27,16 +28,3 @@ export const validateStep: GenerationStep = {
     }
   },
 };
-
-/** View of the draft as a `MapGraph`, for the shared graph predicates. */
-function draftAsGraph(draft: MapDraft): MapGraph {
-  return {
-    nodes: draft.positions.map((position, index) => ({
-      id: asNodeId(index),
-      position,
-      terrain: draft.terrain[index] ?? 'plains',
-    })),
-    edges: draft.edges,
-    adjacency: draft.adjacency,
-  };
-}
