@@ -13,14 +13,15 @@ plan needs something the design does not say, it asks rather than choosing —
 see [Questions](#questions) at the end. It invents no rules, no constants and
 no defaults.
 
-Andrei answered four of the five questions on 2026-09-22, and they are folded
-into the phases below: the AI budget stays in seconds, hotseat is 2 players,
-POI placement is farthest-point sampling alone, and he is supplying the missing
-placeholder art, of which the die-roll animation and the road brush are in this
-change. They are registered as Q20–Q23 in
+Andrei answered all five questions on 2026-09-22, and they are folded into the
+phases below: the AI budget stays in seconds, hotseat is 2 players, POI
+placement is farthest-point sampling alone, Q18's `total_skills` reading is
+confirmed as the units placed on the map, and he is supplying the missing
+placeholder art — the die-roll animation and the road brush are in this change,
+and forest gold and the stamina POIs borrow an existing sheet meanwhile. All
+five are registered as Q20–Q24 in
 [`docs/OPEN_QUESTIONS.md`](./OPEN_QUESTIONS.md), since that register rather
-than this plan is where the repo records a decision. Only P4 is still open, and
-it does not block starting.
+than this plan is where the repo records a decision.
 
 Where the repo stands: the architecture pass landed data models, component
 boundaries and interfaces that typecheck. Thirty-odd seams throw
@@ -380,9 +381,13 @@ phase 2.
    `Plains_Magic`, `Plains_GoldGuardedByFighting`, `Forest_MountainMovement`,
    `Forest_Fighting`, `Mountains_GoldGuardedByFighting`,
    `Mountains_GoldGuardedByMagic`. That is exactly §4.2's rows *minus* forest
-   gold — see [P1](#p1-art-gaps--answered-q20-two-assets-generated). Four dressing
-   sheets cover the eye candy: `Plains_Fields`, `Plains_GrassRocks`,
-   `Forest_Trees`, `Mountains_Mountains`.
+   gold. Two rows therefore borrow a sheet until their own exists (Q20):
+   **forest gold** draws from `Mountains_GoldGuardedByFighting`, and the
+   **stamina** POIs that surplus leaves create draw from
+   `Plains_PlainsMovement`. Put those two substitutions in one table the art
+   mapping reads, not scattered through the renderer, so swapping in a real
+   sheet is a one-line edit. Four dressing sheets cover the eye candy:
+   `Plains_Fields`, `Plains_GrassRocks`, `Forest_Trees`, `Mountains_Mountains`.
 3. **`Poi.artVariant` becomes an index** into the chosen sheet's `sprites`
    array, modulo its length, so a POI's picture is stable across reloads and
    replays and no sheet's sprite count is baked into the generator.
@@ -647,11 +652,11 @@ already, but a v1 *content* choice per §4.4).
 
 ## Questions
 
-Five things this plan could not settle from the documents. **P1, P2, P3 and P5
-were answered on 2026-09-22** and are registered as Q20–Q23 in
+Five things this plan could not settle from the documents. **All five were
+answered on 2026-09-22** and are registered as Q20–Q24 in
 [`docs/OPEN_QUESTIONS.md`](./OPEN_QUESTIONS.md), which is where the repo keeps
 decisions; the summaries below are a convenience, and the register is
-authoritative. **P4 is still open** and does not block phase 0 or phase 1.
+authoritative.
 
 ### P1. ~~Art gaps~~ — **answered (Q20); two assets generated**
 
@@ -666,14 +671,18 @@ list below is Andrei's to supply:
 
 Six §10 asset groups were missing from `Art/`, and one POI sheet:
 
-- **Forest gold.** Eight POI sheets cover eight of §4.2's nine rows. There is no
-  sheet for forest's 4 fighting-guarded gold POIs, although plains' and
-  mountain's gold POIs both have one.
-- **Stamina POIs.** Surplus leaves become stamina POIs, on any terrain, and no
-  sheet covers them.
+- ~~**Forest gold.**~~ Eight POI sheets cover eight of §4.2's nine rows, with
+  none for forest's 4 fighting-guarded gold POIs. [SOURCE chat, review]
+  "Mountain gold placeholder images can be used" — so forest gold draws from
+  `Mountains_GoldGuardedByFighting` until a forest sheet exists.
+- ~~**Stamina POIs.**~~ Surplus leaves become stamina POIs, on any terrain, and
+  no sheet covers them. [SOURCE chat, review] "Plaines movement placeholder
+  images can be used" — so they draw from `Plains_PlainsMovement`.
 - **Character figurines** to choose from at setup, and player avatars.
-- ~~**Die-roll animation.**~~ Generated: eight tumble frames to loop while the
-  roll is in flight, then the six resting faces, one per `GUARD_DIE` value.
+- ~~**Die-roll animation.**~~ Generated here: eight tumble frames to loop while
+  the roll is in flight, then the six resting faces, one per `GUARD_DIE` value.
+  [SOURCE chat, review] "this will be provided" — the generated one stands in
+  until the real animation arrives.
 - **Terrain textures** for the three terrains. (The **road/path brush pattern**
   is generated: three stroke widths, each tiling horizontally with no seam,
   with a deliberately flat centreline so a straight edge draws straight.
@@ -711,14 +720,19 @@ Left unanswered, and not worth blocking on: whether a hotseat game should
 survive a page reload. Persisting to `localStorage` is small but the design does
 not mention it, so phase 4 does not, and a closed tab loses the game.
 
-### P4. Q18, still open in fact — **the only one left**
+### P4. ~~Q18, still open in fact~~ — **answered (Q24): the shipped reading is right**
 
 Q18's `total_skills` is implemented as the skill units *placed on the map*
-rather than a per-player maximum. That reading shipped without confirmation, and
-changing it is a one-line change to `totalSkillUnits()` in
-`packages/core/src/gamemap.ts`. It only affects the estimated and hybrid
-evaluators, which v1 does not use, so it does not block phase 5 — but phase 5 is
-where it would first produce a number anyone looks at.
+rather than a per-player maximum, and that reading shipped without
+confirmation.
+
+[SOURCE chat, review] "There is no set per-player maximum, none of the skills
+are capped by any hardcoded number. So the total # of units place on the map
+are going to be used." So `totalSkillUnits()` stands as written, and the
+estimated evaluator's skill term reaches 1 exactly when one player holds every
+skill POI — which is what makes it comparable with the gold term and keeps the
+evaluator inside [0, 1]. Nothing changes in the code; the reading is now
+confirmed rather than assumed.
 
 ### P5. ~~Are the placement strategies still both wanted?~~ — **answered (Q23): farthest-point only**
 

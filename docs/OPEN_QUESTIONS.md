@@ -11,16 +11,13 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, and Q1–Q23.
+**Answered so far:** all four of GDD.md §12's own open items, and Q1–Q24.
 `pending` in the config is empty.
 
-**Outstanding: one reading, Q18's.** Every *question* in this register is
-answered, including the three readings that were held open for confirmation —
-Q1's first-segment wrinkle, Q13 and Q17 — and the config's `pending` block is
-empty. What is not confirmed is Q18's own pick: what "total skills available"
-divides by. It is implemented under the stated reading, was flagged on PR #5,
-and was put to the designer again while planning the implementation; it only
-affects the two evaluators v1 does not use, so nothing waits on it.
+**Outstanding: none.** Every question in this register is answered, and so is
+every reading that was held open for confirmation — Q1's first-segment wrinkle,
+Q13, Q17, and, as of 2026-09-22, Q18's own pick of what "total skills
+available" divides by ([Q24](#q24)). The config's `pending` block is empty.
 
 The next session's work is implementation against a settled spec rather than
 more design review. `docs/IMPLEMENTATION_PLAN.md` is the build order;
@@ -403,6 +400,9 @@ POI. The alternative — a theoretical maximum skill level per player — would 
 the term mean something different and never reach 1. Changing it later is a
 one-line change to `totalSkillUnits`.
 
+**Confirmed, 2026-09-22.** That reading shipped as a pick rather than an answer
+and is now the designer's own: see [Q24](#q24). No code changed.
+
 **What v1 uses.** [SOURCE §9, review] "The plan is to use the simulated
 rollout for node evaluation in v1, and then experiment with other evaluators."
 So `simulatedRolloutEvaluator()` — §9's specified default — is the one the first
@@ -452,9 +452,10 @@ strengths and reward stacking of every generated map.
 
 ## B3. Questions from the implementation-planning pass
 
-Four gaps found while turning GDD.md and the architecture into a phased build
+Five gaps found while turning GDD.md and the architecture into a phased build
 order (`docs/IMPLEMENTATION_PLAN.md`), all answered by the designer on
-2026-09-22. None of them changed a rule; they settled scope and content.
+2026-09-22. None of them changed a rule; they settled scope and content, and
+Q24 confirmed a reading Q18 had had to pick.
 
 ### Q20. ~~Which §10 art assets are coming, and which need standing in?~~ — **answered**
 
@@ -479,6 +480,15 @@ fallback path. Two of the gaps were closed on request in the same pass —
 `Art/Dice_d6_*` and `Art/Roads_Brush_*`, generated rather than supplied and
 marked `"placeholder": true` in their atlases,
 regenerable with `Art/tools/make_placeholders.py`.
+
+**Two of the POI gaps borrow an existing sheet meanwhile.** [SOURCE §10,
+review] "Mountain gold placeholder images can be used" for forest's gold POIs,
+and "Plaines movement placeholder images can be used" for the stamina POIs that
+surplus leaves create. So the art mapping is not one sheet per §4.2 row: two
+rows point at a sheet belonging to another row. Keep those two substitutions in
+one table rather than scattered through the renderer, so dropping in a real
+sheet is a one-line edit. [SOURCE §10, review] The die-roll animation "will be
+provided" too, so the generated one is a stand-in rather than the final asset.
 
 ### Q21. ~~Is the AI's time budget wall-clock seconds or a rollout count?~~ — **answered: seconds**
 
@@ -526,6 +536,26 @@ the other is a one-liner rather than a rewrite. The judgement of "looks bad"
 belongs to `runMapBatch` over many seeds: POI spacing in the map dump, and the
 shape of the remoteness histogram. This supersedes §3's "two implementations to
 build"; the superseded reading is kept above as it was written.
+
+### Q24. ~~Is Q18's "total skills available" the units on the map, or a per-player maximum?~~ — **answered: the units on the map**
+
+Q18 had to pick a reading to be implementable and said so. The pick was the sum
+of skill units *placed on the map* — the exact parallel of `totalGoldUnits` —
+rather than a theoretical maximum skill level per player. It shipped on PR #5
+under that reading, flagged, and was put to the designer twice more.
+
+[SOURCE §9, review] "There is no set per-player maximum, none of the skills are
+capped by any hardcoded number. So the total # of units place on the map are
+going to be used."
+
+So `totalSkillUnits()` in `packages/core/src/gamemap.ts` stands exactly as
+written and **no code changes**. The confirmation matters for what the
+estimated evaluator *means*: its skill term reaches 1 precisely when one player
+holds every skill POI on the map, which is what keeps it commensurable with the
+gold term and the whole evaluator inside [0, 1] — the range
+`MCTS_EXPLORATION_CONSTANT` = √2 assumes ([Q14](#q14)). It also agrees with §6's
+"per-player stats, uncapped": a per-player maximum would have had to be invented,
+and §11 has no row for one.
 
 ---
 
