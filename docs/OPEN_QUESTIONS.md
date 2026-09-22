@@ -482,6 +482,13 @@ fallback path. Two of the gaps were closed on request in the same pass —
 marked `"placeholder": true` in their atlases,
 regenerable with `Art/tools/make_placeholders.py`.
 
+**The character figurines arrived on 2026-09-22**, supplied rather than
+generated: `Art/player_avatars_sheet.png` + `player_avatars_atlas.json`, six
+full-body figures on the same packed-grid, feet-anchored convention as the
+POI sheets and with no placeholder flag. Whether the separate player avatar
+of GDD §2 is these same six or a distinct set is not settled; the six stand
+in for both meanwhile, which also means hotseat setup offers six characters.
+
 **Two of the POI gaps borrow an existing sheet meanwhile.** [SOURCE §10,
 review] "Mountain gold placeholder images can be used" for forest's gold POIs,
 and "Plaines movement placeholder images can be used" for the stamina POIs that

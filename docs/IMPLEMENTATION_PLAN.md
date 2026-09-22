@@ -734,7 +734,13 @@ Six §10 asset groups were missing from `Art/`, and one POI sheet:
 - ~~**Stamina POIs.**~~ Surplus leaves become stamina POIs, on any terrain, and
   no sheet covers them. [SOURCE chat, review] "Plaines movement placeholder
   images can be used" — so they draw from `Plains_PlainsMovement`.
-- **Character figurines** to choose from at setup, and player avatars.
+- ~~**Character figurines.**~~ Supplied 2026-09-22 as
+  `Art/player_avatars_sheet.png` + `player_avatars_atlas.json`: six full-body
+  figures on a 617×698 grid, anchored at the feet like every other sheet.
+  They are Andrei's own art, so no `"placeholder": true`. §10 asks for
+  figurines to choose from at setup and GDD §2 shows an avatar beside each
+  player's name; the same six serve both until a separate head-and-shoulders
+  avatar set arrives, which would also cap hotseat setup at six characters.
 - ~~**Die-roll animation.**~~ Generated here: eight tumble frames to loop while
   the roll is in flight, then the six resting faces, one per `GUARD_DIE` value.
   [SOURCE chat, review] "this will be provided" — the generated one stands in
