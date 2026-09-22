@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, and Q1–Q24.
+**Answered so far:** all four of GDD.md §12's own open items, and Q1–Q25.
 `pending` in the config is empty.
 
 **Outstanding: none.** Every question in this register is answered, and so is
@@ -452,10 +452,11 @@ strengths and reward stacking of every generated map.
 
 ## B3. Questions from the implementation-planning pass
 
-Five gaps found while turning GDD.md and the architecture into a phased build
+Six gaps found while turning GDD.md and the architecture into a phased build
 order (`docs/IMPLEMENTATION_PLAN.md`), all answered by the designer on
-2026-09-22. None of them changed a rule; they settled scope and content, and
-Q24 confirmed a reading Q18 had had to pick.
+2026-09-22. None of them changed a rule; they settled scope and content, Q24
+confirmed a reading Q18 had had to pick, and Q25 confirmed §5.1 unchanged while
+narrowing how much code two components should expect to share.
 
 ### Q20. ~~Which §10 art assets are coming, and which need standing in?~~ — **answered**
 
@@ -556,6 +557,56 @@ gold term and the whole evaluator inside [0, 1] — the range
 `MCTS_EXPLORATION_CONSTANT` = √2 assumes ([Q14](#q14)). It also agrees with §6's
 "per-player stats, uncapped": a per-player maximum would have had to be invented,
 and §11 has no row for one.
+
+### Q25. ~~Does the remoteness walk track visited POIs?~~ — **answered, confirmed: yes**
+
+Raised on PR #6, reviewing the line that says `closestPoiCandidates` is shared
+by "the remoteness walk over *unvisited* POIs, the rollout policy over
+*unclaimed* POIs". [SOURCE §5.1, review] "we do not track which POIs have been
+visited. As long as a POI is unclaimed it is a valid target for the next walk
+destination."
+
+That is true of the **§9 rollout**, and is what `rollout.ts` already specifies.
+Applied to the **§5.1 remoteness walk** it does not compose, for three reasons
+worth keeping because they are not obvious:
+
+1. The unvisited set is that walk's *termination condition* — §5.1's "until
+   every POI has been visited once per walk", `remotenessDriver.done` is
+   `cursor.unvisited.size === 0`. Remoteness walks run inside §2.1 step 7,
+   before any player exists, so nothing is ever claimed and an unclaimed-only
+   eligibility set never shrinks.
+2. The per-POI score is "the inbound inter-POI segment plus the outbound one",
+   with the first and last POI doubling the single segment they have. That is
+   defined against a walk visiting each POI exactly once.
+3. Remoteness feeds guard strengths (§5.2) and reward stacking (§4.3), so a
+   change here moves every generated map, not just a number.
+
+Put back to the designer rather than applied. [SOURCE §5.1, review] "of course,
+during the remoteness walk we can track which nodes are visited." **So §5.1
+stands exactly as written and nothing changed** — `remotenessDriver` keeps its
+unvisited set, and `rollout.ts` keeps its unclaimed one.
+
+**The useful half of the answer is about code sharing.** [SOURCE §9, review]
+"my prediction is that code between the remoteness walk and the rollouts will
+be hard to share anyway, they are very different. We may end up sharing code
+for choosing the next target only."
+
+The architecture pass shares two things: `candidates.ts` (the target chooser)
+and `walk.ts` (a generic loop plus `WalkDriver`). The first is what §5.1 and §9
+actually name. The second already strains at four points — `WalkDriver.advance`
+returns `TCursor | null` and so cannot express `MacroAdvanceOutcome`; `runWalk`
+records every leg as `{target.node, target.cost}`, which is the Dijkstra
+estimate rather than the real turns' cost and is simply wrong when a target is
+claimed by someone else en route; `WalkResult.visits` exists for the remoteness
+scorer and a rollout consumes none of it; and `WalkDriver.done(cursor)` cannot
+supply the `legsTaken` that `RolloutTermination.isTerminal` takes for a future
+depth cap.
+
+So the expectation for phase 5 is: keep `candidates.ts` shared, and let the
+rollout have its own loop over `macroAdvanceToTarget` rather than being bent
+through `runWalk`. `docs/ARCHITECTURE.md` §5's "one shared component" stays
+true of the target chooser and the one distance metric, which is what §9 asks
+for; it is the generic loop that is not expected to survive.
 
 ---
 

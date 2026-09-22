@@ -260,12 +260,14 @@ what actually differs rather than by who calls it:
 | File | Role |
 |---|---|
 | `candidates.ts` | **The shared kernel.** Rank eligible POIs by weighted terrain cost; pick uniformly among the `CLOSE_CANDIDATE_COUNT` closest. Both §5.1 and §9 are exactly these two operations. |
-| `walk.ts` | The generic loop, plus `WalkDriver<TCursor>` — the three things that differ: which POIs are *eligible*, what *advancing* to a target means, and when the walk is *done*. |
+| `walk.ts` | The generic loop, plus `WalkDriver<TCursor>` — the three things that differ: which POIs are *eligible*, what *advancing* to a target means, and when the walk is *done*. [SOURCE §9, review] Not expected to survive the rollout: "we may end up sharing code for choosing the next target only". See [Q25](./OPEN_QUESTIONS.md#q25). |
 | `remoteness.ts` | §5.1's driver: eligible = unvisited, advance = move straight there charging path cost, done = all POIs visited. Runs `REMOTENESS_SIMULATION_RUNS` walks from a random plains node, then min-max normalises to [0,1]. |
 | `rollout.ts` | §9's driver: eligible = unclaimed POIs of any kind, advance = play real turns through `applyAction` (so allowance, stamina, guard rolls and turn boundaries all apply), done = no unclaimed gold left. |
 
-Neither consumer contains a copy of the other's logic. The distinction the split
-makes explicit: §5.1's walk is pure geometry — turn structure, stamina and
+Neither consumer contains a copy of the other's logic. If the generic loop does
+give way ([Q25](./OPEN_QUESTIONS.md#q25)), `candidates.ts` and the one distance
+metric are what stay shared — which is what §9 asks for. The distinction the
+split makes explicit: §5.1's walk is pure geometry — turn structure, stamina and
 skills play no part — while a rollout leg is a sequence of real turns. What they
 share is the target chooser and the cost metric, which is what §9 asks for.
 

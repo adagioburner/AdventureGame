@@ -179,6 +179,14 @@ asks.
   (`docs/RULES.md`): the remoteness walk over *unvisited* POIs, the rollout
   policy over *unclaimed* POIs, and tree expansion. Eligibility is injected;
   the ranking is written once, here.
+
+  The two eligibility sets really are different, and the remoteness one really
+  is *unvisited* (Q25): §5.1's walk runs inside map generation where nothing is
+  ever claimed, and that set is also what ends the walk.
+
+  **Expect this file to be the only thing the two walks share.** That is the
+  designer's own prediction (Q25), and phase 5 below says where `walk.ts`'s
+  generic loop is likely to give way.
 - `routeVia` and the `PathPreview` types are already written on top of
   `shortestPath` and need nothing.
 
@@ -479,6 +487,34 @@ is already written; the loop is not.
    is no opponent model. A macro-action commits to a POI and keeps moving toward
    it across as many turns as it takes, ending on exactly `arrived`,
    `target_claimed_by_other` or `terminal`.
+
+   **Do not force this through `runWalk`.** The architecture pass gave the two
+   walks a shared loop, and the designer's prediction is that only the target
+   chooser survives (Q25). Four concrete places where `runWalk` and
+   `WalkDriver` fit remoteness and strain against a rollout, worth checking
+   before writing `rolloutDriver`:
+
+   - `WalkDriver.advance` returns `TCursor | null`, which cannot express
+     `MacroAdvanceOutcome` — `arrived` and `target_claimed_by_other` both
+     collapse to "here is a new cursor", and they are not the same thing.
+   - `runWalk` records the visit unconditionally after any non-null advance, as
+     `{target: target.node, legCost: target.cost}`. For remoteness that is
+     exactly true. For a rollout `target.cost` is the Dijkstra *estimate*
+     rather than what the real turns cost, and on `target_claimed_by_other` the
+     walker never reached `target.node` at all.
+   - `WalkResult.visits` and `totalCost` are what the remoteness scorer
+     consumes. A rollout needs none of it — `runRollout` returns the terminal
+     `RolloutCursor`, because the evaluator reads the subject's gold from the
+     state.
+   - `WalkDriver.done(cursor)` cannot supply the leg count that
+     `RolloutTermination.isTerminal(cursor, legsTaken)` takes, and that argument
+     exists for the depth cap that is the obvious lever if rollouts prove slow.
+
+   If those hold up when the code is written, give the rollout its own small
+   loop over `macroAdvanceToTarget` and `RolloutTermination`, keep
+   `candidates.ts` shared, and leave `walk.ts` as remoteness's own loop. What
+   §9 actually asks to share is the target chooser and the cost metric, and
+   both stay shared either way.
 2. **Termination.** `goldExhaustedTermination`: a rollout stops when **no gold
    rewards are left on the map** — specifically not "all POIs claimed" — and
    also on a finished game, since victory can fire earlier. It sits behind an
