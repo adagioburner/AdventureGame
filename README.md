@@ -115,6 +115,15 @@ devDependencies. See `docs/STACK.md`.
 
 ## Looking at a generated map
 
+**Without a clone**, ask for the seeds you want in the project thread: the
+plates come back as attachments or as one page you can page through, with each
+map's §11 reading beside it. `golden/maps/adventure.txt` is also committed, so
+it renders on GitHub — the golden map as text, one record per line. Neither
+needs anything installed. See §2.0 of [the implementation
+plan](docs/IMPLEMENTATION_PLAN.md).
+
+**With a clone:**
+
 ```sh
 pnpm map adventure
 ```

@@ -133,14 +133,42 @@ Phases 0–2 are strictly sequential. Phase 3 can start any time after phase 0
 
 ---
 
-## 2. Seeing a map — what a reviewer types
+## 2. Seeing a map
 
-Step 1 asks for output "viewable by humans", so the commands that produce it
-are part of the deliverable, not something a reviewer reconstructs from the
-source tree. There are two of them and they arrive in two different phases,
-because they are the two different views §9 of `ARCHITECTURE.md` now separates.
+Step 1 asks for output "viewable by humans", so whatever produces it is part of
+the deliverable, not something a reviewer reconstructs from the source tree.
+Two things shape this section. One is §9 of `ARCHITECTURE.md`: the diagnostic
+view and the player-facing view are different drawings arriving in different
+phases, and §§2.1 and 2.2 below are those two views. The other is **who
+reviews** — from a browser or a phone, with no clone of this repository and
+nothing installed. An earlier draft of this section opened with `pnpm install`
+and was wrong about that.
 
-**Today**, from a fresh clone of a branch:
+### 2.0 With no checkout — the reviewing path
+
+None of this needs anything installed, and none of it needs the branch merged
+first.
+
+- **Name seeds in the thread.** "Show me five maps" is the whole interface: the
+  generator is run on the branch and the plates come back as attachments, or as
+  one page that pages through them with each map's §11 reading beside it. Reach
+  for this first. It is the only path that answers *what does seed X look like*
+  for a seed nobody has generated yet, and the only one that works before a
+  phase has landed anywhere.
+- **Read the committed summary.** `golden/maps/adventure.txt` renders on the
+  pull request's Files tab — one record per line, every node, edge and POI of
+  the golden map. It is that map as text, and it is exactly what a failing
+  golden diff puts in front of a reviewer.
+- **Ask for the batch numbers.** `pnpm map:batch` prints a dozen lines. A
+  reviewer who wants the §11 distributions over 40 seeds should be handed them,
+  not told how to produce them.
+
+The rule behind all three: **a reviewer should never have to install a
+toolchain to answer "did this do what §2.1 says".** When a question can only be
+answered by running something, running it is the implementer's job, and the
+answer belongs in the thread.
+
+**With a checkout**, a contributor still has the whole loop:
 
 ```sh
 pnpm install          # once
@@ -195,6 +223,11 @@ client-side already by [§12.1](./GDD.md), so the page generates from the seed
 in the query string: no server, no build, and no file from §2.1 required.
 Changing the seed and reloading is the whole loop, and `?seed=` with no value
 picks one at random and writes it into the URL so it can be shared.
+
+Phase 3 owes §2.0 an answer of its own: a reviewer with no checkout cannot run
+a dev server, so the page has to reach them some other way — a deployed
+preview, or the same render-and-post path §2.0 already describes. Which one is
+a phase 3 deliverable and not something this section can settle in advance.
 
 This is the isometric view with node images, dressing, reward icons, guard
 numbers and road strokes. It has no debug layer and never draws remoteness
