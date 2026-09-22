@@ -317,7 +317,14 @@ and (in v1 content) nothing else.
   here is to inspect generation, not to preview the game: nodes coloured by
   terrain, edges as lines, POIs ringed and labelled with kind, units and guard
   strength, leaves marked, carved valley nodes marked, remoteness as a shade.
-  The isometric view is phase 3's job and a different question.
+
+  **This dump is a developer tool and never becomes the game's map.** It exists
+  to answer "did generation do what §2.1 says", so it deliberately draws the
+  generator's internals — remoteness shading above all, which a player must
+  never see. It is written by `tools/balance`, not by `apps/web`, so it cannot
+  drift into the client. The map players look at is drawn in phase 3 and shares
+  nothing with this but the `GameMap` it reads. See
+  [`ARCHITECTURE.md` §9](./ARCHITECTURE.md#9-client--ui-layer-7).
 - **A `GameMap` JSON round-trip test.** [Q15](./OPEN_QUESTIONS.md#q15) settled
   that the finished map is *sent* to all players rather than regenerated per
   client, so `GameMap` has to
@@ -391,6 +398,11 @@ input state untouched.
 
 ## Phase 3 — art binding and the isometric renderer
 
+**This is the player-facing map** — the one drawn the way §1.3 and §7.1
+describe it, with node images, dressing, reward icons, guard numbers and road
+strokes. It replaces nothing: phase 1's SVG stays as the generator's diagnostic
+view and the two are separate drawings of the same `GameMap` (see item 9).
+
 `docs/ARCHITECTURE.md` §9 deliberately deferred this, so it needs decisions
 rather than only code. It does not touch game logic and can run in parallel with
 phase 2.
@@ -443,10 +455,21 @@ phase 2.
    PixiJS for the map. `apps/web` currently declares no framework dependency at
    all, so this phase is where Vite, React and PixiJS enter the lockfile, along
    with a dev server script and a build script.
+9. **What the player must not see.** `GameMap` is sent whole to every client
+   ([Q15](./OPEN_QUESTIONS.md#q15)), so `Poi.remoteness`, `Poi.group` and
+   `GameMap.attempts` are all sitting in the browser. None of them is drawn:
+   `remoteness` feeds §4.3's reward assignment and §5.2's guard strength, so
+   putting it on screen would show a player the generator's own difficulty
+   scoring. `artVariant` is drawn only as what it is, a sprite index. A guard's
+   *strength* is shown, per §4.4 — that is a game rule, not an internal. The
+   scene has no debug layer; anything a developer wants to see goes in phase 1's
+   SVG.
 
 **Done when:** a generated map from phase 1 renders isometrically in a browser,
 whole-map-visible at open, with terrain colours, dressing, POI images, guard
-numbers in red or purple, and reward icons.
+numbers in red or purple, and reward icons — and a person looking at it can
+read nothing from it that the rules do not give a player, in particular no
+remoteness shading anywhere on screen.
 
 ---
 
