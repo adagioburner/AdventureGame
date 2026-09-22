@@ -14,7 +14,7 @@ Nothing below was resolved by picking something reasonable.
 **Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, and Q28–Q29.
 `pending` in the config is empty.
 
-**Outstanding: one — [Q27](#q27).** Building phase 1 turned up that
+**Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
 `COMPACTNESS_MAX` never binds on a map of ~240 nodes and 300 edges, so §2.1's
 Smooth step does nothing at the current constants. It is a tuning question
 rather than a blocker: generation works and the code implements §2.1 literally.
@@ -26,6 +26,12 @@ for confirmation — Q1's first-segment wrinkle, Q13, Q17, and, as of
 2026-09-22, Q18's own pick of what "total skills available" divides by
 ([Q24](#q24)) and whether the §2 avatar is its own asset ([Q26](#q26)). The
 config's `pending` block is empty.
+
+[Q30](#q30) came out of phase 2: with the rules engine running, a game can in
+principle reach a position where the gold that is left is behind guards nobody
+can beat and §1's win condition can never fire. It is rare — ten games on ten
+maps all ended with a winner — and it is a rule that is missing rather than a
+rule that is wrong.
 
 `docs/IMPLEMENTATION_PLAN.md` is the build order; `docs/ARCHITECTURE.md` §11
 lists the seams it draws on.
@@ -808,6 +814,38 @@ don't have to do complete ordering" preserves.
 
 ---
 
+### Q30. What ends a game nobody can finish? — **asking, not blocking**
+
+Phase 2 made this visible rather than created it. §1 ends a game exactly one
+way: a lead that exceeds the gold still unclaimed. §8 decides a guard by
+`roll + matching skill > guard_strength`, so a player with fighting 3 facing a
+guard of 10 cannot take that POI **on any roll** — 6 + 3 is not greater than
+10. Skills come only from skill POIs, and those are finite.
+
+So a position exists where the gold left on the map is all behind guards no
+surviving player can beat, every skill POI is claimed, and nothing either player
+does can change any of it. §1's condition never fires and the game runs for
+ever. Nothing in §12 covers it and there is no draw, no resignation-to-end and
+no turn limit in the design.
+
+**How likely is it?** Rare at the current constants. Ten full games on ten
+generated maps, two players each, all ended with a winner in 74 to 198 turns
+(`pnpm game <seed>`). It needs an unlucky split of the fighting and magic POIs
+between players plus high guards on what is left.
+
+**What phase 2 did about it:** nothing, in the engine. The rules are
+implemented as written and `applyAction` has no turn cap. The *harness's*
+playthrough driver stops and reports `stalemate` when every seat in one full
+cycle has nothing it could ever claim, because a test that cannot terminate is
+worse than one that fails — that is a property of the harness, not a rule.
+
+Ways out, if you want one: a draw when no player can claim anything, a turn
+limit that awards the win on gold held, letting stamina buy a re-roll, or
+lowering `GUARD_STRENGTH.max` so the die alone can always reach it. All four are
+design; none is the implementer's to pick, and the engine works either way.
+
+---
+
 ## C. Decisions I made that are *implementation*, not design
 
 Listed so you can veto any that read as design to you.
@@ -825,4 +863,9 @@ Listed so you can veto any that read as design to you.
 | Farthest-point seed placement in §2.1 step 4, on nodes of degree ≥ 3 | §2.1 fixes the seed *count* (1 or 2 per terrain) and says nothing about placement. On a near-tree graph a seed down a branch is walled in after a few nodes and its terrain never reaches its share; measured, this choice cuts the share error from ~9 points per terrain to ~3. |
 | Surplus leaves drawn by shuffle | §3 forces every leaf to be a POI and §4.2 fixes how many POIs a terrain's table rows get; nothing says *which* leaves fall inside the quota when a terrain has more leaves than it. Drawn from the map's own stream. |
 | Growing terrain by *trading* when a region is walled in (Q28) | §2.1 asks for the shares and says nothing about how to reach them. A region enclosed by a terrain already at its share cannot take a node without pushing that terrain under; the two-step trade keeps both at their targets and still reduces the total deviation, so the pass terminates. |
+| A `BoardPost`'s id and timestamp are stamped by the caller, not by `applyAction` | The engine is pure and has no clock — `Clock` is a session-layer port for exactly this reason — and a replayed game must rebuild the identical board. |
+| `game_won` replaces `turn_ended`, rather than following it | §7's hand-over is to the next seat; a finished game has none. The turn does not advance and the event list says why. |
+| `createGameState` lives in `@adventure/core`, not in `SetupFlow` | §6's starting stats are a rule. Three consumers need a game before they can play one — setup, hotseat and every rollout — and three copies would be three chances to disagree. |
+| A guarded POI draws from the `DiceSource` once per attempt, and nothing else draws at all | §8 rolls "if guarded"; drawing per turn instead would make a replay's rolls depend on how many turns had no guard in them. |
+| A walk stops at the first step it cannot pay for | §7 says "as far as it gets this turn". Stepping over an unaffordable node to reach a free one further along is not movement. |
 | `GenerationObserver` on `generateMap` | Diagnostics only, for `tools/balance`. §11 wants compactness measured both after Smooth and after Carve Valleys, and `valleyNodes` is draft-only — neither belongs in the `GameMap` that Q15 sends to every client. |
