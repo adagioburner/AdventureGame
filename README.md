@@ -63,11 +63,14 @@ apps/
 tools/
   balance/    Headless balancing harness (GDD §1.3 names it as a reason for
               seed reproducibility).
-Art/          Placeholder art. Reference only — nothing in the repo reads it,
-              and asset extraction/sizing/icon mapping are out of scope for now.
+Art/          Art and its atlases. Reference only — nothing in the repo reads
+              it yet, and icon mapping is out of scope until phase 3.
               `Art/tools/make_placeholders.py` regenerates the stand-in sheets
               that were produced rather than supplied; their atlases carry
               `"placeholder": true`.
+              `Art/tools/make_portrait_crops.py` re-derives the temporary
+              head-and-shoulders boxes in `player_avatars_portraits.json`,
+              which stand in until the real avatar set arrives.
 ```
 
 ## Working on it

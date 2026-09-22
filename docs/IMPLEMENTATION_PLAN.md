@@ -584,7 +584,9 @@ feature would guarantee drift.
 5. **Stats panel** — all seven stats for every player, uncapped, beside name and
    avatar, visible to everyone (§1 has no hidden information). The current
    player's name and avatar prominently displayed and their character
-   highlighted on the map.
+   highlighted on the map. The avatar set is still to come (Q26); until it
+   lands, draw the figurine cropped to its box in
+   `Art/player_avatars_portraits.json` and scale that into the frame.
 6. **Dice.** Hotseat has no server, so it needs a local `DiceSource`. Keep it
    behind the interface the engine already takes, because online play must take
    rolls from the server's separate die stream — a client-side dice source that
@@ -842,7 +844,16 @@ Six §10 asset groups were missing from `Art/`, and one POI sheet:
 - ~~**Stamina POIs.**~~ Surplus leaves become stamina POIs, on any terrain, and
   no sheet covers them. [SOURCE chat, review] "Plaines movement placeholder
   images can be used" — so they draw from `Plains_PlainsMovement`.
-- **Character figurines** to choose from at setup, and player avatars.
+- ~~**Character figurines.**~~ Supplied 2026-09-22 as
+  `Art/player_avatars_sheet.png` + `player_avatars_atlas.json`: six full-body
+  figures on a 617×698 grid, anchored at the feet like every other sheet.
+  They are Andrei's own art, so no `"placeholder": true`. Setup offers these
+  six.
+- **Player avatars** for GDD §2's stats panel are still coming as their own
+  head-and-shoulders set (Q26). Meanwhile phase 3 crops the figurines, using
+  the per-figure boxes in `Art/player_avatars_portraits.json` — one uniform
+  enlarge-and-shift does not work, because the six heads start between row 24
+  and row 155 of the cell. Q26 has the measurements and the reasoning.
 - ~~**Die-roll animation.**~~ Generated here: eight tumble frames to loop while
   the roll is in flight, then the six resting faces, one per `GUARD_DIE` value.
   [SOURCE chat, review] "this will be provided" — the generated one stands in

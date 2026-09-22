@@ -1,0 +1,109 @@
+{
+  "sheet": "player_avatars_sheet.png",
+  "cell_width": 617,
+  "cell_height": 698,
+  "sprites": [
+    {
+      "id": "player_avatars_01",
+      "x": 0,
+      "y": 0,
+      "width": 617,
+      "height": 698,
+      "anchor": {
+        "x": 308,
+        "y": 686
+      },
+      "source_box_in_original": [
+        158,
+        113,
+        593,
+        615
+      ]
+    },
+    {
+      "id": "player_avatars_02",
+      "x": 617,
+      "y": 0,
+      "width": 617,
+      "height": 698,
+      "anchor": {
+        "x": 308,
+        "y": 686
+      },
+      "source_box_in_original": [
+        1174,
+        93,
+        515,
+        642
+      ]
+    },
+    {
+      "id": "player_avatars_03",
+      "x": 1234,
+      "y": 0,
+      "width": 617,
+      "height": 698,
+      "anchor": {
+        "x": 308,
+        "y": 686
+      },
+      "source_box_in_original": [
+        2103,
+        93,
+        413,
+        633
+      ]
+    },
+    {
+      "id": "player_avatars_04",
+      "x": 1851,
+      "y": 0,
+      "width": 617,
+      "height": 698,
+      "anchor": {
+        "x": 308,
+        "y": 686
+      },
+      "source_box_in_original": [
+        170,
+        804,
+        553,
+        674
+      ]
+    },
+    {
+      "id": "player_avatars_05",
+      "x": 0,
+      "y": 698,
+      "width": 617,
+      "height": 698,
+      "anchor": {
+        "x": 308,
+        "y": 686
+      },
+      "source_box_in_original": [
+        2186,
+        809,
+        356,
+        659
+      ]
+    },
+    {
+      "id": "player_avatars_06",
+      "x": 617,
+      "y": 698,
+      "width": 617,
+      "height": 698,
+      "anchor": {
+        "x": 308,
+        "y": 686
+      },
+      "source_box_in_original": [
+        1260,
+        913,
+        361,
+        542
+      ]
+    }
+  ]
+}
