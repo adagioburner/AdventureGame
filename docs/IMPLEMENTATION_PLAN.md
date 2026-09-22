@@ -132,6 +132,79 @@ Phases 0–2 are strictly sequential. Phase 3 can start any time after phase 0
 
 ---
 
+## 2. Seeing a map — what a reviewer types
+
+Step 1 asks for output "viewable by humans", so the commands that produce it
+are part of the deliverable, not something a reviewer reconstructs from the
+source tree. There are two of them and they arrive in two different phases,
+because they are the two different views §9 of `ARCHITECTURE.md` now separates.
+
+**Today**, from a fresh clone of a branch:
+
+```sh
+pnpm install          # once
+pnpm run typecheck    # tsc --noEmit across every package
+pnpm test             # vitest run
+```
+
+No map comes out of that yet: `generateMap` still throws `NotImplementedError`.
+
+### 2.1 After phase 1 — the diagnostic SVG
+
+```sh
+pnpm map adventure            # one map from the seed "adventure"
+pnpm map adventure --json     # ... and the sealed GameMap beside it
+pnpm map                      # a random seed, printed first so it can be reused
+pnpm map:batch 50             # 50 seeds, the aggregate §11 report, no SVGs
+```
+
+`pnpm map <seed>` writes `out/maps/<seed>.svg`, prints that map's report to
+stdout — node, edge and leaf counts, terrain shares, compactness both after
+Smooth and after Carve Valleys, remoteness and guard-strength histograms — and
+prints the SVG's absolute path as its **last** line, so it can be pasted
+straight into a browser without hunting for it. `--json` writes the sealed
+`GameMap` next to the SVG, which is what the phase 3 viewer can load when a
+specific map needs re-examining.
+
+`pnpm map:batch <n>` is `runMapBatch` over `n` seeds with no per-map files: the
+§11 distributions only, which is the check on `COMPACTNESS_MAX`,
+`REMOTENESS_WEIGHT` and their neighbours.
+
+`out/` is already gitignored, and the SVG stays there. What gets **committed**
+is the text map summary under `golden/maps/`, per `golden/README.md`'s
+convention — one record per line, so a failing diff is legible in review. A
+committed SVG would snapshot the same map a second time and churn on every
+cosmetic change to the renderer.
+
+**No extra runner is needed, and that is worth stating because it is not
+obvious.** Every workspace package sets `"main": "src/index.ts"`, and the
+codebase uses no `enum` and no `namespace`, so Node 22's built-in type
+stripping runs the tools directly: `node tools/balance/src/cli.ts` resolves
+`@adventure/core` and runs it with no `tsx`, no `ts-node` and no build step.
+Verified on Node 22.22, which is what `.github/workflows/ci.yml` already pins.
+So `map` and `map:batch` are one-line root scripts wrapping `node`, and a
+reviewer needs nothing that `pnpm install` has not already put in place.
+
+### 2.2 After phase 3 — the map as a player sees it
+
+```sh
+pnpm dev              # Vite dev server in apps/web
+```
+
+then open `http://localhost:5173/?seed=adventure`. Map generation is
+client-side already by [§12.1](./GDD.md), so the page generates from the seed
+in the query string: no server, no build, and no file from §2.1 required.
+Changing the seed and reloading is the whole loop, and `?seed=` with no value
+picks one at random and writes it into the URL so it can be shared.
+
+This is the isometric view with node images, dressing, reward icons, guard
+numbers and road strokes. It has no debug layer and never draws remoteness
+(phase 3, item 9). When a map looks wrong here, `pnpm map <the same seed>` is
+the tool that says why — same map, same seed, all the generator's internals on
+show.
+
+---
+
 ## Phase 0 — test and check infrastructure — **done**
 
 Small, and everything after it reports into it.
@@ -324,7 +397,8 @@ and (in v1 content) nothing else.
   never see. It is written by `tools/balance`, not by `apps/web`, so it cannot
   drift into the client. The map players look at is drawn in phase 3 and shares
   nothing with this but the `GameMap` it reads. See
-  [`ARCHITECTURE.md` §9](./ARCHITECTURE.md#9-client--ui-layer-7).
+  [`ARCHITECTURE.md` §9](./ARCHITECTURE.md#9-client--ui-layer-7). The command
+  that produces it is [§2.1](#21-after-phase-1--the-diagnostic-svg).
 - **A `GameMap` JSON round-trip test.** [Q15](./OPEN_QUESTIONS.md#q15) settled
   that the finished map is *sent* to all players rather than regenerated per
   client, so `GameMap` has to
@@ -337,7 +411,14 @@ and (in v1 content) nothing else.
 shares, compactness both after Smooth and after Carve Valleys (the latter
 expected to be worse, by design), and remoteness and guard-strength histograms.
 Run a batch over many seeds and confirm the §11 parameters land where they
-should. Since only one placement strategy is built (Q23), this is also the
+should.
+
+It needs a way in, so this step also adds `tools/balance/src/cli.ts` — argument
+parsing, the SVG writer's output path, and the stdout report — plus the `map`
+and `map:batch` scripts in the root `package.json` that wrap it. Both are plain
+`node` invocations: [§2](#2-seeing-a-map--what-a-reviewer-types) records why no
+TypeScript runner is needed. The scripts live at the **root** so nobody has to
+know the workspace layout to look at a map. Since only one placement strategy is built (Q23), this is also the
 check on whether that choice holds: if POI spacing looks wrong in the SVG or
 the remoteness histogram is lopsided, the second strategy goes behind the same
 seam and gets compared here.
@@ -454,7 +535,11 @@ phase 2.
 8. **Dependencies.** `docs/STACK.md` §3 chose Vite + React for the chrome and
    PixiJS for the map. `apps/web` currently declares no framework dependency at
    all, so this phase is where Vite, React and PixiJS enter the lockfile, along
-   with a dev server script and a build script.
+   with a dev server script and a build script. The dev server is what a
+   reviewer opens the map in: `pnpm dev`, then
+   `http://localhost:5173/?seed=<seed>`, with the page generating from the
+   query string since §12.1 already puts generation on the client. Spelled out
+   in [§2.2](#22-after-phase-3--the-map-as-a-player-sees-it).
 9. **What the player must not see.** `GameMap` is sent whole to every client
    ([Q15](./OPEN_QUESTIONS.md#q15)), so `Poi.remoteness`, `Poi.group` and
    `GameMap.attempts` are all sitting in the browser. None of them is drawn:
