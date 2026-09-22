@@ -1,9 +1,10 @@
 # Implementation plan
 
-Status: **agreed; phases 0 and 1 done, phase 2 next.** This plan is derived from the
+Status: **agreed; phases 0, 1 and 2 done, phase 3 next.** This plan is derived from the
 five-step order Andrei proposed, checked against the design of record and
-against what is actually in the repo today. Phase 0 landed the test harness and
-phase 1 the map generator; everything from phase 2 on is still seams.
+against what is actually in the repo today. Phase 0 landed the test harness,
+phase 1 the map generator and phase 2 the rules engine; everything from phase 3
+on is still seams.
 
 The design of record is [`GDD.md`](../GDD.md), with
 [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) for component boundaries,
@@ -524,7 +525,7 @@ Seven things worth knowing, five of them only visible once the pipeline ran:
 
 ---
 
-## Phase 2 — rules engine, headless
+## Phase 2 — rules engine, headless — **done**
 
 Everything in `packages/core/src/rules/`, plus `previewPath`. Pure functions,
 no clock, no `Math.random`, dice injected. This is the phase where §8's worked
@@ -567,6 +568,45 @@ input state untouched.
 
 **Done when:** a full game can be played start to finish in a test by calling
 `applyAction` in a loop, and it terminates with a winner.
+
+### What actually landed
+
+All seven items, with the rules taken from §7/§8 as written and §8's worked
+example as a test that reads step by step. 249 tests pass, up from 180.
+`pnpm game <seed>` plays a whole game headlessly and prints it turn by turn, and
+`golden/games/adventure-2p.txt` joins `golden/maps/` and `golden/rng/`.
+
+**Ten games on ten generated maps, two players each, all ended with a winner**
+in 74–198 turns. Guard rolls fail about 40% of the time (11 of 30 on
+`adventure`, 26 of 45 on `duskmoor`), which is the engine's most-exercised
+branch and exactly the loop §8 describes: leave, come back, or stand still and
+try again.
+
+Five things worth knowing, three of them only visible once games ran:
+
+- **Two functions were added that the plan did not list**, both because the
+  alternative was a copy in each of three later phases. `createGameState`
+  (`rules/setup.ts`) is the opening position — §6's seats, stamina by seat and
+  the one shared starting node — and `createDiceSource` (`rules/dice.ts`) is the
+  one `DiceSource` over an injected `Rng`. Phase 4's hotseat, phase 5's rollouts
+  and phase 6's `SetupFlow.start` all need both.
+- **`PostMessageAction` carries an id and a timestamp now.** The engine has no
+  clock by design (`Clock` is a session port), so the caller stamps a post and
+  `applyAction` appends it. Without that, a replayed game's board could not come
+  out identical to the original's.
+- **`game_won` replaces `turn_ended` rather than following it.** A finished game
+  hands over to nobody, so the turn does not advance — which is also what makes
+  `status === 'finished'` a safe terminal test for the rollout (§9).
+- **A walk stops at the first step it cannot pay for**, rather than skipping to
+  a cheaper step further along. Obvious once stated; worth stating, because the
+  preview and the committed move both depend on it and they are one function
+  family so that they cannot disagree.
+- **A game nobody can finish is possible in principle** —
+  [Q30](./OPEN_QUESTIONS.md#q30). §8 needs `roll + skill > strength`, so gold
+  behind a guard of 10 is unreachable to a player with fighting 3 on *any* roll,
+  and §1 has no other way to end a game. None of the ten games hit it, nothing
+  is blocked on it, and the engine implements the rules as written; the harness
+  driver reports `stalemate` so a test cannot hang.
 
 ---
 

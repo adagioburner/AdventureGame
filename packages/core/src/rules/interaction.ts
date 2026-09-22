@@ -1,10 +1,12 @@
-import type { GuardType } from '@adventure/config';
-import { NotImplementedError } from '../errors.ts';
+import type { DieSpec, GuardType } from '@adventure/config';
+import { RuleViolationError } from '../errors.ts';
 import type { DieRoll, InteractionResolution } from '../action.ts';
+import { poiAt } from '../gamemap.ts';
 import type { NodeId } from '../ids.ts';
 import type { PlayerStats } from '../player.ts';
+import { isClaimed } from '../poi.ts';
 import type { Guard } from '../reward.ts';
-import type { GameState } from '../state.ts';
+import { poiRuntimeAt, type GameState } from '../state.ts';
 
 /**
  * [SOURCE §2] The roll is compared against "the relevant skill (fighting or
@@ -15,6 +17,21 @@ import type { GameState } from '../state.ts';
 export function guardSkillStat(guard: Guard): Extract<keyof PlayerStats, 'fighting' | 'magic'> {
   const mapping: Record<GuardType, 'fighting' | 'magic'> = { fighting: 'fighting', magic: 'magic' };
   return mapping[guard.type];
+}
+
+/**
+ * The die a caller supplies must be the die the ruleset specifies (§11
+ * `GUARD_DIE`, 1d6). Checked rather than assumed because the roll arrives from
+ * outside the engine — a server stream, a hotseat client, an MCTS stream — and
+ * a source wired to the wrong die would otherwise silently change §8's odds.
+ */
+function assertRollMatches(spec: DieSpec, roll: DieRoll): void {
+  if (roll.sides !== spec.sides) {
+    throw new RuleViolationError(`guard roll has ${roll.sides} sides, ruleset specifies ${spec.sides}`);
+  }
+  if (roll.value < spec.count || roll.value > spec.count * spec.sides) {
+    throw new RuleViolationError(`guard roll ${roll.value} is outside ${spec.count}d${spec.sides}`);
+  }
 }
 
 /**
@@ -30,13 +47,50 @@ export function guardSkillStat(guard: Guard): Extract<keyof PlayerStats, 'fighti
  *
  * `roll` is passed in rather than drawn here: the engine stays pure, the
  * session layer supplies the authoritative server-side roll (`DiceSource`), and
- * MCTS supplies its own rolls from its own stream.
+ * MCTS supplies its own rolls from its own stream. It is `null` for a node with
+ * nothing to take and for an unguarded POI, and required for a guarded one —
+ * `applyAction` only draws from the `DiceSource` when a guard is actually
+ * faced, so that a die stream advances once per guard attempt and no more.
+ *
+ * This function reads state and never writes it: the caller (`applyAction`, the
+ * one writer) applies `claimed` to `poiRuntime` and the reward to the player's
+ * stats.
  */
 export function resolveInteraction(
-  _state: GameState,
-  _node: NodeId,
-  _stats: PlayerStats,
-  _roll: DieRoll | null,
+  state: GameState,
+  node: NodeId,
+  stats: PlayerStats,
+  roll: DieRoll | null,
 ): InteractionResolution {
-  throw new NotImplementedError('resolveInteraction', 'GDD.md §8');
+  const nothingToTake: InteractionResolution = {
+    node,
+    reward: null,
+    roll: null,
+    skillUsed: null,
+    claimed: false,
+  };
+
+  const poi = poiAt(state.map, node);
+  const runtime = poiRuntimeAt(state, node);
+  // §4.5: a claimed POI's node "behaves like an ordinary node of its terrain".
+  if (poi === undefined || runtime === undefined || isClaimed(runtime)) return nothingToTake;
+
+  if (poi.guard === null) {
+    return { node, reward: poi.reward, roll: null, skillUsed: null, claimed: true };
+  }
+
+  if (roll === null) {
+    throw new RuleViolationError(`node ${node} is guarded; resolving it needs a GUARD_DIE roll`);
+  }
+  assertRollMatches(state.map.ruleset.config.combat.GUARD_DIE, roll);
+
+  const skillUsed = guardSkillStat(poi.guard);
+  return {
+    node,
+    reward: poi.reward,
+    roll,
+    skillUsed,
+    // §8: strictly greater than, so a roll that only ties the guard fails.
+    claimed: roll.value + stats[skillUsed] > poi.guard.strength,
+  };
 }

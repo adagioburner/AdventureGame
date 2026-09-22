@@ -23,16 +23,21 @@ applies to this repo:
 
 ## Status
 
-**Map generation works.** `generateMap(seed, ruleset)` runs GDD.md §2.1's eight
-steps end to end and returns a sealed `GameMap`; `pnpm map <seed>` draws one.
-That is phase 1 of [`docs/IMPLEMENTATION_PLAN.md`](./docs/IMPLEMENTATION_PLAN.md),
-on top of phase 0's test harness. Gameplay logic (§7, §8) and the MCTS search
-loop (§9) are still seams.
+**Map generation and the rules engine work.** `generateMap(seed, ruleset)` runs
+GDD.md §2.1's eight steps end to end and returns a sealed `GameMap`, and
+`applyAction(state, action, dice)` plays §7 and §8's turns on it —
+`pnpm map <seed>` draws a map, `pnpm game <seed>` plays one to a winner and
+prints the game turn by turn. That is phases 1 and 2 of
+[`docs/IMPLEMENTATION_PLAN.md`](./docs/IMPLEMENTATION_PLAN.md), on top of phase
+0's test harness. The UI (§7.1), the MCTS search loop (§9) and the server
+(§6.1) are still seams.
 
-Every design question is answered except one, turned up by phase 1:
-[Q27](./docs/OPEN_QUESTIONS.md) — `COMPACTNESS_MAX` never binds on a graph this
-sparse, so §2.1's Smooth step currently does nothing. The config's `pending`
-block is empty. The §12 decisions: Durable Objects for the
+Two design questions are open, neither blocking: [Q27](./docs/OPEN_QUESTIONS.md)
+— `COMPACTNESS_MAX` never binds on a graph this sparse, so §2.1's Smooth step
+currently does nothing — and [Q30](./docs/OPEN_QUESTIONS.md), turned up by phase
+2: §1 ends a game only through a decisive gold lead, so a position where the
+gold that is left sits behind guards nobody can beat has no ending at all. The
+config's `pending` block is empty. The §12 decisions: Durable Objects for the
 session layer with map generation and AI on the game master's machine (§12.1),
 UCT over the 10 closest unclaimed POIs (§12.2), the message board as ordinary
 game state (§12.3), and no fallback for a disconnected game master — the game
@@ -65,8 +70,9 @@ apps/
   server/     Composition root and host adapters.
 tools/
   balance/    Headless balancing harness (GDD §1.3 names it as a reason for
-              seed reproducibility), the `pnpm map` CLI, and the diagnostic
-              SVG. Nothing here ships to a player.
+              seed reproducibility), the `pnpm map` and `pnpm game` CLIs, the
+              diagnostic SVG, and the playthrough driver that exercises the
+              rules engine end to end. Nothing here ships to a player.
 Art/          Art and its atlases. Reference only — nothing in the repo reads
               it yet, and icon mapping is out of scope until phase 3.
               `Art/tools/make_placeholders.py` regenerates the stand-in sheets
@@ -90,6 +96,9 @@ pnpm map adventure        # one map: a report, and out/maps/adventure.svg
 pnpm map adventure --json # ... and the sealed GameMap beside it
 pnpm map                  # a random seed, printed first so it can be reused
 pnpm map:batch 50         # 50 seeds, the §11 distributions, no files
+
+pnpm game adventure       # play one map to a winner, turn by turn
+pnpm game                 # a random seed, printed first so it can be reused
 ```
 
 `pnpm-lock.yaml` pins the compiler, and `packageManager` in `package.json` pins
@@ -133,7 +142,21 @@ both after Smooth and after Carve Valleys, remoteness and guard-strength
 histograms — and writes `out/maps/adventure.svg`, whose absolute path is the
 **last** line, ready to paste into a browser. `out/` is gitignored.
 
-That drawing is a **developer diagnostic and never becomes the game's map**. It
+### Watching a game
+
+`pnpm game adventure` plays one to a winner and prints it a turn at a time,
+so that every number can be checked by hand: each turn opens with where the
+player is heading and the whole route there; each step names the node entered,
+its terrain, and whether a moving skill or stamina paid for it; a walk that ends
+short names the step it could not pay for; each guard roll
+shows the skill added and the strength it had to beat; and every player's stats
+follow every turn. Node ids are the ones `pnpm map adventure` labels every node
+with, so the log and the drawing read together. Without a clone,
+`golden/games/adventure-2p.txt` is the same thing, committed, so it renders on
+GitHub. The players are driven by a deliberately dumb rule (walk to the nearest
+POI you could take), not by an AI: §9's player is phase 5.
+
+That map drawing is a **developer diagnostic and never becomes the game's map**. It
 is top-down, and it deliberately shows the generator's internals — remoteness
 above all, which decides §4.3's rewards and §5.2's guards and which a player
 must never see. It is written by `tools/balance`, never by `apps/web`, so it

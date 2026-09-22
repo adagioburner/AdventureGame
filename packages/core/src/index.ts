@@ -19,9 +19,11 @@ export * from './player.ts';
 export * from './path.ts';
 export * from './state.ts';
 export * from './action.ts';
+export * from './rules/setup.ts';
 export * from './rules/movement.ts';
 export * from './rules/interaction.ts';
 export * from './rules/turn.ts';
+export * from './rules/dice.ts';
 export * from './rules/victory.ts';
 
 // Re-exported so domain code can import the shared vocabulary from one place.

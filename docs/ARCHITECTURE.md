@@ -344,6 +344,23 @@ interface GameState {
 which keeps the generated map a pure function of its seed and safe to cache and
 replay.
 
+**Implemented in phase 2.** Every function above is code, and `tools/balance`
+plays whole games through `applyAction` on generated maps (`pnpm game <seed>`).
+Three shapes that the seams left open and the implementation settled:
+
+- **`createGameState`** (`rules/setup.ts`) builds the opening position — seats
+  in order, §6's stamina by seat, all players on one node. It is the only other
+  function that produces a `GameState`, and it is in the engine rather than in
+  `SetupFlow` because the hotseat client and every rollout need a game before
+  they can play one.
+- **`createDiceSource`** (`rules/dice.ts`) is the one `DiceSource`
+  implementation, over an injected `Rng`. The die is drawn once per guard
+  actually faced, so a stream replays a game's rolls without a count of the
+  turns that met no guard.
+- **A `BoardPost`'s id and time are stamped by the caller.** The engine has no
+  clock — that is `Clock`, a session port — so `PostMessageAction` carries them
+  and `applyAction` only appends.
+
 Notable rule consequences already encoded:
 
 - `PlayerStats` is `Record<RewardKind, number>` — §6's seven stats are §4.1's
@@ -618,14 +635,15 @@ and guard-strength histograms. `runSelfPlayBatch` is blocked on §12.2.
 
 ## 11. What the next session can pick up
 
-Phase 1 closed items 1, 2 and 5–8 and 10 below — the one distance metric, all
-eight pipeline steps, §4.3 assignment, §5.2 guard strengths, and `sealMap`. What
-is left, each independently implementable against the shapes above:
+Phase 1 closed the one distance metric, all eight pipeline steps, §4.3
+assignment, §5.2 guard strengths and `sealMap`. Phase 2 closed the rules engine:
+`resolveMovement`, `previewPath`, `resolveInteraction`, `nextSeat` and
+`applyAction` are code, §8's worked example is a test, and a full game plays to
+a winner on a generated map. What is left, each independently implementable
+against the shapes above:
 
-1. `resolveMovement` / `previewPath` — §8's worked example is the test case.
-2. `resolveInteraction` — §8.
-3. `SetupFlow.start` — starting positions are settled; needs the rest of setup.
-4. MCTS `search()` — every policy, evaluator and branch rule is written; the four-phase loop and `macroAdvanceToTarget` are not.
-5. The player-facing renderer (§9 above) and the art binding it needs.
+1. MCTS `search()` — every policy, evaluator and branch rule is written; the four-phase loop, `macroAdvanceToTarget` and the rest of `packages/sim/src/rollout.ts` are not.
+2. `SetupFlow.start` — starting positions and `createGameState` are settled; needs the rest of setup, which needs the server.
+3. The player-facing renderer (§9 above) and the art binding it needs.
 
 `grep -rn NotImplementedError packages apps tools` remains the live worklist.

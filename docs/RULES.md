@@ -6,12 +6,12 @@ code, not a new authority — **[`GDD.md`](../GDD.md) remains the single source 
 truth**, and every rule below traces back to a GDD section, cited as `§n`. If
 this file and the GDD ever disagree, the GDD wins and this file is wrong.
 
-One thing to know before reading: after the architecture pass, much of the
-engine is deliberately unimplemented. Rules that are pure bookkeeping (victory,
-allowance refresh, tree expansion, rollout termination, remoteness scoring) are
-real code; rules about walking a path or resolving a guard live as contracts on
-functions that still throw `NotImplementedError` with the GDD section to
-implement against. The rules are decided either way — see
+One thing to know before reading: as of phase 2 every rule below is real code.
+Map generation (§2.1), movement, interaction, turn order and victory all run;
+`pnpm game <seed>` plays a whole game headlessly and prints it turn by turn.
+What is still a contract throwing `NotImplementedError` is the AI (§9's MCTS
+search and the rollout driver) and the session layer (§6.1's setup flow, the
+server). The rules are decided either way — see
 [`docs/OPEN_QUESTIONS.md`](./OPEN_QUESTIONS.md) for how each was settled.
 
 ## The shape of a game
@@ -33,7 +33,9 @@ afterwards (§2, §6.1). Every player starts on the *same* node: a random plains
 node that is not a POI (`chooseStartingNode`, `packages/core/src/gamemap.ts`).
 Stamina is the one stat that does not start at zero — seat *n* starts with
 `STARTING_STAMINA_BASE + (n − 1) × STARTING_STAMINA_INCREMENT`, i.e. 30, 40, 50…
-(`startingStaminaForSeat`, `packages/config/src/index.ts`).
+(`startingStaminaForSeat`, `packages/config/src/index.ts`). `createGameState`
+(`packages/core/src/rules/setup.ts`) builds that opening position, and is the
+only function other than `applyAction` that produces a `GameState`.
 
 **Winning.** Checked each time a POI holding gold is claimed. A lone leader wins
 when their lead over the *runner-up* strictly exceeds the gold still unclaimed
@@ -52,10 +54,16 @@ A player does exactly one of two things (`TurnAction`,
 
 Then the turn ends and play passes to the next seat, whose allowance refreshes.
 Resigned players are not skipped — an AI takes over their seat and keeps playing
-(§7.3). The whole sequence is one pure function, `applyAction`
+(§7.3). A game that has just been won hands over to nobody: the turn does not
+advance, and `game_won` is the last event instead of `turn_ended`.
+
+The whole sequence is one pure function, `applyAction`
 (`packages/core/src/rules/turn.ts`): it is the only writer of `GameState`, and
 the session layer, the AI and the balancing harness all drive the game through
 it, which is what lets MCTS search real game states rather than an approximation.
+It also carries the §7.3 controls (force a turn, switch a seat to AI, resign)
+and §12.3's message board, since every one of them changes game state and there
+is only the one writer.
 
 **A zero-length move is legal, and is not the same as resting.** Standing still
 with an empty path still ends the turn on the POI, so interaction re-triggers
@@ -73,7 +81,9 @@ refresh every turn — the allowance simply *is* the skill level (§7,
 Beyond the free allowance, stamina pays: 1 plains / 2 forest / 3 mountain per
 node. Cost is charged for **entering** a node, so the terrain that matters is
 the destination's, not the one being left. Allowance is consumed in path order,
-per terrain.
+per terrain. A walk stops at the first step it cannot pay for and goes no
+further: a player cannot step over a node they cannot afford, so a cheaper step
+behind an expensive one is not reachable this turn either.
 
 The GDD's worked example (§8) is the reference behaviour: stamina 14,
 plains-move 3, forest-move 1, mountain-move 0, standing on plains. Three plains
@@ -117,7 +127,11 @@ per-player attempt history and no occupancy check anywhere.
 The die is never rolled inside the engine. `applyAction` takes a `DiceSource`,
 so the session layer supplies an authoritative server-side stream (kept separate
 from the public map seed, so clients cannot precompute rolls) and MCTS supplies
-its own.
+its own. It is drawn **once per guard actually faced** and never otherwise, so
+replaying a game's rolls needs only the stream and not a count of how many turns
+happened to end on nothing. `createDiceSource`
+(`packages/core/src/rules/dice.ts`) is the one implementation; what its
+consumers vary is the `Rng`, never the die.
 
 ## Rollouts
 
@@ -198,10 +212,12 @@ a time; the rest of the macro-action is re-derived next turn
 
 | Rule | File |
 |---|---|
+| The opening position | `packages/core/src/rules/setup.ts` |
 | Turn sequence, turn order | `packages/core/src/rules/turn.ts` |
 | Allowance, stamina, path walking | `packages/core/src/rules/movement.ts` |
 | Automatic interaction, guard rolls | `packages/core/src/rules/interaction.ts` |
 | Victory and unclaimed gold | `packages/core/src/rules/victory.ts` |
+| The `GUARD_DIE` stream | `packages/core/src/rules/dice.ts` |
 | The action space | `packages/core/src/action.ts` |
 | Distance metric, path preview | `packages/core/src/path.ts` |
 | Target ranking and choice (shared) | `packages/sim/src/candidates.ts`, `walk.ts` |

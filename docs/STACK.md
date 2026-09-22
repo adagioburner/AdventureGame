@@ -79,6 +79,14 @@ a dozen lines and stayed in-repo, as predicted.
     once you have decided which kind.
   - **`vitest run` in CI, never watch mode**, as a second required check beside
     Typecheck.
+
+  Phase 2 added a fourth: **a test-only helper module is named `*.fixture.ts`**
+  and is not exported from its package's `index.ts`. Vitest collects `*.test.ts`
+  only, so a fixture file is not mistaken for an empty suite, while
+  `tsconfig.json` still typechecks it. `packages/core/src/rules/scenario.fixture.ts`
+  is the first: the rules tests need maps they can reason about line by line, and
+  a generated map is both the wrong shape for that and unavailable in `core`,
+  which `@adventure/mapgen` depends on rather than the other way round.
 - **`tools/` typechecks as its own program.** Phase 1 gave `tools/balance` a
   CLI, and a CLI needs `process`, `console` and `node:fs`. Rather than adding
   `@types/node` to every program — the engine packages run in a browser as well

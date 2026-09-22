@@ -100,11 +100,26 @@ export function renderMapSvg(map: GameMap, options: MapSvgOptions = {}): string 
       }" stroke="${stroke}" stroke-width="${round(width)}"${valleys.has(node.id) ? ' stroke-dasharray="' + round(unit * 4) + '"' : ''}/>`,
     );
     if (poi !== undefined) parts.push(poiLabel(poi, node.position.x, node.position.y, unit, nodeRadius));
+    parts.push(nodeIdLabel(node.id, node.position.x, node.position.y, unit, radius));
   }
 
   parts.push(legend(map, unit, space));
   parts.push('</svg>');
   return parts.join('\n');
+}
+
+/**
+ * The node's id, above the node.
+ *
+ * Every other record the harness prints — the golden map summary, a
+ * playthrough transcript — names nodes by id and nothing else, so without this
+ * the drawing and the logs cannot be read against each other. Small and grey,
+ * because it is a cross-reference rather than something to look at.
+ */
+function nodeIdLabel(id: NodeId, x: number, y: number, unit: number, radius: number): string {
+  return `<text x="${round(x)}" y="${round(y - radius - unit * 3)}" font-family="monospace" font-size="${round(
+    unit * 11,
+  )}" text-anchor="middle" fill="#5f5a50">${id}</text>`;
 }
 
 function poiLabel(poi: Poi, x: number, y: number, unit: number, nodeRadius: number): string {
@@ -143,6 +158,7 @@ function legend(map: GameMap, unit: number, space: number): string {
     'black ring = POI, label = reward kind + units, coloured number = guard strength (red fighting, purple magic)',
     'grey halo = remoteness, darker is more remote (generator internal — the player-facing map never shows it)',
     'blue dashed ring = node carved into a plains valley (step 6)',
+    'small grey number above a node = its node id, which is what every log and golden file names it by',
   ];
   return text
     .map(
