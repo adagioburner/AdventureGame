@@ -275,6 +275,8 @@ export function formatPlaythrough(run: Playthrough): string {
   lines.push('# Node ids are the ids drawn on the diagnostic map for this seed (pnpm map ' + run.options.seed + ').');
   lines.push('# Every step says which terrain was entered and what paid for it: a moving skill');
   lines.push('# (§7 allowance, counted down) or stamina (§11 STAMINA_COST: plains 1, forest 2, mountain 3).');
+  lines.push('# Free steps only pay for their own terrain. A walk that ends short names the step it could');
+  lines.push('# not pay for; the rest of the path waits for next turn (§7).');
   lines.push('# A guarded POI says roll + skill vs guard strength; §8 needs strictly greater.');
   lines.push('#');
   lines.push(
@@ -343,7 +345,7 @@ function moveLines(resolution: MovementResolution, turn: PlayedTurn, run: Playth
     return [
       planned === 0
         ? `  move    stayed on node ${resolution.from} (empty path — §8's second attempt at the same guard)`
-        : `  move    no step affordable this turn; ${planned} still planned, first is node ${resolution.remainder[0]}`,
+        : `  move    no step affordable this turn: ${blockedStep(resolution.from, resolution.remainder, turn, run, turn.allowanceBefore, turn.statsBefore.stamina)}; ${planned} still planned`,
     ];
   }
 
@@ -381,10 +383,40 @@ function moveLines(resolution: MovementResolution, turn: PlayedTurn, run: Playth
 
   if (resolution.remainder.length > 0) {
     lines.push(
-      `  move    stopped at node ${resolution.to}; ${resolution.remainder.length} step${resolution.remainder.length === 1 ? '' : 's'} saved as next turn's planned path`,
+      `  move    stopped at node ${resolution.to}: ${blockedStep(resolution.to, resolution.remainder, turn, run, left, stamina)}`,
+      `          ${resolution.remainder.length} step${resolution.remainder.length === 1 ? '' : 's'} saved as next turn's planned path`,
     );
   }
   return lines;
+}
+
+/**
+ * Why a walk ended short: the step it could not pay for.
+ *
+ * §7's walk has exactly one reason to stop early — the next step is not free
+ * (its terrain's allowance is spent or was never there) and costs more stamina
+ * than is left — so naming that step, its terrain and the two numbers is the
+ * whole explanation. Allowance left in *other* terrains does not help, and the
+ * line says which skill would have.
+ */
+function blockedStep(
+  at: NodeId,
+  remainder: readonly NodeId[],
+  turn: PlayedTurn,
+  run: Playthrough,
+  allowanceLeft: MovementAllowance,
+  staminaLeft: number,
+): string {
+  const next = remainder[0];
+  if (next === undefined) throw new Error('a stopped walk has a next step');
+  const terrain = terrainOf(run, next);
+  const skill = TERRAIN_SKILL[terrain];
+  const cost = run.map.ruleset.config.movement.STAMINA_COST[terrain];
+  // Blocked means not free, so this terrain's allowance is at 0 by now.
+  if (allowanceLeft[terrain] !== 0) throw new Error(`step to ${next} was free yet the walk stopped`);
+  const level = turn.statsBefore[skill];
+  const free = level === 0 ? `${skill} 0` : `${skill} ${level}, all ${level} free steps spent`;
+  return `next step ${at} -> ${next} ${terrain} needs ${cost} stamina (${free}), ${staminaLeft} left`;
 }
 
 function interactionLines(
