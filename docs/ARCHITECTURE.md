@@ -147,10 +147,15 @@ and units → assign guard strengths. Remoteness can run there because it depend
 only on POI *positions*, never on their rewards.
 
 Two things settled about placement. "Approximately equal distances" (§3) is a
-goal, not a procedure, and [SOURCE §3, chat] the answer is to prototype both
+goal, not a procedure, and [SOURCE §3, chat] the answer was to prototype both
 farthest-point sampling and graph-space Poisson-disc and compare them in the
 harness — so `PoiPlacementStrategy` stays a seam with two implementations to
-build. And a terrain can hold more leaves than its `POI_COUNT` quota, since leaf
+build. [SOURCE chat, review] That is now narrowed: "use farthest point
+sampling, we'll switch if that looks bad, which I doubt", so only
+farthest-point sampling gets written and the seam stays for the switch. See
+[Q23](./OPEN_QUESTIONS.md#q23).
+
+And a terrain can hold more leaves than its `POI_COUNT` quota, since leaf
 count is not apportioned by terrain; [SOURCE §9, chat] the surplus leaves become
 *additional* POIs carrying `stamina`. That means total POI count is no longer
 fixed at 60, it gives §4.1's otherwise-unplaced `stamina` kind a home, and it
@@ -580,7 +585,9 @@ Each of these is independently implementable against the shapes above:
 4. `resolveInteraction` — §8.
 5. §4.3 assignment — the weight function is already written.
 6. Step 5 Smooth — the measurement and its exit test are written; the flip loop is not.
-7. Step 7 placement — build both strategies and compare them in the harness.
+7. Step 7 placement — farthest-point sampling behind `PoiPlacementStrategy`; the
+   second strategy is not wanted unless the maps disappoint
+   ([Q23](./OPEN_QUESTIONS.md#q23)).
 8. Remoteness — scorer is written; needs `closestPoiCandidates` (item 1) to run.
 9. `SetupFlow.start` — starting positions are settled; needs the rest of setup.
 10. Guard strengths — written; needs remoteness (item 8) to run.

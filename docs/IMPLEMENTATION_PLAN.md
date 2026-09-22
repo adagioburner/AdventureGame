@@ -13,11 +13,14 @@ plan needs something the design does not say, it asks rather than choosing —
 see [Questions](#questions) at the end. It invents no rules, no constants and
 no defaults.
 
-Andrei answered three of the five questions on 2026-09-22, and they are folded
+Andrei answered four of the five questions on 2026-09-22, and they are folded
 into the phases below: the AI budget stays in seconds, hotseat is 2 players,
-and he is supplying the missing placeholder art, of which the die-roll
-animation and the road brush are in this change. P4 and P5 are still open and
-neither blocks starting.
+POI placement is farthest-point sampling alone, and he is supplying the missing
+placeholder art, of which the die-roll animation and the road brush are in this
+change. They are registered as Q20–Q23 in
+[`docs/OPEN_QUESTIONS.md`](./OPEN_QUESTIONS.md), since that register rather
+than this plan is where the repo records a decision. Only P4 is still open, and
+it does not block starting.
 
 Where the repo stands: the architecture pass landed data models, component
 boundaries and interfaces that typecheck. Thirty-odd seams throw
@@ -97,18 +100,16 @@ stable per-POI random index" with no decision about what it indexes into. The
 sheets in `Art/` are already cut into atlases with per-sprite anchors, so the
 work is small and well-defined, but it is real work and it has gaps in the
 supplied assets. Phase 3 below, and question
-[P1](#p1-art-gaps--answered-two-assets-generated).
+[P1](#p1-art-gaps--answered-q20-two-assets-generated).
 
 **Tuning the balancing constants is not in any of the five steps.** §11 marks
 six parameters tunable by play-test — `COMPACTNESS_MAX`, `REMOTENESS_WEIGHT`,
 `REMOTENESS_WEIGHT_FOR_DISTRIBUTION`, `CLOSE_CANDIDATE_COUNT`,
 `REMOTENESS_SIMULATION_RUNS`, `MCTS_TIME_BUDGET_PER_MOVE_MS` — and
-`docs/ARCHITECTURE.md` §3 leaves two POI placement strategies to prototype and
-compare in the harness rather than picking one. `tools/balance` exists as a
-first-class consumer for this and both its entry points are stubs. The map-side
-half of it belongs in phase 1 (it is how you see whether generation is
-"according to set parameters"); the self-play half needs the AI, so it sits at
-the end of phase 5.
+`tools/balance` exists as a first-class consumer for exactly that, with both
+its entry points still stubs. The map-side half of it belongs in phase 1 (it is
+how you see whether generation is "according to set parameters"); the self-play
+half needs the AI, so it sits at the end of phase 5.
 
 ### 1.3 Phase map
 
@@ -234,10 +235,13 @@ strengths.
 
 - **`placePoisStep`** — every leaf node is a POI first (§3, "no dead ends"),
   then the rest distributed at "approximately equal distances". §3 states that
-  as a goal, not a procedure, and `docs/ARCHITECTURE.md` §3 leaves
-  `PoiPlacementStrategy` as a seam with **both** strategies to build —
-  farthest-point sampling and graph-space Poisson-disc — to be compared in the
-  harness. Build both; pick in 1e.
+  as a goal, not a procedure. `docs/ARCHITECTURE.md` §3 originally left
+  `PoiPlacementStrategy` as a seam with both farthest-point sampling and
+  graph-space Poisson-disc to build and compare; [SOURCE chat, 2026-09-22]
+  Andrei settled it (Q23): "use farthest point sampling, we'll switch if that
+  looks bad, which I doubt". So build **farthest-point sampling only**, and
+  keep `PoiPlacementStrategy` as a seam so the switch stays a one-liner rather
+  than a rewrite. 1e is where you would see it look bad.
 - **`overflowLeafPois`** — a terrain can hold more leaves than its `POI_COUNT`
   quota, and the surplus leaves become *additional* POIs carrying `stamina`,
   `OVERFLOW_LEAF_STAMINA_UNITS` (1) each.
@@ -291,13 +295,16 @@ and (in v1 content) nothing else.
   survive `JSON.parse(JSON.stringify(map))` intact. Cheap to assert now; painful
   to discover in phase 6 with a `Set` or a `Map` in the payload.
 
-### 1e. The map harness and the placement comparison
+### 1e. The map harness
 
 `runMapBatch` in `tools/balance/src/index.ts` reports leaf counts, terrain
 shares, compactness both after Smooth and after Carve Valleys (the latter
 expected to be worse, by design), and remoteness and guard-strength histograms.
-Run a batch over many seeds, confirm the §11 parameters land where they should,
-and use it to compare the two placement strategies from 1c and choose one.
+Run a batch over many seeds and confirm the §11 parameters land where they
+should. Since only one placement strategy is built (Q23), this is also the
+check on whether that choice holds: if POI spacing looks wrong in the SVG or
+the remoteness histogram is lopsided, the second strategy goes behind the same
+seam and gets compared here.
 
 **Phase 1 done when:** `generateMap(seed, ruleset)` returns a valid map for a
 batch of seeds with no unexplained rejections; the same seed gives a
@@ -373,7 +380,7 @@ phase 2.
    `Plains_Magic`, `Plains_GoldGuardedByFighting`, `Forest_MountainMovement`,
    `Forest_Fighting`, `Mountains_GoldGuardedByFighting`,
    `Mountains_GoldGuardedByMagic`. That is exactly §4.2's rows *minus* forest
-   gold — see [P1](#p1-art-gaps--answered-two-assets-generated). Four dressing
+   gold — see [P1](#p1-art-gaps--answered-q20-two-assets-generated). Four dressing
    sheets cover the eye candy: `Plains_Fields`, `Plains_GrassRocks`,
    `Forest_Trees`, `Mountains_Mountains`.
 3. **`Poi.artVariant` becomes an index** into the chosen sheet's `sprites`
@@ -640,13 +647,13 @@ already, but a v1 *content* choice per §4.4).
 
 ## Questions
 
-Five things this plan could not settle from the documents. **P1, P2 and P3 were
-answered on 2026-09-22**; P4 and P5 are still open and neither blocks starting
-phase 0 or phase 1. All five would be registered as Q20 onward in
-[`docs/OPEN_QUESTIONS.md`](./OPEN_QUESTIONS.md), the three answered ones
-carrying the answers below.
+Five things this plan could not settle from the documents. **P1, P2, P3 and P5
+were answered on 2026-09-22** and are registered as Q20–Q23 in
+[`docs/OPEN_QUESTIONS.md`](./OPEN_QUESTIONS.md), which is where the repo keeps
+decisions; the summaries below are a convenience, and the register is
+authoritative. **P4 is still open** and does not block phase 0 or phase 1.
 
-### P1. ~~Art gaps~~ — **answered; two assets generated**
+### P1. ~~Art gaps~~ — **answered (Q20); two assets generated**
 
 [SOURCE chat, 2026-09-22] "I will add the missing placeholder art before we
 start implementing the plan." So phases 3 and 4 are written against the full
@@ -677,7 +684,7 @@ Six §10 asset groups were missing from `Art/`, and one POI sheet:
 - **Move-prospect visuals** — path highlight, destination cross, waypoint
   marker.
 
-### P2. ~~AI budget in seconds or rollouts?~~ — **answered: seconds**
+### P2. ~~AI budget in seconds or rollouts?~~ — **answered (Q21): seconds**
 
 `docs/STACK.md` §5 flagged this and left it as a design question: a fixed
 10-second budget buys very different search on a laptop than on a workstation,
@@ -692,7 +699,7 @@ accepted cost rather than an open item. One consequence for phase 5: a self-play
 comparison is only meaningful between runs on the same machine, so the harness
 should record the machine alongside the result.
 
-### P3. ~~Hotseat scope~~ — **answered: 2 players**
+### P3. ~~Hotseat scope~~ — **answered (Q22): 2 players**
 
 [SOURCE chat, 2026-09-22] "2 players is a good enough number and exercises all
 necessary functionality." Phase 4 fixes the hotseat seat count at 2.
@@ -704,7 +711,7 @@ Left unanswered, and not worth blocking on: whether a hotseat game should
 survive a page reload. Persisting to `localStorage` is small but the design does
 not mention it, so phase 4 does not, and a closed tab loses the game.
 
-### P4. Q18, still open in fact
+### P4. Q18, still open in fact — **the only one left**
 
 Q18's `total_skills` is implemented as the skill units *placed on the map*
 rather than a per-player maximum. That reading shipped without confirmation, and
@@ -713,10 +720,13 @@ changing it is a one-line change to `totalSkillUnits()` in
 evaluators, which v1 does not use, so it does not block phase 5 — but phase 5 is
 where it would first produce a number anyone looks at.
 
-### P5. Are the placement strategies still both wanted?
+### P5. ~~Are the placement strategies still both wanted?~~ — **answered (Q23): farthest-point only**
 
 `docs/ARCHITECTURE.md` §3 left `PoiPlacementStrategy` as a seam with
 farthest-point sampling and graph-space Poisson-disc both to be built and
-compared in the harness. That is two implementations for one shipped behaviour.
-Still the intent, or should phase 1 build one (farthest-point is the simpler)
-and keep the seam for later?
+compared in the harness — two implementations for one shipped behaviour.
+
+[SOURCE chat, 2026-09-22] "use farthest point sampling, we'll switch if that
+looks bad, which I doubt." So phase 1c builds that one, and the seam stays so
+the switch is a one-liner. Phase 1e's batch over many seeds is where "looks
+bad" would show up, in the SVG's POI spacing and the remoteness histogram.
