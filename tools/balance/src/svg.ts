@@ -1,5 +1,5 @@
 import { TERRAINS, type Terrain } from '@adventure/config';
-import { isLeaf, poiAt, type GameMap, type NodeId, type Poi } from '@adventure/core';
+import { poiAt, type GameMap, type NodeId, type Poi } from '@adventure/core';
 
 /**
  * The diagnostic map dump — GDD step 1 asks for output "viewable by humans
@@ -91,7 +91,6 @@ export function renderMapSvg(map: GameMap, options: MapSvgOptions = {}): string 
 
   for (const node of map.graph.nodes) {
     const poi = poiAt(map, node.id);
-    const leaf = isLeaf(map.graph, node.id);
     const stroke = poi !== undefined ? '#1c1c1c' : valleys.has(node.id) ? '#2e6fb7' : '#6b6152';
     const width = poi !== undefined ? unit * 3.5 : valleys.has(node.id) ? unit * 3 : unit * 1.2;
     const radius = poi !== undefined ? nodeRadius * 1.25 : nodeRadius;
@@ -100,16 +99,6 @@ export function renderMapSvg(map: GameMap, options: MapSvgOptions = {}): string 
         TERRAIN_FILL[node.terrain]
       }" stroke="${stroke}" stroke-width="${round(width)}"${valleys.has(node.id) ? ' stroke-dasharray="' + round(unit * 4) + '"' : ''}/>`,
     );
-    if (leaf) {
-      // Outside the node, up and to the left, so it never sits on the POI's
-      // reward label.
-      const size = nodeRadius * 0.7;
-      parts.push(
-        `<rect x="${round(node.position.x - radius - size)}" y="${round(
-          node.position.y - radius - size,
-        )}" width="${round(size)}" height="${round(size)}" fill="#1c1c1c"/>`,
-      );
-    }
     if (poi !== undefined) parts.push(poiLabel(poi, node.position.x, node.position.y, unit, nodeRadius));
   }
 
@@ -153,7 +142,7 @@ function legend(map: GameMap, unit: number, space: number): string {
   const text = [
     'black ring = POI, label = reward kind + units, coloured number = guard strength (red fighting, purple magic)',
     'grey halo = remoteness, darker is more remote (generator internal — the player-facing map never shows it)',
-    'black square = leaf node, blue dashed ring = node carved into a plains valley (step 6)',
+    'blue dashed ring = node carved into a plains valley (step 6)',
   ];
   return text
     .map(

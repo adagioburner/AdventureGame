@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_RULESET } from '@adventure/config';
-import { isLeaf, leafNodes } from '@adventure/core';
+import { isLeaf } from '@adventure/core';
 import { generateAndReport } from './index.ts';
 import { formatBatchReport, formatMapReport, formatMapSummary } from './report.ts';
 import { renderMapSvg } from './svg.ts';
@@ -37,9 +37,13 @@ describe('renderMapSvg', () => {
     for (const fill of ['#d8c08a', '#5d8f57', '#9a9aa4']) expect(svg).toContain(fill);
   });
 
-  it('marks every leaf node', () => {
-    // One rect per leaf, plus the background rect.
-    expect(count(svg, /<rect /g)).toBe(leafNodes(map.graph).length + 1);
+  it('draws nothing but the background as a rect', () => {
+    // Leaves used to carry a black square each. Andrei asked for them dropped
+    // on 2026-09-22 — "the leaves are pretty self-evident and easy to see" —
+    // and a node with one road out is indeed obvious on the drawing. The
+    // §11 leaf *count* is still reported and still tested; it is only the
+    // marker that went.
+    expect(count(svg, /<rect /g)).toBe(1);
   });
 
   it('marks every node carved into a plains valley', () => {
@@ -74,7 +78,8 @@ describe('renderMapSvg', () => {
     expect(svg).toContain(`${map.pois.length} POIs`);
     expect(svg).toContain('black ring = POI');
     expect(svg).toContain('grey halo = remoteness');
-    expect(svg).toContain('black square = leaf node');
+    expect(svg).toContain('blue dashed ring = node carved into a plains valley');
+    expect(svg).not.toContain('leaf node');
   });
 
   it('escapes a seed that would otherwise break the document', () => {
