@@ -11,20 +11,21 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, and Q1–Q25.
+**Answered so far:** all four of GDD.md §12's own open items, and Q1–Q26.
 `pending` in the config is empty.
 
 **Outstanding: none.** Every question in this register is answered, and so is
 every reading that was held open for confirmation — Q1's first-segment wrinkle,
 Q13, Q17, and, as of 2026-09-22, Q18's own pick of what "total skills
-available" divides by ([Q24](#q24)). The config's `pending` block is empty.
+available" divides by ([Q24](#q24)) and whether the §2 avatar is its own asset
+([Q26](#q26)). The config's `pending` block is empty.
 
 The next session's work is implementation against a settled spec rather than
 more design review. `docs/IMPLEMENTATION_PLAN.md` is the build order;
 `docs/ARCHITECTURE.md` §11 lists the seams it draws on.
 
-Q20–Q23 came out of writing that plan rather than the architecture pass, and
-sit in their own section below.
+Q20–Q26 came out of writing that plan, and of the art landing against it,
+rather than the architecture pass, and sit in their own section below.
 
 ---
 
@@ -614,6 +615,32 @@ rollout have its own loop over `macroAdvanceToTarget` rather than being bent
 through `runWalk`. `docs/ARCHITECTURE.md` §5's "one shared component" stays
 true of the target chooser and the one distance metric, which is what §9 asks
 for; it is the generic loop that is not expected to survive.
+
+### Q26. ~~Is GDD §2's player avatar the figurine sheet, or its own asset?~~ — **answered: its own set, cropped figurines meanwhile**
+
+§10 asks for figurines to choose from at setup and §2 shows an avatar beside
+each player's name. The six figures supplied on 2026-09-22 are plainly
+figurines; whether they were also the avatar was unstated, and the two want
+different framings — a figurine stands on a node, an avatar sits in a panel.
+
+[SOURCE chat, 2026-09-22] "there will be a separate head and shoulders set. As
+a temporary image the same avatars can be used enlarged and shifted so that
+only their head and shoulders fit into the frame."
+
+So the avatar is its own asset and the figurines stand in until it arrives.
+**One uniform enlarge-and-shift will not do it**, which is worth recording
+because it is the obvious implementation and it fails: measured from the sheet's
+alpha, the six heads start between row 24 and row 155 of a 698-row cell, so a
+transform that frames the knight lands on the halfling's chest. The heads are
+not centred alike either — a held axe or staff drags a figure's bounding-box
+centre up to 76px off its own face.
+
+`Art/player_avatars_portraits.json` therefore carries one square, cell-relative
+box per figure, measured rather than hand-placed and regenerable with
+`python3 Art/tools/make_portrait_crops.py`. It is marked `"temporary": true`;
+delete both it and the tool when the real set lands. Phase 3 scales the box
+into the avatar frame — there is no second PNG, so nothing is upscaled on disk
+and nothing has to be kept in step with the figurine sheet.
 
 ---
 
