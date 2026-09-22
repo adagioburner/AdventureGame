@@ -11,21 +11,28 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, and Q1–Q26.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, and Q28–Q29.
 `pending` in the config is empty.
 
-**Outstanding: none.** Every question in this register is answered, and so is
-every reading that was held open for confirmation — Q1's first-segment wrinkle,
-Q13, Q17, and, as of 2026-09-22, Q18's own pick of what "total skills
-available" divides by ([Q24](#q24)) and whether the §2 avatar is its own asset
-([Q26](#q26)). The config's `pending` block is empty.
+**Outstanding: one — [Q27](#q27).** Building phase 1 turned up that
+`COMPACTNESS_MAX` never binds on a map of ~240 nodes and 300 edges, so §2.1's
+Smooth step does nothing at the current constants. It is a tuning question
+rather than a blocker: generation works and the code implements §2.1 literally.
+[Q29](#q29), the other thing reviewing phase 1 turned up, is answered — §4.3
+leaned bigger stacks toward remote POIs only 57% of the time, and Andrei's swap
+pass is now §4.3 step 4, which takes it to 96%. Everything
+else in this register is answered, and so is every reading that was held open
+for confirmation — Q1's first-segment wrinkle, Q13, Q17, and, as of
+2026-09-22, Q18's own pick of what "total skills available" divides by
+([Q24](#q24)) and whether the §2 avatar is its own asset ([Q26](#q26)). The
+config's `pending` block is empty.
 
-The next session's work is implementation against a settled spec rather than
-more design review. `docs/IMPLEMENTATION_PLAN.md` is the build order;
-`docs/ARCHITECTURE.md` §11 lists the seams it draws on.
+`docs/IMPLEMENTATION_PLAN.md` is the build order; `docs/ARCHITECTURE.md` §11
+lists the seams it draws on.
 
 Q20–Q26 came out of writing that plan, and of the art landing against it,
-rather than the architecture pass, and sit in their own section below.
+rather than the architecture pass, and sit in their own section below. Q27 came
+out of running the pipeline for the first time.
 
 ---
 
@@ -642,6 +649,163 @@ delete both it and the tool when the real set lands. Phase 3 scales the box
 into the avatar frame — there is no second PNG, so nothing is upscaled on disk
 and nothing has to be kept in step with the figurine sheet.
 
+<a id="q27"></a>
+### Q27. Should `COMPACTNESS_MAX` be retuned? The Smooth step currently does nothing — **asking**
+
+§2.1 step 5 says: "flip isolated nodes to their majority-neighbour terrain
+**until** `compactness = boundary² / area` falls below `COMPACTNESS_MAX`", with
+[SOURCE §1.3, chat] giving a circle reference of 4π ≈ 13 and a starting value
+of 25. The code implements that literally. The consequence, which only shows up
+once the step is run on a real map, is that **the condition already holds
+before the loop starts**, so no node is ever flipped.
+
+The measurement is not wrong; the reference is. A circle scoring 4π assumes a
+dense 2D lattice, where a region of radius *r* holds about π*r*² nodes and about
+2π*r* of them sit on its edge. A finished map is not a lattice: §2.1 prunes to
+~240 nodes and 300 edges, a mean degree of **2.5**, which is nearly a tree. On
+a graph like that a terrain region's boundary is a handful of nodes whatever its
+size, so `boundary² / area` comes out around **1.0 on average and 4.5 at worst**
+over 40 seeds — against a threshold of 25. (Those are the figures after
+[Q28](#q28); before step 6 grew the short terrains back, they were 0.4 and 3.4.
+A terrain that a valley runs through is genuinely corridor-shaped, which is
+what a valley is, so the rise is the fix working rather than a regression.)
+
+What that costs: nothing is broken, but one of the eight pipeline steps is inert,
+and the speckle it exists to clean up survives into the finished map. Flood fill
+with §2.1's same-terrain bias already produces reasonably blobby regions, so the
+maps look sane (`pnpm map adventure`), but they are not smoothed.
+
+Three ways out, none of them the implementer's to pick:
+
+1. **Lower `COMPACTNESS_MAX`** to something that binds at this density — the
+   batch report suggests the interesting range is roughly 1 to 3. It is a §11
+   "tunable (play-test)" row, so this is the cheapest change and needs no code.
+2. **Change what compactness measures** — counting boundary *edges* rather than
+   boundary *nodes* would scale with the graph's own density. [SOURCE §2.1 step
+   5, chat] settled on nodes ("yes, counting nodes is the right approach"), so
+   this would be a reversal rather than a tuning.
+3. **Leave it.** If the regions look right, an inert step is only a tidiness
+   problem, and step 5 becomes load-bearing again if `MAP_EDGE_COUNT` ever rises.
+
+`pnpm map:batch 50` prints the compactness distribution both after Smooth and
+after Carve Valleys, so whichever you pick can be checked against real maps.
+Nothing downstream depends on the answer: reward assignment and guard strengths
+read remoteness, not compactness.
+
+---
+
+### Q28. ~~Are §2.1's terrain shares measured before or after the valleys are carved?~~ — **answered: the finished map**
+
+Andrei, reviewing PR #10: *"Because of the valleys the count of nodes of each
+terrain has been skewed heavily towards plains, right? The mountains are
+overcrowded with POI while Plains have huge empty spaces. ... We need to keep
+close to the original balance of nodes in the final map, not before the valleys
+have been carved."*
+
+Both halves of his reading were right, and the second one is the consequence of
+the first. §2.1 step 6 converts forest and mountain nodes into plains *after*
+step 4 has hit its shares, so the map a player is handed drifts; `adventure`
+finished 65 / 26 / 9 against 45 / 30 / 25. And because §4.2 fixes the POI count
+per terrain — 25 plains, 20 forest, 15 mountain, whatever the node counts turn
+out to be — every node the valleys take out of mountain also packs mountain's
+POIs closer together. On that map two thirds of every mountain node carried a
+POI while plains ran one per 6.2 nodes; `saltmarch` was one per 1.7.
+
+Recorded in `GDD.md` §2.1 as [SOURCE §2.1, review] and implemented: step 6 ends
+by growing whatever terrain is short back into plains, leaving the carved
+fingers and the plains node each one opens from untouched, and the same growth
+finishes step 4, whose flood fill cannot reach the shares on its own. Measured
+over 40 seeds, the finished map now runs 44.8–48.1% plains, 29.8–30.2% forest
+and 21.8–25.2% mountain. The same 40 seeds through the old pipeline ran
+32.9–66.8% plains, 17.5–45.7% forest and 6.4–31.0% mountain. POI spacing sits
+between one per 2.9 and one per 4.9 nodes on every terrain.
+
+Two knock-on facts worth knowing rather than re-deriving. Plains compactness
+rises — 6.8 on `adventure` against 0.9 before — because plains is now genuinely
+corridor-shaped where a valley runs; that is what a valley is, and it is still
+far inside `COMPACTNESS_MAX`, so [Q27](#q27) is unchanged. And a terrain walled
+in by one that is already at its share cannot be fixed by a straight transfer,
+so the regrowth also trades: the neighbour hands a node over and takes one back
+from a terrain that has a surplus. Without that trade the shares stuck as much
+as ten points out on the odd map.
+
+### Q29. Should a bigger reward stack *always* sit on a more remote POI? — **answered 2026-09-22**
+
+Andrei, on PR #10: *"Is distribution of rewards correlated with the remoteness
+score? E.g. if a node has P4 and another P1, we definitely want the first one to
+be more remote."*
+
+**What the measurement found.** Over 200 maps, within a §4.2 row (so like for
+like — the same kind, guard and terrain), §4.3 did lean the right way, but only
+as a tendency:
+
+- Spearman ρ between units and remoteness: **0.141**.
+- Take any two POIs in the same row with different stacks: the bigger stack was
+  the more remote one **57.1%** of the time. Chance is 50%.
+- His example, `plains_move`: a P1 sat at mean remoteness 0.18, P2 at 0.21,
+  P3 at 0.22, P4 at 0.25. Mountain gold was the steepest row — 0.43 / 0.52 /
+  0.60 / 0.64 — and no row ran backwards.
+- Raising `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` helped but saturated: 57.8% at
+  the default 2, then 59.9% (w=4), 62.3% (w=8), 63.6% (w=16), 65.1% (w=32).
+  §4.3 step 3 is a *weighted random draw*, one unit at a time, and §4.2 hands
+  most rows barely more spare units than POIs — `plains_move` is 20 units over
+  10 POIs — so with that few draws the variance dominates however hard
+  remoteness leans on the weights.
+
+**His answer:** *"we can distribute rewards without much regard for remoteness,
+and then for a number of times consider pairs of POIs with the same type of
+reward and swap their rewards if they do not correlate with their remoteness. We
+don't have to do complete ordering, doing that a number of times will raise the
+correlation enough. It would be nice to run a simulation and see how many times
+we need to do that to get the correlation to 90%."*
+
+**The simulation, 200 maps, agreement between stack size and remoteness:**
+
+| Passes | Pooled agreement | Spearman ρ | Maps under 90%, read one at a time | Worst map |
+|---|---|---|---|---|
+| 0 | 57.1% | 0.14 | 200 / 200 | 39.0% |
+| 2 | 87.0% | 0.70 | 158 / 200 | 76.2% |
+| **3** | **91.8%** | 0.78 | 54 / 200 | 81.0% |
+| **5** | **96.3%** | 0.85 | **0 / 200** | 91.0% |
+| 10 | 99.2% | 0.89 | 0 / 200 | 96.4% |
+
+A "pass" is one pair draw per POI in the row, so a whole map at 5 passes draws
+about 300 pairs and swaps about 27 of them — roughly one draw in eleven finds
+something to fix. **Three passes clears his 90% across a batch; five clears it
+on every single map of 200 read on its own**, which is the reading a player
+gets, so the default is **5**. Generated with and without step 4, the four
+seeds the tests use read 59.9 → 99.2 (`adventure`), 73.2 → 96.9 (`alpha`),
+58.3 → 98.6 (`beta`) and 60.9 → 96.5 (`gamma`).
+
+**What shipped:** §4.3 gains a **step 4**, tagged `[SOURCE §4.3, review]`, and
+§11 gains `REWARD_SWAP_PASSES = 5` as a tunable. `swapGroupTowardRemoteness` in
+`packages/mapgen/src/rewards/assign.ts` runs it, right after step 3's draw and
+before §5.2 reads the stacks for guard strength.
+
+Three things worth knowing about it:
+
+- **`REMOTENESS_WEIGHT_FOR_DISTRIBUTION` is left at 2.** His "without much
+  regard for remoteness" reads as permission, not an instruction, and the
+  measurement says the choice barely matters once step 4 runs: at 3 passes it is
+  91.8% with the weight at 2 against 91.2% with it at 0. Leaving it keeps §4.3
+  step 3 exactly as the GDD writes it. Say the word and it goes to 0.
+- **Nothing in §4.2 moves.** A swap exchanges two stacks *inside* one row, so
+  the row's total units, its POI count and step 2's guaranteed unit all survive
+  untouched — verified on the sealed map, and generation still takes ~195 ms.
+- **Unguarded gold all but disappears, which is a real side effect.** §5.2 caps
+  guard strength at 0, and the only way to reach the cap is a 1-unit stack at
+  remoteness ≥ 0.5 — precisely what step 4 moves. Over 60 maps, gold POIs
+  sealing unguarded fall from **3.3%** to **0.2%**, and 58 of those 60 maps have
+  none at all. That pushes §4.4's "every gold POI is guarded, none are exempt"
+  back toward literally true, and mean guard strength is unchanged at 4.6. If
+  the occasional unguarded remote 1-gold was wanted as a treat, that is a
+  separate decision about §5.2's constants, not about step 4.
+
+**Not taken:** making step 3 itself deterministic — sorting a row by remoteness
+and dealing spare units from the remote end. It would guarantee the ordering by
+construction, but it removes the per-seed variety, which is the thing his "we
+don't have to do complete ordering" preserves.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design
@@ -657,3 +821,8 @@ Listed so you can veto any that read as design to you.
 | Remoteness computed inside step 7, between POI placement and reward assignment | Forced by data flow: §4.3 step 3 consumes remoteness, and remoteness depends only on POI positions. |
 | sfc32 PRNG, string seeds | §1.3 requires reproducibility, not a specific algorithm. |
 | `Poi.artVariant` as an opaque stable index | §3 says a POI has an image; what the index means is left entirely to a later art-binding decision. Nothing reads `Art/`. |
+| `POISSON_RADIUS_FACTOR` recalibrated 0.85 → 0.815 | An `EngineeringConfig` knob, documented as existing purely "for making step 1 hit its node budget". 0.85 was a guess made before there was a sampler; measured, it yields ~220 nodes against §11's `MAP_NODE_COUNT` of 240. 0.815 centres the yield on 240. No §11 value changed. |
+| Farthest-point seed placement in §2.1 step 4, on nodes of degree ≥ 3 | §2.1 fixes the seed *count* (1 or 2 per terrain) and says nothing about placement. On a near-tree graph a seed down a branch is walled in after a few nodes and its terrain never reaches its share; measured, this choice cuts the share error from ~9 points per terrain to ~3. |
+| Surplus leaves drawn by shuffle | §3 forces every leaf to be a POI and §4.2 fixes how many POIs a terrain's table rows get; nothing says *which* leaves fall inside the quota when a terrain has more leaves than it. Drawn from the map's own stream. |
+| Growing terrain by *trading* when a region is walled in (Q28) | §2.1 asks for the shares and says nothing about how to reach them. A region enclosed by a terrain already at its share cannot take a node without pushing that terrain under; the two-step trade keeps both at their targets and still reduces the total deviation, so the pass terminates. |
+| `GenerationObserver` on `generateMap` | Diagnostics only, for `tools/balance`. §11 wants compactness measured both after Smooth and after Carve Valleys, and `valleyNodes` is draft-only — neither belongs in the `GameMap` that Q15 sends to every client. |

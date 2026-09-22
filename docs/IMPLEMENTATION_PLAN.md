@@ -1,9 +1,9 @@
 # Implementation plan
 
-Status: **agreed; phase 0 done, phase 1 next.** This plan is derived from the
+Status: **agreed; phases 0 and 1 done, phase 2 next.** This plan is derived from the
 five-step order Andrei proposed, checked against the design of record and
-against what is actually in the repo today. Phase 0 landed the test harness;
-everything from phase 1 on is still seams.
+against what is actually in the repo today. Phase 0 landed the test harness and
+phase 1 the map generator; everything from phase 2 on is still seams.
 
 The design of record is [`GDD.md`](../GDD.md), with
 [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) for component boundaries,
@@ -25,8 +25,9 @@ five are registered as Q20–Q24 in
 than this plan is where the repo records a decision.
 
 Where the repo stands: the architecture pass landed data models, component
-boundaries and interfaces that typecheck. Thirty-odd seams throw
-`NotImplementedError` carrying the GDD section to implement against, and
+boundaries and interfaces that typecheck, and phases 0 and 1 have turned the
+first of the seams into code. The rest still throw `NotImplementedError`
+carrying the GDD section to implement against, and
 `grep -rn NotImplementedError packages apps tools` is the live worklist. Every
 phase below is written as "turn these named seams into code", not as "design
 this".
@@ -118,7 +119,7 @@ half needs the AI, so it sits at the end of phase 5.
 | Phase | What lands | Andrei's step |
 |---|---|---|
 | [0](#phase-0--test-and-check-infrastructure) ✅ | Vitest, `pnpm test`, second CI check | new |
-| [1](#phase-1--map-generation) | Distance metric, the eight pipeline steps, rewards, guards, a human-viewable map dump, the map harness | 1 |
+| [1](#phase-1--map-generation) ✅ | Distance metric, the eight pipeline steps, rewards, guards, a human-viewable map dump, the map harness | 1 |
 | [2](#phase-2--rules-engine-headless) | §7/§8 movement, interaction, turn order, victory — pure, tested | part of 2 |
 | [3](#phase-3--art-binding-and-the-isometric-renderer) | Atlas loader, reward-kind-to-sheet mapping, isometric projection, draw layers | new |
 | [4](#phase-4--hotseat-ui) | Pan/zoom, move mode, path preview, End Turn, Rest, stats, game end | 2 |
@@ -132,24 +133,50 @@ Phases 0–2 are strictly sequential. Phase 3 can start any time after phase 0
 
 ---
 
-## 2. Seeing a map — what a reviewer types
+## 2. Seeing a map
 
-Step 1 asks for output "viewable by humans", so the commands that produce it
-are part of the deliverable, not something a reviewer reconstructs from the
-source tree. There are two of them and they arrive in two different phases,
-because they are the two different views §9 of `ARCHITECTURE.md` now separates.
+Step 1 asks for output "viewable by humans", so whatever produces it is part of
+the deliverable, not something a reviewer reconstructs from the source tree.
+Two things shape this section. One is §9 of `ARCHITECTURE.md`: the diagnostic
+view and the player-facing view are different drawings arriving in different
+phases, and §§2.1 and 2.2 below are those two views. The other is **who
+reviews** — from a browser or a phone, with no clone of this repository and
+nothing installed. An earlier draft of this section opened with `pnpm install`
+and was wrong about that.
 
-**Today**, from a fresh clone of a branch:
+### 2.0 With no checkout — the reviewing path
+
+None of this needs anything installed, and none of it needs the branch merged
+first.
+
+- **Name seeds in the thread.** "Show me five maps" is the whole interface: the
+  generator is run on the branch and the plates come back as attachments, or as
+  one page that pages through them with each map's §11 reading beside it. Reach
+  for this first. It is the only path that answers *what does seed X look like*
+  for a seed nobody has generated yet, and the only one that works before a
+  phase has landed anywhere.
+- **Read the committed summary.** `golden/maps/adventure.txt` renders on the
+  pull request's Files tab — one record per line, every node, edge and POI of
+  the golden map. It is that map as text, and it is exactly what a failing
+  golden diff puts in front of a reviewer.
+- **Ask for the batch numbers.** `pnpm map:batch` prints a dozen lines. A
+  reviewer who wants the §11 distributions over 40 seeds should be handed them,
+  not told how to produce them.
+
+The rule behind all three: **a reviewer should never have to install a
+toolchain to answer "did this do what §2.1 says".** When a question can only be
+answered by running something, running it is the implementer's job, and the
+answer belongs in the thread.
+
+**With a checkout**, a contributor still has the whole loop:
 
 ```sh
 pnpm install          # once
-pnpm run typecheck    # tsc --noEmit across every package
+pnpm run typecheck    # both programs: packages + apps, then tools
 pnpm test             # vitest run
 ```
 
-No map comes out of that yet: `generateMap` still throws `NotImplementedError`.
-
-### 2.1 After phase 1 — the diagnostic SVG
+### 2.1 After phase 1 — the diagnostic SVG — **works now**
 
 ```sh
 pnpm map adventure            # one map from the seed "adventure"
@@ -177,7 +204,7 @@ committed SVG would snapshot the same map a second time and churn on every
 cosmetic change to the renderer.
 
 **No extra runner is needed, and that is worth stating because it is not
-obvious.** Every workspace package sets `"main": "src/index.ts"`, and the
+obvious.** (Confirmed in phase 1: both scripts are one-line `node` invocations.) Every workspace package sets `"main": "src/index.ts"`, and the
 codebase uses no `enum` and no `namespace`, so Node 22's built-in type
 stripping runs the tools directly: `node tools/balance/src/cli.ts` resolves
 `@adventure/core` and runs it with no `tsx`, no `ts-node` and no build step.
@@ -196,6 +223,11 @@ client-side already by [§12.1](./GDD.md), so the page generates from the seed
 in the query string: no server, no build, and no file from §2.1 required.
 Changing the seed and reloading is the whole loop, and `?seed=` with no value
 picks one at random and writes it into the URL so it can be shared.
+
+Phase 3 owes §2.0 an answer of its own: a reviewer with no checkout cannot run
+a dev server, so the page has to reach them some other way — a deployed
+preview, or the same render-and-post path §2.0 already describes. Which one is
+a phase 3 deliverable and not something this section can settle in advance.
 
 This is the isometric view with node images, dressing, reward icons, guard
 numbers and road strokes. It has no debug layer and never draws remoteness
@@ -253,7 +285,7 @@ under Settings → Branches.
 
 ---
 
-## Phase 1 — map generation
+## Phase 1 — map generation — **done**
 
 Delivers: a generated map, reproducible from `(seed, ruleset)`, viewable as a
 picture, and a harness that reports whether the parameters came out as §11
@@ -428,6 +460,67 @@ batch of seeds with no unexplained rejections; the same seed gives a
 byte-identical map twice; the SVG of a handful of seeds looks like §2's
 description (rounded terrain regions, plains valleys, POIs on every leaf); and
 the harness's report sits within §11's targets.
+
+### What actually landed
+
+All of 1a–1e, with the proposals in 1b and 1d taken as written: `delaunator`
+for step 2, SVG from `tools/balance` for the dump. `pnpm map <seed>` and
+`pnpm map:batch <n>` are the §2.1 surface, plain `node` with no TypeScript
+runner as §2 said they could be. 157 tests pass; `golden/maps/adventure.txt`
+joins `golden/rng/`.
+
+Measured over 40 seeds (`pnpm map:batch 40`, 7.8 s): **every seed generates on
+the first attempt**, 229–248 nodes, exactly 300 edges, 31–45 leaves, 60–63 POIs.
+Terrain shares on the **finished** map run 44.8–48.1% plains, 29.8–30.2% forest
+and 21.8–25.2% mountain against §2.1's 45 / 30 / 25. Remoteness spans [0, 1] on
+every map and §4.2 reconciles exactly, row by row.
+
+Seven things worth knowing, five of them only visible once the pipeline ran:
+
+- **A pruned map is nearly a tree.** ~240 nodes and 300 edges is a mean degree
+  of 2.5. Almost every surprise below follows from that, and it is worth
+  carrying into any later reasoning about the graph.
+- **The Smooth step is inert at the current constants**, because
+  `COMPACTNESS_MAX = 25` never binds on a graph that sparse — measured
+  compactness is 1.0 on average, 4.5 at worst. §2.1 is implemented literally
+  ("flip *until* it falls below"), so the loop exits before it starts. This is
+  the one question phase 1 raised:
+  [Q27](./OPEN_QUESTIONS.md#q27). Nothing downstream depends on the answer.
+- **Terrain regions get sealed off** — on a near-tree, a region can find every
+  node next to it already taken long before it reaches its share. Step 4 answers
+  that with farthest-point seed placement on junction nodes and shallowest-first
+  growth; see the note on the step. That alone still left the finished mountain
+  share anywhere from 6.4% to 31.0% across 40 seeds, which is what
+  [Q28](./OPEN_QUESTIONS.md#q28) then fixed.
+- **The shares are a property of the finished map**
+  ([Q28](./OPEN_QUESTIONS.md#q28), Andrei on PR #10). Step 6 carves forest and
+  mountain into plains after step 4 has hit its shares, so the map a player is
+  handed drifted badly — `adventure` finished 65 / 26 / 9 — and because §4.2
+  fixes the POI count per terrain, whatever terrain shrank also crowded its
+  POIs: two thirds of every mountain node on that map carried one. Step 6 now
+  ends by growing the short terrains back into plains, leaving the carved
+  fingers and their mouths alone, and the same growth finishes step 4. Over the
+  same 40 seeds that moved plains from 32.9–66.8% to 44.8–48.1%, forest from
+  17.5–45.7% to 29.8–30.2%, and mountain from 6.4–31.0% to 21.8–25.2%.
+- **Bigger reward stacks now sit on more remote POIs as a rule**
+  ([Q29](./OPEN_QUESTIONS.md#q29), Andrei on PR #10). §4.3's weighted draw put
+  the bigger of two stacks in a row on the more remote POI only 57% of the time,
+  and raising `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` saturates near 65% because
+  the draw is random and §4.2 leaves most rows barely more spare units than
+  POIs. §4.3 gains a **step 4**: draw `REWARD_SWAP_PASSES × (POIs in the row)`
+  pairs and exchange their stacks when the larger one is the less remote. At the
+  default 5 passes that reads 96.3% over 200 maps, and every one of those 200
+  clears 90% on its own. Its side effect is worth carrying into phase 3: gold
+  POIs sealing *unguarded* fall from 3.3% to 0.2%, because §5.2 only caps to 0
+  for a 1-unit stack on a remote node.
+- **`POISSON_RADIUS_FACTOR` was recalibrated**, 0.85 → 0.815. It is an
+  `EngineeringConfig` knob whose whole purpose is hitting the node budget, and
+  0.85 — a guess made before a sampler existed — yields ~220 nodes against
+  `MAP_NODE_COUNT`'s 240. No §11 value changed.
+- **`tools/` typechecks as its own program now.** A CLI needs `process` and
+  `node:fs`, and the engine packages must not get Node's globals by accident;
+  `pnpm run typecheck` runs both `tsconfig.json` and `tools/tsconfig.json`.
+  See [`docs/STACK.md`](./STACK.md) §3.
 
 ---
 

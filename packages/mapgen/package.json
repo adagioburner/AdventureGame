@@ -8,6 +8,7 @@
   "dependencies": {
     "@adventure/config": "workspace:*",
     "@adventure/core": "workspace:*",
-    "@adventure/sim": "workspace:*"
+    "@adventure/sim": "workspace:*",
+    "delaunator": "^5.1.0"
   }
 }

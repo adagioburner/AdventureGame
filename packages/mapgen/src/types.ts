@@ -26,10 +26,10 @@ export interface MapDraft {
    * exempted from the Smooth step".
    *
    * Given the fixed order — one Smooth pass at step 5, Carve Valleys once at
-   * step 6 — that exemption is already satisfied by the ordering alone and this
-   * set is never consulted during generation. It is recorded anyway so the
-   * exemption stays enforceable if a later pass is ever added, and so the
-   * balancing harness can tell carved plains from grown plains.
+   * step 6 — the Smooth exemption is already satisfied by the ordering alone.
+   * The set is read by step 6's own regrowth, which may not take a carved node
+   * back, and it keeps the exemption enforceable if a later pass is ever added;
+   * the balancing harness reads it to tell carved plains from grown plains.
    */
   valleyNodes: Set<NodeId>;
   /** Assigned by step 7; parallel to `poiNodes` only after reward assignment. */

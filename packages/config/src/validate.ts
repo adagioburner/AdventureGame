@@ -101,8 +101,15 @@ export function validateRuleset(ruleset: Ruleset): void {
   // §4.3: the distribution denominator is `current_count + (1 − remoteness) × W`
   // and is >= 1 by construction for any W >= 0. A negative W would break that
   // guarantee, which is the one thing the GDD's own derivation assumes.
-  if (ruleset.config.balancing.REMOTENESS_WEIGHT_FOR_DISTRIBUTION < 0) {
+  if (config.balancing.REMOTENESS_WEIGHT_FOR_DISTRIBUTION < 0) {
     problems.push('§4.3: REMOTENESS_WEIGHT_FOR_DISTRIBUTION must be non-negative.');
+  }
+  // §4.3 step 4 repeats a draw; a negative count is not a shorter pass, it is a
+  // typo. Zero is legitimate — it turns the swap pass off and leaves step 3's
+  // distribution exactly as it falls, which is what the measurement compared to.
+  const swapPasses = config.balancing.REWARD_SWAP_PASSES;
+  if (!Number.isInteger(swapPasses) || swapPasses < 0) {
+    problems.push('§4.3: REWARD_SWAP_PASSES must be a non-negative integer.');
   }
 
   if (problems.length > 0) {

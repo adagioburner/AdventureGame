@@ -37,6 +37,8 @@ Status: v1 design, consolidated from `Annotated_Design_Document.md` (the traceab
 7. **Place POIs** — node selection and reward assignment; see §3 and §4.
 8. **Validate** — reject and regenerate the whole map if: disconnected, or leaf count outside 30–45.
 
+> [SOURCE §2.1, review] **The area shares in step 4 are a property of the finished map, not of the draft step 4 hands on.** Carve Valleys converts nodes out of forest and mountain into plains, so measuring the shares before it runs lets the finished map drift a long way from 45 / 30 / 25 — over 40 seeds the finished mountain share ran from 6.4% to 31.0%, and one seed finished 65 / 26 / 9. Step 6 therefore ends by growing whatever terrain is now short back into plains, leaving the carved fingers and the plains node each one opens from untouched. The same growth also finishes step 4, whose flood fill cannot reach the shares on its own: a region on a graph this sparse is routinely sealed off, every neighbouring node already claimed, while it is still far short. Because §4.2 fixes the POI count per terrain, a terrain that loses nodes also crowds its POIs — the skew that made this visible had two thirds of every mountain node carrying a POI.
+
 > [SOURCE §1.3, chat] Compactness is *not* re-checked at the Validate step: Carve Valleys deliberately reduces compactness along the plains boundary immediately before this step runs, so re-checking it here would fail generation almost every time. Compactness is already enforced inside the Smooth step itself (step 5 loops until it's satisfied).
 
 ---
@@ -98,8 +100,11 @@ Three things per kind, all needed by the assignment algorithm in §4.3: the tota
 1. **Assign kind (and, for gold, guard type) to POIs.** Partition the terrain's POIs into groups sized by the "POIs of this kind" column (e.g. on plains: 10 POIs → plains-movement, 7 → forest-movement, 6 → magic, 2 → gold/fighting-guarded; all 25 plains POIs accounted for, no overlap. On mountain: 10 POIs → gold/fighting-guarded, 5 → gold/magic-guarded).
 2. **Give every POI 1 guaranteed unit** of its assigned kind.
 3. **Distribute the remaining units** of that row's total (total units − POIs of this kind, from §4.2) one at a time, to a randomly chosen POI within the same group, weighted so each POI's chance is inversely proportional to `(its current count of this type − (remoteness − 1) × REMOTENESS_WEIGHT_FOR_DISTRIBUTION)`. Default `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` = **2** (distinct from `REMOTENESS_WEIGHT` in §5.2) — intentionally: weight decreases as a POI's own count grows, and increases the more remote the POI is, so extra units gravitate toward remote, lightly-stacked POIs.
+4. **Swap pairs toward remoteness.** [SOURCE §4.3, review] Draw `REWARD_SWAP_PASSES × (POIs in the row)` pairs of POIs from within the same group, and swap the two POIs' unit counts whenever the larger stack is sitting on the less remote of the two. Default `REWARD_SWAP_PASSES` = **5**. This is a repair pass, not a sort: it is not run to completion, and the map keeps the variety a full ordering would take out.
 
-Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so this denominator is always `current_count + (1 − remoteness) × REMOTENESS_WEIGHT_FOR_DISTRIBUTION` — current_count (≥1, from the guaranteed baseline) plus a non-negative term. It's always ≥ 1, for any non-negative value of `REMOTENESS_WEIGHT_FOR_DISTRIBUTION`, so the earlier non-positive-denominator problem no longer applies at all, regardless of how that constant is tuned later.
+Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's denominator is always `current_count + (1 − remoteness) × REMOTENESS_WEIGHT_FOR_DISTRIBUTION` — current_count (≥1, from the guaranteed baseline) plus a non-negative term. It's always ≥ 1, for any non-negative value of `REMOTENESS_WEIGHT_FOR_DISTRIBUTION`, so the earlier non-positive-denominator problem no longer applies at all, regardless of how that constant is tuned later.
+
+[SOURCE §4.3, review] Why step 4 exists. Step 3's weighting leans the right way but only weakly — measured over 200 generated maps, the bigger of two stacks in the same row was the more remote one **57.1%** of the time, and raising `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` saturates near 65% however far it is pushed, because step 3 is a *random draw* and §4.2 hands most rows barely more spare units than POIs (plains movement: 20 units over 10 POIs). Andrei's ruling: "we can distribute rewards without much regard for remoteness, and then for a number of times consider pairs of POIs with the same type of reward and swap their rewards if they do not correlate with their remoteness — we don't have to do complete ordering", with **90%** named as a satisfactory level of agreement. Measured, same 200 maps: 2 passes → 86.8%, **3 passes → 91.8%**, 5 → 96.3%, 10 → 99.3%. Three passes clears 90% across a batch; five clears it on all but one map in 200 read one at a time, which is why the default is 5. A swap exchanges two stacks inside one row, so every §4.2 total, every row's POI count and step 2's guaranteed unit all survive it untouched.
 
 ### 4.4 Guards
 
@@ -249,7 +254,7 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `MAP_EDGE_COUNT` | ~300 | fixed target |
 | `MAP_COORDINATE_SPACE` | e.g. 1,000,000 units | arbitrary, implementer's choice |
 | `LEAF_COUNT_MIN` / `MAX` | 30 / 45 | fixed |
-| `TERRAIN_AREA_SHARE` (plains/forest/mountain) | 45% / 30% / 25% | approximate target |
+| `TERRAIN_AREA_SHARE` (plains/forest/mountain) | 45% / 30% / 25% | approximate target, measured on the finished map [SOURCE §2.1, review] |
 | `COMPACTNESS_MAX` | 25 | tunable (play-test) |
 | `VALLEY_COUNT` | 2–4 | fixed |
 | `VALLEY_WIDTH` | 1 node | fixed |
@@ -258,6 +263,7 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `GUARD_STRENGTH_MIN` / `MAX` | 2 / 10 | fixed (revisit later) |
 | `REMOTENESS_WEIGHT` | 4 | tunable (play-test) — guard/remoteness balance, §5.2 |
 | `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` | 2 | tunable (play-test) — reward stacking, §4.3 |
+| `REWARD_SWAP_PASSES` | 5 | tunable (play-test) — reward/remoteness agreement, §4.3 step 4 [SOURCE §4.3, review] |
 | `CLOSE_CANDIDATE_COUNT` | 10 | tunable — one K for §5.1's walk, §9's rollout and §9's tree |
 | `REMOTENESS_SIMULATION_RUNS` | 100 | tunable |
 | `STAMINA_COST` (plains/forest/mountain) | 1 / 2 / 3 | fixed |

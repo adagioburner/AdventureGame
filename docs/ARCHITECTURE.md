@@ -153,7 +153,10 @@ harness — so `PoiPlacementStrategy` stays a seam with two implementations to
 build. [SOURCE chat, review] That is now narrowed: "use farthest point
 sampling, we'll switch if that looks bad, which I doubt", so only
 farthest-point sampling gets written and the seam stays for the switch. See
-[Q23](./OPEN_QUESTIONS.md#q23).
+[Q23](./OPEN_QUESTIONS.md#q23). Phase 1 built it as
+`farthestPointPlacement` over the one weighted-cost metric, seeded by the
+leaves §3 forces in, so filler POIs land in the gaps the leaves leave;
+`pnpm map <seed>` is where it would be seen to look bad.
 
 And a terrain can hold more leaves than its `POI_COUNT` quota, since leaf
 count is not apportioned by terrain; [SOURCE §9, chat] the surplus leaves become
@@ -223,6 +226,17 @@ in the algorithm.
 
    Re-weighted after every single unit — that is what makes the `current_count`
    term self-damping.
+4. **Swap pairs toward remoteness** ([Q29](./OPEN_QUESTIONS.md#q29), Andrei on
+   PR #10). Draw `REWARD_SWAP_PASSES × (POIs in the row)` pairs from the group
+   and exchange their unit counts whenever the larger stack sits on the less
+   remote POI. Step 3's draw leaned the right way only 57% of the time and
+   weighting it harder saturates near 65%; this takes it to 96%. It is
+   deliberately **not** run to completion — a full ordering would make every map
+   readable off its stacks alone.
+
+   A swap only ever exchanges two stacks *inside* one group, so §4.2's row
+   totals, the row's POI count and step 2's guaranteed unit are preserved by
+   construction. There is no invariant here to re-check afterwards.
 
 `distributionWeight()` is implemented (it's fully specified) and its doc comment
 records why **no floor, clamp or epsilon is needed**: since remoteness ∈ [0,1],
@@ -231,8 +245,9 @@ the denominator equals `current_count + (1 − remoteness) × W`, i.e. a value �
 The comment says not to add a clamp — it would mask a broken `current_count`
 rather than protect anything.
 
-Guard strengths (§5.2) are solved *after* units are final, since §4.3 fixes the
-gold amount and §5.2 leaves guard strength as the unknown:
+Guard strengths (§5.2) are solved *after* units are final — after step 4's
+swaps, not just step 3's draw — since §4.3 fixes the gold amount and §5.2
+leaves guard strength as the unknown:
 
 ```
 guard_strength = ceil(units × GOLD_WEIGHT − remoteness × REMOTENESS_WEIGHT),  capped to GUARD_STRENGTH
@@ -240,7 +255,10 @@ guard_strength = ceil(units × GOLD_WEIGHT − remoteness × REMOTENESS_WEIGHT),
 
 `GOLD_WEIGHT` (default 3) is a designer-added config row. The cap is 0–10, which
 supersedes §11's `GUARD_STRENGTH_MIN` of 2 — a capped result of 0 means the POI
-is unguarded, so §4.4's "none are exempt" no longer holds. The formula reads the
+is unguarded, so §4.4's "none are exempt" no longer holds. It very nearly does
+again since step 4 landed: reaching the cap needs a 1-unit stack at remoteness
+≥ 0.5, which is exactly what step 4 moves, and unguarded gold fell from 3.3%
+of gold POIs to 0.2% (58 of 60 maps have none). The formula reads the
 POI's reward `units` rather than testing for gold, keeping §4.4's requirement
 that guarding work on any kind. See [Q2](./OPEN_QUESTIONS.md#q2) for the
 formula and [Q2a](./OPEN_QUESTIONS.md#q2a) for the rounding: [SOURCE §5.2, chat]
@@ -590,7 +608,9 @@ tunable — `COMPACTNESS_MAX`, `REMOTENESS_WEIGHT`,
 especially `REMOTENESS_SIMULATION_RUNS`, which §5.1 explicitly expects to change
 "if 100 proves too imprecise or too slow".
 
-`runMapBatch` reports leaf counts, terrain shares, compactness both after Smooth
+`runMapBatch` reports leaf counts, terrain shares of the **finished** map
+(§2.1's targets are a statement about what a player is handed, not about the
+draft before the valleys are cut — Q28), compactness both after Smooth
 and after Carve Valleys (the latter expected to be worse, by design), remoteness
 and guard-strength histograms. `runSelfPlayBatch` is blocked on §12.2.
 
@@ -598,18 +618,14 @@ and guard-strength histograms. `runSelfPlayBatch` is blocked on §12.2.
 
 ## 11. What the next session can pick up
 
-Each of these is independently implementable against the shapes above:
+Phase 1 closed items 1, 2 and 5–8 and 10 below — the one distance metric, all
+eight pipeline steps, §4.3 assignment, §5.2 guard strengths, and `sealMap`. What
+is left, each independently implementable against the shapes above:
 
-1. `shortestPath` + `closestPoiCandidates` (one Dijkstra, deterministic tie-break) — unblocks the UI preview, remoteness and rollouts at once.
-2. Mapgen steps 1–4 and 6 — no open items.
-3. `resolveMovement` / `previewPath` — §8's worked example is the test case.
-4. `resolveInteraction` — §8.
-5. §4.3 assignment — the weight function is already written.
-6. Step 5 Smooth — the measurement and its exit test are written; the flip loop is not.
-7. Step 7 placement — farthest-point sampling behind `PoiPlacementStrategy`; the
-   second strategy is not wanted unless the maps disappoint
-   ([Q23](./OPEN_QUESTIONS.md#q23)).
-8. Remoteness — scorer is written; needs `closestPoiCandidates` (item 1) to run.
-9. `SetupFlow.start` — starting positions are settled; needs the rest of setup.
-10. Guard strengths — written; needs remoteness (item 8) to run.
-11. MCTS `search()` — every policy, evaluator and branch rule is written; the four-phase loop and `macroAdvanceToTarget` are not.
+1. `resolveMovement` / `previewPath` — §8's worked example is the test case.
+2. `resolveInteraction` — §8.
+3. `SetupFlow.start` — starting positions are settled; needs the rest of setup.
+4. MCTS `search()` — every policy, evaluator and branch rule is written; the four-phase loop and `macroAdvanceToTarget` are not.
+5. The player-facing renderer (§9 above) and the art binding it needs.
+
+`grep -rn NotImplementedError packages apps tools` remains the live worklist.

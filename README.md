@@ -23,12 +23,15 @@ applies to this repo:
 
 ## Status
 
-First architecture pass. Data models, component boundaries and interfaces are in
-place and typecheck; gameplay logic, map generation and the MCTS search loop are
-deliberately unimplemented.
+**Map generation works.** `generateMap(seed, ruleset)` runs GDD.md §2.1's eight
+steps end to end and returns a sealed `GameMap`; `pnpm map <seed>` draws one.
+That is phase 1 of [`docs/IMPLEMENTATION_PLAN.md`](./docs/IMPLEMENTATION_PLAN.md),
+on top of phase 0's test harness. Gameplay logic (§7, §8) and the MCTS search
+loop (§9) are still seams.
 
-Every open question raised in this pass is answered — GDD.md §12's four items
-and the thirteen gaps found while building against it. The config's `pending`
+Every design question is answered except one, turned up by phase 1:
+[Q27](./docs/OPEN_QUESTIONS.md) — `COMPACTNESS_MAX` never binds on a graph this
+sparse, so §2.1's Smooth step currently does nothing. The config's `pending`
 block is empty. The §12 decisions: Durable Objects for the
 session layer with map generation and AI on the game master's machine (§12.1),
 UCT over the 10 closest unclaimed POIs (§12.2), the message board as ordinary
@@ -62,7 +65,8 @@ apps/
   server/     Composition root and host adapters.
 tools/
   balance/    Headless balancing harness (GDD §1.3 names it as a reason for
-              seed reproducibility).
+              seed reproducibility), the `pnpm map` CLI, and the diagnostic
+              SVG. Nothing here ships to a player.
 Art/          Art and its atlases. Reference only — nothing in the repo reads
               it yet, and icon mapping is out of scope until phase 3.
               `Art/tools/make_placeholders.py` regenerates the stand-in sheets
@@ -81,6 +85,11 @@ pnpm run typecheck        # tsc --noEmit across every package
 pnpm test                 # vitest run
 pnpm run test:watch       # the same, watching
 pnpm run test:update-golden
+
+pnpm map adventure        # one map: a report, and out/maps/adventure.svg
+pnpm map adventure --json # ... and the sealed GameMap beside it
+pnpm map                  # a random seed, printed first so it can be reused
+pnpm map:batch 50         # 50 seeds, the §11 distributions, no files
 ```
 
 `pnpm-lock.yaml` pins the compiler, and `packageManager` in `package.json` pins
@@ -94,16 +103,47 @@ pull request and on every push to `main`. It installs with `--frozen-lockfile`,
 so a dependency change that isn't reflected in the lockfile fails the build
 rather than being silently applied.
 
-The engine packages still have no *runtime* dependencies — TypeScript and
-Vitest are the only devDependencies. More land when the first implementation
-pass needs them; see `docs/STACK.md`.
+`pnpm run typecheck` is two programs, not one: `tsconfig.json` covers
+`packages/` and `apps/`, and `tools/tsconfig.json` covers `tools/`. Only the
+second has Node's globals (`process`, `console`, `node:fs`), because only
+`tools/` runs on Node and nowhere else — the engine packages run in a browser
+too, and nothing in them may quietly depend on a Node API.
+
+The engine packages have one *runtime* dependency: `delaunator`, for §2.1 step
+2's triangulation, in `@adventure/mapgen` alone. Everything else is still
+devDependencies. See `docs/STACK.md`.
 
 ## Looking at a generated map
 
-Nothing generates one yet — `generateMap` throws until phase 1. The two
-commands that will produce a map, and which phase each arrives in, are written
-down in
-[`docs/IMPLEMENTATION_PLAN.md` §2](docs/IMPLEMENTATION_PLAN.md#2-seeing-a-map--what-a-reviewer-types):
-`pnpm map <seed>` for the generator's diagnostic SVG, and `pnpm dev` for the
-in-game isometric view. They are two different drawings of the same map and are
-not meant to look alike.
+**Without a clone**, ask for the seeds you want in the project thread: the
+plates come back as attachments or as one page you can page through, with each
+map's §11 reading beside it. `golden/maps/adventure.txt` is also committed, so
+it renders on GitHub — the golden map as text, one record per line. Neither
+needs anything installed. See §2.0 of [the implementation
+plan](docs/IMPLEMENTATION_PLAN.md).
+
+**With a clone:**
+
+```sh
+pnpm map adventure
+```
+
+prints a report — node, edge and leaf counts, terrain shares and compactness
+both after Smooth and after Carve Valleys, remoteness and guard-strength
+histograms — and writes `out/maps/adventure.svg`, whose absolute path is the
+**last** line, ready to paste into a browser. `out/` is gitignored.
+
+That drawing is a **developer diagnostic and never becomes the game's map**. It
+is top-down, and it deliberately shows the generator's internals — remoteness
+above all, which decides §4.3's rewards and §5.2's guards and which a player
+must never see. It is written by `tools/balance`, never by `apps/web`, so it
+cannot drift into the client.
+
+The map players look at is the isometric view, `pnpm dev`, and it arrives in
+phase 3. The two are different drawings of the same `GameMap` and are not meant
+to look alike; see
+[`docs/ARCHITECTURE.md` §9](docs/ARCHITECTURE.md#9-client--ui-layer-7).
+
+`pnpm map:batch 50` runs the same generation over 50 seeds and prints the §11
+distributions with no per-map files — that is the check on `COMPACTNESS_MAX`,
+`REMOTENESS_WEIGHT` and their neighbours.

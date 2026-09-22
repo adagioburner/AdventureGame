@@ -94,6 +94,22 @@ describe('validateRuleset', () => {
     expect(() => validateRuleset(ruleset)).toThrow(/REMOTENESS_WEIGHT_FOR_DISTRIBUTION must be non-negative/);
   });
 
+  it('rejects a fractional or negative REWARD_SWAP_PASSES', () => {
+    // §4.3 step 4 repeats a draw, so half a pass is a typo rather than a
+    // shorter pass.
+    for (const bad of [-1, 2.5]) {
+      const ruleset = clone();
+      (ruleset.config.balancing as { REWARD_SWAP_PASSES: number }).REWARD_SWAP_PASSES = bad;
+      expect(() => validateRuleset(ruleset)).toThrow(/REWARD_SWAP_PASSES must be a non-negative integer/);
+    }
+  });
+
+  it('accepts a REWARD_SWAP_PASSES of 0, which simply turns §4.3 step 4 off', () => {
+    const ruleset = clone();
+    (ruleset.config.balancing as { REWARD_SWAP_PASSES: number }).REWARD_SWAP_PASSES = 0;
+    expect(() => validateRuleset(ruleset)).not.toThrow();
+  });
+
   it('reports every problem at once rather than the first', () => {
     const ruleset = clone();
     (ruleset.config.balancing as { CLOSE_CANDIDATE_COUNT: number }).CLOSE_CANDIDATE_COUNT = 0;

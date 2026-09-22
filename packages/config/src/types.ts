@@ -125,6 +125,23 @@ export interface BalancingConfig {
    */
   readonly REMOTENESS_WEIGHT_FOR_DISTRIBUTION: number;
   /**
+   * §11 `REWARD_SWAP_PASSES` — tunable (play-test). §4.3 step 4 only.
+   *
+   * How many pair draws each §4.2 row gets, as a multiple of the number of POIs
+   * in the row: a row of 10 POIs and 5 passes draws 50 pairs.
+   *
+   * [SOURCE §4.3, review] Step 3's weighted draw leans the right way but only
+   * weakly — measured over 200 maps, the bigger of two stacks in the same row
+   * was the more remote one 57.1% of the time, and raising
+   * `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` saturates near 65% because the draw is
+   * random and most rows have barely more spare units than POIs. Step 4 fixes
+   * that by repair rather than by weighting. Measured agreement by pass count:
+   * 0 → 57.1%, 2 → 86.8%, 3 → 91.8%, 5 → 96.3%, 10 → 99.3%. Three clears
+   * Andrei's 90% across a batch; the default of 5 clears it on all but one map
+   * in 200 taken one at a time.
+   */
+  readonly REWARD_SWAP_PASSES: number;
+  /**
    * §11 `CLOSE_CANDIDATE_COUNT` — tunable.
    * Used by the shared random walk (§5.1), by the MCTS rollout policy (§9)
    * and, identically, by MCTS tree expansion.
@@ -328,6 +345,12 @@ export interface EngineeringConfig {
    * implied by `MAP_NODE_COUNT` over `MAP_COORDINATE_SPACE`. Purely a knob for
    * making step 1 hit its node budget; §11 leaves sampling detail to the
    * implementer.
+   *
+   * Calibrated once step 1 existed to actually run: the default started at
+   * 0.85, which was a guess made before there was a sampler, and yields ~220
+   * nodes against `MAP_NODE_COUNT`'s 240. 0.815 centres the yield on 240,
+   * measured over seeds. Poisson-disc sampling is a *distribution*, so a map
+   * lands a few nodes either side; §2's "~240" is what that approximates.
    */
   readonly POISSON_RADIUS_FACTOR: number;
   /** Values GDD.md leaves genuinely undecided. Never silently defaulted. */
