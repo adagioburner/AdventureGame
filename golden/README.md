@@ -48,9 +48,12 @@ Then read the diff before committing it.
   POI, with each POI's reward, group, guard and remoteness. Written by
   `tools/balance/src/golden.test.ts` through `formatMapSummary`, the same
   record format the harness prints.
-- `games/` — a whole game played through the rules engine, one line per turn:
-  what was walked, what it cost, and every guard roll with the skill it was
-  added to and the strength it was compared against. Written by
+- `games/` — a whole game played through the rules engine, written so every
+  number can be checked by hand: one line per step naming the node entered, its
+  terrain, and whether a moving skill or stamina paid for it; every guard roll
+  with the skill it was added to and the strength it was compared against; and
+  every player's stats after every turn. Node ids are the ids the diagnostic
+  map (`pnpm map <seed>`) labels every node with, so the two read together. Written by
   `tools/balance/src/playthrough.test.ts`, and printed by `pnpm game <seed>`.
   It is an exact function of the map seed and a *separate* die seed, so a diff
   here with `maps/` unchanged means a rule moved rather than a map.

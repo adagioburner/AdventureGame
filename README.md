@@ -144,9 +144,12 @@ histograms — and writes `out/maps/adventure.svg`, whose absolute path is the
 
 ### Watching a game
 
-`pnpm game adventure` plays one to a winner and prints it a turn at a time —
-what was walked, what it cost, and every guard roll with the skill added to it
-and the strength it was compared against. Without a clone,
+`pnpm game adventure` plays one to a winner and prints it a turn at a time,
+so that every number can be checked by hand: each step names the node entered,
+its terrain, and whether a moving skill or stamina paid for it; each guard roll
+shows the skill added and the strength it had to beat; and every player's stats
+follow every turn. Node ids are the ones `pnpm map adventure` labels every node
+with, so the log and the drawing read together. Without a clone,
 `golden/games/adventure-2p.txt` is the same thing, committed, so it renders on
 GitHub. The players are driven by a deliberately dumb rule (walk to the nearest
 POI you could take), not by an AI: §9's player is phase 5.

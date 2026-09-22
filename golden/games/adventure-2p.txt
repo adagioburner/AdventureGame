@@ -1,163 +1,1282 @@
 # adventure — 2-player playthrough. See golden/README.md before updating.
-meta dice_seed=dice-adventure start_node=178 pois=60 gold_units=45
-player p1 seat=1 stamina=30
-player p2 seat=2 stamina=40
-turn   1 p1 move 2/2 -> 141 stam-2 poi 141 magicx2 unguarded TAKEN | stam=28 gold=0
-turn   2 p2 move 4/4 -> 148 stam-4 poi 148 plains_movex1 unguarded TAKEN | stam=36 gold=0
-turn   3 p1 move 6/6 -> 218 stam-6 poi 218 plains_movex3 unguarded TAKEN | stam=22 gold=0
-turn   4 p2 move 6/6 -> 73 stam-5 poi 73 forest_movex1 unguarded TAKEN | stam=31 gold=0
-turn   5 p1 move 11/11 -> 102 stam-8 poi 102 magicx1 unguarded TAKEN | stam=14 gold=0
-turn   6 p2 move 6/6 -> 59 stam-5 poi 59 forest_movex2 unguarded TAKEN | stam=26 gold=0
-turn   7 p1 move 8/8 -> 61 stam-5 poi 61 forest_movex2 unguarded TAKEN | stam=9 gold=0
-turn   8 p2 move 6/6 -> 119 stam-5 poi 119 forest_movex2 unguarded TAKEN | stam=21 gold=0
-turn   9 p1 move 5/5 -> 39 stam-2 poi 39 plains_movex2 unguarded TAKEN | stam=7 gold=0
-turn  10 p2 move 10/10 -> 75 stam-9 poi 75 magicx2 unguarded TAKEN | stam=12 gold=0
-turn  11 p1 move 9/9 -> 0 stam-4 poi 0 forest_movex3 unguarded TAKEN | stam=3 gold=0
-turn  12 p2 move 5/5 -> 108 stam-4 poi 108 plains_movex3 unguarded TAKEN | stam=8 gold=0
-turn  13 p1 move 8/16 -> 64 stam-3 | stam=0 gold=0
-turn  14 p2 move 10/12 -> 129 stam-6 | stam=2 gold=0
-turn  15 p1 move 5/8 -> 183 stam-0 | stam=0 gold=0
-turn  16 p2 rest stam+5 | stam=7 gold=0
-turn  17 p1 move 1/3 -> 129 stam-0 | stam=0 gold=0
-turn  18 p2 move 2/2 -> 174 stam-6 poi 174 goldx1 fighting:3 roll 1+0 kept | stam=1 gold=0
-turn  19 p1 rest stam+5 | stam=5 gold=0
-turn  20 p2 move 0/0 -> 174 stam-0 poi 174 goldx1 fighting:3 roll 1+0 kept | stam=1 gold=0
-turn  21 p1 move 1/2 -> 175 stam-3 | stam=2 gold=0
-turn  22 p2 move 0/0 -> 174 stam-0 poi 174 goldx1 fighting:3 roll 6+0 TAKEN | stam=1 gold=1
-turn  23 p1 rest stam+5 | stam=7 gold=0
-turn  24 p2 rest stam+5 | stam=6 gold=1
-turn  25 p1 move 3/3 -> 186 stam-6 poi 186 plains_movex1 unguarded TAKEN | stam=1 gold=0
-turn  26 p2 move 2/11 -> 222 stam-6 | stam=0 gold=1
-turn  27 p1 rest stam+5 | stam=6 gold=0
-turn  28 p2 rest stam+5 | stam=5 gold=1
-turn  29 p1 move 4/4 -> 138 stam-6 poi 138 plains_movex1 unguarded TAKEN | stam=0 gold=0
-turn  30 p2 move 7/9 -> 230 stam-5 | stam=0 gold=1
-turn  31 p1 move 5/5 -> 149 stam-0 poi 149 magicx1 unguarded TAKEN | stam=0 gold=0
-turn  32 p2 move 2/2 -> 193 stam-0 poi 193 forest_movex2 unguarded TAKEN | stam=0 gold=1
-turn  33 p1 move 1/3 -> 137 stam-0 | stam=0 gold=0
-turn  34 p2 move 2/4 -> 230 stam-0 | stam=0 gold=1
-turn  35 p1 rest stam+5 | stam=5 gold=0
-turn  36 p2 rest stam+5 | stam=5 gold=1
-turn  37 p1 move 1/2 -> 238 stam-3 | stam=2 gold=0
-turn  38 p2 move 1/2 -> 229 stam-3 | stam=2 gold=1
-turn  39 p1 rest stam+5 | stam=7 gold=0
-turn  40 p2 rest stam+5 | stam=7 gold=1
-turn  41 p1 move 1/1 -> 172 stam-3 poi 172 goldx1 fighting:3 roll 5+0 TAKEN | stam=4 gold=1
-turn  42 p2 move 1/1 -> 221 stam-3 poi 221 goldx2 magic:6 roll 2+2 kept | stam=4 gold=1
-turn  43 p1 move 3/5 -> 230 stam-3 | stam=1 gold=1
-turn  44 p2 move 0/0 -> 221 stam-0 poi 221 goldx2 magic:6 roll 4+2 kept | stam=4 gold=1
-turn  45 p1 rest stam+5 | stam=6 gold=1
-turn  46 p2 move 0/0 -> 221 stam-0 poi 221 goldx2 magic:6 roll 5+2 TAKEN | stam=4 gold=3
-turn  47 p1 move 3/3 -> 228 stam-6 poi 228 plains_movex2 unguarded TAKEN | stam=0 gold=1
-turn  48 p2 move 4/8 -> 212 stam-3 | stam=1 gold=3
-turn  49 p1 rest stam+5 | stam=5 gold=1
-turn  50 p2 rest stam+5 | stam=6 gold=3
-turn  51 p1 move 1/9 -> 221 stam-3 | stam=2 gold=1
-turn  52 p2 move 2/4 -> 176 stam-6 | stam=0 gold=3
-turn  53 p1 rest stam+5 | stam=7 gold=1
-turn  54 p2 rest stam+5 | stam=5 gold=3
-turn  55 p1 move 5/8 -> 190 stam-6 | stam=1 gold=1
-turn  56 p2 move 1/2 -> 189 stam-3 | stam=2 gold=3
-turn  57 p1 rest stam+5 | stam=6 gold=1
-turn  58 p2 rest stam+5 | stam=7 gold=3
-turn  59 p1 move 2/3 -> 189 stam-6 | stam=0 gold=1
-turn  60 p2 move 1/1 -> 204 stam-3 poi 204 goldx2 magic:5 roll 6+2 TAKEN | stam=4 gold=5
-turn  61 p1 rest stam+5 | stam=5 gold=1
-turn  62 p2 move 1/3 -> 189 stam-3 | stam=1 gold=5
-turn  63 p1 move 1/2 -> 207 stam-3 | stam=2 gold=1
-turn  64 p2 rest stam+5 | stam=6 gold=5
-turn  65 p1 rest stam+5 | stam=7 gold=1
-turn  66 p2 move 2/2 -> 209 stam-6 poi 209 goldx2 fighting:4 roll 1+0 kept | stam=0 gold=5
-turn  67 p1 move 1/1 -> 209 stam-3 poi 209 goldx2 fighting:4 roll 1+0 kept | stam=4 gold=1
-turn  68 p2 move 0/0 -> 209 stam-0 poi 209 goldx2 fighting:4 roll 1+0 kept | stam=0 gold=5
-turn  69 p1 move 0/0 -> 209 stam-0 poi 209 goldx2 fighting:4 roll 2+0 kept | stam=4 gold=1
-turn  70 p2 move 0/0 -> 209 stam-0 poi 209 goldx2 fighting:4 roll 1+0 kept | stam=0 gold=5
-turn  71 p1 move 0/0 -> 209 stam-0 poi 209 goldx2 fighting:4 roll 6+0 TAKEN | stam=4 gold=3
-turn  72 p2 rest stam+5 | stam=5 gold=5
-turn  73 p1 move 1/13 -> 207 stam-3 | stam=1 gold=3
-turn  74 p2 move 1/13 -> 207 stam-3 | stam=2 gold=5
-turn  75 p1 rest stam+5 | stam=6 gold=3
-turn  76 p2 rest stam+5 | stam=7 gold=5
-turn  77 p1 move 2/12 -> 176 stam-6 | stam=0 gold=3
-turn  78 p2 move 2/12 -> 176 stam-6 | stam=1 gold=5
-turn  79 p1 rest stam+5 | stam=5 gold=3
-turn  80 p2 rest stam+5 | stam=6 gold=5
-turn  81 p1 move 4/10 -> 186 stam-3 | stam=2 gold=3
-turn  82 p2 move 5/10 -> 199 stam-6 | stam=0 gold=5
-turn  83 p1 rest stam+5 | stam=7 gold=3
-turn  84 p2 rest stam+5 | stam=5 gold=5
-turn  85 p1 move 4/6 -> 138 stam-6 | stam=1 gold=3
-turn  86 p2 move 3/5 -> 138 stam-3 | stam=2 gold=5
-turn  87 p1 rest stam+5 | stam=6 gold=3
-turn  88 p2 rest stam+5 | stam=7 gold=5
-turn  89 p1 move 2/2 -> 115 stam-6 poi 115 goldx2 magic:6 roll 3+4 TAKEN | stam=0 gold=5
-turn  90 p2 move 7/7 -> 164 stam-5 poi 164 plains_movex2 unguarded TAKEN | stam=2 gold=5
-turn  91 p1 rest stam+5 | stam=5 gold=5
-turn  92 p2 move 3/8 -> 159 stam-0 | stam=2 gold=5
-turn  93 p1 move 1/6 -> 128 stam-3 | stam=2 gold=5
-turn  94 p2 rest stam+5 | stam=7 gold=5
-turn  95 p1 rest stam+5 | stam=7 gold=5
-turn  96 p2 move 2/5 -> 154 stam-6 | stam=1 gold=5
-turn  97 p1 move 2/5 -> 154 stam-6 | stam=1 gold=5
-turn  98 p2 rest stam+5 | stam=6 gold=5
-turn  99 p1 rest stam+5 | stam=6 gold=5
-turn 100 p2 move 3/3 -> 142 stam-6 poi 142 forest_movex3 unguarded TAKEN | stam=0 gold=5
-turn 101 p1 move 5/5 -> 105 stam-3 poi 105 fightingx1 unguarded TAKEN | stam=3 gold=5
-turn 102 p2 rest stam+5 | stam=5 gold=5
-turn 103 p1 move 4/4 -> 51 stam-0 poi 51 goldx1 fighting:3 roll 4+1 TAKEN | stam=3 gold=6
-turn 104 p2 move 1/3 -> 152 stam-3 | stam=2 gold=5
-turn 105 p1 move 1/1 -> 47 stam-0 poi 47 magicx1 unguarded TAKEN | stam=3 gold=6
-turn 106 p2 rest stam+5 | stam=7 gold=5
-turn 107 p1 move 4/4 -> 55 stam-0 poi 55 fightingx1 unguarded TAKEN | stam=3 gold=6
-turn 108 p2 move 2/2 -> 156 stam-6 poi 156 goldx2 fighting:5 roll 6+0 TAKEN | stam=1 gold=7
-turn 109 p1 move 3/3 -> 53 stam-0 poi 53 fightingx1 unguarded TAKEN | stam=3 gold=6
-turn 110 p2 move 2/2 -> 160 stam-0 poi 160 magicx3 unguarded TAKEN | stam=1 gold=7
-turn 111 p1 move 3/3 -> 35 stam-0 poi 35 fightingx1 unguarded TAKEN | stam=3 gold=6
-turn 112 p2 move 1/8 -> 157 stam-0 | stam=1 gold=7
-turn 113 p1 move 3/3 -> 22 stam-0 poi 22 mountain_movex2 unguarded TAKEN | stam=3 gold=6
-turn 114 p2 rest stam+5 | stam=6 gold=7
-turn 115 p1 move 4/4 -> 12 stam-0 poi 12 mountain_movex2 unguarded TAKEN | stam=3 gold=6
-turn 116 p2 move 2/7 -> 162 stam-6 | stam=0 gold=7
-turn 117 p1 move 5/5 -> 8 stam-0 poi 8 mountain_movex3 unguarded TAKEN | stam=3 gold=6
-turn 118 p2 rest stam+5 | stam=5 gold=7
-turn 119 p1 move 4/4 -> 21 stam-0 poi 21 fightingx2 unguarded TAKEN | stam=3 gold=6
-turn 120 p2 move 5/5 -> 81 stam-3 poi 81 plains_movex3 unguarded TAKEN | stam=2 gold=7
-turn 121 p1 move 2/2 -> 45 stam-0 poi 45 fightingx5 unguarded TAKEN | stam=3 gold=6
-turn 122 p2 move 3/14 -> 97 stam-0 | stam=2 gold=7
-turn 123 p1 move 6/7 -> 6 stam-2 | stam=1 gold=6
-turn 124 p2 rest stam+5 | stam=7 gold=7
-turn 125 p1 move 1/1 -> 11 stam-0 poi 11 fightingx2 unguarded TAKEN | stam=1 gold=6
-turn 126 p2 move 2/11 -> 152 stam-6 | stam=1 gold=7
-turn 127 p1 move 5/9 -> 13 stam-0 | stam=1 gold=6
-turn 128 p2 rest stam+5 | stam=6 gold=7
-turn 129 p1 move 4/4 -> 25 stam-0 poi 25 mountain_movex2 unguarded TAKEN | stam=1 gold=6
-turn 130 p2 move 9/9 -> 40 stam-3 poi 40 mountain_movex1 unguarded TAKEN | stam=3 gold=7
-turn 131 p1 move 5/5 -> 41 stam-0 poi 41 mountain_movex2 unguarded TAKEN | stam=1 gold=6
-turn 132 p2 move 10/10 -> 91 stam-0 poi 91 mountain_movex1 unguarded TAKEN | stam=3 gold=7
-turn 133 p1 move 5/18 -> 38 stam-0 | stam=1 gold=6
-turn 134 p2 move 3/3 -> 93 stam-0 poi 93 plains_movex2 unguarded TAKEN | stam=3 gold=7
-turn 135 p1 move 7/11 -> 87 stam-0 | stam=1 gold=6
-turn 136 p2 move 4/4 -> 94 stam-0 poi 94 fightingx2 unguarded TAKEN | stam=3 gold=7
-turn 137 p1 move 4/4 -> 110 stam-0 poi 110 goldx1 fighting:3 roll 4+13 TAKEN | stam=1 gold=7
-turn 138 p2 move 5/5 -> 130 stam-0 poi 130 mountain_movex2 unguarded TAKEN | stam=3 gold=7
-turn 139 p1 move 5/5 -> 58 stam-0 poi 58 goldx1 fighting:2 roll 2+13 TAKEN | stam=1 gold=8
-turn 140 p2 move 14/14 -> 112 stam-0 poi 112 goldx2 fighting:4 roll 4+2 TAKEN | stam=3 gold=9
-turn 141 p1 move 9/17 -> 51 stam-0 | stam=1 gold=8
-turn 142 p2 move 15/19 -> 111 stam-2 | stam=1 gold=9
-turn 143 p1 move 8/8 -> 134 stam-0 poi 134 goldx2 fighting:6 roll 1+13 TAKEN | stam=1 gold=10
-turn 144 p2 move 7/9 -> 151 stam-0 | stam=1 gold=9
-turn 145 p1 move 6/6 -> 161 stam-0 poi 161 goldx2 fighting:6 roll 5+13 TAKEN | stam=1 gold=12
-turn 146 p2 move 9/9 -> 143 stam-0 poi 143 goldx2 fighting:5 roll 2+2 kept | stam=1 gold=9
-turn 147 p1 move 11/12 -> 215 stam-1 | stam=0 gold=12
-turn 148 p2 move 0/0 -> 143 stam-0 poi 143 goldx2 fighting:5 roll 2+2 kept | stam=1 gold=9
-turn 149 p1 move 1/1 -> 231 stam-0 poi 231 goldx6 fighting:10 roll 6+13 TAKEN | stam=0 gold=18
-turn 150 p2 move 0/0 -> 143 stam-0 poi 143 goldx2 fighting:5 roll 6+2 TAKEN | stam=1 gold=11
-turn 151 p1 move 5/5 -> 223 stam-0 poi 223 goldx2 magic:4 roll 3+5 TAKEN | stam=0 gold=20
-turn 152 p2 move 4/4 -> 150 stam-0 poi 150 goldx2 magic:5 roll 1+5 TAKEN | stam=1 gold=13
-turn 153 p1 move 10/10 -> 168 stam-0 poi 168 goldx2 fighting:4 roll 3+13 TAKEN | stam=0 gold=22
-turn 154 p2 move 6/13 -> 217 stam-0 | stam=1 gold=13
-turn 155 p1 move 12/12 -> 216 stam-0 poi 216 goldx4 fighting:9 roll 6+13 TAKEN WON p1 | stam=0 gold=26
+#
+# Node ids are the ids drawn on the diagnostic map for this seed (pnpm map adventure).
+# Every step says which terrain was entered and what paid for it: a moving skill
+# (§7 allowance, counted down) or stamina (§11 STAMINA_COST: plains 1, forest 2, mountain 3).
+# A guarded POI says roll + skill vs guard strength; §8 needs strictly greater.
+#
+meta dice_seed=dice-adventure start_node=178 nodes=239 pois=60 gold_units=45
+meta rest_stamina_gain=5 guard_die=1d6
+player p1 seat=1 starting_stamina=30 starting_node=178
+player p2 seat=2 starting_stamina=40 starting_node=178
+
+turn   1  p1 (seat 1)  at node 178  allowance plains 0 / forest 0 / mountain 0  stamina 30
+  step    178 -> 191  plains   1 stamina (plains_move 0, no free steps), 29 left
+  step    191 -> 141  plains   1 stamina (plains_move 0, no free steps), 28 left
+  poi     node 141 holds magic x2, unguarded — taken (§8)
+  stats p1  stamina  28  gold  0  plains_move 0  forest_move 0  mountain_move 0  fighting 0  magic 2
+  stats p2  stamina  40  gold  0  plains_move 0  forest_move 0  mountain_move 0  fighting 0  magic 0
+
+turn   2  p2 (seat 2)  at node 178  allowance plains 0 / forest 0 / mountain 0  stamina 40
+  step    178 -> 158  plains   1 stamina (plains_move 0, no free steps), 39 left
+  step    158 -> 177  plains   1 stamina (plains_move 0, no free steps), 38 left
+  step    177 -> 129  plains   1 stamina (plains_move 0, no free steps), 37 left
+  step    129 -> 148  plains   1 stamina (plains_move 0, no free steps), 36 left
+  poi     node 148 holds plains_move x1, unguarded — taken (§8)
+  stats p1  stamina  28  gold  0  plains_move 0  forest_move 0  mountain_move 0  fighting 0  magic 2
+  stats p2  stamina  36  gold  0  plains_move 1  forest_move 0  mountain_move 0  fighting 0  magic 0
+
+turn   3  p1 (seat 1)  at node 141  allowance plains 0 / forest 0 / mountain 0  stamina 28
+  step    141 -> 191  plains   1 stamina (plains_move 0, no free steps), 27 left
+  step    191 -> 178  plains   1 stamina (plains_move 0, no free steps), 26 left
+  step    178 -> 181  plains   1 stamina (plains_move 0, no free steps), 25 left
+  step    181 -> 200  plains   1 stamina (plains_move 0, no free steps), 24 left
+  step    200 -> 198  plains   1 stamina (plains_move 0, no free steps), 23 left
+  step    198 -> 218  plains   1 stamina (plains_move 0, no free steps), 22 left
+  poi     node 218 holds plains_move x3, unguarded — taken (§8)
+  stats p1  stamina  22  gold  0  plains_move 3  forest_move 0  mountain_move 0  fighting 0  magic 2
+  stats p2  stamina  36  gold  0  plains_move 1  forest_move 0  mountain_move 0  fighting 0  magic 0
+
+turn   4  p2 (seat 2)  at node 148  allowance plains 1 / forest 0 / mountain 0  stamina 36
+  step    148 -> 129  plains   free (plains_move allowance 1 -> 0)
+  step    129 -> 183  plains   1 stamina (plains_move 1, allowance already spent), 35 left
+  step    183 -> 117  plains   1 stamina (plains_move 1, allowance already spent), 34 left
+  step    117 ->  99  plains   1 stamina (plains_move 1, allowance already spent), 33 left
+  step     99 ->  85  plains   1 stamina (plains_move 1, allowance already spent), 32 left
+  step     85 ->  73  plains   1 stamina (plains_move 1, allowance already spent), 31 left
+  poi     node 73 holds forest_move x1, unguarded — taken (§8)
+  stats p1  stamina  22  gold  0  plains_move 3  forest_move 0  mountain_move 0  fighting 0  magic 2
+  stats p2  stamina  31  gold  0  plains_move 1  forest_move 1  mountain_move 0  fighting 0  magic 0
+
+turn   5  p1 (seat 1)  at node 218  allowance plains 3 / forest 0 / mountain 0  stamina 22
+  step    218 -> 198  plains   free (plains_move allowance 3 -> 2)
+  step    198 -> 200  plains   free (plains_move allowance 2 -> 1)
+  step    200 -> 181  plains   free (plains_move allowance 1 -> 0)
+  step    181 -> 178  plains   1 stamina (plains_move 3, allowance already spent), 21 left
+  step    178 -> 158  plains   1 stamina (plains_move 3, allowance already spent), 20 left
+  step    158 -> 177  plains   1 stamina (plains_move 3, allowance already spent), 19 left
+  step    177 -> 116  plains   1 stamina (plains_move 3, allowance already spent), 18 left
+  step    116 -> 117  plains   1 stamina (plains_move 3, allowance already spent), 17 left
+  step    117 -> 173  plains   1 stamina (plains_move 3, allowance already spent), 16 left
+  step    173 -> 163  plains   1 stamina (plains_move 3, allowance already spent), 15 left
+  step    163 -> 102  plains   1 stamina (plains_move 3, allowance already spent), 14 left
+  poi     node 102 holds magic x1, unguarded — taken (§8)
+  stats p1  stamina  14  gold  0  plains_move 3  forest_move 0  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina  31  gold  0  plains_move 1  forest_move 1  mountain_move 0  fighting 0  magic 0
+
+turn   6  p2 (seat 2)  at node 73  allowance plains 1 / forest 1 / mountain 0  stamina 31
+  step     73 ->  85  plains   free (plains_move allowance 1 -> 0)
+  step     85 ->  99  plains   1 stamina (plains_move 1, allowance already spent), 30 left
+  step     99 -> 124  plains   1 stamina (plains_move 1, allowance already spent), 29 left
+  step    124 ->  71  plains   1 stamina (plains_move 1, allowance already spent), 28 left
+  step     71 -> 121  plains   1 stamina (plains_move 1, allowance already spent), 27 left
+  step    121 ->  59  plains   1 stamina (plains_move 1, allowance already spent), 26 left
+  poi     node 59 holds forest_move x2, unguarded — taken (§8)
+  stats p1  stamina  14  gold  0  plains_move 3  forest_move 0  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina  26  gold  0  plains_move 1  forest_move 3  mountain_move 0  fighting 0  magic 0
+
+turn   7  p1 (seat 1)  at node 102  allowance plains 3 / forest 0 / mountain 0  stamina 14
+  step    102 -> 163  plains   free (plains_move allowance 3 -> 2)
+  step    163 -> 173  plains   free (plains_move allowance 2 -> 1)
+  step    173 -> 117  plains   free (plains_move allowance 1 -> 0)
+  step    117 ->  99  plains   1 stamina (plains_move 3, allowance already spent), 13 left
+  step     99 ->  86  plains   1 stamina (plains_move 3, allowance already spent), 12 left
+  step     86 ->  79  plains   1 stamina (plains_move 3, allowance already spent), 11 left
+  step     79 ->  76  plains   1 stamina (plains_move 3, allowance already spent), 10 left
+  step     76 ->  61  plains   1 stamina (plains_move 3, allowance already spent), 9 left
+  poi     node 61 holds forest_move x2, unguarded — taken (§8)
+  stats p1  stamina   9  gold  0  plains_move 3  forest_move 2  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina  26  gold  0  plains_move 1  forest_move 3  mountain_move 0  fighting 0  magic 0
+
+turn   8  p2 (seat 2)  at node 59  allowance plains 1 / forest 3 / mountain 0  stamina 26
+  step     59 -> 121  plains   free (plains_move allowance 1 -> 0)
+  step    121 ->  71  plains   1 stamina (plains_move 1, allowance already spent), 25 left
+  step     71 -> 124  plains   1 stamina (plains_move 1, allowance already spent), 24 left
+  step    124 ->  95  plains   1 stamina (plains_move 1, allowance already spent), 23 left
+  step     95 -> 131  plains   1 stamina (plains_move 1, allowance already spent), 22 left
+  step    131 -> 119  plains   1 stamina (plains_move 1, allowance already spent), 21 left
+  poi     node 119 holds forest_move x2, unguarded — taken (§8)
+  stats p1  stamina   9  gold  0  plains_move 3  forest_move 2  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina  21  gold  0  plains_move 1  forest_move 5  mountain_move 0  fighting 0  magic 0
+
+turn   9  p1 (seat 1)  at node 61  allowance plains 3 / forest 2 / mountain 0  stamina 9
+  step     61 ->  76  plains   free (plains_move allowance 3 -> 2)
+  step     76 ->  64  plains   free (plains_move allowance 2 -> 1)
+  step     64 ->  60  plains   free (plains_move allowance 1 -> 0)
+  step     60 ->  29  plains   1 stamina (plains_move 3, allowance already spent), 8 left
+  step     29 ->  39  plains   1 stamina (plains_move 3, allowance already spent), 7 left
+  poi     node 39 holds plains_move x2, unguarded — taken (§8)
+  stats p1  stamina   7  gold  0  plains_move 5  forest_move 2  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina  21  gold  0  plains_move 1  forest_move 5  mountain_move 0  fighting 0  magic 0
+
+turn  10  p2 (seat 2)  at node 119  allowance plains 1 / forest 5 / mountain 0  stamina 21
+  step    119 -> 131  plains   free (plains_move allowance 1 -> 0)
+  step    131 ->  95  plains   1 stamina (plains_move 1, allowance already spent), 20 left
+  step     95 -> 124  plains   1 stamina (plains_move 1, allowance already spent), 19 left
+  step    124 ->  71  plains   1 stamina (plains_move 1, allowance already spent), 18 left
+  step     71 ->  79  plains   1 stamina (plains_move 1, allowance already spent), 17 left
+  step     79 ->  65  plains   1 stamina (plains_move 1, allowance already spent), 16 left
+  step     65 ->  68  plains   1 stamina (plains_move 1, allowance already spent), 15 left
+  step     68 ->  69  plains   1 stamina (plains_move 1, allowance already spent), 14 left
+  step     69 ->  49  plains   1 stamina (plains_move 1, allowance already spent), 13 left
+  step     49 ->  75  plains   1 stamina (plains_move 1, allowance already spent), 12 left
+  poi     node 75 holds magic x2, unguarded — taken (§8)
+  stats p1  stamina   7  gold  0  plains_move 5  forest_move 2  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina  12  gold  0  plains_move 1  forest_move 5  mountain_move 0  fighting 0  magic 2
+
+turn  11  p1 (seat 1)  at node 39  allowance plains 5 / forest 2 / mountain 0  stamina 7
+  step     39 ->  29  plains   free (plains_move allowance 5 -> 4)
+  step     29 ->  60  plains   free (plains_move allowance 4 -> 3)
+  step     60 ->  30  plains   free (plains_move allowance 3 -> 2)
+  step     30 ->  19  plains   free (plains_move allowance 2 -> 1)
+  step     19 ->  15  plains   free (plains_move allowance 1 -> 0)
+  step     15 ->  26  plains   1 stamina (plains_move 5, allowance already spent), 6 left
+  step     26 ->  10  plains   1 stamina (plains_move 5, allowance already spent), 5 left
+  step     10 ->   2  plains   1 stamina (plains_move 5, allowance already spent), 4 left
+  step      2 ->   0  plains   1 stamina (plains_move 5, allowance already spent), 3 left
+  poi     node 0 holds forest_move x3, unguarded — taken (§8)
+  stats p1  stamina   3  gold  0  plains_move 5  forest_move 5  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina  12  gold  0  plains_move 1  forest_move 5  mountain_move 0  fighting 0  magic 2
+
+turn  12  p2 (seat 2)  at node 75  allowance plains 1 / forest 5 / mountain 0  stamina 12
+  step     75 -> 120  plains   free (plains_move allowance 1 -> 0)
+  step    120 ->  88  plains   1 stamina (plains_move 1, allowance already spent), 11 left
+  step     88 -> 106  plains   1 stamina (plains_move 1, allowance already spent), 10 left
+  step    106 -> 101  plains   1 stamina (plains_move 1, allowance already spent), 9 left
+  step    101 -> 108  plains   1 stamina (plains_move 1, allowance already spent), 8 left
+  poi     node 108 holds plains_move x3, unguarded — taken (§8)
+  stats p1  stamina   3  gold  0  plains_move 5  forest_move 5  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina   8  gold  0  plains_move 4  forest_move 5  mountain_move 0  fighting 0  magic 2
+
+turn  13  p1 (seat 1)  at node 0  allowance plains 5 / forest 5 / mountain 0  stamina 3
+  step      0 ->   2  plains   free (plains_move allowance 5 -> 4)
+  step      2 ->  10  plains   free (plains_move allowance 4 -> 3)
+  step     10 ->  26  plains   free (plains_move allowance 3 -> 2)
+  step     26 ->  15  plains   free (plains_move allowance 2 -> 1)
+  step     15 ->  19  plains   free (plains_move allowance 1 -> 0)
+  step     19 ->  30  plains   1 stamina (plains_move 5, allowance already spent), 2 left
+  step     30 ->  60  plains   1 stamina (plains_move 5, allowance already spent), 1 left
+  step     60 ->  64  plains   1 stamina (plains_move 5, allowance already spent), 0 left
+  move    stopped at node 64; 8 steps saved as next turn's planned path
+  stats p1  stamina   0  gold  0  plains_move 5  forest_move 5  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina   8  gold  0  plains_move 4  forest_move 5  mountain_move 0  fighting 0  magic 2
+
+turn  14  p2 (seat 2)  at node 108  allowance plains 4 / forest 5 / mountain 0  stamina 8
+  step    108 -> 101  plains   free (plains_move allowance 4 -> 3)
+  step    101 -> 106  plains   free (plains_move allowance 3 -> 2)
+  step    106 ->  68  plains   free (plains_move allowance 2 -> 1)
+  step     68 ->  65  plains   free (plains_move allowance 1 -> 0)
+  step     65 ->  79  plains   1 stamina (plains_move 4, allowance already spent), 7 left
+  step     79 ->  86  plains   1 stamina (plains_move 4, allowance already spent), 6 left
+  step     86 ->  99  plains   1 stamina (plains_move 4, allowance already spent), 5 left
+  step     99 -> 117  plains   1 stamina (plains_move 4, allowance already spent), 4 left
+  step    117 -> 183  plains   1 stamina (plains_move 4, allowance already spent), 3 left
+  step    183 -> 129  plains   1 stamina (plains_move 4, allowance already spent), 2 left
+  move    stopped at node 129; 2 steps saved as next turn's planned path
+  stats p1  stamina   0  gold  0  plains_move 5  forest_move 5  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina   2  gold  0  plains_move 4  forest_move 5  mountain_move 0  fighting 0  magic 2
+
+turn  15  p1 (seat 1)  at node 64  allowance plains 5 / forest 5 / mountain 0  stamina 0
+  step     64 ->  79  plains   free (plains_move allowance 5 -> 4)
+  step     79 ->  86  plains   free (plains_move allowance 4 -> 3)
+  step     86 ->  99  plains   free (plains_move allowance 3 -> 2)
+  step     99 -> 117  plains   free (plains_move allowance 2 -> 1)
+  step    117 -> 183  plains   free (plains_move allowance 1 -> 0)
+  move    stopped at node 183; 3 steps saved as next turn's planned path
+  stats p1  stamina   0  gold  0  plains_move 5  forest_move 5  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina   2  gold  0  plains_move 4  forest_move 5  mountain_move 0  fighting 0  magic 2
+
+turn  16  p2 (seat 2)  at node 129  allowance plains 4 / forest 5 / mountain 0  stamina 2
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   0  gold  0  plains_move 5  forest_move 5  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina   7  gold  0  plains_move 4  forest_move 5  mountain_move 0  fighting 0  magic 2
+
+turn  17  p1 (seat 1)  at node 183  allowance plains 5 / forest 5 / mountain 0  stamina 0
+  step    183 -> 129  plains   free (plains_move allowance 5 -> 4)
+  move    stopped at node 129; 2 steps saved as next turn's planned path
+  stats p1  stamina   0  gold  0  plains_move 5  forest_move 5  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina   7  gold  0  plains_move 4  forest_move 5  mountain_move 0  fighting 0  magic 2
+
+turn  18  p2 (seat 2)  at node 129  allowance plains 4 / forest 5 / mountain 0  stamina 7
+  step    129 -> 175  mountain 3 stamina (mountain_move 0, no free steps), 4 left
+  step    175 -> 174  mountain 3 stamina (mountain_move 0, no free steps), 1 left
+  poi     node 174 holds gold x1, guarded fighting 3
+  roll    1 + fighting 0 = 1 vs 3 — stays on the node, no other cost
+  stats p1  stamina   0  gold  0  plains_move 5  forest_move 5  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina   1  gold  0  plains_move 4  forest_move 5  mountain_move 0  fighting 0  magic 2
+
+turn  19  p1 (seat 1)  at node 129  allowance plains 5 / forest 5 / mountain 0  stamina 0
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   5  gold  0  plains_move 5  forest_move 5  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina   1  gold  0  plains_move 4  forest_move 5  mountain_move 0  fighting 0  magic 2
+
+turn  20  p2 (seat 2)  at node 174  allowance plains 4 / forest 5 / mountain 0  stamina 1
+  move    stayed on node 174 (empty path — §8's second attempt at the same guard)
+  poi     node 174 holds gold x1, guarded fighting 3
+  roll    1 + fighting 0 = 1 vs 3 — stays on the node, no other cost
+  stats p1  stamina   5  gold  0  plains_move 5  forest_move 5  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina   1  gold  0  plains_move 4  forest_move 5  mountain_move 0  fighting 0  magic 2
+
+turn  21  p1 (seat 1)  at node 129  allowance plains 5 / forest 5 / mountain 0  stamina 5
+  step    129 -> 175  mountain 3 stamina (mountain_move 0, no free steps), 2 left
+  move    stopped at node 175; 1 step saved as next turn's planned path
+  stats p1  stamina   2  gold  0  plains_move 5  forest_move 5  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina   1  gold  0  plains_move 4  forest_move 5  mountain_move 0  fighting 0  magic 2
+
+turn  22  p2 (seat 2)  at node 174  allowance plains 4 / forest 5 / mountain 0  stamina 1
+  move    stayed on node 174 (empty path — §8's second attempt at the same guard)
+  poi     node 174 holds gold x1, guarded fighting 3
+  roll    6 + fighting 0 = 6 vs 3 — taken
+  stats p1  stamina   2  gold  0  plains_move 5  forest_move 5  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina   1  gold  1  plains_move 4  forest_move 5  mountain_move 0  fighting 0  magic 2
+
+turn  23  p1 (seat 1)  at node 175  allowance plains 5 / forest 5 / mountain 0  stamina 2
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   7  gold  0  plains_move 5  forest_move 5  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina   1  gold  1  plains_move 4  forest_move 5  mountain_move 0  fighting 0  magic 2
+
+turn  24  p2 (seat 2)  at node 174  allowance plains 4 / forest 5 / mountain 0  stamina 1
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   7  gold  0  plains_move 5  forest_move 5  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina   6  gold  1  plains_move 4  forest_move 5  mountain_move 0  fighting 0  magic 2
+
+turn  25  p1 (seat 1)  at node 175  allowance plains 5 / forest 5 / mountain 0  stamina 7
+  step    175 -> 222  mountain 3 stamina (mountain_move 0, no free steps), 4 left
+  step    222 -> 184  mountain 3 stamina (mountain_move 0, no free steps), 1 left
+  step    184 -> 186  plains   free (plains_move allowance 5 -> 4)
+  poi     node 186 holds plains_move x1, unguarded — taken (§8)
+  stats p1  stamina   1  gold  0  plains_move 6  forest_move 5  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina   6  gold  1  plains_move 4  forest_move 5  mountain_move 0  fighting 0  magic 2
+
+turn  26  p2 (seat 2)  at node 174  allowance plains 4 / forest 5 / mountain 0  stamina 6
+  step    174 -> 175  mountain 3 stamina (mountain_move 0, no free steps), 3 left
+  step    175 -> 222  mountain 3 stamina (mountain_move 0, no free steps), 0 left
+  move    stopped at node 222; 9 steps saved as next turn's planned path
+  stats p1  stamina   1  gold  0  plains_move 6  forest_move 5  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina   0  gold  1  plains_move 4  forest_move 5  mountain_move 0  fighting 0  magic 2
+
+turn  27  p1 (seat 1)  at node 186  allowance plains 6 / forest 5 / mountain 0  stamina 1
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   6  gold  0  plains_move 6  forest_move 5  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina   0  gold  1  plains_move 4  forest_move 5  mountain_move 0  fighting 0  magic 2
+
+turn  28  p2 (seat 2)  at node 222  allowance plains 4 / forest 5 / mountain 0  stamina 0
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   6  gold  0  plains_move 6  forest_move 5  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina   5  gold  1  plains_move 4  forest_move 5  mountain_move 0  fighting 0  magic 2
+
+turn  29  p1 (seat 1)  at node 186  allowance plains 6 / forest 5 / mountain 0  stamina 6
+  step    186 -> 199  mountain 3 stamina (mountain_move 0, no free steps), 3 left
+  step    199 -> 114  mountain 3 stamina (mountain_move 0, no free steps), 0 left
+  step    114 -> 151  plains   free (plains_move allowance 6 -> 5)
+  step    151 -> 138  plains   free (plains_move allowance 5 -> 4)
+  poi     node 138 holds plains_move x1, unguarded — taken (§8)
+  stats p1  stamina   0  gold  0  plains_move 7  forest_move 5  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina   5  gold  1  plains_move 4  forest_move 5  mountain_move 0  fighting 0  magic 2
+
+turn  30  p2 (seat 2)  at node 222  allowance plains 4 / forest 5 / mountain 0  stamina 5
+  step    222 -> 184  mountain 3 stamina (mountain_move 0, no free steps), 2 left
+  step    184 -> 206  plains   free (plains_move allowance 4 -> 3)
+  step    206 -> 212  plains   free (plains_move allowance 3 -> 2)
+  step    212 -> 219  plains   free (plains_move allowance 2 -> 1)
+  step    219 -> 237  plains   free (plains_move allowance 1 -> 0)
+  step    237 -> 210  plains   1 stamina (plains_move 4, allowance already spent), 1 left
+  step    210 -> 230  plains   1 stamina (plains_move 4, allowance already spent), 0 left
+  move    stopped at node 230; 2 steps saved as next turn's planned path
+  stats p1  stamina   0  gold  0  plains_move 7  forest_move 5  mountain_move 0  fighting 0  magic 3
+  stats p2  stamina   0  gold  1  plains_move 4  forest_move 5  mountain_move 0  fighting 0  magic 2
+
+turn  31  p1 (seat 1)  at node 138  allowance plains 7 / forest 5 / mountain 0  stamina 0
+  step    138 -> 151  plains   free (plains_move allowance 7 -> 6)
+  step    151 -> 135  plains   free (plains_move allowance 6 -> 5)
+  step    135 -> 195  plains   free (plains_move allowance 5 -> 4)
+  step    195 -> 137  plains   free (plains_move allowance 4 -> 3)
+  step    137 -> 149  plains   free (plains_move allowance 3 -> 2)
+  poi     node 149 holds magic x1, unguarded — taken (§8)
+  stats p1  stamina   0  gold  0  plains_move 7  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   0  gold  1  plains_move 4  forest_move 5  mountain_move 0  fighting 0  magic 2
+
+turn  32  p2 (seat 2)  at node 230  allowance plains 4 / forest 5 / mountain 0  stamina 0
+  step    230 -> 227  plains   free (plains_move allowance 4 -> 3)
+  step    227 -> 193  plains   free (plains_move allowance 3 -> 2)
+  poi     node 193 holds forest_move x2, unguarded — taken (§8)
+  stats p1  stamina   0  gold  0  plains_move 7  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   0  gold  1  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  33  p1 (seat 1)  at node 149  allowance plains 7 / forest 5 / mountain 0  stamina 0
+  step    149 -> 137  plains   free (plains_move allowance 7 -> 6)
+  move    stopped at node 137; 2 steps saved as next turn's planned path
+  stats p1  stamina   0  gold  0  plains_move 7  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   0  gold  1  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  34  p2 (seat 2)  at node 193  allowance plains 4 / forest 7 / mountain 0  stamina 0
+  step    193 -> 227  plains   free (plains_move allowance 4 -> 3)
+  step    227 -> 230  plains   free (plains_move allowance 3 -> 2)
+  move    stopped at node 230; 2 steps saved as next turn's planned path
+  stats p1  stamina   0  gold  0  plains_move 7  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   0  gold  1  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  35  p1 (seat 1)  at node 137  allowance plains 7 / forest 5 / mountain 0  stamina 0
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   5  gold  0  plains_move 7  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   0  gold  1  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  36  p2 (seat 2)  at node 230  allowance plains 4 / forest 7 / mountain 0  stamina 0
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   5  gold  0  plains_move 7  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   5  gold  1  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  37  p1 (seat 1)  at node 137  allowance plains 7 / forest 5 / mountain 0  stamina 5
+  step    137 -> 238  mountain 3 stamina (mountain_move 0, no free steps), 2 left
+  move    stopped at node 238; 1 step saved as next turn's planned path
+  stats p1  stamina   2  gold  0  plains_move 7  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   5  gold  1  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  38  p2 (seat 2)  at node 230  allowance plains 4 / forest 7 / mountain 0  stamina 5
+  step    230 -> 229  mountain 3 stamina (mountain_move 0, no free steps), 2 left
+  move    stopped at node 229; 1 step saved as next turn's planned path
+  stats p1  stamina   2  gold  0  plains_move 7  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   2  gold  1  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  39  p1 (seat 1)  at node 238  allowance plains 7 / forest 5 / mountain 0  stamina 2
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   7  gold  0  plains_move 7  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   2  gold  1  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  40  p2 (seat 2)  at node 229  allowance plains 4 / forest 7 / mountain 0  stamina 2
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   7  gold  0  plains_move 7  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   7  gold  1  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  41  p1 (seat 1)  at node 238  allowance plains 7 / forest 5 / mountain 0  stamina 7
+  step    238 -> 172  mountain 3 stamina (mountain_move 0, no free steps), 4 left
+  poi     node 172 holds gold x1, guarded fighting 3
+  roll    5 + fighting 0 = 5 vs 3 — taken
+  stats p1  stamina   4  gold  1  plains_move 7  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   7  gold  1  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  42  p2 (seat 2)  at node 229  allowance plains 4 / forest 7 / mountain 0  stamina 7
+  step    229 -> 221  mountain 3 stamina (mountain_move 0, no free steps), 4 left
+  poi     node 221 holds gold x2, guarded magic 6
+  roll    2 + magic 2 = 4 vs 6 — stays on the node, no other cost
+  stats p1  stamina   4  gold  1  plains_move 7  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   4  gold  1  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  43  p1 (seat 1)  at node 172  allowance plains 7 / forest 5 / mountain 0  stamina 4
+  step    172 -> 220  mountain 3 stamina (mountain_move 0, no free steps), 1 left
+  step    220 -> 210  plains   free (plains_move allowance 7 -> 6)
+  step    210 -> 230  plains   free (plains_move allowance 6 -> 5)
+  move    stopped at node 230; 2 steps saved as next turn's planned path
+  stats p1  stamina   1  gold  1  plains_move 7  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   4  gold  1  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  44  p2 (seat 2)  at node 221  allowance plains 4 / forest 7 / mountain 0  stamina 4
+  move    stayed on node 221 (empty path — §8's second attempt at the same guard)
+  poi     node 221 holds gold x2, guarded magic 6
+  roll    4 + magic 2 = 6 vs 6 — stays on the node, no other cost
+  stats p1  stamina   1  gold  1  plains_move 7  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   4  gold  1  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  45  p1 (seat 1)  at node 230  allowance plains 7 / forest 5 / mountain 0  stamina 1
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   6  gold  1  plains_move 7  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   4  gold  1  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  46  p2 (seat 2)  at node 221  allowance plains 4 / forest 7 / mountain 0  stamina 4
+  move    stayed on node 221 (empty path — §8's second attempt at the same guard)
+  poi     node 221 holds gold x2, guarded magic 6
+  roll    5 + magic 2 = 7 vs 6 — taken
+  stats p1  stamina   6  gold  1  plains_move 7  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   4  gold  3  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  47  p1 (seat 1)  at node 230  allowance plains 7 / forest 5 / mountain 0  stamina 6
+  step    230 -> 229  mountain 3 stamina (mountain_move 0, no free steps), 3 left
+  step    229 -> 221  mountain 3 stamina (mountain_move 0, no free steps), 0 left
+  step    221 -> 228  plains   free (plains_move allowance 7 -> 6)
+  poi     node 228 holds plains_move x2, unguarded — taken (§8)
+  stats p1  stamina   0  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   4  gold  3  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  48  p2 (seat 2)  at node 221  allowance plains 4 / forest 7 / mountain 0  stamina 4
+  step    221 -> 229  mountain 3 stamina (mountain_move 0, no free steps), 1 left
+  step    229 -> 237  plains   free (plains_move allowance 4 -> 3)
+  step    237 -> 219  plains   free (plains_move allowance 3 -> 2)
+  step    219 -> 212  plains   free (plains_move allowance 2 -> 1)
+  move    stopped at node 212; 4 steps saved as next turn's planned path
+  stats p1  stamina   0  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   1  gold  3  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  49  p1 (seat 1)  at node 228  allowance plains 9 / forest 5 / mountain 0  stamina 0
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   5  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   1  gold  3  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  50  p2 (seat 2)  at node 212  allowance plains 4 / forest 7 / mountain 0  stamina 1
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   5  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   6  gold  3  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  51  p1 (seat 1)  at node 228  allowance plains 9 / forest 5 / mountain 0  stamina 5
+  step    228 -> 221  mountain 3 stamina (mountain_move 0, no free steps), 2 left
+  move    stopped at node 221; 8 steps saved as next turn's planned path
+  stats p1  stamina   2  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   6  gold  3  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  52  p2 (seat 2)  at node 212  allowance plains 4 / forest 7 / mountain 0  stamina 6
+  step    212 -> 190  mountain 3 stamina (mountain_move 0, no free steps), 3 left
+  step    190 -> 176  mountain 3 stamina (mountain_move 0, no free steps), 0 left
+  move    stopped at node 176; 2 steps saved as next turn's planned path
+  stats p1  stamina   2  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   0  gold  3  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  53  p1 (seat 1)  at node 221  allowance plains 9 / forest 5 / mountain 0  stamina 2
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   7  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   0  gold  3  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  54  p2 (seat 2)  at node 176  allowance plains 4 / forest 7 / mountain 0  stamina 0
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   7  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   5  gold  3  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  55  p1 (seat 1)  at node 221  allowance plains 9 / forest 5 / mountain 0  stamina 7
+  step    221 -> 229  mountain 3 stamina (mountain_move 0, no free steps), 4 left
+  step    229 -> 237  plains   free (plains_move allowance 9 -> 8)
+  step    237 -> 219  plains   free (plains_move allowance 8 -> 7)
+  step    219 -> 212  plains   free (plains_move allowance 7 -> 6)
+  step    212 -> 190  mountain 3 stamina (mountain_move 0, no free steps), 1 left
+  move    stopped at node 190; 3 steps saved as next turn's planned path
+  stats p1  stamina   1  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   5  gold  3  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  56  p2 (seat 2)  at node 176  allowance plains 4 / forest 7 / mountain 0  stamina 5
+  step    176 -> 189  mountain 3 stamina (mountain_move 0, no free steps), 2 left
+  move    stopped at node 189; 1 step saved as next turn's planned path
+  stats p1  stamina   1  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   2  gold  3  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  57  p1 (seat 1)  at node 190  allowance plains 9 / forest 5 / mountain 0  stamina 1
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   6  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   2  gold  3  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  58  p2 (seat 2)  at node 189  allowance plains 4 / forest 7 / mountain 0  stamina 2
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   6  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   7  gold  3  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  59  p1 (seat 1)  at node 190  allowance plains 9 / forest 5 / mountain 0  stamina 6
+  step    190 -> 176  mountain 3 stamina (mountain_move 0, no free steps), 3 left
+  step    176 -> 189  mountain 3 stamina (mountain_move 0, no free steps), 0 left
+  move    stopped at node 189; 1 step saved as next turn's planned path
+  stats p1  stamina   0  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   7  gold  3  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  60  p2 (seat 2)  at node 189  allowance plains 4 / forest 7 / mountain 0  stamina 7
+  step    189 -> 204  mountain 3 stamina (mountain_move 0, no free steps), 4 left
+  poi     node 204 holds gold x2, guarded magic 5
+  roll    6 + magic 2 = 8 vs 5 — taken
+  stats p1  stamina   0  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   4  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  61  p1 (seat 1)  at node 189  allowance plains 9 / forest 5 / mountain 0  stamina 0
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   5  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   4  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  62  p2 (seat 2)  at node 204  allowance plains 4 / forest 7 / mountain 0  stamina 4
+  step    204 -> 189  mountain 3 stamina (mountain_move 0, no free steps), 1 left
+  move    stopped at node 189; 2 steps saved as next turn's planned path
+  stats p1  stamina   5  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   1  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  63  p1 (seat 1)  at node 189  allowance plains 9 / forest 5 / mountain 0  stamina 5
+  step    189 -> 207  mountain 3 stamina (mountain_move 0, no free steps), 2 left
+  move    stopped at node 207; 1 step saved as next turn's planned path
+  stats p1  stamina   2  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   1  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  64  p2 (seat 2)  at node 189  allowance plains 4 / forest 7 / mountain 0  stamina 1
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   2  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   6  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  65  p1 (seat 1)  at node 207  allowance plains 9 / forest 5 / mountain 0  stamina 2
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   7  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   6  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  66  p2 (seat 2)  at node 189  allowance plains 4 / forest 7 / mountain 0  stamina 6
+  step    189 -> 207  mountain 3 stamina (mountain_move 0, no free steps), 3 left
+  step    207 -> 209  mountain 3 stamina (mountain_move 0, no free steps), 0 left
+  poi     node 209 holds gold x2, guarded fighting 4
+  roll    1 + fighting 0 = 1 vs 4 — stays on the node, no other cost
+  stats p1  stamina   7  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   0  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  67  p1 (seat 1)  at node 207  allowance plains 9 / forest 5 / mountain 0  stamina 7
+  step    207 -> 209  mountain 3 stamina (mountain_move 0, no free steps), 4 left
+  poi     node 209 holds gold x2, guarded fighting 4
+  roll    1 + fighting 0 = 1 vs 4 — stays on the node, no other cost
+  stats p1  stamina   4  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   0  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  68  p2 (seat 2)  at node 209  allowance plains 4 / forest 7 / mountain 0  stamina 0
+  move    stayed on node 209 (empty path — §8's second attempt at the same guard)
+  poi     node 209 holds gold x2, guarded fighting 4
+  roll    1 + fighting 0 = 1 vs 4 — stays on the node, no other cost
+  stats p1  stamina   4  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   0  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  69  p1 (seat 1)  at node 209  allowance plains 9 / forest 5 / mountain 0  stamina 4
+  move    stayed on node 209 (empty path — §8's second attempt at the same guard)
+  poi     node 209 holds gold x2, guarded fighting 4
+  roll    2 + fighting 0 = 2 vs 4 — stays on the node, no other cost
+  stats p1  stamina   4  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   0  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  70  p2 (seat 2)  at node 209  allowance plains 4 / forest 7 / mountain 0  stamina 0
+  move    stayed on node 209 (empty path — §8's second attempt at the same guard)
+  poi     node 209 holds gold x2, guarded fighting 4
+  roll    1 + fighting 0 = 1 vs 4 — stays on the node, no other cost
+  stats p1  stamina   4  gold  1  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   0  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  71  p1 (seat 1)  at node 209  allowance plains 9 / forest 5 / mountain 0  stamina 4
+  move    stayed on node 209 (empty path — §8's second attempt at the same guard)
+  poi     node 209 holds gold x2, guarded fighting 4
+  roll    6 + fighting 0 = 6 vs 4 — taken
+  stats p1  stamina   4  gold  3  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   0  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  72  p2 (seat 2)  at node 209  allowance plains 4 / forest 7 / mountain 0  stamina 0
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   4  gold  3  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   5  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  73  p1 (seat 1)  at node 209  allowance plains 9 / forest 5 / mountain 0  stamina 4
+  step    209 -> 207  mountain 3 stamina (mountain_move 0, no free steps), 1 left
+  move    stopped at node 207; 12 steps saved as next turn's planned path
+  stats p1  stamina   1  gold  3  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   5  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  74  p2 (seat 2)  at node 209  allowance plains 4 / forest 7 / mountain 0  stamina 5
+  step    209 -> 207  mountain 3 stamina (mountain_move 0, no free steps), 2 left
+  move    stopped at node 207; 12 steps saved as next turn's planned path
+  stats p1  stamina   1  gold  3  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   2  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  75  p1 (seat 1)  at node 207  allowance plains 9 / forest 5 / mountain 0  stamina 1
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   6  gold  3  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   2  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  76  p2 (seat 2)  at node 207  allowance plains 4 / forest 7 / mountain 0  stamina 2
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   6  gold  3  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   7  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  77  p1 (seat 1)  at node 207  allowance plains 9 / forest 5 / mountain 0  stamina 6
+  step    207 -> 189  mountain 3 stamina (mountain_move 0, no free steps), 3 left
+  step    189 -> 176  mountain 3 stamina (mountain_move 0, no free steps), 0 left
+  move    stopped at node 176; 10 steps saved as next turn's planned path
+  stats p1  stamina   0  gold  3  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   7  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  78  p2 (seat 2)  at node 207  allowance plains 4 / forest 7 / mountain 0  stamina 7
+  step    207 -> 189  mountain 3 stamina (mountain_move 0, no free steps), 4 left
+  step    189 -> 176  mountain 3 stamina (mountain_move 0, no free steps), 1 left
+  move    stopped at node 176; 10 steps saved as next turn's planned path
+  stats p1  stamina   0  gold  3  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   1  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  79  p1 (seat 1)  at node 176  allowance plains 9 / forest 5 / mountain 0  stamina 0
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   5  gold  3  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   1  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  80  p2 (seat 2)  at node 176  allowance plains 4 / forest 7 / mountain 0  stamina 1
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   5  gold  3  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   6  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  81  p1 (seat 1)  at node 176  allowance plains 9 / forest 5 / mountain 0  stamina 5
+  step    176 -> 190  mountain 3 stamina (mountain_move 0, no free steps), 2 left
+  step    190 -> 206  plains   free (plains_move allowance 9 -> 8)
+  step    206 -> 201  plains   free (plains_move allowance 8 -> 7)
+  step    201 -> 186  plains   free (plains_move allowance 7 -> 6)
+  move    stopped at node 186; 6 steps saved as next turn's planned path
+  stats p1  stamina   2  gold  3  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   6  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  82  p2 (seat 2)  at node 176  allowance plains 4 / forest 7 / mountain 0  stamina 6
+  step    176 -> 190  mountain 3 stamina (mountain_move 0, no free steps), 3 left
+  step    190 -> 206  plains   free (plains_move allowance 4 -> 3)
+  step    206 -> 201  plains   free (plains_move allowance 3 -> 2)
+  step    201 -> 186  plains   free (plains_move allowance 2 -> 1)
+  step    186 -> 199  mountain 3 stamina (mountain_move 0, no free steps), 0 left
+  move    stopped at node 199; 5 steps saved as next turn's planned path
+  stats p1  stamina   2  gold  3  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   0  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  83  p1 (seat 1)  at node 186  allowance plains 9 / forest 5 / mountain 0  stamina 2
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   7  gold  3  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   0  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  84  p2 (seat 2)  at node 199  allowance plains 4 / forest 7 / mountain 0  stamina 0
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   7  gold  3  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   5  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  85  p1 (seat 1)  at node 186  allowance plains 9 / forest 5 / mountain 0  stamina 7
+  step    186 -> 199  mountain 3 stamina (mountain_move 0, no free steps), 4 left
+  step    199 -> 114  mountain 3 stamina (mountain_move 0, no free steps), 1 left
+  step    114 -> 151  plains   free (plains_move allowance 9 -> 8)
+  step    151 -> 138  plains   free (plains_move allowance 8 -> 7)
+  move    stopped at node 138; 2 steps saved as next turn's planned path
+  stats p1  stamina   1  gold  3  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   5  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  86  p2 (seat 2)  at node 199  allowance plains 4 / forest 7 / mountain 0  stamina 5
+  step    199 -> 114  mountain 3 stamina (mountain_move 0, no free steps), 2 left
+  step    114 -> 151  plains   free (plains_move allowance 4 -> 3)
+  step    151 -> 138  plains   free (plains_move allowance 3 -> 2)
+  move    stopped at node 138; 2 steps saved as next turn's planned path
+  stats p1  stamina   1  gold  3  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   2  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  87  p1 (seat 1)  at node 138  allowance plains 9 / forest 5 / mountain 0  stamina 1
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   6  gold  3  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   2  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  88  p2 (seat 2)  at node 138  allowance plains 4 / forest 7 / mountain 0  stamina 2
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   6  gold  3  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   7  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  89  p1 (seat 1)  at node 138  allowance plains 9 / forest 5 / mountain 0  stamina 6
+  step    138 -> 128  mountain 3 stamina (mountain_move 0, no free steps), 3 left
+  step    128 -> 115  mountain 3 stamina (mountain_move 0, no free steps), 0 left
+  poi     node 115 holds gold x2, guarded magic 6
+  roll    3 + magic 4 = 7 vs 6 — taken
+  stats p1  stamina   0  gold  5  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   7  gold  5  plains_move 4  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  90  p2 (seat 2)  at node 138  allowance plains 4 / forest 7 / mountain 0  stamina 7
+  step    138 -> 151  plains   free (plains_move allowance 4 -> 3)
+  step    151 -> 135  plains   free (plains_move allowance 3 -> 2)
+  step    135 -> 147  mountain 3 stamina (mountain_move 0, no free steps), 4 left
+  step    147 -> 159  plains   free (plains_move allowance 2 -> 1)
+  step    159 -> 146  plains   free (plains_move allowance 1 -> 0)
+  step    146 -> 144  plains   1 stamina (plains_move 4, allowance already spent), 3 left
+  step    144 -> 164  plains   1 stamina (plains_move 4, allowance already spent), 2 left
+  poi     node 164 holds plains_move x2, unguarded — taken (§8)
+  stats p1  stamina   0  gold  5  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   2  gold  5  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  91  p1 (seat 1)  at node 115  allowance plains 9 / forest 5 / mountain 0  stamina 0
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   5  gold  5  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   2  gold  5  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  92  p2 (seat 2)  at node 164  allowance plains 6 / forest 7 / mountain 0  stamina 2
+  step    164 -> 144  plains   free (plains_move allowance 6 -> 5)
+  step    144 -> 146  plains   free (plains_move allowance 5 -> 4)
+  step    146 -> 159  plains   free (plains_move allowance 4 -> 3)
+  move    stopped at node 159; 5 steps saved as next turn's planned path
+  stats p1  stamina   5  gold  5  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   2  gold  5  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  93  p1 (seat 1)  at node 115  allowance plains 9 / forest 5 / mountain 0  stamina 5
+  step    115 -> 128  mountain 3 stamina (mountain_move 0, no free steps), 2 left
+  move    stopped at node 128; 5 steps saved as next turn's planned path
+  stats p1  stamina   2  gold  5  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   2  gold  5  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  94  p2 (seat 2)  at node 159  allowance plains 6 / forest 7 / mountain 0  stamina 2
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   2  gold  5  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   7  gold  5  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  95  p1 (seat 1)  at node 128  allowance plains 9 / forest 5 / mountain 0  stamina 2
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   7  gold  5  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   7  gold  5  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  96  p2 (seat 2)  at node 159  allowance plains 6 / forest 7 / mountain 0  stamina 7
+  step    159 -> 134  mountain 3 stamina (mountain_move 0, no free steps), 4 left
+  step    134 -> 154  mountain 3 stamina (mountain_move 0, no free steps), 1 left
+  move    stopped at node 154; 3 steps saved as next turn's planned path
+  stats p1  stamina   7  gold  5  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   1  gold  5  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  97  p1 (seat 1)  at node 128  allowance plains 9 / forest 5 / mountain 0  stamina 7
+  step    128 -> 139  mountain 3 stamina (mountain_move 0, no free steps), 4 left
+  step    139 -> 154  mountain 3 stamina (mountain_move 0, no free steps), 1 left
+  move    stopped at node 154; 3 steps saved as next turn's planned path
+  stats p1  stamina   1  gold  5  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   1  gold  5  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  98  p2 (seat 2)  at node 154  allowance plains 6 / forest 7 / mountain 0  stamina 1
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   1  gold  5  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   6  gold  5  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn  99  p1 (seat 1)  at node 154  allowance plains 9 / forest 5 / mountain 0  stamina 1
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   6  gold  5  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   6  gold  5  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 2
+
+turn 100  p2 (seat 2)  at node 154  allowance plains 6 / forest 7 / mountain 0  stamina 6
+  step    154 -> 118  mountain 3 stamina (mountain_move 0, no free steps), 3 left
+  step    118 -> 152  mountain 3 stamina (mountain_move 0, no free steps), 0 left
+  step    152 -> 142  plains   free (plains_move allowance 6 -> 5)
+  poi     node 142 holds forest_move x3, unguarded — taken (§8)
+  stats p1  stamina   6  gold  5  plains_move 9  forest_move 5  mountain_move 0  fighting 0  magic 4
+  stats p2  stamina   0  gold  5  plains_move 6  forest_move 10  mountain_move 0  fighting 0  magic 2
+
+turn 101  p1 (seat 1)  at node 154  allowance plains 9 / forest 5 / mountain 0  stamina 6
+  step    154 -> 118  mountain 3 stamina (mountain_move 0, no free steps), 3 left
+  step    118 -> 123  forest   free (forest_move allowance 5 -> 4)
+  step    123 -> 111  forest   free (forest_move allowance 4 -> 3)
+  step    111 -> 126  forest   free (forest_move allowance 3 -> 2)
+  step    126 -> 105  forest   free (forest_move allowance 2 -> 1)
+  poi     node 105 holds fighting x1, unguarded — taken (§8)
+  stats p1  stamina   3  gold  5  plains_move 9  forest_move 5  mountain_move 0  fighting 1  magic 4
+  stats p2  stamina   0  gold  5  plains_move 6  forest_move 10  mountain_move 0  fighting 0  magic 2
+
+turn 102  p2 (seat 2)  at node 142  allowance plains 6 / forest 10 / mountain 0  stamina 0
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   3  gold  5  plains_move 9  forest_move 5  mountain_move 0  fighting 1  magic 4
+  stats p2  stamina   5  gold  5  plains_move 6  forest_move 10  mountain_move 0  fighting 0  magic 2
+
+turn 103  p1 (seat 1)  at node 105  allowance plains 9 / forest 5 / mountain 0  stamina 3
+  step    105 -> 126  forest   free (forest_move allowance 5 -> 4)
+  step    126 -> 100  forest   free (forest_move allowance 4 -> 3)
+  step    100 ->  74  forest   free (forest_move allowance 3 -> 2)
+  step     74 ->  51  forest   free (forest_move allowance 2 -> 1)
+  poi     node 51 holds gold x1, guarded fighting 3
+  roll    4 + fighting 1 = 5 vs 3 — taken
+  stats p1  stamina   3  gold  6  plains_move 9  forest_move 5  mountain_move 0  fighting 1  magic 4
+  stats p2  stamina   5  gold  5  plains_move 6  forest_move 10  mountain_move 0  fighting 0  magic 2
+
+turn 104  p2 (seat 2)  at node 142  allowance plains 6 / forest 10 / mountain 0  stamina 5
+  step    142 -> 152  mountain 3 stamina (mountain_move 0, no free steps), 2 left
+  move    stopped at node 152; 2 steps saved as next turn's planned path
+  stats p1  stamina   3  gold  6  plains_move 9  forest_move 5  mountain_move 0  fighting 1  magic 4
+  stats p2  stamina   2  gold  5  plains_move 6  forest_move 10  mountain_move 0  fighting 0  magic 2
+
+turn 105  p1 (seat 1)  at node 51  allowance plains 9 / forest 5 / mountain 0  stamina 3
+  step     51 ->  47  plains   free (plains_move allowance 9 -> 8)
+  poi     node 47 holds magic x1, unguarded — taken (§8)
+  stats p1  stamina   3  gold  6  plains_move 9  forest_move 5  mountain_move 0  fighting 1  magic 5
+  stats p2  stamina   2  gold  5  plains_move 6  forest_move 10  mountain_move 0  fighting 0  magic 2
+
+turn 106  p2 (seat 2)  at node 152  allowance plains 6 / forest 10 / mountain 0  stamina 2
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   3  gold  6  plains_move 9  forest_move 5  mountain_move 0  fighting 1  magic 5
+  stats p2  stamina   7  gold  5  plains_move 6  forest_move 10  mountain_move 0  fighting 0  magic 2
+
+turn 107  p1 (seat 1)  at node 47  allowance plains 9 / forest 5 / mountain 0  stamina 3
+  step     47 ->  56  plains   free (plains_move allowance 9 -> 8)
+  step     56 ->  54  plains   free (plains_move allowance 8 -> 7)
+  step     54 ->  63  forest   free (forest_move allowance 5 -> 4)
+  step     63 ->  55  forest   free (forest_move allowance 4 -> 3)
+  poi     node 55 holds fighting x1, unguarded — taken (§8)
+  stats p1  stamina   3  gold  6  plains_move 9  forest_move 5  mountain_move 0  fighting 2  magic 5
+  stats p2  stamina   7  gold  5  plains_move 6  forest_move 10  mountain_move 0  fighting 0  magic 2
+
+turn 108  p2 (seat 2)  at node 152  allowance plains 6 / forest 10 / mountain 0  stamina 7
+  step    152 -> 162  mountain 3 stamina (mountain_move 0, no free steps), 4 left
+  step    162 -> 156  mountain 3 stamina (mountain_move 0, no free steps), 1 left
+  poi     node 156 holds gold x2, guarded fighting 5
+  roll    6 + fighting 0 = 6 vs 5 — taken
+  stats p1  stamina   3  gold  6  plains_move 9  forest_move 5  mountain_move 0  fighting 2  magic 5
+  stats p2  stamina   1  gold  7  plains_move 6  forest_move 10  mountain_move 0  fighting 0  magic 2
+
+turn 109  p1 (seat 1)  at node 55  allowance plains 9 / forest 5 / mountain 0  stamina 3
+  step     55 ->  52  forest   free (forest_move allowance 5 -> 4)
+  step     52 ->  37  forest   free (forest_move allowance 4 -> 3)
+  step     37 ->  53  forest   free (forest_move allowance 3 -> 2)
+  poi     node 53 holds fighting x1, unguarded — taken (§8)
+  stats p1  stamina   3  gold  6  plains_move 9  forest_move 5  mountain_move 0  fighting 3  magic 5
+  stats p2  stamina   1  gold  7  plains_move 6  forest_move 10  mountain_move 0  fighting 0  magic 2
+
+turn 110  p2 (seat 2)  at node 156  allowance plains 6 / forest 10 / mountain 0  stamina 1
+  step    156 -> 157  plains   free (plains_move allowance 6 -> 5)
+  step    157 -> 160  plains   free (plains_move allowance 5 -> 4)
+  poi     node 160 holds magic x3, unguarded — taken (§8)
+  stats p1  stamina   3  gold  6  plains_move 9  forest_move 5  mountain_move 0  fighting 3  magic 5
+  stats p2  stamina   1  gold  7  plains_move 6  forest_move 10  mountain_move 0  fighting 0  magic 5
+
+turn 111  p1 (seat 1)  at node 53  allowance plains 9 / forest 5 / mountain 0  stamina 3
+  step     53 ->  37  forest   free (forest_move allowance 5 -> 4)
+  step     37 ->  46  forest   free (forest_move allowance 4 -> 3)
+  step     46 ->  35  forest   free (forest_move allowance 3 -> 2)
+  poi     node 35 holds fighting x1, unguarded — taken (§8)
+  stats p1  stamina   3  gold  6  plains_move 9  forest_move 5  mountain_move 0  fighting 4  magic 5
+  stats p2  stamina   1  gold  7  plains_move 6  forest_move 10  mountain_move 0  fighting 0  magic 5
+
+turn 112  p2 (seat 2)  at node 160  allowance plains 6 / forest 10 / mountain 0  stamina 1
+  step    160 -> 157  plains   free (plains_move allowance 6 -> 5)
+  move    stopped at node 157; 7 steps saved as next turn's planned path
+  stats p1  stamina   3  gold  6  plains_move 9  forest_move 5  mountain_move 0  fighting 4  magic 5
+  stats p2  stamina   1  gold  7  plains_move 6  forest_move 10  mountain_move 0  fighting 0  magic 5
+
+turn 113  p1 (seat 1)  at node 35  allowance plains 9 / forest 5 / mountain 0  stamina 3
+  step     35 ->  44  forest   free (forest_move allowance 5 -> 4)
+  step     44 ->  32  forest   free (forest_move allowance 4 -> 3)
+  step     32 ->  22  forest   free (forest_move allowance 3 -> 2)
+  poi     node 22 holds mountain_move x2, unguarded — taken (§8)
+  stats p1  stamina   3  gold  6  plains_move 9  forest_move 5  mountain_move 2  fighting 4  magic 5
+  stats p2  stamina   1  gold  7  plains_move 6  forest_move 10  mountain_move 0  fighting 0  magic 5
+
+turn 114  p2 (seat 2)  at node 157  allowance plains 6 / forest 10 / mountain 0  stamina 1
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   3  gold  6  plains_move 9  forest_move 5  mountain_move 2  fighting 4  magic 5
+  stats p2  stamina   6  gold  7  plains_move 6  forest_move 10  mountain_move 0  fighting 0  magic 5
+
+turn 115  p1 (seat 1)  at node 22  allowance plains 9 / forest 5 / mountain 2  stamina 3
+  step     22 ->  28  forest   free (forest_move allowance 5 -> 4)
+  step     28 ->  17  forest   free (forest_move allowance 4 -> 3)
+  step     17 ->  13  forest   free (forest_move allowance 3 -> 2)
+  step     13 ->  12  forest   free (forest_move allowance 2 -> 1)
+  poi     node 12 holds mountain_move x2, unguarded — taken (§8)
+  stats p1  stamina   3  gold  6  plains_move 9  forest_move 5  mountain_move 4  fighting 4  magic 5
+  stats p2  stamina   6  gold  7  plains_move 6  forest_move 10  mountain_move 0  fighting 0  magic 5
+
+turn 116  p2 (seat 2)  at node 157  allowance plains 6 / forest 10 / mountain 0  stamina 6
+  step    157 -> 156  mountain 3 stamina (mountain_move 0, no free steps), 3 left
+  step    156 -> 162  mountain 3 stamina (mountain_move 0, no free steps), 0 left
+  move    stopped at node 162; 5 steps saved as next turn's planned path
+  stats p1  stamina   3  gold  6  plains_move 9  forest_move 5  mountain_move 4  fighting 4  magic 5
+  stats p2  stamina   0  gold  7  plains_move 6  forest_move 10  mountain_move 0  fighting 0  magic 5
+
+turn 117  p1 (seat 1)  at node 12  allowance plains 9 / forest 5 / mountain 4  stamina 3
+  step     12 ->   9  forest   free (forest_move allowance 5 -> 4)
+  step      9 ->   3  forest   free (forest_move allowance 4 -> 3)
+  step      3 ->   7  forest   free (forest_move allowance 3 -> 2)
+  step      7 ->  34  forest   free (forest_move allowance 2 -> 1)
+  step     34 ->   8  forest   free (forest_move allowance 1 -> 0)
+  poi     node 8 holds mountain_move x3, unguarded — taken (§8)
+  stats p1  stamina   3  gold  6  plains_move 9  forest_move 5  mountain_move 7  fighting 4  magic 5
+  stats p2  stamina   0  gold  7  plains_move 6  forest_move 10  mountain_move 0  fighting 0  magic 5
+
+turn 118  p2 (seat 2)  at node 162  allowance plains 6 / forest 10 / mountain 0  stamina 0
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   3  gold  6  plains_move 9  forest_move 5  mountain_move 7  fighting 4  magic 5
+  stats p2  stamina   5  gold  7  plains_move 6  forest_move 10  mountain_move 0  fighting 0  magic 5
+
+turn 119  p1 (seat 1)  at node 8  allowance plains 9 / forest 5 / mountain 7  stamina 3
+  step      8 ->  34  forest   free (forest_move allowance 5 -> 4)
+  step     34 ->  16  forest   free (forest_move allowance 4 -> 3)
+  step     16 ->  24  forest   free (forest_move allowance 3 -> 2)
+  step     24 ->  21  forest   free (forest_move allowance 2 -> 1)
+  poi     node 21 holds fighting x2, unguarded — taken (§8)
+  stats p1  stamina   3  gold  6  plains_move 9  forest_move 5  mountain_move 7  fighting 6  magic 5
+  stats p2  stamina   5  gold  7  plains_move 6  forest_move 10  mountain_move 0  fighting 0  magic 5
+
+turn 120  p2 (seat 2)  at node 162  allowance plains 6 / forest 10 / mountain 0  stamina 5
+  step    162 -> 145  mountain 3 stamina (mountain_move 0, no free steps), 2 left
+  step    145 ->  97  plains   free (plains_move allowance 6 -> 5)
+  step     97 ->  96  plains   free (plains_move allowance 5 -> 4)
+  step     96 ->  98  plains   free (plains_move allowance 4 -> 3)
+  step     98 ->  81  plains   free (plains_move allowance 3 -> 2)
+  poi     node 81 holds plains_move x3, unguarded — taken (§8)
+  stats p1  stamina   3  gold  6  plains_move 9  forest_move 5  mountain_move 7  fighting 6  magic 5
+  stats p2  stamina   2  gold  7  plains_move 9  forest_move 10  mountain_move 0  fighting 0  magic 5
+
+turn 121  p1 (seat 1)  at node 21  allowance plains 9 / forest 5 / mountain 7  stamina 3
+  step     21 ->  24  forest   free (forest_move allowance 5 -> 4)
+  step     24 ->  45  forest   free (forest_move allowance 4 -> 3)
+  poi     node 45 holds fighting x5, unguarded — taken (§8)
+  stats p1  stamina   3  gold  6  plains_move 9  forest_move 5  mountain_move 7  fighting 11  magic 5
+  stats p2  stamina   2  gold  7  plains_move 9  forest_move 10  mountain_move 0  fighting 0  magic 5
+
+turn 122  p2 (seat 2)  at node 81  allowance plains 9 / forest 10 / mountain 0  stamina 2
+  step     81 ->  98  plains   free (plains_move allowance 9 -> 8)
+  step     98 ->  96  plains   free (plains_move allowance 8 -> 7)
+  step     96 ->  97  plains   free (plains_move allowance 7 -> 6)
+  move    stopped at node 97; 11 steps saved as next turn's planned path
+  stats p1  stamina   3  gold  6  plains_move 9  forest_move 5  mountain_move 7  fighting 11  magic 5
+  stats p2  stamina   2  gold  7  plains_move 9  forest_move 10  mountain_move 0  fighting 0  magic 5
+
+turn 123  p1 (seat 1)  at node 45  allowance plains 9 / forest 5 / mountain 7  stamina 3
+  step     45 ->  24  forest   free (forest_move allowance 5 -> 4)
+  step     24 ->  16  forest   free (forest_move allowance 4 -> 3)
+  step     16 ->   4  forest   free (forest_move allowance 3 -> 2)
+  step      4 ->   7  forest   free (forest_move allowance 2 -> 1)
+  step      7 ->   1  forest   free (forest_move allowance 1 -> 0)
+  step      1 ->   6  forest   2 stamina (forest_move 5, allowance already spent), 1 left
+  move    stopped at node 6; 1 step saved as next turn's planned path
+  stats p1  stamina   1  gold  6  plains_move 9  forest_move 5  mountain_move 7  fighting 11  magic 5
+  stats p2  stamina   2  gold  7  plains_move 9  forest_move 10  mountain_move 0  fighting 0  magic 5
+
+turn 124  p2 (seat 2)  at node 97  allowance plains 9 / forest 10 / mountain 0  stamina 2
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   1  gold  6  plains_move 9  forest_move 5  mountain_move 7  fighting 11  magic 5
+  stats p2  stamina   7  gold  7  plains_move 9  forest_move 10  mountain_move 0  fighting 0  magic 5
+
+turn 125  p1 (seat 1)  at node 6  allowance plains 9 / forest 5 / mountain 7  stamina 1
+  step      6 ->  11  forest   free (forest_move allowance 5 -> 4)
+  poi     node 11 holds fighting x2, unguarded — taken (§8)
+  stats p1  stamina   1  gold  6  plains_move 9  forest_move 5  mountain_move 7  fighting 13  magic 5
+  stats p2  stamina   7  gold  7  plains_move 9  forest_move 10  mountain_move 0  fighting 0  magic 5
+
+turn 126  p2 (seat 2)  at node 97  allowance plains 9 / forest 10 / mountain 0  stamina 7
+  step     97 -> 145  mountain 3 stamina (mountain_move 0, no free steps), 4 left
+  step    145 -> 152  mountain 3 stamina (mountain_move 0, no free steps), 1 left
+  move    stopped at node 152; 9 steps saved as next turn's planned path
+  stats p1  stamina   1  gold  6  plains_move 9  forest_move 5  mountain_move 7  fighting 13  magic 5
+  stats p2  stamina   1  gold  7  plains_move 9  forest_move 10  mountain_move 0  fighting 0  magic 5
+
+turn 127  p1 (seat 1)  at node 11  allowance plains 9 / forest 5 / mountain 7  stamina 1
+  step     11 ->   6  forest   free (forest_move allowance 5 -> 4)
+  step      6 ->   5  forest   free (forest_move allowance 4 -> 3)
+  step      5 ->   3  forest   free (forest_move allowance 3 -> 2)
+  step      3 ->   9  forest   free (forest_move allowance 2 -> 1)
+  step      9 ->  13  forest   free (forest_move allowance 1 -> 0)
+  move    stopped at node 13; 4 steps saved as next turn's planned path
+  stats p1  stamina   1  gold  6  plains_move 9  forest_move 5  mountain_move 7  fighting 13  magic 5
+  stats p2  stamina   1  gold  7  plains_move 9  forest_move 10  mountain_move 0  fighting 0  magic 5
+
+turn 128  p2 (seat 2)  at node 152  allowance plains 9 / forest 10 / mountain 0  stamina 1
+  rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
+  stats p1  stamina   1  gold  6  plains_move 9  forest_move 5  mountain_move 7  fighting 13  magic 5
+  stats p2  stamina   6  gold  7  plains_move 9  forest_move 10  mountain_move 0  fighting 0  magic 5
+
+turn 129  p1 (seat 1)  at node 13  allowance plains 9 / forest 5 / mountain 7  stamina 1
+  step     13 ->  17  forest   free (forest_move allowance 5 -> 4)
+  step     17 ->  23  forest   free (forest_move allowance 4 -> 3)
+  step     23 ->  48  forest   free (forest_move allowance 3 -> 2)
+  step     48 ->  25  forest   free (forest_move allowance 2 -> 1)
+  poi     node 25 holds mountain_move x2, unguarded — taken (§8)
+  stats p1  stamina   1  gold  6  plains_move 9  forest_move 5  mountain_move 9  fighting 13  magic 5
+  stats p2  stamina   6  gold  7  plains_move 9  forest_move 10  mountain_move 0  fighting 0  magic 5
+
+turn 130  p2 (seat 2)  at node 152  allowance plains 9 / forest 10 / mountain 0  stamina 6
+  step    152 -> 118  mountain 3 stamina (mountain_move 0, no free steps), 3 left
+  step    118 -> 123  forest   free (forest_move allowance 10 -> 9)
+  step    123 -> 111  forest   free (forest_move allowance 9 -> 8)
+  step    111 -> 126  forest   free (forest_move allowance 8 -> 7)
+  step    126 -> 100  forest   free (forest_move allowance 7 -> 6)
+  step    100 ->  74  forest   free (forest_move allowance 6 -> 5)
+  step     74 ->  50  forest   free (forest_move allowance 5 -> 4)
+  step     50 ->  89  forest   free (forest_move allowance 4 -> 3)
+  step     89 ->  40  forest   free (forest_move allowance 3 -> 2)
+  poi     node 40 holds mountain_move x1, unguarded — taken (§8)
+  stats p1  stamina   1  gold  6  plains_move 9  forest_move 5  mountain_move 9  fighting 13  magic 5
+  stats p2  stamina   3  gold  7  plains_move 9  forest_move 10  mountain_move 1  fighting 0  magic 5
+
+turn 131  p1 (seat 1)  at node 25  allowance plains 9 / forest 5 / mountain 9  stamina 1
+  step     25 ->  48  forest   free (forest_move allowance 5 -> 4)
+  step     48 ->  36  forest   free (forest_move allowance 4 -> 3)
+  step     36 ->  27  forest   free (forest_move allowance 3 -> 2)
+  step     27 ->  82  forest   free (forest_move allowance 2 -> 1)
+  step     82 ->  41  forest   free (forest_move allowance 1 -> 0)
+  poi     node 41 holds mountain_move x2, unguarded — taken (§8)
+  stats p1  stamina   1  gold  6  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   3  gold  7  plains_move 9  forest_move 10  mountain_move 1  fighting 0  magic 5
+
+turn 132  p2 (seat 2)  at node 40  allowance plains 9 / forest 10 / mountain 1  stamina 3
+  step     40 ->  89  forest   free (forest_move allowance 10 -> 9)
+  step     89 ->  43  forest   free (forest_move allowance 9 -> 8)
+  step     43 ->  63  forest   free (forest_move allowance 8 -> 7)
+  step     63 ->  54  plains   free (plains_move allowance 9 -> 8)
+  step     54 ->  87  plains   free (plains_move allowance 8 -> 7)
+  step     87 ->  62  plains   free (plains_move allowance 7 -> 6)
+  step     62 ->  84  plains   free (plains_move allowance 6 -> 5)
+  step     84 ->  83  plains   free (plains_move allowance 5 -> 4)
+  step     83 -> 107  plains   free (plains_move allowance 4 -> 3)
+  step    107 ->  91  forest   free (forest_move allowance 7 -> 6)
+  poi     node 91 holds mountain_move x1, unguarded — taken (§8)
+  stats p1  stamina   1  gold  6  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   3  gold  7  plains_move 9  forest_move 10  mountain_move 2  fighting 0  magic 5
+
+turn 133  p1 (seat 1)  at node 41  allowance plains 9 / forest 5 / mountain 11  stamina 1
+  step     41 ->  82  forest   free (forest_move allowance 5 -> 4)
+  step     82 ->  27  forest   free (forest_move allowance 4 -> 3)
+  step     27 ->  36  forest   free (forest_move allowance 3 -> 2)
+  step     36 ->  31  forest   free (forest_move allowance 2 -> 1)
+  step     31 ->  38  forest   free (forest_move allowance 1 -> 0)
+  move    stopped at node 38; 13 steps saved as next turn's planned path
+  stats p1  stamina   1  gold  6  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   3  gold  7  plains_move 9  forest_move 10  mountain_move 2  fighting 0  magic 5
+
+turn 134  p2 (seat 2)  at node 91  allowance plains 9 / forest 10 / mountain 2  stamina 3
+  step     91 -> 107  plains   free (plains_move allowance 9 -> 8)
+  step    107 -> 104  plains   free (plains_move allowance 8 -> 7)
+  step    104 ->  93  plains   free (plains_move allowance 7 -> 6)
+  poi     node 93 holds plains_move x2, unguarded — taken (§8)
+  stats p1  stamina   1  gold  6  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   3  gold  7  plains_move 11  forest_move 10  mountain_move 2  fighting 0  magic 5
+
+turn 135  p1 (seat 1)  at node 38  allowance plains 9 / forest 5 / mountain 11  stamina 1
+  step     38 ->  35  forest   free (forest_move allowance 5 -> 4)
+  step     35 ->  46  forest   free (forest_move allowance 4 -> 3)
+  step     46 ->  37  forest   free (forest_move allowance 3 -> 2)
+  step     37 ->  52  forest   free (forest_move allowance 2 -> 1)
+  step     52 ->  63  forest   free (forest_move allowance 1 -> 0)
+  step     63 ->  54  plains   free (plains_move allowance 9 -> 8)
+  step     54 ->  87  plains   free (plains_move allowance 8 -> 7)
+  move    stopped at node 87; 4 steps saved as next turn's planned path
+  stats p1  stamina   1  gold  6  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   3  gold  7  plains_move 11  forest_move 10  mountain_move 2  fighting 0  magic 5
+
+turn 136  p2 (seat 2)  at node 93  allowance plains 11 / forest 10 / mountain 2  stamina 3
+  step     93 -> 104  plains   free (plains_move allowance 11 -> 10)
+  step    104 -> 127  forest   free (forest_move allowance 10 -> 9)
+  step    127 -> 132  forest   free (forest_move allowance 9 -> 8)
+  step    132 ->  94  forest   free (forest_move allowance 8 -> 7)
+  poi     node 94 holds fighting x2, unguarded — taken (§8)
+  stats p1  stamina   1  gold  6  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   3  gold  7  plains_move 11  forest_move 10  mountain_move 2  fighting 2  magic 5
+
+turn 137  p1 (seat 1)  at node 87  allowance plains 9 / forest 5 / mountain 11  stamina 1
+  step     87 ->  78  forest   free (forest_move allowance 5 -> 4)
+  step     78 ->  90  forest   free (forest_move allowance 4 -> 3)
+  step     90 -> 103  forest   free (forest_move allowance 3 -> 2)
+  step    103 -> 110  forest   free (forest_move allowance 2 -> 1)
+  poi     node 110 holds gold x1, guarded fighting 3
+  roll    4 + fighting 13 = 17 vs 3 — taken
+  stats p1  stamina   1  gold  7  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   3  gold  7  plains_move 11  forest_move 10  mountain_move 2  fighting 2  magic 5
+
+turn 138  p2 (seat 2)  at node 94  allowance plains 11 / forest 10 / mountain 2  stamina 3
+  step     94 -> 132  forest   free (forest_move allowance 10 -> 9)
+  step    132 -> 127  forest   free (forest_move allowance 9 -> 8)
+  step    127 -> 166  forest   free (forest_move allowance 8 -> 7)
+  step    166 -> 125  forest   free (forest_move allowance 7 -> 6)
+  step    125 -> 130  forest   free (forest_move allowance 6 -> 5)
+  poi     node 130 holds mountain_move x2, unguarded — taken (§8)
+  stats p1  stamina   1  gold  7  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   3  gold  7  plains_move 11  forest_move 10  mountain_move 4  fighting 2  magic 5
+
+turn 139  p1 (seat 1)  at node 110  allowance plains 9 / forest 5 / mountain 11  stamina 1
+  step    110 -> 103  forest   free (forest_move allowance 5 -> 4)
+  step    103 ->  92  forest   free (forest_move allowance 4 -> 3)
+  step     92 ->  77  forest   free (forest_move allowance 3 -> 2)
+  step     77 -> 113  forest   free (forest_move allowance 2 -> 1)
+  step    113 ->  58  forest   free (forest_move allowance 1 -> 0)
+  poi     node 58 holds gold x1, guarded fighting 2
+  roll    2 + fighting 13 = 15 vs 2 — taken
+  stats p1  stamina   1  gold  8  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   3  gold  7  plains_move 11  forest_move 10  mountain_move 4  fighting 2  magic 5
+
+turn 140  p2 (seat 2)  at node 130  allowance plains 11 / forest 10 / mountain 4  stamina 3
+  step    130 -> 125  forest   free (forest_move allowance 10 -> 9)
+  step    125 -> 166  forest   free (forest_move allowance 9 -> 8)
+  step    166 -> 107  plains   free (plains_move allowance 11 -> 10)
+  step    107 ->  83  plains   free (plains_move allowance 10 -> 9)
+  step     83 ->  84  plains   free (plains_move allowance 9 -> 8)
+  step     84 ->  62  plains   free (plains_move allowance 8 -> 7)
+  step     62 ->  87  plains   free (plains_move allowance 7 -> 6)
+  step     87 ->  78  forest   free (forest_move allowance 8 -> 7)
+  step     78 ->  92  forest   free (forest_move allowance 7 -> 6)
+  step     92 ->  77  forest   free (forest_move allowance 6 -> 5)
+  step     77 -> 122  forest   free (forest_move allowance 5 -> 4)
+  step    122 -> 140  forest   free (forest_move allowance 4 -> 3)
+  step    140 -> 155  forest   free (forest_move allowance 3 -> 2)
+  step    155 -> 112  forest   free (forest_move allowance 2 -> 1)
+  poi     node 112 holds gold x2, guarded fighting 4
+  roll    4 + fighting 2 = 6 vs 4 — taken
+  stats p1  stamina   1  gold  8  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   3  gold  9  plains_move 11  forest_move 10  mountain_move 4  fighting 2  magic 5
+
+turn 141  p1 (seat 1)  at node 58  allowance plains 9 / forest 5 / mountain 11  stamina 1
+  step     58 -> 113  forest   free (forest_move allowance 5 -> 4)
+  step    113 ->  67  forest   free (forest_move allowance 4 -> 3)
+  step     67 ->  70  forest   free (forest_move allowance 3 -> 2)
+  step     70 ->  78  forest   free (forest_move allowance 2 -> 1)
+  step     78 ->  87  plains   free (plains_move allowance 9 -> 8)
+  step     87 ->  54  plains   free (plains_move allowance 8 -> 7)
+  step     54 ->  56  plains   free (plains_move allowance 7 -> 6)
+  step     56 ->  47  plains   free (plains_move allowance 6 -> 5)
+  step     47 ->  51  forest   free (forest_move allowance 1 -> 0)
+  move    stopped at node 51; 8 steps saved as next turn's planned path
+  stats p1  stamina   1  gold  8  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   3  gold  9  plains_move 11  forest_move 10  mountain_move 4  fighting 2  magic 5
+
+turn 142  p2 (seat 2)  at node 112  allowance plains 11 / forest 10 / mountain 4  stamina 3
+  step    112 -> 155  forest   free (forest_move allowance 10 -> 9)
+  step    155 -> 140  forest   free (forest_move allowance 9 -> 8)
+  step    140 -> 122  forest   free (forest_move allowance 8 -> 7)
+  step    122 ->  77  forest   free (forest_move allowance 7 -> 6)
+  step     77 ->  92  forest   free (forest_move allowance 6 -> 5)
+  step     92 ->  78  forest   free (forest_move allowance 5 -> 4)
+  step     78 ->  87  plains   free (plains_move allowance 11 -> 10)
+  step     87 ->  54  plains   free (plains_move allowance 10 -> 9)
+  step     54 ->  56  plains   free (plains_move allowance 9 -> 8)
+  step     56 ->  47  plains   free (plains_move allowance 8 -> 7)
+  step     47 ->  51  forest   free (forest_move allowance 4 -> 3)
+  step     51 ->  74  forest   free (forest_move allowance 3 -> 2)
+  step     74 -> 100  forest   free (forest_move allowance 2 -> 1)
+  step    100 -> 126  forest   free (forest_move allowance 1 -> 0)
+  step    126 -> 111  forest   2 stamina (forest_move 10, allowance already spent), 1 left
+  move    stopped at node 111; 4 steps saved as next turn's planned path
+  stats p1  stamina   1  gold  8  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   1  gold  9  plains_move 11  forest_move 10  mountain_move 4  fighting 2  magic 5
+
+turn 143  p1 (seat 1)  at node 51  allowance plains 9 / forest 5 / mountain 11  stamina 1
+  step     51 ->  74  forest   free (forest_move allowance 5 -> 4)
+  step     74 -> 100  forest   free (forest_move allowance 4 -> 3)
+  step    100 -> 126  forest   free (forest_move allowance 3 -> 2)
+  step    126 -> 111  forest   free (forest_move allowance 2 -> 1)
+  step    111 -> 123  forest   free (forest_move allowance 1 -> 0)
+  step    123 -> 118  mountain free (mountain_move allowance 11 -> 10)
+  step    118 -> 154  mountain free (mountain_move allowance 10 -> 9)
+  step    154 -> 134  mountain free (mountain_move allowance 9 -> 8)
+  poi     node 134 holds gold x2, guarded fighting 6
+  roll    1 + fighting 13 = 14 vs 6 — taken
+  stats p1  stamina   1  gold 10  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   1  gold  9  plains_move 11  forest_move 10  mountain_move 4  fighting 2  magic 5
+
+turn 144  p2 (seat 2)  at node 111  allowance plains 11 / forest 10 / mountain 4  stamina 1
+  step    111 -> 123  forest   free (forest_move allowance 10 -> 9)
+  step    123 -> 118  mountain free (mountain_move allowance 4 -> 3)
+  step    118 -> 154  mountain free (mountain_move allowance 3 -> 2)
+  step    154 -> 139  mountain free (mountain_move allowance 2 -> 1)
+  step    139 -> 133  mountain free (mountain_move allowance 1 -> 0)
+  step    133 -> 135  plains   free (plains_move allowance 11 -> 10)
+  step    135 -> 151  plains   free (plains_move allowance 10 -> 9)
+  move    stopped at node 151; 2 steps saved as next turn's planned path
+  stats p1  stamina   1  gold 10  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   1  gold  9  plains_move 11  forest_move 10  mountain_move 4  fighting 2  magic 5
+
+turn 145  p1 (seat 1)  at node 134  allowance plains 9 / forest 5 / mountain 11  stamina 1
+  step    134 -> 159  plains   free (plains_move allowance 9 -> 8)
+  step    159 -> 147  mountain free (mountain_move allowance 11 -> 10)
+  step    147 -> 135  plains   free (plains_move allowance 8 -> 7)
+  step    135 -> 151  plains   free (plains_move allowance 7 -> 6)
+  step    151 -> 114  mountain free (mountain_move allowance 10 -> 9)
+  step    114 -> 161  mountain free (mountain_move allowance 9 -> 8)
+  poi     node 161 holds gold x2, guarded fighting 6
+  roll    5 + fighting 13 = 18 vs 6 — taken
+  stats p1  stamina   1  gold 12  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   1  gold  9  plains_move 11  forest_move 10  mountain_move 4  fighting 2  magic 5
+
+turn 146  p2 (seat 2)  at node 151  allowance plains 11 / forest 10 / mountain 4  stamina 1
+  step    151 -> 135  plains   free (plains_move allowance 11 -> 10)
+  step    135 -> 195  plains   free (plains_move allowance 10 -> 9)
+  step    195 -> 137  plains   free (plains_move allowance 9 -> 8)
+  step    137 -> 149  plains   free (plains_move allowance 8 -> 7)
+  step    149 -> 171  plains   free (plains_move allowance 7 -> 6)
+  step    171 -> 169  plains   free (plains_move allowance 6 -> 5)
+  step    169 -> 194  plains   free (plains_move allowance 5 -> 4)
+  step    194 -> 165  mountain free (mountain_move allowance 4 -> 3)
+  step    165 -> 143  mountain free (mountain_move allowance 3 -> 2)
+  poi     node 143 holds gold x2, guarded fighting 5
+  roll    2 + fighting 2 = 4 vs 5 — stays on the node, no other cost
+  stats p1  stamina   1  gold 12  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   1  gold  9  plains_move 11  forest_move 10  mountain_move 4  fighting 2  magic 5
+
+turn 147  p1 (seat 1)  at node 161  allowance plains 9 / forest 5 / mountain 11  stamina 1
+  step    161 -> 114  mountain free (mountain_move allowance 11 -> 10)
+  step    114 -> 151  plains   free (plains_move allowance 9 -> 8)
+  step    151 -> 135  plains   free (plains_move allowance 8 -> 7)
+  step    135 -> 195  plains   free (plains_move allowance 7 -> 6)
+  step    195 -> 137  plains   free (plains_move allowance 6 -> 5)
+  step    137 -> 149  plains   free (plains_move allowance 5 -> 4)
+  step    149 -> 171  plains   free (plains_move allowance 4 -> 3)
+  step    171 -> 169  plains   free (plains_move allowance 3 -> 2)
+  step    169 -> 194  plains   free (plains_move allowance 2 -> 1)
+  step    194 -> 185  plains   free (plains_move allowance 1 -> 0)
+  step    185 -> 215  plains   1 stamina (plains_move 9, allowance already spent), 0 left
+  move    stopped at node 215; 1 step saved as next turn's planned path
+  stats p1  stamina   0  gold 12  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   1  gold  9  plains_move 11  forest_move 10  mountain_move 4  fighting 2  magic 5
+
+turn 148  p2 (seat 2)  at node 143  allowance plains 11 / forest 10 / mountain 4  stamina 1
+  move    stayed on node 143 (empty path — §8's second attempt at the same guard)
+  poi     node 143 holds gold x2, guarded fighting 5
+  roll    2 + fighting 2 = 4 vs 5 — stays on the node, no other cost
+  stats p1  stamina   0  gold 12  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   1  gold  9  plains_move 11  forest_move 10  mountain_move 4  fighting 2  magic 5
+
+turn 149  p1 (seat 1)  at node 215  allowance plains 9 / forest 5 / mountain 11  stamina 0
+  step    215 -> 231  plains   free (plains_move allowance 9 -> 8)
+  poi     node 231 holds gold x6, guarded fighting 10
+  roll    6 + fighting 13 = 19 vs 10 — taken
+  stats p1  stamina   0  gold 18  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   1  gold  9  plains_move 11  forest_move 10  mountain_move 4  fighting 2  magic 5
+
+turn 150  p2 (seat 2)  at node 143  allowance plains 11 / forest 10 / mountain 4  stamina 1
+  move    stayed on node 143 (empty path — §8's second attempt at the same guard)
+  poi     node 143 holds gold x2, guarded fighting 5
+  roll    6 + fighting 2 = 8 vs 5 — taken
+  stats p1  stamina   0  gold 18  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   1  gold 11  plains_move 11  forest_move 10  mountain_move 4  fighting 2  magic 5
+
+turn 151  p1 (seat 1)  at node 231  allowance plains 9 / forest 5 / mountain 11  stamina 0
+  step    231 -> 215  plains   free (plains_move allowance 9 -> 8)
+  step    215 -> 203  mountain free (mountain_move allowance 11 -> 10)
+  step    203 -> 214  mountain free (mountain_move allowance 10 -> 9)
+  step    214 -> 226  mountain free (mountain_move allowance 9 -> 8)
+  step    226 -> 223  mountain free (mountain_move allowance 8 -> 7)
+  poi     node 223 holds gold x2, guarded magic 4
+  roll    3 + magic 5 = 8 vs 4 — taken
+  stats p1  stamina   0  gold 20  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   1  gold 11  plains_move 11  forest_move 10  mountain_move 4  fighting 2  magic 5
+
+turn 152  p2 (seat 2)  at node 143  allowance plains 11 / forest 10 / mountain 4  stamina 1
+  step    143 -> 165  mountain free (mountain_move allowance 4 -> 3)
+  step    165 -> 167  mountain free (mountain_move allowance 3 -> 2)
+  step    167 -> 180  mountain free (mountain_move allowance 2 -> 1)
+  step    180 -> 150  mountain free (mountain_move allowance 1 -> 0)
+  poi     node 150 holds gold x2, guarded magic 5
+  roll    1 + magic 5 = 6 vs 5 — taken
+  stats p1  stamina   0  gold 20  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   1  gold 13  plains_move 11  forest_move 10  mountain_move 4  fighting 2  magic 5
+
+turn 153  p1 (seat 1)  at node 223  allowance plains 9 / forest 5 / mountain 11  stamina 0
+  step    223 -> 226  mountain free (mountain_move allowance 11 -> 10)
+  step    226 -> 214  mountain free (mountain_move allowance 10 -> 9)
+  step    214 -> 203  mountain free (mountain_move allowance 9 -> 8)
+  step    203 -> 185  plains   free (plains_move allowance 9 -> 8)
+  step    185 -> 194  plains   free (plains_move allowance 8 -> 7)
+  step    194 -> 165  mountain free (mountain_move allowance 8 -> 7)
+  step    165 -> 167  mountain free (mountain_move allowance 7 -> 6)
+  step    167 -> 180  mountain free (mountain_move allowance 6 -> 5)
+  step    180 -> 170  mountain free (mountain_move allowance 5 -> 4)
+  step    170 -> 168  mountain free (mountain_move allowance 4 -> 3)
+  poi     node 168 holds gold x2, guarded fighting 4
+  roll    3 + fighting 13 = 16 vs 4 — taken
+  stats p1  stamina   0  gold 22  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   1  gold 13  plains_move 11  forest_move 10  mountain_move 4  fighting 2  magic 5
+
+turn 154  p2 (seat 2)  at node 150  allowance plains 11 / forest 10 / mountain 4  stamina 1
+  step    150 -> 180  mountain free (mountain_move allowance 4 -> 3)
+  step    180 -> 167  mountain free (mountain_move allowance 3 -> 2)
+  step    167 -> 165  mountain free (mountain_move allowance 2 -> 1)
+  step    165 -> 194  plains   free (plains_move allowance 11 -> 10)
+  step    194 -> 169  plains   free (plains_move allowance 10 -> 9)
+  step    169 -> 217  mountain free (mountain_move allowance 1 -> 0)
+  move    stopped at node 217; 7 steps saved as next turn's planned path
+  stats p1  stamina   0  gold 22  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   1  gold 13  plains_move 11  forest_move 10  mountain_move 4  fighting 2  magic 5
+
+turn 155  p1 (seat 1)  at node 168  allowance plains 9 / forest 5 / mountain 11  stamina 0
+  step    168 -> 170  mountain free (mountain_move allowance 11 -> 10)
+  step    170 -> 180  mountain free (mountain_move allowance 10 -> 9)
+  step    180 -> 167  mountain free (mountain_move allowance 9 -> 8)
+  step    167 -> 165  mountain free (mountain_move allowance 8 -> 7)
+  step    165 -> 194  plains   free (plains_move allowance 9 -> 8)
+  step    194 -> 169  plains   free (plains_move allowance 8 -> 7)
+  step    169 -> 217  mountain free (mountain_move allowance 7 -> 6)
+  step    217 -> 192  mountain free (mountain_move allowance 6 -> 5)
+  step    192 -> 211  mountain free (mountain_move allowance 5 -> 4)
+  step    211 -> 232  mountain free (mountain_move allowance 4 -> 3)
+  step    232 -> 235  mountain free (mountain_move allowance 3 -> 2)
+  step    235 -> 216  mountain free (mountain_move allowance 2 -> 1)
+  poi     node 216 holds gold x4, guarded fighting 9
+  roll    6 + fighting 13 = 19 vs 9 — taken
+  won     p1 — lead exceeds the gold still on the map (§1)
+  stats p1  stamina   0  gold 26  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+  stats p2  stamina   1  gold 13  plains_move 11  forest_move 10  mountain_move 4  fighting 2  magic 5
+
 ended victory after 155 turns
-final p1 gold=26 stamina=0 pm=9 fm=5 mm=11 f=13 m=5
-final p2 gold=13 stamina=1 pm=11 fm=10 mm=4 f=2 m=5
+final stats p1  stamina   0  gold 26  plains_move 9  forest_move 5  mountain_move 11  fighting 13  magic 5
+final stats p2  stamina   1  gold 13  plains_move 11  forest_move 10  mountain_move 4  fighting 2  magic 5
 winners p1

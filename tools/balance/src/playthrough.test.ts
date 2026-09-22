@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_RULESET } from '@adventure/config';
-import { totalGoldUnits } from '@adventure/core';
+import { previewPath, totalGoldUnits } from '@adventure/core';
 import { formatPlaythrough, playGame } from './playthrough.ts';
 
 /**
@@ -47,6 +47,43 @@ describe('a full game', () => {
     // The state split exists so cloning a state does not clone the world
     // (§2.1's map is immutable); this is that promise, end to end.
     expect(run.finalState.map).toBe(run.map);
+  });
+
+  it('shows, for every step, the same accounting the engine committed', () => {
+    // The transcript prints each step from `previewPath`, so it is only worth
+    // reading if that agrees with what `resolveMovement` actually did — on
+    // every move of a real game, not just on a hand-built example.
+    for (const turn of run.turns) {
+      for (const event of turn.events) {
+        if (event.type !== 'moved') continue;
+        const { resolution } = event;
+        const preview = previewPath(
+          run.map.graph,
+          resolution.from,
+          resolution.walked,
+          turn.allowanceBefore,
+          turn.statsBefore.stamina,
+          DEFAULT_RULESET.config,
+        );
+        expect(preview.reachableStepCount).toBe(resolution.walked.length);
+        expect(preview.totalStaminaCost).toBe(resolution.staminaSpent);
+      }
+    }
+  });
+
+  it('adds up: every turn\u2019s stamina is last turn\u2019s, less what moving cost, plus rest and rewards', () => {
+    // The check a reader of the transcript would do by hand, done for all of it.
+    for (const turn of run.turns) {
+      let expected = turn.statsBefore.stamina;
+      for (const event of turn.events) {
+        if (event.type === 'moved') expected -= event.resolution.staminaSpent;
+        if (event.type === 'rested') expected += event.staminaGained;
+        if (event.type === 'interacted' && event.resolution.claimed && event.resolution.reward?.kind === 'stamina') {
+          expected += event.resolution.reward.units;
+        }
+      }
+      expect(turn.standings[turn.seat - 1]?.stats.stamina).toBe(expected);
+    }
   });
 
   it('matches the committed transcript', async () => {

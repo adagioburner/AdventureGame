@@ -1,4 +1,4 @@
-import { startingStaminaForSeat, type Ruleset } from '@adventure/config';
+import { startingStaminaForSeat, type Ruleset, type Terrain } from '@adventure/config';
 import {
   applyAction,
   createDiceSource,
@@ -14,6 +14,9 @@ import {
   type GameEvent,
   type GameMap,
   type GameState,
+  type InteractionResolution,
+  type MovementResolution,
+  type MovementAllowance,
   type NodeId,
   type PlayerId,
   type PlayerStats,
@@ -58,16 +61,32 @@ export interface PlaythroughOptions {
   readonly maxTurns: number;
 }
 
-/** One turn as it was played, for the transcript. */
+/**
+ * One turn as it was played.
+ *
+ * Everything a reader needs to check the turn against the rules by hand is
+ * recorded as it stood *before* the turn — where the player was, what allowance
+ * §7 had just refreshed for them, and the stat block a guard roll was added to.
+ * The transcript then shows the turn's arithmetic against those, and the
+ * standings after it.
+ */
 export interface PlayedTurn {
   readonly number: number;
   readonly seat: number;
   readonly name: string;
   readonly events: readonly GameEvent[];
+  readonly positionBefore: NodeId;
+  /** The free steps per terrain this turn started with (§7). */
+  readonly allowanceBefore: MovementAllowance;
   /** The acting player's stats as the turn began, so a roll can be read back. */
   readonly statsBefore: PlayerStats;
-  readonly staminaAfter: number;
-  readonly goldAfter: number;
+  /** Every player's stats once the turn resolved, in seat order. */
+  readonly standings: readonly PlayerStanding[];
+}
+
+export interface PlayerStanding {
+  readonly name: string;
+  readonly stats: PlayerStats;
 }
 
 export interface Playthrough {
@@ -124,18 +143,19 @@ export function playGame(options: PlaythroughOptions, ruleset: Ruleset): Playthr
     }
 
     const turnNumber = state.turn.number;
+    const allowanceBefore = state.turn.allowance;
     const outcome = applyAction(state, action, dice);
     state = outcome.state;
 
-    const after = state.players[seat - 1];
     turns.push({
       number: turnNumber,
       seat,
       name: player.name,
       events: outcome.events,
+      positionBefore: player.position,
+      allowanceBefore,
       statsBefore: player.stats,
-      staminaAfter: after?.stats.stamina ?? 0,
-      goldAfter: after?.stats.gold ?? 0,
+      standings: state.players.map((current) => ({ name: current.name, stats: current.stats })),
     });
   }
 
@@ -215,75 +235,191 @@ function couldTake(state: GameState, node: NodeId, playerId: PlayerId, ruleset: 
 /*  The transcript                                                             */
 /* -------------------------------------------------------------------------- */
 
+const TERRAIN_SKILL: Record<Terrain, keyof PlayerStats> = {
+  plains: 'plains_move',
+  forest: 'forest_move',
+  mountain: 'mountain_move',
+};
+
 /**
- * The playthrough as text, one line per turn — the same "one record per line"
- * shape as `formatMapSummary`, so a golden diff stays legible in a review.
+ * The playthrough as text, written so that **every number in it can be checked
+ * by hand** against `GDD.md` §7 and §8 and the map.
+ *
+ * That is the whole design brief. A turn prints where the player stood, the
+ * allowance §7 had just refreshed for them, then one line per step naming the
+ * node entered, its terrain, and which of the two things paid for it — a moving
+ * skill (with the allowance counting down) or stamina (with the §11 cost and
+ * what is left). A guard prints the roll, the skill added to it and the
+ * strength it had to beat. Every player's stats follow, so a reader never has
+ * to carry a number forward in their head.
+ *
+ * Node ids are the ids on the diagnostic map (`pnpm map <seed>`), which labels
+ * every node — the transcript and the drawing are meant to be read together.
+ *
+ * The per-step accounting comes from the engine's own `previewPath`, not from a
+ * second implementation of §7 here: it is the same function family as
+ * `resolveMovement`, so what this file shows is what the engine did, and a
+ * transcript that disagreed with the moves would be a bug in the engine rather
+ * than in the log.
  */
 export function formatPlaythrough(run: Playthrough): string {
   const lines: string[] = [];
+  const config = run.map.ruleset.config;
   const goldTotal = run.map.pois.reduce(
     (sum, poi) => sum + (poi.reward.kind === 'gold' ? poi.reward.units : 0),
     0,
   );
 
   lines.push(`# ${run.options.seed} — ${run.options.playerCount}-player playthrough. See golden/README.md before updating.`);
+  lines.push('#');
+  lines.push('# Node ids are the ids drawn on the diagnostic map for this seed (pnpm map ' + run.options.seed + ').');
+  lines.push('# Every step says which terrain was entered and what paid for it: a moving skill');
+  lines.push('# (§7 allowance, counted down) or stamina (§11 STAMINA_COST: plains 1, forest 2, mountain 3).');
+  lines.push('# A guarded POI says roll + skill vs guard strength; §8 needs strictly greater.');
+  lines.push('#');
   lines.push(
-    `meta dice_seed=${run.options.diceSeed} start_node=${run.startingNode} pois=${run.map.pois.length} gold_units=${goldTotal}`,
+    `meta dice_seed=${run.options.diceSeed} start_node=${run.startingNode} nodes=${run.map.graph.nodes.length} pois=${run.map.pois.length} gold_units=${goldTotal}`,
+  );
+  lines.push(
+    `meta rest_stamina_gain=${config.movement.REST_STAMINA_GAIN} guard_die=${config.combat.GUARD_DIE.count}d${config.combat.GUARD_DIE.sides}`,
   );
   for (const player of run.finalState.players) {
-    lines.push(`player ${player.name} seat=${player.seat} stamina=${startingStaminaForSeat(player.seat, run.map.ruleset)}`);
+    lines.push(
+      `player ${player.name} seat=${player.seat} starting_stamina=${startingStaminaForSeat(player.seat, run.map.ruleset)} starting_node=${run.startingNode}`,
+    );
   }
 
-  for (const turn of run.turns) {
-    lines.push(`turn ${String(turn.number).padStart(3, ' ')} ${turn.name} ${describe(turn, run.map)}`);
-  }
+  for (const turn of run.turns) lines.push('', ...turnLines(turn, run));
 
+  lines.push('');
   lines.push(`ended ${run.endedBy} after ${run.turns.length} turns`);
-  for (const player of run.finalState.players) {
-    const skills = `pm=${player.stats.plains_move} fm=${player.stats.forest_move} mm=${player.stats.mountain_move} f=${player.stats.fighting} m=${player.stats.magic}`;
-    lines.push(`final ${player.name} gold=${player.stats.gold} stamina=${player.stats.stamina} ${skills}`);
-  }
+  for (const player of run.finalState.players) lines.push(`final ${statLine(player.name, player.stats)}`);
   lines.push(`winners ${run.finalState.winners.length === 0 ? 'none' : run.finalState.winners.join(' ')}`);
 
   return `${lines.join('\n')}\n`;
 }
 
-function describe(turn: PlayedTurn, map: GameMap): string {
-  const parts: string[] = [];
+function turnLines(turn: PlayedTurn, run: Playthrough): string[] {
+  const { allowanceBefore: allowance, statsBefore: stats } = turn;
+  const lines: string[] = [
+    `turn ${String(turn.number).padStart(3, ' ')}  ${turn.name} (seat ${turn.seat})  at node ${turn.positionBefore}` +
+      `  allowance plains ${allowance.plains} / forest ${allowance.forest} / mountain ${allowance.mountain}` +
+      `  stamina ${stats.stamina}`,
+  ];
+
   for (const event of turn.events) {
     switch (event.type) {
-      case 'moved': {
-        const { resolution } = event;
-        parts.push(
-          `move ${resolution.walked.length}/${resolution.walked.length + resolution.remainder.length} -> ${resolution.to} stam-${resolution.staminaSpent}`,
-        );
+      case 'moved':
+        lines.push(...moveLines(event.resolution, turn, run));
         break;
-      }
       case 'rested':
-        parts.push(`rest stam+${event.staminaGained}`);
+        lines.push(`  rest    +${event.staminaGained} stamina (REST_STAMINA_GAIN), no move and no interaction`);
         break;
-      case 'interacted': {
-        const { resolution } = event;
-        if (resolution.reward === null) break;
-        const guard = poiAt(map, resolution.node)?.guard ?? null;
-        // §8's comparison, written out so the transcript shows the rule and
-        // not just its verdict: roll + matching skill > guard strength.
-        const attempt =
-          resolution.roll === null || guard === null || resolution.skillUsed === null
-            ? 'unguarded'
-            : `${guard.type}:${guard.strength} roll ${resolution.roll.value}+${turn.statsBefore[resolution.skillUsed]}`;
-        parts.push(
-          `poi ${resolution.node} ${resolution.reward.kind}x${resolution.reward.units} ${attempt} ${resolution.claimed ? 'TAKEN' : 'kept'}`,
-        );
+      case 'interacted':
+        lines.push(...interactionLines(event.resolution, turn, run));
         break;
-      }
       case 'game_won':
-        parts.push(`WON ${event.winners.join(' ')}`);
+        lines.push(`  won     ${event.winners.join(' ')} — lead exceeds the gold still on the map (§1)`);
         break;
       default:
         break;
     }
   }
-  parts.push(`| stam=${turn.staminaAfter} gold=${turn.goldAfter}`);
-  return parts.join(' ');
+
+  for (const standing of turn.standings) lines.push(`  ${statLine(standing.name, standing.stats)}`);
+  return lines;
+}
+
+/**
+ * One line per step walked, from the engine's own accounting.
+ *
+ * The allowance is counted down here only to *print* it; which steps were free
+ * is `previewPath`'s answer, not this function's.
+ */
+function moveLines(resolution: MovementResolution, turn: PlayedTurn, run: Playthrough): string[] {
+  const config = run.map.ruleset.config;
+  if (resolution.walked.length === 0) {
+    const planned = resolution.remainder.length;
+    return [
+      planned === 0
+        ? `  move    stayed on node ${resolution.from} (empty path — §8's second attempt at the same guard)`
+        : `  move    no step affordable this turn; ${planned} still planned, first is node ${resolution.remainder[0]}`,
+    ];
+  }
+
+  const preview = previewPath(
+    run.map.graph,
+    resolution.from,
+    resolution.walked,
+    turn.allowanceBefore,
+    turn.statsBefore.stamina,
+    config,
+  );
+
+  const left: Record<Terrain, number> = { ...turn.allowanceBefore };
+  let stamina = turn.statsBefore.stamina;
+  let from = resolution.from;
+  const lines: string[] = [];
+
+  for (const step of preview.steps) {
+    const terrain = terrainOf(run, step.node);
+    const skill = TERRAIN_SKILL[terrain];
+    const where = `${String(from).padStart(3, ' ')} -> ${String(step.node).padStart(3, ' ')}  ${terrain.padEnd(8)}`;
+    if (step.color === 'free') {
+      left[terrain] -= 1;
+      lines.push(`  step    ${where} free (${skill} allowance ${left[terrain] + 1} -> ${left[terrain]})`);
+    } else {
+      stamina -= step.staminaCost;
+      const why =
+        turn.statsBefore[skill] === 0
+          ? `${skill} 0, no free steps`
+          : `${skill} ${turn.statsBefore[skill]}, allowance already spent`;
+      lines.push(`  step    ${where} ${step.staminaCost} stamina (${why}), ${stamina} left`);
+    }
+    from = step.node;
+  }
+
+  if (resolution.remainder.length > 0) {
+    lines.push(
+      `  move    stopped at node ${resolution.to}; ${resolution.remainder.length} step${resolution.remainder.length === 1 ? '' : 's'} saved as next turn's planned path`,
+    );
+  }
+  return lines;
+}
+
+function interactionLines(
+  resolution: InteractionResolution,
+  turn: PlayedTurn,
+  run: Playthrough,
+): string[] {
+  if (resolution.reward === null) return [];
+  const { kind, units } = resolution.reward;
+  const guard = poiAt(run.map, resolution.node)?.guard ?? null;
+  const what = `node ${resolution.node} holds ${kind} x${units}`;
+
+  if (resolution.roll === null || guard === null || resolution.skillUsed === null) {
+    return [`  poi     ${what}, unguarded — taken (§8)`];
+  }
+
+  const skill = turn.statsBefore[resolution.skillUsed];
+  const total = resolution.roll.value + skill;
+  return [
+    `  poi     ${what}, guarded ${guard.type} ${guard.strength}`,
+    `  roll    ${resolution.roll.value} + ${resolution.skillUsed} ${skill} = ${total} vs ${guard.strength}` +
+      ` — ${resolution.claimed ? 'taken' : 'stays on the node, no other cost'}`,
+  ];
+}
+
+function terrainOf(run: Playthrough, node: NodeId): Terrain {
+  const found = run.map.graph.nodes[node];
+  if (found === undefined) throw new Error(`unknown node ${node}`);
+  return found.terrain;
+}
+
+function statLine(name: string, stats: PlayerStats): string {
+  return (
+    `stats ${name}  stamina ${String(stats.stamina).padStart(3, ' ')}  gold ${String(stats.gold).padStart(2, ' ')}` +
+    `  plains_move ${stats.plains_move}  forest_move ${stats.forest_move}  mountain_move ${stats.mountain_move}` +
+    `  fighting ${stats.fighting}  magic ${stats.magic}`
+  );
 }

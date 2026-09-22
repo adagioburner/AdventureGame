@@ -51,6 +51,14 @@ describe('renderMapSvg', () => {
     expect(count(svg, /stroke-dasharray=/g)).toBe(report.valleyNodes.length);
   });
 
+  it('labels every node with its id, so the logs can be read against the drawing', () => {
+    // Andrei, 2026-09-22, on the first playthrough transcript: "the log is still
+    // useless without the accompanying map with nodes labeled with node ids".
+    const labels = [...svg.matchAll(/fill="#5f5a50">(\d+)<\/text>/g)].map((match) => Number(match[1]));
+    expect(labels).toHaveLength(map.graph.nodes.length);
+    expect(new Set(labels)).toEqual(new Set(map.graph.nodes.map((node) => node.id as number)));
+  });
+
   it('labels every POI with its reward kind and unit count', () => {
     const goldTwo = map.pois.filter((poi) => poi.reward.kind === 'gold' && poi.reward.units === 2).length;
     expect(goldTwo).toBeGreaterThan(0);
