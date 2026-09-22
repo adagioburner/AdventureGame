@@ -86,6 +86,18 @@ describe('a full game', () => {
     }
   });
 
+  it('prints, as each turn’s plan, the route the move actually took', () => {
+    // The "plan" line is recorded by the driver, not the engine, so check it
+    // against what the engine walked: walked then remainder is the whole route.
+    for (const turn of run.turns) {
+      for (const event of turn.events) {
+        if (event.type !== 'moved') continue;
+        const { walked, remainder } = event.resolution;
+        expect([...walked, ...remainder]).toEqual(turn.heading?.route);
+      }
+    }
+  });
+
   it('matches the committed transcript', async () => {
     await expect(formatPlaythrough(run)).toMatchFileSnapshot('../../../golden/games/adventure-2p.txt');
   }, 30000);

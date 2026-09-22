@@ -82,6 +82,19 @@ export interface PlayedTurn {
   readonly statsBefore: PlayerStats;
   /** Every player's stats once the turn resolved, in seat order. */
   readonly standings: readonly PlayerStanding[];
+  /**
+   * Where the driver was sending this player and by which route, or `null`
+   * when there was nothing left it could take. The engine never sees this —
+   * a move action carries only its path — so it is recorded here, because a
+   * walk cannot be judged without knowing where it was going.
+   */
+  readonly heading: Heading | null;
+}
+
+export interface Heading {
+  readonly target: NodeId;
+  /** The whole shortest path from where the turn began, target last. */
+  readonly route: readonly NodeId[];
 }
 
 export interface PlayerStanding {
@@ -135,7 +148,7 @@ export function playGame(options: PlaythroughOptions, ruleset: Ruleset): Playthr
     // nothing left is the game stuck: no claim can happen, so §1's win
     // condition can never be reached and playing on would only burn turns.
     const chosen = chooseAction(state, player.id, ruleset);
-    const action = chosen ?? { kind: 'rest' as const, player: player.id };
+    const action = chosen?.action ?? { kind: 'rest' as const, player: player.id };
     idleSeats = chosen === null ? idleSeats + 1 : 0;
     if (idleSeats >= state.players.length) {
       endedBy = 'stalemate';
@@ -156,6 +169,7 @@ export function playGame(options: PlaythroughOptions, ruleset: Ruleset): Playthr
       allowanceBefore,
       statsBefore: player.stats,
       standings: state.players.map((current) => ({ name: current.name, stats: current.stats })),
+      heading: chosen?.heading ?? null,
     });
   }
 
@@ -165,13 +179,19 @@ export function playGame(options: PlaythroughOptions, ruleset: Ruleset): Playthr
 }
 
 /** `null` when this player has nothing left it could ever take. */
-function chooseAction(state: GameState, playerId: PlayerId, ruleset: Ruleset): TurnAction | null {
+function chooseAction(
+  state: GameState,
+  playerId: PlayerId,
+  ruleset: Ruleset,
+): { action: TurnAction; heading: Heading } | null {
   const player = state.players.find((current) => current.id === playerId);
   if (player === undefined) throw new Error(`no such player ${playerId}`);
 
   const target = nearestViableTarget(state, playerId, ruleset);
   if (target === null) return null;
-  if (target === player.position) return { kind: 'move', player: playerId, path: [] };
+  if (target === player.position) {
+    return { action: { kind: 'move', player: playerId, path: [] }, heading: { target, route: [] } };
+  }
 
   const path = shortestPath(state.map.graph, player.position, target, ruleset.config);
   // §2.1 step 8 rejects a disconnected map, so every POI is reachable.
@@ -187,9 +207,10 @@ function chooseAction(state: GameState, playerId: PlayerId, ruleset: Ruleset): T
   );
   // Nothing affordable this turn, so recover instead of standing still: grey is
   // a statement about this turn only (§7.1).
-  if (preview.reachableStepCount === 0) return { kind: 'rest', player: playerId };
+  const heading = { target, route: path };
+  if (preview.reachableStepCount === 0) return { action: { kind: 'rest', player: playerId }, heading };
 
-  return { kind: 'move', player: playerId, path };
+  return { action: { kind: 'move', player: playerId, path }, heading };
 }
 
 function nearestViableTarget(state: GameState, playerId: PlayerId, ruleset: Ruleset): NodeId | null {
@@ -275,6 +296,8 @@ export function formatPlaythrough(run: Playthrough): string {
   lines.push('# Node ids are the ids drawn on the diagnostic map for this seed (pnpm map ' + run.options.seed + ').');
   lines.push('# Every step says which terrain was entered and what paid for it: a moving skill');
   lines.push('# (§7 allowance, counted down) or stamina (§11 STAMINA_COST: plains 1, forest 2, mountain 3).');
+  lines.push('# "plan" is where the test driver sent the player: the nearest POI (by step cost) still');
+  lines.push('# unclaimed that they could beat on the best roll. It is a deliberately simple rule, not the AI.');
   lines.push('# Free steps only pay for their own terrain. A walk that ends short names the step it could');
   lines.push('# not pay for; the rest of the path waits for next turn (§7).');
   lines.push('# A guarded POI says roll + skill vs guard strength; §8 needs strictly greater.');
@@ -307,6 +330,7 @@ function turnLines(turn: PlayedTurn, run: Playthrough): string[] {
     `turn ${String(turn.number).padStart(3, ' ')}  ${turn.name} (seat ${turn.seat})  at node ${turn.positionBefore}` +
       `  allowance plains ${allowance.plains} / forest ${allowance.forest} / mountain ${allowance.mountain}` +
       `  stamina ${stats.stamina}`,
+    ...headingLines(turn, run),
   ];
 
   for (const event of turn.events) {
@@ -333,6 +357,41 @@ function turnLines(turn: PlayedTurn, run: Playthrough): string[] {
 }
 
 /**
+ * Where the player was going, before what happened on the way.
+ *
+ * The driver's rule is the nearest POI (by §11 step cost) that is unclaimed and
+ * that this player could beat on the die's best face, so naming the target
+ * also says why every nearer POI was passed over: it was already taken or out
+ * of reach. A rest with a target says which step could not be paid for.
+ */
+function headingLines(turn: PlayedTurn, run: Playthrough): string[] {
+  const { heading } = turn;
+  if (heading === null) return ['  plan    nothing left on the map this player could take, so rests'];
+
+  const what = describePoi(run, heading.target);
+  if (heading.route.length === 0) {
+    return [`  plan    already on node ${heading.target} (${what}), attacks it again`];
+  }
+  const lines = [
+    `  plan    heading for node ${heading.target} (${what}), the nearest POI ${turn.name} could take`,
+    `          route ${[turn.positionBefore, ...heading.route].join(' -> ')}`,
+  ];
+  if (turn.events.some((event) => event.type === 'rested')) {
+    lines.push(
+      `          can't pay the first step, ${blockedStep(turn.positionBefore, heading.route, turn, run, turn.allowanceBefore, turn.statsBefore.stamina)}, so rests`,
+    );
+  }
+  return lines;
+}
+
+function describePoi(run: Playthrough, node: NodeId): string {
+  const poi = poiAt(run.map, node);
+  if (poi === undefined) throw new Error(`no POI at node ${node}`);
+  const reward = `${poi.reward.kind} x${poi.reward.units}`;
+  return poi.guard === null ? `${reward}, unguarded` : `${reward}, guarded ${poi.guard.type} ${poi.guard.strength}`;
+}
+
+/**
  * One line per step walked, from the engine's own accounting.
  *
  * The allowance is counted down here only to *print* it; which steps were free
@@ -345,7 +404,7 @@ function moveLines(resolution: MovementResolution, turn: PlayedTurn, run: Playth
     return [
       planned === 0
         ? `  move    stayed on node ${resolution.from} (empty path — §8's second attempt at the same guard)`
-        : `  move    no step affordable this turn: ${blockedStep(resolution.from, resolution.remainder, turn, run, turn.allowanceBefore, turn.statsBefore.stamina)}; ${planned} still planned`,
+        : `  move    no step affordable this turn: first step ${blockedStep(resolution.from, resolution.remainder, turn, run, turn.allowanceBefore, turn.statsBefore.stamina)}; ${planned} still planned`,
     ];
   }
 
@@ -383,7 +442,7 @@ function moveLines(resolution: MovementResolution, turn: PlayedTurn, run: Playth
 
   if (resolution.remainder.length > 0) {
     lines.push(
-      `  move    stopped at node ${resolution.to}: ${blockedStep(resolution.to, resolution.remainder, turn, run, left, stamina)}`,
+      `  move    stopped at node ${resolution.to}: next step ${blockedStep(resolution.to, resolution.remainder, turn, run, left, stamina)}`,
       `          ${resolution.remainder.length} step${resolution.remainder.length === 1 ? '' : 's'} saved as next turn's planned path`,
     );
   }
@@ -416,7 +475,7 @@ function blockedStep(
   if (allowanceLeft[terrain] !== 0) throw new Error(`step to ${next} was free yet the walk stopped`);
   const level = turn.statsBefore[skill];
   const free = level === 0 ? `${skill} 0` : `${skill} ${level}, all ${level} free steps spent`;
-  return `next step ${at} -> ${next} ${terrain} needs ${cost} stamina (${free}), ${staminaLeft} left`;
+  return `${at} -> ${next} ${terrain} needs ${cost} stamina (${free}), ${staminaLeft} left`;
 }
 
 function interactionLines(

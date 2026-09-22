@@ -145,8 +145,10 @@ histograms — and writes `out/maps/adventure.svg`, whose absolute path is the
 ### Watching a game
 
 `pnpm game adventure` plays one to a winner and prints it a turn at a time,
-so that every number can be checked by hand: each step names the node entered,
-its terrain, and whether a moving skill or stamina paid for it; each guard roll
+so that every number can be checked by hand: each turn opens with where the
+player is heading and the whole route there; each step names the node entered,
+its terrain, and whether a moving skill or stamina paid for it; a walk that ends
+short names the step it could not pay for; each guard roll
 shows the skill added and the strength it had to beat; and every player's stats
 follow every turn. Node ids are the ones `pnpm map adventure` labels every node
 with, so the log and the drawing read together. Without a clone,
