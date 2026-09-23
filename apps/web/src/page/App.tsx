@@ -5,7 +5,6 @@ import { ART_FILES } from '../art/files.ts';
 import { HotseatGame, HOTSEAT_SEATS, newDiceSeed, type HotseatSeat } from '../modes/hotseat.ts';
 import { loadArt, type LoadedArt } from '../render/pixi/textures.ts';
 import { buildMapScene, type MapScene } from '../render/sceneModel.ts';
-import { ArtPanel } from './ArtPanel.tsx';
 import { GameScreen } from './GameScreen.tsx';
 import { initialSeed, mapFor, randomSeed, writeSeed } from './seed.ts';
 import { SetupScreen } from './SetupScreen.tsx';
@@ -19,7 +18,6 @@ import { SetupScreen } from './SetupScreen.tsx';
 export function App() {
   const [seed, setSeed] = useState(initialSeed);
   const [draft, setDraft] = useState(seed);
-  const [showArt, setShowArt] = useState(false);
   const [logOpen, setLogOpen] = useState(false);
   const [art, setArt] = useState<LoadedArt | null>(null);
   const [map, setMap] = useState<GameMap | null>(null);
@@ -125,15 +123,6 @@ export function App() {
             </button>
           </form>
         )}
-        <button
-          id="toggle-art"
-          className="btn"
-          type="button"
-          aria-pressed={showArt}
-          onClick={() => setShowArt(!showArt)}
-        >
-          Art in use
-        </button>
       </header>
       {status !== null || art === null || map === null || scene === null || seats === null ? (
         <main className="stage">
@@ -156,7 +145,6 @@ export function App() {
           <SetupScreen art={art} map={map} scene={scene} seats={seats} onSeats={setSeats} onStart={start} />
         </main>
       )}
-      {showArt && catalog !== null ? <ArtPanel catalog={catalog} onClose={() => setShowArt(false)} /> : null}
     </div>
   );
 }

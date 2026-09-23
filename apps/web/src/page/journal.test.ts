@@ -107,14 +107,14 @@ describe('the turn log, in words that can be checked by hand', () => {
     const entry = describeTurn(game(workedExample), { kind: 'move', path: path(1, 2, 3, 4, 5) }, dice(4));
     expect(entry.headline).toBe('Walked 5 steps, beat the guard and took 3 gold');
     expect(entry.details).toEqual([
-      'Heading for the 3 gold POI (forest, fighting guard 5).',
+      'Heading for the 3 gold POI (forest, combat guard 5).',
       'Steps: plains free ×3 · plains 1 stamina · forest free.',
       'Stamina 14 → 13.',
-      'Fighting guard 5: rolled 4 + fighting 2 = 6, more than 5. Took 3 gold.',
+      'Combat guard 5: rolled 4 + combat 2 = 6, more than 5. Took 3 gold.',
     ]);
     expect(entry.tone).toBe('took');
     expect(statLine(entry.statsAfter)).toBe(
-      'stamina 13 · gold 3 · plains move 3 · forest move 1 · mountain move 0 · fighting 2 · magic 0',
+      'stamina 13 · gold 3 · plains speed 3 · forest speed 1 · mountains speed 0 · combat 2 · magic 0',
     );
   });
 
@@ -122,7 +122,7 @@ describe('the turn log, in words that can be checked by hand', () => {
     const entry = describeTurn(game(workedExample), { kind: 'move', path: path(1, 2, 3, 4, 5) }, dice(3));
     expect(entry.headline).toBe('Walked 5 steps, lost to the guard');
     expect(entry.details.at(-1)).toBe(
-      'Fighting guard 5: rolled 3 + fighting 2 = 5, not more than 5. The gold stays; losing costs nothing else.',
+      'Combat guard 5: rolled 3 + combat 2 = 5, not more than 5. The gold stays; losing costs nothing else.',
     );
     expect(entry.tone).toBe('missed');
   });
@@ -134,7 +134,7 @@ describe('the turn log, in words that can be checked by hand', () => {
       'Heading for the 5 gold POI (mountain).',
       'Steps: plains 1 stamina ×2.',
       'Stamina 2 → 0.',
-      'Stopped: the next step, into plains, costs 1 stamina and 0 are left (plains move is 0). Those 4 steps are saved for next turn.',
+      'Stopped: the next step, into plains, costs 1 stamina and 0 are left (plains speed is 0). Those 4 steps are saved for next turn.',
     ]);
   });
 
@@ -142,7 +142,7 @@ describe('the turn log, in words that can be checked by hand', () => {
     const entry = describeTurn(game({ stamina: 0, plains_move: 1 }), { kind: 'move', path: path(1, 2) });
     expect(entry.headline).toBe('Walked 1 of 2 steps');
     expect(entry.details.at(-1)).toBe(
-      'Stopped: the next step, into plains, costs 1 stamina and 0 are left (plains move 1, all 1 free step used). That last step is saved for next turn.',
+      'Stopped: the next step, into plains, costs 1 stamina and 0 are left (plains speed 1, all 1 free step used). That last step is saved for next turn.',
     );
     const none = describeTurn(game({ stamina: 0 }), { kind: 'move', path: path(1) });
     expect(none.headline).toBe('Could not afford the first step');

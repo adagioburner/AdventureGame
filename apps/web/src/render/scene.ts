@@ -1,5 +1,6 @@
 import type { GameState, NodeId, PathPreview } from '@adventure/core';
 import type { Camera, Projection } from './isometric.ts';
+import type { FigureCue } from './sceneModel.ts';
 
 /**
  * Draw layers. Separated because they invalidate on completely different
@@ -38,5 +39,7 @@ export interface MapRenderer {
   setPathPreview(preview: PathPreview | null): void;
   /** [SOURCE §4] Shift-click waypoint marker. */
   setWaypoint(node: NodeId | null): void;
+  /** Whether the current player's figure blinks, is highlighted, or neither. */
+  setCue(cue: FigureCue): void;
   invalidate(layer: SceneLayer): void;
 }

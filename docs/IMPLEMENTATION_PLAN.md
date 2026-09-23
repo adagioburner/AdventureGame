@@ -219,8 +219,7 @@ reviewer needs nothing that `pnpm install` has not already put in place.
 **With no checkout**, the viewer comes to the thread as a published page: the
 same app, built by `pnpm build:web`, posted where a phone can open it. It
 generates in the browser, so any seed typed into its box draws that map there
-and then, and its "Art in use" panel says which pictures are placeholders,
-which are borrowed (Q20) and which are supplied. Screenshots of named seeds,
+and then. Screenshots of named seeds,
 whole and zoomed in, come back as attachments the same way §2.0's plates do.
 That is phase 3's answer to §2.0: nothing to run, and any seed on demand.
 
@@ -726,9 +725,10 @@ placeholder** — and that shaped most of what follows.
 - **Four placeholders were generated** by `make_placeholders.py`, flagged
   `placeholder: true` like the die and the brush: tileable textures for the
   three terrains, and `Prospect_Markers` — §7.1's dots and crosses in green,
-  yellow and grey, a waypoint flag and an active-player ring. The viewer's
-  "Art in use" panel lists every picture as placeholder, borrowed or supplied,
-  read from those flags.
+  yellow and grey, a waypoint flag and an active-player ring. The viewer
+  first had an "Art in use" panel listing every picture as placeholder,
+  borrowed or supplied from those flags; Andrei had it removed in phase 4, and
+  the flags stay in the atlases.
 - **The icons are renamed for what they show** (item 6): `plains_move.png`
   (the wagon wheel, was `roads.png`), `forest_move.png` (the green foot, was
   `plains.png`) and `mountain_move.png` (was `mountains.png`), so every icon
@@ -862,7 +862,7 @@ figurines, then play it out on one screen until the engine declares a winner.
   still up. Before this, only the path survived and the flag vanished.
 - **End Turn plays the turn out in three beats**: the figure walks the steps
   the engine says it walked, the die tumbles if a guard was faced, then the
-  result card holds the matching face beside "4 rolled + 2 fighting = 6
+  result card holds the matching face beside "4 rolled + 2 combat = 6
   against 5" and says what was taken or that the gold stays. The engine has
   already resolved the turn before the first beat; the beats only reveal it.
 - **Every number on screen comes from the engine**: the stats panel shows the
@@ -907,6 +907,23 @@ figurines, then play it out on one screen until the engine declares a winner.
   follows the window only.
 - **A closed tab loses the game**, as P3 says: nothing is saved, and reload
   starts a new setup on the same map.
+- **Andrei's first look at the game** (2026-09-23) asked for three changes,
+  all made:
+  - The "Art in use" panel is gone from the page.
+  - The current player's figure blinks while it is their turn, so it is easy
+    to find, with a ripple spreading on the ground under it; once they tap it
+    or press Plan a move it stops blinking and is highlighted instead, a gold
+    ring round it, until the turn is played. Cancel sets it blinking again.
+    `MapRenderer.setCue` takes `blink`, `selected` or `none`; the page picks
+    one from the turn and the move mode, and the renderer animates it.
+  - The page calls the moving skills **plains speed, forest speed and
+    mountains speed**, and fighting **combat**: in the stats panel, the
+    result card, the turn log and every hint. The engine's names
+    (`plains_move`, `fighting`, the `fighting` guard type) are unchanged, and
+    one table in `page/journal.ts`, `STAT_LABEL`, is where the page's words
+    come from. A test reads a whole game's log and finds none of the old
+    words (332 tests now). The turn log's header also reads each terrain's
+    step cost from the map's ruleset rather than from fixed text.
 
 ---
 

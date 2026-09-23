@@ -142,6 +142,8 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 [SOURCE §2] Per-player stats, uncapped: stamina, plains/forest/mountain moving skill levels, fighting skill, magic skill, gold. Displayed for every player to see, next to name and avatar.
 
+[SOURCE §2, review] **On screen the moving skills are "plains speed", "forest speed" and "mountains speed", and fighting is "combat".** Andrei, trying the hotseat game on 2026-09-23: rename them "consistently throughout the interface". The rules and the code keep their names (`plains_move`, `fighting`, a `fighting` guard); only the words a player reads changed. Registered as Q33.
+
 [SOURCE §2, chat] Player count: **2–5** (config, not a hard limit). Turn order fixed at game start, never changes thereafter (order determined by whatever is most convenient to implement — expected default: order the game master accepts join requests, §6.1).
 
 [SOURCE §2, chat] Starting stamina by seat: `STARTING_STAMINA_BASE` (default 30) + (seat − 1) × `STARTING_STAMINA_INCREMENT` (default 10).
@@ -181,6 +183,8 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 ### 7.2 Hotseat mode
 
 [SOURCE §intro, chat] The same computer sequentially shows the game controls for all hotseat participants in turn order. The current player's name and avatar are prominently displayed, and their character is highlighted on the map. Unlike online play, there is **no out-of-turn planning** in hotseat mode — the §7.1 "plan your move while others play" feature does not apply.
+
+[SOURCE §intro, review] **The current player's character blinks until they pick it up, then is highlighted.** Andrei, trying the hotseat game on 2026-09-23: "it is hard to find your character on the map. Can we make it so it blinks when it's your turn, and, once you clicked it to start planning your move, it stops blinking and highlights instead." Registered as Q34.
 
 ### 7.3 Game master controls
 

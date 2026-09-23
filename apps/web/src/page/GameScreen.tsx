@@ -5,7 +5,7 @@ import type { Pick } from '../interaction/picking.ts';
 import { HOTSEAT_MODE, type HotseatGame, type PlayedTurn } from '../modes/hotseat.ts';
 import { position } from '../render/geometry.ts';
 import type { LoadedArt } from '../render/pixi/textures.ts';
-import type { MapScene, Walker } from '../render/sceneModel.ts';
+import type { FigureCue, MapScene, Walker } from '../render/sceneModel.ts';
 import { EndCard, ResultCard } from './Cards.tsx';
 import { journalEntry, type JournalEntry } from './journal.ts';
 import { MapView, type MapHandle } from './MapView.tsx';
@@ -47,6 +47,9 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
   const [entries, setEntries] = useState<readonly JournalEntry[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
   const [endOpen, setEndOpen] = useState(true);
+  // The turn in which the current player picked their figure up; until they
+  // do, it blinks, even over a route saved from their last turn.
+  const [engagedTurn, setEngagedTurn] = useState<number | null>(null);
   const handle = useRef<MapHandle | null>(null);
   const busy = inFlight !== null;
 
@@ -143,12 +146,21 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
         return;
       }
       const refused = controller.enter(clicked);
-      if (refused !== null) refuse(refused);
-      else setResult(null);
+      if (refused !== null) return refuse(refused);
+      setResult(null);
+      setEngagedTurn(shown.turn.number);
+      return;
+    }
+    // Tapping your own figure while a route is up picks it up; it does not
+    // make its own node the destination.
+    if (active !== undefined && target.players.includes(active.id)) {
+      setEngagedTurn(shown.turn.number);
       return;
     }
     const node = target.node;
-    if (node !== null) controller.choose(node, shift);
+    if (node === null) return;
+    setEngagedTurn(shown.turn.number);
+    controller.choose(node, shift);
   };
 
   const plan = (): void => {
@@ -156,6 +168,7 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
     const refused = controller.enter(active.id);
     if (refused !== null) return refuse(refused);
     setResult(null);
+    setEngagedTurn(shown.turn.number);
     // A phone shows the whole map too small to find a figure or tap a node,
     // so planning from the button there starts close in on the player.
     if (window.matchMedia(PHONE).matches) findActive();
@@ -188,6 +201,12 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
 
   const path = inFlight !== null ? inFlight.path : move.kind === 'previewing' ? move.preview : null;
   const waypoint = inFlight !== null ? inFlight.waypoint : move.kind === 'idle' ? null : move.waypoint;
+  const cue: FigureCue =
+    shown.status !== 'in_progress' || busy
+      ? 'none'
+      : move.kind !== 'idle' && engagedTurn === shown.turn.number
+        ? 'selected'
+        : 'blink';
 
   return (
     <div className="game">
@@ -206,7 +225,7 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
         onFind={findActive}
       />
       <div className={`log-host${logOpen ? ' open' : ''}`}>
-        <TurnLog entries={entries} mapSeed={game.setup.map.seed} diceSeed={game.setup.diceSeed} onClose={onCloseLog} />
+        <TurnLog entries={entries} map={game.setup.map} diceSeed={game.setup.diceSeed} onClose={onCloseLog} />
       </div>
       <main className="stage">
         <MapView
@@ -217,6 +236,7 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
           path={path}
           waypoint={waypoint}
           walker={walker}
+          cue={cue}
           onTap={onTap}
           onReady={(ready) => {
             handle.current = ready;

@@ -1,4 +1,4 @@
-import type { RewardKind, Terrain } from '@adventure/config';
+import type { GuardType, RewardKind, Terrain } from '@adventure/config';
 import {
   poiAt,
   previewPath,
@@ -19,7 +19,7 @@ import type { PlayedTurn } from '../modes/hotseat.ts';
  *
  * Written so that every turn can be checked by eye against the rules and the
  * stats panel without the code: which terrain each step entered and whether a
- * moving skill or stamina paid for it, why a walk stopped short, what a guard
+ * terrain's speed or stamina paid for it, why a walk stopped short, what a guard
  * roll added up to and what it had to beat, and the player's whole stat block
  * after. A turn whose reason is not on screen reads as a possible engine bug.
  *
@@ -38,7 +38,11 @@ export interface JournalEntry {
   readonly statsAfter: PlayerStats;
 }
 
-/** Stat names as a player reads them, in the order the panel shows them. */
+/**
+ * Stat names as a player reads them, in the order the panel shows them. The
+ * moving skills read as speeds and fighting as combat throughout the page
+ * (Andrei's review, 2026-09-23); the engine's names are unchanged.
+ */
 export const STAT_ORDER: readonly RewardKind[] = [
   'stamina',
   'gold',
@@ -52,11 +56,17 @@ export const STAT_ORDER: readonly RewardKind[] = [
 export const STAT_LABEL: Readonly<Record<RewardKind, string>> = {
   stamina: 'stamina',
   gold: 'gold',
-  plains_move: 'plains move',
-  forest_move: 'forest move',
-  mountain_move: 'mountain move',
-  fighting: 'fighting',
+  plains_move: 'plains speed',
+  forest_move: 'forest speed',
+  mountain_move: 'mountains speed',
+  fighting: 'combat',
   magic: 'magic',
+};
+
+/** A guard is named for the stat that beats it. */
+export const GUARD_LABEL: Readonly<Record<GuardType, string>> = {
+  fighting: STAT_LABEL.fighting,
+  magic: STAT_LABEL.magic,
 };
 
 const TERRAIN_SKILL: Readonly<Record<Terrain, RewardKind>> = {
@@ -138,7 +148,7 @@ function describeWalk(
   const details = [heading, `Steps: ${runs(steps).join(' · ')}.`];
   details.push(
     preview.totalStaminaCost === 0
-      ? `Every step was free (a moving skill pays for steps onto its own terrain). Stamina stays ${turn.statsBefore.stamina}.`
+      ? `Every step was free (a terrain's speed makes that many steps onto it free each turn). Stamina stays ${turn.statsBefore.stamina}.`
       : `Stamina ${turn.statsBefore.stamina} → ${turn.statsBefore.stamina - preview.totalStaminaCost}.`,
   );
 
@@ -202,7 +212,8 @@ function describeInteraction(
   const skill = turn.statsBefore[resolution.skillUsed];
   const total = resolution.roll.value + skill;
   const sum = `rolled ${resolution.roll.value} + ${STAT_LABEL[resolution.skillUsed]} ${skill} = ${total}`;
-  const kind = `${guard.type === 'fighting' ? 'Fighting' : 'Magic'} guard ${guard.strength}`;
+  const name = GUARD_LABEL[guard.type];
+  const kind = `${name.charAt(0).toUpperCase()}${name.slice(1)} guard ${guard.strength}`;
   return resolution.claimed
     ? { headline: `, beat the guard and took ${prize}`, detail: `${kind}: ${sum}, more than ${guard.strength}. Took ${prize}.` }
     : {
@@ -238,7 +249,7 @@ export function describeNode(state: GameState, node: NodeId): string {
   if (poi === undefined || taken) return `a ${terrain} node`;
   const what = `${poi.reward.units} ${STAT_LABEL[poi.reward.kind]}`;
   if (poi.guard === null) return `the ${what} POI (${terrain})`;
-  return `the ${what} POI (${terrain}, ${poi.guard.type} guard ${poi.guard.strength})`;
+  return `the ${what} POI (${terrain}, ${GUARD_LABEL[poi.guard.type]} guard ${poi.guard.strength})`;
 }
 
 export function statLine(stats: PlayerStats): string {

@@ -128,4 +128,16 @@ describe('a whole hotseat game, played through the move-mode controller', () => 
     });
     expect(game.turns.some((turn) => journalEntry(turn, befores[turn.number - 1] as GameState).tone === 'won')).toBe(true);
   });
+
+  it('names the stats as the page does, never by the engine’s words (Q33)', () => {
+    const text = game.turns
+      .flatMap((turn) => {
+        const entry = journalEntry(turn, befores[turn.number - 1] as GameState);
+        return [entry.headline, ...entry.details, statLine(entry.statsAfter)];
+      })
+      .join('\n');
+    expect(text).toMatch(/speed/);
+    expect(text).toMatch(/combat/i);
+    expect(text).not.toMatch(/fighting|moving skill|movement|plains move|forest move|mountain move|_move/i);
+  });
 });

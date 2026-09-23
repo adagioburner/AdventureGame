@@ -13,12 +13,30 @@ import {
   guardRing,
   nodeOutlineWidth,
   type Billboard,
+  type FigureCue,
   type MapScene,
   type StateScene,
   type Walker,
 } from '../sceneModel.ts';
 import { backdropTerrains } from '../dressing.ts';
 import type { LoadedArt } from './textures.ts';
+
+/**
+ * The current player's cue, in node spacings and milliseconds. Blinking fades
+ * the figure and its ring out and back once a period while a ripple spreads
+ * from its feet, so it can be found even with the whole map in view; planning
+ * holds it steady on a larger ring with a bright edge.
+ */
+const CUE = {
+  blinkMs: 1000,
+  dimAlpha: 0.15,
+  rippleFrom: 0.2,
+  rippleTo: 1.4,
+  rippleWidth: 0.06,
+  highlightScale: 1.5,
+  highlightWidth: 0.05,
+  color: 0xffd84a,
+} as const;
 
 /**
  * `MapRenderer` on PixiJS (docs/STACK.md §3). Everything it draws comes out
@@ -48,6 +66,9 @@ export class PixiMapRenderer implements MapRenderer {
   private poiSprites: Sprite[] = [];
   private characterSprites: Sprite[] = [];
   private waypointSprite: Sprite | null = null;
+  private cue: FigureCue = 'none';
+  /** What the blink animates: the current player's figure, its ring and the ripple. */
+  private cued: { figure: Sprite | null; ring: Sprite | null; ripple: Graphics; at: Point } | null = null;
 
   private state: GameState | null = null;
   private stateScene: StateScene | null = null;
@@ -123,6 +144,28 @@ export class PixiMapRenderer implements MapRenderer {
   setWaypoint(node: NodeId | null): void {
     this.waypoint = node;
     this.invalidate('characters');
+  }
+
+  setCue(cue: FigureCue): void {
+    if (cue === this.cue) return;
+    this.cue = cue;
+    this.invalidate('characters');
+  }
+
+  /** Advance the blink; call once a frame. */
+  tick(now: number): void {
+    const cued = this.cued;
+    if (this.cue !== 'blink' || cued === null) return;
+    const phase = (now % CUE.blinkMs) / CUE.blinkMs;
+    const alpha = CUE.dimAlpha + (1 - CUE.dimAlpha) * (0.5 + 0.5 * Math.cos(phase * 2 * Math.PI));
+    if (cued.figure !== null) cued.figure.alpha = alpha;
+    if (cued.ring !== null) cued.ring.alpha = alpha;
+    const { spacing } = this.scene;
+    const radius = (CUE.rippleFrom + (CUE.rippleTo - CUE.rippleFrom) * phase) * spacing;
+    cued.ripple
+      .clear()
+      .circle(cued.at.x, cued.at.y, radius)
+      .stroke({ color: CUE.color, width: CUE.rippleWidth * spacing, alpha: 1 - phase });
   }
 
   invalidate(layer: SceneLayer): void {
@@ -257,15 +300,35 @@ export class PixiMapRenderer implements MapRenderer {
     this.waypointSprite?.destroy();
     this.waypointSprite = null;
     this.activeLayer.removeChildren().forEach((child) => child.destroy());
+    this.cued = null;
 
-    for (const item of this.stateScene?.characters ?? []) this.characterSprites.push(this.stand(item, 1));
+    const state = this.state;
+    const current = state === null ? undefined : state.players[state.turn.activeSeat - 1]?.id;
+    let figure: Sprite | null = null;
+    for (const item of this.stateScene?.characters ?? []) {
+      const sprite = this.stand(item, 1);
+      this.characterSprites.push(sprite);
+      if (item.player === current) figure = sprite;
+    }
     const active = this.stateScene?.active ?? null;
     if (active !== null) {
+      const selected = this.cue === 'selected';
       const ring = new Sprite(this.art.frame(active.sprite));
       ring.anchor.set(0.5);
-      ring.scale.set(active.size / ring.texture.width);
+      ring.scale.set((active.size * (selected ? CUE.highlightScale : 1)) / ring.texture.width);
       ring.position.set(active.at.x, active.at.y);
       this.activeLayer.addChild(ring);
+      if (selected) {
+        const edge = new Graphics()
+          .circle(active.at.x, active.at.y, (active.size * CUE.highlightScale) / 2)
+          .stroke({ color: CUE.color, width: CUE.highlightWidth * this.scene.spacing });
+        this.activeLayer.addChild(edge);
+      }
+      if (this.cue === 'blink') {
+        const ripple = new Graphics();
+        this.activeLayer.addChild(ripple);
+        this.cued = { figure, ring, ripple, at: active.at };
+      }
     }
     if (this.waypoint !== null) {
       this.waypointSprite = this.stand(buildWaypoint(this.scene, this.map, this.waypoint, this.art.catalog), 1);

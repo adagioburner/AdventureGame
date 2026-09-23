@@ -285,6 +285,14 @@ export interface Walker {
   readonly at: Point;
 }
 
+/**
+ * How the current player's figure calls attention to itself (Andrei's review,
+ * 2026-09-23: "hard to find your character"): it blinks while it is their
+ * turn and they have not picked it up yet, and is highlighted, steady, while
+ * they plan. `none` while a turn plays out and once the game is over.
+ */
+export type FigureCue = 'blink' | 'selected' | 'none';
+
 export function buildStateScene(scene: MapScene, state: GameState, catalog: ArtCatalog, walker: Walker | null = null): StateScene {
   const claimed = new Set<NodeId>();
   state.map.pois.forEach((poi, index) => {

@@ -1,7 +1,7 @@
 import { poiAt, unclaimedGoldUnits, type GameEvent, type GameState } from '@adventure/core';
 import type { ArtCatalog } from '../art/catalog.ts';
 import type { PlayedTurn } from '../modes/hotseat.ts';
-import { STAT_LABEL, STAT_ORDER } from './journal.ts';
+import { GUARD_LABEL, STAT_LABEL, STAT_ORDER } from './journal.ts';
 import { Die, Portrait, StatIcon } from './Sprites.tsx';
 
 /**
@@ -23,7 +23,7 @@ export function ResultCard({ catalog, turn, rolling, onClose }: { catalog: ArtCa
       <header>
         <Portrait catalog={catalog} avatarId={avatar} size={40} label={turn.name} />
         <h2>
-          {guard === null ? `${turn.name} found ${prize}` : `${turn.name} faces a ${guard.type} guard of ${guard.strength}`}
+          {guard === null ? `${turn.name} found ${prize}` : `${turn.name} faces a ${GUARD_LABEL[guard.type]} guard of ${guard.strength}`}
         </h2>
       </header>
       {roll === null || skillUsed === null || guard === null ? (

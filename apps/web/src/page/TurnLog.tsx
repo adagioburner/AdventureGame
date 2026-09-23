@@ -1,3 +1,5 @@
+import { TERRAINS } from '@adventure/config';
+import { terrainStepCost, type GameMap } from '@adventure/core';
 import { statLine, type JournalEntry } from './journal.ts';
 
 /**
@@ -5,7 +7,8 @@ import { statLine, type JournalEntry } from './journal.ts';
  * player was heading, which terrain each step entered and what paid for it,
  * why a walk stopped, what a guard roll added up to, and the stats after.
  */
-export function TurnLog({ entries, mapSeed, diceSeed, onClose }: { entries: readonly JournalEntry[]; mapSeed: string; diceSeed: string; onClose?: () => void }) {
+export function TurnLog({ entries, map, diceSeed, onClose }: { entries: readonly JournalEntry[]; map: GameMap; diceSeed: string; onClose?: () => void }) {
+  const costs = TERRAINS.map((terrain) => `${terrain} ${terrainStepCost(terrain, map.ruleset.config)}`).join(', ');
   return (
     <section className="log" aria-label="Turn log">
       <header>
@@ -17,8 +20,8 @@ export function TurnLog({ entries, mapSeed, diceSeed, onClose }: { entries: read
         )}
       </header>
       <p className="muted">
-        Map seed <code>{mapSeed}</code> · dice seed <code>{diceSeed}</code>. A moving skill of N makes the first N steps onto its
-        terrain free each turn; other steps cost stamina (plains 1, forest 2, mountain 3).
+        Map seed <code>{map.seed}</code> · dice seed <code>{diceSeed}</code>. A terrain's speed of N makes the first N steps
+        onto that terrain free each turn; other steps cost stamina ({costs}).
       </p>
       {entries.length === 0 ? <p className="muted">Nothing played yet.</p> : null}
       <ol>

@@ -7,7 +7,7 @@ import { fitToViewport } from '../render/isometric.ts';
 import { position } from '../render/geometry.ts';
 import { PixiMapRenderer } from '../render/pixi/renderer.ts';
 import type { LoadedArt } from '../render/pixi/textures.ts';
-import { SPACING_PX, type MapScene, type Walker } from '../render/sceneModel.ts';
+import { SPACING_PX, type FigureCue, type MapScene, type Walker } from '../render/sceneModel.ts';
 
 /** What the page can ask of the map once it is up. */
 export interface MapHandle {
@@ -27,6 +27,8 @@ interface MapViewProps {
   readonly path: PathPreview | null;
   readonly waypoint: NodeId | null;
   readonly walker: Walker | null;
+  /** How the current player's figure calls attention to itself; `none` if omitted. */
+  readonly cue?: FigureCue;
   /** A click or tap, as opposed to a drag; `shift` for a shift-click. */
   readonly onTap?: (target: Pick, shift: boolean) => void;
   readonly onReady?: (handle: MapHandle | null) => void;
@@ -41,14 +43,14 @@ const TAP_TRAVEL_PX = 8;
 /** Zoom, relative to the whole-map view, that "find" brings the map to at least. */
 const PLAY_ZOOM_OF_FIT = 2.2;
 
-export function MapView({ art, map: gameMap, scene, state, path, waypoint, walker, onTap, onReady }: MapViewProps) {
+export function MapView({ art, map: gameMap, scene, state, path, waypoint, walker, cue = 'none', onTap, onReady }: MapViewProps) {
   const host = useRef<HTMLDivElement>(null);
   const renderer = useRef<PixiMapRenderer | null>(null);
   const zoomButtons = useRef<((action: 'in' | 'out' | 'fit') => void) | null>(null);
   // Read when the renderer comes up, and by the pointer handlers, which are
   // bound once per map.
-  const latest = useRef({ state, path, waypoint, walker, onTap, onReady });
-  latest.current = { state, path, waypoint, walker, onTap, onReady };
+  const latest = useRef({ state, path, waypoint, walker, cue, onTap, onReady });
+  latest.current = { state, path, waypoint, walker, cue, onTap, onReady };
 
   useEffect(() => {
     const element = host.current;
@@ -78,7 +80,9 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
       map.setState(now.state);
       map.setPathPreview(now.path);
       map.setWaypoint(now.waypoint);
+      map.setCue(now.cue);
       app.stage.addChild(map.root);
+      app.ticker.add(() => map.tick(performance.now()));
       renderer.current = map;
 
       const viewport = (): Point => ({ x: element.clientWidth, y: element.clientHeight });
@@ -221,6 +225,9 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
   useEffect(() => {
     renderer.current?.setWaypoint(waypoint);
   }, [waypoint]);
+  useEffect(() => {
+    renderer.current?.setCue(cue);
+  }, [cue]);
 
   return (
     <>
