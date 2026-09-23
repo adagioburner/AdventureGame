@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q35.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q36.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -936,6 +936,16 @@ rim, in one of the same seven directions. Where every such spot would cover a
 neighbouring node or image, which happens on a crowded mountain (8 of the 19
 on `adventure`), the guardian stands beside its node instead. GDD §3 carries
 the ruling as a `[SOURCE §1, review]` note after Q31's.
+
+### Q36. ~~How is a claimed POI drawn?~~ — **answered 2026-09-23: its picture does not change**
+
+Phase 3 drew a claimed POI's picture 45% see-through, a default that was
+never put to Andrei, and once the cottages were brightened the claimed ones
+looked like ghosts. A darker solid version followed, again without asking.
+Andrei: *"The claimed POIs should lose their icons, but the images DO NOT
+CHANGE."* A claimed POI loses its reward icons, its guard's number and its
+guard ring, and its picture is drawn exactly as before. GDD §4.5 carries the
+ruling as a `[SOURCE §2, review]` note.
 
 ---
 

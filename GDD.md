@@ -120,6 +120,8 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 [SOURCE §2] A POI's reward is consumed once claimed; the node then behaves like an ordinary node of its terrain type.
 
+[SOURCE §2, review] **A claimed POI's image does not change.** Andrei, 2026-09-23: "The claimed POIs should lose their icons, but the images DO NOT CHANGE." Its reward icons, guard strength and guard ring go; its picture stays exactly as it was. Registered as Q36.
+
 ---
 
 ## 5. Balancing

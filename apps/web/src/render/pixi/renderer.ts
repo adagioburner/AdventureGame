@@ -22,14 +22,6 @@ import { backdropTerrains } from '../dressing.ts';
 import type { LoadedArt } from './textures.ts';
 
 /**
- * How a claimed POI's picture is drawn: every colour at this share, so it
- * reads as spent but keeps its colour. It was drawn 45% opaque until Andrei
- * found the brightened cottages "look like ghosts, way too faint and
- * washed-out" (2026-09-23).
- */
-const CLAIMED_TINT = 0xcccccc;
-
-/**
  * The current player's cue, in node spacings and milliseconds. Blinking fades
  * the figure and its ring out and back once a period while a ripple spreads
  * from its feet, so it can be found even with the whole map in view; planning
@@ -292,16 +284,13 @@ export class PixiMapRenderer implements MapRenderer {
   private drawPois(): void {
     for (const sprite of this.poiSprites) sprite.destroy();
     this.poiSprites = [];
-    const claimed = this.stateScene?.claimed ?? new Set<NodeId>();
     for (const item of this.scene.billboards) {
       if (item.layer !== 'pois') continue;
-      const gone = item.node !== null && claimed.has(item.node);
-      // §4.5: a claimed POI "behaves like an ordinary node" — its picture
-      // stays, a little darker, so the map does not change shape. Its node's
-      // icons and number are gone, which is what says it was claimed.
-      const sprite = this.stand(item, 1);
-      if (gone) sprite.tint = CLAIMED_TINT;
-      this.poiSprites.push(sprite);
+      // §4.5: a claimed POI "behaves like an ordinary node". [Andrei,
+      // 2026-09-23] "The claimed POIs should lose their icons, but the images
+      // DO NOT CHANGE": its picture is drawn exactly as before, and only its
+      // icons, number and guard ring go (`drawUi`, `buildStateScene`).
+      this.poiSprites.push(this.stand(item, 1));
     }
   }
 

@@ -264,7 +264,7 @@ function backToFront(p: Billboard, q: Billboard): number {
 // --- what changes during play ------------------------------------------------
 
 export interface StateScene {
-  /** POIs whose reward is gone (§4.5): drawn faded, without icons or a number. */
+  /** POIs whose reward is gone (§4.5): their picture unchanged, without icons or a number. */
   readonly claimed: ReadonlySet<NodeId>;
   /**
    * Every node as it is drawn now. [SOURCE §4.5] A claimed POI "behaves like

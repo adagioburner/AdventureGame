@@ -787,11 +787,12 @@ placeholder** — and that shaped most of what follows.
   POI's picture or reward. Measured on `adventure` with the tests' rough
   sprite shapes, that hides 3 pixels of road against 549 with every picture
   straight behind its node, and no picture covers another POI.
-- **A claimed POI is drawn a little darker on a plain node, with no icons or
-  number.** §4.5 says the node then behaves as an ordinary node; keeping the
-  building is a default, one line to change. It was drawn 45% see-through
-  until the brightened cottages turned to "ghosts" (Andrei, 2026-09-23), so
-  it is now solid at 80% brightness.
+- **A claimed POI keeps its picture exactly as it was, on a plain node, with
+  no icons or number.** §4.5 says the node then behaves as an ordinary node.
+  It was first drawn 45% see-through, a default Andrei had not been asked
+  about, and the brightened cottages turned to ghosts; he ruled on
+  2026-09-23 that "the claimed POIs should lose their icons, but the images
+  DO NOT CHANGE".
 - **Andrei's first review (2026-09-23) made everything smaller and quieter.**
   POI pictures are half their first size, which had them covering roads and
   neighbouring POIs; the plains grass is under a third of its first size, the

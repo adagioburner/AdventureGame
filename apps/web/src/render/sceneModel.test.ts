@@ -362,7 +362,7 @@ describe('what changes during play', () => {
     expect(state.claimed.size).toBe(0);
   });
 
-  it("fades a claimed POI, drops its reward from the screen, and draws its node as an ordinary one", () => {
+  it("keeps a claimed POI's picture, drops its reward from the screen, and draws its node as an ordinary one", () => {
     const index = game.map.pois.findIndex((poi) => poi.guard !== null);
     const target = game.map.pois[index];
     if (target === undefined) throw new Error('the map has no guarded POI');
