@@ -68,7 +68,10 @@ mountain is mountain movement.
 
 `x`, `y`, `width` and `height` place the sprite on the sheet. `anchor` is
 where it touches the ground, relative to its own top left: the foot of a
-building or a figure, which the renderer stands on the node. Sprite ids must
+building or a figure, which the renderer stands on the node. Most supplied
+sheets put it at the bottom of the baked shadow instead; once the shadow is
+keyed, a sprite whose anchor sits below its lowest solid pixel stands on that
+pixel, so its feet and not its shadow touch the node. Sprite ids must
 be unique within a sheet. Optional sprite fields: `tiles` (`"both"` for a
 terrain texture, `"horizontal"` for a road stroke), `centerline_y` for where a
 stroke's centre runs, and `role`, `state` and `value` labelling marker and die

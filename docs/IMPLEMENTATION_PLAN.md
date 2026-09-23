@@ -717,7 +717,10 @@ placeholder** — and that shaped most of what follows.
 - **Most supplied sheets bake their shadow in as opaque grey** (`#bbbbbb`),
   which would sit on the terrain as a grey slab. The loader turns exactly the
   colours the manifest lists into translucent black, rim included, and a sheet
-  whose replacement draws its own shadow just loses its line.
+  whose replacement draws its own shadow just loses its line. Those sheets
+  also anchor each sprite at the foot of that shadow, which left guardians
+  floating behind their nodes, so a sprite whose anchor sits below its lowest
+  solid pixel now stands on that pixel.
 - **Four placeholders were generated** by `make_placeholders.py`, flagged
   `placeholder: true` like the die and the brush: tileable textures for the
   three terrains, and `Prospect_Markers` — §7.1's dots and crosses in green,
