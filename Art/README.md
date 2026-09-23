@@ -87,8 +87,10 @@ and ignored by the game.
   size, a relative weight and a density (standing dressing sprites per node).
   A dressing sheet marked `"layer": "backdrop"` (the mountains) is painted
   onto the ground under the roads and nodes and fills its whole terrain
-  instead: each sprite shrinks as far as its `min_size` to stay over its own
-  terrain, and whatever still reaches past is clipped. Without it, dressing
+  instead, largest first: sprites of its full `size` go wherever they fit
+  over their own terrain, which is the middle of a region, and smaller ones,
+  down to `min_size`, fill in round them and along the edges. Whatever still
+  reaches past is clipped. Raising `size` makes the big peaks bigger. Without it, dressing
   stands up among the POIs and is kept clear of the nodes and roads. A
   standing sheet with `"array": 3` (the fields) is laid out in arrays up to
   three sprites a side, side by side along the ground.

@@ -742,6 +742,10 @@ placeholder** — and that shaped most of what follows.
   `backdrop`, so they are painted onto the ground under the roads and nodes,
   each sized between `min_size` and `size` to stay over mountain ground, and
   clipped to it, covering the whole mountain area instead of only its edges.
+  The largest go down first, so the middle of a region carries peaks up to
+  2.4 node spacings across and smaller ones fill in along the edges; on seed
+  `adventure` 60% of the mountain ground lies under a peak at least three
+  times a tree's size, which a test holds above half.
   Fields are laid out in small arrays side by side along the ground.
 - **Nothing internal is drawn** (item 9), and a test proves it the direct way:
   scrambling every POI's `remoteness` and `group` and the map's `attempts`

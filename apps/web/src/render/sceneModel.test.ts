@@ -219,9 +219,11 @@ describe('what the player sees of the map', () => {
     expect(alone).toEqual([]);
   });
 
-  it("fills the mountains with backdrop, each sized to stay over mountain ground, roads and nodes or not", () => {
+  it("fills the mountains with backdrop, large in the middle, each sized to stay over mountain ground", () => {
     // Andrei, 2026-09-23: "cover the whole mountain region, without gaps when
-    // possible, but not stick out of it. For this, mountains can be resized".
+    // possible, but not stick out of it. For this, mountains can be resized";
+    // then "we need to leave the mountains placed in the middle of the
+    // mountain region large".
     const graph = game.map.graph;
     const backdrop = scene.billboards.filter((item) => item.layer === 'backdrop');
     const art = catalog.manifest.terrain.mountain.dressing;
@@ -247,24 +249,30 @@ describe('what the player sees of the map', () => {
     }
     expect(problems).toEqual([]);
     // Covered: most of the mountain ground lies under a mountain's picture,
-    // on a grid finer than the mountains are sown on.
-    const fine = mountains.size * scene.spacing * BACKDROP_STEP * 0.5;
+    // on a grid finer than the mountains are sown on, and most of it under
+    // one at least three times as large as a tree.
+    const fine = mountains.minSize * scene.spacing * BACKDROP_STEP * 0.5;
+    const [trees] = catalog.manifest.terrain.forest.dressing;
+    const large = 3 * (trees?.size ?? 0) * SPACING_PX;
     let ground = 0;
     let under = 0;
+    let underLarge = 0;
     for (let y = scene.bounds.min.y; y < scene.bounds.max.y; y += fine) {
       for (let x = scene.bounds.min.x; x < scene.bounds.max.x; x += fine) {
         const screen = scene.projection.toScreen({ x, y });
         if (terrainAt(screen) !== 'mountain') continue;
         ground++;
-        const covered = backdrop.some((item) => {
+        const covering = backdrop.filter((item) => {
           const box = pictureBox(item.foot, item.size, ROUGH_SHAPE(item.sprite));
           return screen.x >= box.minX && screen.x <= box.maxX && screen.y >= box.minY && screen.y <= box.maxY;
         });
-        if (covered) under++;
+        if (covering.length > 0) under++;
+        if (covering.some((item) => item.size >= large)) underLarge++;
       }
     }
-    expect(ground).toBeGreaterThan(100);
+    expect(ground).toBeGreaterThan(1000);
     expect(under / ground).toBeGreaterThan(0.9);
+    expect(underLarge / ground).toBeGreaterThan(0.5);
     // Painted under the roads and nodes, so nothing keeps them away from either.
     const close = backdrop.filter((item) => {
       const at = scene.projection.toWorld(item.foot);

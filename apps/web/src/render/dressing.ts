@@ -1,10 +1,10 @@
 import { TERRAINS, type Terrain } from '@adventure/config';
 import { createRng, type GameMap, type Point, type Rng } from '@adventure/core';
-import { atlasOf, wrapIndex, type ArtCatalog } from '../art/catalog.ts';
+import { atlasOf, wrapIndex, type ArtCatalog, type SpriteRef } from '../art/catalog.ts';
 import type { ArtManifest, DressingArt } from '../art/manifest.ts';
 import { distance, distanceToSegment, ObstacleGrid, position } from './geometry.ts';
 import type { Bounds, Projection } from './isometric.ts';
-import { grow, pictureBox, type ShapeOf, type SpriteShape } from './placement.ts';
+import { grow, pictureBox, type Box, type ShapeOf, type SpriteShape } from './placement.ts';
 import { SPACING_PX, type Billboard } from './sceneModel.ts';
 
 /**
@@ -27,8 +27,8 @@ export function backdropTerrains(manifest: ArtManifest): Set<Terrain> {
 /** How far a standing sprite's picture reaches past its measured shape when it is kept off nodes and roads, as a share of its size. */
 export const STANDING_MARGIN = 0.05;
 
-/** How far apart backdrop sprites are sown, as a share of their largest size. */
-export const BACKDROP_STEP = 0.4;
+/** How far apart backdrop spots are sown, as a share of the smallest size a backdrop sprite may take. */
+export const BACKDROP_STEP = 0.6;
 
 /** How far apart two sprites of one array stand, as a share of the gap that would put them edge to edge. */
 const ARRAY_GAP = 1.04;
@@ -205,12 +205,17 @@ export function silhouettePoints(foot: Point, size: number, shape: SpriteShape):
 /**
  * [Andrei, review 2026-09-23] "mountain images should pretty much cover the
  * whole mountain region, without gaps when possible, but not stick out of
- * it. For this, mountains can be resized to fit the necessary space."
+ * it. For this, mountains can be resized to fit the necessary space." And,
+ * on the result: "we need to leave the mountains placed in the middle of the
+ * mountain region large."
  *
- * Sown over every backdrop terrain on a jittered grid `BACKDROP_STEP` of the
- * largest size apart. Each sprite takes the largest size, between the sheet's
- * `min_size` and `size`, at which its silhouette lies wholly over its own
- * terrain; a spot where not even the smallest fits is left bare.
+ * So the largest go down first. Spots are sown over every backdrop terrain
+ * on a jittered grid `BACKDROP_STEP` of the smallest size apart, then tried
+ * at one size after another from the sheet's `size` down to its `min_size`:
+ * a sprite stands wherever its silhouette lies wholly over its own terrain
+ * and most of it is still bare ground. The middle of a region fills with
+ * large mountains first, and smaller ones fill in round them and along the
+ * edges, where a large one would not fit.
  */
 export function placeBackdrop(ground: Ground): Billboard[] {
   const { map, catalog, projection, spacing, bounds, shapeOf } = ground;
@@ -222,39 +227,68 @@ export function placeBackdrop(ground: Ground): Billboard[] {
   const options = new Map(
     [...terrains].map((terrain) => [terrain, manifest.terrain[terrain].dressing.filter((d) => d.layer === 'backdrop')]),
   );
-  const largest = Math.max(...[...options.values()].flat().map((d) => d.size));
-  const step = largest * spacing * BACKDROP_STEP;
-  const over = (terrain: Terrain) => (screen: Point): boolean => {
-    const at = projection.toWorld(screen);
-    return inside(bounds, at) && nearestNode(map, at)?.terrain === terrain;
-  };
+  const all = [...options.values()].flat();
+  const smallest = Math.min(...all.map((d) => d.minSize));
+  const step = smallest * spacing * BACKDROP_STEP;
 
-  const placed: Billboard[] = [];
+  // Every spot, with the sheet and sprite it would draw.
+  const spots: { at: Point; foot: Point; terrain: Terrain; option: DressingArt; sprite: SpriteRef; jitter: number }[] = [];
   for (let gy = bounds.min.y; gy < bounds.max.y; gy += step) {
     for (let gx = bounds.min.x; gx < bounds.max.x; gx += step) {
       const at = { x: gx + rng.nextFloat() * step, y: gy + rng.nextFloat() * step };
       const pickDressing = rng.nextFloat();
       const pickSprite = rng.nextUint32();
-      const shrink = rng.nextFloat();
+      const jitter = rng.nextFloat();
       if (!inside(bounds, at)) continue;
       const terrain = nearestNode(map, at)?.terrain;
       if (terrain === undefined || !terrains.has(terrain)) continue;
       const option = pick(options.get(terrain) ?? [], pickDressing);
       if (option === undefined) continue;
-
-      const foot = projection.toScreen(at);
       const sprite = { sheet: option.sheet, index: wrapIndex(pickSprite, atlasOf(catalog, option.sheet).sprites.length) };
-      const shape = shapeOf(sprite);
-      const fits = over(terrain);
-      // A little variety in the middle of a range, then as large as fits.
-      let size = option.size * (0.85 + 0.15 * shrink);
-      while (size >= option.minSize && !silhouettePoints(foot, size * SPACING_PX, shape).every(fits)) size *= 0.9;
-      if (size < option.minSize) {
-        size = option.minSize;
-        if (!silhouettePoints(foot, size * SPACING_PX, shape).every(fits)) continue;
-      }
-      placed.push({ layer: 'backdrop', sprite, foot, size: size * SPACING_PX, node: null, depth: foot.y });
+      spots.push({ at, foot: projection.toScreen(at), terrain, option, sprite, jitter });
     }
   }
+
+  const over = (terrain: Terrain) => (screen: Point): boolean => {
+    const at = projection.toWorld(screen);
+    return inside(bounds, at) && nearestNode(map, at)?.terrain === terrain;
+  };
+  const placed: Billboard[] = [];
+  const bodies: Box[] = [];
+  const bare = (point: Point): boolean =>
+    !bodies.some((body) => point.x >= body.minX && point.x <= body.maxX && point.y >= body.minY && point.y <= body.maxY);
+  const taken = new Set<number>();
+
+  // From the largest size down, each a step smaller than the last.
+  const largest = Math.max(...all.map((d) => d.size));
+  for (let tier = largest; tier >= smallest * 0.999; tier *= BACKDROP_SHRINK) {
+    spots.forEach((spot, index) => {
+      if (taken.has(index)) return;
+      const { option } = spot;
+      if (tier > option.size * 1.001 || tier < option.minSize * 0.999) return;
+      // A little variety within a size, never below the sheet's smallest.
+      const size = Math.max(option.minSize, tier * (0.9 + 0.1 * spot.jitter)) * SPACING_PX;
+      const shape = shapeOf(spot.sprite);
+      const outline = silhouettePoints(spot.foot, size, shape);
+      if (!outline.every(over(spot.terrain))) return;
+      if (outline.filter(bare).length < outline.length * BACKDROP_BARE) return;
+      taken.add(index);
+      placed.push({ layer: 'backdrop', sprite: spot.sprite, foot: spot.foot, size, node: null, depth: spot.foot.y });
+      bodies.push(body(spot.foot, size, shape));
+    });
+  }
   return placed;
+}
+
+/** Each size tried is this share of the one before. */
+export const BACKDROP_SHRINK = 0.8;
+
+/** A new backdrop sprite needs at least this share of its outline over bare ground. */
+export const BACKDROP_BARE = 0.5;
+
+/** The solid middle of a backdrop picture: what a later one should not stand on. */
+function body(foot: Point, size: number, shape: SpriteShape): Box {
+  const box = pictureBox(foot, size, shape);
+  const inset = (box.maxX - box.minX) * 0.15;
+  return { minX: box.minX + inset, minY: box.minY + (box.maxY - box.minY) * 0.3, maxX: box.maxX - inset, maxY: box.maxY };
 }

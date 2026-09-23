@@ -631,8 +631,9 @@ How the in-game map is put together, since phase 3 drew it:
   waypoint flag are billboards standing at the screen point of their foot and
   sorted back to front. Dressing the manifest marks `backdrop` (the
   mountains) is the exception: it is painted onto the ground under the roads
-  and nodes, sized to fit and clipped to its own terrain, so it can cover the
-  whole of it without hiding either. Reward icons and guard numbers go on top
+  and nodes, the largest that fit first and smaller ones round them, and
+  clipped to its own terrain, so it can cover the whole of it without hiding
+  either. Reward icons and guard numbers go on top
   of everything, so nothing standing can hide them; a route's yellow steps
   carry no number (Q32).
 - **What a picture covers is measured, not guessed.** On load every sprite's
