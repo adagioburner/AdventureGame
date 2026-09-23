@@ -542,8 +542,9 @@ example becomes a test.
    being that of the node being *entered*. The unwalked remainder is saved as
    next turn's planned path.
 2. **`previewPath`** — the same accounting, producing §7.1's per-step colours
-   instead of a new state: green free, yellow costs stamina (labelled), grey
-   unreachable. Deliberately the same function family as `resolveMovement` so
+   instead of a new state: green free, yellow costs stamina, grey
+   unreachable. (§7.1 labelled yellow steps with their cost until Q32 dropped
+   the label in phase 3's review; `previewPath` still reports each cost.) Deliberately the same function family as `resolveMovement` so
    the preview and the committed move cannot disagree. Grey reflects only this
    turn and is never cached.
 3. **`resolveInteraction`** — §8. Unguarded: take it. Guarded: roll
@@ -737,16 +738,28 @@ placeholder** — and that shaped most of what follows.
 - **Dressing never hides the game.** It is scattered deterministically from the
   map's seed at a per-terrain density, kept off nodes and roads, and never
   stands in front of a node or a road on screen. A test checks all three.
+  Mountains are the exception since Andrei's review: the manifest marks them
+  `backdrop`, so they are painted onto the ground under the roads and nodes
+  and cover the whole mountain area instead of only its edges.
 - **Nothing internal is drawn** (item 9), and a test proves it the direct way:
   scrambling every POI's `remoteness` and `group` and the map's `attempts`
   leaves the scene identical, value for value.
-- **A guardian's contour comes from the POI's guard, never from the sheet.**
-  So a gold POI whose guard §5.2 capped to nothing still shows its castle, with
-  no contour and no number, and forest gold on the borrowed mountain sheet
-  gets red because its guard is fighting.
-- **A claimed POI is drawn faded, with no icons, contour or number.** §4.5
-  says the node then behaves as an ordinary node; fading rather than removing
-  the building is a default, one line to change.
+- **A guard's colour is on its POI's node, and comes from the POI's guard,
+  never from the sheet** (Q31). A guarded node is drawn larger, outlined in red
+  or purple, with the picture standing just behind it. So a gold POI whose
+  guard §5.2 capped to nothing still shows its castle, on a plain node with no
+  number, and forest gold on the borrowed mountain sheet gets red because its
+  guard is fighting. The first build ringed the picture itself, per §3's
+  wording; Andrei moved it to the node in his review.
+- **A claimed POI is drawn faded on a plain node, with no icons or number.**
+  §4.5 says the node then behaves as an ordinary node; fading rather than
+  removing the building is a default, one line to change.
+- **Andrei's first review (2026-09-23) made everything smaller and quieter.**
+  POI pictures are half their first size, which had them covering roads and
+  neighbouring POIs; the plains grass is under a third of its first size, the
+  fields about half, and the figures, waypoint flag, reward icons and guard
+  numbers shrank to match. Route steps that cost stamina are yellow with no
+  "-N" beside them (Q32).
 - **Pan and zoom landed early** (`interaction/camera.ts`: drag, pinch, wheel,
   `+`/`-`, and "Whole map"), because a map shown whole on a phone is too small
   to judge art by. Move mode stays in phase 4. So does the move-prospect

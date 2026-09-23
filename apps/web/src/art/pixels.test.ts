@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hexToRgb, keyShadows, silhouette, solidBounds, SOLID_ALPHA, standingAnchor, typicalSpan } from './pixels.ts';
+import { keyShadows, solidBounds, SOLID_ALPHA, standingAnchor, typicalSpan } from './pixels.ts';
 
 function image(width: number, height: number, paint: (x: number, y: number) => [number, number, number, number]) {
   const pixels = new Uint8ClampedArray(width * height * 4);
@@ -112,25 +112,5 @@ describe('standingAnchor', () => {
   it('keeps an anchor that is already inside the picture', () => {
     expect(standingAnchor(sprite, { x: 110, y: 5, width: 80, height: 112 })).toEqual({ x: 50, y: 110 });
     expect(standingAnchor(sprite, null)).toEqual({ x: 50, y: 110 });
-  });
-});
-
-describe('silhouette', () => {
-  it('fills the solid pixels with the contour colour and clears the rest', () => {
-    // A 3×3 solid block, with a faint shadow pixel beside it.
-    const pixels = image(4, 3, (x) => (x < 3 ? [10, 20, 30, 255] : [0, 0, 0, 77]));
-    silhouette(pixels, 4, '#d8282b');
-    const red = [...hexToRgb('#d8282b'), 255];
-    for (let y = 0; y < 3; y++) {
-      for (let x = 0; x < 3; x++) expect([...pixels.slice((y * 4 + x) * 4, (y * 4 + x) * 4 + 4)]).toEqual(red);
-      expect(pixels[(y * 4 + 3) * 4 + 3]).toBe(0);
-    }
-  });
-
-  it('drops a stray speck rather than giving it a contour of its own', () => {
-    const pixels = image(5, 5, (x, y) => (x === 4 && y === 0 ? [10, 20, 30, 255] : x < 3 && y > 1 ? [10, 20, 30, 255] : [0, 0, 0, 0]));
-    silhouette(pixels, 5, '#d8282b');
-    expect(pixels[(0 * 5 + 4) * 4 + 3]).toBe(0);
-    expect(pixels[(3 * 5 + 1) * 4 + 3]).toBe(255);
   });
 });

@@ -6,17 +6,25 @@ import { ART_FILES } from '../art/files.ts';
 import { previewGame, SAMPLE_ALLOWANCE, SAMPLE_STAMINA } from '../page/preview.ts';
 import { distance, distanceToSegment, polygonArea, position } from './geometry.ts';
 import {
+  BACKDROP_GAP,
   buildMapScene,
   buildPathScene,
   buildStateScene,
   buildWaypoint,
   SPACING_PX,
   type MapScene,
+  type NodeMark,
 } from './sceneModel.ts';
 
 const catalog = buildArtCatalog(ART_FILES);
 const game = previewGame('adventure', DEFAULT_RULESET);
 const scene = buildMapScene(game.map, catalog);
+
+/** How far a node's oval, outline included, reaches up and down the screen from its centre. */
+function reach(mark: NodeMark): number {
+  const outline = mark.guard === null ? catalog.manifest.nodes.radius * 0.28 : catalog.manifest.guards.nodeOutlineWidth;
+  return ((mark.radius / scene.spacing + outline / 2) * SPACING_PX) / 2;
+}
 
 /** The scene as plain data: the projection's functions compared by their matrix. */
 function plain(value: MapScene): unknown {
@@ -43,17 +51,34 @@ describe('what the player sees of the map', () => {
     expect(plain(buildMapScene(game.map, catalog))).toEqual(plain(scene));
   });
 
-  it('stands one picture on every POI, with a contour exactly when it is guarded', () => {
+  it("stands one picture on every POI, just behind its node so the whole node shows", () => {
     const pois = scene.billboards.filter((item) => item.layer === 'pois');
     expect(pois).toHaveLength(game.map.pois.length);
     for (const poi of game.map.pois) {
       const picture = pois.find((item) => item.node === poi.node);
-      expect(picture?.contour ?? null).toBe(poi.guard?.type ?? null);
-      expect(picture?.foot).toEqual(scene.projection.toScreen(position(game.map.graph, poi.node)));
+      const node = scene.projection.toScreen(position(game.map.graph, poi.node));
+      const mark = scene.nodes[poi.node];
+      if (picture === undefined || mark === undefined) throw new Error(`POI ${poi.node} is not drawn`);
+      expect(picture.foot.x).toBeCloseTo(node.x);
+      // Its base touches the back of the node's oval, outline and all.
+      expect(node.y - picture.foot.y).toBeCloseTo(reach(mark));
     }
   });
 
-  it('shows a stack of N units as N icons, and a guard as its strength in its colour', () => {
+  it("marks a guarded POI by its node, larger and in its guard's colour, and no other node", () => {
+    // Q31: the colour is on the node, not round the picture.
+    const guards = new Map(game.map.pois.map((poi) => [poi.node, poi.guard?.type ?? null]));
+    expect([...guards.values()].filter((guard) => guard !== null).length).toBeGreaterThan(5);
+    for (const mark of scene.nodes) {
+      const guard = guards.get(mark.node) ?? null;
+      expect(mark.guard).toBe(guard);
+      const radius = guard === null ? catalog.manifest.nodes.radius : catalog.manifest.guards.nodeRadius;
+      expect(mark.radius).toBeCloseTo(radius * scene.spacing);
+    }
+    expect(catalog.manifest.guards.nodeRadius).toBeGreaterThan(catalog.manifest.nodes.radius);
+  });
+
+  it('shows a stack of N units as N icons, and a guard as its strength in its colour, in front of the node', () => {
     expect(scene.labels).toHaveLength(game.map.pois.length);
     for (const poi of game.map.pois) {
       const label = scene.labels.find((candidate) => candidate.node === poi.node);
@@ -61,13 +86,20 @@ describe('what the player sees of the map', () => {
       expect(label?.icons.count).toBe(poi.reward.units);
       if (poi.guard === null) expect(label?.guard).toBeNull();
       else expect(label?.guard).toMatchObject({ type: poi.guard.type, strength: poi.guard.strength });
+      // Wholly in front of the node's oval, so the icons never hide the guard's colour.
+      const node = scene.projection.toScreen(position(game.map.graph, poi.node));
+      const mark = scene.nodes[poi.node];
+      if (label === undefined || mark === undefined) throw new Error(`POI ${poi.node} is not labelled`);
+      expect(label.icons.first.y - label.icons.size / 2).toBeGreaterThanOrEqual(node.y + reach(mark) - 1e-9);
     }
   });
 
   it('draws every node and every road, sized from the map rather than its coordinate space', () => {
     expect(scene.nodes).toHaveLength(game.map.graph.nodes.length);
     expect(scene.roads).toHaveLength(game.map.graph.edges.length);
-    for (const node of scene.nodes) expect(node.radius).toBeCloseTo(catalog.manifest.nodes.radius * scene.spacing);
+    for (const node of scene.nodes.filter((mark) => mark.guard === null)) {
+      expect(node.radius).toBeCloseTo(catalog.manifest.nodes.radius * scene.spacing);
+    }
     // One node spacing comes out as SPACING_PX on screen along the ground.
     const along = scene.projection.toScreen({ x: scene.spacing, y: 0 });
     const origin = scene.projection.toScreen({ x: 0, y: 0 });
@@ -86,7 +118,7 @@ describe('what the player sees of the map', () => {
     }
   });
 
-  it('keeps dressing off nodes and roads, and never in front of either', () => {
+  it('keeps standing dressing off nodes and roads, and never in front of either', () => {
     const graph = game.map.graph;
     const dressing = scene.billboards.filter((item) => item.layer === 'dressing');
     expect(dressing.length).toBeGreaterThan(100);
@@ -126,6 +158,33 @@ describe('what the player sees of the map', () => {
     expect(problems).toEqual([]);
   });
 
+  it("paints backdrop dressing all over its own terrain, under the roads and nodes, without piling up", () => {
+    const graph = game.map.graph;
+    const backdrop = scene.billboards.filter((item) => item.layer === 'backdrop');
+    const sheets = Object.values(catalog.manifest.terrain).flatMap((art) =>
+      art.dressing.filter((d) => d.layer === 'backdrop').map((d) => d.sheet),
+    );
+    expect(sheets).toEqual(['Mountains_Mountains']);
+    const mountainNodes = graph.nodes.filter((node) => node.terrain === 'mountain').length;
+    expect(backdrop.length).toBe(Math.round(mountainNodes * catalog.manifest.terrain.mountain.dressingDensity));
+    const problems: string[] = [];
+    const ground = backdrop.map((item) => scene.projection.toWorld(item.foot));
+    ground.forEach((at, index) => {
+      const nearest = graph.nodes.reduce((best, node) => (distance(at, node.position) < distance(at, best.position) ? node : best));
+      if (nearest.terrain !== 'mountain') problems.push(`backdrop ${index} stands on ${nearest.terrain}`);
+      for (let other = 0; other < index; other++) {
+        const apart = distance(at, ground[other] ?? at) / scene.spacing;
+        const smaller = Math.min(backdrop[index]?.size ?? 0, backdrop[other]?.size ?? 0) / SPACING_PX;
+        if (apart < smaller * BACKDROP_GAP - 1e-9) problems.push(`backdrop ${index} and ${other} are ${apart.toFixed(2)} apart`);
+      }
+    });
+    expect(problems).toEqual([]);
+    // Not held back to the edges of the mountains any more: plenty stand
+    // where standing dressing may not, close to a node or across a road.
+    const close = ground.filter((at) => graph.nodes.some((node) => distance(at, node.position) < scene.spacing * 0.3));
+    expect(close.length).toBeGreaterThan(backdrop.length / 10);
+  });
+
   it('orders everything standing back to front', () => {
     for (let i = 1; i < scene.billboards.length; i++) {
       expect(scene.billboards[i]?.depth).toBeGreaterThanOrEqual(scene.billboards[i - 1]?.depth ?? -Infinity);
@@ -148,18 +207,23 @@ describe('what changes during play', () => {
     expect(state.claimed.size).toBe(0);
   });
 
-  it('fades a claimed POI and drops its reward from the screen', () => {
-    const target = game.map.pois[3];
-    if (target === undefined) throw new Error('the map has too few POIs');
+  it("fades a claimed POI, drops its reward from the screen, and draws its node as an ordinary one", () => {
+    const index = game.map.pois.findIndex((poi) => poi.guard !== null);
+    const target = game.map.pois[index];
+    if (target === undefined) throw new Error('the map has no guarded POI');
     const claimed: GameState = {
       ...game.state,
-      poiRuntime: game.state.poiRuntime.map((runtime, index) =>
-        index === 3 ? { claimedBy: game.state.players[0]?.id ?? null, claimedOnTurn: 1 } : runtime,
+      poiRuntime: game.state.poiRuntime.map((runtime, at) =>
+        at === index ? { claimedBy: game.state.players[0]?.id ?? null, claimedOnTurn: 1 } : runtime,
       ),
     };
     const state = buildStateScene(scene, claimed, catalog);
     expect([...state.claimed]).toEqual([target.node]);
     expect(claimed.poiRuntime.filter(isClaimed)).toHaveLength(1);
+    // §4.5: the claimed POI's node loses its guard's colour; no other node changes.
+    expect(state.nodes[target.node]).toMatchObject({ guard: null, radius: catalog.manifest.nodes.radius * scene.spacing });
+    expect(state.nodes.filter((mark, at) => mark !== scene.nodes[at]).map((mark) => mark.node)).toEqual([target.node]);
+    expect(buildStateScene(scene, game.state, catalog).nodes).toEqual(scene.nodes);
   });
 
   it('shows no active ring once the game is over', () => {
@@ -196,30 +260,13 @@ describe('a prospective move', () => {
     expect(path.cross.color).toBe(sample.preview.destinationReachable ? arrival : 'unreachable');
   });
 
-  it('labels every stamina step with its cost and nothing else', () => {
+  it('puts no number on a stamina step: its colour says it is not free', () => {
+    // Q32: Andrei's 2026-09-23 review dropped §7.1's "-3" labels.
     if (sample === null) throw new Error('no sample');
     const from = game.state.players[0]?.position ?? asNodeId(0);
     const path = buildPathScene(scene, game.map, from, sample.preview, catalog);
-    const expected = sample.preview.steps
-      .filter((step) => step.color === 'stamina')
-      .map((step) => `-${step.staminaCost}`);
-    expect(path.costs.map((cost) => cost.text)).toEqual(expected);
-    // Each beside the middle of its own road, clear of both ends and so of
-    // the icons and numbers under each POI.
-    let previous = from;
-    let index = 0;
-    for (const step of sample.preview.steps) {
-      if (step.color === 'stamina') {
-        const cost = path.costs[index++];
-        const a = scene.projection.toScreen(position(game.map.graph, previous));
-        const b = scene.projection.toScreen(position(game.map.graph, step.node));
-        const middle = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
-        if (cost === undefined) throw new Error('a stamina step has no cost');
-        expect(distance(cost.at, middle)).toBeLessThan(SPACING_PX * 0.25);
-        expect(Math.min(distance(cost.at, a), distance(cost.at, b))).toBeGreaterThan(distance(cost.at, middle));
-      }
-      previous = step.node;
-    }
+    expect(Object.keys(path).sort()).toEqual(['cross', 'dots']);
+    expect(path.dots.some((dot) => dot.color === 'stamina')).toBe(true);
   });
 
   it('greys the cross when the destination is out of reach this turn', () => {
@@ -233,7 +280,6 @@ describe('a prospective move', () => {
     };
     const path = buildPathScene(scene, game.map, asNodeId(0), unreachable, catalog);
     expect(path.cross.color).toBe('unreachable');
-    expect(path.costs).toHaveLength(0);
   });
 
   it('stands the waypoint flag on its node', () => {

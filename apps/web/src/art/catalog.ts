@@ -1,4 +1,4 @@
-import { REWARD_KINDS, TERRAINS, type GuardType, type RewardKind } from '@adventure/config';
+import { REWARD_KINDS, TERRAINS, type RewardKind } from '@adventure/config';
 import type { Poi } from '@adventure/core';
 import { ArtError, array, nonNegative, parseAtlas, positive, record, spriteIndex, string, type Atlas } from './atlas.ts';
 import { parseManifest, poiArtRow, sheetsNamed, type ArtManifest, type PoiArtRow } from './manifest.ts';
@@ -162,19 +162,12 @@ export function atlasOf(catalog: ArtCatalog, name: string): Atlas {
 export interface PoiArt {
   readonly row: PoiArtRow;
   readonly sprite: SpriteRef;
-  /** The contour colour's guard type, or `null` for an unguarded POI. */
-  readonly contour: GuardType | null;
 }
 
 export function poiArt(catalog: ArtCatalog, poi: Poi): PoiArt {
-  const guard = poi.guard?.type ?? null;
-  const row = poiArtRow(catalog.manifest, poi.terrain, poi.reward.kind, guard);
+  const row = poiArtRow(catalog.manifest, poi.terrain, poi.reward.kind, poi.guard?.type ?? null);
   const count = atlasOf(catalog, row.sheet).sprites.length;
-  return {
-    row,
-    sprite: { sheet: row.sheet, index: wrapIndex(poi.artVariant, count) },
-    contour: guard,
-  };
+  return { row, sprite: { sheet: row.sheet, index: wrapIndex(poi.artVariant, count) } };
 }
 
 export function wrapIndex(variant: number, count: number): number {

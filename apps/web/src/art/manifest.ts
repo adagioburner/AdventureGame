@@ -29,8 +29,9 @@ export interface ArtManifest {
   readonly icons: { readonly size: number; readonly files: Readonly<Record<RewardKind, string>> };
   readonly guards: {
     readonly colors: Readonly<Record<GuardType, string>>;
-    /** Contour width around a guardian, in node spacings. */
-    readonly contour: number;
+    /** A guarded POI's node: its radius, and its outline's width in the guard's colour (§3). */
+    readonly nodeRadius: number;
+    readonly nodeOutlineWidth: number;
     readonly numberSize: number;
   };
   readonly roads: { readonly sheet: string; readonly sprite: string; readonly width: number };
@@ -56,7 +57,16 @@ export interface DressingArt {
   readonly sheet: string;
   readonly size: number;
   readonly weight: number;
+  /**
+   * `standing` dressing is depth-sorted with the POIs and figures and kept off
+   * the nodes and roads; `backdrop` dressing is painted onto the ground under
+   * the roads, nodes and everything else, so it can stand anywhere on its
+   * terrain.
+   */
+  readonly layer: DressingLayer;
 }
+
+export type DressingLayer = 'standing' | 'backdrop';
 
 export interface PoiArtRow {
   readonly terrain: Terrain | 'any';
@@ -79,7 +89,6 @@ export interface MoveProspectArt {
   readonly crossSize: number;
   readonly waypointSize: number;
   readonly activeSize: number;
-  readonly costColor: string;
 }
 
 const PATH_STEP_COLORS: readonly PathStepColor[] = ['free', 'stamina', 'unreachable'];
@@ -122,7 +131,8 @@ export function parseManifest(json: unknown): ArtManifest {
           color(record(guards[type], `manifest.json: guards.${type}`)['color'], `manifest.json: guards.${type}.color`),
         ]),
       ) as Record<GuardType, string>,
-      contour: positive(guards['contour'], 'manifest.json: guards.contour'),
+      nodeRadius: positive(guards['node_radius'], 'manifest.json: guards.node_radius'),
+      nodeOutlineWidth: positive(guards['node_outline_width'], 'manifest.json: guards.node_outline_width'),
       numberSize: positive(guards['number_size'], 'manifest.json: guards.number_size'),
     },
     roads: {
@@ -145,7 +155,6 @@ export function parseManifest(json: unknown): ArtManifest {
       crossSize: positive(prospect['cross_size'], 'manifest.json: move_prospect.cross_size'),
       waypointSize: positive(prospect['waypoint_size'], 'manifest.json: move_prospect.waypoint_size'),
       activeSize: positive(prospect['active_size'], 'manifest.json: move_prospect.active_size'),
-      costColor: color(prospect['cost_color'], 'manifest.json: move_prospect.cost_color'),
     },
     figurines: {
       sheet: string(figurines['sheet'], 'manifest.json: figurines.sheet'),
@@ -174,8 +183,8 @@ export function parseManifest(json: unknown): ArtManifest {
  * row naming the terrain wins over it), and on guard type. A POI whose guard
  * the generator capped at strength 0 has no guard at all (§5.2), so it falls
  * back to its kind's row on that terrain whatever that row's guard is; the
- * renderer then draws it without a contour or a number, as the unguarded POI
- * it is.
+ * renderer then draws its node plain and gives it no number, as the unguarded
+ * POI it is.
  */
 export function poiArtRow(
   manifest: ArtManifest,
@@ -221,10 +230,15 @@ function parseTerrain(json: unknown, where: string): TerrainArt {
     nodeColor: color(entry['node_color'], `${where}.node_color`),
     dressing: array(entry['dressing'], `${where}.dressing`).map((item, index) => {
       const dressing = record(item, `${where}.dressing[${index}]`);
+      const layer = dressing['layer'] ?? 'standing';
+      if (layer !== 'standing' && layer !== 'backdrop') {
+        throw new ArtError(`${where}.dressing[${index}].layer: expected standing or backdrop`);
+      }
       return {
         sheet: string(dressing['sheet'], `${where}.dressing[${index}].sheet`),
         size: positive(dressing['size'], `${where}.dressing[${index}].size`),
         weight: positive(dressing['weight'], `${where}.dressing[${index}].weight`),
+        layer,
       };
     }),
     dressingDensity: nonNegative(entry['dressing_density'], `${where}.dressing_density`),

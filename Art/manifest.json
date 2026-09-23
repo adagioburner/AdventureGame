@@ -6,8 +6,8 @@
       "texture_size": 2.2,
       "node_color": "#c8a266",
       "dressing": [
-        { "sheet": "Plains_Fields", "size": 0.8, "weight": 1 },
-        { "sheet": "Plains_GrassRocks", "size": 0.4, "weight": 3 }
+        { "sheet": "Plains_Fields", "size": 0.45, "weight": 1 },
+        { "sheet": "Plains_GrassRocks", "size": 0.12, "weight": 3 }
       ],
       "dressing_density": 0.9
     },
@@ -22,38 +22,38 @@
       "texture": "Mountains_Texture",
       "texture_size": 2.2,
       "node_color": "#8d8b86",
-      "dressing": [{ "sheet": "Mountains_Mountains", "size": 1.0, "weight": 1 }],
-      "dressing_density": 1.0
+      "dressing": [{ "sheet": "Mountains_Mountains", "size": 0.9, "weight": 1, "layer": "backdrop" }],
+      "dressing_density": 1.5
     }
   },
   "pois": [
-    { "terrain": "plains", "reward": "plains_move", "guard": null, "sheet": "Plains_PlainsMovement", "size": 0.85 },
-    { "terrain": "plains", "reward": "forest_move", "guard": null, "sheet": "Plains_ForestMovement", "size": 0.85 },
-    { "terrain": "plains", "reward": "magic", "guard": null, "sheet": "Plains_Magic", "size": 0.85 },
-    { "terrain": "plains", "reward": "gold", "guard": "fighting", "sheet": "Plains_GoldGuardedByFighting", "size": 1.15 },
-    { "terrain": "forest", "reward": "mountain_move", "guard": null, "sheet": "Forest_MountainMovement", "size": 0.85 },
-    { "terrain": "forest", "reward": "fighting", "guard": null, "sheet": "Forest_Fighting", "size": 0.85 },
+    { "terrain": "plains", "reward": "plains_move", "guard": null, "sheet": "Plains_PlainsMovement", "size": 0.42 },
+    { "terrain": "plains", "reward": "forest_move", "guard": null, "sheet": "Plains_ForestMovement", "size": 0.42 },
+    { "terrain": "plains", "reward": "magic", "guard": null, "sheet": "Plains_Magic", "size": 0.42 },
+    { "terrain": "plains", "reward": "gold", "guard": "fighting", "sheet": "Plains_GoldGuardedByFighting", "size": 0.58 },
+    { "terrain": "forest", "reward": "mountain_move", "guard": null, "sheet": "Forest_MountainMovement", "size": 0.42 },
+    { "terrain": "forest", "reward": "fighting", "guard": null, "sheet": "Forest_Fighting", "size": 0.42 },
     {
       "terrain": "forest",
       "reward": "gold",
       "guard": "fighting",
       "sheet": "Mountains_GoldGuardedByFighting",
-      "size": 0.8,
+      "size": 0.4,
       "borrowed": "Q20: forest gold has no sheet of its own yet, so it borrows mountain gold's fighting guardians."
     },
-    { "terrain": "mountain", "reward": "gold", "guard": "fighting", "sheet": "Mountains_GoldGuardedByFighting", "size": 0.8 },
-    { "terrain": "mountain", "reward": "gold", "guard": "magic", "sheet": "Mountains_GoldGuardedByMagic", "size": 0.9 },
+    { "terrain": "mountain", "reward": "gold", "guard": "fighting", "sheet": "Mountains_GoldGuardedByFighting", "size": 0.4 },
+    { "terrain": "mountain", "reward": "gold", "guard": "magic", "sheet": "Mountains_GoldGuardedByMagic", "size": 0.45 },
     {
       "terrain": "any",
       "reward": "stamina",
       "guard": null,
       "sheet": "Plains_PlainsMovement",
-      "size": 0.85,
+      "size": 0.42,
       "borrowed": "Q20: stamina POIs come from surplus leaves on any terrain and have no sheet of their own yet, so they borrow the plains-movement houses."
     }
   ],
   "icons": {
-    "size": 0.26,
+    "size": 0.2,
     "files": {
       "plains_move": "Icons/plains_move.png",
       "forest_move": "Icons/forest_move.png",
@@ -67,8 +67,9 @@
   "guards": {
     "fighting": { "color": "#d8282b" },
     "magic": { "color": "#9a3ad6" },
-    "contour": 0.035,
-    "number_size": 0.3
+    "node_radius": 0.15,
+    "node_outline_width": 0.045,
+    "number_size": 0.24
   },
   "roads": { "sheet": "Roads_Brush", "sprite": "Roads_Path", "width": 0.2 },
   "nodes": { "radius": 0.1, "outline": "#2b2419" },
@@ -89,11 +90,10 @@
     "dot_size": 0.2,
     "dot_spacing": 0.25,
     "cross_size": 0.6,
-    "waypoint_size": 0.5,
-    "active_size": 0.5,
-    "cost_color": "#f4cc2c"
+    "waypoint_size": 0.35,
+    "active_size": 0.4
   },
-  "figurines": { "sheet": "player_avatars", "size": 0.7 },
+  "figurines": { "sheet": "player_avatars", "size": 0.45 },
   "portraits": "player_avatars_portraits.json",
   "dice": { "sheet": "Dice_d6" },
   "shadows": {

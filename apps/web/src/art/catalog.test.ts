@@ -81,7 +81,7 @@ describe('the art catalog built from Art/', () => {
   it('prefers a row naming the terrain over one for any terrain, and a matching guard over a fallback', () => {
     expect(poiArtRow(catalog.manifest, 'mountain', 'gold', 'magic').sheet).toBe('Mountains_GoldGuardedByMagic');
     expect(poiArtRow(catalog.manifest, 'mountain', 'gold', 'fighting').sheet).toBe('Mountains_GoldGuardedByFighting');
-    // A capped plains gold POI keeps its castle; the renderer drops the contour.
+    // A capped plains gold POI keeps its castle; its node is drawn unguarded.
     expect(poiArtRow(catalog.manifest, 'plains', 'gold', null).sheet).toBe('Plains_GoldGuardedByFighting');
   });
 
@@ -90,7 +90,7 @@ describe('the art catalog built from Art/', () => {
     expect(() => poiArtRow(catalog.manifest, 'mountain', 'magic', null)).toThrow(/magic on mountain/);
   });
 
-  it('picks a POI sprite by artVariant modulo the sheet, and draws the contour from the guard alone', () => {
+  it('picks a POI sprite by artVariant modulo the sheet', () => {
     const poi = (artVariant: number, guard: Poi['guard']): Poi => ({
       node: asNodeId(0),
       terrain: 'mountain',
@@ -105,8 +105,6 @@ describe('the art catalog built from Art/', () => {
       sheet: 'Mountains_GoldGuardedByMagic',
       index: 2,
     });
-    expect(poiArt(catalog, poi(5, { type: 'magic', strength: 4 })).contour).toBe('magic');
-    expect(poiArt(catalog, poi(5, null)).contour).toBeNull();
     expect(wrapIndex(4_294_967_295, 7)).toBe(4_294_967_295 % 7);
   });
 

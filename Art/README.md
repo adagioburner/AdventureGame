@@ -82,15 +82,20 @@ and ignored by the game.
 
 - `terrain`: per terrain, its texture and how many node spacings one tile of
   it covers, the colour of its nodes' ovals, and its dressing sheets with a
-  size, a relative weight and a density (dressing sprites per node).
+  size, a relative weight and a density (dressing sprites per node). A
+  dressing sheet marked `"layer": "backdrop"` (the mountains) is painted onto
+  the ground under the roads and nodes, so it can stand anywhere on its
+  terrain; without it, dressing stands up among the POIs and is kept clear of
+  the nodes and roads.
 - `pois`: one row per picture. A row matches a POI on its reward kind; its
   `terrain` is the POI's own or `any`, and a row naming the POI's guard type
-  beats one that doesn't. The coloured contour always comes from the POI's
-  actual guard, never from the row. Rows with a `borrowed` note are the Q20
-  substitutions: forest gold and stamina POIs have no sheet of their own yet.
+  beats one that doesn't. The red or purple on a guarded POI's node always
+  comes from the POI's actual guard, never from the row. Rows with a
+  `borrowed` note are the Q20 substitutions: forest gold and stamina POIs have
+  no sheet of their own yet.
 - `icons`, `guards`, `roads`, `nodes`: reward icons, the red and purple guard
-  colours with contour and number sizes, the road brush and width, and the
-  node ovals.
+  colours with the size and outline width of a guarded POI's node and the
+  size of the guard's number, the road brush and width, and the node ovals.
 - `move_prospect`: which marker sprites draw §7.1's dots, crosses, waypoint
   flag and active-player ring, and their sizes.
 - `figurines`, `portraits`, `dice`: the player figures, their portrait crops

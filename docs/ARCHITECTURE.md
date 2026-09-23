@@ -622,15 +622,18 @@ How the in-game map is put together, since phase 3 drew it:
   median road length). No code names a file in `Art/`, which is what makes art
   swappable; `Art/README.md` walks through a swap. A POI's row is chosen by its
   reward kind, then its terrain (or `any`) and guard type; its picture is
-  sprite `artVariant mod count`; its coloured contour comes from its own
-  `guard`, never from the row.
+  sprite `artVariant mod count`. The red or purple of a guard is drawn on the
+  POI's node (Q31) and comes from the POI's own `guard`, never from the row.
 - **The ground is laid through the projection, figures stand up in front of
   it.** Terrain cells, roads, node ovals and the path overlay are drawn in map
   coordinates under the projection's matrix, so a circle becomes §2's oval and
   a flat X §7.1's isometric cross. Buildings, dressing, figures and the
   waypoint flag are billboards standing at the screen point of their foot and
-  sorted back to front. Reward icons, guard numbers and stamina costs go on
-  top of everything, so nothing standing can hide them.
+  sorted back to front. Dressing the manifest marks `backdrop` (the
+  mountains) is the exception: it is painted onto the ground under the roads
+  and nodes, so it can cover its whole terrain without hiding either. Reward
+  icons and guard numbers go on top of everything, so nothing standing can
+  hide them; a route's yellow steps carry no number (Q32).
 - **The rule against drawing internals is a test, not a convention.** Building
   the scene from a map whose `remoteness`, `group` and `attempts` have been
   scrambled gives the same scene, value for value

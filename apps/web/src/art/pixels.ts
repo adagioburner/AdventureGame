@@ -29,10 +29,10 @@ export const SOLID_ALPHA = 128;
  * a horse's hooves, say) that touch no pixel of the key and so are not reached
  * by that growth. A patch lying apart from the picture and made only of those
  * greys is shadow too, and is keyed with it; left alone, each would be drawn
- * as a pale blob on the ground with a ring of guardian contour round it.
+ * as a pale blob on the ground.
  *
  * `opacity` stays below `SOLID_ALPHA / 255`, so a keyed shadow never counts
- * as picture when the sprite's extent is measured or its contour drawn.
+ * as picture when the sprite's extent is measured.
  */
 export const RIM_PIXELS = 6;
 
@@ -169,36 +169,6 @@ export function standingAnchor(
   if (extent === null) return sprite.anchor;
   const lowest = extent.y + extent.height - sprite.y;
   return { x: sprite.anchor.x, y: Math.min(sprite.anchor.y, lowest) };
-}
-
-/**
- * Turn every solid pixel `color` and every other one clear: a guardian's
- * silhouette, for its contour. Specks of one or two stray pixels — export
- * noise at the edge of a shadow — are dropped first (a morphological
- * opening), or each would come out as its own little ring of contour.
- */
-export function silhouette(pixels: Uint8ClampedArray, width: number, color: string): void {
-  const [r, g, b] = hexToRgb(color);
-  const count = pixels.length / 4;
-  const solid = new Uint8Array(count);
-  for (let p = 0; p < count; p++) solid[p] = (pixels[p * 4 + 3] as number) >= SOLID_ALPHA ? 1 : 0;
-  const neighbours = (p: number): number[] => {
-    const x = p % width;
-    const around = [p - width, p + width];
-    if (x > 0) around.push(p - 1);
-    if (x < width - 1) around.push(p + 1);
-    return around.filter((q) => q >= 0 && q < count);
-  };
-  const eroded = new Uint8Array(count);
-  for (let p = 0; p < count; p++) eroded[p] = solid[p] === 1 && neighbours(p).every((q) => solid[q] === 1) ? 1 : 0;
-  for (let p = 0; p < count; p++) {
-    const keep = eroded[p] === 1 || (solid[p] === 1 && neighbours(p).some((q) => eroded[q] === 1));
-    const i = p * 4;
-    pixels[i] = r;
-    pixels[i + 1] = g;
-    pixels[i + 2] = b;
-    pixels[i + 3] = keep ? 255 : 0;
-  }
 }
 
 export function hexToRgb(color: string): [number, number, number] {

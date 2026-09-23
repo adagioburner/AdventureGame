@@ -12,11 +12,15 @@ import type { Camera, Projection } from './isometric.ts';
  * dressing, POI images and characters share one depth-sorted plane. What the
  * renderer actually stacks, bottom to top, is
  *
- *   1. the ground — `terrain`, `edges`, `nodes` — laid through the projection;
- *   2. everything standing — `dressing`, `pois`, `characters` — sorted by depth;
- *   3. the `path-overlay`, on the ground but drawn over what stands on it, so
+ *   1. the `terrain`, laid through the projection;
+ *   2. the backdrop part of `dressing` (the mountains), painted on the ground
+ *      so the roads and nodes can cross it;
+ *   3. the rest of the ground — `edges`, `nodes` — laid through the projection;
+ *   4. everything standing — the rest of `dressing`, `pois`, `characters` —
+ *      sorted by depth;
+ *   5. the `path-overlay`, on the ground but drawn over what stands on it, so
  *      a planned route is never hidden behind a building;
- *   4. `ui`: reward icons, guard numbers and stamina costs, always readable.
+ *   6. `ui`: reward icons and guard numbers, always readable.
  *
  * [SOURCE §6] Terrain textures, eye-candy billboards, road/path brush, POI and
  * guardian images, character figurines, the die-roll animation, and the

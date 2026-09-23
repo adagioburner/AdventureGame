@@ -1,6 +1,6 @@
 import { TERRAINS } from '@adventure/config';
 import type { GameMap, GameState, NodeId, PathPreview, Point } from '@adventure/core';
-import { Container, Graphics, Matrix, Sprite, Text, TilingSprite, type Texture } from 'pixi.js';
+import { Container, Graphics, Matrix, Sprite, Text, TilingSprite } from 'pixi.js';
 import { spriteIndex } from '../../art/atlas.ts';
 import { atlasOf } from '../../art/catalog.ts';
 import type { Camera, Projection } from '../isometric.ts';
@@ -9,7 +9,7 @@ import {
   buildPathScene,
   buildStateScene,
   buildWaypoint,
-  SPACING_PX,
+  nodeOutlineWidth,
   type Billboard,
   type MapScene,
   type StateScene,
@@ -27,8 +27,9 @@ export class PixiMapRenderer implements MapRenderer {
   /** Add this to the stage; the camera moves it. */
   readonly root = new Container();
 
-  private readonly groundBelow = new Container();
   private readonly terrainLayer = new Container();
+  private readonly backdrop = new Container();
+  private readonly groundBelow = new Container();
   private readonly edgesLayer = new Container();
   private readonly nodesLayer = new Container();
   private readonly activeLayer = new Container();
@@ -36,7 +37,6 @@ export class PixiMapRenderer implements MapRenderer {
   private readonly groundAbove = new Container();
   private readonly ui = new Container();
   private readonly labelsLayer = new Container();
-  private readonly costsLayer = new Container();
 
   private readonly dressingSprites: Sprite[] = [];
   private poiSprites: Sprite[] = [];
@@ -56,12 +56,14 @@ export class PixiMapRenderer implements MapRenderer {
   ) {
     this.projection = scene.projection;
     const m = scene.projection.matrix;
-    for (const ground of [this.groundBelow, this.groundAbove]) {
+    for (const ground of [this.terrainLayer, this.groundBelow, this.groundAbove]) {
       ground.setFromMatrix(new Matrix(m.a, m.b, m.c, m.d, m.tx, m.ty));
     }
-    this.groundBelow.addChild(this.terrainLayer, this.edgesLayer, this.nodesLayer, this.activeLayer);
-    this.ui.addChild(this.labelsLayer, this.costsLayer);
-    this.root.addChild(this.groundBelow, this.standing, this.groundAbove, this.ui);
+    this.groundBelow.addChild(this.edgesLayer, this.nodesLayer, this.activeLayer);
+    this.ui.addChild(this.labelsLayer);
+    // The backdrop is painted on the ground, under the roads and nodes;
+    // `scene.billboards` already lists it back to front.
+    this.root.addChild(this.terrainLayer, this.backdrop, this.groundBelow, this.standing, this.groundAbove, this.ui);
     for (const layer of ['terrain', 'edges', 'nodes', 'dressing', 'pois', 'ui'] as const) this.invalidate(layer);
   }
 
@@ -81,7 +83,7 @@ export class PixiMapRenderer implements MapRenderer {
     if (state.map !== this.map) throw new Error('this renderer draws one map; make a new one for another');
     this.state = state;
     this.stateScene = buildStateScene(this.scene, state, this.art.catalog);
-    for (const layer of ['pois', 'characters', 'ui', 'path-overlay'] as const) this.invalidate(layer);
+    for (const layer of ['nodes', 'pois', 'characters', 'ui', 'path-overlay'] as const) this.invalidate(layer);
   }
 
   setPathPreview(preview: PathPreview | null): void {
@@ -161,13 +163,17 @@ export class PixiMapRenderer implements MapRenderer {
 
   private drawNodes(): void {
     this.nodesLayer.removeChildren().forEach((child) => child.destroy());
-    const { manifest } = this.art.catalog;
+    const { catalog } = this.art;
+    const { manifest } = catalog;
     const graphics = new Graphics();
-    for (const node of this.scene.nodes) {
+    for (const node of this.stateScene?.nodes ?? this.scene.nodes) {
       graphics
         .circle(node.at.x, node.at.y, node.radius)
         .fill(manifest.terrain[node.terrain].nodeColor)
-        .stroke({ color: manifest.nodes.outline, width: node.radius * 0.28 });
+        .stroke({
+          color: node.guard === null ? manifest.nodes.outline : manifest.guards.colors[node.guard],
+          width: nodeOutlineWidth(catalog, node.guard) * this.scene.spacing,
+        });
     }
     this.nodesLayer.addChild(graphics);
   }
@@ -178,6 +184,7 @@ export class PixiMapRenderer implements MapRenderer {
     for (const sprite of this.dressingSprites) sprite.destroy();
     this.dressingSprites.length = 0;
     for (const item of this.scene.billboards) {
+      if (item.layer === 'backdrop') this.dressingSprites.push(this.stand(item, 1, this.backdrop));
       if (item.layer === 'dressing') this.dressingSprites.push(this.stand(item, 1));
     }
   }
@@ -190,8 +197,8 @@ export class PixiMapRenderer implements MapRenderer {
       if (item.layer !== 'pois') continue;
       const gone = item.node !== null && claimed.has(item.node);
       // §4.5: a claimed POI "behaves like an ordinary node" — its picture
-      // stays, faded and without its contour, so the map does not change shape.
-      this.poiSprites.push(this.stand(gone ? { ...item, contour: null } : item, gone ? 0.45 : 1));
+      // stays, faded, so the map does not change shape.
+      this.poiSprites.push(this.stand(item, gone ? 0.45 : 1));
     }
   }
 
@@ -216,25 +223,17 @@ export class PixiMapRenderer implements MapRenderer {
     }
   }
 
-  private stand(item: Billboard, alpha: number): Sprite {
+  private stand(item: Billboard, alpha: number, parent: Container = this.standing): Sprite {
     const sheet = this.art.sheet(item.sprite.sheet);
-    let texture: Texture | undefined = sheet.frames[item.sprite.index];
-    const scale = item.size / sheet.typical;
-    if (item.contour !== null) {
-      const { contour } = this.art.catalog.manifest.guards;
-      // The manifest's contour width is in node spacings; turn it into this
-      // sheet's texture pixels at the size this sprite is drawn.
-      const radius = (contour * SPACING_PX) / scale;
-      texture = sheet.contoured(item.contour, radius)[item.sprite.index];
-    }
+    const texture = sheet.frames[item.sprite.index];
     if (texture === undefined) throw new Error(`${item.sprite.sheet} has no sprite ${item.sprite.index}`);
     const sprite = new Sprite(texture);
     sprite.anchor.copyFrom(texture.defaultAnchor ?? { x: 0.5, y: 1 });
-    sprite.scale.set(scale);
+    sprite.scale.set(item.size / sheet.typical);
     sprite.position.set(item.foot.x, item.foot.y);
     sprite.zIndex = item.depth;
     sprite.alpha = alpha;
-    this.standing.addChild(sprite);
+    parent.addChild(sprite);
     return sprite;
   }
 
@@ -242,7 +241,6 @@ export class PixiMapRenderer implements MapRenderer {
 
   private drawPath(): void {
     this.groundAbove.removeChildren().forEach((child) => child.destroy());
-    this.costsLayer.removeChildren().forEach((child) => child.destroy());
     const state = this.state;
     const preview = this.preview;
     if (state === null || preview === null) return;
@@ -260,9 +258,6 @@ export class PixiMapRenderer implements MapRenderer {
     };
     for (const dot of path.dots) decal(prospect.dot[dot.color], dot.at, dot.size);
     decal(prospect.cross[path.cross.color], path.cross.at, path.cross.size);
-    for (const cost of path.costs) {
-      this.costsLayer.addChild(label(cost.text, prospect.costColor, cost.size, cost.at, 0.5, '#2b2419'));
-    }
   }
 
   private drawUi(): void {
@@ -286,8 +281,8 @@ export class PixiMapRenderer implements MapRenderer {
   }
 }
 
-/** A bold number with a contrasting edge, legible on any terrain. */
-function label(text: string, color: string, size: number, at: Point, anchorX: number, edge = '#ffffff'): Text {
+/** A bold number with a white edge, legible on any terrain. */
+function label(text: string, color: string, size: number, at: Point, anchorX: number): Text {
   const label = new Text({
     text,
     resolution: 4,
@@ -296,7 +291,7 @@ function label(text: string, color: string, size: number, at: Point, anchorX: nu
       fontWeight: '900',
       fontSize: size,
       fill: color,
-      stroke: { color: edge, width: size * 0.22, join: 'round' },
+      stroke: { color: '#ffffff', width: size * 0.22, join: 'round' },
     },
   });
   label.anchor.set(anchorX, 0.5);

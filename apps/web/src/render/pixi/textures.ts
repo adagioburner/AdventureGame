@@ -1,8 +1,8 @@
-import { REWARD_KINDS, type GuardType, type RewardKind } from '@adventure/config';
+import { REWARD_KINDS, type RewardKind } from '@adventure/config';
 import { CanvasSource, Rectangle, Texture, type TextureSource } from 'pixi.js';
 import { atlasOf, type ArtCatalog, type SpriteRef } from '../../art/catalog.ts';
 import type { Atlas } from '../../art/atlas.ts';
-import { keyShadows, silhouette, solidBounds, standingAnchor, typicalSpan } from '../../art/pixels.ts';
+import { keyShadows, solidBounds, standingAnchor, typicalSpan } from '../../art/pixels.ts';
 
 /**
  * `Art/` turned into GPU textures, once, when the page opens.
@@ -20,8 +20,6 @@ import { keyShadows, silhouette, solidBounds, standingAnchor, typicalSpan } from
  *    memory;
  * 4. one texture per sprite is cut from the result, mipmapped so a map zoomed
  *    out does not shimmer.
- *
- * A guardian's contour (§3) is built from the same scaled sheet on first use.
  */
 export const MAX_TYPICAL_PX = 320;
 
@@ -33,8 +31,6 @@ export interface SheetTextures {
   readonly scale: number;
   /** The typical sprite span, in texture pixels. */
   readonly typical: number;
-  /** The same frames with a contour of `radius` texture pixels in the guard's colour. */
-  contoured(guard: GuardType, radius: number): readonly Texture[];
 }
 
 export interface LoadedArt {
@@ -132,69 +128,8 @@ function processSheet(
   const anchors = atlas.sprites.map((sprite, index) => standingAnchor(sprite, extents[index] ?? null));
   const frames = atlas.sprites.map((sprite, index) => frameTexture(source, sprite, anchors[index] ?? sprite.anchor, scale));
 
-  const contours = new Map<string, readonly Texture[]>();
-  const sheet: SheetTextures = {
-    atlas,
-    frames,
-    scale,
-    typical: typicalOriginal * scale,
-    contoured(guard, radius) {
-      const key = `${guard}:${radius.toFixed(1)}`;
-      const cached = contours.get(key);
-      if (cached !== undefined) return cached;
-      const outlined = contourSheet(scaled, atlas, scale, catalog.manifest.guards.colors[guard], radius);
-      const outlinedSource = mipmapped(outlined).source;
-      const result = atlas.sprites.map((sprite, index) =>
-        frameTexture(outlinedSource, sprite, anchors[index] ?? sprite.anchor, scale),
-      );
-      contours.set(key, result);
-      return result;
-    },
-  };
+  const sheet: SheetTextures = { atlas, frames, scale, typical: typicalOriginal * scale };
   return { sheet, full };
-}
-
-/**
- * [SOURCE §3] A guardian's image carries "a red (fighting) or purple (magic)
- * contour". The supplied sheets have none, so it is drawn here: the solid
- * silhouette in the guard's colour, stamped in a ring around each sprite, with
- * the sprite (and its translucent shadow) on top.
- */
-function contourSheet(
-  scaled: HTMLCanvasElement,
-  atlas: Atlas,
-  scale: number,
-  color: string,
-  radius: number,
-): HTMLCanvasElement {
-  const mask = makeCanvas(scaled.width, scaled.height);
-  const maskContext = context(mask);
-  maskContext.drawImage(scaled, 0, 0);
-  const data = maskContext.getImageData(0, 0, mask.width, mask.height);
-  silhouette(data.data, mask.width, color);
-  maskContext.putImageData(data, 0, 0);
-
-  const out = makeCanvas(scaled.width, scaled.height);
-  const outContext = context(out);
-  // Two rings of stamps, so a wide contour has no gaps between them.
-  const stamps: [number, number][] = [];
-  for (const ring of [radius * 0.5, radius]) {
-    const steps = Math.max(12, Math.ceil(ring * 2));
-    for (let i = 0; i < steps; i++) {
-      const angle = (i / steps) * Math.PI * 2;
-      stamps.push([Math.cos(angle) * ring, Math.sin(angle) * ring]);
-    }
-  }
-  for (const sprite of atlas.sprites) {
-    outContext.save();
-    outContext.beginPath();
-    outContext.rect(sprite.x * scale, sprite.y * scale, sprite.width * scale, sprite.height * scale);
-    outContext.clip();
-    for (const [dx, dy] of stamps) outContext.drawImage(mask, dx, dy);
-    outContext.restore();
-  }
-  outContext.drawImage(scaled, 0, 0);
-  return out;
 }
 
 function frameTexture(

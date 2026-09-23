@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, and Q28–Q29.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q32.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -38,7 +38,9 @@ lists the seams it draws on.
 
 Q20–Q26 came out of writing that plan, and of the art landing against it,
 rather than the architecture pass, and sit in their own section below. Q27 came
-out of running the pipeline for the first time.
+out of running the pipeline for the first time. Q31 and Q32 are Andrei's
+rulings from his first look at the phase 3 map, recorded here because each
+changes what GDD §3 or §7.1 says.
 
 ---
 
@@ -855,6 +857,37 @@ design; none is the implementer's to pick, and the engine works either way.
 
 ---
 
+### Q31. ~~Where does a guard's red or purple go?~~ — **answered 2026-09-23: on the node**
+
+GDD §3 gives a guarded POI's image "a red (fighting) or purple (magic)
+contour", and phase 3 drew exactly that, a coloured ring round each guardian's
+picture. Andrei, reviewing the map: *"the guards should not have red or purple
+contours; instead, the nodes should."*
+
+So the colour is now on the POI's node: a guarded node is drawn larger than an
+ordinary one and outlined in its guard's colour, and the picture stands just
+behind the node so the whole node shows in front of it, with the reward icons
+and the guard's number in front of that. Once the POI is claimed, §4.5's
+"behaves like an ordinary node" makes it an ordinary node again, colour and
+all. The size and the outline width are `guards.node_radius` and
+`guards.node_outline_width` in `Art/manifest.json`. GDD §3 carries the ruling
+as a `[SOURCE §1, review]` note beside the original sentence.
+
+---
+
+### Q32. ~~Do yellow route steps show their stamina cost?~~ — **answered 2026-09-23: no**
+
+GDD §7.1 labels a yellow step "with the stamina cost, e.g. '-3'", and phase 3
+drew a "-N" beside each one. Andrei, reviewing the map: *"Let us remove the
+numbers showing stamina lost. The color coding already tells the player that
+it's not free; they can figure out the rest."*
+
+The route is now dots and a cross only. `previewPath` in `@adventure/core`
+still reports each step's cost, since the engine charges it; only the label is
+gone. GDD §7.1 carries the ruling as a `[SOURCE §4, review]` note.
+
+---
+
 ## C. Decisions I made that are *implementation*, not design
 
 Listed so you can veto any that read as design to you.
@@ -867,7 +900,7 @@ Listed so you can veto any that read as design to you.
 | `PlayerStats` typed as `Record<RewardKind, number>` | §6's seven stats are exactly §4.1's seven kinds. Typing them as one thing makes claiming a reward a single addition and stops the lists drifting. |
 | Remoteness computed inside step 7, between POI placement and reward assignment | Forced by data flow: §4.3 step 3 consumes remoteness, and remoteness depends only on POI positions. |
 | sfc32 PRNG, string seeds | §1.3 requires reproducibility, not a specific algorithm. |
-| `Poi.artVariant` as an opaque stable index | §3 says a POI has an image; what the index means is left entirely to a later art-binding decision. Nothing reads `Art/`. |
+| `Poi.artVariant` as an opaque stable index | §3 says a POI has an image and leaves which one to the art. Since phase 3 it picks sprite `artVariant mod count` from the sheet `Art/manifest.json` names for the POI, so no sheet's sprite count is baked into the generator. |
 | `POISSON_RADIUS_FACTOR` recalibrated 0.85 → 0.815 | An `EngineeringConfig` knob, documented as existing purely "for making step 1 hit its node budget". 0.85 was a guess made before there was a sampler; measured, it yields ~220 nodes against §11's `MAP_NODE_COUNT` of 240. 0.815 centres the yield on 240. No §11 value changed. |
 | Farthest-point seed placement in §2.1 step 4, on nodes of degree ≥ 3 | §2.1 fixes the seed *count* (1 or 2 per terrain) and says nothing about placement. On a near-tree graph a seed down a branch is walled in after a few nodes and its terrain never reaches its share; measured, this choice cuts the share error from ~9 points per terrain to ~3. |
 | Surplus leaves drawn by shuffle | §3 forces every leaf to be a POI and §4.2 fixes how many POIs a terrain's table rows get; nothing says *which* leaves fall inside the quota when a terrain has more leaves than it. Drawn from the map's own stream. |
