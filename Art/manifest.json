@@ -117,8 +117,8 @@
     "sheets": {
       "Plains_PlainsMovement": { "brightness": 1.6, "saturation": 1.3 },
       "Plains_Magic": { "brightness": 1.45, "saturation": 2.6 },
-      "Mountains_GoldGuardedByFighting": { "brightness": 1.6, "saturation": 2.4 },
-      "Mountains_GoldGuardedByMagic": { "brightness": 1.6, "saturation": 2.4 },
+      "Mountains_GoldGuardedByFighting": { "outline": { "color": "#fff3c4", "width": 0.01 } },
+      "Mountains_GoldGuardedByMagic": { "outline": { "color": "#fff3c4", "width": 0.01 } },
       "Forest_Fighting": { "outline": { "color": "#1c1812", "width": 0.02 } }
     }
   }
