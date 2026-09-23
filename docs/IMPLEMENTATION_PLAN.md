@@ -698,7 +698,7 @@ remoteness shading anywhere on screen.
 ### What actually landed
 
 All nine items, drawn with PixiJS in `apps/web` and viewable with no checkout
-as a published page (§2.2). 40 new tests, 293 in all. Andrei asked for one
+as a published page (§2.2). 44 new tests, 297 in all. Andrei asked for one
 thing beyond the plan — **art that is easy to swap, since most of it is
 placeholder** — and that shaped most of what follows.
 
