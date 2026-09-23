@@ -14,7 +14,7 @@ import { atlasOf, poiArt, wrapIndex, type ArtCatalog, type SpriteRef } from '../
 import { placeBackdrop, placeDressing } from './dressing.ts';
 import { distance, nodeBounds, nodeSpacing, position, voronoiCells } from './geometry.ts';
 import { isometricProjection, type Bounds, type Projection } from './isometric.ts';
-import { placePoiPictures, ROUGH_SHAPE, type Box, type Oval, type PoiPicture, type ShapeOf } from './placement.ts';
+import { pictureBands, placePoiPictures, ROUGH_SHAPE, type Box, type Oval, type PoiPicture, type ShapeOf } from './placement.ts';
 
 /**
  * The map as a player sees it, as plain data: what to draw, where, and how
@@ -157,7 +157,7 @@ export function buildMapScene(map: GameMap, catalog: ArtCatalog, shapeOf: ShapeO
   });
   const pictures: PoiPicture[] = map.pois.map((poi) => {
     const art = poiArt(catalog, poi);
-    return { node: poi.node, oval: ovals[poi.node] as Oval, sprite: art.sprite, size: art.row.size * SPACING_PX };
+    return { node: poi.node, oval: ovals[poi.node] as Oval, sprite: art.sprite, size: art.row.size * SPACING_PX, onNode: art.row.onNode };
   });
   const feet = placePoiPictures(
     pictures,
@@ -178,7 +178,9 @@ export function buildMapScene(map: GameMap, catalog: ArtCatalog, shapeOf: ShapeO
   });
 
   const ground = { map, catalog, projection, spacing, bounds, shapeOf };
-  const billboards = [...placeBackdrop(ground), ...placeDressing(ground), ...pois].sort(backToFront);
+  // Standing dressing keeps off every POI's picture and reward.
+  const taken = [...pois.flatMap((poi) => pictureBands(poi.foot, poi.size, shapeOf(poi.sprite))), ...labels.map(labelBox)];
+  const billboards = [...placeBackdrop(ground), ...placeDressing(ground, taken), ...pois].sort(backToFront);
   return { projection, spacing, bounds, terrain, roads, nodes, billboards, labels };
 }
 

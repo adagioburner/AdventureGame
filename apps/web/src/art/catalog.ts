@@ -97,6 +97,22 @@ export function buildArtCatalog(files: ArtFiles): ArtCatalog {
   for (const sheet of manifest.adjustments.keys()) {
     if (!named.has(sheet)) problems.push(`manifest.json: adjustments.sheets.${sheet} names a sheet the manifest does not draw`);
   }
+  // A left-out sprite the sheet does not have is most likely a typo, and the
+  // sprite meant is still drawn.
+  for (const terrain of TERRAINS) {
+    for (const dressing of manifest.terrain[terrain].dressing) {
+      const sheet = atlas(dressing.sheet);
+      if (sheet === undefined) continue;
+      for (const id of dressing.leaveOut) {
+        if (!sheet.sprites.some((sprite) => sprite.id === id)) {
+          problems.push(`manifest.json: terrain.${terrain} leaves out ${id}, which ${atlasFile(sheet.name)} does not have`);
+        }
+      }
+      if (sheet.sprites.every((sprite) => dressing.leaveOut.includes(sprite.id))) {
+        problems.push(`manifest.json: terrain.${terrain} leaves out every sprite of ${dressing.sheet}`);
+      }
+    }
+  }
   const roads = atlas(manifest.roads.sheet);
   if (roads !== undefined) {
     check(() => {

@@ -6,7 +6,14 @@
       "texture_size": 2.2,
       "node_color": "#c8a266",
       "dressing": [
-        { "sheet": "Plains_Fields", "size": 0.45, "weight": 1, "array": 3 },
+        {
+          "sheet": "Plains_Fields",
+          "size": 0.45,
+          "weight": 1,
+          "array": 3,
+          "flat": true,
+          "leave_out": ["Plains_Fields_02", "Plains_Fields_07"]
+        },
         { "sheet": "Plains_GrassRocks", "size": 0.12, "weight": 3 }
       ],
       "dressing_density": 0.9
@@ -39,10 +46,11 @@
       "guard": "fighting",
       "sheet": "Mountains_GoldGuardedByFighting",
       "size": 0.8,
+      "on_node": true,
       "borrowed": "Q20: forest gold has no sheet of its own yet, so it borrows mountain gold's fighting guardians."
     },
-    { "terrain": "mountain", "reward": "gold", "guard": "fighting", "sheet": "Mountains_GoldGuardedByFighting", "size": 0.8 },
-    { "terrain": "mountain", "reward": "gold", "guard": "magic", "sheet": "Mountains_GoldGuardedByMagic", "size": 0.9 },
+    { "terrain": "mountain", "reward": "gold", "guard": "fighting", "sheet": "Mountains_GoldGuardedByFighting", "size": 0.8, "on_node": true },
+    { "terrain": "mountain", "reward": "gold", "guard": "magic", "sheet": "Mountains_GoldGuardedByMagic", "size": 0.9, "on_node": true },
     {
       "terrain": "any",
       "reward": "stamina",

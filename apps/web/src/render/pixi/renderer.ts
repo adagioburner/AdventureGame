@@ -22,6 +22,14 @@ import { backdropTerrains } from '../dressing.ts';
 import type { LoadedArt } from './textures.ts';
 
 /**
+ * How a claimed POI's picture is drawn: every colour at this share, so it
+ * reads as spent but keeps its colour. It was drawn 45% opaque until Andrei
+ * found the brightened cottages "look like ghosts, way too faint and
+ * washed-out" (2026-09-23).
+ */
+const CLAIMED_TINT = 0xcccccc;
+
+/**
  * The current player's cue, in node spacings and milliseconds. Blinking fades
  * the figure and its ring out and back once a period while a ripple spreads
  * from its feet, so it can be found even with the whole map in view; planning
@@ -289,8 +297,11 @@ export class PixiMapRenderer implements MapRenderer {
       if (item.layer !== 'pois') continue;
       const gone = item.node !== null && claimed.has(item.node);
       // §4.5: a claimed POI "behaves like an ordinary node" — its picture
-      // stays, faded, so the map does not change shape.
-      this.poiSprites.push(this.stand(item, gone ? 0.45 : 1));
+      // stays, a little darker, so the map does not change shape. Its node's
+      // icons and number are gone, which is what says it was claimed.
+      const sprite = this.stand(item, 1);
+      if (gone) sprite.tint = CLAIMED_TINT;
+      this.poiSprites.push(sprite);
     }
   }
 

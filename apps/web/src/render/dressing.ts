@@ -4,7 +4,7 @@ import { atlasOf, wrapIndex, type ArtCatalog, type SpriteRef } from '../art/cata
 import type { ArtManifest, DressingArt } from '../art/manifest.ts';
 import { distance, distanceToSegment, ObstacleGrid, position } from './geometry.ts';
 import type { Bounds, Projection } from './isometric.ts';
-import { grow, pictureBox, type Box, type ShapeOf, type SpriteShape } from './placement.ts';
+import { grow, overlapArea, pictureBands, pictureBox, type Box, type ShapeOf, type SpriteShape } from './placement.ts';
 import { SPACING_PX, type Billboard } from './sceneModel.ts';
 
 /**
@@ -55,6 +55,14 @@ function inside(bounds: Bounds, at: Point): boolean {
   return at.x >= bounds.min.x && at.x <= bounds.max.x && at.y >= bounds.min.y && at.y <= bounds.max.y;
 }
 
+/** One of a dressing sheet's sprites, any but those the manifest leaves out. */
+function dressingSprite(catalog: ArtCatalog, option: DressingArt, roll: number): SpriteRef {
+  const kept = atlasOf(catalog, option.sheet)
+    .sprites.map((sprite, index) => ({ id: sprite.id, index }))
+    .filter((sprite) => !option.leaveOut.includes(sprite.id));
+  return { sheet: option.sheet, index: kept[wrapIndex(roll, kept.length)]?.index ?? 0 };
+}
+
 function pick(options: readonly DressingArt[], roll: number): DressingArt | undefined {
   const total = options.reduce((sum, option) => sum + option.weight, 0);
   let left = roll * total;
@@ -65,6 +73,10 @@ function pick(options: readonly DressingArt[], roll: number): DressingArt | unde
  * Standing dressing, scattered over each terrain at the manifest's density
  * and rejected wherever it would stand on a road, stand on a node, or hide a
  * node or road standing behind it — so it is never in the way of the game.
+ * Nor does it touch anything in `taken`, the POIs' pictures and rewards; and
+ * a `flat` sheet, a field, lies wholly over its own terrain, since all of its
+ * picture is ground. [Andrei, review 2026-09-23] "field images from plains are
+ * sometimes invading other terrains and their content".
  *
  * A sheet with an `array` is laid out as a small grid of sprites side by
  * side along the ground instead of one at a time: [Andrei, review
@@ -72,7 +84,7 @@ function pick(options: readonly DressingArt[], roll: number): DressingArt | unde
  * time". A cell of an array that breaks a rule is left out, and an array left
  * with fewer than two sprites is not placed at all.
  */
-export function placeDressing(ground: Ground): Billboard[] {
+export function placeDressing(ground: Ground, taken: readonly Box[]): Billboard[] {
   const { map, catalog, projection, spacing, bounds, shapeOf } = ground;
   const { manifest } = catalog;
   const graph = map.graph;
@@ -98,6 +110,11 @@ export function placeDressing(ground: Ground): Billboard[] {
   const width = bounds.max.x - bounds.min.x;
   const height = bounds.max.y - bounds.min.y;
 
+  const overTerrain = (screen: Point, terrain: Terrain): boolean => {
+    const at = projection.toWorld(screen);
+    return inside(bounds, at) && nearestNode(map, at)?.terrain === terrain;
+  };
+
   /** The billboard for a standing sprite at `at`, or `null` where it would be in the way. */
   const stand = (at: Point, option: DressingArt, terrain: Terrain, spriteRoll: number): Billboard | null => {
     if (!inside(bounds, at)) return null;
@@ -109,10 +126,14 @@ export function placeDressing(ground: Ground): Billboard[] {
     }
     const size = option.size * SPACING_PX;
     const foot = projection.toScreen(at);
-    const sprite = { sheet: option.sheet, index: wrapIndex(spriteRoll, atlasOf(catalog, option.sheet).sprites.length) };
+    const sprite = dressingSprite(catalog, option, spriteRoll);
+    const shape = shapeOf(sprite);
     // The picture rises above its foot; a node or road inside it would be hidden.
-    const box = grow(pictureBox(foot, size, shapeOf(sprite)), size * STANDING_MARGIN);
+    const box = grow(pictureBox(foot, size, shape), size * STANDING_MARGIN);
     if (obstacles.anyInBox(box.minX, box.minY, box.maxX, box.maxY)) return null;
+    const bands = pictureBands(foot, size, shape).map((band) => grow(band, size * STANDING_MARGIN));
+    if (taken.some((other) => overlapArea(box, other) > 0 && bands.some((band) => overlapArea(band, other) > 0))) return null;
+    if (option.flat && !groundPoints(foot, size, shape).every((point) => overTerrain(point, terrain))) return null;
     return { layer: 'dressing', sprite, foot, size, node: null, depth: foot.y };
   };
 
@@ -173,6 +194,27 @@ function arrayCells(rng: Rng, most: number): [number, number][] {
   const cells: [number, number][] = [];
   for (let i = 0; i < columns; i++) for (let j = 0; j < rows; j++) cells.push([i, j]);
   return cells;
+}
+
+/**
+ * Screen points round the edge of a flat sprite's picture, all of which are
+ * ground: each band's two ends, half way down it, and the picture's top and
+ * bottom in the middle.
+ */
+export function groundPoints(foot: Point, size: number, shape: SpriteShape): Point[] {
+  const box = pictureBox(foot, size, shape);
+  const middle = (box.minX + box.maxX) / 2;
+  return [
+    ...pictureBands(foot, size, shape).flatMap((band) => {
+      const y = (band.minY + band.maxY) / 2;
+      return [
+        { x: band.minX, y },
+        { x: band.maxX, y },
+      ];
+    }),
+    { x: middle, y: box.minY },
+    { x: middle, y: box.maxY },
+  ];
 }
 
 /**
@@ -244,7 +286,7 @@ export function placeBackdrop(ground: Ground): Billboard[] {
       if (terrain === undefined || !terrains.has(terrain)) continue;
       const option = pick(options.get(terrain) ?? [], pickDressing);
       if (option === undefined) continue;
-      const sprite = { sheet: option.sheet, index: wrapIndex(pickSprite, atlasOf(catalog, option.sheet).sprites.length) };
+      const sprite = dressingSprite(catalog, option, pickSprite);
       spots.push({ at, foot: projection.toScreen(at), terrain, option, sprite, jitter });
     }
   }

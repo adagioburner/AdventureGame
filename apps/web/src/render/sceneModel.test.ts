@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_RULESET } from '@adventure/config';
 import { asNodeId, isClaimed, type GameMap, type GameState, type PathPreview } from '@adventure/core';
-import { atlasOf, buildArtCatalog } from '../art/catalog.ts';
+import { atlasOf, buildArtCatalog, poiArt } from '../art/catalog.ts';
 import { ART_FILES } from '../art/files.ts';
 import { previewGame, SAMPLE_ALLOWANCE, SAMPLE_STAMINA } from './scene.fixture.ts';
 import { distance, distanceToSegment, polygonArea, position } from './geometry.ts';
-import { BACKDROP_STEP, silhouettePoints, STANDING_MARGIN } from './dressing.ts';
-import { boxTouchesOval, grow, lengthInBox, overlapArea, pictureBox, ROUGH_SHAPE } from './placement.ts';
+import { BACKDROP_STEP, groundPoints, silhouettePoints, STANDING_MARGIN } from './dressing.ts';
+import { boxTouchesOval, grow, lengthInBox, ON_NODE_REACH, overlapArea, pictureBox, ROUGH_SHAPE } from './placement.ts';
 import {
   buildMapScene,
   buildPathScene,
@@ -14,6 +14,7 @@ import {
   buildWaypoint,
   guardRing,
   ICON_TOUCH,
+  labelBox,
   nodeOval,
   nodeOutlineWidth,
   SPACING_PX,
@@ -63,16 +64,34 @@ describe('what the player sees of the map', () => {
     expect(plain(buildMapScene(game.map, catalog))).toEqual(plain(scene));
   });
 
-  it('stands one picture on every POI, touching its own node and never covering it', () => {
+  it('stands one picture on every POI against its node: a guardian on it, off its middle, and the rest touching it', () => {
+    // Andrei, 2026-09-23: "place POI images closer to the POIs themselves,
+    // close to or touching the node. Guards, specifically, can be standing on
+    // the node itself, not centered on it but intersecting at the base".
     expect(pictures).toHaveLength(game.map.pois.length);
+    let guardians = 0;
+    let onNode = 0;
     for (const poi of game.map.pois) {
       const picture = pictures.find((item) => item.node === poi.node);
       if (picture === undefined) throw new Error(`POI ${poi.node} has no picture`);
       const box = pictureBox(picture.foot, picture.size, ROUGH_SHAPE(picture.sprite));
       const oval = ovalOf(poi.node);
+      if (poiArt(catalog, poi).row.onNode) {
+        guardians++;
+        const reach = Math.hypot((picture.foot.x - oval.at.x) / oval.rx, (picture.foot.y - oval.at.y) / oval.ry);
+        if (reach <= 1) {
+          onNode++;
+          expect(reach).toBeCloseTo(ON_NODE_REACH);
+          continue;
+        }
+      }
       expect(boxTouchesOval(box, oval)).toBe(false);
       expect(boxTouchesOval(grow(box, 1), oval)).toBe(true);
     }
+    // A guardian steps off its node only where standing on it would cover a
+    // neighbour, which on a crowded mountain happens.
+    expect(guardians).toBeGreaterThan(10);
+    expect(onNode).toBeGreaterThan(guardians / 2);
   });
 
   it('keeps POI pictures off the roads and off other POIs', () => {
@@ -89,10 +108,15 @@ describe('what the player sees of the map', () => {
       if (box === undefined) return;
       const oval = ovalOf(picture.node);
       const behind = pictureBox({ x: oval.at.x, y: oval.at.y - oval.ry }, picture.size, ROUGH_SHAPE(picture.sprite));
-      for (const [a, b] of screenRoads) {
+      // A guardian standing on its node stands on its own roads' first
+      // stretch, as Andrei asked; those roads are left out of both sums.
+      const onNode = ((picture.foot.x - oval.at.x) / oval.rx) ** 2 + ((picture.foot.y - oval.at.y) / oval.ry) ** 2 <= 1;
+      screenRoads.forEach(([a, b], at) => {
+        const edge = game.map.graph.edges[at];
+        if (onNode && (edge?.a === picture.node || edge?.b === picture.node)) return;
         hidden += lengthInBox(a, b, box);
         hiddenBehind += lengthInBox(a, b, behind);
-      }
+      });
       for (const node of pois) {
         if (node !== picture.node && boxTouchesOval(box, ovalOf(node))) problems.push(`the picture of ${picture.node} covers POI ${node}`);
       }
@@ -198,6 +222,37 @@ describe('what the player sees of the map', () => {
       // And it is drawn from a dressing sheet, with a sprite the sheet has.
       if (!sheets.includes(item.sprite.sheet)) problems.push(`${where} uses ${item.sprite.sheet}`);
       if (item.sprite.index >= atlasOf(catalog, item.sprite.sheet).sprites.length) problems.push(`${where} has no sprite`);
+    }
+    expect(problems).toEqual([]);
+  });
+
+  it('keeps fields over the plains, and all standing dressing off the POIs\' pictures and rewards', () => {
+    // Andrei, 2026-09-23: "field images from plains are sometimes invading
+    // other terrains and their content".
+    const graph = game.map.graph;
+    const terrainAt = (screen: { x: number; y: number }) => {
+      const at = scene.projection.toWorld(screen);
+      return graph.nodes.reduce((best, node) => (distance(at, node.position) < distance(at, best.position) ? node : best)).terrain;
+    };
+    const taken = [
+      ...pictures.map((picture) => pictureBox(picture.foot, picture.size, ROUGH_SHAPE(picture.sprite))),
+      ...scene.labels.map(labelBox),
+    ];
+    const art = catalog.manifest.terrain.plains.dressing.find((d) => d.sheet === 'Plains_Fields');
+    const problems: string[] = [];
+    for (const item of scene.billboards.filter((billboard) => billboard.layer === 'dressing')) {
+      const where = `${item.sprite.sheet} at (${item.foot.x.toFixed(1)}, ${item.foot.y.toFixed(1)})`;
+      const box = grow(pictureBox(item.foot, item.size, ROUGH_SHAPE(item.sprite)), item.size * STANDING_MARGIN);
+      if (taken.some((other) => overlapArea(box, other) > 0)) problems.push(`${where} covers a POI`);
+      if (item.sprite.sheet !== 'Plains_Fields') continue;
+      for (const point of groundPoints(item.foot, item.size, ROUGH_SHAPE(item.sprite))) {
+        const terrain = terrainAt(point);
+        if (terrain !== 'plains') problems.push(`${where} reaches over ${terrain}`);
+      }
+      // Andrei, 2026-09-23: the dark brown fields drew the eye away from the
+      // wagon wheel icons, so they are left out.
+      const id = atlasOf(catalog, item.sprite.sheet).sprites[item.sprite.index]?.id ?? '';
+      if (art?.leaveOut.includes(id)) problems.push(`${where} is ${id}, which is left out`);
     }
     expect(problems).toEqual([]);
   });

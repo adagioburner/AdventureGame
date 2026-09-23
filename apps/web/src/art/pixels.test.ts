@@ -3,6 +3,7 @@ import {
   adjustColors,
   keyShadows,
   outlinePictures,
+  solidBands,
   solidBounds,
   SOLID_ALPHA,
   standingAnchor,
@@ -106,6 +107,30 @@ describe('solidBounds and typicalSpan', () => {
     const box = (width: number, height: number) => ({ x: 0, y: 0, width, height });
     expect(typicalSpan([box(10, 4), box(3, 30), box(20, 20), null], 99)).toBe(20);
     expect(typicalSpan([null], 99)).toBe(99);
+  });
+});
+
+describe('solidBands', () => {
+  it('says where the picture is in each band of its extent, and which bands hold none of it', () => {
+    // A 4-wide roof over a 2-wide trunk, an empty row between, in an 8×8 cell.
+    const pixels = image(8, 8, (x, y) => {
+      if (y < 2 && x >= 1 && x < 5) return [200, 50, 50, 255];
+      if (y >= 3 && y < 6 && x >= 2 && x < 4) return [90, 60, 30, 255];
+      if (y === 6) return [0, 0, 0, 77];
+      return [0, 0, 0, 0];
+    });
+    const extent = solidBounds(pixels, 8, { x: 0, y: 0, width: 8, height: 8 });
+    expect(extent).toEqual({ x: 1, y: 0, width: 4, height: 6 });
+    if (extent === null) return;
+    expect(solidBands(pixels, 8, extent, 3)).toEqual([{ left: 1, right: 5 }, { left: 2, right: 4 }, { left: 2, right: 4 }]);
+    expect(solidBands(pixels, 8, extent, 6)).toEqual([
+      { left: 1, right: 5 },
+      { left: 1, right: 5 },
+      null,
+      { left: 2, right: 4 },
+      { left: 2, right: 4 },
+      { left: 2, right: 4 },
+    ]);
   });
 });
 

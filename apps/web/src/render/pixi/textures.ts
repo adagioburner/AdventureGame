@@ -7,11 +7,12 @@ import {
   hexToRgb,
   keyShadows,
   outlinePictures,
+  solidBands,
   solidBounds,
   standingAnchor,
   typicalSpan,
 } from '../../art/pixels.ts';
-import type { SpriteShape } from '../placement.ts';
+import { SHAPE_BANDS, type SpriteShape } from '../placement.ts';
 
 /**
  * `Art/` turned into GPU textures, once, when the page opens.
@@ -25,8 +26,8 @@ import type { SpriteShape } from '../placement.ts';
  *    contour round each picture (`outlinePictures`);
  * 2. each sprite's solid extent is measured, and the median of those is the
  *    sheet's typical span, which the manifest's sizes are relative to; each
- *    extent is also kept as the sprite's shape, which is where the scene
- *    lets it stand;
+ *    extent, and where the picture lies within it band by band, is also kept
+ *    as the sprite's shape, which is where the scene lets it stand;
  * 3. the sheet is scaled down so that span is at most `MAX_TYPICAL_PX` — the
  *    supplied sheets are drawn several times larger than they ever appear, and
  *    uploading them whole would cost a phone a few hundred megabytes of GPU
@@ -169,11 +170,25 @@ function processSheet(
     const anchor = anchors[index] ?? sprite.anchor;
     const footX = sprite.x + anchor.x;
     const footY = sprite.y + anchor.y;
+    const bands = solidBands(data.data, full.width, extent, SHAPE_BANDS).flatMap((band, at) => {
+      if (band === null) return [];
+      const top = extent.y + (extent.height * at) / SHAPE_BANDS;
+      const bottom = extent.y + (extent.height * (at + 1)) / SHAPE_BANDS;
+      return [
+        {
+          left: (band.left - footX) / typicalOriginal,
+          top: (top - footY) / typicalOriginal,
+          right: (band.right - footX) / typicalOriginal,
+          bottom: (bottom - footY) / typicalOriginal,
+        },
+      ];
+    });
     return {
       left: (extent.x - footX) / typicalOriginal,
       top: (extent.y - footY) / typicalOriginal,
       right: (extent.x + extent.width - footX) / typicalOriginal,
       bottom: (extent.y + extent.height - footY) / typicalOriginal,
+      bands,
     };
   });
   const sheet: SheetTextures = { atlas, frames, scale, typical: typicalOriginal * scale, shapes };

@@ -101,13 +101,20 @@ and ignored by the game.
   reaches past is clipped. Raising `size` makes the big peaks bigger. Without it, dressing
   stands up among the POIs and is kept clear of the nodes and roads. A
   standing sheet with `"array": 3` (the fields) is laid out in arrays up to
-  three sprites a side, side by side along the ground.
+  three sprites a side, side by side along the ground. `"flat": true` says
+  the sprites lie flat on the ground, so the whole picture, not just its
+  foot, must lie over its own terrain. `"leave_out"` lists sprites of the
+  sheet, by id, that are never drawn: the two dark brown fields, which drew
+  the eye away from the wagon wheel icons. Standing dressing never touches a
+  POI's picture or reward.
 - `pois`: one row per picture. A row matches a POI on its reward kind; its
   `terrain` is the POI's own or `any`, and a row naming the POI's guard type
   beats one that doesn't. The red or purple on a guarded POI's node always
   comes from the POI's actual guard, never from the row. Rows with a
   `borrowed` note are the Q20 substitutions: forest gold and stamina POIs have
-  no sheet of their own yet.
+  no sheet of their own yet. A row with `"on_node": true` (the guardians)
+  stands its picture on the POI's node, feet across the back of it; every
+  other picture stands beside its node, touching it (Q35).
 - `icons`, `guards`, `roads`, `nodes`: reward icons (sized by their picture,
   so the transparent margin round an icon does not matter), the red and
   purple guard colours with the width of the ring round a guarded POI's node

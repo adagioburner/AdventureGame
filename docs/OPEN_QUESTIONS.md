@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q34.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q35.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -919,6 +919,23 @@ figure or presses Plan a move it holds still, the ring enlarged and circled
 in gold, until End Turn or Rest. Cancel sets it blinking again. The ripple is
 an addition he did not ask for and is one line to drop. GDD §7.2 carries the
 ruling as a `[SOURCE §intro, review]` note.
+
+### Q35. ~~Where does a POI's image stand?~~ — **answered 2026-09-23: against its node, a guardian on it**
+
+Q31 put each image beside its node, on whichever side hid least, touching the
+node's oval with its bounding box. Andrei found them too far away: *"let us
+place POI images closer to the POIs themselves, close to or touching the node.
+Guards, specifically, can be standing on the node itself, not centered on it
+but intersecting at the base."*
+
+Each sprite's picture is now measured in horizontal bands as it loads, so an
+image comes in until the picture itself touches the oval rather than the
+empty corner of its box. The rows marked `on_node` in `Art/manifest.json`, the
+guardians, stand with their feet 60% of the way from the node's centre to its
+rim, in one of the same seven directions. Where every such spot would cover a
+neighbouring node or image, which happens on a crowded mountain (8 of the 19
+on `adventure`), the guardian stands beside its node instead. GDD §3 carries
+the ruling as a `[SOURCE §1, review]` note after Q31's.
 
 ---
 

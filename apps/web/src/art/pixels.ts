@@ -272,6 +272,37 @@ export function solidBounds(pixels: Uint8ClampedArray, stride: number, rect: Rec
 }
 
 /**
+ * A sprite's solid picture cut into `count` horizontal bands of equal height
+ * over `extent`, top to bottom: the leftmost and rightmost solid pixel in each
+ * (`right` one past the last), or `null` for a band with none. A building's
+ * roof is narrower than its walls and a guardian's spear sticks out on one
+ * side, so these say where the picture really is far better than its box.
+ */
+export function solidBands(
+  pixels: Uint8ClampedArray,
+  stride: number,
+  extent: Rect,
+  count: number,
+): ({ left: number; right: number } | null)[] {
+  const bands: ({ left: number; right: number } | null)[] = Array.from({ length: count }, () => null);
+  for (let y = extent.y; y < extent.y + extent.height; y++) {
+    const band = Math.min(count - 1, Math.floor(((y - extent.y) * count) / extent.height));
+    let left = Infinity;
+    let right = -Infinity;
+    for (let x = extent.x; x < extent.x + extent.width; x++) {
+      if ((pixels[(y * stride + x) * 4 + 3] as number) >= SOLID_ALPHA) {
+        if (x < left) left = x;
+        right = x + 1;
+      }
+    }
+    if (left === Infinity) continue;
+    const now = bands[band];
+    bands[band] = now === null || now === undefined ? { left, right } : { left: Math.min(now.left, left), right: Math.max(now.right, right) };
+  }
+  return bands;
+}
+
+/**
  * A sheet's typical sprite span: the median, over its sprites, of the larger
  * side of each one's solid extent. `Art/manifest.json`'s sizes are measured
  * against this, which is what lets a replacement sheet at another resolution,

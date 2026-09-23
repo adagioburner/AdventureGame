@@ -90,6 +90,13 @@ export interface DressingArt {
    * side along the ground, instead of one at a time. `1` for no arrays.
    */
   readonly array: number;
+  /**
+   * Standing only: lies flat on the ground, as a field does, so all of its
+   * picture is ground and must lie over its own terrain, not just its foot.
+   */
+  readonly flat: boolean;
+  /** Sprites of the sheet never drawn, by id: the sheet stays as supplied. */
+  readonly leaveOut: readonly string[];
 }
 
 export type DressingLayer = 'standing' | 'backdrop';
@@ -102,6 +109,8 @@ export interface PoiArtRow {
   readonly size: number;
   /** Why this row draws from another row's sheet, or `null` when it does not. */
   readonly borrowed: string | null;
+  /** The picture stands on the POI's node, its base across it, rather than beside it: the guardians. */
+  readonly onNode: boolean;
 }
 
 export interface MoveProspectArt {
@@ -271,15 +280,22 @@ function parseTerrain(json: unknown, where: string): TerrainArt {
       const size = positive(dressing['size'], `${where}.dressing[${index}].size`);
       const minSize = dressing['min_size'] === undefined ? size : positive(dressing['min_size'], `${where}.dressing[${index}].min_size`);
       if (minSize > size) throw new ArtError(`${where}.dressing[${index}].min_size: must not exceed size`);
-      const array = dressing['array'] === undefined ? 1 : positive(dressing['array'], `${where}.dressing[${index}].array`);
-      if (!Number.isInteger(array)) throw new ArtError(`${where}.dressing[${index}].array: must be a whole number`);
+      const side = dressing['array'] === undefined ? 1 : positive(dressing['array'], `${where}.dressing[${index}].array`);
+      if (!Number.isInteger(side)) throw new ArtError(`${where}.dressing[${index}].array: must be a whole number`);
       return {
         sheet: string(dressing['sheet'], `${where}.dressing[${index}].sheet`),
         size,
         weight: positive(dressing['weight'], `${where}.dressing[${index}].weight`),
         layer,
         minSize,
-        array,
+        array: side,
+        flat: flag(dressing['flat'], `${where}.dressing[${index}].flat`),
+        leaveOut:
+          dressing['leave_out'] === undefined
+            ? []
+            : array(dressing['leave_out'], `${where}.dressing[${index}].leave_out`).map((id, at) =>
+                string(id, `${where}.dressing[${index}].leave_out[${at}]`),
+              ),
       };
     }),
     dressingDensity: nonNegative(entry['dressing_density'], `${where}.dressing_density`),
@@ -308,7 +324,15 @@ function parsePoiRow(json: unknown, where: string): PoiArtRow {
     sheet: string(row['sheet'], `${where}.sheet`),
     size: positive(row['size'], `${where}.size`),
     borrowed: typeof borrowed === 'string' ? borrowed : null,
+    onNode: flag(row['on_node'], `${where}.on_node`),
   };
+}
+
+/** An optional true or false, false when left out. */
+function flag(json: unknown, where: string): boolean {
+  if (json === undefined) return false;
+  if (typeof json !== 'boolean') throw new ArtError(`${where}: expected true or false`);
+  return json;
 }
 
 function parseAdjustment(json: unknown, where: string): SheetAdjustment {
