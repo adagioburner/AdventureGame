@@ -50,9 +50,10 @@ the black mountain is mountain movement.
    shadow is already translucent should lose its line under `shadows` in the
    manifest.
 5. **A sheet the game brightens or outlines.** A few of the supplied sheets
-   are edited as they load rather than in the PNG: the cottages and magic
-   buildings are brightened, the guards get a pale contour so they stand out
-   on the mountains, and the statues a thin dark one. Each is one line under
+   are edited as they load rather than in the PNG: the cottages, magic
+   buildings and guards are brightened and their colours enriched, the
+   guards so they stand out on the mountains, and the statues get a thin
+   dark contour. Each is one line under
    `adjustments` in the manifest. A replacement that already looks right
    should lose its line.
 6. **Run the tests.** `pnpm test` checks that every sheet and icon the
