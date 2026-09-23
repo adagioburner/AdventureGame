@@ -41,8 +41,9 @@ the black mountain is mountain movement.
    `Mountains_GoldGuardedByFighting` in the forest-gold row and drops that
    row's `borrowed` note.
 3. **Real art replacing a placeholder.** Delete `"placeholder": true` from the
-   new atlas. The viewer's "Art in use" panel lists every picture as
-   placeholder, borrowed or supplied, from exactly these flags.
+   new atlas. That flag, and the manifest's `borrowed` notes, are the one
+   record of which pictures are not final; the game page no longer lists
+   them.
 4. **A sheet that draws its own soft shadow.** Most supplied sheets bake their
    drop shadow in as opaque flat grey (`#bbbbbb`), which the loader turns into
    translucent black so it darkens the ground it falls on. A replacement whose

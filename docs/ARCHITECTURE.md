@@ -566,8 +566,8 @@ message type — which is the "swappable without a rewrite" requirement.
 ## 9. Client / UI layer (§7)
 
 `apps/web`: Vite and React for the page, PixiJS for the map (`docs/STACK.md`
-§3). The map as a player sees it is drawn; move mode, the client store and the
-modes are still seams.
+§3). The map as a player sees it is drawn and a hot seat game plays on it;
+the client store and the online transport are still seams.
 
 | Module | Covers |
 |---|---|
@@ -577,9 +577,11 @@ modes are still seams.
 | `render/scene.ts` | `MapRenderer` and the draw layers (terrain, dressing, edges, nodes, POIs, path overlay, characters, UI), split by how often each invalidates |
 | `render/pixi/` | The PixiJS `MapRenderer` and the one-time pixel work on each sheet as it loads |
 | `interaction/camera.ts` | §7.1 click-drag pan, `+`/`-` zoom, plus wheel and pinch |
-| `interaction/moveMode.ts` | The §7.1 move-mode state machine: idle → selecting → previewing, shift-click waypoint, End Turn, Rest |
-| `state/client.ts` | `ClientGameStore` and the `Transport` seam |
-| `modes/` | Online vs. hotseat as a flag on one UI |
+| `interaction/moveMode.ts` | The §7.1 move-mode state machine: idle → selecting → previewing, shift-click waypoint, End Turn, Rest. Commits `TurnAction`s through a callback and draws nothing |
+| `interaction/picking.ts` | What a click or tap landed on: the figures under it, front first, and the node, forgiving a finger at any zoom |
+| `modes/` | Online vs. hotseat as a flag on one UI; `hotseat.ts` also holds `HotseatGame`, the local game with its own dice |
+| `page/` | The React page: setup, the game screen, the stats panel, the result and end cards, and `journal.ts`, the turn log in words |
+| `state/client.ts` | `ClientGameStore` and the `Transport` seam, for phase 7 |
 
 Three decisions worth stating:
 
@@ -647,6 +649,25 @@ How the in-game map is put together, since phase 3 drew it:
   scrambled gives the same scene, value for value
   (`render/sceneModel.test.ts`).
 
+How a hot seat turn runs, since phase 4 made it playable:
+
+- **One writer, one die.** `HotseatGame` owns the `GameState` and plays every
+  action through `applyAction` with a `DiceSource` seeded per game; the page
+  only ever shows states it returned. The dice seed is shown in the turn log,
+  so a game can be replayed exactly. Online play will take rolls from the
+  server instead, and nothing on that path imports `modes/hotseat.ts`.
+- **The controller plans, the page reveals.** The move-mode controller turns
+  taps into a route, previews it with `previewPath` against this turn's
+  allowance, and on End Turn commits a `move` carrying the route and its
+  waypoint. The engine resolves the whole turn at once; the page then walks
+  the figure along the steps the `moved` event lists, tumbles the die if an
+  `interacted` event carries a roll, and only then shows the new state and
+  hands over to the next seat.
+- **A route the player could not finish comes back.** The engine saves the
+  unwalked remainder and its waypoint on the player, and the controller
+  reopens that player's next turn on it, recoloured against the fresh
+  allowance.
+
 ---
 
 ## 10. Balancing harness
@@ -674,11 +695,13 @@ assignment, §5.2 guard strengths and `sealMap`. Phase 2 closed the rules engine
 `resolveMovement`, `previewPath`, `resolveInteraction`, `nextSeat` and
 `applyAction` are code, §8's worked example is a test, and a full game plays to
 a winner on a generated map. Phase 3 drew the map as a player sees it, with
-the art bound through `Art/manifest.json` (§9). What is left, each
-independently implementable against the shapes above:
+the art bound through `Art/manifest.json` (§9), and phase 4 made a two-seat
+hot seat game playable on it, through the move-mode controller online play
+will reuse. What is left, each independently implementable against the shapes
+above:
 
 1. MCTS `search()` — every policy, evaluator and branch rule is written; the four-phase loop, `macroAdvanceToTarget` and the rest of `packages/sim/src/rollout.ts` are not.
 2. `SetupFlow.start` — starting positions and `createGameState` are settled; needs the rest of setup, which needs the server.
-3. Move mode and the hotseat UI on top of the renderer (§9 above): `interaction/moveMode.ts`, `state/client.ts` and `modes/`.
+3. `state/client.ts` and a `Transport`, so the same game screen can play a game the server holds.
 
 `grep -rn NotImplementedError packages apps tools` remains the live worklist.

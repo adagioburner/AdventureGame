@@ -3,7 +3,7 @@ import { DEFAULT_RULESET } from '@adventure/config';
 import { asNodeId, isClaimed, type GameMap, type GameState, type PathPreview } from '@adventure/core';
 import { atlasOf, buildArtCatalog } from '../art/catalog.ts';
 import { ART_FILES } from '../art/files.ts';
-import { previewGame, SAMPLE_ALLOWANCE, SAMPLE_STAMINA } from '../page/preview.ts';
+import { previewGame, SAMPLE_ALLOWANCE, SAMPLE_STAMINA } from './scene.fixture.ts';
 import { distance, distanceToSegment, polygonArea, position } from './geometry.ts';
 import { BACKDROP_STEP, silhouettePoints, STANDING_MARGIN } from './dressing.ts';
 import { boxTouchesOval, grow, lengthInBox, overlapArea, pictureBox, ROUGH_SHAPE } from './placement.ts';
@@ -321,6 +321,29 @@ describe('what changes during play', () => {
     expect(guardRing(catalog, scene.spacing, state.nodes[target.node] ?? scene.nodes[0]!)).toBeNull();
     expect(state.nodes.filter((mark, at) => mark !== scene.nodes[at]).map((mark) => mark.node)).toEqual([target.node]);
     expect(buildStateScene(scene, game.state, catalog).nodes).toEqual(scene.nodes);
+  });
+
+  it('draws a walking figure where End Turn has got it to, alone, with its ring', () => {
+    const walking = game.state.players[0];
+    const neighbour = game.map.graph.adjacency[walking?.position ?? 0]?.[0];
+    if (walking === undefined || neighbour === undefined) throw new Error('no one to walk');
+    const from = position(game.map.graph, walking.position);
+    const to = position(game.map.graph, neighbour);
+    const halfway = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
+    const still = buildStateScene(scene, game.state, catalog);
+    const moving = buildStateScene(scene, game.state, catalog, { player: walking.id, at: halfway });
+
+    const [mover, other] = moving.characters;
+    const foot = scene.projection.toScreen(halfway);
+    expect(mover?.player).toBe(walking.id);
+    expect(mover?.foot.x).toBeCloseTo(foot.x, 9);
+    expect(mover?.foot.y).toBeCloseTo(foot.y + SPACING_PX * 0.12, 9);
+    // The other figure no longer shares a node with it, so stands in the middle of its own.
+    expect(other?.foot.x).toBeCloseTo(scene.projection.toScreen(from).x, 9);
+    expect(other?.foot.x).not.toBe(still.characters[1]?.foot.x);
+    // The ring follows the player whose turn it is.
+    expect(moving.active?.at.x).toBeCloseTo(scene.projection.toWorld(mover?.foot ?? foot).x, 9);
+    expect(moving.nodes).toEqual(still.nodes);
   });
 
   it('shows no active ring once the game is over', () => {

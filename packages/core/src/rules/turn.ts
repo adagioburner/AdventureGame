@@ -93,7 +93,10 @@ function applyTurnAction(state: GameState, action: TurnAction, dice: DiceSource)
   const player = requireActivePlayer(state, action.player);
   const events: GameEvent[] = [];
 
-  let next = action.kind === 'move' ? applyMove(state, player, action.path, events) : applyRest(state, player, events);
+  let next =
+    action.kind === 'move'
+      ? applyMove(state, player, action.path, action.waypoint, events)
+      : applyRest(state, player, events);
 
   // §7/§8: the interaction is a property of where the *turn* ends, so a POI
   // walked over on the way is not interacted with, and resting on one is not
@@ -107,6 +110,7 @@ function applyMove(
   state: GameState,
   player: PlayerState,
   path: readonly NodeId[],
+  plannedWaypoint: NodeId | null | undefined,
   events: GameEvent[],
 ): GameState {
   const resolution = resolveMovement(
@@ -119,9 +123,10 @@ function applyMove(
   );
 
   // [SOURCE §4] "An unfinished path is saved for the next turn and can still be
-  // changed." The waypoint survives only while it is still ahead of the player.
+  // changed." The waypoint survives only while it is still ahead of the player:
+  // the one this move was planned through, or else the one already saved.
   const remainder = resolution.remainder;
-  const waypoint = player.plannedPath === null ? null : player.plannedPath.waypoint;
+  const waypoint = plannedWaypoint !== undefined ? plannedWaypoint : (player.plannedPath?.waypoint ?? null);
   const plannedPath: PlannedPath | null =
     remainder.length === 0
       ? null

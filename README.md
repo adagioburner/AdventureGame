@@ -23,16 +23,17 @@ applies to this repo:
 
 ## Status
 
-**Map generation, the rules engine and the map a player sees work.**
-`generateMap(seed, ruleset)` runs GDD.md §2.1's eight steps end to end and
-returns a sealed `GameMap`, `applyAction(state, action, dice)` plays §7 and
-§8's turns on it, and `apps/web` draws it isometrically from the art in `Art/`
-— `pnpm map <seed>` draws the generator's diagnostic view, `pnpm game <seed>`
-plays a game to a winner and prints it turn by turn, and `pnpm dev` opens the
-map as a player sees it. That is phases 1 to 3 of
+**Map generation, the rules engine, the map a player sees and a hot seat
+game work.** `generateMap(seed, ruleset)` runs GDD.md §2.1's eight steps end
+to end and returns a sealed `GameMap`, `applyAction(state, action, dice)` plays
+§7 and §8's turns on it, and `apps/web` draws it isometrically from the art in
+`Art/` and lets two players take turns on one screen until the engine declares
+a winner — `pnpm map <seed>` draws the generator's diagnostic view,
+`pnpm game <seed>` plays a game to a winner and prints it turn by turn, and
+`pnpm dev` opens the hot seat game. That is phases 1 to 4 of
 [`docs/IMPLEMENTATION_PLAN.md`](./docs/IMPLEMENTATION_PLAN.md), on top of phase
-0's test harness. The playable UI (§7.1), the MCTS search loop (§9) and the
-server (§6.1) are still seams.
+0's test harness. The MCTS search loop (§9), the server (§6.1) and online play
+are still seams.
 
 Two design questions are open, neither blocking: [Q27](./docs/OPEN_QUESTIONS.md)
 — `COMPACTNESS_MAX` never binds on a graph this sparse, so §2.1's Smooth step
@@ -104,7 +105,7 @@ pnpm map:batch 50         # 50 seeds, the §11 distributions, no files
 pnpm game adventure       # play one map to a winner, turn by turn
 pnpm game                 # a random seed, printed first so it can be reused
 
-pnpm dev                  # the map viewer: http://localhost:5173/?seed=adventure
+pnpm dev                  # the hot seat game: http://localhost:5173/?seed=adventure
 pnpm build:web            # ... as a static page in apps/web/dist
 ```
 
@@ -169,8 +170,8 @@ above all, which decides §4.3's rewards and §5.2's guards and which a player
 must never see. It is written by `tools/balance`, never by `apps/web`, so it
 cannot drift into the client.
 
-The map players look at is the isometric view, `pnpm dev`, and it arrives in
-phase 3. The two are different drawings of the same `GameMap` and are not meant
+The map players look at is the isometric view, `pnpm dev`, which phase 3 drew
+and phase 4 made playable. The two are different drawings of the same `GameMap` and are not meant
 to look alike; see
 [`docs/ARCHITECTURE.md` §9](docs/ARCHITECTURE.md#9-client--ui-layer-7).
 

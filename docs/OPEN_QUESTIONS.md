@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q32.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q34.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -886,6 +886,39 @@ it's not free; they can figure out the rest."*
 The route is now dots and a cross only. `previewPath` in `@adventure/core`
 still reports each step's cost, since the engine charges it; only the label is
 gone. GDD §7.1 carries the ruling as a `[SOURCE §4, review]` note.
+
+---
+
+### Q33. ~~What does the page call the stats?~~ — **answered 2026-09-23: speed and combat**
+
+GDD §6 names them "plains/forest/mountain moving skill levels" and "fighting
+skill", and phase 4's page said "plains movement" and "fighting". Andrei,
+trying the hotseat game: rename them to "plains speed", "forest speed",
+"mountains speed" and "Combat" "consistently throughout the interface".
+
+The page now uses those words everywhere a player reads a stat: the stats
+panel, the result card ("a combat guard of 5"), the turn log and the hints.
+They come from one table, `STAT_LABEL` in `apps/web/src/page/journal.ts`. The
+engine, the config and the rules documents keep `plains_move` and `fighting`,
+since the rename is about what a player reads. GDD §6 carries the ruling as a
+`[SOURCE §2, review]` note.
+
+---
+
+### Q34. ~~How does the page show whose figure is whose turn?~~ — **answered 2026-09-23: it blinks, then is highlighted**
+
+GDD §7.2 says the current player's "character is highlighted on the map", and
+phase 4 drew a ring under it that was easy to miss. Andrei: *"it is hard to
+find your character on the map. Can we make it so it blinks when it's your
+turn, and, once you clicked it to start planning your move, it stops blinking
+and highlights instead."*
+
+The figure and its ring now pulse while it is the player's turn, with a
+ripple spreading on the ground under them, and once the player taps the
+figure or presses Plan a move it holds still, the ring enlarged and circled
+in gold, until End Turn or Rest. Cancel sets it blinking again. The ripple is
+an addition he did not ask for and is one line to drop. GDD §7.2 carries the
+ruling as a `[SOURCE §intro, review]` note.
 
 ---
 
