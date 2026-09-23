@@ -472,7 +472,18 @@ def stamp_wrapped(canvas: Canvas, cx: float, cy: float, reach: float, make_sdf, 
 
 # Colours are GDD.md §2's: plains light brown, forests green, mountains grey.
 TEXTURES = {
-    "Plains": {"base": (198, 170, 116), "amp": 30, "seed": 11},
+    "Plains": {
+        "base": (198, 170, 116),
+        "amp": 30,
+        "seed": 11,
+        "notes": (
+            " Its grass blades stand up off the ground, so they are drawn "
+            "pre-distorted by the inverse of the isometric projection: seen "
+            "flat they lean up and to the left, and on the map they point "
+            "straight up. A replacement drawn plainly top-down would show "
+            "upright features leaning right."
+        ),
+    },
     "Forest": {"base": (86, 124, 62), "amp": 34, "seed": 23},
     "Mountains": {"base": (142, 140, 134), "amp": 44, "seed": 37},
 }
@@ -494,6 +505,33 @@ def texture_base(spec) -> Canvas:
     return canvas
 
 
+def to_screen(x: float, y: float) -> tuple[float, float]:
+    """Where a vector on the ground ends up on screen: the renderer's 2:1
+    isometric projection (apps/web/src/render/isometric.ts), turning the
+    ground 45 degrees and squashing it to half height."""
+    return (x - y) * math.sqrt(0.5), (x + y) * math.sqrt(0.125)
+
+
+def to_ground(x: float, y: float) -> tuple[float, float]:
+    """The ground vector that `to_screen` turns into this screen vector."""
+    return x * math.sqrt(0.5) + y * math.sqrt(2), y * math.sqrt(2) - x * math.sqrt(0.5)
+
+
+def upright(ax: float, ay: float, sdf):
+    """A shape described as it should look on screen, drawn onto the ground at
+    (ax, ay); `sdf` is in screen terms, relative to that point.
+
+    The texture is laid on the ground plane, so anything drawn in it is turned
+    and squashed with the ground: a blade drawn pointing up the tile comes out
+    leaning to the right. Something that stands up off the ground, like grass,
+    is drawn through the inverse instead, so it points up once projected."""
+
+    def ground(x: float, y: float) -> float:
+        return sdf(*to_screen(x - ax, y - ay))
+
+    return ground
+
+
 def draw_plains(canvas: Canvas, seed: int) -> None:
     grass = (116, 132, 60, 255)
     grass_light = (150, 160, 78, 255)
@@ -502,13 +540,16 @@ def draw_plains(canvas: Canvas, seed: int) -> None:
         cx, cy = hash01(seed, i, 1) * TEXTURE_SIZE, hash01(seed, i, 2) * TEXTURE_SIZE
         colour = grass if i % 3 else grass_light
         for blade in range(3):
+            # Each tuft fans out from a short row of roots, in screen terms:
+            # the middle blade stands up, the outer two lean out a little.
             lean = (blade - 1) * 0.45 + (hash01(seed, i, blade, 3) - 0.5) * 0.3
-            length = 5 + hash01(seed, i, blade, 4) * 4
-            bx, by = cx + blade * 2 - 2, cy
-            tx, ty = bx + math.sin(lean) * length, by - math.cos(lean) * length
+            length = 4.5 + hash01(seed, i, blade, 4) * 3.5
+            gx, gy = to_ground((blade - 1) * 1.6, 0)
+            bx, by = cx + gx, cy + gy
+            tx, ty = math.sin(lean) * length, -math.cos(lean) * length
             stamp_wrapped(
-                canvas, bx, by, length + 2,
-                lambda x, y, tx=tx - bx, ty=ty - by: capsule(x, y, x + tx, y + ty, 0.9),
+                canvas, bx, by, 2 * length + 3,
+                lambda x, y, tx=tx, ty=ty: upright(x, y, capsule(0, 0, tx, ty, 0.8)),
                 colour,
             )
     for i in range(26):
@@ -573,6 +614,7 @@ def build_textures(art_dir: str) -> None:
                 "which is what foreshortens it into the isometric view. A "
                 "replacement must tile the same way, and should stay quiet enough "
                 "for POI images, dressing and roads to read on top of it."
+                + spec.get("notes", "")
             ),
             "sprites": [
                 {

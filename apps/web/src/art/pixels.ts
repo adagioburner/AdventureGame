@@ -116,6 +116,139 @@ export function keyShadows(
   return changed;
 }
 
+/**
+ * Lighten and enrich a sheet's colours in place (`Art/manifest.json`'s
+ * `adjustments`). `brightness` raises each channel `c` in 0..1 to
+ * `c ** (1 / brightness)`, so darks and midtones lift most and white stays
+ * white instead of clipping; `saturation` then scales each colour's distance
+ * from its own grey (Rec. 601 luma). Alpha is untouched, and a keyed shadow,
+ * being black, stays black.
+ */
+export function adjustColors(pixels: Uint8ClampedArray, brightness: number, saturation: number): void {
+  if (brightness === 1 && saturation === 1) return;
+  const lift = new Uint8ClampedArray(256);
+  for (let c = 0; c < 256; c++) lift[c] = Math.round(255 * (c / 255) ** (1 / brightness));
+  for (let i = 0; i < pixels.length; i += 4) {
+    if ((pixels[i + 3] as number) === 0) continue;
+    const r = lift[pixels[i] as number] as number;
+    const g = lift[pixels[i + 1] as number] as number;
+    const b = lift[pixels[i + 2] as number] as number;
+    const grey = 0.299 * r + 0.587 * g + 0.114 * b;
+    pixels[i] = grey + (r - grey) * saturation;
+    pixels[i + 1] = grey + (g - grey) * saturation;
+    pixels[i + 2] = grey + (b - grey) * saturation;
+  }
+}
+
+/**
+ * Draw a contour `radius` pixels thick round the picture in each of `rects`
+ * (a sheet's sprites), in place. The contour lies behind the picture, so the
+ * picture's soft edge blends into it rather than into the ground, and over
+ * anything else in the cell, a keyed shadow included. Each sprite is
+ * outlined within its own rect, so a contour never spills into a neighbour.
+ *
+ * Distances are exact (a Euclidean distance transform), so the contour is as
+ * thick on a diagonal as along an edge, and its outer edge is anti-aliased.
+ */
+export function outlinePictures(
+  pixels: Uint8ClampedArray,
+  stride: number,
+  rects: readonly Rect[],
+  radius: number,
+  color: readonly [number, number, number],
+): void {
+  const rows = pixels.length / 4 / stride;
+  for (const rect of rects) {
+    const x0 = Math.max(0, Math.floor(rect.x));
+    const y0 = Math.max(0, Math.floor(rect.y));
+    const width = Math.min(stride, Math.floor(rect.x + rect.width)) - x0;
+    const height = Math.min(rows, Math.floor(rect.y + rect.height)) - y0;
+    if (width <= 0 || height <= 0) continue;
+    const solid = new Uint8Array(width * height);
+    let any = false;
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        if ((pixels[((y0 + y) * stride + x0 + x) * 4 + 3] as number) >= SOLID_ALPHA) {
+          solid[y * width + x] = 1;
+          any = true;
+        }
+      }
+    }
+    if (!any) continue;
+    const distance = squaredDistances(solid, width, height);
+    // A pixel `d` from the nearest picture pixel's centre lies between
+    // `d - 1` and `d` past the picture's edge, so the contour covers
+    // `radius + 1 - d` of it.
+    const reach = (radius + 1) ** 2;
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const p = y * width + x;
+        const i = ((y0 + y) * stride + x0 + x) * 4;
+        const alpha = (pixels[i + 3] as number) / 255;
+        if (solid[p] === 1) {
+          // The picture over its contour: opaque, its soft edge tinted by it.
+          for (let c = 0; c < 3; c++) pixels[i + c] = (pixels[i + c] as number) * alpha + color[c]! * (1 - alpha);
+          pixels[i + 3] = 255;
+          continue;
+        }
+        if ((distance[p] as number) >= reach) continue;
+        const cover = Math.min(1, radius + 1 - Math.sqrt(distance[p] as number));
+        // The contour over whatever else is there.
+        const out = cover + alpha * (1 - cover);
+        for (let c = 0; c < 3; c++) {
+          pixels[i + c] = (color[c]! * cover + (pixels[i + c] as number) * alpha * (1 - cover)) / out;
+        }
+        pixels[i + 3] = out * 255;
+      }
+    }
+  }
+}
+
+/**
+ * Squared distance from every cell to the nearest set cell of `mask`, by
+ * Felzenszwalb and Huttenlocher's separable transform: columns, then rows.
+ */
+function squaredDistances(mask: Uint8Array, width: number, height: number): Float64Array {
+  const far = (width + height) ** 2;
+  const grid = new Float64Array(width * height);
+  for (let p = 0; p < grid.length; p++) grid[p] = mask[p] === 1 ? 0 : far;
+  const size = Math.max(width, height);
+  const line = new Float64Array(size);
+  const hull = new Int32Array(size);
+  const bounds = new Float64Array(size + 1);
+  // One column or row: `count` cells from `first`, `step` apart.
+  const pass = (first: number, step: number, count: number): void => {
+    for (let k = 0; k < count; k++) line[k] = grid[first + k * step] as number;
+    let top = 0;
+    hull[0] = 0;
+    bounds[0] = -Infinity;
+    bounds[1] = Infinity;
+    for (let q = 1; q < count; q++) {
+      const fq = (line[q] as number) + q * q;
+      let v = hull[top] as number;
+      let s = (fq - ((line[v] as number) + v * v)) / (2 * (q - v));
+      while (s <= (bounds[top] as number)) {
+        top--;
+        v = hull[top] as number;
+        s = (fq - ((line[v] as number) + v * v)) / (2 * (q - v));
+      }
+      top++;
+      hull[top] = q;
+      bounds[top] = s;
+      bounds[top + 1] = Infinity;
+    }
+    let at = 0;
+    for (let q = 0; q < count; q++) {
+      while ((bounds[at + 1] as number) < q) at++;
+      const v = hull[at] as number;
+      grid[first + q * step] = (q - v) * (q - v) + (line[v] as number);
+    }
+  };
+  for (let x = 0; x < width; x++) pass(x, width, height);
+  for (let y = 0; y < height; y++) pass(y * width, 1, width);
+  return grid;
+}
+
 /** The smallest box inside `rect` holding every solid pixel, or `null` if none. */
 export function solidBounds(pixels: Uint8ClampedArray, stride: number, rect: Rect): Rect | null {
   let minX = Infinity;

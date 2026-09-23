@@ -3,7 +3,7 @@
   "cell_width": 256,
   "cell_height": 256,
   "placeholder": true,
-  "notes": "Placeholder for GDD.md \u00a710's plains terrain texture. Drawn top-down and seamless in both directions: the renderer repeats it across every node of this terrain and lays it on the ground plane, which is what foreshortens it into the isometric view. A replacement must tile the same way, and should stay quiet enough for POI images, dressing and roads to read on top of it.",
+  "notes": "Placeholder for GDD.md \u00a710's plains terrain texture. Drawn top-down and seamless in both directions: the renderer repeats it across every node of this terrain and lays it on the ground plane, which is what foreshortens it into the isometric view. A replacement must tile the same way, and should stay quiet enough for POI images, dressing and roads to read on top of it. Its grass blades stand up off the ground, so they are drawn pre-distorted by the inverse of the isometric projection: seen flat they lean up and to the left, and on the map they point straight up. A replacement drawn plainly top-down would show upright features leaning right.",
   "sprites": [
     {
       "id": "Plains_Texture",

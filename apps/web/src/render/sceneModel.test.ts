@@ -102,7 +102,11 @@ describe('what the player sees of the map', () => {
     });
     expect(problems).toEqual([]);
     expect(hiddenBehind).toBeGreaterThan(300);
-    expect(hidden).toBeLessThan(hiddenBehind * 0.1);
+    // With the guards twice the size (Andrei, 2026-09-23) not every picture
+    // on a crowded mountain can stand clear of both the roads and its
+    // neighbours; clear of the neighbours wins, and about a quarter of the
+    // road hidden by standing everything behind is still hidden.
+    expect(hidden).toBeLessThan(hiddenBehind * 0.3);
   });
 
   it("rings a guarded POI's node in its guard's colour outside the black outline, and no other node", () => {

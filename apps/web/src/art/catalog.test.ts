@@ -146,6 +146,28 @@ describe('a bad art drop', () => {
     expect(() => parseManifest(withDressing({ ...fields, layer: 'sky' }))).toThrow(/layer: expected standing or backdrop/);
   });
 
+  it('rejects an adjustment for a sheet nothing draws, and a malformed one', () => {
+    const manifest = ART_FILES.json.get('manifest.json') as { adjustments: { sheets: object } };
+    const withAdjustments = (sheets: object) => ({ ...manifest, adjustments: { ...manifest.adjustments, sheets } });
+    const files = (sheets: object): ArtFiles => ({
+      json: new Map([...ART_FILES.json, ['manifest.json', withAdjustments(sheets)]]),
+      urls: ART_FILES.urls,
+    });
+    expect(() => buildArtCatalog(files({ Plains_Magik: { brightness: 1.5 } }))).toThrow(
+      /adjustments\.sheets\.Plains_Magik names a sheet the manifest does not draw/,
+    );
+    expect(() => parseManifest(withAdjustments({ Plains_Magic: { brightness: 0 } }))).toThrow(/brightness/);
+    expect(() => parseManifest(withAdjustments({ Forest_Fighting: { outline: { color: 'black', width: 0.01 } } }))).toThrow(
+      /outline\.color: expected a colour/,
+    );
+    const parsed = parseManifest(withAdjustments({ Forest_Fighting: { outline: { color: '#1C1812', width: 0.01 } } }));
+    expect(parsed.adjustments.get('Forest_Fighting')).toEqual({
+      brightness: 1,
+      saturation: 1,
+      outline: { color: '#1c1812', width: 0.01 },
+    });
+  });
+
   it('is reported with every problem at once', () => {
     const files: ArtFiles = {
       json: new Map([...ART_FILES.json].filter(([key]) => key !== 'Forest_Trees_atlas.json')),

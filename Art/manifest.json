@@ -32,17 +32,17 @@
     { "terrain": "plains", "reward": "magic", "guard": null, "sheet": "Plains_Magic", "size": 0.63 },
     { "terrain": "plains", "reward": "gold", "guard": "fighting", "sheet": "Plains_GoldGuardedByFighting", "size": 0.58 },
     { "terrain": "forest", "reward": "mountain_move", "guard": null, "sheet": "Forest_MountainMovement", "size": 0.42 },
-    { "terrain": "forest", "reward": "fighting", "guard": null, "sheet": "Forest_Fighting", "size": 0.42 },
+    { "terrain": "forest", "reward": "fighting", "guard": null, "sheet": "Forest_Fighting", "size": 0.63 },
     {
       "terrain": "forest",
       "reward": "gold",
       "guard": "fighting",
       "sheet": "Mountains_GoldGuardedByFighting",
-      "size": 0.4,
+      "size": 0.8,
       "borrowed": "Q20: forest gold has no sheet of its own yet, so it borrows mountain gold's fighting guardians."
     },
-    { "terrain": "mountain", "reward": "gold", "guard": "fighting", "sheet": "Mountains_GoldGuardedByFighting", "size": 0.4 },
-    { "terrain": "mountain", "reward": "gold", "guard": "magic", "sheet": "Mountains_GoldGuardedByMagic", "size": 0.45 },
+    { "terrain": "mountain", "reward": "gold", "guard": "fighting", "sheet": "Mountains_GoldGuardedByFighting", "size": 0.8 },
+    { "terrain": "mountain", "reward": "gold", "guard": "magic", "sheet": "Mountains_GoldGuardedByMagic", "size": 0.9 },
     {
       "terrain": "any",
       "reward": "stamina",
@@ -110,6 +110,16 @@
       "Plains_GrassRocks": ["#bbbbbb"],
       "Plains_Magic": ["#bbbbbb"],
       "Plains_PlainsMovement": ["#bbbbbb"]
+    }
+  },
+  "adjustments": {
+    "notes": "Edits made to a sheet as it loads, so its PNG stays exactly as supplied. `brightness` lifts the darks and midtones (each colour channel c, from 0 to 1, becomes c^(1/brightness), so white stays white; 1 leaves it). `saturation` scales how far each colour sits from its own grey (1 leaves it, 2 doubles it). `outline` draws a contour round every picture on the sheet, behind the picture and over its shadow, `width` thick as a share of the sheet's typical sprite so it grows and shrinks with it. Delete a sheet's line when its replacement already looks the way it should.",
+    "sheets": {
+      "Plains_PlainsMovement": { "brightness": 1.6, "saturation": 1.3 },
+      "Plains_Magic": { "brightness": 1.45, "saturation": 2.6 },
+      "Mountains_GoldGuardedByFighting": { "outline": { "color": "#fff3c4", "width": 0.03 } },
+      "Mountains_GoldGuardedByMagic": { "outline": { "color": "#fff3c4", "width": 0.03 } },
+      "Forest_Fighting": { "outline": { "color": "#1c1812", "width": 0.02 } }
     }
   }
 }

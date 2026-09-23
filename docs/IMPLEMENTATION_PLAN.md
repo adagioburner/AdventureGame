@@ -722,6 +722,17 @@ placeholder** — and that shaped most of what follows.
   also anchor each sprite at the foot of that shadow, which left guardians
   floating behind their nodes, so a sprite whose anchor sits below its lowest
   solid pixel now stands on that pixel.
+- **Some supplied sheets are edited as they load, never in the PNG**
+  (Andrei's art pass after phase 4, 2026-09-23). The cottages and magic
+  buildings are brightened, the magic ones with much richer colour; the
+  guards are drawn twice the size with a pale contour so they read on the
+  mountains, and the statues half as large again with a thin dark contour.
+  Each is one line under `adjustments` in the manifest, which a replacement
+  that already looks right just loses. Bigger guards crowd a mountain, so a
+  picture now avoids touching another POI's picture even at the cost of a
+  little road. The same pass turned the plains grass upright: it is drawn
+  through the inverse of the isometric projection, where before it leaned
+  right with the ground.
 - **Four placeholders were generated** by `make_placeholders.py`, flagged
   `placeholder: true` like the die and the brush: tileable textures for the
   three terrains, and `Prospect_Markers` — §7.1's dots and crosses in green,
