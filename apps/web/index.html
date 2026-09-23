@@ -318,7 +318,10 @@
         margin: 0;
         padding: 0;
         display: grid;
-        grid-template-columns: 1fr 1fr;
+        /* Each column as wide as its longest label ("mountains speed"), so no
+           stat name is cut short; the numbers still line up down a column. */
+        grid-template-columns: max-content max-content;
+        justify-content: space-between;
         gap: 3px 12px;
       }
       .stats li {
