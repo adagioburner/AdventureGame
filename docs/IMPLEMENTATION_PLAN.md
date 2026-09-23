@@ -699,7 +699,7 @@ remoteness shading anywhere on screen.
 ### What actually landed
 
 All nine items, drawn with PixiJS in `apps/web` and viewable with no checkout
-as a published page (§2.2). 44 new tests, 297 in all. Andrei asked for one
+as a published page (§2.2). 47 new tests, 300 in all. Andrei asked for one
 thing beyond the plan — **art that is easy to swap, since most of it is
 placeholder** — and that shaped most of what follows.
 
@@ -739,18 +739,26 @@ placeholder** — and that shaped most of what follows.
   map's seed at a per-terrain density, kept off nodes and roads, and never
   stands in front of a node or a road on screen. A test checks all three.
   Mountains are the exception since Andrei's review: the manifest marks them
-  `backdrop`, so they are painted onto the ground under the roads and nodes
-  and cover the whole mountain area instead of only its edges.
+  `backdrop`, so they are painted onto the ground under the roads and nodes,
+  each sized between `min_size` and `size` to stay over mountain ground, and
+  clipped to it, covering the whole mountain area instead of only its edges.
+  Fields are laid out in small arrays side by side along the ground.
 - **Nothing internal is drawn** (item 9), and a test proves it the direct way:
   scrambling every POI's `remoteness` and `group` and the map's `attempts`
   leaves the scene identical, value for value.
 - **A guard's colour is on its POI's node, and comes from the POI's guard,
-  never from the sheet** (Q31). A guarded node is drawn larger, outlined in red
-  or purple, with the picture standing just behind it. So a gold POI whose
-  guard §5.2 capped to nothing still shows its castle, on a plain node with no
-  number, and forest gold on the borrowed mountain sheet gets red because its
-  guard is fighting. The first build ringed the picture itself, per §3's
-  wording; Andrei moved it to the node in his review.
+  never from the sheet** (Q31). A guarded node keeps its black outline and
+  gains a red or purple ring outside it. So a gold POI whose guard §5.2 capped
+  to nothing still shows its castle, on a plain node with no number, and
+  forest gold on the borrowed mountain sheet gets red because its guard is
+  fighting. The first build ringed the picture itself, per §3's wording;
+  Andrei moved it to the node in his review.
+- **A POI's picture stands beside its node, where it hides least.** Each
+  picture touches its node in one of seven directions, behind or to a side,
+  and takes the one that covers the least road, no other node and no other
+  POI's picture or reward. Measured on `adventure` with the tests' rough
+  sprite shapes, that hides 3 pixels of road against 549 with every picture
+  straight behind its node, and no picture covers another POI.
 - **A claimed POI is drawn faded on a plain node, with no icons or number.**
   §4.5 says the node then behaves as an ordinary node; fading rather than
   removing the building is a default, one line to change.
@@ -759,7 +767,9 @@ placeholder** — and that shaped most of what follows.
   neighbouring POIs; the plains grass is under a third of its first size, the
   fields about half, and the figures, waypoint flag, reward icons and guard
   numbers shrank to match. Route steps that cost stamina are yellow with no
-  "-N" beside them (Q32).
+  "-N" beside them (Q32). His second look the same day enlarged the node ovals
+  by half, with the reward icons touching them, and the magic POIs' towers by
+  half again.
 - **Pan and zoom landed early** (`interaction/camera.ts`: drag, pinch, wheel,
   `+`/`-`, and "Whole map"), because a map shown whole on a phone is too small
   to judge art by. Move mode stays in phase 4. So does the move-prospect

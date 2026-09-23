@@ -3,6 +3,7 @@ import { CanvasSource, Rectangle, Texture, type TextureSource } from 'pixi.js';
 import { atlasOf, type ArtCatalog, type SpriteRef } from '../../art/catalog.ts';
 import type { Atlas } from '../../art/atlas.ts';
 import { keyShadows, solidBounds, standingAnchor, typicalSpan } from '../../art/pixels.ts';
+import type { SpriteShape } from '../placement.ts';
 
 /**
  * `Art/` turned into GPU textures, once, when the page opens.
@@ -13,7 +14,9 @@ import { keyShadows, solidBounds, standingAnchor, typicalSpan } from '../../art/
  * 1. its baked-in shadow colours, if the manifest lists any, become a
  *    translucent shadow (`keyShadows`);
  * 2. each sprite's solid extent is measured, and the median of those is the
- *    sheet's typical span, which the manifest's sizes are relative to;
+ *    sheet's typical span, which the manifest's sizes are relative to; each
+ *    extent is also kept as the sprite's shape, which is where the scene
+ *    lets it stand;
  * 3. the sheet is scaled down so that span is at most `MAX_TYPICAL_PX` — the
  *    supplied sheets are drawn several times larger than they ever appear, and
  *    uploading them whole would cost a phone a few hundred megabytes of GPU
@@ -31,12 +34,17 @@ export interface SheetTextures {
   readonly scale: number;
   /** The typical sprite span, in texture pixels. */
   readonly typical: number;
+  /** Each sprite's solid picture relative to where it stands, in typical spans; in atlas order. */
+  readonly shapes: readonly SpriteShape[];
 }
 
 export interface LoadedArt {
   readonly catalog: ArtCatalog;
   sheet(name: string): SheetTextures;
   frame(ref: SpriteRef): Texture;
+  /** A sprite's measured shape, for placing it (`sceneModel.ts`). */
+  shape(ref: SpriteRef): SpriteShape;
+  /** A reward icon, trimmed to its picture so its size is the size it looks. */
   icon(kind: RewardKind): Texture;
   /** A sprite cut out on its own at full resolution, for repeating: terrain textures, the road brush. */
   tile(ref: SpriteRef): Texture;
@@ -63,7 +71,12 @@ export async function loadArt(catalog: ArtCatalog): Promise<LoadedArt> {
     REWARD_KINDS.map(async (kind) => {
       const image = await loadImage(catalog.iconUrl(kind));
       const scale = Math.min(1, 128 / Math.max(image.width, image.height));
-      icons.set(kind, mipmapped(drawScaled(image, scale)));
+      const canvas = drawScaled(image, scale);
+      const pixels = context(canvas).getImageData(0, 0, canvas.width, canvas.height);
+      const whole = { x: 0, y: 0, width: canvas.width, height: canvas.height };
+      const solid = solidBounds(pixels.data, canvas.width, whole) ?? whole;
+      const source = mipmapped(canvas).source;
+      icons.set(kind, new Texture({ source, frame: new Rectangle(solid.x, solid.y, solid.width, solid.height) }));
     }),
   );
 
@@ -80,6 +93,11 @@ export async function loadArt(catalog: ArtCatalog): Promise<LoadedArt> {
       const frame = sheetOf(ref.sheet).frames[ref.index];
       if (frame === undefined) throw new Error(`${ref.sheet} has no sprite ${ref.index}`);
       return frame;
+    },
+    shape: (ref) => {
+      const shape = sheetOf(ref.sheet).shapes[ref.index];
+      if (shape === undefined) throw new Error(`${ref.sheet} has no sprite ${ref.index}`);
+      return shape;
     },
     icon: (kind) => {
       const icon = icons.get(kind);
@@ -128,7 +146,19 @@ function processSheet(
   const anchors = atlas.sprites.map((sprite, index) => standingAnchor(sprite, extents[index] ?? null));
   const frames = atlas.sprites.map((sprite, index) => frameTexture(source, sprite, anchors[index] ?? sprite.anchor, scale));
 
-  const sheet: SheetTextures = { atlas, frames, scale, typical: typicalOriginal * scale };
+  const shapes = atlas.sprites.map((sprite, index): SpriteShape => {
+    const extent = extents[index] ?? sprite;
+    const anchor = anchors[index] ?? sprite.anchor;
+    const footX = sprite.x + anchor.x;
+    const footY = sprite.y + anchor.y;
+    return {
+      left: (extent.x - footX) / typicalOriginal,
+      top: (extent.y - footY) / typicalOriginal,
+      right: (extent.x + extent.width - footX) / typicalOriginal,
+      bottom: (extent.y + extent.height - footY) / typicalOriginal,
+    };
+  });
+  const sheet: SheetTextures = { atlas, frames, scale, typical: typicalOriginal * scale, shapes };
   return { sheet, full };
 }
 

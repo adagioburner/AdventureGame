@@ -32,8 +32,10 @@ the black mountain is mountain movement.
    count: every sheet is scaled on load so its typical sprite (the median of
    each sprite's larger solid side) comes out at the manifest's `size`,
    measured in node spacings, where one node spacing is the length of a
-   typical road. A POI's `artVariant` picks sprite `variant mod count`, so a
-   sheet of four and a sheet of twelve both work.
+   typical road. Each sprite's own solid extent is measured too, and decides
+   where it can stand without covering a road. A POI's `artVariant` picks
+   sprite `variant mod count`, so a sheet of four and a sheet of twelve both
+   work.
 2. **New name.** Drop the files, then change the one manifest line that names
    the old sheet. A new POI sheet for forest gold, for example, replaces
    `Mountains_GoldGuardedByFighting` in the forest-gold row and drops that
@@ -82,20 +84,25 @@ and ignored by the game.
 
 - `terrain`: per terrain, its texture and how many node spacings one tile of
   it covers, the colour of its nodes' ovals, and its dressing sheets with a
-  size, a relative weight and a density (dressing sprites per node). A
-  dressing sheet marked `"layer": "backdrop"` (the mountains) is painted onto
-  the ground under the roads and nodes, so it can stand anywhere on its
-  terrain; without it, dressing stands up among the POIs and is kept clear of
-  the nodes and roads.
+  size, a relative weight and a density (standing dressing sprites per node).
+  A dressing sheet marked `"layer": "backdrop"` (the mountains) is painted
+  onto the ground under the roads and nodes and fills its whole terrain
+  instead: each sprite shrinks as far as its `min_size` to stay over its own
+  terrain, and whatever still reaches past is clipped. Without it, dressing
+  stands up among the POIs and is kept clear of the nodes and roads. A
+  standing sheet with `"array": 3` (the fields) is laid out in arrays up to
+  three sprites a side, side by side along the ground.
 - `pois`: one row per picture. A row matches a POI on its reward kind; its
   `terrain` is the POI's own or `any`, and a row naming the POI's guard type
   beats one that doesn't. The red or purple on a guarded POI's node always
   comes from the POI's actual guard, never from the row. Rows with a
   `borrowed` note are the Q20 substitutions: forest gold and stamina POIs have
   no sheet of their own yet.
-- `icons`, `guards`, `roads`, `nodes`: reward icons, the red and purple guard
-  colours with the size and outline width of a guarded POI's node and the
-  size of the guard's number, the road brush and width, and the node ovals.
+- `icons`, `guards`, `roads`, `nodes`: reward icons (sized by their picture,
+  so the transparent margin round an icon does not matter), the red and
+  purple guard colours with the width of the ring round a guarded POI's node
+  and the size of the guard's number, the road brush and width, and the node
+  ovals.
 - `move_prospect`: which marker sprites draw §7.1's dots, crosses, waypoint
   flag and active-player ring, and their sizes.
 - `figurines`, `portraits`, `dice`: the player figures, their portrait crops

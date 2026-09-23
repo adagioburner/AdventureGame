@@ -631,9 +631,16 @@ How the in-game map is put together, since phase 3 drew it:
   waypoint flag are billboards standing at the screen point of their foot and
   sorted back to front. Dressing the manifest marks `backdrop` (the
   mountains) is the exception: it is painted onto the ground under the roads
-  and nodes, so it can cover its whole terrain without hiding either. Reward
-  icons and guard numbers go on top of everything, so nothing standing can
-  hide them; a route's yellow steps carry no number (Q32).
+  and nodes, sized to fit and clipped to its own terrain, so it can cover the
+  whole of it without hiding either. Reward icons and guard numbers go on top
+  of everything, so nothing standing can hide them; a route's yellow steps
+  carry no number (Q32).
+- **What a picture covers is measured, not guessed.** On load every sprite's
+  solid extent is measured (`SpriteShape`), and the scene uses it to stand
+  each POI's picture beside its node on the side that covers no road and no
+  other POI (`render/placement.ts`), to keep standing dressing clear of the
+  game, and to fit each mountain inside its terrain (`render/dressing.ts`).
+  The tests, which have no pixels, use `ROUGH_SHAPE` for every sprite.
 - **The rule against drawing internals is a test, not a convention.** Building
   the scene from a map whose `remoteness`, `group` and `attempts` have been
   scrambled gives the same scene, value for value

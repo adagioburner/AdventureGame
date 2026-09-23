@@ -4,7 +4,7 @@ import { asNodeId, type Poi } from '@adventure/core';
 import { ArtError, atlasExtent } from './atlas.ts';
 import { atlasOf, buildArtCatalog, poiArt, sheetFile, wrapIndex, type ArtFiles } from './catalog.ts';
 import { ART_FILES } from './files.ts';
-import { poiArtRow, sheetsNamed } from './manifest.ts';
+import { parseManifest, poiArtRow, sheetsNamed } from './manifest.ts';
 
 /**
  * The real `Art/` folder against the real `Art/manifest.json`. This is the test
@@ -131,6 +131,19 @@ describe('a bad art drop', () => {
     expect(() => buildArtCatalog(without('Forest_Trees_atlas.json'))).toThrow(/Forest_Trees_atlas\.json is missing/);
     expect(() => buildArtCatalog(without('Plains_Magic_sheet.png'))).toThrow(/Plains_Magic_sheet\.png is missing/);
     expect(() => buildArtCatalog(without('Icons/gold.png'))).toThrow(/Icons\/gold\.png is missing/);
+  });
+
+  it('rejects dressing it could not lay out: a backdrop that grows to fit, or an array of part-sprites', () => {
+    const manifest = ART_FILES.json.get('manifest.json') as { terrain: Record<string, { dressing: object[] }> };
+    const withDressing = (dressing: object) => ({
+      ...manifest,
+      terrain: { ...manifest.terrain, plains: { ...manifest.terrain['plains'], dressing: [dressing] } },
+    });
+    const fields = { sheet: 'Plains_Fields', size: 0.45, weight: 1 };
+    expect(parseManifest(withDressing({ ...fields, array: 3 })).terrain.plains.dressing[0]).toMatchObject({ array: 3, layer: 'standing' });
+    expect(() => parseManifest(withDressing({ ...fields, array: 2.5 }))).toThrow(/array: must be a whole number/);
+    expect(() => parseManifest(withDressing({ ...fields, min_size: 0.6 }))).toThrow(/min_size: must not exceed size/);
+    expect(() => parseManifest(withDressing({ ...fields, layer: 'sky' }))).toThrow(/layer: expected standing or backdrop/);
   });
 
   it('is reported with every problem at once', () => {

@@ -9,11 +9,13 @@ import {
   buildPathScene,
   buildStateScene,
   buildWaypoint,
+  guardRing,
   nodeOutlineWidth,
   type Billboard,
   type MapScene,
   type StateScene,
 } from '../sceneModel.ts';
+import { backdropTerrains } from '../dressing.ts';
 import type { LoadedArt } from './textures.ts';
 
 /**
@@ -29,6 +31,8 @@ export class PixiMapRenderer implements MapRenderer {
 
   private readonly terrainLayer = new Container();
   private readonly backdrop = new Container();
+  /** The backdrop's own terrain, laid through the projection: the backdrop is clipped to it. */
+  private readonly backdropGround = new Container();
   private readonly groundBelow = new Container();
   private readonly edgesLayer = new Container();
   private readonly nodesLayer = new Container();
@@ -56,14 +60,23 @@ export class PixiMapRenderer implements MapRenderer {
   ) {
     this.projection = scene.projection;
     const m = scene.projection.matrix;
-    for (const ground of [this.terrainLayer, this.groundBelow, this.groundAbove]) {
+    for (const ground of [this.terrainLayer, this.backdropGround, this.groundBelow, this.groundAbove]) {
       ground.setFromMatrix(new Matrix(m.a, m.b, m.c, m.d, m.tx, m.ty));
     }
     this.groundBelow.addChild(this.edgesLayer, this.nodesLayer, this.activeLayer);
     this.ui.addChild(this.labelsLayer);
     // The backdrop is painted on the ground, under the roads and nodes;
     // `scene.billboards` already lists it back to front.
-    this.root.addChild(this.terrainLayer, this.backdrop, this.groundBelow, this.standing, this.groundAbove, this.ui);
+    this.root.addChild(
+      this.terrainLayer,
+      this.backdropGround,
+      this.backdrop,
+      this.groundBelow,
+      this.standing,
+      this.groundAbove,
+      this.ui,
+    );
+    this.clipBackdrop();
     for (const layer of ['terrain', 'edges', 'nodes', 'dressing', 'pois', 'ui'] as const) this.invalidate(layer);
   }
 
@@ -165,17 +178,37 @@ export class PixiMapRenderer implements MapRenderer {
     this.nodesLayer.removeChildren().forEach((child) => child.destroy());
     const { catalog } = this.art;
     const { manifest } = catalog;
+    const { spacing } = this.scene;
     const graphics = new Graphics();
     for (const node of this.stateScene?.nodes ?? this.scene.nodes) {
       graphics
         .circle(node.at.x, node.at.y, node.radius)
         .fill(manifest.terrain[node.terrain].nodeColor)
-        .stroke({
-          color: node.guard === null ? manifest.nodes.outline : manifest.guards.colors[node.guard],
-          width: nodeOutlineWidth(catalog, node.guard) * this.scene.spacing,
-        });
+        .stroke({ color: manifest.nodes.outline, width: nodeOutlineWidth(catalog) * spacing });
+      const ring = guardRing(catalog, spacing, node);
+      if (ring !== null && node.guard !== null) {
+        graphics.circle(node.at.x, node.at.y, ring.radius).stroke({ color: manifest.guards.colors[node.guard], width: ring.width });
+      }
     }
     this.nodesLayer.addChild(graphics);
+  }
+
+  /**
+   * The backdrop is sized and placed to stay over its own terrain, but a
+   * picture is not the triangle its placement assumes; clipping it to the
+   * terrain's cells cuts off whatever still reaches past, the map's edge
+   * included.
+   */
+  private clipBackdrop(): void {
+    const terrains = backdropTerrains(this.art.catalog.manifest);
+    if (terrains.size === 0) return;
+    const mask = new Graphics();
+    for (const patch of this.scene.terrain) {
+      if (!terrains.has(patch.terrain) || patch.polygon.length < 3) continue;
+      mask.poly(grow(patch.polygon, this.scene.spacing * 0.004).flatMap((p) => [p.x, p.y])).fill(0xffffff);
+    }
+    this.backdropGround.addChild(mask);
+    this.backdrop.mask = mask;
   }
 
   // --- what stands on it --------------------------------------------------------

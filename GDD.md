@@ -47,7 +47,7 @@ Status: v1 design, consolidated from `Annotated_Design_Document.md` (the traceab
 
 [SOURCE §1] Some nodes are POIs. A POI has: a reward (§4), optionally a guard (§4.4), and an eye-candy image of the place or — if guarded — of the guardian, with a red (fighting) or purple (magic) contour.
 
-[SOURCE §1, review] **The red or purple goes on the POI's node, not round the guardian's image.** Andrei, reviewing the phase 3 map on 2026-09-23: "the guards should not have red or purple contours; instead, the nodes should." A guarded POI's node is drawn larger than an ordinary one, outlined in its guard's colour, and the image stands just behind it so the whole node shows; once the POI is claimed its node is drawn as an ordinary one (§4.5). Registered as Q31.
+[SOURCE §1, review] **The red or purple goes on the POI's node, not round the guardian's image.** Andrei, reviewing the phase 3 map on 2026-09-23: "the guards should not have red or purple contours; instead, the nodes should." A guarded POI's node keeps the black outline every node has and gains a ring in its guard's colour just outside it ("let's keep the regular black one inside it as well", same day); once the POI is claimed its node is drawn as an ordinary one (§4.5). The image stands beside its node rather than on it, on whichever side covers no road and no other POI. Registered as Q31.
 
 [SOURCE §1] POI placement: distributed randomly at approximately equal distances from each other; every leaf node of the graph must be a POI (no dead ends); leaf nodes are assigned POI status first, remaining POIs distributed randomly among the rest.
 

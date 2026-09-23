@@ -29,9 +29,8 @@ export interface ArtManifest {
   readonly icons: { readonly size: number; readonly files: Readonly<Record<RewardKind, string>> };
   readonly guards: {
     readonly colors: Readonly<Record<GuardType, string>>;
-    /** A guarded POI's node: its radius, and its outline's width in the guard's colour (§3). */
-    readonly nodeRadius: number;
-    readonly nodeOutlineWidth: number;
+    /** The width of the ring in the guard's colour round a guarded POI's node (§3, Q31). */
+    readonly ringWidth: number;
     readonly numberSize: number;
   };
   readonly roads: { readonly sheet: string; readonly sprite: string; readonly width: number };
@@ -49,7 +48,7 @@ export interface TerrainArt {
   readonly textureSize: number;
   readonly nodeColor: string;
   readonly dressing: readonly DressingArt[];
-  /** Dressing sprites per node of this terrain. */
+  /** Standing dressing sprites per node of this terrain; backdrop dressing fills the terrain instead. */
   readonly dressingDensity: number;
 }
 
@@ -60,10 +59,16 @@ export interface DressingArt {
   /**
    * `standing` dressing is depth-sorted with the POIs and figures and kept off
    * the nodes and roads; `backdrop` dressing is painted onto the ground under
-   * the roads, nodes and everything else, so it can stand anywhere on its
-   * terrain.
+   * the roads, nodes and everything else, and fills its whole terrain.
    */
   readonly layer: DressingLayer;
+  /** Backdrop only: the smallest a sprite may shrink to, to fit its terrain. */
+  readonly minSize: number;
+  /**
+   * Standing only: laid out in arrays up to this many sprites a side, side by
+   * side along the ground, instead of one at a time. `1` for no arrays.
+   */
+  readonly array: number;
 }
 
 export type DressingLayer = 'standing' | 'backdrop';
@@ -131,8 +136,7 @@ export function parseManifest(json: unknown): ArtManifest {
           color(record(guards[type], `manifest.json: guards.${type}`)['color'], `manifest.json: guards.${type}.color`),
         ]),
       ) as Record<GuardType, string>,
-      nodeRadius: positive(guards['node_radius'], 'manifest.json: guards.node_radius'),
-      nodeOutlineWidth: positive(guards['node_outline_width'], 'manifest.json: guards.node_outline_width'),
+      ringWidth: positive(guards['ring_width'], 'manifest.json: guards.ring_width'),
       numberSize: positive(guards['number_size'], 'manifest.json: guards.number_size'),
     },
     roads: {
@@ -234,11 +238,18 @@ function parseTerrain(json: unknown, where: string): TerrainArt {
       if (layer !== 'standing' && layer !== 'backdrop') {
         throw new ArtError(`${where}.dressing[${index}].layer: expected standing or backdrop`);
       }
+      const size = positive(dressing['size'], `${where}.dressing[${index}].size`);
+      const minSize = dressing['min_size'] === undefined ? size : positive(dressing['min_size'], `${where}.dressing[${index}].min_size`);
+      if (minSize > size) throw new ArtError(`${where}.dressing[${index}].min_size: must not exceed size`);
+      const array = dressing['array'] === undefined ? 1 : positive(dressing['array'], `${where}.dressing[${index}].array`);
+      if (!Number.isInteger(array)) throw new ArtError(`${where}.dressing[${index}].array: must be a whole number`);
       return {
         sheet: string(dressing['sheet'], `${where}.dressing[${index}].sheet`),
-        size: positive(dressing['size'], `${where}.dressing[${index}].size`),
+        size,
         weight: positive(dressing['weight'], `${where}.dressing[${index}].weight`),
         layer,
+        minSize,
+        array,
       };
     }),
     dressingDensity: nonNegative(entry['dressing_density'], `${where}.dressing_density`),

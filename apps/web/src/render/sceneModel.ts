@@ -1,6 +1,5 @@
-import { TERRAINS, type GuardType, type RewardKind, type Terrain } from '@adventure/config';
+import type { GuardType, RewardKind, Terrain } from '@adventure/config';
 import {
-  createRng,
   isClaimed,
   type GameMap,
   type GameState,
@@ -11,16 +10,10 @@ import {
 } from '@adventure/core';
 import { spriteIndex } from '../art/atlas.ts';
 import { atlasOf, poiArt, wrapIndex, type ArtCatalog, type SpriteRef } from '../art/catalog.ts';
-import {
-  distance,
-  distanceToSegment,
-  nodeBounds,
-  nodeSpacing,
-  ObstacleGrid,
-  position,
-  voronoiCells,
-} from './geometry.ts';
+import { placeBackdrop, placeDressing } from './dressing.ts';
+import { distance, nodeBounds, nodeSpacing, position, voronoiCells } from './geometry.ts';
 import { isometricProjection, type Bounds, type Projection } from './isometric.ts';
+import { placePoiPictures, ROUGH_SHAPE, type Box, type Oval, type PoiPicture, type ShapeOf } from './placement.ts';
 
 /**
  * The map as a player sees it, as plain data: what to draw, where, and how
@@ -78,12 +71,13 @@ export interface NodeMark {
   readonly node: NodeId;
   readonly at: Point;
   readonly terrain: Terrain;
-  /** World units. */
+  /** World units, to the middle of the node's black outline. */
   readonly radius: number;
   /**
    * [SOURCE §3] A guarded POI is marked in red (fighting) or purple (magic),
-   * on its node rather than round its picture since Andrei's 2026-09-23
-   * review (Q31). `null` for every other node, and for a claimed POI's.
+   * as a ring round its node's black outline rather than round its picture
+   * since Andrei's 2026-09-23 review (Q31). `null` for every other node, and
+   * for a claimed POI's.
    */
   readonly guard: GuardType | null;
 }
@@ -123,7 +117,11 @@ export interface PoiLabel {
   readonly guard: { readonly type: GuardType; readonly strength: number; readonly at: Point; readonly size: number } | null;
 }
 
-export function buildMapScene(map: GameMap, catalog: ArtCatalog): MapScene {
+/**
+ * `shapeOf` gives each sprite's measured shape, which is where pictures and
+ * dressing go; without the pixels, `ROUGH_SHAPE` stands in for every sprite.
+ */
+export function buildMapScene(map: GameMap, catalog: ArtCatalog, shapeOf: ShapeOf = ROUGH_SHAPE): MapScene {
   const { manifest } = catalog;
   const graph = map.graph;
   const spacing = nodeSpacing(graph);
@@ -149,61 +147,76 @@ export function buildMapScene(map: GameMap, catalog: ArtCatalog): MapScene {
   const guards = new Map(map.pois.map((poi) => [poi.node, poi.guard?.type ?? null]));
   const nodes: NodeMark[] = graph.nodes.map((node) => nodeMark(catalog, spacing, node, guards.get(node.id) ?? null));
 
-  const pois: Billboard[] = [];
-  const labels: PoiLabel[] = [];
-  for (const poi of map.pois) {
+  const ovals = nodes.map((mark) => ({ ...nodeOval(catalog, projection, spacing, mark), node: mark.node, poi: guards.has(mark.node) }));
+  const labels = map.pois.map((poi) => {
+    const oval = ovals[poi.node] as Oval;
+    return poiLabel(catalog, poi.node, oval, poi.reward.kind, poi.reward.units, poi.guard);
+  });
+  const pictures: PoiPicture[] = map.pois.map((poi) => {
     const art = poiArt(catalog, poi);
-    const at = projection.toScreen(position(graph, poi.node));
-    // The picture stands just behind its node, so the whole node, and the
-    // guard's colour on it, is in front of the picture and never hidden by it.
-    const reach = nodeReach(catalog, poi.guard?.type ?? null);
-    const foot = { x: at.x, y: at.y - reach };
-    pois.push({
-      layer: 'pois',
-      sprite: art.sprite,
-      foot,
-      size: art.row.size * SPACING_PX,
-      node: poi.node,
-      depth: foot.y,
-    });
-    labels.push(poiLabel(catalog, poi.node, at, reach, poi.reward.kind, poi.reward.units, poi.guard));
-  }
+    return { node: poi.node, oval: ovals[poi.node] as Oval, sprite: art.sprite, size: art.row.size * SPACING_PX };
+  });
+  const feet = placePoiPictures(
+    pictures,
+    {
+      roads: roads.map((road) => [projection.toScreen(road.from), projection.toScreen(road.to)] as const),
+      nodes: ovals,
+      labels: labels.map(labelBox),
+      onGround: (screen) => {
+        const at = projection.toWorld(screen);
+        return at.x >= bounds.min.x && at.x <= bounds.max.x && at.y >= bounds.min.y && at.y <= bounds.max.y;
+      },
+    },
+    shapeOf,
+  );
+  const pois: Billboard[] = pictures.map((picture, index) => {
+    const foot = feet[index] as Point;
+    return { layer: 'pois', sprite: picture.sprite, foot, size: picture.size, node: picture.node, depth: foot.y };
+  });
 
-  const dressing = placeDressing(map, catalog, projection, spacing, bounds);
-  const billboards = [...dressing, ...pois].sort(backToFront);
+  const ground = { map, catalog, projection, spacing, bounds, shapeOf };
+  const billboards = [...placeBackdrop(ground), ...placeDressing(ground), ...pois].sort(backToFront);
   return { projection, spacing, bounds, terrain, roads, nodes, billboards, labels };
 }
 
-/** How a node is drawn: a guarded POI's node larger, in its guard's colour. */
+/** How a node is drawn. Every node is the same size; a guarded POI's adds a ring in its guard's colour. */
 export function nodeMark(
   catalog: ArtCatalog,
   spacing: number,
   node: { readonly id: NodeId; readonly position: Point; readonly terrain: Terrain },
   guard: GuardType | null,
 ): NodeMark {
-  const { manifest } = catalog;
-  const radius = guard === null ? manifest.nodes.radius : manifest.guards.nodeRadius;
-  return { node: node.id, at: node.position, terrain: node.terrain, radius: radius * spacing, guard };
+  return { node: node.id, at: node.position, terrain: node.terrain, radius: catalog.manifest.nodes.radius * spacing, guard };
 }
 
-/** The width of a node's outline, in node spacings. */
-export function nodeOutlineWidth(catalog: ArtCatalog, guard: GuardType | null): number {
-  const { manifest } = catalog;
-  return guard === null ? manifest.nodes.radius * 0.28 : manifest.guards.nodeOutlineWidth;
+/** The width of a node's black outline, in node spacings. */
+export function nodeOutlineWidth(catalog: ArtCatalog): number {
+  return catalog.manifest.nodes.radius * 0.28;
 }
 
-/** How far a node's oval, outline included, reaches up and down the screen from its centre, in pixels at zoom 1. */
-function nodeReach(catalog: ArtCatalog, guard: GuardType | null): number {
-  const radius = guard === null ? catalog.manifest.nodes.radius : catalog.manifest.guards.nodeRadius;
+/**
+ * The guard's ring round a guarded POI's node, in world units: drawn just
+ * outside the black outline, which stays (Andrei, 2026-09-23).
+ */
+export function guardRing(catalog: ArtCatalog, spacing: number, mark: NodeMark): { radius: number; width: number } | null {
+  if (mark.guard === null) return null;
+  const width = catalog.manifest.guards.ringWidth * spacing;
+  return { radius: mark.radius + (nodeOutlineWidth(catalog) * spacing) / 2 + width / 2, width };
+}
+
+/** A node's oval on screen at zoom 1, outline and guard's ring included. */
+export function nodeOval(catalog: ArtCatalog, projection: Projection, spacing: number, mark: NodeMark): Oval {
+  const ring = guardRing(catalog, spacing, mark);
+  const reach = ring === null ? mark.radius + (nodeOutlineWidth(catalog) * spacing) / 2 : ring.radius + ring.width / 2;
+  const across = (reach * SPACING_PX) / spacing;
   // The isometric view halves the ground's depth.
-  return ((radius + nodeOutlineWidth(catalog, guard) / 2) * SPACING_PX) / 2;
+  return { at: projection.toScreen(mark.at), rx: across, ry: across / 2 };
 }
 
 function poiLabel(
   catalog: ArtCatalog,
   node: NodeId,
-  at: Point,
-  reach: number,
+  oval: Oval,
   kind: RewardKind,
   units: number,
   guard: { readonly type: GuardType; readonly strength: number } | null,
@@ -212,11 +225,12 @@ function poiLabel(
   const step = size * 0.42;
   const rowWidth = size + step * (units - 1);
   const numberSize = catalog.manifest.guards.numberSize * SPACING_PX;
-  // In front of the POI's node, so neither the picture nor the node hides the
-  // reward; with a guard, the icons and the number are centred together.
+  // Just in front of the POI's node, touching its oval, so nothing standing
+  // hides the reward and the reward hides nothing of the node; with a guard,
+  // the icons and the number are centred together.
   const numberWidth = guard === null ? 0 : numberSize * (String(guard.strength).length * 0.6) + size * 0.2;
-  const left = at.x - (rowWidth + numberWidth) / 2;
-  const y = at.y + reach + size * 0.55;
+  const left = oval.at.x - (rowWidth + numberWidth) / 2;
+  const y = oval.at.y + oval.ry + size * ICON_TOUCH;
   return {
     node,
     icons: { kind, count: units, first: { x: left + size / 2, y }, step, size },
@@ -227,109 +241,20 @@ function poiLabel(
   };
 }
 
+/** Where an icon's centre sits below its node's oval, as a share of its size: just under a half, so the two touch. */
+export const ICON_TOUCH = 0.45;
+
+/** The screen box a POI's icons and number cover. */
+export function labelBox(label: PoiLabel): Box {
+  const { icons, guard } = label;
+  const right = guard === null ? icons.first.x + icons.step * (icons.count - 1) + icons.size / 2 : guard.at.x + guard.size * 0.6 * String(guard.strength).length;
+  const half = Math.max(icons.size, guard?.size ?? 0) / 2;
+  return { minX: icons.first.x - icons.size / 2, minY: icons.first.y - half, maxX: right, maxY: icons.first.y + half };
+}
+
 function backToFront(p: Billboard, q: Billboard): number {
   return p.depth - q.depth || p.foot.x - q.foot.x;
 }
-
-/**
- * [SOURCE §6] "non-interactive dressing (eye candy) are billboard sprites
- * pasted onto the map by the engine."
- *
- * Scattered over each terrain's ground at the manifest's density, from a
- * stream forked off the map seed so the same map always carries the same
- * trees. Standing dressing is rejected wherever it would stand on a road or
- * hide a node or a road standing behind it, so it is never in the way of the
- * game. Backdrop dressing is painted under the roads and nodes, so it goes
- * anywhere on its terrain, only kept apart enough not to pile up.
- */
-export function placeDressing(
-  map: GameMap,
-  catalog: ArtCatalog,
-  projection: Projection,
-  spacing: number,
-  bounds: Bounds,
-): Billboard[] {
-  const { manifest } = catalog;
-  const graph = map.graph;
-  const rng = createRng(map.seed).fork('dressing');
-
-  // What standing dressing must not cover, in screen space: every node and every road.
-  const obstacles = new ObstacleGrid(SPACING_PX);
-  for (const node of graph.nodes) obstacles.addPoint(projection.toScreen(node.position));
-  for (const edge of graph.edges) {
-    obstacles.addSegment(projection.toScreen(position(graph, edge.a)), projection.toScreen(position(graph, edge.b)));
-  }
-
-  const quota = new Map<Terrain, number>();
-  for (const terrain of TERRAINS) {
-    const count = graph.nodes.filter((node) => node.terrain === terrain).length;
-    quota.set(terrain, Math.round(count * manifest.terrain[terrain].dressingDensity));
-  }
-  const wanted = [...quota.values()].reduce((sum, n) => sum + n, 0);
-
-  const placed: Billboard[] = [];
-  const backdrop: { at: Point; size: number }[] = [];
-  const width = bounds.max.x - bounds.min.x;
-  const height = bounds.max.y - bounds.min.y;
-  for (let attempt = 0; attempt < wanted * 40 && placed.length < wanted; attempt++) {
-    const at = { x: bounds.min.x + rng.nextFloat() * width, y: bounds.min.y + rng.nextFloat() * height };
-    const pickDressing = rng.nextFloat();
-    const pickSprite = rng.nextUint32();
-
-    let nearest = graph.nodes[0];
-    let nearestDistance = Infinity;
-    for (const node of graph.nodes) {
-      const d = distance(at, node.position);
-      if (d < nearestDistance) {
-        nearestDistance = d;
-        nearest = node;
-      }
-    }
-    if (nearest === undefined) break;
-    const left = quota.get(nearest.terrain) ?? 0;
-    if (left <= 0) continue;
-
-    const options = manifest.terrain[nearest.terrain].dressing;
-    if (options.length === 0) continue;
-    const total = options.reduce((sum, option) => sum + option.weight, 0);
-    let roll = pickDressing * total;
-    const option = options.find((candidate) => (roll -= candidate.weight) < 0) ?? options[options.length - 1];
-    if (option === undefined) continue;
-
-    const size = option.size * SPACING_PX;
-    const foot = projection.toScreen(at);
-    if (option.layer === 'backdrop') {
-      const apart = option.size * spacing * BACKDROP_GAP;
-      if (backdrop.some((other) => distance(at, other.at) < Math.min(apart, other.size * BACKDROP_GAP))) continue;
-      backdrop.push({ at, size: option.size * spacing });
-    } else {
-      if (nearestDistance < spacing * 0.3) continue;
-      if (graph.edges.some((edge) => distanceToSegment(at, position(graph, edge.a), position(graph, edge.b)) < spacing * 0.14)) {
-        continue;
-      }
-      // The sprite rises above its foot; a node or road inside that box would
-      // be hidden behind it.
-      if (obstacles.anyInBox(foot.x - size * 0.45, foot.y - size * 0.9, foot.x + size * 0.45, foot.y + size * 0.05)) {
-        continue;
-      }
-    }
-
-    const count = atlasOf(catalog, option.sheet).sprites.length;
-    placed.push({
-      layer: option.layer === 'backdrop' ? 'backdrop' : 'dressing',
-      sprite: { sheet: option.sheet, index: wrapIndex(pickSprite, count) },
-      foot,
-      size,
-      node: null,
-      depth: foot.y,
-    });
-    quota.set(nearest.terrain, left - 1);
-  }
-  return placed;
-}
-
-/** How close two backdrop sprites may stand, as a share of the smaller one's size. */
-export const BACKDROP_GAP = 0.45;
 
 // --- what changes during play ------------------------------------------------
 

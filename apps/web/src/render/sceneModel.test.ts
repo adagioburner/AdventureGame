@@ -5,25 +5,37 @@ import { atlasOf, buildArtCatalog } from '../art/catalog.ts';
 import { ART_FILES } from '../art/files.ts';
 import { previewGame, SAMPLE_ALLOWANCE, SAMPLE_STAMINA } from '../page/preview.ts';
 import { distance, distanceToSegment, polygonArea, position } from './geometry.ts';
+import { BACKDROP_STEP, silhouettePoints, STANDING_MARGIN } from './dressing.ts';
+import { boxTouchesOval, grow, lengthInBox, overlapArea, pictureBox, ROUGH_SHAPE } from './placement.ts';
 import {
-  BACKDROP_GAP,
   buildMapScene,
   buildPathScene,
   buildStateScene,
   buildWaypoint,
+  guardRing,
+  ICON_TOUCH,
+  nodeOval,
+  nodeOutlineWidth,
   SPACING_PX,
   type MapScene,
-  type NodeMark,
 } from './sceneModel.ts';
 
 const catalog = buildArtCatalog(ART_FILES);
 const game = previewGame('adventure', DEFAULT_RULESET);
 const scene = buildMapScene(game.map, catalog);
 
-/** How far a node's oval, outline included, reaches up and down the screen from its centre. */
-function reach(mark: NodeMark): number {
-  const outline = mark.guard === null ? catalog.manifest.nodes.radius * 0.28 : catalog.manifest.guards.nodeOutlineWidth;
-  return ((mark.radius / scene.spacing + outline / 2) * SPACING_PX) / 2;
+const ovals = scene.nodes.map((mark) => nodeOval(catalog, scene.projection, scene.spacing, mark));
+const pictures = scene.billboards.filter((item) => item.layer === 'pois');
+const screenRoads = game.map.graph.edges.map(
+  (edge) =>
+    [scene.projection.toScreen(position(game.map.graph, edge.a)), scene.projection.toScreen(position(game.map.graph, edge.b))] as const,
+);
+
+/** The node a POI picture stands by, on screen. */
+function ovalOf(node: number | null) {
+  const oval = node === null ? undefined : ovals[node];
+  if (oval === undefined) throw new Error(`no node ${String(node)}`);
+  return oval;
 }
 
 /** The scene as plain data: the projection's functions compared by their matrix. */
@@ -51,31 +63,62 @@ describe('what the player sees of the map', () => {
     expect(plain(buildMapScene(game.map, catalog))).toEqual(plain(scene));
   });
 
-  it("stands one picture on every POI, just behind its node so the whole node shows", () => {
-    const pois = scene.billboards.filter((item) => item.layer === 'pois');
-    expect(pois).toHaveLength(game.map.pois.length);
+  it('stands one picture on every POI, touching its own node and never covering it', () => {
+    expect(pictures).toHaveLength(game.map.pois.length);
     for (const poi of game.map.pois) {
-      const picture = pois.find((item) => item.node === poi.node);
-      const node = scene.projection.toScreen(position(game.map.graph, poi.node));
-      const mark = scene.nodes[poi.node];
-      if (picture === undefined || mark === undefined) throw new Error(`POI ${poi.node} is not drawn`);
-      expect(picture.foot.x).toBeCloseTo(node.x);
-      // Its base touches the back of the node's oval, outline and all.
-      expect(node.y - picture.foot.y).toBeCloseTo(reach(mark));
+      const picture = pictures.find((item) => item.node === poi.node);
+      if (picture === undefined) throw new Error(`POI ${poi.node} has no picture`);
+      const box = pictureBox(picture.foot, picture.size, ROUGH_SHAPE(picture.sprite));
+      const oval = ovalOf(poi.node);
+      expect(boxTouchesOval(box, oval)).toBe(false);
+      expect(boxTouchesOval(grow(box, 1), oval)).toBe(true);
     }
   });
 
-  it("marks a guarded POI by its node, larger and in its guard's colour, and no other node", () => {
-    // Q31: the colour is on the node, not round the picture.
+  it('keeps POI pictures off the roads and off other POIs', () => {
+    // Andrei, 2026-09-23: "placing the POI images so that they do not obscure
+    // roads and other POI". Measured against every picture standing straight
+    // behind its node, which is where the first build put them all.
+    const pois = new Set(game.map.pois.map((poi) => poi.node));
+    let hidden = 0;
+    let hiddenBehind = 0;
+    const problems: string[] = [];
+    const boxes = pictures.map((picture) => pictureBox(picture.foot, picture.size, ROUGH_SHAPE(picture.sprite)));
+    pictures.forEach((picture, index) => {
+      const box = boxes[index];
+      if (box === undefined) return;
+      const oval = ovalOf(picture.node);
+      const behind = pictureBox({ x: oval.at.x, y: oval.at.y - oval.ry }, picture.size, ROUGH_SHAPE(picture.sprite));
+      for (const [a, b] of screenRoads) {
+        hidden += lengthInBox(a, b, box);
+        hiddenBehind += lengthInBox(a, b, behind);
+      }
+      for (const node of pois) {
+        if (node !== picture.node && boxTouchesOval(box, ovalOf(node))) problems.push(`the picture of ${picture.node} covers POI ${node}`);
+      }
+      boxes.forEach((other, at) => {
+        if (at > index && overlapArea(box, other) > 0) problems.push(`the pictures of ${picture.node} and ${pictures[at]?.node} overlap`);
+      });
+    });
+    expect(problems).toEqual([]);
+    expect(hiddenBehind).toBeGreaterThan(300);
+    expect(hidden).toBeLessThan(hiddenBehind * 0.1);
+  });
+
+  it("rings a guarded POI's node in its guard's colour outside the black outline, and no other node", () => {
+    // Q31: the colour is on the node, not round the picture, and the node
+    // keeps its black outline inside the ring.
     const guards = new Map(game.map.pois.map((poi) => [poi.node, poi.guard?.type ?? null]));
     expect([...guards.values()].filter((guard) => guard !== null).length).toBeGreaterThan(5);
+    const outline = nodeOutlineWidth(catalog) * scene.spacing;
     for (const mark of scene.nodes) {
       const guard = guards.get(mark.node) ?? null;
       expect(mark.guard).toBe(guard);
-      const radius = guard === null ? catalog.manifest.nodes.radius : catalog.manifest.guards.nodeRadius;
-      expect(mark.radius).toBeCloseTo(radius * scene.spacing);
+      expect(mark.radius).toBeCloseTo(catalog.manifest.nodes.radius * scene.spacing);
+      const ring = guardRing(catalog, scene.spacing, mark);
+      if (guard === null) expect(ring).toBeNull();
+      else expect((ring?.radius ?? 0) - (ring?.width ?? 0) / 2).toBeCloseTo(mark.radius + outline / 2);
     }
-    expect(catalog.manifest.guards.nodeRadius).toBeGreaterThan(catalog.manifest.nodes.radius);
   });
 
   it('shows a stack of N units as N icons, and a guard as its strength in its colour, in front of the node', () => {
@@ -86,20 +129,20 @@ describe('what the player sees of the map', () => {
       expect(label?.icons.count).toBe(poi.reward.units);
       if (poi.guard === null) expect(label?.guard).toBeNull();
       else expect(label?.guard).toMatchObject({ type: poi.guard.type, strength: poi.guard.strength });
-      // Wholly in front of the node's oval, so the icons never hide the guard's colour.
-      const node = scene.projection.toScreen(position(game.map.graph, poi.node));
-      const mark = scene.nodes[poi.node];
-      if (label === undefined || mark === undefined) throw new Error(`POI ${poi.node} is not labelled`);
-      expect(label.icons.first.y - label.icons.size / 2).toBeGreaterThanOrEqual(node.y + reach(mark) - 1e-9);
+      // Touching the front of the node's oval (Andrei, 2026-09-23), and
+      // barely over it, so the icons never hide the guard's colour.
+      const oval = ovalOf(poi.node);
+      if (label === undefined) throw new Error(`POI ${poi.node} is not labelled`);
+      const top = label.icons.first.y - label.icons.size / 2;
+      expect(top).toBeLessThanOrEqual(oval.at.y + oval.ry);
+      expect(top).toBeCloseTo(oval.at.y + oval.ry - label.icons.size * (0.5 - ICON_TOUCH));
     }
   });
 
   it('draws every node and every road, sized from the map rather than its coordinate space', () => {
     expect(scene.nodes).toHaveLength(game.map.graph.nodes.length);
     expect(scene.roads).toHaveLength(game.map.graph.edges.length);
-    for (const node of scene.nodes.filter((mark) => mark.guard === null)) {
-      expect(node.radius).toBeCloseTo(catalog.manifest.nodes.radius * scene.spacing);
-    }
+    for (const node of scene.nodes) expect(node.radius).toBeCloseTo(catalog.manifest.nodes.radius * scene.spacing);
     // One node spacing comes out as SPACING_PX on screen along the ground.
     const along = scene.projection.toScreen({ x: scene.spacing, y: 0 });
     const origin = scene.projection.toScreen({ x: 0, y: 0 });
@@ -143,12 +186,9 @@ describe('what the player sees of the map', () => {
       if (graph.edges.some((edge) => distanceToSegment(ground, position(graph, edge.a), position(graph, edge.b)) < scene.spacing * 0.14)) {
         problems.push(`${where} stands on a road`);
       }
+      const box = grow(pictureBox(item.foot, item.size, ROUGH_SHAPE(item.sprite)), item.size * STANDING_MARGIN);
       const hides = covered.some(
-        (point) =>
-          point.x >= item.foot.x - item.size * 0.45 &&
-          point.x <= item.foot.x + item.size * 0.45 &&
-          point.y >= item.foot.y - item.size * 0.9 &&
-          point.y <= item.foot.y + item.size * 0.05,
+        (point) => point.x >= box.minX && point.x <= box.maxX && point.y >= box.minY && point.y <= box.maxY,
       );
       if (hides) problems.push(`${where} stands in front of a node or road`);
       // And it is drawn from a dressing sheet, with a sprite the sheet has.
@@ -158,30 +198,78 @@ describe('what the player sees of the map', () => {
     expect(problems).toEqual([]);
   });
 
-  it("paints backdrop dressing all over its own terrain, under the roads and nodes, without piling up", () => {
+  it('lays fields out in arrays, each field side by side with another along the ground', () => {
+    // Andrei, 2026-09-23: fields "look the best when placed in arrays, several at a time".
+    const art = catalog.manifest.terrain.plains.dressing.find((d) => d.sheet === 'Plains_Fields');
+    expect(art?.array).toBeGreaterThan(1);
+    const fields = scene.billboards.filter((item) => item.sprite.sheet === 'Plains_Fields');
+    expect(fields.length).toBeGreaterThan(10);
+    const ground = fields.map((item) => scene.projection.toWorld(item.foot));
+    const step = ((art?.size ?? 0) * SPACING_PX) / (2 * scene.projection.matrix.a);
+    const alone = ground.filter(
+      (at, index) =>
+        !ground.some((other, j) => {
+          if (j === index) return false;
+          const dx = Math.abs(other.x - at.x);
+          const dy = Math.abs(other.y - at.y);
+          // One step along one ground axis and none along the other.
+          return (Math.abs(dx - step) < step * 0.1 && dy < 1e-6) || (Math.abs(dy - step) < step * 0.1 && dx < 1e-6);
+        }),
+    );
+    expect(alone).toEqual([]);
+  });
+
+  it("fills the mountains with backdrop, each sized to stay over mountain ground, roads and nodes or not", () => {
+    // Andrei, 2026-09-23: "cover the whole mountain region, without gaps when
+    // possible, but not stick out of it. For this, mountains can be resized".
     const graph = game.map.graph;
     const backdrop = scene.billboards.filter((item) => item.layer === 'backdrop');
-    const sheets = Object.values(catalog.manifest.terrain).flatMap((art) =>
-      art.dressing.filter((d) => d.layer === 'backdrop').map((d) => d.sheet),
-    );
-    expect(sheets).toEqual(['Mountains_Mountains']);
-    const mountainNodes = graph.nodes.filter((node) => node.terrain === 'mountain').length;
-    expect(backdrop.length).toBe(Math.round(mountainNodes * catalog.manifest.terrain.mountain.dressingDensity));
+    const art = catalog.manifest.terrain.mountain.dressing;
+    expect(art.map((d) => [d.sheet, d.layer])).toEqual([['Mountains_Mountains', 'backdrop']]);
+    const [mountains] = art;
+    if (mountains === undefined) throw new Error('no mountain dressing');
+    const terrainAt = (screen: { x: number; y: number }) => {
+      const at = scene.projection.toWorld(screen);
+      const inside = at.x >= scene.bounds.min.x && at.x <= scene.bounds.max.x && at.y >= scene.bounds.min.y && at.y <= scene.bounds.max.y;
+      if (!inside) return 'off the map';
+      return graph.nodes.reduce((best, node) => (distance(at, node.position) < distance(at, best.position) ? node : best)).terrain;
+    };
     const problems: string[] = [];
-    const ground = backdrop.map((item) => scene.projection.toWorld(item.foot));
-    ground.forEach((at, index) => {
-      const nearest = graph.nodes.reduce((best, node) => (distance(at, node.position) < distance(at, best.position) ? node : best));
-      if (nearest.terrain !== 'mountain') problems.push(`backdrop ${index} stands on ${nearest.terrain}`);
-      for (let other = 0; other < index; other++) {
-        const apart = distance(at, ground[other] ?? at) / scene.spacing;
-        const smaller = Math.min(backdrop[index]?.size ?? 0, backdrop[other]?.size ?? 0) / SPACING_PX;
-        if (apart < smaller * BACKDROP_GAP - 1e-9) problems.push(`backdrop ${index} and ${other} are ${apart.toFixed(2)} apart`);
+    for (const item of backdrop) {
+      const where = `a mountain at (${item.foot.x.toFixed(1)}, ${item.foot.y.toFixed(1)})`;
+      if (item.size < mountains.minSize * SPACING_PX - 1e-9 || item.size > mountains.size * SPACING_PX + 1e-9) {
+        problems.push(`${where} is ${item.size.toFixed(1)} across`);
       }
-    });
+      for (const point of silhouettePoints(item.foot, item.size, ROUGH_SHAPE(item.sprite))) {
+        const terrain = terrainAt(point);
+        if (terrain !== 'mountain') problems.push(`${where} reaches over ${terrain}`);
+      }
+    }
     expect(problems).toEqual([]);
-    // Not held back to the edges of the mountains any more: plenty stand
-    // where standing dressing may not, close to a node or across a road.
-    const close = ground.filter((at) => graph.nodes.some((node) => distance(at, node.position) < scene.spacing * 0.3));
+    // Covered: most of the mountain ground lies under a mountain's picture,
+    // on a grid finer than the mountains are sown on.
+    const fine = mountains.size * scene.spacing * BACKDROP_STEP * 0.5;
+    let ground = 0;
+    let under = 0;
+    for (let y = scene.bounds.min.y; y < scene.bounds.max.y; y += fine) {
+      for (let x = scene.bounds.min.x; x < scene.bounds.max.x; x += fine) {
+        const screen = scene.projection.toScreen({ x, y });
+        if (terrainAt(screen) !== 'mountain') continue;
+        ground++;
+        const covered = backdrop.some((item) => {
+          const box = pictureBox(item.foot, item.size, ROUGH_SHAPE(item.sprite));
+          return screen.x >= box.minX && screen.x <= box.maxX && screen.y >= box.minY && screen.y <= box.maxY;
+        });
+        if (covered) under++;
+      }
+    }
+    expect(ground).toBeGreaterThan(100);
+    expect(under / ground).toBeGreaterThan(0.9);
+    // Painted under the roads and nodes, so nothing keeps them away from either.
+    const close = backdrop.filter((item) => {
+      const at = scene.projection.toWorld(item.foot);
+      return graph.nodes.some((node) => distance(at, node.position) < scene.spacing * 0.3);
+    });
     expect(close.length).toBeGreaterThan(backdrop.length / 10);
   });
 
@@ -222,6 +310,7 @@ describe('what changes during play', () => {
     expect(claimed.poiRuntime.filter(isClaimed)).toHaveLength(1);
     // §4.5: the claimed POI's node loses its guard's colour; no other node changes.
     expect(state.nodes[target.node]).toMatchObject({ guard: null, radius: catalog.manifest.nodes.radius * scene.spacing });
+    expect(guardRing(catalog, scene.spacing, state.nodes[target.node] ?? scene.nodes[0]!)).toBeNull();
     expect(state.nodes.filter((mark, at) => mark !== scene.nodes[at]).map((mark) => mark.node)).toEqual([target.node]);
     expect(buildStateScene(scene, game.state, catalog).nodes).toEqual(scene.nodes);
   });

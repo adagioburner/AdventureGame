@@ -6,7 +6,7 @@
       "texture_size": 2.2,
       "node_color": "#c8a266",
       "dressing": [
-        { "sheet": "Plains_Fields", "size": 0.45, "weight": 1 },
+        { "sheet": "Plains_Fields", "size": 0.45, "weight": 1, "array": 3 },
         { "sheet": "Plains_GrassRocks", "size": 0.12, "weight": 3 }
       ],
       "dressing_density": 0.9
@@ -22,14 +22,14 @@
       "texture": "Mountains_Texture",
       "texture_size": 2.2,
       "node_color": "#8d8b86",
-      "dressing": [{ "sheet": "Mountains_Mountains", "size": 0.9, "weight": 1, "layer": "backdrop" }],
-      "dressing_density": 1.5
+      "dressing": [{ "sheet": "Mountains_Mountains", "size": 0.9, "min_size": 0.35, "weight": 1, "layer": "backdrop" }],
+      "dressing_density": 0
     }
   },
   "pois": [
     { "terrain": "plains", "reward": "plains_move", "guard": null, "sheet": "Plains_PlainsMovement", "size": 0.42 },
     { "terrain": "plains", "reward": "forest_move", "guard": null, "sheet": "Plains_ForestMovement", "size": 0.42 },
-    { "terrain": "plains", "reward": "magic", "guard": null, "sheet": "Plains_Magic", "size": 0.42 },
+    { "terrain": "plains", "reward": "magic", "guard": null, "sheet": "Plains_Magic", "size": 0.63 },
     { "terrain": "plains", "reward": "gold", "guard": "fighting", "sheet": "Plains_GoldGuardedByFighting", "size": 0.58 },
     { "terrain": "forest", "reward": "mountain_move", "guard": null, "sheet": "Forest_MountainMovement", "size": 0.42 },
     { "terrain": "forest", "reward": "fighting", "guard": null, "sheet": "Forest_Fighting", "size": 0.42 },
@@ -53,7 +53,7 @@
     }
   ],
   "icons": {
-    "size": 0.2,
+    "size": 0.18,
     "files": {
       "plains_move": "Icons/plains_move.png",
       "forest_move": "Icons/forest_move.png",
@@ -67,12 +67,11 @@
   "guards": {
     "fighting": { "color": "#d8282b" },
     "magic": { "color": "#9a3ad6" },
-    "node_radius": 0.15,
-    "node_outline_width": 0.045,
+    "ring_width": 0.045,
     "number_size": 0.24
   },
   "roads": { "sheet": "Roads_Brush", "sprite": "Roads_Path", "width": 0.2 },
-  "nodes": { "radius": 0.1, "outline": "#2b2419" },
+  "nodes": { "radius": 0.15, "outline": "#2b2419" },
   "move_prospect": {
     "sheet": "Prospect_Markers",
     "dot": {

@@ -48,7 +48,7 @@ export function MapView({ art, game, showSample }: MapViewProps) {
       }
       element.appendChild(app.canvas);
 
-      const scene = buildMapScene(game.map, art.catalog);
+      const scene = buildMapScene(game.map, art.catalog, art.shape);
       const map = new PixiMapRenderer(art, game.map, scene);
       map.setState(game.state);
       showSampleOn(map, sampleShown.current ? game.sample : null);

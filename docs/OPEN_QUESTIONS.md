@@ -864,14 +864,15 @@ contour", and phase 3 drew exactly that, a coloured ring round each guardian's
 picture. Andrei, reviewing the map: *"the guards should not have red or purple
 contours; instead, the nodes should."*
 
-So the colour is now on the POI's node: a guarded node is drawn larger than an
-ordinary one and outlined in its guard's colour, and the picture stands just
-behind the node so the whole node shows in front of it, with the reward icons
-and the guard's number in front of that. Once the POI is claimed, §4.5's
-"behaves like an ordinary node" makes it an ordinary node again, colour and
-all. The size and the outline width are `guards.node_radius` and
-`guards.node_outline_width` in `Art/manifest.json`. GDD §3 carries the ruling
-as a `[SOURCE §1, review]` note beside the original sentence.
+So the colour is now on the POI's node: every node keeps its black outline,
+and a guarded POI's node gains a ring in its guard's colour just outside it —
+the black one stays inside, as Andrei asked on his second look the same day.
+The picture stands beside the node, touching it, and never on it, so the whole
+ring shows; the reward icons and the guard's number touch the node's front.
+Once the POI is claimed, §4.5's "behaves like an ordinary node" makes it an
+ordinary node again, ring and all. The ring's width is `guards.ring_width` in
+`Art/manifest.json`. GDD §3 carries the ruling as a `[SOURCE §1, review]` note
+beside the original sentence.
 
 ---
 
