@@ -152,7 +152,7 @@ export function App() {
           onNewGame={() => setGame(null)}
         />
       ) : (
-        <main className="stage">
+        <main className="stage setting-up">
           <SetupScreen art={art} map={map} scene={scene} seats={seats} onSeats={setSeats} onStart={start} />
         </main>
       )}

@@ -763,13 +763,24 @@
           min-width: 40px;
           min-height: 36px;
         }
+        /* Setup stacks the map above the form, so the starting node shows. */
+        .setting-up {
+          display: grid;
+          grid-template-rows: minmax(180px, 1fr) minmax(0, max-content);
+        }
+        .setting-up > .canvas-host {
+          position: relative;
+          inset: auto;
+        }
+        .setting-up > .zoom {
+          display: none;
+        }
         .setup {
-          top: auto;
-          right: 8px;
-          left: 8px;
-          bottom: 8px;
+          position: static;
           width: auto;
-          max-height: 72%;
+          min-height: 0;
+          max-height: none;
+          margin: 0 8px 8px;
         }
         .notice {
           max-width: calc(100% - 90px);
