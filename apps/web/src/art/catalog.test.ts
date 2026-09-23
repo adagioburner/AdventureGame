@@ -144,6 +144,37 @@ describe('a bad art drop', () => {
     expect(() => parseManifest(withDressing({ ...fields, array: 2.5 }))).toThrow(/array: must be a whole number/);
     expect(() => parseManifest(withDressing({ ...fields, min_size: 0.6 }))).toThrow(/min_size: must not exceed size/);
     expect(() => parseManifest(withDressing({ ...fields, layer: 'sky' }))).toThrow(/layer: expected standing or backdrop/);
+    expect(() => parseManifest(withDressing({ ...fields, flat: 'yes' }))).toThrow(/flat: expected true or false/);
+  });
+
+  it('leaves dressing sprites out by id, and says when an id is not on the sheet', () => {
+    // Andrei, 2026-09-23: the dark brown fields drew the eye away from the wagon wheel icons.
+    const catalog = buildArtCatalog(ART_FILES);
+    const [fields] = catalog.manifest.terrain.plains.dressing;
+    expect(fields?.leaveOut).toEqual(['Plains_Fields_02', 'Plains_Fields_07']);
+    expect(fields?.flat).toBe(true);
+    const manifest = ART_FILES.json.get('manifest.json') as { terrain: Record<string, { dressing: object[] }> };
+    const leaving = (leave_out: string[]): ArtFiles => ({
+      json: new Map([
+        ...ART_FILES.json,
+        [
+          'manifest.json',
+          {
+            ...manifest,
+            terrain: {
+              ...manifest.terrain,
+              plains: { ...manifest.terrain['plains'], dressing: [{ sheet: 'Plains_Fields', size: 0.45, weight: 1, leave_out }] },
+            },
+          },
+        ],
+      ]),
+      urls: ART_FILES.urls,
+    });
+    expect(() => buildArtCatalog(leaving(['Plains_Fields_2']))).toThrow(
+      /terrain\.plains leaves out Plains_Fields_2, which Plains_Fields_atlas\.json does not have/,
+    );
+    const all = atlasOf(catalog, 'Plains_Fields').sprites.map((sprite) => sprite.id);
+    expect(() => buildArtCatalog(leaving(all))).toThrow(/leaves out every sprite of Plains_Fields/);
   });
 
   it('rejects an adjustment for a sheet nothing draws, and a malformed one', () => {

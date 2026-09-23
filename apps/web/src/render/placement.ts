@@ -11,16 +11,29 @@ import type { SpriteRef } from '../art/catalog.ts';
  */
 
 /**
- * A sprite's solid picture — its keyed shadow left out — relative to its
- * foot, in units of its sheet's typical span. `x` grows to the right and `y`
- * down the screen, so `top` is negative.
+ * A box relative to a sprite's foot, in units of its sheet's typical span.
+ * `x` grows to the right and `y` down the screen, so `top` is negative.
  */
-export interface SpriteShape {
+export interface Extent {
   readonly left: number;
   readonly top: number;
   readonly right: number;
   readonly bottom: number;
 }
+
+/**
+ * A sprite's solid picture — its keyed shadow left out — as its box and,
+ * once its pixels are measured, band by band from top to bottom: where the
+ * picture really is, so a picture can stand right up against its node rather
+ * than wherever its box's empty corner allows. Without `bands` the box is the
+ * picture.
+ */
+export interface SpriteShape extends Extent {
+  readonly bands?: readonly Extent[];
+}
+
+/** How many horizontal bands a measured sprite's picture is cut into. */
+export const SHAPE_BANDS = 12;
 
 export type ShapeOf = (sprite: SpriteRef) => SpriteShape;
 
@@ -39,13 +52,37 @@ export interface Box {
 }
 
 /** The screen box a sprite's picture covers when it stands at `foot`, `size` pixels across its typical span. */
-export function pictureBox(foot: Point, size: number, shape: SpriteShape): Box {
+export function pictureBox(foot: Point, size: number, shape: Extent): Box {
   return {
     minX: foot.x + shape.left * size,
     minY: foot.y + shape.top * size,
     maxX: foot.x + shape.right * size,
     maxY: foot.y + shape.bottom * size,
   };
+}
+
+/** The screen boxes a sprite's picture covers band by band; its one box when it has no bands. */
+export function pictureBands(foot: Point, size: number, shape: SpriteShape): Box[] {
+  const bands = shape.bands;
+  if (bands === undefined || bands.length === 0) return [pictureBox(foot, size, shape)];
+  return bands.map((band) => pictureBox(foot, size, band));
+}
+
+/** The smallest box holding every one of `boxes`. */
+export function boundsOf(boxes: readonly Box[]): Box {
+  return {
+    minX: Math.min(...boxes.map((box) => box.minX)),
+    minY: Math.min(...boxes.map((box) => box.minY)),
+    maxX: Math.max(...boxes.map((box) => box.maxX)),
+    maxY: Math.max(...boxes.map((box) => box.maxY)),
+  };
+}
+
+/** How much two pictures, each a set of bands, share. */
+export function overlapBands(p: readonly Box[], q: readonly Box[]): number {
+  let shared = 0;
+  for (const a of p) for (const b of q) shared += overlapArea(a, b);
+  return shared;
 }
 
 export function grow(box: Box, by: number): Box {
@@ -60,6 +97,10 @@ export function overlapArea(p: Box, q: Box): number {
 
 function area(box: Box): number {
   return Math.max(0, box.maxX - box.minX) * Math.max(0, box.maxY - box.minY);
+}
+
+function areaOf(boxes: readonly Box[]): number {
+  return boxes.reduce((sum, box) => sum + area(box), 0);
 }
 
 /** A node's oval on screen: its centre and its two semi-axes, outline included. */
@@ -112,6 +153,8 @@ export interface PoiPicture {
   readonly sprite: SpriteRef;
   /** Screen pixels at zoom 1 across the sheet's typical span. */
   readonly size: number;
+  /** Stands on its node, its base across the node, rather than beside it: the guardians. */
+  readonly onNode: boolean;
 }
 
 export interface Surroundings {
@@ -133,6 +176,21 @@ export interface Surroundings {
  */
 export const PICTURE_DIRECTIONS: readonly number[] = [90, 60, 120, 30, 150, 0, 180];
 
+/**
+ * How far from its node's centre a guardian stands, as a share of the way to
+ * the rim of the node's oval: on the node with its base across it, but never
+ * in the middle of it, where it would hide the whole node.
+ */
+export const ON_NODE_REACH = 0.6;
+
+/**
+ * What a guardian pays, in rough pixels of road, for stepping off its node to
+ * stand beside it instead: more than the road its legs hide, less than
+ * covering a neighbour's node or picture, which is the only reason to step
+ * off.
+ */
+export const OFF_NODE = 60;
+
 /** How many times every picture is reconsidered once all of them stand somewhere. */
 const ROUNDS = 3;
 
@@ -147,42 +205,50 @@ const PICTURE_OVERLAP = 40;
 
 /**
  * [Andrei, review 2026-09-23] "can you try placing the POI images so that
- * they do not obscure roads and other POI".
+ * they do not obscure roads and other POI"; and later that day, "let us place
+ * POI images closer to the POIs themselves, close to or touching the node.
+ * Guards, specifically, can be standing on the node itself, not centered on
+ * it but intersecting at the base".
  *
- * Every picture stands touching its own node — never on it — in one of
- * `PICTURE_DIRECTIONS`, and takes the direction that hides least: road
- * length first, then other nodes, other POIs' pictures and other POIs'
- * rewards, each weighed by how much it matters to a player. Pictures start
- * behind their nodes and each is then moved in turn to its best direction
- * given where the others stand, a few rounds over, in map order, so the same
- * map always comes out the same.
+ * Every picture stands in one of `PICTURE_DIRECTIONS` from its own node.
+ * Most stand beside it, their picture, band by band, touching the node's oval
+ * but nowhere over it, so no empty corner of their box keeps them away. A
+ * guardian stands on the node instead, its foot `ON_NODE_REACH` of the way
+ * from the centre to the rim, and steps off to stand beside it like the rest
+ * only where every spot on it would cover a neighbour (`OFF_NODE`). Each
+ * picture takes the spot that hides least: road length first, then other
+ * nodes, other POIs' pictures and other POIs' rewards, each weighed by how
+ * much it matters to a player. Pictures start at their first spot and each
+ * is then moved in turn to its best given where the others stand, a few
+ * rounds over, in map order, so the same map always comes out the same.
  */
 export function placePoiPictures(pictures: readonly PoiPicture[], around: Surroundings, shapeOf: ShapeOf): Point[] {
-  const candidates = pictures.map((picture) =>
-    PICTURE_DIRECTIONS.map((angle) => footTouching(picture, angle, shapeOf(picture.sprite))),
+  const spots = pictures.map((picture) => spotsFor(picture, shapeOf(picture.sprite)));
+  const feet = spots.map((options) => options.map((spot) => spot.foot));
+  const bands = pictures.map((picture, index) =>
+    (feet[index] ?? []).map((foot) => pictureBands(foot, picture.size, shapeOf(picture.sprite))),
   );
+  const boxes = bands.map((options) => options.map(boundsOf));
   const choice = pictures.map(() => 0);
-  const boxOf = (index: number, option: number): Box => {
-    const picture = pictures[index] as PoiPicture;
-    const foot = candidates[index]?.[option] as Point;
-    return pictureBox(foot, picture.size, shapeOf(picture.sprite));
-  };
 
   for (let round = 0; round < ROUNDS; round++) {
     let moved = false;
     pictures.forEach((picture, index) => {
       let best = choice[index] ?? 0;
       let bestCost = Infinity;
-      PICTURE_DIRECTIONS.forEach((_, option) => {
-        const box = boxOf(index, option);
-        let cost = option * 2 + hidden(box, picture, around);
+      spots[index]?.forEach((spot, option) => {
+        const mine = bands[index]?.[option] ?? [];
+        const box = boxes[index]?.[option] as Box;
+        let cost = spot.bias + hidden(mine, picture, around);
         // Another POI's picture, as it stands now; their nodes are counted
         // with the rest of the nodes.
         pictures.forEach((_, at) => {
           if (at === index) return;
-          const theirs = boxOf(at, choice[at] ?? 0);
-          const shared = overlapArea(box, theirs);
-          if (shared > 0) cost += PICTURE_OVERLAP + (150 * shared) / Math.max(1, Math.min(area(box), area(theirs)));
+          const theirs = choice[at] ?? 0;
+          if (overlapArea(box, boxes[at]?.[theirs] as Box) === 0) return;
+          const other = bands[at]?.[theirs] ?? [];
+          const shared = overlapBands(mine, other);
+          if (shared > 0) cost += PICTURE_OVERLAP + (150 * shared) / Math.max(1, Math.min(areaOf(mine), areaOf(other)));
         });
         if (cost < bestCost - 1e-9) {
           bestCost = cost;
@@ -194,22 +260,26 @@ export function placePoiPictures(pictures: readonly PoiPicture[], around: Surrou
     });
     if (!moved) break;
   }
-  return pictures.map((_, index) => candidates[index]?.[choice[index] ?? 0] as Point);
+  return pictures.map((_, index) => feet[index]?.[choice[index] ?? 0] as Point);
 }
 
-/** What a picture standing in `box` hides of the map, in rough pixels of road. */
-export function hidden(box: Box, picture: PoiPicture, around: Surroundings): number {
+/** What a picture standing in `bands` hides of the map, in rough pixels of road. */
+export function hidden(bands: readonly Box[], picture: PoiPicture, around: Surroundings): number {
+  const box = boundsOf(bands);
   let cost = 0;
-  for (const [a, b] of around.roads) cost += lengthInBox(a, b, box);
+  for (const [a, b] of around.roads) {
+    if (lengthInBox(a, b, box) === 0) continue;
+    for (const band of bands) cost += lengthInBox(a, b, band);
+  }
   for (const node of around.nodes) {
-    if (node.node === picture.node || !boxTouchesOval(box, node)) continue;
+    if (node.node === picture.node || !bands.some((band) => boxTouchesOval(band, node))) continue;
     cost += node.poi ? 120 : 40;
   }
   // A reward drawn over a picture hides the picture as much as the picture
   // would hide the reward, so this counts whichever is the larger share.
   for (const label of around.labels) {
-    const shared = overlapArea(box, label);
-    if (shared > 0) cost += (120 * shared) / Math.max(1, Math.min(area(box), area(label)));
+    const shared = overlapBands(bands, [label]);
+    if (shared > 0) cost += (120 * shared) / Math.max(1, Math.min(areaOf(bands), area(label)));
   }
   const base = [
     { x: box.minX, y: box.maxY },
@@ -221,30 +291,53 @@ export function hidden(box: Box, picture: PoiPicture, around: Surroundings): num
 }
 
 /**
+ * Where a picture may stand, best first, each with what choosing it costs
+ * before anything it hides: a little for each direction further from
+ * straight behind, and `OFF_NODE` for a guardian stepping off its node.
+ */
+export function spotsFor(picture: PoiPicture, shape: SpriteShape): { foot: Point; bias: number }[] {
+  const beside = PICTURE_DIRECTIONS.map((angle, index) => ({ foot: footTouching(picture, angle, shape), bias: index * 2 }));
+  if (!picture.onNode) return beside;
+  const on = PICTURE_DIRECTIONS.map((angle, index) => ({ foot: footOnNode(picture.oval, angle), bias: index * 2 }));
+  return [...on, ...beside.map((spot) => ({ ...spot, bias: spot.bias + OFF_NODE }))];
+}
+
+/** A guardian's foot: on its node's oval, `ON_NODE_REACH` of the way from the centre to the rim in direction `angle`. */
+export function footOnNode(oval: Oval, angle: number): Point {
+  const radians = (angle * Math.PI) / 180;
+  return {
+    x: oval.at.x + Math.cos(radians) * oval.rx * ON_NODE_REACH,
+    y: oval.at.y - Math.sin(radians) * oval.ry * ON_NODE_REACH,
+  };
+}
+
+/**
  * The foot that puts the picture next to its node in direction `angle`: its
- * box as close to the node as it goes without covering the node's oval.
+ * picture, band by band, as close to the node as it goes without covering
+ * any of the node's oval.
  */
 export function footTouching(picture: PoiPicture, angle: number, shape: SpriteShape): Point {
   const { oval, size } = picture;
   const radians = (angle * Math.PI) / 180;
   const dx = Math.cos(radians);
   const dy = -Math.sin(radians);
-  const half = { x: ((shape.right - shape.left) * size) / 2, y: ((shape.bottom - shape.top) * size) / 2 };
-  const centreOffset = { x: ((shape.left + shape.right) / 2) * size, y: ((shape.top + shape.bottom) / 2) * size };
-  const boxAt = (t: number): Box => {
-    const cx = oval.at.x + dx * t;
-    const cy = oval.at.y + dy * t;
-    return { minX: cx - half.x, minY: cy - half.y, maxX: cx + half.x, maxY: cy + half.y };
-  };
-  // The box's centre moves out along the direction until the box clears the
-  // oval: a bisection between touching and clear.
-  let lo = 0;
-  let hi = half.x + half.y + oval.rx + oval.ry;
-  for (let i = 0; i < 30; i++) {
-    const mid = (lo + hi) / 2;
-    if (boxTouchesOval(boxAt(mid), oval)) lo = mid;
-    else hi = mid;
+  // The picture's box centre moves out from the node's centre along the
+  // direction; this is where its foot is then.
+  const centre = { x: ((shape.left + shape.right) / 2) * size, y: ((shape.top + shape.bottom) / 2) * size };
+  const footAt = (t: number): Point => ({ x: oval.at.x + dx * t - centre.x, y: oval.at.y + dy * t - centre.y });
+  const touches = (t: number): boolean => pictureBands(footAt(t), size, shape).some((band) => boxTouchesOval(band, oval));
+  // In from far enough out that it is clear, a step at a time, to the first
+  // place it touches — a picture with a gap in it may be clear again closer
+  // in, even centred on the node — then a bisection between the two.
+  const far = ((shape.right - shape.left + shape.bottom - shape.top) * size) / 2 + oval.rx + oval.ry;
+  const step = far / 64;
+  let clear = far;
+  while (clear > step && !touches(clear - step)) clear -= step;
+  let touching = Math.max(0, clear - step);
+  for (let i = 0; i < 20; i++) {
+    const mid = (touching + clear) / 2;
+    if (touches(mid)) touching = mid;
+    else clear = mid;
   }
-  const box = boxAt(hi);
-  return { x: (box.minX + box.maxX) / 2 - centreOffset.x, y: (box.minY + box.maxY) / 2 - centreOffset.y };
+  return footAt(clear);
 }

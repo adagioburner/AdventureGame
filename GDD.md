@@ -49,6 +49,8 @@ Status: v1 design, consolidated from `Annotated_Design_Document.md` (the traceab
 
 [SOURCE §1, review] **The red or purple goes on the POI's node, not round the guardian's image.** Andrei, reviewing the phase 3 map on 2026-09-23: "the guards should not have red or purple contours; instead, the nodes should." A guarded POI's node keeps the black outline every node has and gains a ring in its guard's colour just outside it ("let's keep the regular black one inside it as well", same day); once the POI is claimed its node is drawn as an ordinary one (§4.5). The image stands beside its node rather than on it, on whichever side covers no road and no other POI. Registered as Q31.
 
+[SOURCE §1, review] **Every image stands right against its node, and a guardian stands on it.** Andrei, the same evening: "let us place POI images closer to the POIs themselves, close to or touching the node. Guards, specifically, can be standing on the node itself, not centered on it but intersecting at the base". An image other than a guardian touches its node's oval, measured on the picture itself rather than its bounding box, without covering it. A guardian stands with its feet on the back part of its node, off the centre, so the front of the node, the guard's colour and the reward in front of it stay in view. Where every spot on its node would cover a neighbouring node or image, it stands beside its node like the others. No dressing ever covers a POI's image: "let's have the POI images always unobscured". This revises the Q31 note above only as far as where the image stands, and is registered as Q35.
+
 [SOURCE §1] POI placement: distributed randomly at approximately equal distances from each other; every leaf node of the graph must be a POI (no dead ends); leaf nodes are assigned POI status first, remaining POIs distributed randomly among the rest.
 
 [SOURCE §1] POI counts: **25 on plains, 20 in forests, 15 in mountains** (total 60).
@@ -117,6 +119,8 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 ### 4.5 Consumption
 
 [SOURCE §2] A POI's reward is consumed once claimed; the node then behaves like an ordinary node of its terrain type.
+
+[SOURCE §2, review] **A claimed POI's image does not change.** Andrei, 2026-09-23: "The claimed POIs should lose their icons, but the images DO NOT CHANGE." Its reward icons, guard strength and guard ring go; its picture stays exactly as it was. Registered as Q36.
 
 ---
 

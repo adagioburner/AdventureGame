@@ -6,7 +6,14 @@
       "texture_size": 2.2,
       "node_color": "#c8a266",
       "dressing": [
-        { "sheet": "Plains_Fields", "size": 0.45, "weight": 1, "array": 3 },
+        {
+          "sheet": "Plains_Fields",
+          "size": 0.45,
+          "weight": 1,
+          "array": 3,
+          "flat": true,
+          "leave_out": ["Plains_Fields_02", "Plains_Fields_07"]
+        },
         { "sheet": "Plains_GrassRocks", "size": 0.12, "weight": 3 }
       ],
       "dressing_density": 0.9
@@ -39,10 +46,11 @@
       "guard": "fighting",
       "sheet": "Mountains_GoldGuardedByFighting",
       "size": 0.8,
+      "on_node": true,
       "borrowed": "Q20: forest gold has no sheet of its own yet, so it borrows mountain gold's fighting guardians."
     },
-    { "terrain": "mountain", "reward": "gold", "guard": "fighting", "sheet": "Mountains_GoldGuardedByFighting", "size": 0.8 },
-    { "terrain": "mountain", "reward": "gold", "guard": "magic", "sheet": "Mountains_GoldGuardedByMagic", "size": 0.9 },
+    { "terrain": "mountain", "reward": "gold", "guard": "fighting", "sheet": "Mountains_GoldGuardedByFighting", "size": 0.8, "on_node": true },
+    { "terrain": "mountain", "reward": "gold", "guard": "magic", "sheet": "Mountains_GoldGuardedByMagic", "size": 0.9, "on_node": true },
     {
       "terrain": "any",
       "reward": "stamina",
@@ -115,7 +123,7 @@
   "adjustments": {
     "notes": "Edits made to a sheet as it loads, so its PNG stays exactly as supplied. `brightness` lifts the darks and midtones (each colour channel c, from 0 to 1, becomes c^(1/brightness), so white stays white; 1 leaves it). `saturation` scales how far each colour sits from its own grey (1 leaves it, 2 doubles it). `outline` draws a contour round every picture on the sheet, behind the picture and over its shadow, `width` thick as a share of the sheet's typical sprite so it grows and shrinks with it. Delete a sheet's line when its replacement already looks the way it should.",
     "sheets": {
-      "Plains_PlainsMovement": { "brightness": 1.6, "saturation": 1.3 },
+      "Plains_PlainsMovement": { "brightness": 1.3, "saturation": 2.0 },
       "Plains_Magic": { "brightness": 1.45, "saturation": 2.6 },
       "Mountains_GoldGuardedByFighting": { "outline": { "color": "#fff3c4", "width": 0.01 } },
       "Mountains_GoldGuardedByMagic": { "outline": { "color": "#fff3c4", "width": 0.01 } },

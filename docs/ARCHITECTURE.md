@@ -639,10 +639,11 @@ How the in-game map is put together, since phase 3 drew it:
   of everything, so nothing standing can hide them; a route's yellow steps
   carry no number (Q32).
 - **What a picture covers is measured, not guessed.** On load every sprite's
-  solid extent is measured (`SpriteShape`), and the scene uses it to stand
-  each POI's picture beside its node on the side that covers no road and no
-  other POI (`render/placement.ts`), to keep standing dressing clear of the
-  game, and to fit each mountain inside its terrain (`render/dressing.ts`).
+  solid extent is measured (`SpriteShape`), band by band, and the scene uses
+  it to stand each POI's picture against its node, or a guardian on it (Q35),
+  on the side that covers no road and no other POI (`render/placement.ts`),
+  to keep standing dressing clear of the game and of the POIs, and to fit
+  each mountain inside its terrain (`render/dressing.ts`).
   The tests, which have no pixels, use `ROUGH_SHAPE` for every sprite.
 - **The rule against drawing internals is a test, not a convention.** Building
   the scene from a map whose `remoteness`, `group` and `attempts` have been

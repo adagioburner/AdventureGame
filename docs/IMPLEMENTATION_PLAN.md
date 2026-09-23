@@ -729,12 +729,25 @@ placeholder** — and that shaped most of what follows.
   on the mountains, and the statues half as large again with a thin dark
   contour. On the way there Andrei turned down a cream contour three times
   as thick (too bright) and brighter, more vivid guards (they looked wrong).
+  He later asked for the plains-speed cottages to match the forest-speed
+  ones, which are drawn as supplied; brightness 1.3 and colour 2.0 match
+  them in both lightness and colour, measured over the whole sheet.
   Each is one line under `adjustments` in the manifest, which a replacement
   that already looks right just loses. Bigger guards crowd a mountain, so a
   picture now avoids touching another POI's picture even at the cost of a
   little road. The same pass turned the plains grass upright: it is drawn
   through the inverse of the isometric projection, where before it leaned
   right with the ground.
+- **Pictures stand right against their nodes, guardians on them** (Q35,
+  Andrei, 2026-09-23). Each sprite's picture is measured in twelve
+  horizontal bands as it loads, and placement uses those bands instead of
+  its box, so a picture touches its node instead of standing off by its
+  box's empty corner. The guardian rows, marked `on_node`, stand with their
+  feet across the back of the node and step off it only where every spot on
+  it would cover a neighbour. Fields (`flat`) must lie wholly over plains,
+  no standing dressing touches a POI's picture or reward, and the two dark
+  brown field sprites are left out (`leave_out`), so on `adventure` there
+  are fewer fields than before.
 - **Four placeholders were generated** by `make_placeholders.py`, flagged
   `placeholder: true` like the die and the brush: tileable textures for the
   three terrains, and `Prospect_Markers` — §7.1's dots and crosses in green,
@@ -777,9 +790,12 @@ placeholder** — and that shaped most of what follows.
   POI's picture or reward. Measured on `adventure` with the tests' rough
   sprite shapes, that hides 3 pixels of road against 549 with every picture
   straight behind its node, and no picture covers another POI.
-- **A claimed POI is drawn faded on a plain node, with no icons or number.**
-  §4.5 says the node then behaves as an ordinary node; fading rather than
-  removing the building is a default, one line to change.
+- **A claimed POI keeps its picture exactly as it was, on a plain node, with
+  no icons or number.** §4.5 says the node then behaves as an ordinary node.
+  It was first drawn 45% see-through, a default Andrei had not been asked
+  about, and the brightened cottages turned to ghosts; he ruled on
+  2026-09-23 that "the claimed POIs should lose their icons, but the images
+  DO NOT CHANGE".
 - **Andrei's first review (2026-09-23) made everything smaller and quieter.**
   POI pictures are half their first size, which had them covering roads and
   neighbouring POIs; the plains grass is under a third of its first size, the

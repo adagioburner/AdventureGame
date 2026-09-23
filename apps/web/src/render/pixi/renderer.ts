@@ -284,13 +284,13 @@ export class PixiMapRenderer implements MapRenderer {
   private drawPois(): void {
     for (const sprite of this.poiSprites) sprite.destroy();
     this.poiSprites = [];
-    const claimed = this.stateScene?.claimed ?? new Set<NodeId>();
     for (const item of this.scene.billboards) {
       if (item.layer !== 'pois') continue;
-      const gone = item.node !== null && claimed.has(item.node);
-      // §4.5: a claimed POI "behaves like an ordinary node" — its picture
-      // stays, faded, so the map does not change shape.
-      this.poiSprites.push(this.stand(item, gone ? 0.45 : 1));
+      // §4.5: a claimed POI "behaves like an ordinary node". [Andrei,
+      // 2026-09-23] "The claimed POIs should lose their icons, but the images
+      // DO NOT CHANGE": its picture is drawn exactly as before, and only its
+      // icons, number and guard ring go (`drawUi`, `buildStateScene`).
+      this.poiSprites.push(this.stand(item, 1));
     }
   }
 
