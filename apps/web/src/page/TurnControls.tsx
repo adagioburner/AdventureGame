@@ -93,6 +93,10 @@ function hint(move: MoveModeState, armed: boolean, name: string, rest: number, o
       const { preview } = move;
       const steps = preview.steps.length;
       if (steps === 0) return `Staying here this turn. ${stay}.`;
+      if (preview.reachableStepCount === 0) {
+        const route = steps === 1 ? 'this step' : `the first of these ${steps} steps`;
+        return `Not even ${route} is affordable this turn. Rest gains ${rest} stamina; End turn walks nothing and keeps the route for next turn.`;
+      }
       const cost = preview.totalStaminaCost === 0 ? 'no stamina' : `${preview.totalStaminaCost} stamina`;
       const reach = preview.destinationReachable
         ? `All ${steps} step${steps === 1 ? '' : 's'} this turn, for ${cost}.`
