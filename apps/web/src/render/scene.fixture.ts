@@ -18,11 +18,11 @@ import { generateMap } from '@adventure/mapgen';
 import { defaultRemotenessScorer } from '@adventure/sim';
 
 /**
- * What the phase 3 page shows: a map generated from a seed, the two hotseat
- * players (Q22) standing on their shared starting node, and one sample move.
+ * A map generated from a seed, the two hotseat players (Q22) standing on their
+ * shared starting node, and one sample move: what the scene tests draw.
  *
- * Generation is client-side already by §12.1, so the page needs no server and
- * no file: the seed in the address is the whole input.
+ * Not part of the app — the page plans real moves since phase 4 — and named
+ * `*.fixture.ts` so Vitest does not collect it while the typecheck still does.
  */
 export interface PreviewGame {
   readonly map: GameMap;
@@ -31,12 +31,11 @@ export interface PreviewGame {
 }
 
 /**
- * A prospective move, so §7.1's path colours can be seen before phase 4 lets
- * anyone click one. A fresh game's players hold no moving skills, so their
- * every step would be yellow; the sample is instead what `previewPath` returns
- * for the player in §8's worked example — 14 stamina, plains-move 3,
- * forest-move 1 — walking from the starting node to the nearest POI whose route
- * shows all three colours. The page says so beside it.
+ * A prospective move with all three of §7.1's path colours. A fresh game's
+ * players hold no moving skills, so their every step would be yellow; the
+ * sample is instead what `previewPath` returns for the player in §8's worked
+ * example — 14 stamina, plains-move 3, forest-move 1 — walking from the
+ * starting node to the nearest POI whose route shows all three colours.
  */
 export interface SampleMove {
   readonly preview: PathPreview;
@@ -77,11 +76,4 @@ export function sampleMove(map: GameMap, from: NodeId, ruleset: Ruleset = DEFAUL
   if (best === null) return null;
   const middle = best.path[Math.floor(best.path.length / 2) - 1] ?? null;
   return { preview: best.preview, waypoint: middle, allowance: SAMPLE_ALLOWANCE, stamina: SAMPLE_STAMINA };
-}
-
-/** A shareable random seed, for `?seed=` with no value. */
-export function randomSeed(): Seed {
-  const words = ['amber', 'birch', 'cairn', 'delta', 'ember', 'fjord', 'glade', 'heath', 'islet', 'juniper'];
-  const pick = (): string => words[Math.floor(Math.random() * words.length)] ?? 'amber';
-  return `${pick()}-${pick()}-${Math.floor(Math.random() * 1000)}`;
 }

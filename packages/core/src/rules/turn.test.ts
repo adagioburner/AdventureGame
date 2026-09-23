@@ -102,6 +102,16 @@ describe('applyAction — movement', () => {
     expect(state.players[0]?.plannedPath).toEqual({ path: [n(3)], waypoint: null });
   });
 
+  it('keeps the waypoint the move was planned through while it is still ahead', () => {
+    const start = withStats(fixtureGame(map, 0), one, { stamina: 1 });
+    const through = (waypoint: number) =>
+      applyAction(start, { kind: 'move', player: one, path: [n(1), n(2), n(3)], waypoint: n(waypoint) }, noDice).state
+        .players[0]?.plannedPath;
+    expect(through(3)).toEqual({ path: [n(2), n(3)], waypoint: n(3) });
+    // Already walked past: nothing left to route through.
+    expect(through(1)).toEqual({ path: [n(2), n(3)], waypoint: null });
+  });
+
   it('clears the planned path once the walk finishes', () => {
     const start = withStats(fixtureGame(map, 0), one, { stamina: 4 });
     const { state } = applyAction(start, { kind: 'move', player: one, path: [n(1), n(2)] }, noDice);

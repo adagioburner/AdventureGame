@@ -8,9 +8,8 @@ import type { Camera } from '../render/isometric.ts';
  * controller is testable headlessly; the page turns pointer, wheel and key
  * events into these calls.
  *
- * Phase 3 lands this early, and only this much of §7.1's controls, because a
- * map shown whole on a phone is too small to judge art by: the reviewer has to
- * be able to zoom in. Move mode stays phase 4.
+ * Phase 3 landed this early, because a map shown whole on a phone is too small
+ * to judge art by; phase 4's move mode sits beside it (`moveMode.ts`).
  */
 export interface PointerDrag {
   readonly from: Point;
@@ -26,6 +25,12 @@ export interface CameraController {
   zoomAt(screen: Point, factor: number): void;
   /** [SOURCE §1.3, chat] Whole map visible at game start. */
   resetToFit(): void;
+  /**
+   * Bring a zoom-1 plane point to the middle of the view — the current
+   * player's figure, when they ask where it is — zooming in to `zoom` first if
+   * the view is further out than that.
+   */
+  centerOn(plane: Point, zoom: number): void;
   /** A new fit, when the viewport changes size. */
   setFit(fit: Camera, viewport: Point): void;
 }
@@ -79,6 +84,9 @@ export function createCameraController(fit: Camera, viewport: Point): CameraCont
     zoomAt,
     resetToFit() {
       camera = whole;
+    },
+    centerOn(plane, zoom) {
+      camera = { zoom: clampZoom(Math.max(camera.zoom, zoom)), center: plane };
     },
     setFit(next, nextViewport) {
       whole = next;

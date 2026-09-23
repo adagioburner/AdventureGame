@@ -6,6 +6,7 @@ import { atlasOf } from '../../art/catalog.ts';
 import type { Camera, Projection } from '../isometric.ts';
 import type { MapRenderer, SceneLayer } from '../scene.ts';
 import {
+  buildCharacters,
   buildPathScene,
   buildStateScene,
   buildWaypoint,
@@ -14,6 +15,7 @@ import {
   type Billboard,
   type MapScene,
   type StateScene,
+  type Walker,
 } from '../sceneModel.ts';
 import { backdropTerrains } from '../dressing.ts';
 import type { LoadedArt } from './textures.ts';
@@ -51,6 +53,7 @@ export class PixiMapRenderer implements MapRenderer {
   private stateScene: StateScene | null = null;
   private preview: PathPreview | null = null;
   private waypoint: NodeId | null = null;
+  private walker: Walker | null = null;
   private viewport: Point = { x: 1, y: 1 };
 
   constructor(
@@ -95,8 +98,21 @@ export class PixiMapRenderer implements MapRenderer {
   setState(state: GameState): void {
     if (state.map !== this.map) throw new Error('this renderer draws one map; make a new one for another');
     this.state = state;
-    this.stateScene = buildStateScene(this.scene, state, this.art.catalog);
+    this.stateScene = buildStateScene(this.scene, state, this.art.catalog, this.walker);
     for (const layer of ['nodes', 'pois', 'characters', 'ui', 'path-overlay'] as const) this.invalidate(layer);
+  }
+
+  /** A figure part-way along a road while End Turn plays out; `null` when nobody is walking. */
+  setWalker(walker: Walker | null): void {
+    this.walker = walker;
+    if (this.state === null || this.stateScene === null) return;
+    this.stateScene = { ...this.stateScene, ...buildCharacters(this.scene, this.state, this.art.catalog, walker) };
+    this.invalidate('characters');
+  }
+
+  /** The figures as drawn now, for telling which one a click landed on. */
+  get characters(): readonly Billboard[] {
+    return this.stateScene?.characters ?? [];
   }
 
   setPathPreview(preview: PathPreview | null): void {

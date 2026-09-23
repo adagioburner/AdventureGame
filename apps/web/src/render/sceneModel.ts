@@ -6,6 +6,7 @@ import {
   type NodeId,
   type PathPreview,
   type PathStepColor,
+  type PlayerId,
   type Point,
 } from '@adventure/core';
 import { spriteIndex } from '../art/atlas.ts';
@@ -99,6 +100,8 @@ export interface Billboard {
   readonly node: NodeId | null;
   /** Back to front: larger is nearer the viewer. */
   readonly depth: number;
+  /** Whose figure this is; characters only. */
+  readonly player?: PlayerId;
 }
 
 /** §4.1's icons and §4.4's number for one POI, drawn over everything else. */
@@ -271,8 +274,18 @@ export interface StateScene {
   readonly active: { readonly at: Point; readonly size: number; readonly sprite: SpriteRef } | null;
 }
 
-export function buildStateScene(scene: MapScene, state: GameState, catalog: ArtCatalog): StateScene {
-  const { manifest } = catalog;
+/**
+ * A figure on its way between nodes while End Turn plays out (§7.1: "the
+ * character walks to the destination or as far as it gets"). Where it stands is
+ * animation, not state: the engine has already moved it.
+ */
+export interface Walker {
+  readonly player: PlayerId;
+  /** World units, anywhere along the road it is walking. */
+  readonly at: Point;
+}
+
+export function buildStateScene(scene: MapScene, state: GameState, catalog: ArtCatalog, walker: Walker | null = null): StateScene {
   const claimed = new Set<NodeId>();
   state.map.pois.forEach((poi, index) => {
     const runtime = state.poiRuntime[index];
@@ -283,21 +296,36 @@ export function buildStateScene(scene: MapScene, state: GameState, catalog: ArtC
       ? nodeMark(catalog, scene.spacing, { id: mark.node, position: mark.at, terrain: mark.terrain }, null)
       : mark,
   );
+  return { claimed, nodes, ...buildCharacters(scene, state, catalog, walker) };
+}
 
+/**
+ * The figures, and the highlight under the current player's (§7.2). Split out
+ * so a walking figure redraws only these.
+ */
+export function buildCharacters(
+  scene: MapScene,
+  state: GameState,
+  catalog: ArtCatalog,
+  walker: Walker | null = null,
+): Pick<StateScene, 'characters' | 'active'> {
+  const { manifest } = catalog;
   const figurines = atlasOf(catalog, manifest.figurines.sheet);
   const size = manifest.figurines.size * SPACING_PX;
   // Players sharing a node (§8 allows any number) stand side by side.
   const byNode = new Map<NodeId, number[]>();
   state.players.forEach((player, index) => {
+    if (player.id === walker?.player) return;
     byNode.set(player.position, [...(byNode.get(player.position) ?? []), index]);
   });
 
   const characters: Billboard[] = [];
   let active: StateScene['active'] = null;
   state.players.forEach((player, index) => {
-    const together = byNode.get(player.position) ?? [index];
+    const walking = player.id === walker?.player;
+    const together = walking ? [index] : (byNode.get(player.position) ?? [index]);
     const slot = together.indexOf(index);
-    const base = scene.projection.toScreen(position(state.map.graph, player.position));
+    const base = scene.projection.toScreen(walking ? walker.at : position(state.map.graph, player.position));
     // A little in front of the node, so a figure is never behind the POI it
     // stands on.
     const foot = { x: base.x + (slot - (together.length - 1) / 2) * size * 0.45, y: base.y + SPACING_PX * 0.12 };
@@ -310,6 +338,7 @@ export function buildStateScene(scene: MapScene, state: GameState, catalog: ArtC
       size,
       node: player.position,
       depth: foot.y + 0.5,
+      player: player.id,
     });
     if (player.seat === state.turn.activeSeat && state.status !== 'finished') {
       active = {
@@ -319,7 +348,7 @@ export function buildStateScene(scene: MapScene, state: GameState, catalog: ArtC
       };
     }
   });
-  return { claimed, nodes, characters, active };
+  return { characters, active };
 }
 
 // --- a prospective move ------------------------------------------------------

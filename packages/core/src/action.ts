@@ -22,6 +22,14 @@ export interface MoveAction {
    * re-triggers and the player gets another roll against the guard.
    */
   readonly path: readonly NodeId[];
+  /**
+   * [SOURCE §4] The shift-click waypoint the path was planned through, if any.
+   * The engine walks `path` and nothing else; the waypoint only rides along
+   * into the saved remainder, so that a route cut short this turn still shows
+   * its waypoint next turn and "can still be changed" around it. Omitted, the
+   * player's already-saved waypoint is kept, which is what a forced move wants.
+   */
+  readonly waypoint?: NodeId | null;
 }
 
 export interface RestAction {
