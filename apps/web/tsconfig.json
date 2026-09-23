@@ -1,0 +1,15 @@
+{
+  // The browser client is the one program that gets the DOM, and nothing else
+  // may: the engine packages run on the server too, so `tsconfig.json` at the
+  // root leaves `apps/web` out and this program opts in to `lib.dom` and to
+  // Vite's `import.meta.glob` types. Still no build step for the typecheck;
+  // Vite bundles for the browser (docs/STACK.md §3).
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["vite/client"],
+    "jsx": "react-jsx"
+  },
+  "include": ["./src/**/*.ts", "./src/**/*.tsx", "./vite.config.ts"]
+}

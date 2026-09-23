@@ -1,10 +1,10 @@
 # Implementation plan
 
-Status: **agreed; phases 0, 1 and 2 done, phase 3 next.** This plan is derived from the
+Status: **agreed; phases 0–3 done, phase 4 next.** This plan is derived from the
 five-step order Andrei proposed, checked against the design of record and
 against what is actually in the repo today. Phase 0 landed the test harness,
-phase 1 the map generator and phase 2 the rules engine; everything from phase 3
-on is still seams.
+phase 1 the map generator, phase 2 the rules engine and phase 3 the map as a
+player sees it; everything from phase 4 on is still seams.
 
 The design of record is [`GDD.md`](../GDD.md), with
 [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) for component boundaries,
@@ -173,7 +173,7 @@ answer belongs in the thread.
 
 ```sh
 pnpm install          # once
-pnpm run typecheck    # both programs: packages + apps, then tools
+pnpm run typecheck    # three programs: packages + server, the web app, then tools
 pnpm test             # vitest run
 ```
 
@@ -213,22 +213,28 @@ Verified on Node 22.22, which is what `.github/workflows/ci.yml` already pins.
 So `map` and `map:batch` are one-line root scripts wrapping `node`, and a
 reviewer needs nothing that `pnpm install` has not already put in place.
 
-### 2.2 After phase 3 — the map as a player sees it
+### 2.2 After phase 3 — the map as a player sees it — **works now**
+
+**With no checkout**, the viewer comes to the thread as a published page: the
+same app, built by `pnpm build:web`, posted where a phone can open it. It
+generates in the browser, so any seed typed into its box draws that map there
+and then, and its "Art in use" panel says which pictures are placeholders,
+which are borrowed (Q20) and which are supplied. Screenshots of named seeds,
+whole and zoomed in, come back as attachments the same way §2.0's plates do.
+That is phase 3's answer to §2.0: nothing to run, and any seed on demand.
+
+**With a checkout:**
 
 ```sh
 pnpm dev              # Vite dev server in apps/web
+pnpm build:web        # the static page, in apps/web/dist
 ```
 
 then open `http://localhost:5173/?seed=adventure`. Map generation is
 client-side already by [§12.1](./GDD.md), so the page generates from the seed
-in the query string: no server, no build, and no file from §2.1 required.
-Changing the seed and reloading is the whole loop, and `?seed=` with no value
-picks one at random and writes it into the URL so it can be shared.
-
-Phase 3 owes §2.0 an answer of its own: a reviewer with no checkout cannot run
-a dev server, so the page has to reach them some other way — a deployed
-preview, or the same render-and-post path §2.0 already describes. Which one is
-a phase 3 deliverable and not something this section can settle in advance.
+in the query string: no server and no file from §2.1 required. Changing the
+seed is the whole loop, and a page opened with no `?seed=` picks one at random
+and writes it into the URL so it can be shared.
 
 This is the isometric view with node images, dressing, reward icons, guard
 numbers and road strokes. It has no debug layer and never draws remoteness
@@ -536,8 +542,9 @@ example becomes a test.
    being that of the node being *entered*. The unwalked remainder is saved as
    next turn's planned path.
 2. **`previewPath`** — the same accounting, producing §7.1's per-step colours
-   instead of a new state: green free, yellow costs stamina (labelled), grey
-   unreachable. Deliberately the same function family as `resolveMovement` so
+   instead of a new state: green free, yellow costs stamina, grey
+   unreachable. (§7.1 labelled yellow steps with their cost until Q32 dropped
+   the label in phase 3's review; `previewPath` still reports each cost.) Deliberately the same function family as `resolveMovement` so
    the preview and the committed move cannot disagree. Grey reflects only this
    turn and is never cached.
 3. **`resolveInteraction`** — §8. Unguarded: take it. Guarded: roll
@@ -688,6 +695,97 @@ whole-map-visible at open, with terrain colours, dressing, POI images, guard
 numbers in red or purple, and reward icons — and a person looking at it can
 read nothing from it that the rules do not give a player, in particular no
 remoteness shading anywhere on screen.
+
+### What actually landed
+
+All nine items, drawn with PixiJS in `apps/web` and viewable with no checkout
+as a published page (§2.2). 47 new tests, 300 in all. Andrei asked for one
+thing beyond the plan — **art that is easy to swap, since most of it is
+placeholder** — and that shaped most of what follows.
+
+- **One table decides every picture: `Art/manifest.json`.** It names the sheet
+  for each terrain texture, dressing kind, POI row, road, marker and figure, and
+  the size each is drawn at. The two Q20 substitutions are rows in it with a
+  `borrowed` note. No code names a file in `Art/`, so a swap is a file drop plus
+  at most one manifest line; [`Art/README.md`](../Art/README.md) walks through
+  one. A sheet pairs with its atlas by file name, because five supplied atlases
+  name a file that was renamed on the way in.
+- **Sizes are in node spacings, not pixels.** One node spacing is the median
+  road length, and each sheet is scaled on load so its typical sprite (the
+  median of each sprite's larger solid side) comes out at its manifest size. A
+  replacement drawn at another resolution, or with more padding in its cells,
+  needs no other change.
+- **Most supplied sheets bake their shadow in as opaque grey** (`#bbbbbb`),
+  which would sit on the terrain as a grey slab. The loader turns exactly the
+  colours the manifest lists into translucent black, rim included, and a sheet
+  whose replacement draws its own shadow just loses its line. Those sheets
+  also anchor each sprite at the foot of that shadow, which left guardians
+  floating behind their nodes, so a sprite whose anchor sits below its lowest
+  solid pixel now stands on that pixel.
+- **Four placeholders were generated** by `make_placeholders.py`, flagged
+  `placeholder: true` like the die and the brush: tileable textures for the
+  three terrains, and `Prospect_Markers` — §7.1's dots and crosses in green,
+  yellow and grey, a waypoint flag and an active-player ring. The viewer's
+  "Art in use" panel lists every picture as placeholder, borrowed or supplied,
+  read from those flags.
+- **The icons are renamed for what they show** (item 6): `plains_move.png`
+  (the wagon wheel, was `roads.png`), `forest_move.png` (the green foot, was
+  `plains.png`) and `mountain_move.png` (was `mountains.png`), so every icon
+  is now `Icons/<reward kind>.png`.
+- **The ground is one textured cell per node** (a Voronoi cell clipped to the
+  map), which is how §2's terrain types read as areas rather than dots. Every
+  road draws `Roads_Path`, the middle of the brush's three widths (item 7).
+- **Dressing never hides the game.** It is scattered deterministically from the
+  map's seed at a per-terrain density, kept off nodes and roads, and never
+  stands in front of a node or a road on screen. A test checks all three.
+  Mountains are the exception since Andrei's review: the manifest marks them
+  `backdrop`, so they are painted onto the ground under the roads and nodes,
+  each sized between `min_size` and `size` to stay over mountain ground, and
+  clipped to it, covering the whole mountain area instead of only its edges.
+  The largest go down first, so the middle of a region carries peaks up to
+  2.4 node spacings across and smaller ones fill in along the edges; on seed
+  `adventure` 60% of the mountain ground lies under a peak at least three
+  times a tree's size, which a test holds above half.
+  Fields are laid out in small arrays side by side along the ground.
+- **Nothing internal is drawn** (item 9), and a test proves it the direct way:
+  scrambling every POI's `remoteness` and `group` and the map's `attempts`
+  leaves the scene identical, value for value.
+- **A guard's colour is on its POI's node, and comes from the POI's guard,
+  never from the sheet** (Q31). A guarded node keeps its black outline and
+  gains a red or purple ring outside it. So a gold POI whose guard §5.2 capped
+  to nothing still shows its castle, on a plain node with no number, and
+  forest gold on the borrowed mountain sheet gets red because its guard is
+  fighting. The first build ringed the picture itself, per §3's wording;
+  Andrei moved it to the node in his review.
+- **A POI's picture stands beside its node, where it hides least.** Each
+  picture touches its node in one of seven directions, behind or to a side,
+  and takes the one that covers the least road, no other node and no other
+  POI's picture or reward. Measured on `adventure` with the tests' rough
+  sprite shapes, that hides 3 pixels of road against 549 with every picture
+  straight behind its node, and no picture covers another POI.
+- **A claimed POI is drawn faded on a plain node, with no icons or number.**
+  §4.5 says the node then behaves as an ordinary node; fading rather than
+  removing the building is a default, one line to change.
+- **Andrei's first review (2026-09-23) made everything smaller and quieter.**
+  POI pictures are half their first size, which had them covering roads and
+  neighbouring POIs; the plains grass is under a third of its first size, the
+  fields about half, and the figures, waypoint flag, reward icons and guard
+  numbers shrank to match. Route steps that cost stamina are yellow with no
+  "-N" beside them (Q32). His second look the same day enlarged the node ovals
+  by half, with the reward icons touching them, and the magic POIs' towers by
+  half again.
+- **Pan and zoom landed early** (`interaction/camera.ts`: drag, pinch, wheel,
+  `+`/`-`, and "Whole map"), because a map shown whole on a phone is too small
+  to judge art by. Move mode stays in phase 4. So does the move-prospect
+  input: the markers are drawn from `previewPath`, and the viewer shows one
+  sample route, walked by §8's worked-example player, so they can be judged
+  before phase 4 wires them to a click.
+- **Three type-check programs now**, not two: `apps/web` needs the DOM, JSX and
+  Vite's types, which the packages must never see. `pnpm run typecheck` runs
+  all three, as CI does.
+- **`pixi.js/unsafe-eval` is imported once**, in `main.tsx`, so the renderer
+  works under a page policy that forbids `eval` — which is what lets the
+  viewer be published as a page at all.
 
 ---
 
@@ -957,7 +1055,7 @@ answered on 2026-09-22** and are registered as Q20–Q24 in
 decisions; the summaries below are a convenience, and the register is
 authoritative.
 
-### P1. ~~Art gaps~~ — **answered (Q20); two assets generated**
+### P1. ~~Art gaps~~ — **answered (Q20); placeholders generated for the rest**
 
 [SOURCE chat, 2026-09-22] "I will add the missing placeholder art before we
 start implementing the plan." So phases 3 and 4 are written against the full
@@ -991,15 +1089,17 @@ Six §10 asset groups were missing from `Art/`, and one POI sheet:
   the roll is in flight, then the six resting faces, one per `GUARD_DIE` value.
   [SOURCE chat, review] "this will be provided" — the generated one stands in
   until the real animation arrives.
-- **Terrain textures** for the three terrains. (The **road/path brush pattern**
-  is generated: three stroke widths, each tiling horizontally with no seam,
-  with a deliberately flat centreline so a straight edge draws straight.
-  `Art/Icons/roads.png` is not it — it is the brown wagon wheel, i.e. §4.1's
-  plains-movement reward icon. `Art/Icons/plains.png` is the green foot, i.e.
-  the forest-movement icon. All seven reward icons are present; two are just
-  misnamed, and renaming them is worth doing before phase 3 reads them.)
-- **Move-prospect visuals** — path highlight, destination cross, waypoint
-  marker.
+- ~~**Terrain textures**~~ for the three terrains — generated in phase 3 as
+  placeholders (`Plains_Texture`, `Forest_Texture`, `Mountains_Texture`), each
+  one tile that repeats in both directions. (The **road/path brush pattern**
+  is generated too: three stroke widths, each tiling horizontally with no seam,
+  with a deliberately flat centreline so a straight edge draws straight. The
+  old `Art/Icons/roads.png` was not it — it was the brown wagon wheel, §4.1's
+  plains-movement reward icon. Phase 3 renamed the icons for their reward
+  kinds, so that is now `Icons/plains_move.png`.)
+- ~~**Move-prospect visuals**~~ — path dots, destination cross, waypoint
+  marker, and a ring under the player to move — generated in phase 3 as the
+  placeholder `Prospect_Markers` sheet.
 
 ### P2. ~~AI budget in seconds or rollouts?~~ — **answered (Q21): seconds**
 

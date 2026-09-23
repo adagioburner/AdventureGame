@@ -47,6 +47,8 @@ Status: v1 design, consolidated from `Annotated_Design_Document.md` (the traceab
 
 [SOURCE §1] Some nodes are POIs. A POI has: a reward (§4), optionally a guard (§4.4), and an eye-candy image of the place or — if guarded — of the guardian, with a red (fighting) or purple (magic) contour.
 
+[SOURCE §1, review] **The red or purple goes on the POI's node, not round the guardian's image.** Andrei, reviewing the phase 3 map on 2026-09-23: "the guards should not have red or purple contours; instead, the nodes should." A guarded POI's node keeps the black outline every node has and gains a ring in its guard's colour just outside it ("let's keep the regular black one inside it as well", same day); once the POI is claimed its node is drawn as an ordinary one (§4.5). The image stands beside its node rather than on it, on whichever side covers no road and no other POI. Registered as Q31.
+
 [SOURCE §1] POI placement: distributed randomly at approximately equal distances from each other; every leaf node of the graph must be a POI (no dead ends); leaf nodes are assigned POI status first, remaining POIs distributed randomly among the rest.
 
 [SOURCE §1] POI counts: **25 on plains, 20 in forests, 15 in mountains** (total 60).
@@ -73,7 +75,7 @@ Status: v1 design, consolidated from `Annotated_Design_Document.md` (the traceab
 
 [SOURCE §1] A stack of N same-kind units on one POI shows N (possibly overlapping) icons.
 
-[INFERRED §6] The seven icon image assets Andrei supplied match this table with no discrepancies.
+[INFERRED §6] The seven icon image assets Andrei supplied match this table with no discrepancies. Two arrived under names that did not describe them; they are now `Art/Icons/<reward kind>.png`, one per row above (see Q20).
 
 ### 4.2 Reward totals per terrain
 
@@ -169,6 +171,8 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 [SOURCE §4] Click-drag to pan, `+`/`-` to zoom. Clicking the player's own highlighted character enters moving mode; clicking a destination node highlights the shortest path (weighted terrain cost, §5.1) with a thick dotted line and an isometric cross at the destination. Shift-click sets an intermediate waypoint when more than one path exists.
 
 [SOURCE §4] Path coloring: green = covered by current skill allowance, yellow = costs stamina (labeled with the stamina cost, e.g. "-3"), grey = unreachable, including the destination cross if unreachable. [SOURCE §4, chat] Coloring reflects only what's achievable *this turn*; it recalculates each new turn as skill allowances refresh — grey never means permanently impossible, since resting always restores stamina.
+
+[SOURCE §4, review] **Yellow steps carry no number.** Andrei, reviewing the phase 3 map on 2026-09-23: "Let us remove the numbers showing stamina lost. The color coding already tells the player that it's not free; they can figure out the rest." This drops the "-3" label above; the colours are unchanged. Registered as Q32.
 
 [SOURCE §4] "End Turn" commits the last-shown path; the character walks to the destination or as far as it gets this turn. Players may plan their next move out of turn while others play; clicking "End Turn" then executes it in one click. An unfinished path is saved for the next turn and can still be changed.
 

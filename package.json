@@ -4,13 +4,15 @@
   "type": "module",
   "packageManager": "pnpm@10.0.0",
   "scripts": {
-    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tools/tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p apps/web/tsconfig.json && tsc --noEmit -p tools/tsconfig.json",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:update-golden": "vitest run -u",
     "map": "node tools/balance/src/cli.ts map",
     "map:batch": "node tools/balance/src/cli.ts batch",
-    "game": "node tools/balance/src/cli.ts game"
+    "game": "node tools/balance/src/cli.ts game",
+    "dev": "pnpm --filter @adventure/web dev",
+    "build:web": "pnpm --filter @adventure/web build"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Adventure Map Viewer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=Public+Sans:wght@400;600;700&family=JetBrains+Mono:wght@500&display=swap"
+    />
+    <style>
+      :root {
+        --ground: #e7ebed;
+        --panel: #f7f8f8;
+        --ink: #1b2328;
+        --muted: #56646c;
+        --line: #c6cfd4;
+        --accent: #2c6a93;
+        --accent-ink: #ffffff;
+        --map-ground: #a9b8bf;
+        --free: #3f9a45;
+        --stamina: #c99a06;
+        --unreachable: #7d8589;
+        --placeholder: #9b5a12;
+        --borrowed: #6b4aa3;
+        --supplied: #2f7a4a;
+        --display: 'IM Fell English SC', 'Iowan Old Style', Georgia, serif;
+        --ui: 'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        --mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root:not([data-theme='light']) {
+          color-scheme: dark;
+          --ground: #13191c;
+          --panel: #1b2327;
+          --ink: #e2e8ea;
+          --muted: #93a2aa;
+          --line: #2c373d;
+          --accent: #7cb3da;
+          --accent-ink: #0d1a22;
+          --map-ground: #25333b;
+          --placeholder: #e0a458;
+          --borrowed: #b79be6;
+          --supplied: #7cc596;
+        }
+      }
+      :root[data-theme='dark'] {
+        color-scheme: dark;
+        --ground: #13191c;
+        --panel: #1b2327;
+        --ink: #e2e8ea;
+        --muted: #93a2aa;
+        --line: #2c373d;
+        --accent: #7cb3da;
+        --accent-ink: #0d1a22;
+        --map-ground: #25333b;
+        --placeholder: #e0a458;
+        --borrowed: #b79be6;
+        --supplied: #7cc596;
+      }
+      html,
+      body,
+      #app {
+        height: 100%;
+      }
+      body {
+        margin: 0;
+        overflow: hidden;
+        background: var(--ground);
+        color: var(--ink);
+        font: 14px/1.45 var(--ui);
+      }
+      button,
+      input {
+        font: inherit;
+        color: inherit;
+      }
+      :focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .shell {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        grid-template-columns: minmax(0, 1fr);
+        height: 100%;
+      }
+      .bar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 10px 16px;
+        padding: 10px 16px;
+        border-bottom: 1px solid var(--line);
+        background: var(--panel);
+      }
+      .bar h1 {
+        margin: 0;
+        font: 400 22px/1 var(--display);
+        letter-spacing: 0.01em;
+        text-wrap: balance;
+      }
+      .seed {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        flex: 1 1 300px;
+        min-width: 0;
+      }
+      .seed label {
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .seed input {
+        flex: 1 1 110px;
+        min-width: 0;
+        max-width: 240px;
+        padding: 6px 8px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--ground);
+        font-family: var(--mono);
+        font-size: 13px;
+      }
+      .btn {
+        padding: 6px 12px;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--ground);
+        cursor: pointer;
+        font-weight: 600;
+        white-space: nowrap;
+      }
+      .btn.primary {
+        border-color: var(--accent);
+        background: var(--accent);
+        color: var(--accent-ink);
+      }
+      .btn[aria-pressed='true'] {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .stage {
+        position: relative;
+        min-height: 0;
+        overflow: hidden;
+        background: var(--map-ground);
+      }
+      .canvas-host {
+        position: absolute;
+        inset: 0;
+        touch-action: none;
+        cursor: grab;
+      }
+      .canvas-host:active {
+        cursor: grabbing;
+      }
+      .status {
+        position: absolute;
+        inset: 0;
+        display: grid;
+        place-items: center;
+        padding-inline: 16px;
+        color: var(--ink);
+        font-weight: 600;
+        text-align: center;
+        white-space: pre-wrap;
+      }
+      .overlay {
+        position: absolute;
+        display: flex;
+        gap: 8px;
+        pointer-events: none;
+      }
+      .overlay > * {
+        pointer-events: auto;
+      }
+      .zoom {
+        right: 16px;
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        flex-direction: column;
+      }
+      .zoom .btn {
+        min-width: 44px;
+        min-height: 40px;
+        background: var(--panel);
+      }
+      .legend {
+        left: 16px;
+        bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+        max-width: min(420px, calc(100% - 100px));
+        flex-direction: column;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        font-size: 12.5px;
+      }
+      .legend p {
+        margin: 0;
+        color: var(--muted);
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px 12px;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 600;
+      }
+      .chip i {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        border: 1.5px solid #161616;
+      }
+      .art {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        bottom: 12px;
+        width: min(380px, calc(100% - 24px));
+        overflow: auto;
+        padding: 14px 16px;
+        border-radius: 8px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        box-shadow: 0 10px 30px rgb(0 0 0 / 0.18);
+      }
+      .art h2 {
+        margin: 0 0 4px;
+        font: 400 20px/1.2 var(--display);
+      }
+      .art > p {
+        margin: 0 0 12px;
+        color: var(--muted);
+      }
+      .art h3 {
+        margin: 14px 0 6px;
+        font-size: 11.5px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .art ul {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 6px;
+      }
+      .art li {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 2px 10px;
+        align-items: baseline;
+      }
+      .art code {
+        grid-column: 1 / -1;
+        font: 12px var(--mono);
+        color: var(--muted);
+        overflow-wrap: anywhere;
+      }
+      .tag {
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+      }
+      .tag.placeholder {
+        color: var(--placeholder);
+      }
+      .tag.borrowed {
+        color: var(--borrowed);
+      }
+      .tag.supplied {
+        color: var(--supplied);
+      }
+      @media (max-width: 560px) {
+        .bar h1 {
+          font-size: 19px;
+        }
+        .legend {
+          top: 12px;
+          right: 16px;
+          bottom: auto;
+          max-width: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="./src/main.tsx"></script>
+  </body>
+</html>

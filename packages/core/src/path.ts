@@ -204,7 +204,9 @@ export function routeVia(
 
 /**
  * [SOURCE §4] Path colouring: green = covered by the current skill allowance,
- * yellow = costs stamina (labelled with the cost), grey = unreachable.
+ * yellow = costs stamina, grey = unreachable. The UI puts no cost beside a
+ * yellow step since Andrei's 2026-09-23 review (Q32); `staminaCost` is still
+ * reported, because the engine charges it.
  *
  * [SOURCE §4, chat] This reflects only what is achievable *this turn*, and is
  * recalculated every turn as allowances refresh. Grey never means permanently

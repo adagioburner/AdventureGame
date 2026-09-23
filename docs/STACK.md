@@ -95,6 +95,18 @@ a dozen lines and stayed in-repo, as predicted.
   in with `"types": ["node"]`. `pnpm run typecheck` runs both programs. This is
   a *typechecking* split only: there is still no build step, and Node 22 strips
   the types and runs the source either way.
+- **`apps/web` typechecks as a third program**, for the mirror-image reason:
+  it needs the DOM, JSX and Vite's `import.meta.glob` types, and the engine
+  packages must never see those either. `apps/web/tsconfig.json` adds them and
+  `pnpm run typecheck` runs all three. Vitest runs the web app's tests with the
+  rest, including the ones that read `Art/` through `import.meta.glob`, so
+  every art check is part of `pnpm test`.
+- **Vite, React and PixiJS entered the lockfile in phase 3**, in `apps/web`
+  alone: `vite` 8, `react` and `react-dom` 19, `pixi.js` 8. `pnpm dev` serves
+  the viewer and `pnpm build:web` writes it as a static page to
+  `apps/web/dist`, relative paths throughout, so it can be posted anywhere.
+  The page imports `pixi.js/unsafe-eval` once, which lets PixiJS run under a
+  content security policy that forbids `eval`.
 - **`delaunator` is the first runtime dependency**, in `@adventure/mapgen`
   alone, for §2.1 step 2. A correct incremental Delaunay is a great deal of
   subtle floating-point geometry, and this is the smallest well-tested
