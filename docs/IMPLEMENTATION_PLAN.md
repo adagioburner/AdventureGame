@@ -729,6 +729,9 @@ placeholder** — and that shaped most of what follows.
   on the mountains, and the statues half as large again with a thin dark
   contour. On the way there Andrei turned down a cream contour three times
   as thick (too bright) and brighter, more vivid guards (they looked wrong).
+  He later asked for the plains-speed cottages to match the forest-speed
+  ones, which are drawn as supplied; brightness 1.3 and colour 2.0 match
+  them in both lightness and colour, measured over the whole sheet.
   Each is one line under `adjustments` in the manifest, which a replacement
   that already looks right just loses. Bigger guards crowd a mountain, so a
   picture now avoids touching another POI's picture even at the cost of a
