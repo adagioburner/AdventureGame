@@ -73,7 +73,7 @@ Status: v1 design, consolidated from `Annotated_Design_Document.md` (the traceab
 
 [SOURCE §1] A stack of N same-kind units on one POI shows N (possibly overlapping) icons.
 
-[INFERRED §6] The seven icon image assets Andrei supplied match this table with no discrepancies.
+[INFERRED §6] The seven icon image assets Andrei supplied match this table with no discrepancies. Two arrived under names that did not describe them; they are now `Art/Icons/<reward kind>.png`, one per row above (see Q20).
 
 ### 4.2 Reward totals per terrain
 

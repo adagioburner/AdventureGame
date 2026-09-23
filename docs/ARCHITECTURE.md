@@ -565,13 +565,18 @@ message type — which is the "swappable without a rewrite" requirement.
 
 ## 9. Client / UI layer (§7)
 
-`apps/web`. Boundaries only in this pass — no framework is committed to in code.
+`apps/web`: Vite and React for the page, PixiJS for the map (`docs/STACK.md`
+§3). The map as a player sees it is drawn; move mode, the client store and the
+modes are still seams.
 
 | Module | Covers |
 |---|---|
-| `render/isometric.ts` | `Projection` (world ↔ screen), `Camera`, `fitToViewport` for §1.3's "whole map visible at game start" |
+| `art/` | Reads `Art/`: the atlases, `Art/manifest.json` (which picture is drawn for what), and the check that the two agree |
+| `render/isometric.ts` | `Projection` (world ↔ screen, and the same map as one affine matrix), `Camera`, `fitToViewport` for §1.3's "whole map visible at game start" |
+| `render/sceneModel.ts` | Everything drawn, as plain data: terrain cells, roads, nodes, billboards, icon stacks and guard numbers; then the per-state and per-preview parts. No PixiJS, so it is what the tests check |
 | `render/scene.ts` | `MapRenderer` and the draw layers (terrain, dressing, edges, nodes, POIs, path overlay, characters, UI), split by how often each invalidates |
-| `interaction/camera.ts` | §7.1 click-drag pan, `+`/`-` zoom |
+| `render/pixi/` | The PixiJS `MapRenderer` and the one-time pixel work on each sheet as it loads |
+| `interaction/camera.ts` | §7.1 click-drag pan, `+`/`-` zoom, plus wheel and pinch |
 | `interaction/moveMode.ts` | The §7.1 move-mode state machine: idle → selecting → previewing, shift-click waypoint, End Turn, Rest |
 | `state/client.ts` | `ClientGameStore` and the `Transport` seam |
 | `modes/` | Online vs. hotseat as a flag on one UI |
@@ -609,9 +614,27 @@ Three decisions worth stating:
   sprite index. They stay on the wire because the AI player (§9) runs
   client-side and consumes them; that is not permission to draw them.
 
-Art binding is **out of scope** and marked so: nothing reads `Art/`, and
-`Poi.artVariant` is only a stable per-POI random index. What it indexes into —
-sheet extraction, sizing, the icon-to-reward mapping — is a later decision.
+How the in-game map is put together, since phase 3 drew it:
+
+- **One table binds art to the game: `Art/manifest.json`.** It names the sheet
+  for every terrain texture, dressing kind, POI row, road, marker and figure,
+  and the size each is drawn at, in node spacings (one node spacing is the
+  median road length). No code names a file in `Art/`, which is what makes art
+  swappable; `Art/README.md` walks through a swap. A POI's row is chosen by its
+  reward kind, then its terrain (or `any`) and guard type; its picture is
+  sprite `artVariant mod count`; its coloured contour comes from its own
+  `guard`, never from the row.
+- **The ground is laid through the projection, figures stand up in front of
+  it.** Terrain cells, roads, node ovals and the path overlay are drawn in map
+  coordinates under the projection's matrix, so a circle becomes §2's oval and
+  a flat X §7.1's isometric cross. Buildings, dressing, figures and the
+  waypoint flag are billboards standing at the screen point of their foot and
+  sorted back to front. Reward icons, guard numbers and stamina costs go on
+  top of everything, so nothing standing can hide them.
+- **The rule against drawing internals is a test, not a convention.** Building
+  the scene from a map whose `remoteness`, `group` and `attempts` have been
+  scrambled gives the same scene, value for value
+  (`render/sceneModel.test.ts`).
 
 ---
 
@@ -639,11 +662,12 @@ Phase 1 closed the one distance metric, all eight pipeline steps, §4.3
 assignment, §5.2 guard strengths and `sealMap`. Phase 2 closed the rules engine:
 `resolveMovement`, `previewPath`, `resolveInteraction`, `nextSeat` and
 `applyAction` are code, §8's worked example is a test, and a full game plays to
-a winner on a generated map. What is left, each independently implementable
-against the shapes above:
+a winner on a generated map. Phase 3 drew the map as a player sees it, with
+the art bound through `Art/manifest.json` (§9). What is left, each
+independently implementable against the shapes above:
 
 1. MCTS `search()` — every policy, evaluator and branch rule is written; the four-phase loop, `macroAdvanceToTarget` and the rest of `packages/sim/src/rollout.ts` are not.
 2. `SetupFlow.start` — starting positions and `createGameState` are settled; needs the rest of setup, which needs the server.
-3. The player-facing renderer (§9 above) and the art binding it needs.
+3. Move mode and the hotseat UI on top of the renderer (§9 above): `interaction/moveMode.ts`, `state/client.ts` and `modes/`.
 
 `grep -rn NotImplementedError packages apps tools` remains the live worklist.

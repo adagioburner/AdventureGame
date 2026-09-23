@@ -23,14 +23,16 @@ applies to this repo:
 
 ## Status
 
-**Map generation and the rules engine work.** `generateMap(seed, ruleset)` runs
-GDD.md §2.1's eight steps end to end and returns a sealed `GameMap`, and
-`applyAction(state, action, dice)` plays §7 and §8's turns on it —
-`pnpm map <seed>` draws a map, `pnpm game <seed>` plays one to a winner and
-prints the game turn by turn. That is phases 1 and 2 of
+**Map generation, the rules engine and the map a player sees work.**
+`generateMap(seed, ruleset)` runs GDD.md §2.1's eight steps end to end and
+returns a sealed `GameMap`, `applyAction(state, action, dice)` plays §7 and
+§8's turns on it, and `apps/web` draws it isometrically from the art in `Art/`
+— `pnpm map <seed>` draws the generator's diagnostic view, `pnpm game <seed>`
+plays a game to a winner and prints it turn by turn, and `pnpm dev` opens the
+map as a player sees it. That is phases 1 to 3 of
 [`docs/IMPLEMENTATION_PLAN.md`](./docs/IMPLEMENTATION_PLAN.md), on top of phase
-0's test harness. The UI (§7.1), the MCTS search loop (§9) and the server
-(§6.1) are still seams.
+0's test harness. The playable UI (§7.1), the MCTS search loop (§9) and the
+server (§6.1) are still seams.
 
 Two design questions are open, neither blocking: [Q27](./docs/OPEN_QUESTIONS.md)
 — `COMPACTNESS_MAX` never binds on a graph this sparse, so §2.1's Smooth step
@@ -66,15 +68,17 @@ packages/
   protocol/   Client/server wire contract and the auth port. Plain data.
   session/    Turn sequencing, authority, setup flow. Eight ports, no runtime deps.
 apps/
-  web/        Client: isometric renderer, interaction, online + hotseat modes.
+  web/        Client: isometric renderer (Vite, React, PixiJS), interaction,
+              online + hotseat modes.
   server/     Composition root and host adapters.
 tools/
   balance/    Headless balancing harness (GDD §1.3 names it as a reason for
               seed reproducibility), the `pnpm map` and `pnpm game` CLIs, the
               diagnostic SVG, and the playthrough driver that exercises the
               rules engine end to end. Nothing here ships to a player.
-Art/          Art and its atlases. Reference only — nothing in the repo reads
-              it yet, and icon mapping is out of scope until phase 3.
+Art/          Art, its atlases, and `manifest.json`, the one table that says
+              which picture is drawn for what. `Art/README.md` says how to
+              swap a picture.
               `Art/tools/make_placeholders.py` regenerates the stand-in sheets
               that were produced rather than supplied; their atlases carry
               `"placeholder": true`.
@@ -87,7 +91,7 @@ Art/          Art and its atlases. Reference only — nothing in the repo reads
 
 ```sh
 pnpm install              # once; installs the pinned TypeScript and Vitest
-pnpm run typecheck        # tsc --noEmit across every package
+pnpm run typecheck        # tsc --noEmit: packages + server, the web app, tools
 pnpm test                 # vitest run
 pnpm run test:watch       # the same, watching
 pnpm run test:update-golden
@@ -99,6 +103,9 @@ pnpm map:batch 50         # 50 seeds, the §11 distributions, no files
 
 pnpm game adventure       # play one map to a winner, turn by turn
 pnpm game                 # a random seed, printed first so it can be reused
+
+pnpm dev                  # the map viewer: http://localhost:5173/?seed=adventure
+pnpm build:web            # ... as a static page in apps/web/dist
 ```
 
 `pnpm-lock.yaml` pins the compiler, and `packageManager` in `package.json` pins
