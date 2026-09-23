@@ -91,6 +91,12 @@ export function buildArtCatalog(files: ArtFiles): ArtCatalog {
       problems.push(`${atlasFile(texture.name)}: a terrain texture must tile both ways ("tiles": "both")`);
     }
   }
+  // An adjustment for a sheet nothing draws would do nothing, silently: most
+  // likely a misspelt or renamed sheet whose picture is now drawn unedited.
+  const named = new Set(sheetsNamed(manifest));
+  for (const sheet of manifest.adjustments.keys()) {
+    if (!named.has(sheet)) problems.push(`manifest.json: adjustments.sheets.${sheet} names a sheet the manifest does not draw`);
+  }
   const roads = atlas(manifest.roads.sheet);
   if (roads !== undefined) {
     check(() => {

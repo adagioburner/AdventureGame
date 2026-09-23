@@ -137,6 +137,15 @@ export const PICTURE_DIRECTIONS: readonly number[] = [90, 60, 120, 30, 150, 0, 1
 const ROUNDS = 3;
 
 /**
+ * What any overlap with another POI's picture costs, however small, in rough
+ * pixels of road: as much as covering a plain node. Without it a corner's
+ * overlap cost next to nothing, and once the guards were drawn twice the size
+ * (Andrei, 2026-09-23) a crowded mountain ended with pictures touching and one
+ * guard standing over another POI's node, to save a little road elsewhere.
+ */
+const PICTURE_OVERLAP = 40;
+
+/**
  * [Andrei, review 2026-09-23] "can you try placing the POI images so that
  * they do not obscure roads and other POI".
  *
@@ -173,7 +182,7 @@ export function placePoiPictures(pictures: readonly PoiPicture[], around: Surrou
           if (at === index) return;
           const theirs = boxOf(at, choice[at] ?? 0);
           const shared = overlapArea(box, theirs);
-          if (shared > 0) cost += (150 * shared) / Math.max(1, Math.min(area(box), area(theirs)));
+          if (shared > 0) cost += PICTURE_OVERLAP + (150 * shared) / Math.max(1, Math.min(area(box), area(theirs)));
         });
         if (cost < bestCost - 1e-9) {
           bestCost = cost;

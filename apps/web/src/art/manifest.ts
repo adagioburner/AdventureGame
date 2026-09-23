@@ -40,6 +40,27 @@ export interface ArtManifest {
   readonly portraits: string;
   readonly dice: { readonly sheet: string };
   readonly shadows: { readonly opacity: number; readonly sheets: ReadonlyMap<string, readonly string[]> };
+  /** Edits made to a sheet as it loads, by sheet name; a sheet with no line is drawn as supplied. */
+  readonly adjustments: ReadonlyMap<string, SheetAdjustment>;
+}
+
+/**
+ * How a sheet is changed on load, so its PNG stays exactly as the artist
+ * supplied it and a replacement that already looks right just loses its line.
+ */
+export interface SheetAdjustment {
+  /** Each colour channel `c` in 0..1 becomes `c ** (1 / brightness)`: darks lift most, white stays white. `1` leaves it. */
+  readonly brightness: number;
+  /** How far each colour sits from its own grey, scaled: `1` leaves it, `2` doubles it. */
+  readonly saturation: number;
+  /** A contour round every sprite's picture, drawn behind it and over its shadow. */
+  readonly outline: SheetOutline | null;
+}
+
+export interface SheetOutline {
+  readonly color: string;
+  /** How thick, as a share of the sheet's typical sprite span, so it scales with the picture. */
+  readonly width: number;
 }
 
 export interface TerrainArt {
@@ -119,6 +140,9 @@ export function parseManifest(json: unknown): ArtManifest {
   const dice = record(root['dice'], 'manifest.json: dice');
   const shadows = record(root['shadows'], 'manifest.json: shadows');
   const shadowSheets = record(shadows['sheets'], 'manifest.json: shadows.sheets');
+  const adjustments = root['adjustments'] === undefined ? {} : record(root['adjustments'], 'manifest.json: adjustments');
+  const adjustedSheets =
+    adjustments['sheets'] === undefined ? {} : record(adjustments['sheets'], 'manifest.json: adjustments.sheets');
 
   return {
     terrain,
@@ -177,6 +201,12 @@ export function parseManifest(json: unknown): ArtManifest {
         ]),
       ),
     },
+    adjustments: new Map(
+      Object.entries(adjustedSheets).map(([sheet, entry]) => [
+        sheet,
+        parseAdjustment(entry, `manifest.json: adjustments.sheets.${sheet}`),
+      ]),
+    ),
   };
 }
 
@@ -278,6 +308,22 @@ function parsePoiRow(json: unknown, where: string): PoiArtRow {
     sheet: string(row['sheet'], `${where}.sheet`),
     size: positive(row['size'], `${where}.size`),
     borrowed: typeof borrowed === 'string' ? borrowed : null,
+  };
+}
+
+function parseAdjustment(json: unknown, where: string): SheetAdjustment {
+  const entry = record(json, where);
+  const outline = entry['outline'] === undefined ? null : record(entry['outline'], `${where}.outline`);
+  return {
+    brightness: entry['brightness'] === undefined ? 1 : positive(entry['brightness'], `${where}.brightness`),
+    saturation: entry['saturation'] === undefined ? 1 : nonNegative(entry['saturation'], `${where}.saturation`),
+    outline:
+      outline === null
+        ? null
+        : {
+            color: color(outline['color'], `${where}.outline.color`),
+            width: positive(outline['width'], `${where}.outline.width`),
+          },
   };
 }
 

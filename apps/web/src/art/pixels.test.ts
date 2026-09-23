@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { keyShadows, solidBounds, SOLID_ALPHA, standingAnchor, typicalSpan } from './pixels.ts';
+import {
+  adjustColors,
+  keyShadows,
+  outlinePictures,
+  solidBounds,
+  SOLID_ALPHA,
+  standingAnchor,
+  typicalSpan,
+} from './pixels.ts';
 
 function image(width: number, height: number, paint: (x: number, y: number) => [number, number, number, number]) {
   const pixels = new Uint8ClampedArray(width * height * 4);
@@ -112,5 +120,96 @@ describe('standingAnchor', () => {
   it('keeps an anchor that is already inside the picture', () => {
     expect(standingAnchor(sprite, { x: 110, y: 5, width: 80, height: 112 })).toEqual({ x: 50, y: 110 });
     expect(standingAnchor(sprite, null)).toEqual({ x: 50, y: 110 });
+  });
+});
+
+describe('adjustColors', () => {
+  it('lifts darks more than lights, keeps white and black, and leaves alpha alone', () => {
+    const row: [number, number, number, number][] = [
+      [64, 64, 64, 255],
+      [191, 191, 191, 200],
+      [255, 255, 255, 255],
+      [0, 0, 0, 77],
+    ];
+    const pixels = image(4, 1, (x) => row[x] ?? [0, 0, 0, 0]);
+    adjustColors(pixels, 2, 1);
+    // sqrt(0.25) = 0.5 and sqrt(0.75) = 0.866: the dark grey gains 64, the light one 30.
+    expect([...pixels]).toEqual([128, 128, 128, 255, 221, 221, 221, 200, 255, 255, 255, 255, 0, 0, 0, 77]);
+  });
+
+  it('pushes a colour away from its own grey, and leaves a grey as it is', () => {
+    const pixels = image(2, 1, (x) => (x === 0 ? [100, 150, 100, 255] : [120, 120, 120, 255]));
+    adjustColors(pixels, 1, 2);
+    const grey = 0.299 * 100 + 0.587 * 150 + 0.114 * 100;
+    expect([...pixels.slice(0, 3)]).toEqual([100, 150, 100].map((c) => Math.round(grey + (c - grey) * 2)));
+    expect([...pixels.slice(4, 8)]).toEqual([120, 120, 120, 255]);
+  });
+
+  it('does nothing at 1 and 1', () => {
+    const pixels = image(1, 1, () => [10, 200, 30, 255]);
+    adjustColors(pixels, 1, 1);
+    expect([...pixels]).toEqual([10, 200, 30, 255]);
+  });
+});
+
+describe('outlinePictures', () => {
+  // A 3×3 red square in the middle of a 13×13 cell, beside a second cell.
+  const cell = (x: number, y: number): [number, number, number, number] =>
+    x >= 5 && x < 8 && y >= 5 && y < 8 ? [200, 0, 0, 255] : [0, 0, 0, 0];
+
+  it('draws the contour round the picture, as thick on a diagonal as on a side, and not beyond', () => {
+    const pixels = image(13, 13, cell);
+    outlinePictures(pixels, 13, [{ x: 0, y: 0, width: 13, height: 13 }], 2, [255, 255, 255]);
+    const at = (x: number, y: number) => [...pixels.slice((y * 13 + x) * 4, (y * 13 + x) * 4 + 4)];
+    expect(at(6, 6)).toEqual([200, 0, 0, 255]);
+    expect(at(4, 6)).toEqual([255, 255, 255, 255]); // the first pixel out
+    expect(at(3, 6)).toEqual([255, 255, 255, 255]); // the second
+    expect(at(2, 6)[3]).toBe(0);
+    // Off the corner the contour rounds: (4, 4) is well inside it, (3, 3)
+    // only just reaches its edge, (2, 2) is clear.
+    expect(at(4, 4)).toEqual([255, 255, 255, 255]);
+    expect(at(3, 3)[3]).toBeGreaterThan(0);
+    expect(at(3, 3)[3]).toBeLessThan(64);
+    expect(at(2, 2)[3]).toBe(0);
+  });
+
+  it('anti-aliases a contour that ends part way through a pixel', () => {
+    const pixels = image(13, 13, cell);
+    outlinePictures(pixels, 13, [{ x: 0, y: 0, width: 13, height: 13 }], 1.5, [255, 255, 255]);
+    expect(pixels[(6 * 13 + 3) * 4 + 3]).toBe(128);
+  });
+
+  it('lays the contour over a keyed shadow and under the picture\'s soft edge', () => {
+    const pixels = image(13, 13, (x, y) =>
+      x === 4 && y === 6 ? [0, 0, 0, 77] : x === 5 && y === 6 ? [100, 0, 0, 128] : cell(x, y),
+    );
+    outlinePictures(pixels, 13, [{ x: 0, y: 0, width: 13, height: 13 }], 2, [255, 255, 255]);
+    const at = (x: number, y: number) => [...pixels.slice((y * 13 + x) * 4, (y * 13 + x) * 4 + 4)];
+    expect(at(4, 6)).toEqual([255, 255, 255, 255]);
+    // Half-opaque dark red over white: the edge blends into the contour, not the ground.
+    expect(at(5, 6)).toEqual([177, 127, 127, 255]);
+  });
+
+  it('keeps each sprite\'s contour inside its own cell', () => {
+    // The picture touches the right edge of the first cell; the second is empty.
+    const pixels = image(20, 5, (x, y) => (x >= 7 && x < 10 && y >= 1 && y < 4 ? [0, 0, 200, 255] : [0, 0, 0, 0]));
+    outlinePictures(
+      pixels,
+      20,
+      [
+        { x: 0, y: 0, width: 10, height: 5 },
+        { x: 10, y: 0, width: 10, height: 5 },
+      ],
+      2,
+      [255, 255, 255],
+    );
+    expect(pixels[(2 * 20 + 6) * 4 + 3]).toBe(255);
+    for (let x = 10; x < 20; x++) expect(pixels[(2 * 20 + x) * 4 + 3], `x ${x}`).toBe(0);
+  });
+
+  it('leaves an empty cell empty', () => {
+    const pixels = image(4, 4, () => [0, 0, 0, 0]);
+    outlinePictures(pixels, 4, [{ x: 0, y: 0, width: 4, height: 4 }], 2, [255, 255, 255]);
+    expect(pixels.every((value) => value === 0)).toBe(true);
   });
 });

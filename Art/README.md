@@ -49,7 +49,14 @@ the black mountain is mountain movement.
    translucent black so it darkens the ground it falls on. A replacement whose
    shadow is already translucent should lose its line under `shadows` in the
    manifest.
-5. **Run the tests.** `pnpm test` checks that every sheet and icon the
+5. **A sheet the game brightens or outlines.** A few of the supplied sheets
+   are edited as they load rather than in the PNG: the cottages and magic
+   buildings are brightened and their colours enriched, the guards get a
+   faint cream contour so they stand out on the mountains, and the statues
+   get a thin dark one. Each is one line under
+   `adjustments` in the manifest. A replacement that already looks right
+   should lose its line.
+6. **Run the tests.** `pnpm test` checks that every sheet and icon the
    manifest names exists, that each PNG is at least as large as its atlas
    says, that every POI kind the rules can produce has a picture, and that
    textures tile. A broken drop fails with one message listing every problem.
@@ -106,6 +113,13 @@ and ignored by the game.
   purple guard colours with the width of the ring round a guarded POI's node
   and the size of the guard's number, the road brush and width, and the node
   ovals.
+- `adjustments`: per sheet, edits made as it loads so the PNG stays as
+  supplied. `brightness` lifts darks and midtones (each channel `c` from 0 to
+  1 becomes `c^(1/brightness)`, so white stays white), `saturation` scales how
+  far each colour sits from its own grey, and `outline` draws a contour of
+  `color` round every picture on the sheet, behind the picture and over its
+  shadow, `width` thick as a share of the sheet's typical sprite. A line for
+  a sheet the manifest does not draw is reported as a problem.
 - `move_prospect`: which marker sprites draw §7.1's dots, crosses, waypoint
   flag and active-player ring, and their sizes.
 - `figurines`, `portraits`, `dice`: the player figures, their portrait crops
@@ -114,6 +128,9 @@ and ignored by the game.
 ## Placeholders
 
 `tools/make_placeholders.py` draws every sheet flagged `"placeholder": true`:
-the die, the road brush, the three terrain textures and the move markers. It
+the die, the road brush, the three terrain textures and the move markers.
+The plains texture's grass is drawn through the inverse of the isometric
+projection so it stands up on the map; anything a replacement texture shows
+standing up off the ground needs the same treatment, or it leans right. It
 writes the same bytes every run, so rerunning it after editing it changes only
 what was edited. `tools/make_portrait_crops.py` rederives the portrait boxes.

@@ -2,7 +2,15 @@ import { REWARD_KINDS, type RewardKind } from '@adventure/config';
 import { CanvasSource, Rectangle, Texture, type TextureSource } from 'pixi.js';
 import { atlasOf, type ArtCatalog, type SpriteRef } from '../../art/catalog.ts';
 import type { Atlas } from '../../art/atlas.ts';
-import { keyShadows, solidBounds, standingAnchor, typicalSpan } from '../../art/pixels.ts';
+import {
+  adjustColors,
+  hexToRgb,
+  keyShadows,
+  outlinePictures,
+  solidBounds,
+  standingAnchor,
+  typicalSpan,
+} from '../../art/pixels.ts';
 import type { SpriteShape } from '../placement.ts';
 
 /**
@@ -12,7 +20,9 @@ import type { SpriteShape } from '../placement.ts';
  * nothing but its files and its line in `Art/manifest.json`:
  *
  * 1. its baked-in shadow colours, if the manifest lists any, become a
- *    translucent shadow (`keyShadows`);
+ *    translucent shadow (`keyShadows`), and any `adjustments` the manifest
+ *    lists for it are made: brighter or richer colour (`adjustColors`), a
+ *    contour round each picture (`outlinePictures`);
  * 2. each sprite's solid extent is measured, and the median of those is the
  *    sheet's typical span, which the manifest's sizes are relative to; each
  *    extent is also kept as the sprite's shape, which is where the scene
@@ -133,13 +143,21 @@ function processSheet(
   const data = fullContext.getImageData(0, 0, full.width, full.height);
 
   const shadows = catalog.manifest.shadows.sheets.get(atlas.name);
-  if (shadows !== undefined) {
-    keyShadows(data.data, full.width, shadows, catalog.manifest.shadows.opacity);
-    fullContext.putImageData(data, 0, 0);
-  }
+  if (shadows !== undefined) keyShadows(data.data, full.width, shadows, catalog.manifest.shadows.opacity);
+  const adjustment = catalog.manifest.adjustments.get(atlas.name);
+  if (adjustment !== undefined) adjustColors(data.data, adjustment.brightness, adjustment.saturation);
 
-  const extents = atlas.sprites.map((sprite) => solidBounds(data.data, full.width, sprite));
+  let extents = atlas.sprites.map((sprite) => solidBounds(data.data, full.width, sprite));
+  // Measured before any contour, so a contour adds to the picture's size
+  // rather than shrinking the picture inside it.
   const typicalOriginal = typicalSpan(extents, Math.max(atlas.cellWidth, atlas.cellHeight));
+  const outline = adjustment?.outline ?? null;
+  if (outline !== null) {
+    outlinePictures(data.data, full.width, atlas.sprites, outline.width * typicalOriginal, hexToRgb(outline.color));
+    extents = atlas.sprites.map((sprite) => solidBounds(data.data, full.width, sprite));
+  }
+  if (shadows !== undefined || adjustment !== undefined) fullContext.putImageData(data, 0, 0);
+
   const scale = Math.min(1, MAX_TYPICAL_PX / typicalOriginal);
   const scaled = drawScaled(full, scale);
   const source = mipmapped(scaled).source;
