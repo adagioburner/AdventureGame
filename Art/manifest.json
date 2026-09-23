@@ -1,0 +1,116 @@
+{
+  "notes": "The one table that says which picture the game draws for what. Nothing in the code names a file in Art/: to swap a picture, replace the sheet (a <Name>_sheet.png plus its <Name>_atlas.json) and, if its name changed, change the one line below that names it. Every sheet is scaled on load so its typical sprite is `size` node spacings across, where one node spacing is the length of a typical road on the map, so a replacement drawn at any resolution needs no other change. Art/README.md walks through a swap.",
+  "terrain": {
+    "plains": {
+      "texture": "Plains_Texture",
+      "texture_size": 2.2,
+      "node_color": "#c8a266",
+      "dressing": [
+        { "sheet": "Plains_Fields", "size": 0.8, "weight": 1 },
+        { "sheet": "Plains_GrassRocks", "size": 0.4, "weight": 3 }
+      ],
+      "dressing_density": 0.9
+    },
+    "forest": {
+      "texture": "Forest_Texture",
+      "texture_size": 2.2,
+      "node_color": "#4e8a3a",
+      "dressing": [{ "sheet": "Forest_Trees", "size": 0.55, "weight": 1 }],
+      "dressing_density": 3.2
+    },
+    "mountain": {
+      "texture": "Mountains_Texture",
+      "texture_size": 2.2,
+      "node_color": "#8d8b86",
+      "dressing": [{ "sheet": "Mountains_Mountains", "size": 1.0, "weight": 1 }],
+      "dressing_density": 1.0
+    }
+  },
+  "pois": [
+    { "terrain": "plains", "reward": "plains_move", "guard": null, "sheet": "Plains_PlainsMovement", "size": 0.85 },
+    { "terrain": "plains", "reward": "forest_move", "guard": null, "sheet": "Plains_ForestMovement", "size": 0.85 },
+    { "terrain": "plains", "reward": "magic", "guard": null, "sheet": "Plains_Magic", "size": 0.85 },
+    { "terrain": "plains", "reward": "gold", "guard": "fighting", "sheet": "Plains_GoldGuardedByFighting", "size": 1.15 },
+    { "terrain": "forest", "reward": "mountain_move", "guard": null, "sheet": "Forest_MountainMovement", "size": 0.85 },
+    { "terrain": "forest", "reward": "fighting", "guard": null, "sheet": "Forest_Fighting", "size": 0.85 },
+    {
+      "terrain": "forest",
+      "reward": "gold",
+      "guard": "fighting",
+      "sheet": "Mountains_GoldGuardedByFighting",
+      "size": 0.8,
+      "borrowed": "Q20: forest gold has no sheet of its own yet, so it borrows mountain gold's fighting guardians."
+    },
+    { "terrain": "mountain", "reward": "gold", "guard": "fighting", "sheet": "Mountains_GoldGuardedByFighting", "size": 0.8 },
+    { "terrain": "mountain", "reward": "gold", "guard": "magic", "sheet": "Mountains_GoldGuardedByMagic", "size": 0.9 },
+    {
+      "terrain": "any",
+      "reward": "stamina",
+      "guard": null,
+      "sheet": "Plains_PlainsMovement",
+      "size": 0.85,
+      "borrowed": "Q20: stamina POIs come from surplus leaves on any terrain and have no sheet of their own yet, so they borrow the plains-movement houses."
+    }
+  ],
+  "icons": {
+    "size": 0.26,
+    "files": {
+      "plains_move": "Icons/plains_move.png",
+      "forest_move": "Icons/forest_move.png",
+      "mountain_move": "Icons/mountain_move.png",
+      "fighting": "Icons/fighting.png",
+      "magic": "Icons/magic.png",
+      "gold": "Icons/gold.png",
+      "stamina": "Icons/stamina.png"
+    }
+  },
+  "guards": {
+    "fighting": { "color": "#d8282b" },
+    "magic": { "color": "#9a3ad6" },
+    "contour": 0.035,
+    "number_size": 0.3
+  },
+  "roads": { "sheet": "Roads_Brush", "sprite": "Roads_Path", "width": 0.2 },
+  "nodes": { "radius": 0.1, "outline": "#2b2419" },
+  "move_prospect": {
+    "sheet": "Prospect_Markers",
+    "dot": {
+      "free": "Prospect_Dot_Free",
+      "stamina": "Prospect_Dot_Stamina",
+      "unreachable": "Prospect_Dot_Unreachable"
+    },
+    "cross": {
+      "free": "Prospect_Cross_Free",
+      "stamina": "Prospect_Cross_Stamina",
+      "unreachable": "Prospect_Cross_Unreachable"
+    },
+    "waypoint": "Prospect_Waypoint",
+    "active": "Prospect_ActiveRing",
+    "dot_size": 0.2,
+    "dot_spacing": 0.25,
+    "cross_size": 0.6,
+    "waypoint_size": 0.5,
+    "active_size": 0.5,
+    "cost_color": "#f4cc2c"
+  },
+  "figurines": { "sheet": "player_avatars", "size": 0.7 },
+  "portraits": "player_avatars_portraits.json",
+  "dice": { "sheet": "Dice_d6" },
+  "shadows": {
+    "notes": "Most supplied sheets bake their drop shadow in as an opaque flat grey, which would sit on the terrain as a grey patch. The loader turns exactly these colours into a translucent dark shadow instead. Delete a sheet's line when its replacement draws its own translucent shadow.",
+    "opacity": 0.3,
+    "sheets": {
+      "Forest_Fighting": ["#bbbbbb"],
+      "Forest_MountainMovement": ["#bbbbbb"],
+      "Forest_Trees": ["#bbbbbb"],
+      "Mountains_GoldGuardedByFighting": ["#bbbbbb"],
+      "Mountains_GoldGuardedByMagic": ["#bbbbbb", "#c7c7c7"],
+      "Plains_Fields": ["#bbbbbb"],
+      "Plains_ForestMovement": ["#bbbbbb"],
+      "Plains_GoldGuardedByFighting": ["#bbbbbb"],
+      "Plains_GrassRocks": ["#bbbbbb"],
+      "Plains_Magic": ["#bbbbbb"],
+      "Plains_PlainsMovement": ["#bbbbbb"]
+    }
+  }
+}

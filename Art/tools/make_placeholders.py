@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Generate the placeholder art assets Claude was asked for: the d6 roll
-animation (GDD.md §10 "die-roll animation") and the road/path brush pattern
-(§10 "terrain textures (all 3 types) + road/path brush pattern").
+animation (GDD.md §10 "die-roll animation"), the road/path brush pattern and
+the three terrain textures (§10 "terrain textures (all 3 types) + road/path
+brush pattern"), and the prospective-move markers (§10 "visual elements for
+showing a prospective move (path highlight, cross, waypoint marker)").
 
 These are placeholders. They exist so phases 3 and 4 of the implementation plan
 have something to bind to and can be swapped for real art without a code
@@ -366,12 +368,336 @@ def build_brush(art_dir: str) -> None:
             "tile to the edge's bearing and lays it from node to node. Three "
             "widths are supplied to tell a main route from a faint one; nothing "
             "in the design assigns them yet, so picking per edge is open. "
-            "`Art/Icons/roads.png` is NOT this: it is the brown wagon wheel, "
-            "i.e. §4.1's plains-movement reward icon."
+            "The brown wagon wheel in `Art/Icons/plains_move.png` is NOT this: "
+            "it is §4.1's plains-movement reward icon."
         ),
         "sprites": sprites,
     }
     with open(os.path.join(art_dir, "Roads_Brush_atlas.json"), "w") as fh:
+        json.dump(atlas, fh, indent=2)
+        fh.write("\n")
+
+
+# --- the terrain textures ---------------------------------------------------
+
+TEXTURE_SIZE = 256
+
+
+def hash01(*values: int) -> float:
+    """A portable integer hash to [0, 1), so the textures never depend on a
+    library's random stream."""
+    h = 0x811C9DC5
+    for v in values:
+        h ^= v & 0xFFFFFFFF
+        h = (h * 0x01000193) & 0xFFFFFFFF
+        h ^= h >> 15
+        h = (h * 0x2C1B3C6D) & 0xFFFFFFFF
+        h ^= h >> 12
+    return h / 2**32
+
+
+def tile_noise(x: float, y: float, period: int, seed: int) -> float:
+    """Value noise in [0, 1] that repeats every TEXTURE_SIZE pixels, because
+    its lattice has `period` cells across the tile and wraps."""
+    fx = x / TEXTURE_SIZE * period
+    fy = y / TEXTURE_SIZE * period
+    ix, iy = int(math.floor(fx)), int(math.floor(fy))
+    tx, ty = fx - ix, fy - iy
+    tx, ty = tx * tx * (3 - 2 * tx), ty * ty * (3 - 2 * ty)
+
+    def at(i: int, j: int) -> float:
+        return hash01(i % period, j % period, seed)
+
+    top = at(ix, iy) * (1 - tx) + at(ix + 1, iy) * tx
+    bottom = at(ix, iy + 1) * (1 - tx) + at(ix + 1, iy + 1) * tx
+    return top * (1 - ty) + bottom * ty
+
+
+def fbm(x: float, y: float, seed: int) -> float:
+    """Four octaves, each with an integer period, so the sum still tiles."""
+    total, weight = 0.0, 0.0
+    for octave, period in enumerate((4, 8, 16, 32)):
+        amp = 0.55**octave
+        total += amp * tile_noise(x, y, period, seed + octave * 101)
+        weight += amp
+    return total / weight
+
+
+def capsule(ax: float, ay: float, bx: float, by: float, radius: float):
+    """Signed distance to a line segment with round ends."""
+
+    def sdf(x: float, y: float) -> float:
+        px, py = x - ax, y - ay
+        vx, vy = bx - ax, by - ay
+        t = max(0.0, min(1.0, (px * vx + py * vy) / (vx * vx + vy * vy)))
+        return math.hypot(px - vx * t, py - vy * t) - radius
+
+    return sdf
+
+
+def ellipse(cx: float, cy: float, rx: float, ry: float, angle: float):
+    """Approximate signed distance to a rotated ellipse (fine at these sizes)."""
+    ca, sa = math.cos(-angle), math.sin(-angle)
+
+    def sdf(x: float, y: float) -> float:
+        dx, dy = x - cx, y - cy
+        lx, ly = dx * ca - dy * sa, dx * sa + dy * ca
+        k = math.hypot(lx / rx, ly / ry)
+        return (k - 1.0) * min(rx, ry)
+
+    return sdf
+
+
+def shade(color, amount: float):
+    r, g, b = color[:3]
+    return (
+        max(0, min(255, int(r + amount))),
+        max(0, min(255, int(g + amount))),
+        max(0, min(255, int(b + amount))),
+        255,
+    )
+
+
+def stamp_wrapped(canvas: Canvas, cx: float, cy: float, reach: float, make_sdf, color) -> None:
+    """Draw a feature and its copies across the tile edges, so it survives the
+    wrap and the texture still abuts itself with no seam."""
+    size = TEXTURE_SIZE
+    for dx in (-size, 0, size):
+        for dy in (-size, 0, size):
+            x, y = cx + dx, cy + dy
+            if -reach <= x <= size + reach and -reach <= y <= size + reach:
+                box = (int(x - reach) - 1, int(y - reach) - 1, int(x + reach) + 2, int(y + reach) + 2)
+                canvas.fill_sdf(box, make_sdf(x, y), color)
+
+
+# Colours are GDD.md §2's: plains light brown, forests green, mountains grey.
+TEXTURES = {
+    "Plains": {"base": (198, 170, 116), "amp": 30, "seed": 11},
+    "Forest": {"base": (86, 124, 62), "amp": 34, "seed": 23},
+    "Mountains": {"base": (142, 140, 134), "amp": 44, "seed": 37},
+}
+
+
+def texture_base(spec) -> Canvas:
+    size = TEXTURE_SIZE
+    canvas = Canvas(size, size)
+    base, amp, seed = spec["base"], spec["amp"], spec["seed"]
+    for y in range(size):
+        for x in range(size):
+            n = fbm(x + 0.5, y + 0.5, seed) - 0.5
+            color = shade(base, n * amp)
+            for sy in range(y * SS, y * SS + SS):
+                row = sy * canvas.sw
+                for sx in range(x * SS, x * SS + SS):
+                    i = (row + sx) * 4
+                    canvas.px[i : i + 4] = bytes(color)
+    return canvas
+
+
+def draw_plains(canvas: Canvas, seed: int) -> None:
+    grass = (116, 132, 60, 255)
+    grass_light = (150, 160, 78, 255)
+    pebble = (160, 140, 108, 255)
+    for i in range(46):
+        cx, cy = hash01(seed, i, 1) * TEXTURE_SIZE, hash01(seed, i, 2) * TEXTURE_SIZE
+        colour = grass if i % 3 else grass_light
+        for blade in range(3):
+            lean = (blade - 1) * 0.45 + (hash01(seed, i, blade, 3) - 0.5) * 0.3
+            length = 5 + hash01(seed, i, blade, 4) * 4
+            bx, by = cx + blade * 2 - 2, cy
+            tx, ty = bx + math.sin(lean) * length, by - math.cos(lean) * length
+            stamp_wrapped(
+                canvas, bx, by, length + 2,
+                lambda x, y, tx=tx - bx, ty=ty - by: capsule(x, y, x + tx, y + ty, 0.9),
+                colour,
+            )
+    for i in range(26):
+        cx, cy = hash01(seed, i, 7) * TEXTURE_SIZE, hash01(seed, i, 8) * TEXTURE_SIZE
+        r = 1.2 + hash01(seed, i, 9) * 1.6
+        stamp_wrapped(canvas, cx, cy, r + 1, lambda x, y, r=r: disc(x, y, r), pebble)
+
+
+def draw_forest(canvas: Canvas, seed: int) -> None:
+    dark = (58, 92, 44, 255)
+    light = (112, 150, 78, 255)
+    for i in range(90):
+        cx, cy = hash01(seed, i, 1) * TEXTURE_SIZE, hash01(seed, i, 2) * TEXTURE_SIZE
+        rx = 3 + hash01(seed, i, 3) * 4
+        ry = rx * (0.45 + hash01(seed, i, 4) * 0.3)
+        angle = hash01(seed, i, 5) * math.pi
+        stamp_wrapped(
+            canvas, cx, cy, rx + 1,
+            lambda x, y, rx=rx, ry=ry, a=angle: ellipse(x, y, rx, ry, a),
+            dark if i % 4 else light,
+        )
+
+
+def draw_mountains(canvas: Canvas, seed: int) -> None:
+    crack = (96, 94, 90, 255)
+    speck = (176, 174, 168, 255)
+    for i in range(14):
+        x, y = hash01(seed, i, 1) * TEXTURE_SIZE, hash01(seed, i, 2) * TEXTURE_SIZE
+        heading = hash01(seed, i, 3) * math.pi * 2
+        for seg in range(4):
+            heading += (hash01(seed, i, seg, 4) - 0.5) * 1.2
+            length = 6 + hash01(seed, i, seg, 5) * 8
+            nx, ny = x + math.cos(heading) * length, y + math.sin(heading) * length
+            stamp_wrapped(
+                canvas, x, y, length + 2,
+                lambda px, py, dx=nx - x, dy=ny - y: capsule(px, py, px + dx, py + dy, 0.8),
+                crack,
+            )
+            x, y = nx, ny
+    for i in range(60):
+        cx, cy = hash01(seed, i, 7) * TEXTURE_SIZE, hash01(seed, i, 8) * TEXTURE_SIZE
+        r = 0.8 + hash01(seed, i, 9) * 1.4
+        stamp_wrapped(canvas, cx, cy, r + 1, lambda x, y, r=r: disc(x, y, r), speck)
+
+
+def build_textures(art_dir: str) -> None:
+    features = {"Plains": draw_plains, "Forest": draw_forest, "Mountains": draw_mountains}
+    for name, spec in TEXTURES.items():
+        canvas = texture_base(spec)
+        features[name](canvas, spec["seed"])
+        stem = f"{name}_Texture"
+        write_png(os.path.join(art_dir, f"{stem}_sheet.png"), TEXTURE_SIZE, TEXTURE_SIZE, canvas.downsample())
+        atlas = {
+            "sheet": f"{stem}_sheet.png",
+            "cell_width": TEXTURE_SIZE,
+            "cell_height": TEXTURE_SIZE,
+            "placeholder": True,
+            "notes": (
+                f"Placeholder for GDD.md §10's {name.lower()} terrain texture. Drawn "
+                "top-down and seamless in both directions: the renderer repeats it "
+                "across every node of this terrain and lays it on the ground plane, "
+                "which is what foreshortens it into the isometric view. A "
+                "replacement must tile the same way, and should stay quiet enough "
+                "for POI images, dressing and roads to read on top of it."
+            ),
+            "sprites": [
+                {
+                    "id": stem,
+                    "x": 0,
+                    "y": 0,
+                    "width": TEXTURE_SIZE,
+                    "height": TEXTURE_SIZE,
+                    "anchor": {"x": 0, "y": 0},
+                    "tiles": "both",
+                }
+            ],
+        }
+        with open(os.path.join(art_dir, f"{stem}_atlas.json"), "w") as fh:
+            json.dump(atlas, fh, indent=2)
+            fh.write("\n")
+
+
+# --- the prospective-move markers --------------------------------------------
+
+MARKER = 128
+# GDD.md §7.1's path colours, one per state the rules engine reports.
+PROSPECT_STATES = [
+    ("Free", (76, 175, 80, 255)),  # green: covered by this turn's skill allowance
+    ("Stamina", (244, 204, 44, 255)),  # yellow: costs stamina
+    ("Unreachable", (196, 196, 196, 255)),  # grey: not reachable this turn
+]
+FLAG = (66, 128, 222, 255)
+RING = (255, 232, 120, 255)
+
+
+def build_markers(art_dir: str) -> None:
+    width, height = 4 * MARKER, 2 * MARKER
+    canvas = Canvas(width, height)
+    sprites = []
+
+    def sprite(sid, col, row, anchor, **extra):
+        entry = {
+            "id": sid,
+            "x": col * MARKER,
+            "y": row * MARKER,
+            "width": MARKER,
+            "height": MARKER,
+            "anchor": anchor,
+        }
+        entry.update(extra)
+        sprites.append(entry)
+
+    centre = {"x": MARKER // 2, "y": MARKER // 2}
+    for col, (state, colour) in enumerate(PROSPECT_STATES):
+        # Row 0: the dot the thick dotted path is made of.
+        ox, oy = col * MARKER, 0
+        cx, cy = ox + MARKER / 2, oy + MARKER / 2
+        box = (ox, oy, ox + MARKER, oy + MARKER)
+        canvas.fill_sdf(box, disc(cx, cy, 40), BLACK)
+        canvas.fill_sdf(box, disc(cx, cy, 32), colour)
+        canvas.fill_sdf(box, disc(cx - 9, cy - 9, 9), shade(colour, 40))
+        sprite(f"Prospect_Dot_{state}", col, 0, centre, role="dot", state=state.lower())
+
+        # Row 1: the destination cross.
+        oy = MARKER
+        cy = oy + MARKER / 2
+        box = (ox, oy, ox + MARKER, oy + MARKER)
+        arm = 40
+        for grow, fill in ((8, BLACK), (0, colour)):
+            for sign in (1, -1):
+                canvas.fill_sdf(
+                    box,
+                    capsule(cx - arm, cy - sign * arm, cx + arm, cy + sign * arm, 11 + grow),
+                    fill,
+                )
+        sprite(f"Prospect_Cross_{state}", col, 1, centre, role="cross", state=state.lower())
+
+    # The waypoint marker stands up on its node, so it anchors at the foot of
+    # its pole like every figure on the POI sheets.
+    ox, oy = 3 * MARKER, 0
+    box = (ox, oy, ox + MARKER, oy + MARKER)
+    foot_x, foot_y = ox + 44, oy + 117
+    canvas.fill_sdf(box, ellipse(foot_x, foot_y, 16, 6, 0.0), BLACK)
+    canvas.fill_sdf(box, capsule(foot_x, foot_y, foot_x, oy + 14, 6), BLACK)
+    canvas.fill_sdf(box, capsule(foot_x, foot_y - 2, foot_x, oy + 16, 2.5), (120, 90, 60, 255))
+
+    def pennant(grow: float):
+        ax, ay, bx, by, tx, ty = foot_x, oy + 14, foot_x, oy + 62, ox + 112, oy + 38
+
+        def sdf(x: float, y: float) -> float:
+            # Inside test for a triangle, as a distance-like value.
+            def side(px, py, qx, qy):
+                return ((x - px) * (qy - py) - (y - py) * (qx - px)) / math.hypot(qx - px, qy - py)
+
+            return max(-side(ax, ay, bx, by), -side(bx, by, tx, ty), -side(tx, ty, ax, ay)) - grow
+
+        return sdf
+
+    canvas.fill_sdf(box, pennant(6), BLACK)
+    canvas.fill_sdf(box, pennant(0), FLAG)
+    sprite("Prospect_Waypoint", 3, 0, {"x": foot_x - ox, "y": foot_y - oy}, role="waypoint")
+
+    # The active player's ring, laid on the ground under their figurine.
+    ox, oy = 3 * MARKER, MARKER
+    cx, cy = ox + MARKER / 2, oy + MARKER / 2
+    box = (ox, oy, ox + MARKER, oy + MARKER)
+    canvas.fill_sdf(box, lambda x, y: abs(math.hypot(x - cx, y - cy) - 46) - 12, BLACK)
+    canvas.fill_sdf(box, lambda x, y: abs(math.hypot(x - cx, y - cy) - 46) - 6, RING)
+    sprite("Prospect_ActiveRing", 3, 1, centre, role="active")
+
+    write_png(os.path.join(art_dir, "Prospect_Markers_sheet.png"), width, height, canvas.downsample())
+    atlas = {
+        "sheet": "Prospect_Markers_sheet.png",
+        "cell_width": MARKER,
+        "cell_height": MARKER,
+        "placeholder": True,
+        "notes": (
+            "Placeholder for GDD.md §10's visual elements for a prospective move, "
+            "coloured per §7.1: green where this turn's skill allowance covers the "
+            "step, yellow where it costs stamina, grey where it is out of reach this "
+            "turn. The dots make the thick dotted line and the crosses mark the "
+            "destination; both, and the active player's ring, are drawn top-down "
+            "and laid on the ground by the renderer, which is what turns the flat X "
+            "into the isometric cross §7.1 asks for. The waypoint flag stands up on "
+            "its node instead, so it is drawn upright and anchored at its foot."
+        ),
+        "sprites": sprites,
+    }
+    with open(os.path.join(art_dir, "Prospect_Markers_atlas.json"), "w") as fh:
         json.dump(atlas, fh, indent=2)
         fh.write("\n")
 
@@ -381,7 +707,9 @@ def main() -> None:
     art_dir = os.path.normpath(art_dir)
     build_die(art_dir)
     build_brush(art_dir)
-    print(f"wrote Dice_d6 and Roads_Brush into {art_dir}")
+    build_textures(art_dir)
+    build_markers(art_dir)
+    print(f"wrote Dice_d6, Roads_Brush, the terrain textures and Prospect_Markers into {art_dir}")
 
 
 if __name__ == "__main__":

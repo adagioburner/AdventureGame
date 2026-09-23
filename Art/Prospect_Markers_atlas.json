@@ -1,0 +1,111 @@
+{
+  "sheet": "Prospect_Markers_sheet.png",
+  "cell_width": 128,
+  "cell_height": 128,
+  "placeholder": true,
+  "notes": "Placeholder for GDD.md \u00a710's visual elements for a prospective move, coloured per \u00a77.1: green where this turn's skill allowance covers the step, yellow where it costs stamina, grey where it is out of reach this turn. The dots make the thick dotted line and the crosses mark the destination; both, and the active player's ring, are drawn top-down and laid on the ground by the renderer, which is what turns the flat X into the isometric cross \u00a77.1 asks for. The waypoint flag stands up on its node instead, so it is drawn upright and anchored at its foot.",
+  "sprites": [
+    {
+      "id": "Prospect_Dot_Free",
+      "x": 0,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "anchor": {
+        "x": 64,
+        "y": 64
+      },
+      "role": "dot",
+      "state": "free"
+    },
+    {
+      "id": "Prospect_Cross_Free",
+      "x": 0,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "anchor": {
+        "x": 64,
+        "y": 64
+      },
+      "role": "cross",
+      "state": "free"
+    },
+    {
+      "id": "Prospect_Dot_Stamina",
+      "x": 128,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "anchor": {
+        "x": 64,
+        "y": 64
+      },
+      "role": "dot",
+      "state": "stamina"
+    },
+    {
+      "id": "Prospect_Cross_Stamina",
+      "x": 128,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "anchor": {
+        "x": 64,
+        "y": 64
+      },
+      "role": "cross",
+      "state": "stamina"
+    },
+    {
+      "id": "Prospect_Dot_Unreachable",
+      "x": 256,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "anchor": {
+        "x": 64,
+        "y": 64
+      },
+      "role": "dot",
+      "state": "unreachable"
+    },
+    {
+      "id": "Prospect_Cross_Unreachable",
+      "x": 256,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "anchor": {
+        "x": 64,
+        "y": 64
+      },
+      "role": "cross",
+      "state": "unreachable"
+    },
+    {
+      "id": "Prospect_Waypoint",
+      "x": 384,
+      "y": 0,
+      "width": 128,
+      "height": 128,
+      "anchor": {
+        "x": 44,
+        "y": 117
+      },
+      "role": "waypoint"
+    },
+    {
+      "id": "Prospect_ActiveRing",
+      "x": 384,
+      "y": 128,
+      "width": 128,
+      "height": 128,
+      "anchor": {
+        "x": 64,
+        "y": 64
+      },
+      "role": "active"
+    }
+  ]
+}

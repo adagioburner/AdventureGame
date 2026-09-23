@@ -2,14 +2,26 @@ import type { GameState, NodeId, PathPreview } from '@adventure/core';
 import type { Camera, Projection } from './isometric.ts';
 
 /**
- * Draw layers, back to front. Separated because they invalidate on completely
- * different schedules: terrain and dressing are generated once per map, POI
- * markers change only when a reward is claimed, and the path overlay changes on
- * every mouse move.
+ * Draw layers. Separated because they invalidate on completely different
+ * schedules: terrain, roads, nodes and dressing are drawn once per map, POI
+ * markers change only when a reward is claimed, characters when someone
+ * moves, and the path overlay on every mouse move.
+ *
+ * They are *logical* layers, not a back-to-front order. Isometric depth
+ * decides the order: a tree in front of a castle has to cover it, so
+ * dressing, POI images and characters share one depth-sorted plane. What the
+ * renderer actually stacks, bottom to top, is
+ *
+ *   1. the ground — `terrain`, `edges`, `nodes` — laid through the projection;
+ *   2. everything standing — `dressing`, `pois`, `characters` — sorted by depth;
+ *   3. the `path-overlay`, on the ground but drawn over what stands on it, so
+ *      a planned route is never hidden behind a building;
+ *   4. `ui`: reward icons, guard numbers and stamina costs, always readable.
  *
  * [SOURCE §6] Terrain textures, eye-candy billboards, road/path brush, POI and
  * guardian images, character figurines, the die-roll animation, and the
- * prospective-move visuals are all art (§10).
+ * prospective-move visuals are all art (§10); which picture is used for each
+ * is `Art/manifest.json`'s business and nobody else's.
  */
 export type SceneLayer = 'terrain' | 'dressing' | 'edges' | 'nodes' | 'pois' | 'path-overlay' | 'characters' | 'ui';
 
@@ -23,18 +35,4 @@ export interface MapRenderer {
   /** [SOURCE §4] Shift-click waypoint marker. */
   setWaypoint(node: NodeId | null): void;
   invalidate(layer: SceneLayer): void;
-}
-
-/**
- * How a POI, a guardian, a terrain tile or a reward icon turns into a picture.
- *
- * **Out of scope for this pass, by instruction.** The `Art/` folder holds
- * placeholder sheets (a PNG plus a same-named JSON per sheet, images not to
- * scale with each other), but sheet extraction, sizing and the icon-to-reward
- * mapping are all still to be settled with the designer. Nothing in the repo
- * reads `Art/`, and `Poi.artVariant` is only a stable per-POI random index —
- * what it indexes into is decided here, later.
- */
-export interface ArtBinding {
-  readonly name: string;
 }
