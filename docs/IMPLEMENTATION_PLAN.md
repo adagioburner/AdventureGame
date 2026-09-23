@@ -1,10 +1,11 @@
 # Implementation plan
 
-Status: **agreed; phases 0–3 done, phase 4 next.** This plan is derived from the
+Status: **agreed; phases 0–4 done, phase 5 next.** This plan is derived from the
 five-step order Andrei proposed, checked against the design of record and
 against what is actually in the repo today. Phase 0 landed the test harness,
-phase 1 the map generator, phase 2 the rules engine and phase 3 the map as a
-player sees it; everything from phase 4 on is still seams.
+phase 1 the map generator, phase 2 the rules engine, phase 3 the map as a
+player sees it and phase 4 a hot seat game played on it; everything from
+phase 5 on is still seams.
 
 The design of record is [`GDD.md`](../GDD.md), with
 [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) for component boundaries,
@@ -121,9 +122,9 @@ half needs the AI, so it sits at the end of phase 5.
 |---|---|---|
 | [0](#phase-0--test-and-check-infrastructure) ✅ | Vitest, `pnpm test`, second CI check | new |
 | [1](#phase-1--map-generation) ✅ | Distance metric, the eight pipeline steps, rewards, guards, a human-viewable map dump, the map harness | 1 |
-| [2](#phase-2--rules-engine-headless) | §7/§8 movement, interaction, turn order, victory — pure, tested | part of 2 |
-| [3](#phase-3--art-binding-and-the-isometric-renderer) | Atlas loader, reward-kind-to-sheet mapping, isometric projection, draw layers | new |
-| [4](#phase-4--hotseat-ui) | Pan/zoom, move mode, path preview, End Turn, Rest, stats, game end | 2 |
+| [2](#phase-2--rules-engine-headless) ✅ | §7/§8 movement, interaction, turn order, victory — pure, tested | part of 2 |
+| [3](#phase-3--art-binding-and-the-isometric-renderer) ✅ | Atlas loader, reward-kind-to-sheet mapping, isometric projection, draw layers | new |
+| [4](#phase-4--hotseat-ui) ✅ | Pan/zoom, move mode, path preview, End Turn, Rest, stats, game end | 2 |
 | [5](#phase-5--ai-players-the-engine) | MCTS `search()`, rollouts, self-play harness, balancing pass | part of 5 |
 | [6](#phase-6--server-foundation-auth-and-lobby) | Host decision made real, transport, auth, game list, join/accept setup | 3 |
 | [7](#phase-7--online-play) | Authoritative state, broadcast, reconnect, message board, out-of-turn planning, GM controls | 4 |
@@ -617,7 +618,7 @@ Five things worth knowing, three of them only visible once games ran:
 
 ---
 
-## Phase 3 — art binding and the isometric renderer
+## Phase 3 — art binding and the isometric renderer — **done**
 
 **This is the player-facing map** — the one drawn the way §1.3 and §7.1
 describe it, with node images, dressing, reward icons, guard numbers and road
@@ -789,7 +790,7 @@ placeholder** — and that shaped most of what follows.
 
 ---
 
-## Phase 4 — hotseat UI
+## Phase 4 — hotseat UI — **done**
 
 §7.2's hotseat is not a second client: it is the §7.1 UI with
 `allowOutOfTurnPlanning: false`, which makes the move-mode controller refuse
@@ -833,6 +834,72 @@ feature would guarantee drift.
 
 **Done when:** a full hotseat game is playable end to end in a browser, with a
 winner, and every number on screen came out of `@adventure/core`.
+
+### What actually landed
+
+All seven items, as the page `pnpm build:web` builds and the published viewer
+now plays: pick a map by its seed, name the two seats and choose their
+figurines, then play it out on one screen until the engine declares a winner.
+31 new tests, 331 in all.
+
+- **The move-mode controller is one class for both modes**
+  (`interaction/moveMode.ts`). It knows the mode it runs in and the seats this
+  screen controls, and nothing else about hotseat; `modes/hotseat.ts`'s
+  `HOTSEAT_MODE` turns out-of-turn planning off, so `enter()` answers
+  `not_your_turn` for the other seat. It commits `TurnAction`s through a
+  callback and draws nothing, so phase 7 wires the same controller to a
+  transport. A test plays a whole game through it, seat after seat, to a
+  winner.
+- **`HotseatGame` is the only local writer** (`modes/hotseat.ts`). It builds
+  the state with `createGameState`, puts both seats on
+  `chooseStartingNode(map, rng(map.seed).fork('starting-node'))`, and plays each
+  action through `applyAction` with a `createDiceSource` of its own. The dice
+  seed is drawn fresh for every game and printed at the top of the turn log,
+  so any game can be replayed number for number; nothing online imports it.
+- **A move keeps the waypoint it was planned through.** `MoveAction` gained an
+  optional `waypoint`, and `applyMove` saves it with the route it could not
+  finish, so a player's next turn reopens on that route with its waypoint flag
+  still up. Before this, only the path survived and the flag vanished.
+- **End Turn plays the turn out in three beats**: the figure walks the steps
+  the engine says it walked, the die tumbles if a guard was faced, then the
+  result card holds the matching face beside "4 rolled + 2 fighting = 6
+  against 5" and says what was taken or that the gold stays. The engine has
+  already resolved the turn before the first beat; the beats only reveal it.
+- **Every number on screen comes from the engine**: the stats panel shows the
+  engine's seven stats for each player and the free steps left in this turn's
+  allowance, the route's colours and its hint ("All 9 steps this turn, for
+  9 stamina") come from `previewPath`, and the end card names the engine's
+  `winners` and the gold `unclaimedGoldUnits` says is left. The browser check below compares them to a second
+  copy of the engine after every turn.
+- **The turn log says what happened in words** (`page/journal.ts`), held to
+  the bar Andrei set for PR #11's log: where each player was heading, which
+  terrain each step entered and whether a free step or stamina paid for it,
+  why a walk stopped and what was saved, each roll with its sum, and every
+  player's stats after the turn. A test reads §8's worked example back in
+  those words.
+- **Defaults the plan did not settle**, each a small change if Andrei wants
+  otherwise:
+  - A "Plan a move" button sits beside tapping your figure, and a
+    "Waypoint" button arms the next tap as the waypoint, because a touch
+    screen has no shift key. "Find" centres the map on the current player.
+  - End Turn with no route drawn means stay put, which is §8's way to fight a
+    guard again from its node; Rest is its own button.
+  - There is no hand-off curtain between seats: a notice names the next
+    player and their card lights up. §7.2 has no hidden information, so
+    nothing needs hiding while the device changes hands.
+  - Tapping a POI's picture means its node, since the picture stands beside
+    the node rather than on it.
+  - The sample route and its toggle are gone from the page; the route drawn
+    is now always the current player's own.
+- **A browser check plays whole games by clicking.** A Playwright script (kept
+  out of the repo, like the phase 3 screenshots) taps the figure, taps the
+  target, shift-taps or uses the Waypoint button, presses End Turn or Rest,
+  and after every turn compares what the page shows, down to each stat in the
+  panel, with a second copy of the engine fed the same actions and the page's
+  dice seed. It found one real bug: an animation frame stamped a moment
+  before the walk began stalled End Turn for good, which now cannot happen.
+- **A closed tab loses the game**, as P3 says: nothing is saved, and reload
+  starts a new setup on the same map.
 
 ---
 

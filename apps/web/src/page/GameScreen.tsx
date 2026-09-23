@@ -90,19 +90,23 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
     }
     setResult(null);
     setInFlight(planned);
-    void playOut(turn, before).then(() => {
-      setWalker(null);
-      setShown(turn.after);
-      setEntries((current) => [journalEntry(turn, before), ...current]);
-      setInFlight(null);
-      controller.setGame(turn.after);
-      if (turn.after.status === 'finished') {
-        setEndOpen(true);
-        return;
-      }
-      const next = turn.after.players[turn.after.turn.activeSeat - 1];
-      if (next !== undefined) say(`${next.name}’s turn`);
-    });
+    // Whatever happens while it plays out, the turn has been played: the
+    // page must end up showing it, never stuck part-way.
+    void playOut(turn, before)
+      .catch(() => undefined)
+      .then(() => {
+        setWalker(null);
+        setShown(turn.after);
+        setEntries((current) => [journalEntry(turn, before), ...current]);
+        setInFlight(null);
+        controller.setGame(turn.after);
+        if (turn.after.status === 'finished') {
+          setEndOpen(true);
+          return;
+        }
+        const next = turn.after.players[turn.after.turn.activeSeat - 1];
+        if (next !== undefined) say(`${next.name}’s turn`);
+      });
   };
 
   /** The walk, then the die: what End Turn shows before the result is revealed. */
@@ -239,7 +243,8 @@ function walk(player: PlayerId, nodes: readonly Point[], show: (walker: Walker) 
     }
     const start = performance.now();
     const frame = (now: number): void => {
-      const t = Math.min(1, (now - start) / total);
+      // A frame's timestamp can be a little earlier than `start`.
+      const t = Math.min(1, Math.max(0, (now - start) / total));
       const along = t * steps;
       const index = Math.min(steps - 1, Math.floor(along));
       const a = nodes[index] as Point;
