@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { hexToRgb, keyShadows, silhouette, solidBounds, SOLID_ALPHA, typicalSpan } from './pixels.ts';
+import { hexToRgb, keyShadows, silhouette, solidBounds, SOLID_ALPHA, standingAnchor, typicalSpan } from './pixels.ts';
 
 function image(width: number, height: number, paint: (x: number, y: number) => [number, number, number, number]) {
   const pixels = new Uint8ClampedArray(width * height * 4);
@@ -84,6 +84,20 @@ describe('solidBounds and typicalSpan', () => {
     const box = (width: number, height: number) => ({ x: 0, y: 0, width, height });
     expect(typicalSpan([box(10, 4), box(3, 30), box(20, 20), null], 99)).toBe(20);
     expect(typicalSpan([null], 99)).toBe(99);
+  });
+});
+
+describe('standingAnchor', () => {
+  // A sprite in the second cell of a row, 100 wide and 120 tall.
+  const sprite = { x: 100, y: 0, width: 100, height: 120, anchor: { x: 50, y: 110 } };
+
+  it('stands a figure on its feet when the atlas anchor is down in its baked shadow', () => {
+    expect(standingAnchor(sprite, { x: 130, y: 10, width: 40, height: 70 })).toEqual({ x: 50, y: 80 });
+  });
+
+  it('keeps an anchor that is already inside the picture', () => {
+    expect(standingAnchor(sprite, { x: 110, y: 5, width: 80, height: 112 })).toEqual({ x: 50, y: 110 });
+    expect(standingAnchor(sprite, null)).toEqual({ x: 50, y: 110 });
   });
 });
 

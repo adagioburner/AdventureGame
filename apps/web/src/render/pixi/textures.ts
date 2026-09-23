@@ -2,7 +2,7 @@ import { REWARD_KINDS, type GuardType, type RewardKind } from '@adventure/config
 import { CanvasSource, Rectangle, Texture, type TextureSource } from 'pixi.js';
 import { atlasOf, type ArtCatalog, type SpriteRef } from '../../art/catalog.ts';
 import type { Atlas } from '../../art/atlas.ts';
-import { keyShadows, silhouette, solidBounds, typicalSpan } from '../../art/pixels.ts';
+import { keyShadows, silhouette, solidBounds, standingAnchor, typicalSpan } from '../../art/pixels.ts';
 
 /**
  * `Art/` turned into GPU textures, once, when the page opens.
@@ -129,7 +129,8 @@ function processSheet(
   const scale = Math.min(1, MAX_TYPICAL_PX / typicalOriginal);
   const scaled = drawScaled(full, scale);
   const source = mipmapped(scaled).source;
-  const frames = atlas.sprites.map((sprite) => frameTexture(source, sprite, scale));
+  const anchors = atlas.sprites.map((sprite, index) => standingAnchor(sprite, extents[index] ?? null));
+  const frames = atlas.sprites.map((sprite, index) => frameTexture(source, sprite, anchors[index] ?? sprite.anchor, scale));
 
   const contours = new Map<string, readonly Texture[]>();
   const sheet: SheetTextures = {
@@ -143,7 +144,9 @@ function processSheet(
       if (cached !== undefined) return cached;
       const outlined = contourSheet(scaled, atlas, scale, catalog.manifest.guards.colors[guard], radius);
       const outlinedSource = mipmapped(outlined).source;
-      const result = atlas.sprites.map((sprite) => frameTexture(outlinedSource, sprite, scale));
+      const result = atlas.sprites.map((sprite, index) =>
+        frameTexture(outlinedSource, sprite, anchors[index] ?? sprite.anchor, scale),
+      );
       contours.set(key, result);
       return result;
     },
@@ -194,12 +197,17 @@ function contourSheet(
   return out;
 }
 
-function frameTexture(source: TextureSource, sprite: Atlas['sprites'][number], scale: number): Texture {
+function frameTexture(
+  source: TextureSource,
+  sprite: Atlas['sprites'][number],
+  anchor: { readonly x: number; readonly y: number },
+  scale: number,
+): Texture {
   const frame = new Rectangle(sprite.x * scale, sprite.y * scale, sprite.width * scale, sprite.height * scale);
   return new Texture({
     source,
     frame,
-    defaultAnchor: { x: sprite.anchor.x / sprite.width, y: sprite.anchor.y / sprite.height },
+    defaultAnchor: { x: anchor.x / sprite.width, y: anchor.y / sprite.height },
   });
 }
 

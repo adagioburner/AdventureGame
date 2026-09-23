@@ -152,6 +152,24 @@ export function typicalSpan(extents: readonly (Rect | null)[], fallback: number)
 }
 
 /**
+ * Where a sprite stands, cell-relative. The atlas anchor, unless it sits below
+ * the picture's lowest solid pixel: most supplied sheets put the anchor at the
+ * foot of the baked shadow, which falls towards the viewer, and a guardian
+ * stood there floats a good way behind its node. Once the shadow is keyed it is
+ * not picture any more, so the sprite stands on its own lowest solid pixel
+ * instead. An anchor already inside the picture (a marker's centre, a figure
+ * anchored at its feet) is kept as it is.
+ */
+export function standingAnchor(
+  sprite: Rect & { readonly anchor: { readonly x: number; readonly y: number } },
+  extent: Rect | null,
+): { readonly x: number; readonly y: number } {
+  if (extent === null) return sprite.anchor;
+  const lowest = extent.y + extent.height - sprite.y;
+  return { x: sprite.anchor.x, y: Math.min(sprite.anchor.y, lowest) };
+}
+
+/**
  * Turn every solid pixel `color` and every other one clear: a guardian's
  * silhouette, for its contour. Specks of one or two stray pixels — export
  * noise at the edge of a shadow — are dropped first (a morphological
