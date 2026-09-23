@@ -13,6 +13,9 @@ import { Players } from './Players.tsx';
 import { TurnControls } from './TurnControls.tsx';
 import { TurnLog } from './TurnLog.tsx';
 
+/** The page's phone layout, as `index.html` switches to it. */
+const PHONE = '(max-width: 899px)';
+
 /** How long End Turn's walk takes per step, the die tumbles, and a notice stays up. */
 export const timing = { stepMs: 220, tumbleMs: 1100, noticeMs: 2200 };
 
@@ -151,8 +154,11 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
   const plan = (): void => {
     if (active === undefined) return;
     const refused = controller.enter(active.id);
-    if (refused !== null) refuse(refused);
-    else setResult(null);
+    if (refused !== null) return refuse(refused);
+    setResult(null);
+    // A phone shows the whole map too small to find a figure or tap a node,
+    // so planning from the button there starts close in on the player.
+    if (window.matchMedia(PHONE).matches) findActive();
   };
   const findActive = (): void => {
     if (active !== undefined) handle.current?.centerOn(active.position);
@@ -224,7 +230,8 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
         {result === null ? null : (
           <ResultCard catalog={catalog} turn={result.turn} rolling={result.rolling} onClose={() => setResult(null)} />
         )}
-        {shown.status === 'finished' && endOpen && inFlight === null ? (
+        {/* The winning turn's own card comes first; OK on it brings up the end. */}
+        {shown.status === 'finished' && endOpen && inFlight === null && result === null ? (
           <EndCard catalog={catalog} state={shown} onNewGame={onNewGame} onClose={() => setEndOpen(false)} />
         ) : null}
       </main>
