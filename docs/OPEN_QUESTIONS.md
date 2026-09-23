@@ -934,8 +934,12 @@ empty corner of its box. The rows marked `on_node` in `Art/manifest.json`, the
 guardians, stand with their feet 60% of the way from the node's centre to its
 rim, in one of the same seven directions. Where every such spot would cover a
 neighbouring node or image, which happens on a crowded mountain (8 of the 19
-on `adventure`), the guardian stands beside its node instead. GDD §3 carries
-the ruling as a `[SOURCE §1, review]` note after Q31's.
+on `adventure`), the guardian stands beside its node instead; asked, Andrei
+kept that rule. Standing dressing (trees, fields, grass and rocks) never
+covers a POI's picture or its icons. Asked whether that should cover the
+trees or only the fields that prompted it, he answered *"let's have the POI
+images always unobscured"*. GDD §3 carries the ruling as a
+`[SOURCE §1, review]` note after Q31's.
 
 ### Q36. ~~How is a claimed POI drawn?~~ — **answered 2026-09-23: its picture does not change**
 
