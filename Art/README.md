@@ -22,8 +22,8 @@ supplied atlases name a file that was renamed after they were written.
 The icons are named for the reward kind they stand for (`plains_move.png`,
 `forest_move.png`, `mountain_move.png`, `fighting.png`, `magic.png`, `gold.png`,
 `stamina.png`). They are matched by picture, not by the names they arrived
-with: the wagon wheel is plains movement, the tree is forest movement, the
-mountain is mountain movement.
+with: the wagon wheel is plains movement, the green foot is forest movement,
+the black mountain is mountain movement.
 
 ## Swapping a picture
 
@@ -58,7 +58,6 @@ mountain is mountain movement.
   "sheet": "Plains_Magic_sheet.png",
   "cell_width": 457,
   "cell_height": 587,
-  "placeholder": true,
   "sprites": [
     { "id": "Plains_Magic_01", "x": 0, "y": 0, "width": 457, "height": 587,
       "anchor": { "x": 228, "y": 575 } }
@@ -75,7 +74,8 @@ pixel, so its feet and not its shadow touch the node. Sprite ids must
 be unique within a sheet. Optional sprite fields: `tiles` (`"both"` for a
 terrain texture, `"horizontal"` for a road stroke), `centerline_y` for where a
 stroke's centre runs, and `role`, `state` and `value` labelling marker and die
-sprites. Anything else, such as `source_box_in_original`, is there for people
+sprites. A generated sheet also carries `"placeholder": true` at the top
+level. Anything else, such as `source_box_in_original`, is there for people
 and ignored by the game.
 
 ## How the manifest is organised
