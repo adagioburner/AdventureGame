@@ -91,7 +91,10 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
       };
       apply();
 
+      // Pixi's `resizeTo` follows the window only, and on a phone the map's
+      // box also changes as the panels round it do, so resize the canvas here.
       const observer = new ResizeObserver(() => {
+        app.resize();
         camera.setFit(fit(), viewport());
         if (!touched) camera.resetToFit();
         apply();

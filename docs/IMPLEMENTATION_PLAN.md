@@ -881,7 +881,9 @@ figurines, then play it out on one screen until the engine declares a winner.
   otherwise:
   - A "Plan a move" button sits beside tapping your figure, and a
     "Waypoint" button arms the next tap as the waypoint, because a touch
-    screen has no shift key. "Find" centres the map on the current player.
+    screen has no shift key. "Find" centres the map on the current player,
+    and on a phone "Plan a move" does too, since the whole map there is too
+    small to find a figure or tap a node.
   - End Turn with no route drawn means stay put, which is §8's way to fight a
     guard again from its node; Rest is its own button.
   - There is no hand-off curtain between seats: a notice names the next
@@ -891,13 +893,18 @@ figurines, then play it out on one screen until the engine declares a winner.
     the node rather than on it.
   - The sample route and its toggle are gone from the page; the route drawn
     is now always the current player's own.
-- **A browser check plays whole games by clicking.** A Playwright script (kept
-  out of the repo, like the phase 3 screenshots) taps the figure, taps the
-  target, shift-taps or uses the Waypoint button, presses End Turn or Rest,
-  and after every turn compares what the page shows, down to each stat in the
-  panel, with a second copy of the engine fed the same actions and the page's
-  dice seed. It found one real bug: an animation frame stamped a moment
-  before the walk began stalled End Turn for good, which now cannot happen.
+- **A browser check plays whole games by clicking**, at desktop and at phone
+  size. A Playwright script (kept out of the repo, like the phase 3
+  screenshots) taps the figure, taps the target, shift-taps or uses the
+  Waypoint button, presses End Turn or Rest, and after every turn compares
+  what the page shows, down to each stat in the panel, with a second copy of
+  the engine fed the same actions and the page's dice seed. Games of 163 and
+  153 turns ran to a winner with every number matching. It found three real
+  bugs, all fixed: an animation frame stamped a moment before the walk began
+  stalled End Turn for good; on a phone the end card covered the OK button of
+  the winning turn's result card; and the map's canvas kept its first size
+  when the panels round it changed height, because PixiJS's `resizeTo`
+  follows the window only.
 - **A closed tab loses the game**, as P3 says: nothing is saved, and reload
   starts a new setup on the same map.
 
