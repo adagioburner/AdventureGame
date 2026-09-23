@@ -61,6 +61,20 @@ describe('keyShadows', () => {
     expect([...pixels.slice(5 * 4, 6 * 4)]).toEqual([196, 196, 196, 255]);
   });
 
+  it('does not let a faint edge pixel, its grey skewed by the canvas, save a patch from keying', () => {
+    // Read back from a premultiplied canvas, a nearly clear 198 grey comes out
+    // as 212: outside the range, but not picture either.
+    const row: [number, number, number, number][] = [
+      [212, 212, 212, 20],
+      [197, 197, 197, 255],
+      [196, 196, 196, 190],
+    ];
+    const pixels = image(row.length, 1, (x) => row[x] ?? [0, 0, 0, 0]);
+    keyShadows(pixels, row.length, ['#bbbbbb'], 0.3);
+    expect(pixels[1 * 4 + 3]).toBe(77);
+    expect(pixels[2 * 4 + 3]).toBe(57);
+  });
+
   it('never keys a shadow solid enough to be measured as picture', () => {
     const pixels = image(1, 1, () => [187, 187, 187, 255]);
     keyShadows(pixels, 1, ['#bbbbbb'], 0.9);

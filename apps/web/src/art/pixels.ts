@@ -79,7 +79,9 @@ export function keyShadows(
   }
 
   // Detached patches of shadow grey: every connected run of visible, unkeyed
-  // pixels that holds nothing but rim-range greys.
+  // pixels whose solid ones are all rim-range greys. Faint pixels are not
+  // judged: a canvas stores colour premultiplied by alpha, so reading one back
+  // can move a nearly clear pixel's grey well outside the range.
   const visited = new Uint8Array(keyed.length);
   for (let start = 0; start < keyed.length; start++) {
     if (keyed[start] === 1 || visited[start] === 1 || (pixels[start * 4 + 3] as number) === 0) continue;
@@ -88,7 +90,7 @@ export function keyShadows(
     let shadow = true;
     for (let k = 0; k < patch.length; k++) {
       const p = patch[k] as number;
-      if (shadow && !near(p * 4, 3, 8, 16)) shadow = false;
+      if (shadow && (pixels[p * 4 + 3] as number) >= SOLID_ALPHA && !near(p * 4, 3, 8, 16)) shadow = false;
       const x = p % width;
       for (const q of [p - 1, p + 1, p - width, p + width]) {
         if (q < 0 || q >= keyed.length || keyed[q] === 1 || visited[q] === 1) continue;
