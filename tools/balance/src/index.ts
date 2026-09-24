@@ -1,6 +1,5 @@
 import { TERRAINS, type Ruleset, type Terrain } from '@adventure/config';
 import {
-  NotImplementedError,
   leafNodes,
   terrainCompactness,
   terrainNodes,
@@ -31,8 +30,8 @@ import { draftAsGraph } from '@adventure/mapgen';
  *     GDD explicitly anticipates needing.
  *   - `REMOTENESS_WEIGHT` (§5.2) and `REMOTENESS_WEIGHT_FOR_DISTRIBUTION`
  *     (§4.3) — the resulting guard-strength and reward-stack distributions.
- *   - `MCTS_TIME_BUDGET_PER_MOVE` (§9) — AI strength against search time, once
- *     a tree policy exists.
+ *   - `MCTS_TIME_BUDGET_PER_MOVE` (§9) — AI strength against search time:
+ *     `runSelfPlayBatch` in `selfplay.ts`.
  */
 export interface MapGenerationReport {
   readonly seed: Seed;
@@ -144,16 +143,6 @@ export interface BatchOptions {
 /** Generate many maps and report the distributions above. */
 export function runMapBatch(options: BatchOptions): readonly MapGenerationReport[] {
   return options.seeds.map((seed) => generateAndReport(seed, options.ruleset).report);
-}
-
-/**
- * Play AI-vs-AI games to completion and report outcomes.
- *
- * The policies, evaluators and branch rules all exist now; what this waits on is
- * `search()`'s four-phase loop and `macroAdvanceToTarget`, not a design answer.
- */
-export function runSelfPlayBatch(_options: BatchOptions): never {
-  throw new NotImplementedError('runSelfPlayBatch — requires MCTS search()', 'GDD.md §9');
 }
 
 /** Counts per bucket over `[low, high]`; the top bucket is closed at `high`. */
