@@ -39,18 +39,20 @@ export interface JournalEntry {
 }
 
 /**
- * Stat names as a player reads them, in the order the panel shows them. The
- * moving skills read as speeds and fighting as combat throughout the page
- * (Andrei's review, 2026-09-23); the engine's names are unchanged.
+ * Stat names as a player reads them, in the order the panel, the end-of-game
+ * table and the turn log show them. The moving skills read as speeds and
+ * fighting as combat throughout the page (Andrei's review, 2026-09-23); the
+ * engine's names are unchanged. The order is §6's, gold last, in all three
+ * places (Andrei, 2026-09-24).
  */
 export const STAT_ORDER: readonly RewardKind[] = [
   'stamina',
-  'gold',
   'plains_move',
   'forest_move',
   'mountain_move',
   'fighting',
   'magic',
+  'gold',
 ];
 
 export const STAT_LABEL: Readonly<Record<RewardKind, string>> = {
@@ -240,6 +242,16 @@ function victoryLine(winners: number, after: GameState): string {
  * A node as a player sees it: its terrain, and the POI on it if its reward is
  * still there (§4.5: a claimed POI's node is an ordinary node).
  */
+/**
+ * Whether the turn took an unguarded POI's reward. [Andrei, 2026-09-24] Its
+ * result card has no OK and fades out by itself; a guard fight's card, with
+ * its die, waits for OK.
+ */
+export function isUnguardedClaim(turn: PlayedTurn): boolean {
+  const interacted = find(turn.events, 'interacted');
+  return interacted !== undefined && interacted.resolution.reward !== null && interacted.resolution.roll === null;
+}
+
 export function describeNode(state: GameState, node: NodeId): string {
   const map = state.map;
   const terrain = terrainOf(map, node);

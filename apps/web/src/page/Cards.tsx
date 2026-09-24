@@ -7,9 +7,24 @@ import { Die, Portrait, StatIcon } from './Sprites.tsx';
 /**
  * What a turn ended on, when it ended on a POI (§8). A guarded one shows the
  * die, the skill added to it and the guard strength it was compared against,
- * whichever way it went.
+ * whichever way it went, and stays until OK. [Andrei, 2026-09-24] An
+ * unguarded one has no OK: the page fades it out by itself (`fading`).
  */
-export function ResultCard({ catalog, turn, rolling, onClose }: { catalog: ArtCatalog; turn: PlayedTurn; rolling: boolean; onClose: () => void }) {
+export function ResultCard({
+  catalog,
+  turn,
+  rolling,
+  fading,
+  fadeMs,
+  onClose,
+}: {
+  catalog: ArtCatalog;
+  turn: PlayedTurn;
+  rolling: boolean;
+  fading: boolean;
+  fadeMs: number;
+  onClose: () => void;
+}) {
   const interacted = turn.events.find((event): event is Extract<GameEvent, { type: 'interacted' }> => event.type === 'interacted');
   const reward = interacted?.resolution.reward ?? null;
   if (interacted === undefined || reward === null) return null;
@@ -19,7 +34,12 @@ export function ResultCard({ catalog, turn, rolling, onClose }: { catalog: ArtCa
   const prize = `${reward.units} ${STAT_LABEL[reward.kind]}`;
 
   return (
-    <div className={`card result${rolling ? ' rolling' : claimed ? ' took' : ' missed'}`} role="status" aria-live="polite">
+    <div
+      className={`card result${rolling ? ' rolling' : claimed ? ' took' : ' missed'}${fading ? ' fading' : ''}`}
+      style={{ transitionDuration: `${fadeMs}ms` }}
+      role="status"
+      aria-live="polite"
+    >
       <header>
         <Portrait catalog={catalog} avatarId={avatar} size={40} label={turn.name} />
         <h2>
@@ -45,12 +65,12 @@ export function ResultCard({ catalog, turn, rolling, onClose }: { catalog: ArtCa
             <p className="outcome">
               {claimed
                 ? `More than ${guard.strength}: the guard is beaten. +${prize}.`
-                : `Not more than ${guard.strength}: the ${STAT_LABEL[reward.kind]} stays on the node. Losing costs nothing else.`}
+                : `Not more than ${guard.strength}: the ${STAT_LABEL[reward.kind]} stays on the node.`}
             </p>
           )}
         </>
       )}
-      {rolling ? null : (
+      {rolling || guard === null ? null : (
         <button className="btn" type="button" onClick={onClose}>
           OK
         </button>

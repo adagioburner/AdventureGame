@@ -114,7 +114,7 @@ describe('the turn log, in words that can be checked by hand', () => {
     ]);
     expect(entry.tone).toBe('took');
     expect(statLine(entry.statsAfter)).toBe(
-      'stamina 13 · gold 3 · plains speed 3 · forest speed 1 · mountains speed 0 · combat 2 · magic 0',
+      'stamina 13 · plains speed 3 · forest speed 1 · mountains speed 0 · combat 2 · magic 0 · gold 3',
     );
   });
 

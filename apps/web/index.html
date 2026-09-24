@@ -470,6 +470,13 @@
       .result.missed {
         border-top: 4px solid var(--missed);
       }
+      .result {
+        transition-property: opacity;
+        transition-timing-function: ease-in;
+      }
+      .result.fading {
+        opacity: 0;
+      }
       .roll {
         display: flex;
         align-items: center;
