@@ -121,3 +121,15 @@ export function createRng(seed: Seed): Rng {
 
   return rng;
 }
+
+const SEED_WORDS = ['amber', 'birch', 'cairn', 'delta', 'ember', 'fjord', 'glade', 'heath', 'islet', 'juniper'];
+
+/**
+ * A seed a person can read out and type, such as "ember-glade-417". `random`
+ * returns a number in [0, 1); the page passes `Math.random`, the server its
+ * own. Which map a seed gives is §1.3's business, not the seed's wording.
+ */
+export function friendlySeed(random: () => number): Seed {
+  const pick = (): string => SEED_WORDS[Math.floor(random() * SEED_WORDS.length)] ?? 'amber';
+  return `${pick()}-${pick()}-${Math.floor(random() * 1000)}`;
+}

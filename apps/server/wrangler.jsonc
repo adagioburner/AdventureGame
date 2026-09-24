@@ -1,0 +1,36 @@
+{
+  // The site's one Worker (docs/STACK.md §5). `pnpm build:site` builds the
+  // pages into apps/web/dist-site first; `wrangler deploy` then uploads both.
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "adventure",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": "../web/dist-site",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+  "durable_objects": {
+    "bindings": [
+      { "name": "GAMES", "class_name": "GameRoom" },
+      { "name": "LOBBY", "class_name": "Lobby" }
+    ]
+  },
+  // The free plan runs only SQLite-backed Durable Objects.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GameRoom", "Lobby"] }],
+  "observability": { "enabled": true },
+  "env": {
+    // Open pull requests share this one: Cloudflare makes no per-version
+    // preview address for a Worker with Durable Objects.
+    "preview": {
+      "name": "adventure-preview",
+      "durable_objects": {
+        "bindings": [
+          { "name": "GAMES", "class_name": "GameRoom" },
+          { "name": "LOBBY", "class_name": "Lobby" }
+        ]
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 import type { GameId, GameState, UserId } from '@adventure/core';
-import type { Broadcaster, Clock, GameStore } from '@adventure/session';
-import type { ServerMessage } from '@adventure/protocol';
+import type { Broadcaster, Clock, GameDirectory, GameListing, GameStore } from '@adventure/session';
+import type { ServerMessage, SetupState } from '@adventure/protocol';
 import type { AccountRecord, AccountStore, LoginRecord } from '../auth/accounts.ts';
 
 /**
@@ -12,10 +12,27 @@ import type { AccountRecord, AccountStore, LoginRecord } from '../auth/accounts.
  */
 export function createMemoryGameStore(): GameStore {
   const games = new Map<GameId, GameState>();
+  const setups = new Map<GameId, SetupState>();
   return {
     load: async (gameId) => games.get(gameId) ?? null,
     save: async (state) => {
       games.set(state.id, state);
+    },
+    loadSetup: async (gameId) => setups.get(gameId) ?? null,
+    saveSetup: async (setup) => {
+      setups.set(setup.gameId, setup);
+    },
+  };
+}
+
+/** Keeps the game list's rows, for tests of whatever reports to it. */
+export function createMemoryGameDirectory(): GameDirectory & { readonly rows: Map<GameId, GameListing> } {
+  const rows = new Map<GameId, GameListing>();
+  return {
+    rows,
+    update: async (gameId, listing) => {
+      if (listing === null) rows.delete(gameId);
+      else rows.set(gameId, listing);
     },
   };
 }

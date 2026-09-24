@@ -128,9 +128,9 @@ half needs the AI, so it sits at the end of phase 5.
 | [3](#phase-3--art-binding-and-the-isometric-renderer) ✅ | Atlas loader, reward-kind-to-sheet mapping, isometric projection, draw layers | new |
 | [4](#phase-4--hotseat-ui) ✅ | Pan/zoom, move mode, path preview, End Turn, Rest, stats, game end | 2 |
 | [5](#phase-5--ai-players-the-engine) ✅ | MCTS `search()`, rollouts, computer seats and thinking time in hot seat (Q40), self-play harness; the balancing pass comes next | part of 5 |
-| [6](#phase-6--server-foundation-auth-and-lobby) | Host decision made real, transport, auth, game list, join/accept setup | 3 |
-| [7](#phase-7--online-play) | Authoritative state, broadcast, reconnect, message board, out-of-turn planning, GM controls | 4 |
-| [8](#phase-8--ai-in-multiplayer) | Web Worker on the GM's machine, AI seats and settings in online games, resign-to-AI, human/AI switching | rest of 5 |
+| [6](#phase-6--server-foundation-auth-and-lobby) | Host decision made real, transport, auth, game list, join/accept setup, computers in empty seats (Q48) | 3 |
+| [7](#phase-7--online-play) | Authoritative state, broadcast, reconnect, message board, out-of-turn planning, GM controls, computer seats' turns (Q48) | 4 |
+| [8](#phase-8--ai-in-multiplayer) | Web Worker on the GM's machine, resign-to-AI, human/AI switching (computer seats moved to phases 6 and 7, Q48) | rest of 5 |
 
 Phases 0–2 are strictly sequential. Phase 3 can start any time after phase 0
 (it touches no game logic). Phase 5 is independent of 6–8.
@@ -1169,10 +1169,16 @@ where the GM starts it.
    to configure.
 7. **Resignation.** A human may resign at any time. Only the GM can hand control
    back to a human. The AI takeover half of this needs phase 8.
+8. **Computer seats' turns** (Q48). Andrei's answer on phase 6 lets the GM start
+   with seats empty, played by the computer, so a started game has computer
+   turns straight away. They are played here rather than in phase 8: the
+   server asks the GM's browser for the move (`gm.requestAiMove` /
+   `gm.aiMove`), which thinks with the hot seat's `startComputerMove` for the
+   setup screen's thinking time. With no GM connected the game waits (§12.4).
 
 **Done when:** a full 2-player online game is playable end to end from two
-browsers, survives a reload on both sides, and the GM can force a stalling
-player's move.
+browsers, survives a reload on both sides, the GM can force a stalling
+player's move, and a game with computer seats plays to the end.
 
 ---
 
@@ -1194,15 +1200,12 @@ player's move.
    GM online. That is §12.1 and §12.4 composed, and it is stronger than either
    alone. Worth surfacing in the UI so a stalled game is legible rather than
    mysterious.
-4. **AI seats at setup** — including AI players in a game from the setup screen.
-   Hot seat has these since phase 5 (Q40, Q41); this carries the same Human and
-   Computer choice into online setup.
-5. **AI settings** — thinking time per turn, in seconds: Andrei confirmed the
-   budget stays wall-clock rather than a rollout count, because the game is for
-   fun rather than for a consistently strong AI.
-   `MCTS_TIME_BUDGET_PER_MOVE_MS` is config, so a per-game override needs a
-   path through the protocol. Hot seat's per-seat box, 1 to 60 seconds, is the
-   one to carry over (Q41).
+4. ~~**AI seats at setup**~~ — landed in phase 6 instead (Q48): the GM may start
+   with seats empty and a computer plays each one. Their turns arrive in phase
+   7.
+5. ~~**AI settings**~~ — landed in phase 6 instead (Q48): one thinking time
+   for all of a game's computer seats, 1 to 60 seconds, set on the setup
+   screen and carried in the setup state.
 6. **Handover** — an AI takes over a resigned seat so play continues, and the GM
    may switch any player between human and AI control at will. Only the GM hands
    control back to a human.

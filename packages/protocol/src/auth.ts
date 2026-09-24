@@ -40,3 +40,19 @@ export interface AuthProvider {
   /** Resolve a token back to a principal, or `null` if it is invalid/expired. */
   verify(token: AuthToken): Promise<Principal | null>;
 }
+
+/**
+ * What `POST /api/register` and `POST /api/login` answer. The token goes in
+ * `Authorization: Bearer <token>` on later requests, and as `?token=` on a
+ * socket, since a browser cannot set headers on a WebSocket.
+ */
+export interface LoginResponse {
+  readonly token: AuthToken;
+  readonly user: Principal;
+}
+
+/** A refused register or login, with a sentence the page can show as it is. */
+export interface AuthFailure {
+  readonly error: string;
+  readonly reason: 'username_invalid' | 'password_invalid' | 'username_taken' | 'wrong_credentials' | 'bad_request';
+}

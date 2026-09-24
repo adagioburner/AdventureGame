@@ -2,7 +2,7 @@ import { SKILL_KINDS, type Ruleset } from '@adventure/config';
 import type { NodeId } from './ids.ts';
 import type { MapGraph } from './graph.ts';
 import type { Poi } from './poi.ts';
-import type { Rng, Seed } from './rng.ts';
+import { createRng, type Rng, type Seed } from './rng.ts';
 
 /**
  * The generated world: everything §2.1 produces, and nothing that changes
@@ -71,4 +71,13 @@ export function chooseStartingNode(map: GameMap, rng: Rng): NodeId {
     throw new RangeError('no non-POI plains node available as a starting position');
   }
   return rng.pick(candidates);
+}
+
+/**
+ * The node every game on this map starts from: `chooseStartingNode` with an
+ * `Rng` forked from the map's own seed, so it replays with the map. Hot seat
+ * and online games share it, so a seed starts in the same place either way.
+ */
+export function startingNodeFor(map: GameMap): NodeId {
+  return chooseStartingNode(map, createRng(map.seed).fork('starting-node'));
 }

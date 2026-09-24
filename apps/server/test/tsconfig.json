@@ -6,7 +6,8 @@
   "extends": "../../../tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,
-    "types": ["node"]
+    "types": ["node"],
+    "resolveJsonModule": true
   },
   "include": ["./**/*.ts"]
 }

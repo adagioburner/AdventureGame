@@ -1,5 +1,5 @@
 import { asUserId, type GameId, type GameState, type UserId } from '@adventure/core';
-import { encodeMessage, type ServerMessage } from '@adventure/protocol';
+import { encodeMessage, type ServerMessage, type SetupState } from '@adventure/protocol';
 import type { Broadcaster, GameStore } from '@adventure/session';
 import type { AccountRecord, AccountStore } from '../auth/accounts.ts';
 import type { PasswordHash } from '../auth/password.ts';
@@ -48,18 +48,28 @@ export function userSocketTag(userId: UserId): string {
 }
 
 const STATE_KEY = 'state';
+const SETUP_KEY = 'setup';
 
 /**
- * One object holds one game, so the store keeps a single state under a fixed
- * key and refuses a state for any other game — that would be a routing bug.
- * Storage writes are structured-cloned, so `GameMap.poiByNode` stays a `Map`.
+ * One object holds one game, so the store keeps a single state and a single
+ * setup under fixed keys and refuses any other game's — that would be a
+ * routing bug. Storage writes are structured-cloned, so `GameMap.poiByNode`
+ * stays a `Map`.
  */
 export function createDurableGameStore(gameId: GameId, storage: DurableStorageLike): GameStore {
+  const mine = (id: GameId, what: string): void => {
+    if (id !== gameId) throw new RangeError(`${what} for ${id} saved to the object for ${gameId}`);
+  };
   return {
     load: async (id) => (id === gameId ? ((await storage.get<GameState>(STATE_KEY)) ?? null) : null),
     save: async (state) => {
-      if (state.id !== gameId) throw new RangeError(`game ${state.id} saved to the object for ${gameId}`);
+      mine(state.id, 'game');
       await storage.put(STATE_KEY, state);
+    },
+    loadSetup: async (id) => (id === gameId ? ((await storage.get<SetupState>(SETUP_KEY)) ?? null) : null),
+    saveSetup: async (setup) => {
+      mine(setup.gameId, 'setup');
+      await storage.put(SETUP_KEY, setup);
     },
   };
 }

@@ -162,6 +162,8 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 [SOURCE §3, chat] v1 authentication: username + password. **Architecture requirement:** design the auth layer so stronger security can be swapped in later without a rewrite.
 
+[SOURCE §3, review] **The game master may start before every seat is filled; computers play the empty seats.** Andrei, 2026-09-24: "the game master should be able to start the game before all seats are filled. The unfilled seats are played by the ai." The game master plays, always in seat 1; later seats go in acceptance order, so computers take the last seats. They are named "Computer 1", "Computer 2" and so on, each with a free figure, and share one thinking time on the setup screen (1 to 60 seconds, starting at 10); the game master may change their names and figures before Start, and may start with nobody else joined. The rest of the setup screen, the game list and the account rules are the sixteen details he took as recommended. Registered as Q48.
+
 [INFERRED §3] Hosting/infrastructure is explicitly left open. See §12.
 
 ---

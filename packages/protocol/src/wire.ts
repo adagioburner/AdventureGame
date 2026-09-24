@@ -32,24 +32,33 @@ export function encodeMessage(message: ClientMessage | ServerMessage): string {
   return JSON.stringify(message, replacer);
 }
 
-const CLIENT_MESSAGE_TYPES: ReadonlySet<string> = new Set<ClientMessage['type']>([
-  'lobby.list',
-  'lobby.create',
-  'lobby.requestJoin',
-  'setup.setPlayerCount',
-  'setup.respondToJoin',
-  'setup.addAiPlayer',
-  'setup.start',
-  'turn.plan',
-  'turn.end',
-  'turn.rest',
-  'gm.forceTurn',
-  'gm.setControl',
-  'player.resign',
-  'board.post',
-  'gm.mapGenerated',
-  'gm.aiMove',
-]);
+/**
+ * Every client message type, as a record so that adding a type to
+ * `ClientMessage` without listing it here fails the typecheck.
+ */
+const CLIENT_MESSAGE_TYPE_RECORD: Record<ClientMessage['type'], true> = {
+  'lobby.create': true,
+  'setup.requestJoin': true,
+  'setup.withdraw': true,
+  'setup.leave': true,
+  'setup.updateSeat': true,
+  'setup.setPlayerCount': true,
+  'setup.respondToJoin': true,
+  'setup.setSeed': true,
+  'setup.setThinkingTime': true,
+  'setup.cancel': true,
+  'setup.start': true,
+  'turn.plan': true,
+  'turn.end': true,
+  'turn.rest': true,
+  'gm.forceTurn': true,
+  'gm.setControl': true,
+  'player.resign': true,
+  'board.post': true,
+  'gm.mapGenerated': true,
+  'gm.aiMove': true,
+};
+const CLIENT_MESSAGE_TYPES: ReadonlySet<string> = new Set(Object.keys(CLIENT_MESSAGE_TYPE_RECORD));
 
 export class WireError extends Error {
   override readonly name = 'WireError';

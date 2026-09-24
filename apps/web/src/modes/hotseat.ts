@@ -2,10 +2,10 @@ import {
   applyAction,
   asGameId,
   asPlayerId,
-  chooseStartingNode,
   createDiceSource,
   createGameState,
   createRng,
+  startingNodeFor,
   type ControlMode,
   type DiceSource,
   type GameEvent,
@@ -176,7 +176,7 @@ export class HotseatGame {
  * off the map's own seed, so the start replays with the map.
  */
 export function hotseatStartingNode(map: GameMap): NodeId {
-  return chooseStartingNode(map, createRng(map.seed).fork('starting-node'));
+  return startingNodeFor(map);
 }
 
 /** A fresh die seed, not derivable from the map's. */

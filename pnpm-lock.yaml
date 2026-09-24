@@ -39,6 +39,9 @@ importers:
         specifier: workspace:*
         version: link:../../packages/session
     devDependencies:
+      '@adventure/sim':
+        specifier: workspace:*
+        version: link:../../packages/sim
       '@cloudflare/workers-types':
         specifier: ^5.20260924.1
         version: 5.20260924.1

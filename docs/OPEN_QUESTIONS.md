@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q47.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q48.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -1123,6 +1123,58 @@ recommendation, and he took all three:
 
 `followInto` in `apps/web/src/interaction/camera.ts`, applied on each frame of
 a walk in `MapView.tsx`.
+
+### Q48. ~~What does phase 6 leave open?~~ — **answered 2026-09-24: computers fill empty seats at Start, the rest as recommended**
+
+Phase 6 (the server, accounts, the game list and the setup screen) left
+seventeen details open. They were put to Andrei with a recommendation each on
+a page he answers by number. On 12 he chose differently, *"the game master
+should be able to start the game before all seats are filled. The unfilled
+seats are played by the ai"*, which raised 14 to 17; for everything else he
+said *"everything as recommended"*.
+
+1. **Hot seat on the site:** a "Play on one device" button on the login page
+   opens the hot seat start panel, unchanged, with no account needed.
+2. **Usernames:** 3 to 20 letters, digits or underscores. Capitals don't make
+   a different name, so "Andrei" and "andrei" are one account.
+3. **Passwords:** at least 8 characters, nothing else required. There is no
+   email address, so a forgotten password cannot be reset in v1.
+4. **Logins** last 30 days on that browser, with a Log out button.
+5. **The game list** has two parts. Your games: every game you are in,
+   waiting or started. Open games: games still waiting for players, with the
+   name, the game master, seats filled ("2 of 3") and an Ask to join button.
+   Finished games are not listed.
+6. **Game names:** the creator types one, filled in as "<username>'s game".
+7. **The game master plays**, always in seat 1. Later seats go in the order
+   the game master accepts people (§6).
+8. **The map:** the game master picks it with the hot seat panel's seed box
+   and map preview; everyone else in the game sees it as it changes.
+9. **Player count:** the game master picks 2 to 5, starting at 2, never below
+   the seats already filled.
+10. **Name and figure** are chosen when asking to join, the name filled in
+    from the username, and can be changed until the start. A figure someone
+    else in the game holds is greyed out, as on the hot seat panel.
+11. **No, withdraw, leave, cancel:** a declined player sees "The game master
+    declined your request" and may ask again; anyone can withdraw a request or
+    leave before the start; the game master can cancel a game before it
+    starts, which takes it off the list.
+12. **Start** works with seats still empty, and a computer plays each empty
+    seat. Seats go in acceptance order, so the computers take the last seats
+    and start with the most stamina (§6). Everyone then sees the map with
+    every figure on the starting node and a line saying online turns arrive
+    in the next phase.
+13. **The look:** login, register, the game list and the setup screen in the
+    style of the hot seat start panel, with no new art.
+14. **Computer seats** are "Computer 1", "Computer 2" and so on, each with a
+    figure nobody holds, and the game master can change them before Start.
+15. **Thinking time:** one box on the setup screen for all the computer seats,
+    whole seconds from 1 to 60, starting at 10 as in hot seat (Q41).
+16. **Starting alone:** the game master can start with nobody else joined and
+    computers in every other seat.
+17. **The computers' online turns move into phase 7**, so a game with
+    computer seats plays to the end as soon as online turns work. Phase 8
+    keeps the Web Worker, resigning to the computer and switching a seat
+    between person and computer mid-game.
 
 ---
 
