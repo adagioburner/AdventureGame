@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { startingStaminaForSeat } from '@adventure/config';
 import { dijkstra, poiAt, type GameState, type NodeId, type PlayerId } from '@adventure/core';
 import { createMoveModeController } from '../interaction/moveMode.ts';
-import { journalEntry, statLine } from '../page/journal.ts';
+import { isUnguardedClaim, journalEntry, statLine } from '../page/journal.ts';
 import { mapFor } from '../page/seed.ts';
 import { HotseatGame, HOTSEAT_MODE, HOTSEAT_SEATS, hotseatStartingNode, newDiceSeed } from './hotseat.ts';
 
@@ -127,6 +127,19 @@ describe('a whole hotseat game, played through the move-mode controller', () => 
       expect(entry.headline.length).toBeGreaterThan(0);
     });
     expect(game.turns.some((turn) => journalEntry(turn, befores[turn.number - 1] as GameState).tone === 'won')).toBe(true);
+  });
+
+  it('lets only an unguarded claim’s card close by itself; a guard fight waits for OK (Andrei, 2026-09-24)', () => {
+    const kinds = game.turns.flatMap((turn) => {
+      const interacted = turn.events.find((event) => event.type === 'interacted');
+      if (interacted === undefined || interacted.type !== 'interacted' || interacted.resolution.reward === null) return [];
+      const guarded = poiAt(map, interacted.resolution.node)?.guard != null;
+      expect(isUnguardedClaim(turn)).toBe(!guarded);
+      return [guarded];
+    });
+    expect(kinds).toContain(true);
+    expect(kinds).toContain(false);
+    expect(game.turns.filter((turn) => turn.events.every((event) => event.type !== 'interacted')).some(isUnguardedClaim)).toBe(false);
   });
 
   it('names the stats as the page does, never by the engine’s words (Q33)', () => {

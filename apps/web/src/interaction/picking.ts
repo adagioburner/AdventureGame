@@ -63,6 +63,17 @@ export function pickCharacters(characters: readonly Billboard[], shapeOf: ShapeO
 }
 
 /**
+ * The middle of the top of `player`'s figure, in the plane: where an unguarded
+ * claim's notice floats up from. `null` if the player has no figure drawn.
+ */
+export function figureTop(characters: readonly Billboard[], shapeOf: ShapeOf, player: PlayerId): Point | null {
+  const figure = characters.find((item) => item.player === player);
+  if (figure === undefined) return null;
+  const box = pictureBox(figure.foot, figure.size, shapeOf(figure.sprite));
+  return { x: (box.minX + box.maxX) / 2, y: box.minY };
+}
+
+/**
  * The node nearest `plane` on the ground, if it is near enough; failing that,
  * the node of a POI whose picture was tapped, since the castle is what a player
  * aims at.

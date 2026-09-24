@@ -6,8 +6,8 @@ import { HOTSEAT_MODE, type HotseatGame, type PlayedTurn } from '../modes/hotsea
 import { position } from '../render/geometry.ts';
 import type { LoadedArt } from '../render/pixi/textures.ts';
 import type { FigureCue, MapScene, Walker } from '../render/sceneModel.ts';
-import { EndCard, ResultCard } from './Cards.tsx';
-import { journalEntry, type JournalEntry } from './journal.ts';
+import { ClaimNotice, EndCard, ResultCard } from './Cards.tsx';
+import { isUnguardedClaim, journalEntry, type JournalEntry } from './journal.ts';
 import { MapView, type MapHandle } from './MapView.tsx';
 import { Players } from './Players.tsx';
 import { TurnControls } from './TurnControls.tsx';
@@ -16,8 +16,12 @@ import { TurnLog } from './TurnLog.tsx';
 /** The page's phone layout, as `index.html` switches to it. */
 const PHONE = '(max-width: 899px)';
 
-/** How long End Turn's walk takes per step, the die tumbles, and a notice stays up. */
-export const timing = { stepMs: 220, tumbleMs: 1100, noticeMs: 2200 };
+/**
+ * How long End Turn's walk takes per step, the die tumbles, a notice stays up,
+ * and an unguarded claim's notice takes to fade in, stays up (2 seconds, his
+ * pick) and takes to fade out.
+ */
+export const timing = { stepMs: 220, tumbleMs: 1100, noticeMs: 2200, appearMs: 200, claimMs: 2000, fadeMs: 500 };
 
 interface GameScreenProps {
   readonly art: LoadedArt;
@@ -59,6 +63,16 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
     const timer = window.setTimeout(() => setNotice(null), timing.noticeMs);
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  // [Andrei, 2026-09-24] "the unguarded poi should produce a card that fades
+  // itself. The guarded POI produce a card with a die roll that has an ok
+  // button": an unguarded claim's notice has no OK and goes once it has faded.
+  useEffect(() => {
+    if (result === null || result.rolling || !isUnguardedClaim(result.turn)) return;
+    const timer = window.setTimeout(() => setResult(null), timing.claimMs + timing.fadeMs);
+    return () => window.clearTimeout(timer);
+  }, [result]);
+  const locateFigure = useCallback((player: PlayerId) => handle.current?.screenOfFigure(player) ?? null, []);
 
   const commit = useRef<(action: TurnAction) => void>(() => undefined);
   const controller = useMemo(
@@ -247,7 +261,16 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
             {notice}
           </div>
         )}
-        {result === null ? null : (
+        {result === null ? null : isUnguardedClaim(result.turn) ? (
+          <ClaimNotice
+            key={result.turn.after.turn.number}
+            turn={result.turn}
+            locate={locateFigure}
+            stayMs={timing.claimMs}
+            appearMs={timing.appearMs}
+            fadeMs={timing.fadeMs}
+          />
+        ) : (
           <ResultCard catalog={catalog} turn={result.turn} rolling={result.rolling} onClose={() => setResult(null)} />
         )}
         {/* The winning turn's own card comes first; OK on it brings up the end. */}
