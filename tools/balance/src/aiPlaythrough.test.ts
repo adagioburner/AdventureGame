@@ -34,7 +34,7 @@ describe('a computer-against-computer game', () => {
     expect(turns).toHaveLength(run.turns.length);
     for (const turn of turns) {
       expect(turn).toMatch(/\n {2}plan {4}(heading for node \d+|already on node \d+|rests)/);
-      expect(turn).toMatch(/\n {2}why {5}\d+ games played in its head/);
+      expect(turn).toMatch(/\n {2}why {5}\d+ games? played in its head/);
     }
   });
 

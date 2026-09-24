@@ -86,14 +86,18 @@ function explain(state: GameState, root: MctsNode, best: MctsNode, iterations: n
   const share = (node: MctsNode): string => (node.visits === 0 ? '—' : `${Math.round((100 * node.totalValue) / node.visits)}%`);
 
   const lines = [
-    `  why     ${iterations} games played in its head over ${(took / 1000).toFixed(1)} s. This way: ${best.visits} games,` +
+    `  why     ${games(iterations)} played in its head over ${(took / 1000).toFixed(1)} s. This way: ${games(best.visits)},` +
       ` ending with ${share(best)} of the map's ${gold} gold on average`,
   ];
   const others = ranked.filter((node) => node !== best).slice(0, 3);
   if (others.length > 0) {
-    lines.push(`  others  ${others.map((node) => `${label(state, node)} ${node.visits} games ${share(node)}`).join(' · ')}`);
+    lines.push(`  others  ${others.map((node) => `${label(state, node)} ${games(node.visits)} ${share(node)}`).join(' · ')}`);
   }
   return lines;
+}
+
+function games(count: number): string {
+  return `${count} game${count === 1 ? '' : 's'}`;
 }
 
 function label(state: GameState, node: MctsNode): string {
