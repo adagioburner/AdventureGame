@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q36.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q37.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -553,6 +553,8 @@ while the setup flow does not exist yet, not a change to the game's range.
 Left unasked and not worth blocking on: whether a hotseat game survives a page
 reload. Persisting it is small but the design does not mention it, so the plan
 does not either, and a closed tab loses the game.
+Andrei has since ruled that it should survive one, and postponed it to the
+multiplayer work ([Q37](#q37)).
 
 ### Q23. ~~Build both POI placement strategies, or one?~~ — **answered: farthest-point only, seam kept**
 
@@ -950,6 +952,16 @@ Andrei: *"The claimed POIs should lose their icons, but the images DO NOT
 CHANGE."* A claimed POI loses its reward icons, its guard's number and its
 guard ring, and its picture is drawn exactly as before. GDD §4.5 carries the
 ruling as a `[SOURCE §2, review]` note.
+
+### Q37. ~~Should a hot seat game survive a page reload?~~ — **answered 2026-09-24: yes, postponed to multiplayer**
+
+Phase 4 shipped without asking (Q22 above, and the plan's P3), so reloading or
+closing the page loses the game in progress. It was item 38 on the list of
+choices made without asking him. Andrei: *"reloading should not kill the game.
+This one can be postponed, because with multiplayer the game [state] will be
+persisted anyway."* Nothing is built for it now. It is recorded here so the
+multiplayer work picks it up; the plan's phase 7 already expects a game to
+survive a reload on both sides.
 
 ---
 

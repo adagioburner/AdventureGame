@@ -935,7 +935,8 @@ figurines, then play it out on one screen until the engine declares a winner.
   when the panels round it changed height, because PixiJS's `resizeTo`
   follows the window only.
 - **A closed tab loses the game**, as P3 says: nothing is saved, and reload
-  starts a new setup on the same map.
+  starts a new setup on the same map. Andrei has since ruled that a reload
+  should not lose the game, and postponed it to the multiplayer work (Q37).
 - **Andrei's first look at the game** (2026-09-23) asked for three changes,
   all made:
   - The "Art in use" panel is gone from the page.
@@ -1246,7 +1247,9 @@ setup flow is where the GM picks a count for real.
 
 Left unanswered, and not worth blocking on: whether a hotseat game should
 survive a page reload. Persisting to `localStorage` is small but the design does
-not mention it, so phase 4 does not, and a closed tab loses the game.
+not mention it, so phase 4 does not, and a closed tab loses the game. Andrei
+has since ruled that it should survive one, postponed to the multiplayer work
+(Q37).
 
 ### P4. ~~Q18, still open in fact~~ — **answered (Q24): the shipped reading is right**
 
