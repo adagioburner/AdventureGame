@@ -1032,8 +1032,7 @@ each. He took all five recommendations:
   nothing in the game marks it as a computer except its thinking.
 
 *Since [Q51](#q51) the panel is the one new game screen: it takes 2 to 5
-seats, and its opening line reads "Each seat takes its turn on this screen,
-played by a person or by the computer."*
+seats, and since [Q53](#q53) it has no opening line.*
 
 ### Q42. ~~What shows during the computer's turn?~~ — **answered 2026-09-24: a filling bar, and its die card closes itself**
 
@@ -1305,7 +1304,11 @@ figure (Q46). Only the column moves, and only when the card is out of view.
 In the same review he asked for superfluous wording to go from the new game
 screen: its opening line no longer adds "All start on the plains node where
 the figures stand.", and a seat's heading reads "Seat 3 · starts with 50
-stamina" without "moves third".
+stamina" without "moves third". Asked which other lines could go, he took
+the recommendations: the screen has no opening line at all ("Each seat takes
+its turn on this screen, played by a person or by the computer." is gone),
+the game master's line is just "You are the game master.", and a kept seat's
+line and the "1 to 60" beside the thinking time stay.
 
 ---
 

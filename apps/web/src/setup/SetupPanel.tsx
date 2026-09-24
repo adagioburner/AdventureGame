@@ -94,7 +94,6 @@ function LocalSetupPanel({ art, panel }: { readonly art: LoadedArt; readonly pan
       }}
     >
       <h2>New game</h2>
-      <p className="muted">Each seat takes its turn on this screen, played by a person or by the computer.</p>
       {panel.playOnline === null ? null : (
         <>
           <PlayOnlineSwitch on={false} disabled={panel.playOnline.busy} onChange={panel.playOnline.turnOn} />
@@ -174,7 +173,7 @@ function OnlineSetupPanel({ art, panel }: { readonly art: LoadedArt; readonly pa
         {starting
           ? 'Starting the game…'
           : isGameMaster
-            ? 'You are the game master. Others can ask to join the Human seats, and the computer plays any nobody has taken when you start.'
+            ? 'You are the game master.'
             : `Game master: ${setup.gameMasterName}. The computer plays any Human seat nobody has taken at the start.`}
       </p>
       {panel.connected ? null : (
