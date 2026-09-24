@@ -1137,11 +1137,11 @@ where the GM starts it.
 
 ### What actually landed
 
-Built to Andrei's answers in [Q48](./OPEN_QUESTIONS.md#q48) and
-[Q49](./OPEN_QUESTIONS.md#q49). Three browsers played it through against the
-local Workers runtime: register, list, ask to join, both figure clashes,
-accept, change the map, start, decline, cancel, and hot seat from the login
-page.
+Built to Andrei's answers in [Q48](./OPEN_QUESTIONS.md#q48),
+[Q49](./OPEN_QUESTIONS.md#q49) and [Q50](./OPEN_QUESTIONS.md#q50). Three
+browsers played it through against the local Workers runtime: register, list,
+ask to join, both figure clashes, accept, change the map, start, decline,
+cancel, and hot seat from the login page and the game list.
 
 - **One Worker** (`apps/server/src/worker.ts`) serves the pages, the account
   endpoints and two kinds of socket. **The lobby is one Durable Object**
@@ -1166,7 +1166,8 @@ page.
   (`vite build --mode site`) into `apps/web/dist-site/`, which the Worker
   serves. `main.tsx` picks the site only in that mode, and the hot seat build
   (`pnpm build:web`, and the game page made from it) comes out byte for byte
-  as before. `/hotseat` is the hot seat page, unchanged (Q48 1).
+  as before. `/hotseat` is the hot seat page, unchanged, reached
+  from the login page (Q48 1) and the game list (Q50).
 - **Tests** run the server in Cloudflare's local runtime from Node, through
   wrangler's `unstable_startWorker` (`apps/server/test/worker.test.ts`),
   because `@cloudflare/vitest-pool-workers` needs Vitest 4 and the repository

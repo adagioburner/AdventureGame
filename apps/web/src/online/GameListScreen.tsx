@@ -8,6 +8,7 @@ import { useChannel } from './socket.ts';
 interface GameListScreenProps {
   readonly login: Login;
   onOpen(gameId: GameId): void;
+  onHotseat(): void;
   onLogOut(): void;
   onRefused(): void;
 }
@@ -19,9 +20,10 @@ const GAME_NAME_MAX = 40;
  * [Q48, 5 and 6] The game list: your games, waiting or started, then the open
  * games waiting for players, and a new game named by its creator, "<username>’s
  * game" to begin with. The server sends the whole list again whenever any row
- * changes.
+ * changes. [Q50] Its top bar has the login page's "Play on one device" too,
+ * so hot seat needs no logging out.
  */
-export function GameListScreen({ login, onOpen, onLogOut, onRefused }: GameListScreenProps) {
+export function GameListScreen({ login, onOpen, onHotseat, onLogOut, onRefused }: GameListScreenProps) {
   const me = login.user;
   const [games, setGames] = useState<readonly GameSummary[] | null>(null);
   const [name, setName] = useState(`${me.displayName}’s game`);
@@ -58,6 +60,9 @@ export function GameListScreen({ login, onOpen, onLogOut, onRefused }: GameListS
         <span className="seed-shown">
           Logged in as <b>{me.displayName}</b>
         </span>
+        <button className="btn" type="button" onClick={onHotseat}>
+          Play on one device
+        </button>
         <button className="btn" type="button" onClick={onLogOut}>
           Log out
         </button>

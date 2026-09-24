@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q49.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q50.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -1210,6 +1210,14 @@ What "detected, resolved and told" became (`packages/session/src/setup.ts`,
   after a "no" does not ask again.
 - Someone whose request was still waiting when the game master pressed Start
   sees "This game started without you" over the map.
+
+### Q50. ~~Can someone logged in play hot seat?~~ — **answered 2026-09-24: yes, from the game list too**
+
+Q48 1 put "Play on one device" on the login page only, so someone already
+logged in could reach hot seat only by logging out. Andrei took the
+recommendation: the game list's top bar has the same button, beside Log out
+(`apps/web/src/online/GameListScreen.tsx`). It opens the same `/hotseat` page,
+unchanged, and keeps the login.
 
 ---
 

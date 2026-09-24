@@ -13,7 +13,8 @@ import './site.css';
  *
  *   /             the login page, or once logged in the game list
  *   /games/<id>   one game: its setup, and once started the map
- *   /hotseat      [Q48, 1] "Play on one device": today's hot seat page, unchanged
+ *   /hotseat      [Q48, 1] "Play on one device": today's hot seat page, unchanged,
+ *                 from the login page and [Q50] the game list
  *
  * A game's address works before logging in too: the login page shows first,
  * then the game.
@@ -89,6 +90,12 @@ export function Site() {
   return route.page === 'game' ? (
     <OnlineGameScreen key={route.gameId} gameId={route.gameId} login={login} onBack={() => go('/')} onRefused={checkLogin} />
   ) : (
-    <GameListScreen login={login} onOpen={(gameId) => go(`/games/${gameId}`)} onLogOut={leave} onRefused={checkLogin} />
+    <GameListScreen
+      login={login}
+      onOpen={(gameId) => go(`/games/${gameId}`)}
+      onHotseat={() => go('/hotseat')}
+      onLogOut={leave}
+      onRefused={checkLogin}
+    />
   );
 }
