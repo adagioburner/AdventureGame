@@ -65,11 +65,7 @@ export interface SearchResult {
 
 /** `search()`, keeping the tree. */
 export function searchTree(root: GameState, options: MctsOptions): SearchResult {
-  if (root.status !== 'in_progress') throw new RangeError(`cannot search a game that is ${root.status}`);
-  if (activePlayer(root).id !== options.subject) {
-    throw new RangeError(`search for ${options.subject}, but it is ${activePlayer(root).id}'s turn`);
-  }
-
+  checkSearchable(root, options);
   const tree = createRootNode(root, options);
   const start = options.now();
   let iterations = 0;
@@ -80,6 +76,47 @@ export function searchTree(root: GameState, options: MctsOptions): SearchResult 
   } while (options.now() - start < options.timeBudgetMs);
 
   return { root: tree, best: options.treePolicy.bestChild(tree), iterations };
+}
+
+/**
+ * `searchTree` a slice at a time, for a page that has to keep drawing while
+ * the computer thinks: each `step` iterates for about `sliceMs` and then hands
+ * the thread back. The budget runs on `now()` from this call, so whatever the
+ * page does between slices counts against it, as it would on a chess clock.
+ */
+export interface SlicedSearch {
+  /** Iterate for up to `sliceMs`, at least once; true once the budget is spent. */
+  step(sliceMs: number): boolean;
+  /** The tree so far, and the child `treePolicy.bestChild` picks from it. */
+  result(): SearchResult;
+}
+
+export function startSearch(root: GameState, options: MctsOptions): SlicedSearch {
+  checkSearchable(root, options);
+  const tree = createRootNode(root, options);
+  const deadline = options.now() + options.timeBudgetMs;
+  let iterations = 0;
+  return {
+    step(sliceMs: number): boolean {
+      const until = Math.min(deadline, options.now() + sliceMs);
+      do {
+        iterate(tree, root, options);
+        iterations++;
+      } while (options.now() < until);
+      return options.now() >= deadline;
+    },
+    result(): SearchResult {
+      if (iterations === 0) throw new RangeError('no step of the search has run yet');
+      return { root: tree, best: options.treePolicy.bestChild(tree), iterations };
+    },
+  };
+}
+
+function checkSearchable(root: GameState, options: MctsOptions): void {
+  if (root.status !== 'in_progress') throw new RangeError(`cannot search a game that is ${root.status}`);
+  if (activePlayer(root).id !== options.subject) {
+    throw new RangeError(`search for ${options.subject}, but it is ${activePlayer(root).id}'s turn`);
+  }
 }
 
 export function createRootNode(_state: GameState, _options: MctsOptions): MctsNode {

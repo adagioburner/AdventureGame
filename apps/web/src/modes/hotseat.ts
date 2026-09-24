@@ -6,6 +6,7 @@ import {
   createDiceSource,
   createGameState,
   createRng,
+  type ControlMode,
   type DiceSource,
   type GameEvent,
   type GameMap,
@@ -49,11 +50,22 @@ export const HOTSEAT_MODE: HotseatModeConfig = { kind: 'hotseat', allowOutOfTurn
  */
 export const HOTSEAT_SEATS = 2;
 
-/** What the setup screen settles for one seat: a name and a figurine (§6.1). */
+/**
+ * What the setup screen settles for one seat (§6.1): a name, a figurine, and
+ * who plays it.
+ *
+ * [Andrei, 2026-09-24] Q41: either seat or both can be the computer, and each
+ * computer seat has its own thinking time, in whole seconds from
+ * `THINKING_TIME_SECONDS`, starting at 10.
+ */
 export interface HotseatSeat {
   readonly name: string;
   /** A sprite id on the figurine sheet `Art/manifest.json` names. */
   readonly avatarId: string;
+  /** `'ai'` is a computer seat (§9). */
+  readonly control: ControlMode;
+  /** How long a computer seat thinks about each move. Kept for a person too, so switching back and forth keeps it. */
+  readonly thinkingSeconds: number;
 }
 
 export interface HotseatSetup {
@@ -105,6 +117,12 @@ export class HotseatGame {
     if (setup.seats.length !== HOTSEAT_SEATS) {
       throw new RangeError(`hotseat seats ${HOTSEAT_SEATS} players, got ${setup.seats.length}`);
     }
+    const range = setup.map.ruleset.config.ai.THINKING_TIME_SECONDS;
+    for (const seat of setup.seats) {
+      if (!Number.isInteger(seat.thinkingSeconds) || seat.thinkingSeconds < range.min || seat.thinkingSeconds > range.max) {
+        throw new RangeError(`thinking time is whole seconds from ${range.min} to ${range.max}, got ${seat.thinkingSeconds}`);
+      }
+    }
     this.setup = setup;
     this.current = createGameState({
       id: asGameId(`hotseat-${setup.map.seed}`),
@@ -113,7 +131,7 @@ export class HotseatGame {
         id: asPlayerId(`seat-${index + 1}`),
         name: seat.name,
         avatarId: seat.avatarId,
-        control: 'human' as const,
+        control: seat.control,
       })),
       startingNode: hotseatStartingNode(setup.map),
     });

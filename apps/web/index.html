@@ -363,6 +363,28 @@
         flex-wrap: wrap;
         gap: 6px;
       }
+      .thinking-bar {
+        height: 8px;
+        border-radius: 999px;
+        background: var(--ground);
+        border: 1px solid var(--line);
+        overflow: hidden;
+      }
+      .thinking-bar i {
+        display: block;
+        height: 100%;
+        background: var(--accent);
+        transform-origin: left;
+        animation: think-fill linear forwards;
+      }
+      @keyframes think-fill {
+        from {
+          transform: scaleX(0);
+        }
+        to {
+          transform: scaleX(1);
+        }
+      }
       .log-host {
         grid-area: log;
         min-height: 0;
@@ -611,6 +633,42 @@
       }
       .start {
         justify-self: stretch;
+      }
+      .control-toggle {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      .control-toggle button {
+        padding: 6px 10px;
+        border: 0;
+        background: var(--ground);
+        color: inherit;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .control-toggle button + button {
+        border-left: 1px solid var(--line);
+      }
+      .control-toggle button[aria-checked='true'] {
+        background: var(--accent-soft);
+        color: var(--accent);
+        box-shadow: inset 0 0 0 1px var(--accent);
+      }
+      .seat .think {
+        flex-wrap: wrap;
+      }
+      .seat .think input {
+        flex: 0 0 56px;
+        text-align: right;
+        font: 600 13px var(--mono);
+      }
+      .think small {
+        font-weight: 400;
+        color: var(--muted);
       }
 
       /* --- phones --------------------------------------------------------- */

@@ -8,8 +8,8 @@ import { HotseatGame, HOTSEAT_MODE, HOTSEAT_SEATS, hotseatStartingNode, newDiceS
 
 const map = mapFor('adventure');
 const seats = [
-  { name: 'Ada', avatarId: 'player_avatars_03' },
-  { name: 'Bram', avatarId: 'player_avatars_05' },
+  { name: 'Ada', avatarId: 'player_avatars_03', control: 'human' as const, thinkingSeconds: 10 },
+  { name: 'Bram', avatarId: 'player_avatars_05', control: 'human' as const, thinkingSeconds: 10 },
 ];
 
 describe('hotseat setup (§6, Q22)', () => {
@@ -21,7 +21,15 @@ describe('hotseat setup (§6, Q22)', () => {
       [1, 'Ada', 'player_avatars_03', 'human'],
       [2, 'Bram', 'player_avatars_05', 'human'],
     ]);
-    expect(() => new HotseatGame({ map, seats: [...seats, { name: 'Cy', avatarId: 'player_avatars_01' }], diceSeed: 'x' })).toThrow();
+    expect(() => new HotseatGame({ map, seats: [...seats, { name: 'Cy', avatarId: 'player_avatars_01', control: 'human' as const, thinkingSeconds: 10 }], diceSeed: 'x' })).toThrow();
+  });
+
+  it('hands a seat to the computer, with a thinking time of whole seconds from 1 to 60 (Q41)', () => {
+    const computer = new HotseatGame({ map, seats: [seats[0]!, { ...seats[1]!, control: 'ai', thinkingSeconds: 60 }], diceSeed: 'x' });
+    expect(computer.state.players.map((player) => player.control)).toEqual(['human', 'ai']);
+    for (const thinkingSeconds of [0, 61, 2.5, Number.NaN]) {
+      expect(() => new HotseatGame({ map, seats: [seats[0]!, { ...seats[1]!, control: 'ai', thinkingSeconds }], diceSeed: 'x' })).toThrow(RangeError);
+    }
   });
 
   it('starts each seat with STARTING_STAMINA_BASE + (seat − 1) × STARTING_STAMINA_INCREMENT', () => {

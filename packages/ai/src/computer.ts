@@ -1,7 +1,7 @@
 import type { GameConfig } from '@adventure/config';
 import type { DiceSource, GameState, PlayerId, Rng, TurnAction } from '@adventure/core';
 import { goldExhaustedTermination, restWhenStuck, turnCapTermination } from '@adventure/sim';
-import { searchTree, firstTurnOf, type SearchResult } from './mcts.ts';
+import { firstTurnOf, searchTree, startSearch, type SearchResult } from './mcts.ts';
 import { simulatedRolloutEvaluator } from './policies/evaluators.ts';
 import { closestPoiRolloutPolicy } from './policies/rollout.ts';
 import { closestUnclaimedPoiEnumerator, previewReachability, uctTreePolicy } from './policies/tree.ts';
@@ -57,4 +57,25 @@ export function chooseComputerMove(state: GameState, subject: PlayerId, settings
   const options = computerSearchOptions(state, subject, settings);
   const search = searchTree(state, options);
   return { action: firstTurnOf(state, search.best.action, options), search };
+}
+
+/** A computer seat's move, thought about a slice at a time (see `SlicedSearch`). */
+export interface ComputerThinking {
+  /** Think for up to `sliceMs` more; true once the thinking time is spent. */
+  step(sliceMs: number): boolean;
+  /** The move the thinking so far points to. */
+  move(): ComputerMove;
+}
+
+/** `chooseComputerMove`, for a caller that must hand the thread back between slices. */
+export function startComputerMove(state: GameState, subject: PlayerId, settings: ComputerSettings): ComputerThinking {
+  const options = computerSearchOptions(state, subject, settings);
+  const search = startSearch(state, options);
+  return {
+    step: (sliceMs) => search.step(sliceMs),
+    move() {
+      const result = search.result();
+      return { action: firstTurnOf(state, result.best.action, options), search: result };
+    },
+  };
 }

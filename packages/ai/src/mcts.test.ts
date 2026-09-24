@@ -11,7 +11,7 @@ import {
   withPosition,
   withStats,
 } from '../../core/src/rules/scenario.fixture.ts';
-import { search, searchTree } from './mcts.ts';
+import { search, searchTree, startSearch } from './mcts.ts';
 import {
   estimatedGoldAndSkillsEvaluator,
   hybridGoldAndSkillsEvaluator,
@@ -190,5 +190,32 @@ describe('search', () => {
   it('refuses to search for a player whose turn it is not', () => {
     const state = fixtureGame(star, 0);
     expect(() => search(state, optionsFor(state, { subject: player('two') }))).toThrow(RangeError);
+  });
+});
+
+describe('startSearch', () => {
+  it('thinks a slice at a time until the budget is spent', () => {
+    const state = fixtureGame(star, 0);
+    const clock = tickingClock();
+    const sliced = startSearch(state, optionsFor(state, { now: clock, timeBudgetMs: 150 }));
+    let slices = 1;
+    while (!sliced.step(10)) slices++;
+    expect(slices).toBeGreaterThan(5);
+    expect(clock()).toBeLessThanOrEqual(160);
+    const { root, iterations } = sliced.result();
+    expect(root.visits).toBe(iterations);
+  });
+
+  it('comes to the same choice as one long search', () => {
+    const state = fixtureGame(star, 0);
+    const sliced = startSearch(state, optionsFor(state, { timeBudgetMs: 2000 }));
+    while (!sliced.step(25));
+    expect(sliced.result().best.action).toEqual({ kind: 'target', target: expect.objectContaining({ node: n(1) }) });
+  });
+
+  it('has no result before its first slice, and refuses the wrong player', () => {
+    const state = fixtureGame(star, 0);
+    expect(() => startSearch(state, optionsFor(state)).result()).toThrow(RangeError);
+    expect(() => startSearch(state, optionsFor(state, { subject: player('two') }))).toThrow(RangeError);
   });
 });
