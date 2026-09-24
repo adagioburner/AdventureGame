@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q51.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q52.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -1280,6 +1280,18 @@ seat rules are `packages/session/src/setup.ts`: an open seat is a Human seat
 nobody holds (`isOpenSeat`), `setup.setSeatControl` turns a seat Human or
 Computer, `setup.rename` renames the game, and `lobby.create` takes the seats
 and seed the page already has.
+
+<a id="q52"></a>
+### Q52. ~~How do four or five player cards fit beside the map?~~ — **answered 2026-09-24: they scroll**
+
+Q51 21's five seats made the play screen's player cards taller than a
+computer window: with 4 players under about 920 pixels tall, or 5 under about
+1080, they pushed Plan a move, Rest and End turn off the bottom. Of three ways
+put to him (scroll the cards, shrink the cards of players not on turn, or move
+the buttons above the cards) Andrei took the recommended one: the cards scroll
+in their own column when they don't fit, and the buttons stay where they are.
+Two or three players, and phones, look as before. `.players` in
+`apps/web/index.html`.
 
 ---
 

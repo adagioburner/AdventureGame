@@ -261,6 +261,9 @@
         display: grid;
         gap: 8px;
         padding: 12px;
+        /* Four or five cards can be taller than the window: they scroll here,
+           so the turn buttons below stay on screen (Andrei, 2026-09-24). */
+        overflow-y: auto;
       }
       .player {
         display: grid;
@@ -709,6 +712,8 @@
           gap: 6px;
           padding: 6px;
           border-bottom: 1px solid var(--line);
+          /* Phones show every card above the map, as before. */
+          overflow-y: visible;
         }
         .player {
           gap: 4px;
