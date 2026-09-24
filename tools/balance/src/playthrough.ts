@@ -30,13 +30,13 @@ import { generateAndReport } from './index.ts';
  *
  * This is the harness's end-to-end check on the rules engine (phase 2): every
  * turn goes through the one writer, on a real generated map, and the run either
- * reaches §1's win condition or reports why it could not. It is deliberately
- * **not** an AI — §9's MCTS player is phase 5 and lives in `@adventure/ai`.
- * The driver below makes the dumbest defensible decision a player could make,
- * so that what the transcript shows is the rules working and not a policy
- * being clever.
+ * reaches §1's win condition or reports why it could not. Who picks the moves
+ * is a `PlaythroughDriver`. The default, below, is deliberately **not** an AI:
+ * it makes the dumbest defensible decision a player could make, so that what
+ * the transcript shows is the rules working and not a policy being clever.
+ * §9's computer player drives the same loop from `aiPlaythrough.ts`.
  *
- * The policy, in full:
+ * The default policy, in full:
  *
  *  - target the nearest POI (weighted terrain cost, the one metric) whose
  *    reward is unclaimed and which this player could in principle take — a
@@ -51,6 +51,23 @@ import { generateAndReport } from './index.ts';
  */
 
 export type PlaythroughEnd = 'victory' | 'stalemate' | 'turn_cap';
+
+/** One seat's decision for its turn, and what the transcript says about it. */
+export interface TurnChoice {
+  readonly action: TurnAction;
+  /** Where the player is going; `null` for a rest that heads nowhere. */
+  readonly heading: Heading | null;
+  /** Lines under the plan saying why the driver chose this. */
+  readonly why: readonly string[];
+}
+
+/** Who picks the moves in a playthrough. */
+export interface PlaythroughDriver {
+  /** The transcript's header lines saying how the moves were chosen. */
+  readonly describe: readonly string[];
+  /** `null` when this player has nothing left it could ever take. */
+  choose(state: GameState, player: PlayerId): TurnChoice | null;
+}
 
 export interface PlaythroughOptions {
   readonly seed: Seed;
@@ -84,17 +101,21 @@ export interface PlayedTurn {
   readonly standings: readonly PlayerStanding[];
   /**
    * Where the driver was sending this player and by which route, or `null`
-   * when there was nothing left it could take. The engine never sees this —
+   * when there was nothing left it could take or it chose to rest. The engine never sees this —
    * a move action carries only its path — so it is recorded here, because a
    * walk cannot be judged without knowing where it was going.
    */
   readonly heading: Heading | null;
+  /** The driver's reasons, printed under the plan. */
+  readonly why: readonly string[];
 }
 
 export interface Heading {
   readonly target: NodeId;
   /** The whole shortest path from where the turn began, target last. */
   readonly route: readonly NodeId[];
+  /** Why this target, as the plan line gives it: "the nearest POI p1 could take". */
+  readonly reason: string;
 }
 
 export interface PlayerStanding {
@@ -109,9 +130,14 @@ export interface Playthrough {
   readonly finalState: GameState;
   readonly turns: readonly PlayedTurn[];
   readonly endedBy: PlaythroughEnd;
+  readonly describe: readonly string[];
 }
 
-export function playGame(options: PlaythroughOptions, ruleset: Ruleset): Playthrough {
+export function playGame(
+  options: PlaythroughOptions,
+  ruleset: Ruleset,
+  driver: PlaythroughDriver = nearestTargetDriver(ruleset),
+): Playthrough {
   const { map } = generateAndReport(options.seed, ruleset);
   const startingNode = chooseStartingNode(map, createRng(map.seed).fork('starting-node'));
   const dice = createDiceSource(createRng(options.diceSeed), ruleset.config);
@@ -147,7 +173,7 @@ export function playGame(options: PlaythroughOptions, ruleset: Ruleset): Playthr
     // resting is what §7 offers. Only once *every* seat in one full cycle has
     // nothing left is the game stuck: no claim can happen, so §1's win
     // condition can never be reached and playing on would only burn turns.
-    const chosen = chooseAction(state, player.id, ruleset);
+    const chosen = driver.choose(state, player.id);
     const action = chosen?.action ?? { kind: 'rest' as const, player: player.id };
     idleSeats = chosen === null ? idleSeats + 1 : 0;
     if (idleSeats >= state.players.length) {
@@ -170,27 +196,36 @@ export function playGame(options: PlaythroughOptions, ruleset: Ruleset): Playthr
       statsBefore: player.stats,
       standings: state.players.map((current) => ({ name: current.name, stats: current.stats })),
       heading: chosen?.heading ?? null,
+      why: chosen?.why ?? [],
     });
   }
 
   if (state.status === 'finished') endedBy = 'victory';
 
-  return { map, options, startingNode, finalState: state, turns, endedBy };
+  return { map, options, startingNode, finalState: state, turns, endedBy, describe: driver.describe };
+}
+
+/** The simple test driver described at the top of this file. */
+export function nearestTargetDriver(ruleset: Ruleset): PlaythroughDriver {
+  return {
+    describe: [
+      '# "plan" is where the test driver sent the player: the nearest POI (by step cost) still',
+      '# unclaimed that they could beat on the best roll. It is a deliberately simple rule, not the AI.',
+    ],
+    choose: (state, playerId) => chooseAction(state, playerId, ruleset),
+  };
 }
 
 /** `null` when this player has nothing left it could ever take. */
-function chooseAction(
-  state: GameState,
-  playerId: PlayerId,
-  ruleset: Ruleset,
-): { action: TurnAction; heading: Heading } | null {
+function chooseAction(state: GameState, playerId: PlayerId, ruleset: Ruleset): TurnChoice | null {
   const player = state.players.find((current) => current.id === playerId);
   if (player === undefined) throw new Error(`no such player ${playerId}`);
 
   const target = nearestViableTarget(state, playerId, ruleset);
   if (target === null) return null;
+  const reason = `the nearest POI ${player.name} could take`;
   if (target === player.position) {
-    return { action: { kind: 'move', player: playerId, path: [] }, heading: { target, route: [] } };
+    return { action: { kind: 'move', player: playerId, path: [] }, heading: { target, route: [], reason }, why: [] };
   }
 
   const path = shortestPath(state.map.graph, player.position, target, ruleset.config);
@@ -207,10 +242,10 @@ function chooseAction(
   );
   // Nothing affordable this turn, so recover instead of standing still: grey is
   // a statement about this turn only (§7.1).
-  const heading = { target, route: path };
-  if (preview.reachableStepCount === 0) return { action: { kind: 'rest', player: playerId }, heading };
+  const heading = { target, route: path, reason };
+  if (preview.reachableStepCount === 0) return { action: { kind: 'rest', player: playerId }, heading, why: [] };
 
-  return { action: { kind: 'move', player: playerId, path }, heading };
+  return { action: { kind: 'move', player: playerId, path }, heading, why: [] };
 }
 
 function nearestViableTarget(state: GameState, playerId: PlayerId, ruleset: Ruleset): NodeId | null {
@@ -296,8 +331,7 @@ export function formatPlaythrough(run: Playthrough): string {
   lines.push('# Node ids are the ids drawn on the diagnostic map for this seed (pnpm map ' + run.options.seed + ').');
   lines.push('# Every step says which terrain was entered and what paid for it: a moving skill');
   lines.push('# (§7 allowance, counted down) or stamina (§11 STAMINA_COST: plains 1, forest 2, mountain 3).');
-  lines.push('# "plan" is where the test driver sent the player: the nearest POI (by step cost) still');
-  lines.push('# unclaimed that they could beat on the best roll. It is a deliberately simple rule, not the AI.');
+  lines.push(...run.describe);
   lines.push('# Free steps only pay for their own terrain. A walk that ends short names the step it could');
   lines.push('# not pay for; the rest of the path waits for next turn (§7).');
   lines.push('# A guarded POI says roll + skill vs guard strength; §8 needs strictly greater.');
@@ -365,16 +399,20 @@ function turnLines(turn: PlayedTurn, run: Playthrough): string[] {
  * of reach. A rest with a target says which step could not be paid for.
  */
 function headingLines(turn: PlayedTurn, run: Playthrough): string[] {
-  const { heading } = turn;
-  if (heading === null) return ['  plan    nothing left on the map this player could take, so rests'];
+  const { heading, why } = turn;
+  if (heading === null) {
+    if (why.length > 0) return ['  plan    rests', ...why];
+    return ['  plan    nothing left on the map this player could take, so rests'];
+  }
 
   const what = describePoi(run, heading.target);
   if (heading.route.length === 0) {
-    return [`  plan    already on node ${heading.target} (${what}), attacks it again`];
+    return [`  plan    already on node ${heading.target} (${what}), attacks it again`, ...why];
   }
   const lines = [
-    `  plan    heading for node ${heading.target} (${what}), the nearest POI ${turn.name} could take`,
+    `  plan    heading for node ${heading.target} (${what}), ${heading.reason}`,
     `          route ${[turn.positionBefore, ...heading.route].join(' -> ')}`,
+    ...why,
   ];
   if (turn.events.some((event) => event.type === 'rested')) {
     lines.push(

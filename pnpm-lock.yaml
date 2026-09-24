@@ -41,6 +41,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@adventure/ai':
+        specifier: workspace:*
+        version: link:../../packages/ai
       '@adventure/config':
         specifier: workspace:*
         version: link:../../packages/config

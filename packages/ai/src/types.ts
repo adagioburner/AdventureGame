@@ -1,7 +1,7 @@
+import type { GameConfig } from '@adventure/config';
 import type { DiceSource, GameState, PlayerId, Rng } from '@adventure/core';
-import type { PoiCandidate, RolloutCursor, RolloutTermination } from '@adventure/sim';
+import type { PoiCandidate, RestRule, RolloutCursor, RolloutTermination } from '@adventure/sim';
 
-/** A node of the search tree. One node per game state reached in the tree. */
 /**
  * One branch of the search tree.
  *
@@ -13,10 +13,21 @@ export type MctsBranch =
   | { readonly kind: 'target'; readonly target: PoiCandidate }
   | { readonly kind: 'rest' };
 
+/**
+ * A node of the search tree: a decision point of the search's subject, reached
+ * by the sequence of branches on the path from the root.
+ *
+ * A node holds no game state. The game has dice and the other seats move at
+ * random in between, so the same branches lead to a different position each
+ * time; every iteration replays them from the root through `applyAction` and
+ * samples afresh. That is open-loop MCTS, the standard form for a game with
+ * chance in it: were a node to keep the one position its first visit happened
+ * to reach, a single lucky or unlucky roll would decide that branch's value for
+ * the rest of the search.
+ */
 export interface MctsNode {
-  readonly state: GameState;
   /**
-   * The branch that produced this state; `null` at the root.
+   * The branch taken from the parent; `null` at the root.
    *
    * [SOURCE §12.2/§9, chat] Taking a target branch is a **macro-action**: "the
    * simulated player keeps moving to the chosen POI without making new decision
@@ -27,8 +38,6 @@ export interface MctsNode {
   readonly action: MctsBranch | null;
   readonly parent: MctsNode | null;
   readonly children: MctsNode[];
-  /** Branches not yet expanded from this node, per the `ActionEnumerator`. */
-  readonly untried: MctsBranch[];
   visits: number;
   /** Sum of backpropagated values; the evaluator decides what a value means. */
   totalValue: number;
@@ -47,7 +56,12 @@ export interface MctsNode {
  */
 export interface TreePolicy {
   readonly name: string;
-  select(node: MctsNode, rng: Rng): MctsNode;
+  /**
+   * Pick among `available`: the children of `node` whose branch exists in the
+   * position this iteration reached (a target another seat has claimed in this
+   * sample is not one).
+   */
+  select(node: MctsNode, available: readonly MctsNode[], rng: Rng): MctsNode;
   /** Which child to return as the final move once the budget is spent. */
   bestChild(root: MctsNode): MctsNode;
 }
@@ -87,8 +101,8 @@ export interface ActionEnumerator {
  * "Reachable in one turn" for the rest-pruning rule — can this player actually
  * arrive at that target within this turn's allowance and stamina (§7)?
  *
- * Injected because it is the one part of the rule that needs `previewPath` from
- * `@adventure/core`, which is not written yet. The rule itself is.
+ * Injected so a test can fix it; `previewReachability()` is the real one,
+ * `previewPath` over the cheapest route.
  */
 export interface TurnReachability {
   isReachableThisTurn(state: GameState, subject: PlayerId, target: PoiCandidate): boolean;
@@ -122,19 +136,20 @@ export interface RolloutPolicy {
  * tuned. See Q18 in `docs/OPEN_QUESTIONS.md`, and `policies/evaluators.ts` for
  * the three that ship — simulated, estimated and hybrid.
  *
- * The signature takes both the rolled-out cursor *and* the node being
- * evaluated, which is what lets all three sit behind this one interface: the
- * simulated one reads the rollout, the estimated one reads the node, and the
- * hybrid averages them.
+ * The signature takes both the rolled-out cursor *and* the position at the
+ * node being evaluated — where this iteration's rollout started — which is what
+ * lets all three sit behind this one interface: the simulated one reads the
+ * rollout, the estimated one reads the node, and the hybrid averages them.
  */
 export interface NodeEvaluator {
   readonly name: string;
-  evaluate(node: MctsNode, rolledOut: RolloutCursor, subject: PlayerId): number;
+  evaluate(atNode: RolloutCursor, rolledOut: RolloutCursor, subject: PlayerId): number;
 }
 
 /** Everything `search()` needs. Every policy is injected; none has a default. */
 export interface MctsOptions {
   readonly subject: PlayerId;
+  readonly config: GameConfig;
   readonly treePolicy: TreePolicy;
   readonly actions: ActionEnumerator;
   readonly rollout: RolloutPolicy;
@@ -144,6 +159,12 @@ export interface MctsOptions {
    * there is no separate opponent model to inject — only when to stop.
    */
   readonly termination: RolloutTermination;
+  /**
+   * When a player heading for a target rests instead. The same rule for tree
+   * edges, rollouts and the move `search()` returns, so all three step alike.
+   */
+  readonly restRule: RestRule;
+  /** The search's own die, never the game's: a search must not use up real rolls. */
   readonly dice: DiceSource;
   readonly rng: Rng;
   /** §11 `MCTS_TIME_BUDGET_PER_MOVE` — 10 s. */

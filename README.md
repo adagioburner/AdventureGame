@@ -23,17 +23,18 @@ applies to this repo:
 
 ## Status
 
-**Map generation, the rules engine, the map a player sees and a hot seat
-game work.** `generateMap(seed, ruleset)` runs GDD.md §2.1's eight steps end
-to end and returns a sealed `GameMap`, `applyAction(state, action, dice)` plays
-§7 and §8's turns on it, and `apps/web` draws it isometrically from the art in
-`Art/` and lets two players take turns on one screen until the engine declares
-a winner — `pnpm map <seed>` draws the generator's diagnostic view,
-`pnpm game <seed>` plays a game to a winner and prints it turn by turn, and
-`pnpm dev` opens the hot seat game. That is phases 1 to 4 of
+**Map generation, the rules engine, the map a player sees, a hot seat game
+and the computer player work.** `generateMap(seed, ruleset)` runs GDD.md
+§2.1's eight steps end to end and returns a sealed `GameMap`,
+`applyAction(state, action, dice)` plays §7 and §8's turns on it, and
+`apps/web` draws it isometrically from the art in `Art/` and lets two seats,
+each a person or §9's MCTS computer player, take turns on one screen until the
+engine declares a winner — `pnpm map <seed>` draws the generator's diagnostic
+view, `pnpm game <seed>` plays a game to a winner and prints it turn by turn,
+and `pnpm dev` opens the hot seat game. That is phases 1 to 5 of
 [`docs/IMPLEMENTATION_PLAN.md`](./docs/IMPLEMENTATION_PLAN.md), on top of phase
-0's test harness. The MCTS search loop (§9), the server (§6.1) and online play
-are still seams.
+0's test harness, with phase 5's balancing pass still to come. The server
+(§6.1) and online play are still seams.
 
 Two design questions are open, neither blocking: [Q27](./docs/OPEN_QUESTIONS.md)
 — `COMPACTNESS_MAX` never binds on a graph this sparse, so §2.1's Smooth step
@@ -104,6 +105,9 @@ pnpm map:batch 50         # 50 seeds, the §11 distributions, no files
 
 pnpm game adventure       # play one map to a winner, turn by turn
 pnpm game                 # a random seed, printed first so it can be reused
+pnpm game adventure --computer --seconds=2
+                          # ... with the computer in both seats, 2 s a move
+pnpm selfplay 10          # 10 computer-against-computer games at 10 s a move
 
 pnpm dev                  # the hot seat game: http://localhost:5173/?seed=adventure
 pnpm build:web            # ... as a static page in apps/web/dist

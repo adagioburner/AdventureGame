@@ -11,6 +11,7 @@
     "map": "node tools/balance/src/cli.ts map",
     "map:batch": "node tools/balance/src/cli.ts batch",
     "game": "node tools/balance/src/cli.ts game",
+    "selfplay": "node tools/balance/src/cli.ts selfplay",
     "dev": "pnpm --filter @adventure/web dev",
     "build:web": "pnpm --filter @adventure/web build"
   },

@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@adventure/ai": "workspace:*",
     "@adventure/config": "workspace:*",
     "@adventure/core": "workspace:*",
     "@adventure/mapgen": "workspace:*",

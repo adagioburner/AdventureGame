@@ -1,6 +1,6 @@
 import type { GameConfig } from '@adventure/config';
-import type { GameState, NodeId, PlayerId, Rng } from '@adventure/core';
-import { closestPoiCandidates } from '@adventure/sim';
+import { playerById, previewPath, shortestPath, type GameState, type NodeId, type PlayerId, type Rng } from '@adventure/core';
+import { closestPoiCandidates, unclaimedPoiNodes, type PoiCandidate } from '@adventure/sim';
 import type { ActionEnumerator, MctsBranch, MctsNode, TreePolicy, TurnReachability } from '../types.ts';
 
 /**
@@ -30,12 +30,12 @@ export function uctTreePolicy(explorationConstant: number): TreePolicy {
   return {
     name: 'uct',
 
-    select(node: MctsNode, rng: Rng): MctsNode {
-      if (node.children.length === 0) {
-        throw new RangeError('uctTreePolicy.select called on a node with no children');
+    select(node: MctsNode, available: readonly MctsNode[], rng: Rng): MctsNode {
+      if (available.length === 0) {
+        throw new RangeError('uctTreePolicy.select called with no child to choose');
       }
       return argMaxWithRandomTieBreak(
-        node.children,
+        available,
         (child) =>
           child.visits === 0
             ? Number.POSITIVE_INFINITY
@@ -140,11 +140,23 @@ export function closestUnclaimedPoiEnumerator(
 
 /** POIs whose reward is still unclaimed (§4.5) — the eligible target set. */
 export function unclaimedPoiNodesOf(state: GameState): ReadonlySet<NodeId> {
-  const nodes = new Set<NodeId>();
-  for (let index = 0; index < state.map.pois.length; index++) {
-    const poi = state.map.pois[index];
-    if (poi === undefined) continue;
-    if (state.poiRuntime[index]?.claimedBy === null) nodes.add(poi.node);
-  }
-  return nodes;
+  return unclaimedPoiNodes(state);
+}
+
+/**
+ * [SOURCE §12.2, chat] "reachable in one turn": walking the cheapest route to
+ * the target (the one metric, §5.1) arrives this turn, on this turn's
+ * allowance and the player's stamina (§7). Standing on it already counts.
+ */
+export function previewReachability(): TurnReachability {
+  return {
+    isReachableThisTurn(state: GameState, subject: PlayerId, target: PoiCandidate): boolean {
+      const player = playerById(state, subject);
+      const config = state.map.ruleset.config;
+      const route = shortestPath(state.map.graph, player.position, target.node, config);
+      if (route === null) return false;
+      return previewPath(state.map.graph, player.position, route, state.turn.allowance, player.stats.stamina, config)
+        .destinationReachable;
+    },
+  };
 }

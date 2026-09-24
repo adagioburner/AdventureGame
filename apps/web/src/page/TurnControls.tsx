@@ -7,6 +7,11 @@ interface TurnControlsProps {
   readonly waypointArmed: boolean;
   /** An End Turn is playing out: nothing can be pressed until it has. */
   readonly busy: boolean;
+  /**
+   * The computer's thinking time when the seat to move is a computer's, in
+   * milliseconds; `null` for a person.
+   */
+  readonly thinkingMs: number | null;
   onPlan(): void;
   onCancel(): void;
   onArmWaypoint(armed: boolean): void;
@@ -33,6 +38,32 @@ export function TurnControls(props: TurnControlsProps) {
   const here = poiAt(state.map, player.position);
   const runtime = poiRuntimeAt(state, player.position);
   const onGuard = here !== undefined && here.guard !== null && runtime !== undefined && !isClaimed(runtime);
+  const find = (
+    <button className="btn ghost" type="button" onClick={props.onFind} aria-label={`Show ${player.name} on the map`}>
+      Find {player.name}
+    </button>
+  );
+
+  // [Andrei, 2026-09-24] Q42: while a computer thinks, its name and a bar that
+  // fills across its thinking time; Plan a move, Rest and End turn are hidden
+  // until it has moved.
+  if (props.thinkingMs !== null) {
+    return (
+      <section className="controls" aria-label={`${player.name}’s turn`}>
+        <div className="thinking">
+          <p className="hint" aria-live="polite">
+            {busy ? `${player.name} is moving…` : `${player.name} is thinking…`}
+          </p>
+          {busy ? null : (
+            <div className="thinking-bar" role="presentation">
+              <i key={state.turn.number} style={{ animationDuration: `${props.thinkingMs}ms` }} />
+            </div>
+          )}
+        </div>
+        <div className="buttons">{find}</div>
+      </section>
+    );
+  }
 
   return (
     <section className="controls" aria-label={`${player.name}’s turn`}>
@@ -71,9 +102,7 @@ export function TurnControls(props: TurnControlsProps) {
         <button className="btn primary" type="button" disabled={busy} onClick={props.onEndTurn}>
           End turn
         </button>
-        <button className="btn ghost" type="button" onClick={props.onFind} aria-label={`Show ${player.name} on the map`}>
-          Find {player.name}
-        </button>
+        {find}
       </div>
     </section>
   );

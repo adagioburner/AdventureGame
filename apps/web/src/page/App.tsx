@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { DEFAULT_RULESET } from '@adventure/config';
 import type { GameMap } from '@adventure/core';
 import { atlasOf, buildArtCatalog, type ArtCatalog } from '../art/catalog.ts';
 import { ART_FILES } from '../art/files.ts';
@@ -149,11 +150,17 @@ export function App() {
   );
 }
 
-/** Two seats with different figurines, so the two can be told apart on the map. */
+/**
+ * Two seats with different figurines, so the two can be told apart on the map.
+ * Both start as people (Q41), with §11's 10 seconds ready for either to be
+ * handed to the computer.
+ */
 function defaultSeats(catalog: ArtCatalog): readonly HotseatSeat[] {
   const ids = atlasOf(catalog, catalog.manifest.figurines.sheet).sprites.map((sprite) => sprite.id);
   return Array.from({ length: HOTSEAT_SEATS }, (_unused, index) => ({
     name: `Player ${index + 1}`,
     avatarId: ids[index % ids.length] ?? '',
+    control: 'human' as const,
+    thinkingSeconds: Math.round(DEFAULT_RULESET.config.ai.MCTS_TIME_BUDGET_PER_MOVE_MS / 1000),
   }));
 }

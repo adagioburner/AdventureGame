@@ -245,6 +245,22 @@ export interface AiConfig {
    * the designer's.
    */
   readonly MIN_REACHABLE_NODES_FOR_REST: number;
+  /**
+   * `SIMULATION_TURN_CAP` — 250. Not in §11; the designer's, 2026-09-24 (Q44).
+   *
+   * [SOURCE §9, review] A game the computer plays out in its head stops after
+   * this many turns, counted from the position it is thinking about, "and give
+   * the victory to whatever player has more gold". It is there for Q30's
+   * position, where the gold left is behind guards nobody can beat and a
+   * simulated game would otherwise never stop.
+   */
+  readonly SIMULATION_TURN_CAP: number;
+  /**
+   * The thinking time a computer seat can be given on the start game panel, in
+   * whole seconds. Not in §11; the designer's, 2026-09-24 (Q41): 1 to 60, the
+   * box starting at `MCTS_TIME_BUDGET_PER_MOVE_MS`.
+   */
+  readonly THINKING_TIME_SECONDS: IntRange;
 }
 
 /**

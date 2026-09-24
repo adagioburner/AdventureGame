@@ -91,8 +91,10 @@ before any of the multiplayer work lands.
 
 This plan therefore puts the MCTS engine in phase 5, before the server phases,
 and keeps AI's *multiplayer* integration (the GM's-machine Web Worker, AI
-settings UI, resign-to-AI handover, GM switching a seat between human and AI)
-in phase 8 where it belongs, because that part genuinely does need the server.
+seats and settings in online games, resign-to-AI handover, GM switching a seat
+between human and AI) in phase 8 where it belongs, because that part genuinely
+does need the server. The hot seat start game panel's computer seats and
+thinking time moved into phase 5 at Andrei's ruling (Q40).
 Phase 5 and phases 6–7 are independent of each other, so if you would rather
 keep AI last, swap them; nothing downstream changes.
 
@@ -125,10 +127,10 @@ half needs the AI, so it sits at the end of phase 5.
 | [2](#phase-2--rules-engine-headless) ✅ | §7/§8 movement, interaction, turn order, victory — pure, tested | part of 2 |
 | [3](#phase-3--art-binding-and-the-isometric-renderer) ✅ | Atlas loader, reward-kind-to-sheet mapping, isometric projection, draw layers | new |
 | [4](#phase-4--hotseat-ui) ✅ | Pan/zoom, move mode, path preview, End Turn, Rest, stats, game end | 2 |
-| [5](#phase-5--ai-players-the-engine) | MCTS `search()`, rollouts, self-play harness, balancing pass | part of 5 |
+| [5](#phase-5--ai-players-the-engine) ✅ | MCTS `search()`, rollouts, computer seats and thinking time in hot seat (Q40), self-play harness; the balancing pass comes next | part of 5 |
 | [6](#phase-6--server-foundation-auth-and-lobby) | Host decision made real, transport, auth, game list, join/accept setup | 3 |
 | [7](#phase-7--online-play) | Authoritative state, broadcast, reconnect, message board, out-of-turn planning, GM controls | 4 |
-| [8](#phase-8--ai-in-multiplayer) | Web Worker on the GM's machine, AI settings, resign-to-AI, human/AI switching | rest of 5 |
+| [8](#phase-8--ai-in-multiplayer) | Web Worker on the GM's machine, AI seats and settings in online games, resign-to-AI, human/AI switching | rest of 5 |
 
 Phases 0–2 are strictly sequential. Phase 3 can start any time after phase 0
 (it touches no game logic). Phase 5 is independent of 6–8.
@@ -961,7 +963,7 @@ figurines, then play it out on one screen until the engine declares a winner.
 
 ---
 
-## Phase 5 — AI players, the engine
+## Phase 5 — AI players, the engine — **built; the balancing pass comes next**
 
 Depends on phases 1, 2 and nothing else. Every policy, evaluator and branch rule
 is already written; the loop is not.
@@ -1025,7 +1027,9 @@ is already written; the loop is not.
    `MCTS_EXPLORATION_CONSTANT` = √2 correct — a new evaluator has to preserve the
    range, not a particular divisor.
 6. **An AI seat in hotseat.** The cheapest possible way to play against it, and
-   it needs no server at all.
+   it needs no server at all. Andrei widened this (Q40): the hot seat start
+   game panel gets a human or computer choice per seat and a thinking time,
+   which the plan had put in phase 8.
 7. **`runSelfPlayBatch`** in `tools/balance`, then **the balancing pass**: tune
    the six parameters §11 marks tunable, with `REMOTENESS_SIMULATION_RUNS`
    called out by §5.1 as expected to change "if 100 proves too imprecise or too
@@ -1041,6 +1045,48 @@ reports `target_claimed_by_other` rather than continuing; the rest branch
 appears exactly when fewer than 3 targets are reachable; every evaluator's
 output inside [0, 1]; `search()` inside its time budget and returning one legal
 turn; self-play games terminating.
+
+### What actually landed
+
+Items 1 to 6 and the harness half of item 7. The balancing pass is next, as
+proposals Andrei rules on one at a time (Q40); nothing in §11 changed.
+
+- **The rollout** (`packages/sim/src/rollout.ts`) is its own small loop, as
+  item 1 expected: `playRolloutTurn`, `macroAdvanceToTarget`,
+  `playUntilTurnOf` and `runRollout`, over `candidates.ts`'s shared chooser.
+  `walk.ts` stays remoteness's own. There is no `rolloutDriver`, and the
+  termination's second argument is `turnsTaken`, not `legsTaken`, since a
+  macro-action spans turns. Each seat keeps its own target across the others'
+  turns (`RolloutCursor.targets`). A player that cannot take a single step
+  rests (Q43, `restWhenStuck()`), and a simulated game stops after
+  `SIMULATION_TURN_CAP` = 250 turns as well as on no gold left (Q44).
+- **The search** (`packages/ai/src/mcts.ts`) is open-loop MCTS: a node holds
+  no game state and each iteration replays its branches from the root, so the
+  dice and the other seats' choices are drawn afresh every time. The first
+  version kept one state per node, and one lucky or unlucky roll then decided
+  a branch for the rest of the search; with a star map's gold one step away it
+  chose a stamina POI instead. Open-loop is the standard form for a game with
+  chance in it, under §12.2's "sensible defaults". `startSearch` runs the same
+  search a slice at a time.
+- **The computer player** (`packages/ai/src/computer.ts`) is the v1 setup in
+  one place: UCT with √2, the closest unclaimed POIs plus rest, §9's rollout,
+  the simulated evaluation, the rest rule and the turn cap.
+  `chooseComputerMove` thinks in one go; `startComputerMove` in slices.
+- **Hot seat** (`apps/web`): Human and Computer buttons and a thinking time of
+  1 to 60 seconds per seat on the start game panel (Q41); on a computer's turn
+  "<name> is thinking…" over a filling bar, then its move plays out like a
+  person's End turn, and its die card closes itself after 3 seconds (Q42).
+  It thinks on the page's own thread, one 12 ms slice a frame
+  (`modes/computer.ts`), because the published game page cannot count on
+  being allowed to start a Web Worker. A computer seat is not in the move-mode
+  controller's `localPlayers`, so its saved route never comes back as a
+  preview.
+- **The harness** (`tools/balance`): `computerDriver` puts the computer in a
+  playthrough, and each turn's transcript says how many games it played in
+  its head, how the chosen target did in them and the runners-up.
+  `pnpm game <seed> --computer [--seconds=<s>]` plays one such game;
+  `pnpm selfplay [<n>] [--seconds=<s>]` plays n and reports wins by seat,
+  turns and the machine they ran on.
 
 ---
 
@@ -1139,7 +1185,9 @@ player's move.
    learns this — that is what the ports were for. Note this makes `apps/web`
    depend on `@adventure/mapgen` and `@adventure/ai`, which it does not today.
 2. **A Web Worker is not optional.** 10 seconds of search per AI seat per turn
-   cannot run on the GM's UI thread.
+   cannot run on the GM's UI thread. (Hot seat thinks in one slice a frame on
+   the page's thread instead, phase 5, because the published page cannot count
+   on starting a worker; whether the GM's page can is this phase's to check.)
 3. **The composed consequence, stated plainly:** with AI and map generation on
    the GM's machine, a disconnected game master blocks forced turns *and* every
    AI turn *and* map creation, so even an all-AI game cannot advance without the
@@ -1147,11 +1195,14 @@ player's move.
    alone. Worth surfacing in the UI so a stalled game is legible rather than
    mysterious.
 4. **AI seats at setup** — including AI players in a game from the setup screen.
+   Hot seat has these since phase 5 (Q40, Q41); this carries the same Human and
+   Computer choice into online setup.
 5. **AI settings** — thinking time per turn, in seconds: Andrei confirmed the
    budget stays wall-clock rather than a rollout count, because the game is for
    fun rather than for a consistently strong AI.
    `MCTS_TIME_BUDGET_PER_MOVE_MS` is config, so a per-game override needs a
-   path through the protocol.
+   path through the protocol. Hot seat's per-seat box, 1 to 60 seconds, is the
+   one to carry over (Q41).
 6. **Handover** — an AI takes over a resigned seat so play continues, and the GM
    may switch any player between human and AI control at will. Only the GM hands
    control back to a human.

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { GameEvent, GameState, NodeId, PathPreview, PlayerId, Point, TurnAction } from '@adventure/core';
+import { previewPath, type GameEvent, type GameState, type NodeId, type PathPreview, type PlayerId, type Point, type TurnAction } from '@adventure/core';
 import { createMoveModeController, type EnterRefusal, type MoveModeState } from '../interaction/moveMode.ts';
 import type { Pick } from '../interaction/picking.ts';
+import { hotseatComputer } from '../modes/computer.ts';
 import { HOTSEAT_MODE, type HotseatGame, type PlayedTurn } from '../modes/hotseat.ts';
 import { position } from '../render/geometry.ts';
 import type { LoadedArt } from '../render/pixi/textures.ts';
@@ -19,9 +20,10 @@ const PHONE = '(max-width: 899px)';
 /**
  * How long End Turn's walk takes per step, the die tumbles, a notice stays up,
  * and an unguarded claim's notice takes to fade in, stays up (2 seconds, his
- * pick) and takes to fade out.
+ * pick) and takes to fade out; and how long a computer's die card stays up
+ * (3 seconds, Q42).
  */
-export const timing = { stepMs: 220, tumbleMs: 1100, noticeMs: 2200, appearMs: 200, claimMs: 2000, fadeMs: 500 };
+export const timing = { stepMs: 220, tumbleMs: 1100, noticeMs: 2200, appearMs: 200, claimMs: 2000, fadeMs: 500, computerCardMs: 3000 };
 
 interface GameScreenProps {
   readonly art: LoadedArt;
@@ -56,6 +58,7 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
   const [engagedTurn, setEngagedTurn] = useState<number | null>(null);
   const handle = useRef<MapHandle | null>(null);
   const busy = inFlight !== null;
+  const computer = useMemo(() => hotseatComputer(game), [game]);
 
   const say = useCallback((text: string) => setNotice(text), []);
   useEffect(() => {
@@ -72,14 +75,26 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
     const timer = window.setTimeout(() => setResult(null), timing.claimMs + timing.fadeMs);
     return () => window.clearTimeout(timer);
   }, [result]);
+  // [Andrei, 2026-09-24] Q42: "the computer's die panel closes itself, pressing
+  // OK is not necessary". OK still closes it sooner.
+  useEffect(() => {
+    if (result === null || result.rolling || isUnguardedClaim(result.turn)) return;
+    if (result.turn.after.players.find((player) => player.id === result.turn.player)?.control !== 'ai') return;
+    const timer = window.setTimeout(() => setResult(null), timing.computerCardMs);
+    return () => window.clearTimeout(timer);
+  }, [result]);
   const locateFigure = useCallback((player: PlayerId) => handle.current?.screenOfFigure(player) ?? null, []);
 
   const commit = useRef<(action: TurnAction) => void>(() => undefined);
+  /** Play a turn, then show it: the walk along `planned`, the die, the new state. */
+  const play = useRef<(action: TurnAction, planned: { path: PathPreview | null; waypoint: NodeId | null }) => void>(() => undefined);
   const controller = useMemo(
     () =>
       createMoveModeController({
         mode: HOTSEAT_MODE,
-        localPlayers: new Set(game.state.players.map((player) => player.id)),
+        // A computer seat is not this screen's to plan for: its saved route
+        // is never brought back as a preview, and its figure cannot be picked up.
+        localPlayers: new Set(game.state.players.filter((player) => player.control === 'human').map((player) => player.id)),
         commit: (action) => commit.current(action),
       }),
     [game],
@@ -96,10 +111,13 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
   }, [controller, game]);
 
   commit.current = (action) => {
-    const before = game.state;
     // The route End Turn committed stays drawn while the figure walks it.
     const planned =
       action.kind === 'move' && move.kind === 'previewing' ? { path: move.preview, waypoint: move.waypoint } : { path: null, waypoint: null };
+    play.current(action, planned);
+  };
+  play.current = (action, planned) => {
+    const before = game.state;
     let turn: PlayedTurn;
     try {
       turn = game.play(action);
@@ -145,6 +163,25 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
     setResult({ turn, rolling: false });
   };
 
+  // [Andrei, 2026-09-24] Q42: a computer's turn starts with it thinking for its
+  // seat's time, while its figure blinks, and then plays out like a person's
+  // End turn: its route drawn, the walk, the die. Leaving the game stops it.
+  useEffect(() => {
+    if (busy || shown !== game.state || shown.status !== 'in_progress') return;
+    const player = shown.players[shown.turn.activeSeat - 1];
+    if (player === undefined || player.control !== 'ai') return;
+    const cancel = { aborted: false };
+    computer.chooseAction(shown, player.id, cancel).then(
+      (action) => {
+        if (!cancel.aborted) play.current(action, { path: routeOf(shown, action), waypoint: null });
+      },
+      (error: unknown) => say(error instanceof Error ? error.message : String(error)),
+    );
+    return () => {
+      cancel.aborted = true;
+    };
+  }, [computer, game, shown, busy, say]);
+
   const refuse = (why: EnterRefusal): void => {
     const active = shown.players[shown.turn.activeSeat - 1];
     if (why === 'not_your_turn' && active !== undefined) say(`It is ${active.name}’s turn. In hot seat nobody plans out of turn.`);
@@ -156,7 +193,7 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
     if (controller.state.kind === 'idle') {
       const clicked = target.players.find((player) => player === active?.id) ?? target.players[0];
       if (clicked === undefined) {
-        if (target.node !== null) say('Tap your figure, or Plan a move, before choosing where to go.');
+        if (target.node !== null && active?.control !== 'ai') say('Tap your figure, or Plan a move, before choosing where to go.');
         return;
       }
       const refused = controller.enter(clicked);
@@ -207,11 +244,12 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
       shown: () => shown,
       diceSeed: game.setup.diceSeed,
       busy: () => busy,
+      thinking: () => !busy && shown === game.state && shown.status === 'in_progress' && active?.control === 'ai',
       screenOf: (node: number): Point | null => handle.current?.screenOf(node as NodeId) ?? null,
       setTiming: (next: Partial<typeof timing>) => Object.assign(timing, next),
     };
     (window as unknown as { __adventure?: typeof hooks }).__adventure = hooks;
-  }, [game, shown, busy]);
+  }, [game, shown, busy, active]);
 
   const path = inFlight !== null ? inFlight.path : move.kind === 'previewing' ? move.preview : null;
   const waypoint = inFlight !== null ? inFlight.waypoint : move.kind === 'idle' ? null : move.waypoint;
@@ -230,6 +268,7 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
         move={move}
         waypointArmed={armed}
         busy={busy}
+        thinkingMs={active?.control === 'ai' ? (game.setup.seats[active.seat - 1]?.thinkingSeconds ?? 0) * 1000 : null}
         onPlan={plan}
         onCancel={() => controller.cancel()}
         onArmWaypoint={(on) => controller.armWaypoint(on)}
@@ -306,6 +345,13 @@ function walk(player: PlayerId, nodes: readonly Point[], show: (walker: Walker) 
     };
     requestAnimationFrame(frame);
   });
+}
+
+/** The computer's route as a person's End turn would show it: §7's colours for this turn. */
+function routeOf(state: GameState, action: TurnAction): PathPreview | null {
+  const player = state.players[state.turn.activeSeat - 1];
+  if (action.kind !== 'move' || action.path.length === 0 || player === undefined) return null;
+  return previewPath(state.map.graph, player.position, action.path, state.turn.allowance, player.stats.stamina, state.map.ruleset.config);
 }
 
 function sleep(ms: number): Promise<void> {

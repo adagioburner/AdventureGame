@@ -20,8 +20,8 @@ function setup(): { game: HotseatGame; controller: MoveModeController; sent: Tur
   const game = new HotseatGame({
     map,
     seats: [
-      { name: 'Ada', avatarId: 'player_avatars_01' },
-      { name: 'Bram', avatarId: 'player_avatars_02' },
+      { name: 'Ada', avatarId: 'player_avatars_01', control: 'human', thinkingSeconds: 10 },
+      { name: 'Bram', avatarId: 'player_avatars_02', control: 'human', thinkingSeconds: 10 },
     ],
     diceSeed: 'move-mode',
   });

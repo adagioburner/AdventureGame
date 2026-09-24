@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q39.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q45.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -999,6 +999,91 @@ was never put to Andrei; it was item 5 on the list. Andrei: *"please list gold
 last"*, and at his pick in all three places that share the order: the stats
 panel, the end-of-game table and the turn log. `STAT_ORDER` in
 `apps/web/src/page/journal.ts` is the one list.
+
+### Q40. ~~Does phase 5 change the start game panel?~~ — **answered 2026-09-24: yes, both controls now**
+
+The plan split his fifth step in two: phase 5 had "an AI seat in hotseat" and
+phase 8 had "AI seats at setup" and "AI settings". Andrei asked whether phase 5
+would need changes to the start game panel, and on the choice between both
+controls now, the seat only now, or both later he picked **both now**: the
+hot seat start game panel gets a human or computer choice per seat and a
+thinking time. Phase 8 carries those two controls into online games. The six
+§11 values the plan tunes at the end of phase 5 come afterwards, as proposals
+he rules on one at a time; this change tunes nothing.
+
+### Q41. ~~How does the start game panel set up a computer seat?~~ — **answered 2026-09-24: as recommended**
+
+Five details the ask left open, put to him with a mock and a recommendation
+each. He took all five recommendations:
+
+- Either seat or both can be the computer; with both, the game plays itself.
+  Both seats start as Human, as before.
+- Two buttons at the top of each seat, Human and Computer. The panel's opening
+  line now reads "Two seats take turns on this screen, each played by a person
+  or by the computer."
+- Each computer seat has its own thinking time, shown in that seat.
+- The thinking time is a box for whole seconds from 1 to 60, filled in with
+  §11's 10. `THINKING_TIME_SECONDS` in the config holds the range. Start the
+  game stays greyed out while a computer seat's box holds anything else.
+- A computer seat's name and figurine are chosen as a person's are, and
+  nothing in the game marks it as a computer except its thinking.
+
+### Q42. ~~What shows during the computer's turn?~~ — **answered 2026-09-24: a filling bar, and its die card closes itself**
+
+- While it thinks, the line above the buttons reads "<name> is thinking…" over
+  a bar that fills across its thinking time. Its player card is highlighted and
+  its figure blinks, as for anyone's turn, and the map still pans and zooms.
+  Plan a move, Rest and End turn are hidden until it has moved; Find stays.
+- Its move then plays out like a person's End turn: its route is drawn, the
+  figure walks, an unguarded claim floats up and fades, and the die tumbles if
+  it fights a guard.
+- The recommendation was for that die card to wait for OK as a person's does.
+  Andrei chose the other option: *"the computer's die panel closes itself,
+  pressing OK is [not] necessary"*. It closes after 3 seconds. The OK button is
+  still on it and closes it sooner. A person's die card still waits for OK.
+
+### Q43. ~~When does a simulated player rest?~~ — **answered 2026-09-24: when it cannot take a single step**
+
+§9 says a simulated player keeps moving toward its POI and says nothing about
+resting, and stamina runs out often. Recommended and accepted: a simulated
+player rests on any turn in which it cannot take a single step toward its
+target, then carries on toward the same target. The computer's real move
+follows the same rule, so it never ends a turn standing still for want of
+stamina. `restWhenStuck()` in `packages/sim/src/rollout.ts`.
+
+### Q44. ~~What stops a simulated game that cannot end?~~ — **answered 2026-09-24: 250 turns, then the one with more gold**
+
+Q30's position, gold that nobody can take, would leave a game the computer
+plays in its head running for ever. Andrei: *"we can end the simulation after
+250 turns and give the victory to whatever player has more gold"*.
+`SIMULATION_TURN_CAP` (250) counts turns from the position the computer is
+thinking about. A game stopped there is scored like any other: the simulated
+evaluation reads each player's share of the map's gold, so whoever holds more
+comes out ahead.
+
+This is for the games the computer plays in its head only; a real game still
+has no turn limit, and Q30 stays open.
+
+Measured afterwards, on six maps with 40 simulated games from each starting
+point: of the games simulated from the opening, 16% reach 250 turns (the
+median runs 181); from turn 50, 1%; from turns 100 and 150, none. Random play
+is slow to finish early on, so near the opening the cap stops about a sixth of
+what the computer imagines, and each of those is scored on the gold held at
+turn 250.
+
+### Q45. ~~Does a busy page cut the computer's thinking short?~~ — **answered 2026-09-24: yes, it moves when its seconds are up**
+
+The computer thinks in 12 ms slices between the page's frames
+(`apps/web/src/modes/computer.ts`), and its thinking time counts clock seconds
+from the start of its turn. When the page stutters or freezes, part of that
+time passes with no thinking done. In the headless browser used for checks,
+which has no graphics card, the page froze for up to 17 seconds at each turn
+change, a move got one or two slices, and the computer played almost at
+random. Put to Andrei with two options: move when the seconds are up (weaker
+on a slow page, but a turn never takes longer than the time set), or keep
+thinking until it has had its full seconds (as strong, but a slow page makes
+the turn run longer). Recommended and chosen: **as now**, which keeps Q20's
+rule of thinking in seconds rather than for strength. Nothing changed.
 
 ---
 

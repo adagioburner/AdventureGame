@@ -6,12 +6,13 @@ code, not a new authority — **[`GDD.md`](../GDD.md) remains the single source 
 truth**, and every rule below traces back to a GDD section, cited as `§n`. If
 this file and the GDD ever disagree, the GDD wins and this file is wrong.
 
-One thing to know before reading: as of phase 2 every rule below is real code.
-Map generation (§2.1), movement, interaction, turn order and victory all run;
-`pnpm game <seed>` plays a whole game headlessly and prints it turn by turn.
-What is still a contract throwing `NotImplementedError` is the AI (§9's MCTS
-search and the rollout driver) and the session layer (§6.1's setup flow, the
-server). The rules are decided either way — see
+One thing to know before reading: as of phase 5 every rule below is real code.
+Map generation (§2.1), movement, interaction, turn order, victory and the AI
+(§9's MCTS search and its rollouts) all run; `pnpm game <seed>` plays a whole
+game headlessly and prints it turn by turn, and `pnpm game <seed> --computer`
+has the computer play both seats. What is still a contract throwing
+`NotImplementedError` is the session layer (§6.1's setup flow, the server). The
+rules are decided either way — see
 [`docs/OPEN_QUESTIONS.md`](./OPEN_QUESTIONS.md) for how each was settled.
 
 ## The shape of a game
@@ -143,8 +144,14 @@ game.
 
 **Every seat is simulated by the same policy** — human-controlled players
 included. There is no separate opponent model; the rollout plays whichever seat
-is active, in turn order. The `subject` on a `RolloutCursor` only says whose
-gold gets read at the end.
+is active, in turn order. Each seat keeps its own target across the other
+seats' turns (`RolloutCursor.targets`). The `subject` on a `RolloutCursor` only
+says whose gold gets read at the end.
+
+**A simulated player rests when it cannot take a single step** toward its
+target, and then carries on toward the same target (Q43, `restWhenStuck()`).
+The tree's edges and the computer's real move follow the same rule, so all
+three step alike.
 
 **Choosing a target is a macro-action.** The simulated player commits to a POI
 and keeps moving toward it across as many turns as it takes, making no new
@@ -172,9 +179,15 @@ thing anyone wins with, so a state with none left is already decided, and
 simulating the tail buys the search nothing while costing real time against the
 10-second budget. `goldExhaustedTermination` also stops on a finished game,
 since §1's win condition can fire earlier, when a leader's lead already exceeds
-what remains. Termination sits behind an interface because a turn or depth cap
-is the obvious lever if rollouts prove slow, and it would change what the
-backpropagated value means (`packages/sim/src/rollout.ts`).
+what remains.
+
+**It also stops after `SIMULATION_TURN_CAP` (250) turns**, counted from the
+position the computer is thinking about (Q44, `turnCapTermination`). That is
+for Q30's position, where the gold that is left is behind guards nobody can
+beat and nothing else would stop a simulated game. A game stopped there is
+scored like any other, by the subject's share of the map's gold, which is
+Andrei's "give the victory to whatever player has more gold". Near the opening
+about a sixth of simulated games reach the cap; from turn 50 on, almost none.
 
 **What comes back.** There are three kinds of node evaluation, and they are
 worth keeping apart (`packages/ai/src/policies/evaluators.ts`):
@@ -198,7 +211,11 @@ preserve is the range itself, not a particular divisor.
 
 **Around the rollout**, the search selects with UCT, expands one untried branch
 at a time through `applyAction`, and returns the most-visited child of the root
-("robust child") once `MCTS_TIME_BUDGET_PER_MOVE` (10 s) is spent. Branches at a
+("robust child") once `MCTS_TIME_BUDGET_PER_MOVE` (10 s) is spent. It is
+open-loop: a tree node holds no game state, and every iteration replays the
+branches from the root, so the dice and the other seats' moves are drawn
+afresh each time and a branch is judged on all its outcomes rather than on the
+one its first visit happened to reach. Branches at a
 node are those same `CLOSE_CANDIDATE_COUNT` closest unclaimed POIs, *recomputed
 against that node's state*,
 plus a rest branch, added only when fewer than `MIN_REACHABLE_NODES_FOR_REST`
