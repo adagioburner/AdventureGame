@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q52.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q53.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -1292,6 +1292,20 @@ the buttons above the cards) Andrei took the recommended one: the cards scroll
 in their own column when they don't fit, and the buttons stay where they are.
 Two or three players, and phones, look as before. `.players` in
 `apps/web/index.html`.
+
+<a id="q53"></a>
+### Q53. ~~Does the column show the current player's card when their turn starts?~~ — **answered 2026-09-24: yes, it glides there**
+
+Once the cards scroll (Q52), player 5's card can sit out of view on their own
+turn. Andrei took the recommendation: at the start of each turn the column
+glides until the current player's card shows, as the map glides to their
+figure (Q46). Only the column moves, and only when the card is out of view.
+`Players` in `apps/web/src/page/Players.tsx`.
+
+In the same review he asked for superfluous wording to go from the new game
+screen: its opening line no longer adds "All start on the plains node where
+the figures stand.", and a seat's heading reads "Seat 3 · starts with 50
+stamina" without "moves third".
 
 ---
 

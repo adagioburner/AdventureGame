@@ -5,8 +5,3 @@ export function sentence(message: string): string {
   const capital = text.charAt(0).toUpperCase() + text.slice(1);
   return /[.!?]$/.test(capital) ? capital : `${capital}.`;
 }
-
-/** "first", "second"… for the seat legend, as on the hot seat panel. */
-export function ordinal(seat: number): string {
-  return ['first', 'second', 'third', 'fourth', 'fifth'][seat - 1] ?? `${seat}th`;
-}

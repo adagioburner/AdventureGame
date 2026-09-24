@@ -6,7 +6,6 @@ import { atlasOf, type ArtCatalog } from '../art/catalog.ts';
 import { Figurine } from '../page/Sprites.tsx';
 import type { LoadedArt } from '../render/pixi/textures.ts';
 import { withCount, withSeat, type LocalLimits, type LocalSetup } from './local.ts';
-import { ordinal } from './text.ts';
 import './setup.css';
 
 /** A player's name's longest, as on the server. */
@@ -95,10 +94,7 @@ function LocalSetupPanel({ art, panel }: { readonly art: LoadedArt; readonly pan
       }}
     >
       <h2>New game</h2>
-      <p className="muted">
-        Each seat takes its turn on this screen, played by a person or by the computer. All start on the plains node where the
-        figures stand.
-      </p>
+      <p className="muted">Each seat takes its turn on this screen, played by a person or by the computer.</p>
       {panel.playOnline === null ? null : (
         <>
           <PlayOnlineSwitch on={false} disabled={panel.playOnline.busy} onChange={panel.playOnline.turnOn} />
@@ -441,7 +437,7 @@ function SeatCard({ seat, children }: { readonly seat: number; readonly children
   return (
     <fieldset className="seat">
       <legend>
-        Seat {seat} · moves {ordinal(seat)} · starts with {startingStaminaForSeat(seat, DEFAULT_RULESET)} stamina
+        Seat {seat} · starts with {startingStaminaForSeat(seat, DEFAULT_RULESET)} stamina
       </legend>
       {children}
     </fieldset>
