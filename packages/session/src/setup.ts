@@ -8,7 +8,15 @@ import {
   type GameState,
   type UserId,
 } from '@adventure/core';
-import type { ClientMessage, JoinRequest, ProtocolErrorCode, SetupSeat, SetupState } from '@adventure/protocol';
+import {
+  isOpenSeat,
+  type ClientMessage,
+  type JoinRequest,
+  type NewGameSeat,
+  type ProtocolErrorCode,
+  type SetupSeat,
+  type SetupState,
+} from '@adventure/protocol';
 
 /**
  * [SOURCE §3] §6.1's setup flow, as pure functions over `SetupState`: the GM
@@ -16,13 +24,19 @@ import type { ClientMessage, JoinRequest, ProtocolErrorCode, SetupSeat, SetupSta
  * each player picks a name and figure, and the GM starts. `GameSession` runs
  * these one message at a time and does the storing and sending.
  *
- * [Q48] Andrei's answers settle the details: the GM plays, always in seat 1;
- * later seats go in the order the GM accepts people (§6's "whatever is most
- * convenient", which acceptance order also is); the GM may start with seats
- * empty, alone if they like, and a computer plays each empty seat. Computer
- * seats are "Computer 1", "Computer 2" and so on, each with a free figure, and
- * the GM may rename them and change their figures before the start. One
- * thinking time covers all of them.
+ * [Q48] Andrei's answers settle the details: the GM plays, always in seat 1,
+ * and may start with seats empty, alone if they like; a computer plays each
+ * empty seat. Computer seats are "Computer 1", "Computer 2" and so on, each
+ * with a free figure, and the GM may rename them and change their figures
+ * before the start.
+ *
+ * [Q51] One setup screen for hot seat and online games, Andrei's answers to
+ * phase 6 details 21 to 30. Every seat but the GM's is Human or Computer, as
+ * the GM sets it (22). A Human seat nobody holds is open: accepting someone
+ * puts them in the first open seat, and an open seat still empty at Start is
+ * played by the computer. Each computer seat has its own thinking time (24).
+ * A new game has two seats, both Human, as on the hot seat screen, unless it
+ * was made from a setup the page already had (25).
  *
  * [Q49] Figures, Andrei's answers to phase 6 details 18 and 19: a person
  * may take a figure a computer holds, and the computer switches to a free
@@ -35,8 +49,7 @@ import type { ClientMessage, JoinRequest, ProtocolErrorCode, SetupSeat, SetupSta
  * the state).
  *
  * [SOURCE §2, chat] Starting stamina is then `startingStaminaForSeat(seat)`
- * from `@adventure/config`, inside `createGameState`, so computers, holding the
- * last seats, start with the most.
+ * from `@adventure/config`, inside `createGameState`.
  */
 
 /** What a setup is checked against, fixed for a game when it is created. */
@@ -83,43 +96,66 @@ export interface NewSetup {
   readonly gameMaster: { readonly userId: UserId; readonly displayName: string };
   readonly createdAt: number;
   readonly mapSeed: string;
+  /**
+   * [Q51, 25] The seats a page already had when "Play online" was turned on,
+   * seat 1 the game master's. Without them the game starts with two seats,
+   * both Human, as a new hot seat game does.
+   */
+  readonly seats?: readonly NewGameSeat[];
 }
 
-/** [Q48, 6 and 7] A new game, its creator in seat 1 and a computer in seat 2. */
+/** [Q48, 6] A new game, its creator in seat 1. */
 export function createSetup(game: NewSetup, limits: SetupLimits): SetupState {
   const name = checkedText(game.name, limits.gameNameMaxLength, 'game name');
   const seed = checkedText(game.mapSeed, limits.seedMaxLength, 'map seed');
-  const creator: SetupSeat = {
-    id: personSeatId(game.gameMaster.userId),
-    seat: 1,
-    playerId: playerIdForSeat(1),
-    userId: game.gameMaster.userId,
-    name: game.gameMaster.displayName.slice(0, limits.nameMaxLength),
-    avatarId: firstFigure(limits),
-    control: 'human',
-  };
-  return withSeats(
+  const asked = game.seats ?? [{ control: 'human' }, { control: 'human' }];
+  if (!Array.isArray(asked) || asked.length < limits.playerCount.min || asked.length > limits.playerCount.max) {
+    throw new SetupError('invalid_action', `a game takes ${limits.playerCount.min} to ${limits.playerCount.max} players`);
+  }
+  const [first, ...rest] = asked;
+  const creatorFigure = first?.avatarId === undefined ? firstFigure(limits) : checkedFigure(first.avatarId, limits);
+  const seats: SetupSeat[] = [
     {
-      gameId: game.gameId,
-      name,
-      gameMaster: game.gameMaster.userId,
-      gameMasterName: game.gameMaster.displayName,
-      createdAt: game.createdAt,
-      phase: 'setup',
-      playerCount: limits.playerCount.min,
-      seats: [creator],
-      nextComputer: 1,
-      pending: [],
-      mapSeed: seed,
+      id: personSeatId(game.gameMaster.userId),
+      seat: 1,
+      playerId: playerIdForSeat(1),
+      userId: game.gameMaster.userId,
+      name: game.gameMaster.displayName.slice(0, limits.nameMaxLength),
+      avatarId: creatorFigure,
+      control: 'human',
       thinkingSeconds: limits.defaultThinkingSeconds,
     },
-    [creator],
-    [],
-    limits,
-  );
+  ];
+  let nextSeatId = 1;
+  for (const wanted of rest) {
+    if (wanted?.control === 'ai') {
+      seats.push({
+        ...computerSeat(nextSeatId++, checkedText(wanted.name, limits.nameMaxLength, 'name'), '', limits),
+        avatarId: figureNoOneElseHolds(wanted.avatarId, seats, limits),
+        thinkingSeconds: checkedSeconds(wanted.thinkingSeconds, limits),
+      });
+    } else if (wanted?.control === 'human') {
+      seats.push(openSeat(nextSeatId++, limits));
+    } else {
+      throw new SetupError('invalid_action', 'a seat is Human or Computer');
+    }
+  }
+  return {
+    gameId: game.gameId,
+    name,
+    gameMaster: game.gameMaster.userId,
+    gameMasterName: game.gameMaster.displayName,
+    createdAt: game.createdAt,
+    phase: 'setup',
+    playerCount: seats.length,
+    seats: numbered(seats),
+    nextSeatId,
+    pending: [],
+    mapSeed: seed,
+  };
 }
 
-/** The setup messages `applySetupAction` takes: every `setup.*` but Start. */
+/** The setup messages `applySetupAction` takes: every `setup.*`. */
 export type SetupAction = Extract<
   ClientMessage,
   {
@@ -132,6 +168,8 @@ export type SetupAction = Extract<
       | 'setup.setPlayerCount'
       | 'setup.respondToJoin'
       | 'setup.setSeed'
+      | 'setup.rename'
+      | 'setup.setSeatControl'
       | 'setup.setThinkingTime'
       | 'setup.cancel'
       | 'setup.start';
@@ -162,7 +200,6 @@ export function applySetupAction(
     if (!isGameMaster) throw new SetupError('not_game_master', 'only the game master can do that');
   };
   const people = peopleOf(state);
-  const computers = computersOf(state);
   const seated = people.some((seat) => seat.userId === by);
 
   switch (action.type) {
@@ -203,19 +240,13 @@ export function applySetupAction(
     case 'setup.leave': {
       if (isGameMaster) throw new SetupError('invalid_action', 'the game master cannot leave; cancel the game instead');
       if (!seated) throw new SetupError('invalid_action', 'you hold no seat in this game');
-      return { state: withSeats(state, people.filter((seat) => seat.userId !== by), computers, limits) };
+      // [Q51, 22] The seat stays Human, open for someone else.
+      return replaceSeat(state, personSeatId(by), openSeat(state.nextSeatId, limits), limits, 1);
     }
 
     case 'setup.updateSeat': {
-      const target = state.seats.find((seat) => seat.id === action.seatId);
-      if (target === undefined) {
-        throw new SetupError(
-          'invalid_action',
-          isComputerSeatId(action.seatId)
-            ? 'that computer seat has just made way for a person or been removed'
-            : 'that seat is no longer in the game',
-        );
-      }
+      const target = seatNamed(state, action.seatId);
+      if (isOpenSeat(target)) throw new SetupError('invalid_action', 'nobody holds that seat yet');
       const allowed = target.userId === null ? isGameMaster : target.userId === by;
       if (!allowed) {
         throw new SetupError(
@@ -231,8 +262,25 @@ export function applySetupAction(
         name: checkedText(action.name, limits.nameMaxLength, 'name'),
         avatarId: figureNoOneElseHolds(action.avatarId, others, limits),
       };
-      const replace = (seats: readonly SetupSeat[]): SetupSeat[] => seats.map((seat) => (seat.id === target.id ? changed : seat));
-      return { state: withSeats(state, replace(people), replace(computers), limits) };
+      return replaceSeat(state, target.id, changed, limits);
+    }
+
+    case 'setup.setSeatControl': {
+      gameMasterOnly();
+      const target = seatNamed(state, action.seatId);
+      if (action.control !== 'human' && action.control !== 'ai') {
+        throw new SetupError('invalid_action', 'a seat is Human or Computer');
+      }
+      if (target.userId === state.gameMaster) throw new SetupError('invalid_action', 'your own seat is always Human');
+      if (target.userId !== null) {
+        throw new SetupError('invalid_action', `${target.name} holds that seat; only they can leave it`);
+      }
+      if (target.control === action.control) return { state };
+      const replacement =
+        action.control === 'ai'
+          ? computerSeat(state.nextSeatId, nextComputerName(state.seats), freeFigure(state.seats, limits), limits)
+          : openSeat(state.nextSeatId, limits);
+      return replaceSeat(state, target.id, replacement, limits, 1);
     }
 
     case 'setup.setPlayerCount': {
@@ -242,7 +290,15 @@ export function applySetupAction(
         throw new SetupError('invalid_action', `a game takes ${limits.playerCount.min} to ${limits.playerCount.max} players`);
       }
       if (count < people.length) throw new SetupError('invalid_action', `${people.length} seats are already taken`);
-      return { state: withSeats({ ...state, playerCount: count }, people, computers, limits) };
+      // New seats are Human, as on the hot seat screen; fewer seats drop the
+      // last ones nobody holds.
+      const seats = [...state.seats];
+      let nextSeatId = state.nextSeatId;
+      while (seats.length < count) seats.push(openSeat(nextSeatId++, limits));
+      for (let at = seats.length - 1; seats.length > count && at >= 0; at--) {
+        if (seats[at]?.userId === null) seats.splice(at, 1);
+      }
+      return { state: { ...state, playerCount: count, seats: settled(seats, limits), nextSeatId } };
     }
 
     case 'setup.respondToJoin': {
@@ -251,8 +307,9 @@ export function applySetupAction(
       if (request === undefined) throw new SetupError('invalid_action', 'there is no such request');
       const pending = state.pending.filter((other) => other.userId !== action.userId);
       if (!action.accept) return { state: { ...state, pending }, declined: action.userId };
-      if (people.length >= state.playerCount) {
-        throw new SetupError('game_full', 'every seat is taken; raise the player count first');
+      const open = state.seats.find(isOpenSeat);
+      if (open === undefined) {
+        throw new SetupError('game_full', 'no Human seat is free; make a seat Human or raise the number of players first');
       }
       // [Q49, 19] The first accepted gets a figure two asked for; the other
       // picks again before they can be accepted.
@@ -264,15 +321,13 @@ export function applySetupAction(
         );
       }
       const joined: SetupSeat = {
+        ...open,
         id: personSeatId(request.userId),
-        seat: people.length + 1,
-        playerId: playerIdForSeat(people.length + 1),
         userId: request.userId,
         name: request.requestedName,
         avatarId: request.requestedAvatarId,
-        control: 'human',
       };
-      return { state: withSeats({ ...state, pending }, [...people, joined], computers, limits) };
+      return replaceSeat({ ...state, pending }, open.id, joined, limits);
     }
 
     case 'setup.setSeed': {
@@ -280,14 +335,16 @@ export function applySetupAction(
       return { state: { ...state, mapSeed: checkedText(action.seed, limits.seedMaxLength, 'map seed') } };
     }
 
+    case 'setup.rename': {
+      gameMasterOnly();
+      return { state: { ...state, name: checkedText(action.name, limits.gameNameMaxLength, 'game name') } };
+    }
+
     case 'setup.setThinkingTime': {
       gameMasterOnly();
-      const seconds = action.seconds;
-      const range = limits.thinkingSeconds;
-      if (!Number.isInteger(seconds) || seconds < range.min || seconds > range.max) {
-        throw new SetupError('invalid_action', `thinking time is whole seconds from ${range.min} to ${range.max}`);
-      }
-      return { state: { ...state, thinkingSeconds: seconds } };
+      const target = seatNamed(state, action.seatId);
+      if (target.control !== 'ai') throw new SetupError('invalid_action', 'only a computer seat has a thinking time');
+      return replaceSeat(state, target.id, { ...target, thinkingSeconds: checkedSeconds(action.seconds, limits) }, limits);
     }
 
     case 'setup.cancel': {
@@ -297,9 +354,15 @@ export function applySetupAction(
 
     case 'setup.start': {
       gameMasterOnly();
-      // [Q48, 12 and 16] No seat has to be filled by a person: computers play
-      // the rest, even every seat but the game master's.
-      return { state: { ...state, phase: 'starting' } };
+      // [Q48, 12 and 16] No seat has to be filled by a person: the computer
+      // plays every Human seat nobody has taken, even every seat but the game
+      // master's. Each gets a name and figure as a new computer seat does.
+      let nextSeatId = state.nextSeatId;
+      const seats = [...state.seats];
+      seats.forEach((seat, at) => {
+        if (isOpenSeat(seat)) seats[at] = computerSeat(nextSeatId++, nextComputerName(seats), freeFigure(seats, limits), limits);
+      });
+      return { state: { ...state, phase: 'starting', seats: numbered(seats), nextSeatId } };
     }
   }
 }
@@ -332,10 +395,6 @@ function peopleOf(state: SetupState): SetupSeat[] {
   return state.seats.filter((seat) => seat.userId !== null);
 }
 
-function computersOf(state: SetupState): SetupSeat[] {
-  return state.seats.filter((seat) => seat.userId === null);
-}
-
 function playerIdForSeat(seat: number) {
   return asPlayerId(`seat-${seat}`);
 }
@@ -344,45 +403,61 @@ function personSeatId(userId: UserId): string {
   return `person:${userId}`;
 }
 
-function isComputerSeatId(id: string): boolean {
-  return id.startsWith('computer:');
+/** A Human seat nobody holds yet ([Q51, 22]). */
+function openSeat(n: number, limits: SetupLimits): SetupSeat {
+  return {
+    id: `open:${n}`,
+    seat: 0,
+    playerId: playerIdForSeat(0),
+    userId: null,
+    name: '',
+    avatarId: '',
+    control: 'human',
+    thinkingSeconds: limits.defaultThinkingSeconds,
+  };
+}
+
+function computerSeat(n: number, name: string, avatarId: string, limits: SetupLimits): SetupSeat {
+  return {
+    id: `computer:${n}`,
+    seat: 0,
+    playerId: playerIdForSeat(0),
+    userId: null,
+    name,
+    avatarId,
+    control: 'ai',
+    thinkingSeconds: limits.defaultThinkingSeconds,
+  };
 }
 
 /**
- * Lays the seats out again: people first, in the order given, then as many
- * computers as the player count leaves room for. Computers keep their names
- * and figures in order; when there are fewer, the last go, and when there are
- * more, new ones get the lowest "Computer N" not in use and a free figure.
- * Then any computer whose figure a person now holds switches to a free one.
+ * The seat `id` names, or a refusal saying why it has gone: a computer or open
+ * seat is replaced when the game master switches it, or a person takes it.
  */
-function withSeats(
-  state: SetupState,
-  people: readonly SetupSeat[],
-  computers: readonly SetupSeat[],
-  limits: SetupLimits,
-): SetupState {
-  const room = state.playerCount - people.length;
-  const kept = computers.slice(0, room);
-  const seats: SetupSeat[] = people.map((seat, index) => ({
-    ...seat,
-    seat: index + 1,
-    playerId: playerIdForSeat(index + 1),
-  }));
-  for (const computer of kept) seats.push({ ...computer, userId: null, control: 'ai' });
-  let nextComputer = state.nextComputer;
-  while (seats.length < state.playerCount) {
-    seats.push({
-      id: `computer:${nextComputer++}`,
-      seat: 0,
-      playerId: playerIdForSeat(0),
-      userId: null,
-      name: nextComputerName(seats),
-      avatarId: freeFigure(seats, limits),
-      control: 'ai',
-    });
-  }
-  const numbered = seats.map((seat, index) => ({ ...seat, seat: index + 1, playerId: playerIdForSeat(index + 1) }));
-  return { ...state, seats: settleFigures(numbered, limits), nextComputer };
+function seatNamed(state: SetupState, id: string): SetupSeat {
+  const seat = state.seats.find((candidate) => candidate.id === id);
+  if (seat !== undefined) return seat;
+  throw new SetupError(
+    'invalid_action',
+    id.startsWith('computer:') || id.startsWith('open:')
+      ? 'that seat has just changed; look again'
+      : 'that seat is no longer in the game',
+  );
+}
+
+/** `state` with seat `id` replaced by `seat`, `used` seat ids later. */
+function replaceSeat(state: SetupState, id: string, seat: SetupSeat, limits: SetupLimits, used = 0): SetupOutcome {
+  const seats = state.seats.map((other) => (other.id === id ? seat : other));
+  return { state: { ...state, seats: settled(seats, limits), nextSeatId: state.nextSeatId + used } };
+}
+
+/** Seat numbers and player ids, from the seats' order. */
+function numbered(seats: readonly SetupSeat[]): SetupSeat[] {
+  return seats.map((seat, index) => ({ ...seat, seat: index + 1, playerId: playerIdForSeat(index + 1) }));
+}
+
+function settled(seats: readonly SetupSeat[], limits: SetupLimits): SetupSeat[] {
+  return settleFigures(numbered(seats), limits);
 }
 
 function nextComputerName(seats: readonly SetupSeat[]): string {
@@ -411,7 +486,7 @@ function settleFigures(seats: readonly SetupSeat[], limits: SetupLimits): SetupS
   const inUse = new Set(seats.filter((seat) => seat.userId !== null).map((seat) => seat.avatarId));
   const clashing = new Set<string>();
   for (const seat of seats) {
-    if (seat.userId !== null) continue;
+    if (seat.control !== 'ai') continue;
     if (inUse.has(seat.avatarId)) clashing.add(seat.id);
     else inUse.add(seat.avatarId);
   }
@@ -432,6 +507,15 @@ function checkedText(value: unknown, maxLength: number, what: string): string {
   if (text.length === 0) throw new SetupError('invalid_action', `the ${what} is empty`);
   if (text.length > maxLength) throw new SetupError('invalid_action', `the ${what} is longer than ${maxLength} characters`);
   return text;
+}
+
+/** [Q41, Q51 24] A computer seat's thinking time: whole seconds within §11's range. */
+function checkedSeconds(value: unknown, limits: SetupLimits): number {
+  const range = limits.thinkingSeconds;
+  if (typeof value !== 'number' || !Number.isInteger(value) || value < range.min || value > range.max) {
+    throw new SetupError('invalid_action', `thinking time is whole seconds from ${range.min} to ${range.max}`);
+  }
+  return value;
 }
 
 function checkedFigure(value: unknown, limits: SetupLimits): string {

@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q50.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q51.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -556,6 +556,9 @@ does not either, and a closed tab loses the game.
 Andrei has since ruled that it should survive one, and postponed it to the
 multiplayer work ([Q37](#q37)).
 
+*Replaced 2026-09-24 by [Q51](#q51) 21: a game on one device takes 2 to 5
+players, picked on the one new game screen.*
+
 ### Q23. ~~Build both POI placement strategies, or one?~~ — **answered: farthest-point only, seam kept**
 
 `docs/ARCHITECTURE.md` §3 read §3's "approximately equal distances" as a goal
@@ -1028,6 +1031,10 @@ each. He took all five recommendations:
 - A computer seat's name and figurine are chosen as a person's are, and
   nothing in the game marks it as a computer except its thinking.
 
+*Since [Q51](#q51) the panel is the one new game screen: it takes 2 to 5
+seats, and its opening line reads "Each seat takes its turn on this screen,
+played by a person or by the computer."*
+
 ### Q42. ~~What shows during the computer's turn?~~ — **answered 2026-09-24: a filling bar, and its die card closes itself**
 
 - While it thinks, the line above the buttons reads "<name> is thinking…" over
@@ -1176,6 +1183,13 @@ said *"everything as recommended"*.
     keeps the Web Worker, resigning to the computer and switching a seat
     between person and computer mid-game.
 
+*[Q51](#q51) changed 7, 12, 14 and 15 when the two setup screens became one:
+the game master makes each seat Human or Computer, an accepted person takes
+the first free Human seat instead of the next one in acceptance order, the
+computer plays a Human seat still empty at Start, and each computer seat has
+its own thinking time. 1 and 8 now open the same screen with the switch off
+or on.*
+
 ### Q49. ~~Who gets a figure two seats want?~~ — **answered 2026-09-24: as recommended, with every clash detected and told**
 
 Building Q48 turned up two clashes its answers left open. Andrei took both
@@ -1192,7 +1206,7 @@ the players are notified and allowed to act on it."*
     accept them.
 
 What "detected, resolved and told" became (`packages/session/src/setup.ts`,
-`apps/web/src/online/SetupPanel.tsx`):
+`apps/web/src/setup/SetupPanel.tsx`):
 
 - A change the server refuses because someone else just took the figure says
   who: "Bea holds that figure now; pick another". The page shows it at the
@@ -1219,6 +1233,54 @@ recommendation: the game list's top bar has the same button, beside Log out
 (`apps/web/src/online/GameListScreen.tsx`). It opens the same `/hotseat` page,
 unchanged, and keeps the login.
 
+*Taken back 2026-09-24 by [Q51](#q51) 26: the game list has one New game
+button instead, and turning its "Play online" switch off gives the game on one
+device.*
+
+<a id="q51"></a>
+### Q51. ~~Can the hot seat and online setup screens be one?~~ — **answered 2026-09-24: yes, with a "Play online" switch**
+
+Andrei: *"we now have two screens that look almost the same, one is for an
+online game and another for hot seat. When there is only one human player, the
+difference is only in where the game is persisted. Yet the screens differ,
+e.g. the hotseat screen has 2 players hardcoded, and I'm afraid they will keep
+deviating. Can we unify these screens, with a simple toggle that tells us
+whether the game we create is stored?"* Ten details it left open were put to
+him with a recommendation each. He answered *"recommended options for 21 to 30
+look good, except the wording in 28, which should say "play online""*.
+
+21. **Player count:** a game on one device takes 2 to 5 players, as a stored
+    one does. This replaces Q22's two seats.
+22. **Seats:** every seat has Human and Computer buttons. In a stored game
+    seat 1 is always the game master's, and every other Human seat is kept
+    for someone who asks to join: accepting puts them in the first free Human
+    seat, and a request can be accepted only while one is free. A Human seat
+    still empty at Start is played by the computer. This replaces Q48 7 and
+    12's acceptance order.
+23. **No two people on one device in a stored game** yet.
+24. **Thinking time** is set per computer seat, under its figures, as on the
+    hot seat panel (Q41). This replaces Q48 15's one box.
+25. **The switch:** turning it on stores the game at once, lists it and
+    changes the page's address. Turning it off before the start removes the
+    game; if anyone has asked to join or taken a seat, the game master is
+    asked first, and they are told the game was cancelled.
+26. **Where it opens:** the game list has one New game button, which opens the
+    screen with the switch on; it replaces Q50's button. The login page keeps
+    "Play on one device", which opens the screen without the switch.
+27. **Game name:** a box under the switch while it is on.
+28. **Wording:** the switch reads "Play online", with "Others can ask to join,
+    and it stays in your games." under it.
+29. **The game page artifact** shows the same screen without the switch.
+30. **Where it lands:** in the phase 6 pull request (#19).
+
+Where it lives: `apps/web/src/setup/SetupPanel.tsx` is the one screen, with a
+local panel (switch off) and an online panel (switch on); `local.ts` holds the
+setup that lives on one device and converts it to and from a stored one. The
+seat rules are `packages/session/src/setup.ts`: an open seat is a Human seat
+nobody holds (`isOpenSeat`), `setup.setSeatControl` turns a seat Human or
+Computer, `setup.rename` renames the game, and `lobby.create` takes the seats
+and seed the page already has.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design
@@ -1229,7 +1291,7 @@ Listed so you can veto any that read as design to you.
 |---|---|
 | `MAX_GENERATION_ATTEMPTS = 50` | §2.1 says "regenerate" with no bound; an unbounded loop hangs. Lives in `EngineeringConfig`, never merged into `GameConfig`. |
 | Separate server-side die stream from the public map seed | §1's no-hidden-information is about map, POIs and rewards, all of which clients get in full. A shared seed would let a client precompute rolls. |
-| Seats allocated in GM acceptance order | §6 explicitly delegates this: "whatever is most convenient to implement — expected default: order the game master accepts join requests". |
+| Seats allocated in GM acceptance order | §6 explicitly delegates this: "whatever is most convenient to implement — expected default: order the game master accepts join requests". *Since [Q51](#q51) 22 an accepted person takes the first free Human seat the game master kept.* |
 | `PlayerStats` typed as `Record<RewardKind, number>` | §6's seven stats are exactly §4.1's seven kinds. Typing them as one thing makes claiming a reward a single addition and stops the lists drifting. |
 | Remoteness computed inside step 7, between POI placement and reward assignment | Forced by data flow: §4.3 step 3 consumes remoteness, and remoteness depends only on POI positions. |
 | sfc32 PRNG, string seeds | §1.3 requires reproducibility, not a specific algorithm. |

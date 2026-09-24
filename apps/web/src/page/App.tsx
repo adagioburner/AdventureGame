@@ -1,30 +1,50 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { DEFAULT_RULESET } from '@adventure/config';
 import type { GameMap } from '@adventure/core';
 import { atlasOf, buildArtCatalog, type ArtCatalog } from '../art/catalog.ts';
 import { ART_FILES } from '../art/files.ts';
-import { HotseatGame, HOTSEAT_SEATS, newDiceSeed, type HotseatSeat } from '../modes/hotseat.ts';
+import { HotseatGame, newDiceSeed } from '../modes/hotseat.ts';
 import { loadArt, type LoadedArt } from '../render/pixi/textures.ts';
 import { buildMapScene, type MapScene } from '../render/sceneModel.ts';
+import { newLocalSetup, toHotseatSeats, type LocalLimits, type LocalSetup } from '../setup/local.ts';
+import { SetupPanel } from '../setup/SetupPanel.tsx';
 import { GameScreen } from './GameScreen.tsx';
+import { MapView } from './MapView.tsx';
 import { initialSeed, mapFor, randomSeed, writeSeed } from './seed.ts';
-import { SetupScreen } from './SetupScreen.tsx';
+
+export interface AppProps {
+  /**
+   * [Q51, 25 and 26] On the site, for someone logged in: turns "Play online"
+   * on, storing the game with this setup and seed, and opens it. Rejects with
+   * a sentence saying why it could not. Without it, as on the game page, which
+   * has no server, the setup screen has no switch (29).
+   */
+  readonly playOnline?: ((setup: LocalSetup, seed: string) => Promise<void>) | undefined;
+  /** A stored game's setup, brought back here when "Play online" was turned off. */
+  readonly carried?: LocalSetup | undefined;
+  /** More buttons for the top bar: the site's "Your games". */
+  readonly barExtra?: ReactNode;
+}
 
 /**
- * The hotseat game (docs/IMPLEMENTATION_PLAN.md phase 4): pick a map by its
- * seed and set up the two seats, then play it out on one screen. `?seed=`
- * picks the map; with no seed a random one is chosen and written back into the
- * address so it can be shared.
+ * A game on this device (docs/IMPLEMENTATION_PLAN.md phase 4): pick a map by
+ * its seed and set up the seats on the one setup screen (Q51), then play it
+ * out on one screen. `?seed=` picks the map; with no seed a random one is
+ * chosen and written back into the address so it can be shared.
  */
-export function App() {
+export function App({ playOnline, carried, barExtra }: AppProps = {}) {
   const [seed, setSeed] = useState(initialSeed);
   const [draft, setDraft] = useState(seed);
   const [logOpen, setLogOpen] = useState(false);
   const [art, setArt] = useState<LoadedArt | null>(null);
   const [map, setMap] = useState<GameMap | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
-  const [seats, setSeats] = useState<readonly HotseatSeat[] | null>(null);
+  const [setup, setSetup] = useState<LocalSetup | null>(null);
   const [game, setGame] = useState<HotseatGame | null>(null);
+  const [goingOnline, setGoingOnline] = useState<{ readonly busy: boolean; readonly problem: string | null }>({
+    busy: false,
+    problem: null,
+  });
 
   const catalog = useMemo<ArtCatalog | null>(() => {
     try {
@@ -35,11 +55,13 @@ export function App() {
     }
   }, []);
 
+  const limits = useMemo<LocalLimits | null>(() => (catalog === null ? null : localLimits(catalog)), [catalog]);
+
   useEffect(() => {
-    if (catalog === null) return;
-    setSeats(defaultSeats(catalog));
+    if (catalog === null || limits === null) return;
+    setSetup(carried ?? newLocalSetup(limits));
     loadArt(catalog).then(setArt, (error: unknown) => setProblem(String(error)));
-  }, [catalog]);
+  }, [catalog, limits]);
 
   useEffect(() => {
     setMap(null);
@@ -67,11 +89,25 @@ export function App() {
     setSeed(trimmed);
   };
 
+  // The opening position is the engine's, so the figures on the map are
+  // `createGameState`'s own.
+  const opening = useMemo(
+    () => (map === null || setup === null ? null : new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'setup' }).state),
+    [map, setup],
+  );
+
   const start = (): void => {
-    if (map === null || seats === null) return;
-    const named = seats.map((seat, index) => ({ ...seat, name: seat.name.trim() || `Player ${index + 1}` }));
+    if (map === null || setup === null) return;
     setLogOpen(false);
-    setGame(new HotseatGame({ map, seats: named, diceSeed: newDiceSeed() }));
+    setGame(new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: newDiceSeed() }));
+  };
+
+  const turnOnline = (): void => {
+    if (playOnline === undefined || setup === null || goingOnline.busy) return;
+    setGoingOnline({ busy: true, problem: null });
+    playOnline(setup, seed).catch((error: unknown) =>
+      setGoingOnline({ busy: false, problem: error instanceof Error ? error.message : String(error) }),
+    );
   };
 
   const status =
@@ -124,8 +160,9 @@ export function App() {
             </button>
           </form>
         )}
+        {barExtra}
       </header>
-      {status !== null || art === null || map === null || scene === null || seats === null ? (
+      {status !== null || art === null || map === null || scene === null || setup === null || limits === null || opening === null ? (
         <main className="stage">
           <div className="status" role="status">
             {status}
@@ -143,24 +180,30 @@ export function App() {
         />
       ) : (
         <main className="stage setting-up">
-          <SetupScreen art={art} map={map} scene={scene} seats={seats} onSeats={setSeats} onStart={start} />
+          <MapView art={art} map={map} scene={scene} state={opening} path={null} waypoint={null} walker={null} />
+          <SetupPanel
+            art={art}
+            panel={{
+              kind: 'local',
+              setup,
+              limits,
+              onChange: setSetup,
+              onStart: start,
+              playOnline: playOnline === undefined ? null : { ...goingOnline, turnOn: turnOnline },
+            }}
+          />
         </main>
       )}
     </div>
   );
 }
 
-/**
- * Two seats with different figurines, so the two can be told apart on the map.
- * Both start as people (Q41), with §11's 10 seconds ready for either to be
- * handed to the computer.
- */
-function defaultSeats(catalog: ArtCatalog): readonly HotseatSeat[] {
-  const ids = atlasOf(catalog, catalog.manifest.figurines.sheet).sprites.map((sprite) => sprite.id);
-  return Array.from({ length: HOTSEAT_SEATS }, (_unused, index) => ({
-    name: `Player ${index + 1}`,
-    avatarId: ids[index % ids.length] ?? '',
-    control: 'human' as const,
-    thinkingSeconds: Math.round(DEFAULT_RULESET.config.ai.MCTS_TIME_BUDGET_PER_MOVE_MS / 1000),
-  }));
+/** [Q51] §11's ranges and the figurine sheet, which a game on this device is checked against. */
+function localLimits(catalog: ArtCatalog): LocalLimits {
+  return {
+    playerCount: DEFAULT_RULESET.config.players.PLAYER_COUNT,
+    thinkingSeconds: DEFAULT_RULESET.config.ai.THINKING_TIME_SECONDS,
+    defaultThinkingSeconds: Math.round(DEFAULT_RULESET.config.ai.MCTS_TIME_BUDGET_PER_MOVE_MS / 1000),
+    figures: atlasOf(catalog, catalog.manifest.figurines.sheet).sprites.map((sprite) => sprite.id),
+  };
 }

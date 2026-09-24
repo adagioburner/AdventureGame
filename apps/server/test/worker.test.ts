@@ -179,7 +179,7 @@ describe('the server, in the local Workers runtime', () => {
     expect(joined.setup.seats.map((seat) => [seat.name, seat.control])).toEqual([
       ['Gamemaster', 'human'],
       ['Bea', 'human'],
-      ['Computer 1', 'ai'],
+      ['', 'human'],
     ]);
     await beaList.next(
       (m): m is ServerMessage => m.type === 'lobby.games' && m.games.some((game) => game.gameId === gameId && game.mine),
@@ -209,6 +209,46 @@ describe('the server, in the local Workers runtime', () => {
     await reopened.next((m): m is ServerMessage => m.type === 'game.state');
 
     for (const client of [gmList, beaList, gmGame, beaGame, reopened]) client.close();
+  }, 60_000);
+
+  it('creates a game from the setup a page already had, and lists its new name (Q51)', async () => {
+    const gm = await register('Online_gm');
+    const lobby = await Client.open('/api/lobby', gm.token);
+    await lobby.next((m): m is ServerMessage => m.type === 'lobby.games');
+    lobby.send({
+      type: 'lobby.create',
+      name: 'Online_gm’s game',
+      setup: {
+        mapSeed: 'amber-birch-1',
+        seats: [
+          { control: 'human', avatarId: 'player_avatars_03' },
+          { control: 'ai', name: 'Robo', avatarId: 'player_avatars_01', thinkingSeconds: 20 },
+          { control: 'human' },
+        ],
+      },
+    });
+    const { gameId } = await lobby.next((m): m is Extract<ServerMessage, { type: 'lobby.created' }> => m.type === 'lobby.created');
+    const gmGame = await Client.open(`/api/games/${gameId}`, gm.token);
+    const first = await gmGame.next(isSetup(() => true));
+    expect(first.setup.mapSeed).toBe('amber-birch-1');
+    expect(first.setup.seats.map((seat) => [seat.id, seat.name, seat.avatarId, seat.control, seat.thinkingSeconds])).toEqual([
+      [`person:${gm.user.userId}`, 'Online_gm', 'player_avatars_03', 'human', 10],
+      ['computer:1', 'Robo', 'player_avatars_01', 'ai', 20],
+      ['open:2', '', '', 'human', 10],
+    ]);
+
+    gmGame.send({ type: 'setup.rename', gameId, name: 'Friday game' });
+    gmGame.send({ type: 'setup.setThinkingTime', gameId, seatId: 'computer:1', seconds: 30 });
+    const changed = await gmGame.next(isSetup((setup) => setup.seats[1]?.thinkingSeconds === 30));
+    expect(changed.setup.name).toBe('Friday game');
+    const listed = await lobby.next(
+      (m): m is Extract<ServerMessage, { type: 'lobby.games' }> =>
+        m.type === 'lobby.games' && m.games.some((game) => game.gameId === gameId && game.name === 'Friday game'),
+    );
+    // Seats for people: the game master's and the open Human seat.
+    expect(listed.games.find((game) => game.gameId === gameId)).toMatchObject({ seatsTaken: 1, seatsTotal: 2 });
+
+    for (const client of [lobby, gmGame]) client.close();
   }, 60_000);
 
   it('settles two people reaching for one figure at once: one gets it, the other is told who has it (Q49)', async () => {

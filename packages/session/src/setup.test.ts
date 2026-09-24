@@ -32,6 +32,8 @@ const act = {
   accept: (userId: UserId): SetupAction => ({ type: 'setup.respondToJoin', gameId: G, userId, accept: true }),
   decline: (userId: UserId): SetupAction => ({ type: 'setup.respondToJoin', gameId: G, userId, accept: false }),
   seat: (seatId: string, name: string, avatarId: string): SetupAction => ({ type: 'setup.updateSeat', gameId: G, seatId, name, avatarId }),
+  control: (seatId: string, control: 'human' | 'ai'): SetupAction => ({ type: 'setup.setSeatControl', gameId: G, seatId, control }),
+  think: (seatId: string, seconds: number): SetupAction => ({ type: 'setup.setThinkingTime', gameId: G, seatId, seconds }),
   leave: (): SetupAction => ({ type: 'setup.leave', gameId: G }),
   withdraw: (): SetupAction => ({ type: 'setup.withdraw', gameId: G }),
   start: (): SetupAction => ({ type: 'setup.start', gameId: G }),
@@ -48,36 +50,74 @@ function refused(state: SetupState, by: UserId, action: SetupAction): SetupError
 }
 
 const seatsOf = (state: SetupState) => state.seats.map((seat) => [seat.seat, seat.name, seat.avatarId, seat.control]);
+const idsOf = (state: SetupState) => state.seats.map((seat) => seat.id);
+
+/** An open Human seat, as `seatsOf` shows it. */
+const open = (seat: number) => [seat, '', '', 'human'];
+
+/** A game of `count` whose seats after the game master's are all computers. */
+function withComputers(count: number): SetupState {
+  let state = play(fresh(), [andrei, act.count(count)]);
+  for (const seat of state.seats.slice(1)) state = play(state, [andrei, act.control(seat.id, 'ai')]);
+  return state;
+}
 
 describe('a new game', () => {
-  it('puts its creator in seat 1 and a computer in the other seat of two', () => {
+  it('puts its creator in seat 1 and keeps seat 2 Human, as a new hot seat game has two Human seats (Q51)', () => {
     const state = fresh();
     expect(state.phase).toBe('setup');
     expect(state.playerCount).toBe(2);
-    expect(state.thinkingSeconds).toBe(10);
     expect(state.gameMasterName).toBe('Andrei');
-    expect(seatsOf(state)).toEqual([
-      [1, 'Andrei', 'fig_01', 'human'],
-      [2, 'Computer 1', 'fig_02', 'ai'],
-    ]);
+    expect(seatsOf(state)).toEqual([[1, 'Andrei', 'fig_01', 'human'], open(2)]);
+    expect(idsOf(state)).toEqual(['person:andrei', 'open:1']);
   });
 
-  it('needs a name', () => {
+  it('can be made from the setup a page already had: its computers stay, its other Human seats open (Q51, 25)', () => {
+    const state = createSetup(
+      {
+        gameId: G,
+        name: 'Andrei’s game',
+        gameMaster: { userId: andrei, displayName: 'Andrei' },
+        createdAt: 1,
+        mapSeed: 'fixture',
+        seats: [
+          { control: 'human', avatarId: 'fig_03' },
+          { control: 'ai', name: 'Robo', avatarId: 'fig_01', thinkingSeconds: 25 },
+          { control: 'human' },
+        ],
+      },
+      limits,
+    );
+    expect(seatsOf(state)).toEqual([[1, 'Andrei', 'fig_03', 'human'], [2, 'Robo', 'fig_01', 'ai'], open(3)]);
+    expect(state.seats[1]?.thinkingSeconds).toBe(25);
+    expect(state.playerCount).toBe(3);
+  });
+
+  it('needs a name, 2 to 5 seats, and computers with figures of their own and a thinking time in range', () => {
+    const make = (extra: object) =>
+      createSetup({ gameId: G, name: 'g', gameMaster: { userId: andrei, displayName: 'A' }, createdAt: 1, mapSeed: 's', ...extra }, limits);
+    expect(() => make({ name: '  ' })).toThrow(SetupError);
+    expect(() => make({ seats: [{ control: 'human' }] })).toThrow(/2 to 5 players/);
+    expect(() => make({ seats: Array.from({ length: 6 }, () => ({ control: 'human' })) })).toThrow(/2 to 5 players/);
     expect(() =>
-      createSetup({ gameId: G, name: '  ', gameMaster: { userId: andrei, displayName: 'A' }, createdAt: 1, mapSeed: 's' }, limits),
-    ).toThrow(SetupError);
+      make({ seats: [{ control: 'human', avatarId: 'fig_02' }, { control: 'ai', name: 'R', avatarId: 'fig_02', thinkingSeconds: 10 }] }),
+    ).toThrow(/A holds that figure/);
+    expect(() =>
+      make({ seats: [{ control: 'human' }, { control: 'ai', name: 'R', avatarId: 'fig_02', thinkingSeconds: 61 }] }),
+    ).toThrow(/1 to 60/);
   });
 });
 
 describe('the player count', () => {
-  it('adds and removes computers, numbering new ones after the rest', () => {
-    const three = play(fresh(), [andrei, act.count(3)]);
-    expect(seatsOf(three)).toEqual([
+  it('adds Human seats, and removes the last seats nobody holds', () => {
+    const four = play(fresh(), [andrei, act.count(4)]);
+    expect(seatsOf(four)).toEqual([[1, 'Andrei', 'fig_01', 'human'], open(2), open(3), open(4)]);
+    const mixed = play(four, [andrei, act.control('open:2', 'ai')], [bea, act.ask('Bea', 'fig_04')], [andrei, act.accept(bea)]);
+    expect(seatsOf(mixed)).toEqual([[1, 'Andrei', 'fig_01', 'human'], [2, 'Bea', 'fig_04', 'human'], [3, 'Computer 1', 'fig_02', 'ai'], open(4)]);
+    expect(seatsOf(play(mixed, [andrei, act.count(2)]))).toEqual([
       [1, 'Andrei', 'fig_01', 'human'],
-      [2, 'Computer 1', 'fig_02', 'ai'],
-      [3, 'Computer 2', 'fig_03', 'ai'],
+      [2, 'Bea', 'fig_04', 'human'],
     ]);
-    expect(seatsOf(play(three, [andrei, act.count(2)]))).toEqual(seatsOf(fresh()));
   });
 
   it('is the game master’s, within 2 to 5, and never below the seats people hold', () => {
@@ -91,11 +131,34 @@ describe('the player count', () => {
   });
 });
 
+describe('Human and Computer seats (Q51, 22)', () => {
+  it('turns a Human seat nobody holds into a new computer, and back', () => {
+    const computer = play(fresh(), [andrei, act.control('open:1', 'ai')]);
+    expect(seatsOf(computer)).toEqual([[1, 'Andrei', 'fig_01', 'human'], [2, 'Computer 1', 'fig_02', 'ai']]);
+    expect(computer.seats[1]?.thinkingSeconds).toBe(10);
+    const human = play(computer, [andrei, act.control('computer:2', 'human')]);
+    expect(seatsOf(human)).toEqual([[1, 'Andrei', 'fig_01', 'human'], open(2)]);
+    expect(idsOf(human)).toEqual(['person:andrei', 'open:3']);
+  });
+
+  it('is the game master’s, and not for their own seat or a seat a person holds', () => {
+    expect(refused(fresh(), bea, act.control('open:1', 'ai')).code).toBe('not_game_master');
+    expect(refused(fresh(), andrei, act.control('person:andrei', 'ai')).message).toBe('your own seat is always Human');
+    const joined = play(fresh(), [bea, act.ask('Bea', 'fig_04')], [andrei, act.accept(bea)]);
+    expect(refused(joined, andrei, act.control('person:bea', 'ai')).message).toBe('Bea holds that seat; only they can leave it');
+  });
+
+  it('changes nothing when the seat already is what was asked', () => {
+    expect(play(fresh(), [andrei, act.control('open:1', 'human')])).toEqual(fresh());
+  });
+});
+
 describe('joining', () => {
-  it('takes the next seat in the order the game master accepts, and a computer gives it up', () => {
+  it('takes the first Human seat nobody holds, in the order the game master accepts', () => {
     const state = play(
       fresh(),
       [andrei, act.count(4)],
+      [andrei, act.control('open:2', 'ai')],
       [bea, act.ask('Bea', 'fig_05')],
       [cal, act.ask('Cal', 'fig_06')],
       [andrei, act.accept(cal)],
@@ -104,8 +167,8 @@ describe('joining', () => {
     expect(seatsOf(state)).toEqual([
       [1, 'Andrei', 'fig_01', 'human'],
       [2, 'Cal', 'fig_06', 'human'],
-      [3, 'Bea', 'fig_05', 'human'],
-      [4, 'Computer 1', 'fig_02', 'ai'],
+      [3, 'Computer 1', 'fig_02', 'ai'],
+      [4, 'Bea', 'fig_05', 'human'],
     ]);
     expect(state.pending).toEqual([]);
   });
@@ -132,9 +195,11 @@ describe('joining', () => {
     expect(play(outcome.state, [bea, act.ask('Bea', 'fig_04')]).pending).toHaveLength(1);
   });
 
-  it('refuses to accept when people hold every seat', () => {
+  it('refuses to accept while no Human seat is free, people or computers holding them all', () => {
     const full = play(fresh(), [bea, act.ask('Bea', 'fig_04')], [andrei, act.accept(bea)], [cal, act.ask('Cal', 'fig_05')]);
     expect(refused(full, andrei, act.accept(cal)).code).toBe('game_full');
+    const computers = play(withComputers(2), [cal, act.ask('Cal', 'fig_05')]);
+    expect(refused(computers, andrei, act.accept(cal)).message).toMatch(/make a seat Human or raise the number of players/);
   });
 
   it('is the game master’s to accept or decline, and a seated person cannot ask again', () => {
@@ -146,7 +211,7 @@ describe('joining', () => {
 });
 
 describe('leaving', () => {
-  it('gives the seat back to a computer and moves later people up', () => {
+  it('opens the seat again for someone else, and nobody moves', () => {
     const state = play(
       fresh(),
       [andrei, act.count(3)],
@@ -156,11 +221,7 @@ describe('leaving', () => {
       [andrei, act.accept(cal)],
       [bea, act.leave()],
     );
-    expect(seatsOf(state)).toEqual([
-      [1, 'Andrei', 'fig_01', 'human'],
-      [2, 'Cal', 'fig_05', 'human'],
-      [3, 'Computer 1', 'fig_02', 'ai'],
-    ]);
+    expect(seatsOf(state)).toEqual([[1, 'Andrei', 'fig_01', 'human'], open(2), [3, 'Cal', 'fig_05', 'human']]);
   });
 
   it('is not for the game master, who cancels instead, nor for someone without a seat', () => {
@@ -171,11 +232,11 @@ describe('leaving', () => {
 
 describe('changing a seat', () => {
   it('lets a person change their own name and figure, and the game master a computer’s', () => {
-    const joined = play(fresh(), [andrei, act.count(3)], [bea, act.ask('Bea', 'fig_04')], [andrei, act.accept(bea)]);
+    const joined = play(fresh(), [andrei, act.count(3)], [andrei, act.control('open:2', 'ai')], [bea, act.ask('Bea', 'fig_04')], [andrei, act.accept(bea)]);
     const state = play(
       joined,
       [bea, act.seat('person:bea', 'B', 'fig_06')],
-      [andrei, act.seat('computer:1', 'Robo', 'fig_05')],
+      [andrei, act.seat('computer:3', 'Robo', 'fig_05')],
       [andrei, act.seat('person:andrei', 'Andy', 'fig_01')],
     );
     expect(seatsOf(state)).toEqual([
@@ -185,28 +246,32 @@ describe('changing a seat', () => {
     ]);
   });
 
-  it('refuses someone else’s seat, and a computer’s to anyone but the game master', () => {
-    const joined = play(fresh(), [andrei, act.count(3)], [bea, act.ask('Bea', 'fig_04')], [andrei, act.accept(bea)]);
+  it('refuses someone else’s seat, a computer’s to anyone but the game master, and a seat nobody holds', () => {
+    const joined = play(fresh(), [andrei, act.count(3)], [andrei, act.control('open:2', 'ai')], [bea, act.ask('Bea', 'fig_04')], [andrei, act.accept(bea)]);
     expect(refused(joined, bea, act.seat('person:andrei', 'Bea', 'fig_04')).code).toBe('invalid_action');
     expect(refused(joined, andrei, act.seat('person:bea', 'Bea', 'fig_04')).code).toBe('invalid_action');
-    expect(refused(joined, bea, act.seat('computer:1', 'Robo', 'fig_05')).code).toBe('not_game_master');
+    expect(refused(joined, bea, act.seat('computer:3', 'Robo', 'fig_05')).code).toBe('not_game_master');
     expect(refused(joined, andrei, act.seat('computer:9', 'Nobody', 'fig_05')).code).toBe('invalid_action');
+    expect(refused(fresh(), andrei, act.seat('open:1', 'Nobody', 'fig_05')).message).toBe('nobody holds that seat yet');
   });
 
-  it('keeps a renamed computer’s name and figure as seats come and go', () => {
-    const renamed = play(fresh(), [andrei, act.count(3)], [andrei, act.seat('computer:1', 'Robo', 'fig_06')]);
-    const joined = play(renamed, [bea, act.ask('Bea', 'fig_04')], [andrei, act.accept(bea)]);
-    expect(seatsOf(joined)).toEqual([
-      [1, 'Andrei', 'fig_01', 'human'],
-      [2, 'Bea', 'fig_04', 'human'],
-      [3, 'Robo', 'fig_06', 'ai'],
+  it('gives each computer its own thinking time, whole seconds from 1 to 60 (Q51, 24)', () => {
+    const three = withComputers(3);
+    const state = play(three, [andrei, act.think('computer:3', 25)]);
+    expect(state.seats.map((seat) => [seat.id, seat.thinkingSeconds])).toEqual([
+      ['person:andrei', 10],
+      ['computer:3', 25],
+      ['computer:4', 10],
     ]);
+    for (const seconds of [0, 61, 2.5]) expect(refused(three, andrei, act.think('computer:3', seconds)).code).toBe('invalid_action');
+    expect(refused(three, bea, act.think('computer:3', 20)).code).toBe('not_game_master');
+    expect(refused(fresh(), andrei, act.think('open:1', 20)).message).toBe('only a computer seat has a thinking time');
   });
 });
 
 describe('figures (Q49: details 18 and 19)', () => {
   it('gives a person the figure a computer holds, and the computer switches to a free one', () => {
-    const three = play(fresh(), [andrei, act.count(3)]);
+    const three = play(fresh(), [andrei, act.count(3)], [andrei, act.control('open:2', 'ai')]);
     const joined = play(three, [bea, act.ask('Bea', 'fig_02')], [andrei, act.accept(bea)]);
     expect(seatsOf(joined)).toEqual([
       [1, 'Andrei', 'fig_01', 'human'],
@@ -222,11 +287,11 @@ describe('figures (Q49: details 18 and 19)', () => {
   });
 
   it('does not let the game master give a computer a figure another seat holds, and says who holds it', () => {
-    const three = play(fresh(), [andrei, act.count(3)]);
-    expect(refused(three, andrei, act.seat('computer:1', 'Computer 1', 'fig_03')).message).toBe(
+    const three = withComputers(3);
+    expect(refused(three, andrei, act.seat('computer:3', 'Computer 1', 'fig_03')).message).toBe(
       'Computer 2 holds that figure now; pick another',
     );
-    expect(refused(three, andrei, act.seat('computer:1', 'Computer 1', 'fig_01')).message).toMatch(/^Andrei holds/);
+    expect(refused(three, andrei, act.seat('computer:3', 'Computer 1', 'fig_01')).message).toMatch(/^Andrei holds/);
   });
 
   it('refuses a person a figure another person took a moment ago, naming them', () => {
@@ -272,37 +337,33 @@ describe('changes that cross another (Q49)', () => {
     expect(refused(accepted, bea, act.change('Bea', 'fig_05')).message).toMatch(/just accepted you/);
   });
 
-  it('refuses a change aimed at a computer that has made way for a person, rather than changing the computer now in its seat', () => {
-    const four = play(fresh(), [andrei, act.count(4)]);
-    expect(four.seats.map((seat) => seat.id)).toEqual(['person:andrei', 'computer:1', 'computer:2', 'computer:3']);
-    const joined = play(four, [bea, act.ask('Bea', 'fig_05')], [andrei, act.accept(bea)]);
-    expect(joined.seats.map((seat) => seat.id)).toEqual(['person:andrei', 'person:bea', 'computer:1', 'computer:2']);
-    expect(refused(joined, andrei, act.seat('computer:3', 'Robo', 'fig_06')).message).toMatch(/made way for a person/);
+  it('refuses a change aimed at a seat that has just changed, rather than changing whatever holds it now', () => {
+    const computer = play(fresh(), [andrei, act.control('open:1', 'ai')]);
+    const human = play(computer, [andrei, act.control('computer:2', 'human')]);
+    expect(refused(human, andrei, act.seat('computer:2', 'Robo', 'fig_06')).message).toBe('that seat has just changed; look again');
+    expect(refused(human, andrei, act.control('computer:2', 'human')).message).toBe('that seat has just changed; look again');
+    const joined = play(fresh(), [bea, act.ask('Bea', 'fig_05')], [andrei, act.accept(bea)]);
+    expect(refused(joined, andrei, act.control('open:1', 'ai')).message).toBe('that seat has just changed; look again');
   });
 
-  it('never gives a new computer the id of one that went', () => {
+  it('never gives a seat the id of one that went', () => {
     const state = play(fresh(), [andrei, act.count(3)], [andrei, act.count(2)], [andrei, act.count(3)]);
-    expect(state.seats.map((seat) => [seat.id, seat.name])).toEqual([
-      ['person:andrei', 'Andrei'],
-      ['computer:1', 'Computer 1'],
-      ['computer:3', 'Computer 2'],
-    ]);
+    expect(idsOf(state)).toEqual(['person:andrei', 'open:1', 'open:3']);
   });
 });
 
 describe('the game master’s other settings', () => {
-  it('sets the map seed and the computers’ thinking time, whole seconds from 1 to 60', () => {
+  it('sets the map seed and the game’s name', () => {
     const state = play(
       fresh(),
       [andrei, { type: 'setup.setSeed', gameId: G, seed: ' amber-birch-3 ' }],
-      [andrei, { type: 'setup.setThinkingTime', gameId: G, seconds: 25 }],
+      [andrei, { type: 'setup.rename', gameId: G, name: ' Friday game ' }],
     );
     expect(state.mapSeed).toBe('amber-birch-3');
-    expect(state.thinkingSeconds).toBe(25);
-    for (const seconds of [0, 61, 2.5]) {
-      expect(refused(fresh(), andrei, { type: 'setup.setThinkingTime', gameId: G, seconds }).code).toBe('invalid_action');
-    }
+    expect(state.name).toBe('Friday game');
     expect(refused(fresh(), bea, { type: 'setup.setSeed', gameId: G, seed: 'x' }).code).toBe('not_game_master');
+    expect(refused(fresh(), bea, { type: 'setup.rename', gameId: G, name: 'x' }).code).toBe('not_game_master');
+    expect(refused(fresh(), andrei, { type: 'setup.rename', gameId: G, name: 'x'.repeat(41) }).code).toBe('invalid_action');
   });
 
   it('cancels, after which nothing more happens in setup', () => {
@@ -328,6 +389,7 @@ describe('starting', () => {
   it('may happen with seats empty, even with nobody else joined, and computers play them', () => {
     const starting = play(fresh(), [andrei, act.count(3)], [andrei, act.start()]);
     expect(starting.phase).toBe('starting');
+    expect(idsOf(starting)).toEqual(['person:andrei', 'computer:3', 'computer:4']);
     const { setup, game } = startGame(starting, map);
     expect(setup.phase).toBe('started');
     expect(game.players.map((player) => [player.seat, player.name, player.control])).toEqual([

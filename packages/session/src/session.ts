@@ -1,5 +1,5 @@
 import { NotImplementedError, type GameId, type GameMap, type UserId } from '@adventure/core';
-import type { ClientMessage, ServerMessage, SetupState } from '@adventure/protocol';
+import { isOpenSeat, type ClientMessage, type ServerMessage, type SetupState } from '@adventure/protocol';
 import {
   GAME_MASTER_ABSENCE_BEHAVIOUR,
   type Broadcaster,
@@ -113,6 +113,8 @@ export class GameSession {
       case 'setup.setPlayerCount':
       case 'setup.respondToJoin':
       case 'setup.setSeed':
+      case 'setup.rename':
+      case 'setup.setSeatControl':
       case 'setup.setThinkingTime':
       case 'setup.cancel':
       case 'setup.start': {
@@ -195,7 +197,7 @@ export function listingOf(setup: SetupState): GameListing | null {
     gameMasterName: setup.gameMasterName,
     phase: setup.phase === 'started' ? 'in_progress' : 'setup',
     seatsTaken: people.length,
-    seatsTotal: setup.playerCount,
+    seatsTotal: people.length + setup.seats.filter(isOpenSeat).length,
     createdAt: setup.createdAt,
     members: people.map((seat) => seat.userId).filter((id): id is UserId => id !== null),
   };

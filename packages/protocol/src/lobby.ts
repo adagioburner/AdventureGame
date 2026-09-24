@@ -16,6 +16,7 @@ export interface GameSummary {
   readonly phase: 'setup' | 'in_progress';
   /** Seats people have taken, the game master's included. */
   readonly seatsTaken: number;
+  /** [Q51, 22] Seats for people: those taken and the Human seats still open. */
   readonly seatsTotal: number;
   readonly createdAt: number;
   /** Whether the user this row was sent to holds a seat in the game. */
@@ -38,27 +39,43 @@ export interface JoinRequest {
 }
 
 /**
- * A seat on the setup screen. People hold the first seats, the game master in
- * seat 1 and the rest in the order the game master accepted them; computers
- * hold the seats nobody has taken ([Q48, 7 and 12]).
+ * A seat on the setup screen ([Q51, 22]). The game master holds seat 1. Every
+ * other seat is Human or Computer, as the game master sets it: a Human seat is
+ * kept for someone who asks to join, and accepting someone puts them in the
+ * first Human seat nobody holds; a Human seat still empty at Start is played
+ * by the computer ([Q48, 12]).
+ *
+ * So a seat is one of three things:
+ *   - a person's: `control` human and `userId` theirs;
+ *   - open: `control` human and `userId` null, with no name or figure yet;
+ *   - a computer's: `control` ai and `userId` null.
  */
 export interface SetupSeat {
   /**
-   * Who holds the seat, for as long as they hold it: `person:<userId>`, or
-   * `computer:<n>` for a computer, whose `n` is never reused within a game.
-   * Seat numbers move up when someone leaves or a computer makes way for a
-   * person, so a change to a seat names it by this rather than by its number,
-   * and a change aimed at a holder who has gone is refused instead of landing
-   * on whoever holds that number now.
+   * Who holds the seat, for as long as they hold it: `person:<userId>`,
+   * `computer:<n>` for a computer, or `open:<n>` for a Human seat nobody
+   * holds; an `n` is never reused within a game. Seat numbers move up when a
+   * seat is removed, so a change to a seat names it by this rather than by its
+   * number, and a change aimed at a holder who has gone is refused instead of
+   * landing on whoever holds that number now.
    */
   readonly id: string;
   readonly seat: Seat;
   readonly playerId: PlayerId;
-  /** `null` for a computer seat. */
+  /** `null` for an open seat and a computer seat. */
   readonly userId: UserId | null;
+  /** Empty for an open seat. */
   readonly name: string;
+  /** Empty for an open seat. */
   readonly avatarId: string;
   readonly control: ControlMode;
+  /** [Q51, 24] A computer seat's thinking time, whole seconds; kept but unused on a Human seat. */
+  readonly thinkingSeconds: number;
+}
+
+/** Whether a seat is a Human seat nobody holds yet ([Q51, 22]). */
+export function isOpenSeat(seat: SetupSeat): boolean {
+  return seat.control === 'human' && seat.userId === null;
 }
 
 /**
@@ -96,11 +113,9 @@ export interface SetupState {
   readonly playerCount: number;
   /** Exactly `playerCount` of them, in seat order. */
   readonly seats: readonly SetupSeat[];
-  /** The `n` the next computer seat's `id` gets. */
-  readonly nextComputer: number;
+  /** The `n` the next computer or open seat's `id` gets. */
+  readonly nextSeatId: number;
   readonly pending: readonly JoinRequest[];
   /** [SOURCE §1.3] The map seed, so the whole map is reproducible from it. */
   readonly mapSeed: string;
-  /** [Q48, 15] One thinking time for every computer seat, in whole seconds. */
-  readonly thinkingSeconds: number;
 }

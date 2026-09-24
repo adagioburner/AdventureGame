@@ -44,13 +44,6 @@ export type UiModeConfig = HotseatModeConfig | OnlineModeConfig;
 export const HOTSEAT_MODE: HotseatModeConfig = { kind: 'hotseat', allowOutOfTurnPlanning: false };
 
 /**
- * [Q22] Hotseat seats exactly two players. `PLAYER_COUNT` (2–5) stays as it
- * is: this is a constraint of the mode while §6.1's setup flow does not exist,
- * not a change to the game's range.
- */
-export const HOTSEAT_SEATS = 2;
-
-/**
  * What the setup screen settles for one seat (§6.1): a name, a figurine, and
  * who plays it.
  *
@@ -114,8 +107,11 @@ export class HotseatGame {
   private readonly played: PlayedTurn[] = [];
 
   constructor(setup: HotseatSetup) {
-    if (setup.seats.length !== HOTSEAT_SEATS) {
-      throw new RangeError(`hotseat seats ${HOTSEAT_SEATS} players, got ${setup.seats.length}`);
+    // [Q51, 21] Any player count the game takes, 2 to 5, as online; Q22's two
+    // seats were the mode's limit before the setup screens became one.
+    const count = setup.map.ruleset.config.players.PLAYER_COUNT;
+    if (setup.seats.length < count.min || setup.seats.length > count.max) {
+      throw new RangeError(`a game takes ${count.min} to ${count.max} players, got ${setup.seats.length}`);
     }
     const range = setup.map.ruleset.config.ai.THINKING_TIME_SECONDS;
     for (const seat of setup.seats) {

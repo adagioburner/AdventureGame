@@ -1,4 +1,6 @@
-import type { AuthFailure, LoginResponse, Principal } from '@adventure/protocol';
+import type { GameId } from '@adventure/core';
+import { decodeServerMessage, encodeMessage, type AuthFailure, type LoginResponse, type NewGameSetup, type Principal } from '@adventure/protocol';
+import { sentence } from '../setup/text.ts';
 
 /**
  * The site's account endpoints (`apps/server/src/worker.ts`) and the login
@@ -72,6 +74,44 @@ export function socketUrl(path: string, token: string): string {
   url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:';
   url.searchParams.set('token', token);
   return url.toString();
+}
+
+/** How long creating a game may take before the page gives up and says so. */
+const CREATE_WAIT_MS = 15_000;
+
+/**
+ * [Q51, 25] Creates a game from a setup this page already has, when "Play
+ * online" is turned on, through the game list's socket as the game list's own
+ * New game does. Rejects with the server's refusal as a sentence.
+ */
+export function createGame(token: string, name: string, setup: NewGameSetup): Promise<GameId> {
+  return new Promise((resolve, reject) => {
+    let socket: WebSocket;
+    try {
+      socket = new WebSocket(socketUrl('/api/lobby', token));
+    } catch {
+      reject(new Error('The server could not be reached. Try again.'));
+      return;
+    }
+    const finish = (outcome: () => void): void => {
+      window.clearTimeout(timer);
+      socket.close();
+      outcome();
+    };
+    const timer = window.setTimeout(() => finish(() => reject(new Error('The server did not answer. Try again.'))), CREATE_WAIT_MS);
+    socket.addEventListener('open', () => socket.send(encodeMessage({ type: 'lobby.create', name, setup })));
+    socket.addEventListener('message', (event) => {
+      let message;
+      try {
+        message = decodeServerMessage(String(event.data));
+      } catch {
+        return;
+      }
+      if (message.type === 'lobby.created') finish(() => resolve(message.gameId));
+      else if (message.type === 'error') finish(() => reject(new Error(sentence(message.message))));
+    });
+    socket.addEventListener('close', () => finish(() => reject(new Error('The server could not be reached. Try again.'))));
+  });
 }
 
 async function credentials(path: string, username: string, password: string): Promise<Login> {

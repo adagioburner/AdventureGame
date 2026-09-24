@@ -46,6 +46,8 @@ const CLIENT_MESSAGE_TYPE_RECORD: Record<ClientMessage['type'], true> = {
   'setup.setPlayerCount': true,
   'setup.respondToJoin': true,
   'setup.setSeed': true,
+  'setup.rename': true,
+  'setup.setSeatControl': true,
   'setup.setThinkingTime': true,
   'setup.cancel': true,
   'setup.start': true,

@@ -1,20 +1,28 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { createGameState, startingNodeFor, type GameId, type GameMap, type GameState } from '@adventure/core';
-import type { SetupState } from '@adventure/protocol';
+import { isOpenSeat, type SetupState } from '@adventure/protocol';
 import { MapView } from '../page/MapView.tsx';
 import { randomSeed } from '../page/seed.ts';
 import { buildMapScene, type MapScene } from '../render/sceneModel.ts';
+import { DEFAULT_RULESET } from '@adventure/config';
+import { atlasOf, type ArtCatalog } from '../art/catalog.ts';
+import { fromOnlineSetup, type LocalLimits, type LocalSetup } from '../setup/local.ts';
+import { SetupPanel } from '../setup/SetupPanel.tsx';
+import { sentence } from '../setup/text.ts';
 import { socketUrl, type Login } from './api.ts';
 import { mapForSeed, useArt, useMapFor } from './assets.ts';
-import { SetupPanel } from './SetupPanel.tsx';
 import { useChannel } from './socket.ts';
-import { sentence } from './text.ts';
 
 interface OnlineGameScreenProps {
   readonly gameId: GameId;
   readonly login: Login;
   onBack(): void;
   onRefused(): void;
+  /**
+   * [Q51, 25] The game master turned "Play online" off and the game is gone
+   * from the server: carry on with this setup on this device.
+   */
+  onGoLocal(setup: LocalSetup, seed: string): void;
 }
 
 /** How long a refusal from the server stays on screen. */
@@ -30,7 +38,7 @@ const NOTICE_MS = 4000;
  * Start the server asks the game master's browser for the map and sends it on
  * to everyone in the game (§12.1).
  */
-export function OnlineGameScreen({ gameId, login, onBack, onRefused }: OnlineGameScreenProps) {
+export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }: OnlineGameScreenProps) {
   const me = login.user;
   const [setup, setSetup] = useState<SetupState | null>(null);
   const [game, setGame] = useState<GameState | null>(null);
@@ -39,12 +47,18 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused }: OnlineGam
   const [notice, setNotice] = useState<string | null>(null);
   const [seedDraft, setSeedDraft] = useState('');
   const { art, problem: artProblem } = useArt();
+  // Set when the game master turns "Play online" off, until the cancel lands.
+  const goingLocal = useRef(false);
 
   const channel = useChannel(
     socketUrl(`/api/games/${gameId}`, login.token),
     (message) => {
       switch (message.type) {
         case 'setup.state':
+          if (goingLocal.current && message.setup.phase === 'cancelled' && art !== null) {
+            onGoLocal(fromOnlineSetup(message.setup, localLimits(art.catalog)), message.setup.mapSeed);
+            return;
+          }
           setSetup(message.setup);
           return;
         case 'setup.declined':
@@ -60,6 +74,7 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused }: OnlineGam
           }, 30);
           return;
         case 'error':
+          goingLocal.current = false;
           if (message.code === 'game_not_found') setMissing(true);
           else setNotice(sentence(message.message));
           return;
@@ -88,21 +103,21 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused }: OnlineGam
     [art, map],
   );
 
-  // Before the start, the engine's own opening position for these seats, so
-  // the figures and the stamina shown are `createGameState`'s.
+  // Before the start, the engine's own opening position for the seats someone
+  // holds, so the figures on the map are `createGameState`'s. A Human seat
+  // nobody holds has no figure to show (Q51, 22).
   const seats = setup?.seats;
-  const opening = useMemo<GameState | null>(
-    () =>
-      map === null || seats === undefined || game !== null
-        ? null
-        : createGameState({
-            id: gameId,
-            map,
-            players: seats.map((seat) => ({ id: seat.playerId, name: seat.name, avatarId: seat.avatarId, control: seat.control })),
-            startingNode: startingNodeFor(map),
-          }),
-    [gameId, map, seats, game],
-  );
+  const opening = useMemo<GameState | null>(() => {
+    if (map === null || seats === undefined || game !== null) return null;
+    const state = createGameState({
+      id: gameId,
+      map,
+      players: seats.map((seat) => ({ id: seat.playerId, name: seat.name, avatarId: seat.avatarId, control: seat.control })),
+      startingNode: startingNodeFor(map),
+    });
+    const open = new Set(seats.filter(isOpenSeat).map((seat) => seat.playerId));
+    return { ...state, players: state.players.filter((player) => !open.has(player.id)) };
+  }, [gameId, map, seats, game]);
 
   const shown = game ?? opening;
   const isGameMaster = setup?.gameMaster === me.userId;
@@ -188,14 +203,33 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused }: OnlineGam
           ) : (
             <SetupPanel
               art={art}
-              setup={setup}
-              opening={shown}
-              me={me}
-              connected={channel.status === 'open'}
-              declined={declined}
-              send={(message) => {
-                if (message.type === 'setup.requestJoin') setDeclined(false);
-                return channel.send(message);
+              panel={{
+                kind: 'online',
+                setup,
+                me,
+                connected: channel.status === 'open',
+                declined,
+                send: (message) => {
+                  if (message.type === 'setup.requestJoin') setDeclined(false);
+                  return channel.send(message);
+                },
+                onTurnOff: () => {
+                  // [Q51, 25] Anyone who asked to join is told the game was
+                  // cancelled, so the game master is asked first.
+                  const others = [
+                    ...setup.seats.filter((seat) => seat.userId !== null && seat.userId !== me.userId).map((seat) => seat.name),
+                    ...setup.pending.map((request) => request.requestedName),
+                  ];
+                  if (
+                    others.length > 0 &&
+                    !window.confirm(
+                      `Stop playing online? The game leaves the game list, and ${listOf(others)} will be told it was cancelled.`,
+                    )
+                  ) {
+                    return;
+                  }
+                  if (channel.send({ type: 'setup.cancel', gameId })) goingLocal.current = true;
+                },
               }}
             />
           )}
@@ -208,4 +242,19 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused }: OnlineGam
       )}
     </div>
   );
+}
+
+/** "Bea", "Bea and Cal", "Bea, Cal and Dan". */
+function listOf(names: readonly string[]): string {
+  return names.length <= 1 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+}
+
+/** §11's ranges and the figurine sheet, for a setup carried to this device. */
+function localLimits(catalog: ArtCatalog): LocalLimits {
+  return {
+    playerCount: DEFAULT_RULESET.config.players.PLAYER_COUNT,
+    thinkingSeconds: DEFAULT_RULESET.config.ai.THINKING_TIME_SECONDS,
+    defaultThinkingSeconds: Math.round(DEFAULT_RULESET.config.ai.MCTS_TIME_BUDGET_PER_MOVE_MS / 1000),
+    figures: atlasOf(catalog, catalog.manifest.figurines.sheet).sprites.map((sprite) => sprite.id),
+  };
 }

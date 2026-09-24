@@ -99,7 +99,9 @@ export class Lobby extends DurableObject<Env> {
       created = await roomOf(this.env, gameId).create(gameId, {
         name: message.name,
         gameMaster: { userId: who.userId, displayName: who.displayName },
-        mapSeed: friendlySeed(cryptoRandom),
+        // [Q51, 25] "Play online" sends the setup the page already has.
+        mapSeed: message.setup?.mapSeed ?? friendlySeed(cryptoRandom),
+        ...(message.setup === undefined ? {} : { seats: message.setup.seats }),
       });
     } catch (error) {
       // The page waits for an answer, so a failure gets one too.

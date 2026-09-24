@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { asGameId, type GameId } from '@adventure/core';
 import { App } from '../page/App.tsx';
-import { logOut, saveLogin, savedLogin, whoAmI, type Login } from './api.ts';
+import { toNewGameSetup, type LocalSetup } from '../setup/local.ts';
+import { createGame, logOut, saveLogin, savedLogin, whoAmI, type Login } from './api.ts';
 import { GameListScreen } from './GameListScreen.tsx';
 import { LoginScreen } from './LoginScreen.tsx';
 import { OnlineGameScreen } from './OnlineGameScreen.tsx';
@@ -13,8 +14,9 @@ import './site.css';
  *
  *   /             the login page, or once logged in the game list
  *   /games/<id>   one game: its setup, and once started the map
- *   /hotseat      [Q48, 1] "Play on one device": today's hot seat page, unchanged,
- *                 from the login page and [Q50] the game list
+ *   /hotseat      a game on this device: the one setup screen with "Play online"
+ *                 off (Q51), from the login page's "Play on one device" (Q48, 1)
+ *                 or by turning "Play online" off; logged in, the switch is there
  *
  * A game's address works before logging in too: the login page shows first,
  * then the game.
@@ -30,6 +32,8 @@ function routeOf(pathname: string): Route {
 export function Site() {
   const [route, setRoute] = useState<Route>(() => routeOf(window.location.pathname));
   const [login, setLogin] = useState<Login | null>(savedLogin);
+  // [Q51, 25] A stored game's setup, carried here when "Play online" is turned off.
+  const [carried, setCarried] = useState<LocalSetup | undefined>(undefined);
 
   useEffect(() => {
     const onPop = (): void => setRoute(routeOf(window.location.pathname));
@@ -43,7 +47,10 @@ export function Site() {
 
   const go = useCallback((path: string): void => {
     window.history.pushState(null, '', path);
-    setRoute(routeOf(path));
+    const next = routeOf(window.location.pathname);
+    // A carried setup is for the one visit to the game on this device it was carried to.
+    if (next.page !== 'hotseat') setCarried(undefined);
+    setRoute(next);
   }, []);
 
   const forget = useCallback((): void => {
@@ -67,7 +74,30 @@ export function Site() {
 
   useEffect(checkLogin, [checkLogin]);
 
-  if (route.page === 'hotseat') return <App />;
+  if (route.page === 'hotseat') {
+    // [Q51, 25, 26 and 29] Logged in, the setup screen has "Play online", and
+    // the top bar the way back to the game list.
+    return (
+      <App
+        carried={carried}
+        playOnline={
+          login === null
+            ? undefined
+            : async (setup, seed) => {
+                const gameId = await createGame(login.token, `${login.user.displayName}’s game`, toNewGameSetup(setup, seed));
+                go(`/games/${gameId}`);
+              }
+        }
+        barExtra={
+          login === null ? null : (
+            <button className="btn" type="button" onClick={() => go('/')}>
+              Your games
+            </button>
+          )
+        }
+      />
+    );
+  }
 
   if (login === null) {
     return (
@@ -88,12 +118,21 @@ export function Site() {
   };
 
   return route.page === 'game' ? (
-    <OnlineGameScreen key={route.gameId} gameId={route.gameId} login={login} onBack={() => go('/')} onRefused={checkLogin} />
+    <OnlineGameScreen
+      key={route.gameId}
+      gameId={route.gameId}
+      login={login}
+      onBack={() => go('/')}
+      onRefused={checkLogin}
+      onGoLocal={(setup, seed) => {
+        go(`/hotseat?seed=${encodeURIComponent(seed)}`);
+        setCarried(setup);
+      }}
+    />
   ) : (
     <GameListScreen
       login={login}
       onOpen={(gameId) => go(`/games/${gameId}`)}
-      onHotseat={() => go('/hotseat')}
       onLogOut={leave}
       onRefused={checkLogin}
     />

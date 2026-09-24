@@ -1138,10 +1138,14 @@ where the GM starts it.
 ### What actually landed
 
 Built to Andrei's answers in [Q48](./OPEN_QUESTIONS.md#q48),
-[Q49](./OPEN_QUESTIONS.md#q49) and [Q50](./OPEN_QUESTIONS.md#q50). Three
-browsers played it through against the local Workers runtime: register, list,
-ask to join, both figure clashes, accept, change the map, start, decline,
-cancel, and hot seat from the login page and the game list.
+[Q49](./OPEN_QUESTIONS.md#q49), [Q50](./OPEN_QUESTIONS.md#q50) and
+[Q51](./OPEN_QUESTIONS.md#q51). Three browsers played it through against the
+local Workers runtime: register, list, ask to join, both figure clashes,
+accept, change the map, start, decline, cancel, and hot seat from the login
+page and the game list. Two more then played Q51's one setup screen through:
+a stored game with four seats, a join into a kept Human seat, the switch
+turned off with the joiner told, five seats played on one device, and the
+switch turned on again.
 
 - **One Worker** (`apps/server/src/worker.ts`) serves the pages, the account
   endpoints and two kinds of socket. **The lobby is one Durable Object**
@@ -1155,8 +1159,9 @@ cancel, and hot seat from the login page and the game list.
   (`auth/rules.ts`): PBKDF2-SHA256 at 100,000 iterations (the most WebCrypto
   in Workers allows), random tokens stored only as hashes, 30 days.
 - **The setup flow** is pure functions over `SetupState` in
-  `packages/session/src/setup.ts`, the Q48 and Q49 rules with a test each.
-  `SetupSeat.id` names a seat's holder so a change survives seats moving up.
+  `packages/session/src/setup.ts`, the Q48, Q49 and Q51 rules with a test
+  each. `SetupSeat.id` names a seat's holder so a change survives seats
+  changing hands.
 - **The map round trip at Start is two messages**, not a call:
   `setup.start` moves the game to `starting` and asks the game master's
   browser for the map; `gm.mapGenerated` starts it. A Durable Object may sleep
@@ -1166,8 +1171,14 @@ cancel, and hot seat from the login page and the game list.
   (`vite build --mode site`) into `apps/web/dist-site/`, which the Worker
   serves. `main.tsx` picks the site only in that mode, and the hot seat build
   (`pnpm build:web`, and the game page made from it) comes out byte for byte
-  as before. `/hotseat` is the hot seat page, unchanged, reached
-  from the login page (Q48 1) and the game list (Q50).
+  as before.
+- **One setup screen** (Q51, `apps/web/src/setup/`): `SetupPanel.tsx` draws
+  a game on one device (`local.ts`, 2 to 5 seats) and a stored game from the
+  same parts, and the "Play online" switch moves the seats from one to the
+  other. `/hotseat` shows it with the switch off, reached from the login page
+  (Q48 1) and by turning the switch off; the game list's New game button
+  opens it on (Q50's button is gone). The game page artifact shows it without
+  the switch.
 - **Tests** run the server in Cloudflare's local runtime from Node, through
   wrangler's `unstable_startWorker` (`apps/server/test/worker.test.ts`),
   because `@cloudflare/vitest-pool-workers` needs Vitest 4 and the repository
