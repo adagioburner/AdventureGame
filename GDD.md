@@ -192,6 +192,10 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 [SOURCE §5, review] **Either hot seat seat, or both, can be played by the computer (§9).** Andrei, 2026-09-24, asked that phase 5 bring this to the start game panel rather than wait for multiplayer (Q40). Each seat has Human and Computer buttons, both starting on Human; a computer seat has its own thinking time, whole seconds from 1 to 60, starting at §11's 10; its name and figurine are picked as a person's are (Q41). On its turn the line above the buttons reads "<name> is thinking…" over a bar that fills across the thinking time, its figure blinks, and Plan a move, Rest and End turn are hidden until it has moved; the move then plays out like a person's End turn. Its die card closes by itself after 3 seconds: "the computer's die panel closes itself, pressing OK is [not] necessary" (Q42).
 
+[SOURCE chat, review] **Each turn starts with the map on the current player's figure.** Andrei, 2026-09-24: "we need to center the map on the current player's figure at the beginning of each turn, both human and AI". The map glides there over about half a second at the zoom it already has, from the first turn on; after an unguarded claim it waits until the claim's notice has faded (Q46).
+
+[SOURCE chat, review] **The map follows a walking figure that nears the edge.** Andrei, 2026-09-24: "as the figures move, if they get out of view, the map should also pan to follow them automatically". Once a walking figure is within a fifth of the view from an edge, the map keeps pace with it, so it never leaves the screen; if someone pans or zooms during the walk, the map stops following for the rest of that walk (Q47).
+
 ### 7.3 Game master controls
 
 [SOURCE §4] If a player takes too long, the game master can force their currently-planned move (or force a rest, if none was planned). [SOURCE §4, chat] No fixed time threshold — entirely at the game master's discretion.
