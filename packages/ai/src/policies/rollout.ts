@@ -1,5 +1,13 @@
-import { NotImplementedError } from '@adventure/core';
+import type { GameConfig } from '@adventure/config';
+import type { DiceSource, Rng } from '@adventure/core';
+import { runRollout, type RestRule, type RolloutCursor, type RolloutTermination } from '@adventure/sim';
 import type { RolloutPolicy } from '../types.ts';
+
+export interface ClosestPoiRolloutSettings {
+  readonly config: GameConfig;
+  readonly termination: RolloutTermination;
+  readonly restRule: RestRule;
+}
 
 /**
  * [SOURCE §5, chat] The specified rollout policy: "choose a random target among
@@ -10,11 +18,11 @@ import type { RolloutPolicy } from '../types.ts';
  * choosing itself is `chooseWalkTarget`, shared verbatim with remoteness
  * scoring. Nothing is reimplemented here.
  */
-export function closestPoiRolloutPolicy(): RolloutPolicy {
+export function closestPoiRolloutPolicy(settings: ClosestPoiRolloutSettings): RolloutPolicy {
   return {
     name: 'closest-poi-random',
-    run() {
-      throw new NotImplementedError('closestPoiRolloutPolicy.run', 'GDD.md §9 (via @adventure/sim runRollout)');
+    run(from: RolloutCursor, rng: Rng, dice: DiceSource): RolloutCursor {
+      return runRollout(from, { ...settings, rng, dice });
     },
   };
 }

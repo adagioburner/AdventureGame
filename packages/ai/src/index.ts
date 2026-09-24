@@ -10,8 +10,13 @@
 export * from './types.ts';
 export * from './mcts.ts';
 export * from './runner.ts';
-export { closestPoiRolloutPolicy } from './policies/rollout.ts';
-export { uctTreePolicy, closestUnclaimedPoiEnumerator, unclaimedPoiNodesOf } from './policies/tree.ts';
+export { closestPoiRolloutPolicy, type ClosestPoiRolloutSettings } from './policies/rollout.ts';
+export {
+  uctTreePolicy,
+  closestUnclaimedPoiEnumerator,
+  unclaimedPoiNodesOf,
+  previewReachability,
+} from './policies/tree.ts';
 export {
   simulatedRolloutEvaluator,
   estimatedGoldAndSkillsEvaluator,

@@ -8,7 +8,7 @@ import {
   type PlayerId,
 } from '@adventure/core';
 import type { RolloutCursor } from '@adventure/sim';
-import type { MctsNode, NodeEvaluator } from '../types.ts';
+import type { NodeEvaluator } from '../types.ts';
 
 /**
  * [SOURCE §9, review] There are **three** kinds of node evaluation, and
@@ -78,7 +78,7 @@ function goldProgress(state: GameState): number {
 export function simulatedRolloutEvaluator(): NodeEvaluator {
   return {
     name: 'simulated-rollout',
-    evaluate(_node: MctsNode, rolledOut: RolloutCursor, subject: PlayerId): number {
+    evaluate(_atNode: RolloutCursor, rolledOut: RolloutCursor, subject: PlayerId): number {
       const player = playerById(rolledOut.state, subject);
       return normalisedGold(rolledOut.state, player.stats.gold);
     },
@@ -107,10 +107,10 @@ export function simulatedRolloutEvaluator(): NodeEvaluator {
 export function estimatedGoldAndSkillsEvaluator(): NodeEvaluator {
   return {
     name: 'estimated-gold-and-skills',
-    evaluate(node: MctsNode, _rolledOut: RolloutCursor, subject: PlayerId): number {
-      const progress = goldProgress(node.state);
-      const gold = normalisedGold(node.state, playerById(node.state, subject).stats.gold);
-      const skills = normalisedSkills(node.state, subject);
+    evaluate(atNode: RolloutCursor, _rolledOut: RolloutCursor, subject: PlayerId): number {
+      const progress = goldProgress(atNode.state);
+      const gold = normalisedGold(atNode.state, playerById(atNode.state, subject).stats.gold);
+      const skills = normalisedSkills(atNode.state, subject);
       return gold * progress + skills * (1 - progress);
     },
   };
@@ -130,9 +130,9 @@ export function hybridGoldAndSkillsEvaluator(): NodeEvaluator {
 
   return {
     name: 'hybrid-gold-and-skills',
-    evaluate(node: MctsNode, rolledOut: RolloutCursor, subject: PlayerId): number {
+    evaluate(atNode: RolloutCursor, rolledOut: RolloutCursor, subject: PlayerId): number {
       return (
-        (simulated.evaluate(node, rolledOut, subject) + estimated.evaluate(node, rolledOut, subject)) / 2
+        (simulated.evaluate(atNode, rolledOut, subject) + estimated.evaluate(atNode, rolledOut, subject)) / 2
       );
     },
   };
