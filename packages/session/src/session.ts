@@ -106,6 +106,7 @@ export class GameSession {
 
     switch (message.type) {
       case 'setup.requestJoin':
+      case 'setup.updateRequest':
       case 'setup.withdraw':
       case 'setup.leave':
       case 'setup.updateSeat':

@@ -7,4 +7,13 @@ import { App } from './page/App.tsx';
 
 const host = document.getElementById('app');
 if (host === null) throw new Error('index.html has no #app');
-createRoot(host).render(<App />);
+const root = createRoot(host);
+
+// `vite build --mode site` builds the online site the Worker serves
+// (apps/server); every other build is the hot seat page alone, and this branch
+// and the site's code are left out of it.
+if (import.meta.env.MODE === 'site') {
+  void import('./online/Site.tsx').then(({ Site }) => root.render(<Site />));
+} else {
+  root.render(<App />);
+}

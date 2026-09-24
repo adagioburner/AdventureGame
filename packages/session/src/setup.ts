@@ -24,6 +24,16 @@ import type { ClientMessage, JoinRequest, ProtocolErrorCode, SetupSeat, SetupSta
  * the GM may rename them and change their figures before the start. One
  * thinking time covers all of them.
  *
+ * [Q49] Figures, Andrei's answers to phase 6 details 18 and 19: a person
+ * may take a figure a computer holds, and the computer switches to a free
+ * one; a join request holds no figure, so two may name the same one, and the
+ * first accepted gets it while the other waits for its sender to pick again.
+ * He added that whichever way a clash resolves matters less than that it is
+ * detected, resolved and told to the people it affects, so every refusal
+ * below names who holds the figure, and a request whose figure was taken
+ * shows as such to its sender and to the game master (the panel reads it off
+ * the state).
+ *
  * [SOURCE §2, chat] Starting stamina is then `startingStaminaForSeat(seat)`
  * from `@adventure/config`, inside `createGameState`, so computers, holding the
  * last seats, start with the most.
@@ -80,6 +90,7 @@ export function createSetup(game: NewSetup, limits: SetupLimits): SetupState {
   const name = checkedText(game.name, limits.gameNameMaxLength, 'game name');
   const seed = checkedText(game.mapSeed, limits.seedMaxLength, 'map seed');
   const creator: SetupSeat = {
+    id: personSeatId(game.gameMaster.userId),
     seat: 1,
     playerId: playerIdForSeat(1),
     userId: game.gameMaster.userId,
@@ -97,6 +108,7 @@ export function createSetup(game: NewSetup, limits: SetupLimits): SetupState {
       phase: 'setup',
       playerCount: limits.playerCount.min,
       seats: [creator],
+      nextComputer: 1,
       pending: [],
       mapSeed: seed,
       thinkingSeconds: limits.defaultThinkingSeconds,
@@ -113,6 +125,7 @@ export type SetupAction = Extract<
   {
     type:
       | 'setup.requestJoin'
+      | 'setup.updateRequest'
       | 'setup.withdraw'
       | 'setup.leave'
       | 'setup.updateSeat'
@@ -153,17 +166,30 @@ export function applySetupAction(
   const seated = people.some((seat) => seat.userId === by);
 
   switch (action.type) {
-    case 'setup.requestJoin': {
-      if (seated) throw new SetupError('invalid_action', 'you already hold a seat in this game');
+    case 'setup.requestJoin':
+    case 'setup.updateRequest': {
+      const existing = state.pending.find((pending) => pending.userId === by);
+      if (seated) {
+        throw new SetupError(
+          'invalid_action',
+          action.type === 'setup.updateRequest'
+            ? 'the game master has just accepted you; change your name and figure on your seat'
+            : 'you already hold a seat in this game',
+        );
+      }
+      if (action.type === 'setup.updateRequest' && existing === undefined) {
+        throw new SetupError('invalid_action', 'the game master has already answered your request');
+      }
       const request: JoinRequest = {
         userId: by,
         requestedName: checkedText(action.name, limits.nameMaxLength, 'name'),
-        requestedAvatarId: unheldFigure(action.avatarId, people, limits),
-        requestedAt: state.pending.find((pending) => pending.userId === by)?.requestedAt ?? now,
+        requestedAvatarId: figureNoOneElseHolds(action.avatarId, people, limits),
+        requestedAt: existing?.requestedAt ?? now,
       };
-      const pending = state.pending.some((existing) => existing.userId === by)
-        ? state.pending.map((existing) => (existing.userId === by ? request : existing))
-        : [...state.pending, request];
+      const pending =
+        existing === undefined
+          ? [...state.pending, request]
+          : state.pending.map((other) => (other.userId === by ? request : other));
       return { state: { ...state, pending } };
     }
 
@@ -181,8 +207,15 @@ export function applySetupAction(
     }
 
     case 'setup.updateSeat': {
-      const target = state.seats.find((seat) => seat.seat === action.seat);
-      if (target === undefined) throw new SetupError('invalid_action', `there is no seat ${action.seat}`);
+      const target = state.seats.find((seat) => seat.id === action.seatId);
+      if (target === undefined) {
+        throw new SetupError(
+          'invalid_action',
+          isComputerSeatId(action.seatId)
+            ? 'that computer seat has just made way for a person or been removed'
+            : 'that seat is no longer in the game',
+        );
+      }
       const allowed = target.userId === null ? isGameMaster : target.userId === by;
       if (!allowed) {
         throw new SetupError(
@@ -190,18 +223,16 @@ export function applySetupAction(
           target.userId === null ? 'only the game master can change a computer seat' : 'that is not your seat',
         );
       }
+      // A person may take a computer's figure (Q49, 18); a computer may not
+      // take anyone's.
+      const others = (target.userId === null ? state.seats : people).filter((seat) => seat.id !== target.id);
       const changed: SetupSeat = {
         ...target,
         name: checkedText(action.name, limits.nameMaxLength, 'name'),
-        avatarId: unheldFigure(
-          action.avatarId,
-          people.filter((seat) => seat.seat !== target.seat),
-          limits,
-        ),
+        avatarId: figureNoOneElseHolds(action.avatarId, others, limits),
       };
-      const replace = (seats: readonly SetupSeat[]): SetupSeat[] =>
-        seats.map((seat) => (seat.seat === target.seat ? changed : seat));
-      return { state: withSeats(state, replace(people), replace(computers), limits, changed) };
+      const replace = (seats: readonly SetupSeat[]): SetupSeat[] => seats.map((seat) => (seat.id === target.id ? changed : seat));
+      return { state: withSeats(state, replace(people), replace(computers), limits) };
     }
 
     case 'setup.setPlayerCount': {
@@ -223,7 +254,17 @@ export function applySetupAction(
       if (people.length >= state.playerCount) {
         throw new SetupError('game_full', 'every seat is taken; raise the player count first');
       }
+      // [Q49, 19] The first accepted gets a figure two asked for; the other
+      // picks again before they can be accepted.
+      const holder = people.find((seat) => seat.avatarId === request.requestedAvatarId);
+      if (holder !== undefined) {
+        throw new SetupError(
+          'invalid_action',
+          `${holder.name} has taken the figure ${request.requestedName} asked for; ${request.requestedName} has to pick another before you can accept them`,
+        );
+      }
       const joined: SetupSeat = {
+        id: personSeatId(request.userId),
         seat: people.length + 1,
         playerId: playerIdForSeat(people.length + 1),
         userId: request.userId,
@@ -231,7 +272,7 @@ export function applySetupAction(
         avatarId: request.requestedAvatarId,
         control: 'human',
       };
-      return { state: withSeats({ ...state, pending }, [...people, joined], computers, limits, joined) };
+      return { state: withSeats({ ...state, pending }, [...people, joined], computers, limits) };
     }
 
     case 'setup.setSeed': {
@@ -299,21 +340,26 @@ function playerIdForSeat(seat: number) {
   return asPlayerId(`seat-${seat}`);
 }
 
+function personSeatId(userId: UserId): string {
+  return `person:${userId}`;
+}
+
+function isComputerSeatId(id: string): boolean {
+  return id.startsWith('computer:');
+}
+
 /**
  * Lays the seats out again: people first, in the order given, then as many
  * computers as the player count leaves room for. Computers keep their names
  * and figures in order; when there are fewer, the last go, and when there are
  * more, new ones get the lowest "Computer N" not in use and a free figure.
- *
- * `changed` is the seat whose figure just changed, if any, for the figure
- * rules below.
+ * Then any computer whose figure a person now holds switches to a free one.
  */
 function withSeats(
   state: SetupState,
   people: readonly SetupSeat[],
   computers: readonly SetupSeat[],
   limits: SetupLimits,
-  changed?: SetupSeat,
 ): SetupState {
   const room = state.playerCount - people.length;
   const kept = computers.slice(0, room);
@@ -323,8 +369,10 @@ function withSeats(
     playerId: playerIdForSeat(index + 1),
   }));
   for (const computer of kept) seats.push({ ...computer, userId: null, control: 'ai' });
+  let nextComputer = state.nextComputer;
   while (seats.length < state.playerCount) {
     seats.push({
+      id: `computer:${nextComputer++}`,
       seat: 0,
       playerId: playerIdForSeat(0),
       userId: null,
@@ -334,7 +382,7 @@ function withSeats(
     });
   }
   const numbered = seats.map((seat, index) => ({ ...seat, seat: index + 1, playerId: playerIdForSeat(index + 1) }));
-  return { ...state, seats: settleFigures(numbered, limits, changed) };
+  return { ...state, seats: settleFigures(numbered, limits), nextComputer };
 }
 
 function nextComputerName(seats: readonly SetupSeat[]): string {
@@ -354,12 +402,26 @@ function freeFigure(seats: readonly SetupSeat[], limits: SetupLimits): string {
 }
 
 /**
- * Keeps every seat's figure its own. **Waiting on Andrei (phase 6 details 18
- * and 19):** what happens when a person takes a figure a computer holds, and
- * when two requests name the same figure.
+ * [Q49, 18] Keeps every seat's figure its own. People's figures are already
+ * their own (the checks below refuse anything else); a computer whose figure a
+ * person, or an earlier computer, holds switches to the first figure nobody
+ * holds. There are more figures than seats, so there always is one.
  */
-function settleFigures(seats: readonly SetupSeat[], _limits: SetupLimits, _changed?: SetupSeat): SetupSeat[] {
-  return [...seats];
+function settleFigures(seats: readonly SetupSeat[], limits: SetupLimits): SetupSeat[] {
+  const inUse = new Set(seats.filter((seat) => seat.userId !== null).map((seat) => seat.avatarId));
+  const clashing = new Set<string>();
+  for (const seat of seats) {
+    if (seat.userId !== null) continue;
+    if (inUse.has(seat.avatarId)) clashing.add(seat.id);
+    else inUse.add(seat.avatarId);
+  }
+  return seats.map((seat) => {
+    if (!clashing.has(seat.id)) return seat;
+    const free = limits.figures.find((id) => !inUse.has(id));
+    if (free === undefined) return seat;
+    inUse.add(free);
+    return { ...seat, avatarId: free };
+  });
 }
 
 /* -------------------------------- checking -------------------------------- */
@@ -379,11 +441,13 @@ function checkedFigure(value: unknown, limits: SetupLimits): string {
   return value;
 }
 
-/** [Q48, 10] A figure another person in the game holds is not on offer. */
-function unheldFigure(value: unknown, others: readonly SetupSeat[], limits: SetupLimits): string {
+/**
+ * [Q48, 10] A figure one of `others` holds is not on offer. A refusal names
+ * the holder, since it usually means they took it a moment ago.
+ */
+function figureNoOneElseHolds(value: unknown, others: readonly SetupSeat[], limits: SetupLimits): string {
   const figure = checkedFigure(value, limits);
-  if (others.some((seat) => seat.avatarId === figure)) {
-    throw new SetupError('invalid_action', 'someone else in the game holds that figure');
-  }
+  const holder = others.find((seat) => seat.avatarId === figure);
+  if (holder !== undefined) throw new SetupError('invalid_action', `${holder.name} holds that figure now; pick another`);
   return figure;
 }

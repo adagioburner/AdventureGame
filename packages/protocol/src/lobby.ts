@@ -25,6 +25,10 @@ export interface GameSummary {
 /**
  * A user asking to be let in, with the name and figure they would play as
  * ([Q48, 10]). [SOURCE §3] The game master accepts or rejects.
+ *
+ * [Q49, 19] A request holds no figure: two requests may name the same one,
+ * and a seated person may take it. A request whose figure a person holds
+ * waits for its sender to pick another before it can be accepted.
  */
 export interface JoinRequest {
   readonly userId: UserId;
@@ -39,6 +43,15 @@ export interface JoinRequest {
  * hold the seats nobody has taken ([Q48, 7 and 12]).
  */
 export interface SetupSeat {
+  /**
+   * Who holds the seat, for as long as they hold it: `person:<userId>`, or
+   * `computer:<n>` for a computer, whose `n` is never reused within a game.
+   * Seat numbers move up when someone leaves or a computer makes way for a
+   * person, so a change to a seat names it by this rather than by its number,
+   * and a change aimed at a holder who has gone is refused instead of landing
+   * on whoever holds that number now.
+   */
+  readonly id: string;
   readonly seat: Seat;
   readonly playerId: PlayerId;
   /** `null` for a computer seat. */
@@ -83,6 +96,8 @@ export interface SetupState {
   readonly playerCount: number;
   /** Exactly `playerCount` of them, in seat order. */
   readonly seats: readonly SetupSeat[];
+  /** The `n` the next computer seat's `id` gets. */
+  readonly nextComputer: number;
   readonly pending: readonly JoinRequest[];
   /** [SOURCE §1.3] The map seed, so the whole map is reproducible from it. */
   readonly mapSeed: string;

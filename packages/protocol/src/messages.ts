@@ -6,7 +6,6 @@ import type {
   GameState,
   NodeId,
   PlayerId,
-  Seat,
   TurnAction,
   UserId,
 } from '@adventure/core';
@@ -33,16 +32,21 @@ export type ClientMessage =
   /** [Q48, 6] Creates a game in setup, with the sender as its game master in seat 1. */
   | { readonly type: 'lobby.create'; readonly name: string }
   /* ---- a game's socket, before the start (§6.1, Q48) ---- */
-  /** Ask to join, or change a pending request, with the name and figure to play as. */
+  /** Ask to join with the name and figure to play as. Asking twice changes the request. */
   | { readonly type: 'setup.requestJoin'; readonly gameId: GameId; readonly name: string; readonly avatarId: string }
+  /**
+   * Change a request still waiting. Refused once the game master has
+   * answered it, so an edit that crosses a "no" does not ask again.
+   */
+  | { readonly type: 'setup.updateRequest'; readonly gameId: GameId; readonly name: string; readonly avatarId: string }
   | { readonly type: 'setup.withdraw'; readonly gameId: GameId }
   /** A seated person other than the game master gives up their seat. */
   | { readonly type: 'setup.leave'; readonly gameId: GameId }
   /**
    * A person changes their own seat's name and figure, or the game master a
-   * computer seat's ([Q48, 10 and 14]).
+   * computer seat's ([Q48, 10 and 14]). `seatId` is `SetupSeat.id`.
    */
-  | { readonly type: 'setup.updateSeat'; readonly gameId: GameId; readonly seat: Seat; readonly name: string; readonly avatarId: string }
+  | { readonly type: 'setup.updateSeat'; readonly gameId: GameId; readonly seatId: string; readonly name: string; readonly avatarId: string }
   // [SOURCE §3] GM-only setup actions. Authority is checked by the session layer.
   | { readonly type: 'setup.setPlayerCount'; readonly gameId: GameId; readonly count: number }
   | { readonly type: 'setup.respondToJoin'; readonly gameId: GameId; readonly userId: UserId; readonly accept: boolean }

@@ -1,0 +1,135 @@
+/*
+ * The online site's pages (Q48, 13): the hot seat panel's look, from the
+ * variables and classes in index.html, with no new art. Loaded only by the
+ * site build, so the hot seat page is unchanged.
+ */
+
+.site-page {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 16px;
+  padding: 24px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+}
+.card.site-card {
+  position: static;
+  width: min(460px, 100%);
+  box-sizing: border-box;
+}
+.site-card hr {
+  width: 100%;
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+.field {
+  display: grid;
+  gap: 4px;
+  font-weight: 600;
+}
+.field input {
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--ground);
+  font-weight: 400;
+}
+.field small {
+  font-weight: 400;
+  color: var(--muted);
+}
+.problem {
+  color: var(--missed);
+  font-weight: 600;
+}
+.waiting {
+  color: var(--accent);
+  font-weight: 600;
+}
+.games {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.game-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--ground);
+}
+.game-row > div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.game-row h3 {
+  margin: 0;
+  font: 400 19px/1.2 var(--display);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.game-row p {
+  font-size: 12.5px;
+}
+
+/* --- online setup ------------------------------------------------------ */
+.setup.online .choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+.setup.online .choice .control-toggle {
+  flex: 1 1 auto;
+}
+.control-toggle.count {
+  grid-template-columns: repeat(4, 1fr);
+}
+.control-toggle button:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+.seat .tag {
+  margin: -4px 0 0;
+}
+.seated,
+.request {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.seated b,
+.request b {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.who-asks {
+  flex: 1 1 auto;
+  display: grid;
+  min-width: 0;
+}
+.who-asks small {
+  color: var(--missed);
+  font-weight: 600;
+}
+.request + .request {
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+.seat input:disabled {
+  opacity: 0.6;
+}
+.problem-notice {
+  background: var(--missed);
+}
