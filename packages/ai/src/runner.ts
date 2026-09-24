@@ -4,10 +4,11 @@ import type { GameState, PlayerId, TurnAction } from '@adventure/core';
  * The session layer's view of an AI player — deliberately tiny, and async.
  *
  * Async because a move costs `MCTS_TIME_BUDGET_PER_MOVE` (10 s) of CPU, which
- * must not run inside a request handler or on the UI thread. The session layer
- * depends only on this interface, so the same `GameSession` code works whether
- * the search runs in a Web Worker (hotseat, local play), in a worker thread
- * next to the server, or in a separate service reached over the network — which
+ * must not block a request handler or the UI thread. The session layer depends
+ * only on this interface, so the same `GameSession` code works whether the
+ * search runs a frame-sized slice at a time on the page's own thread (hot seat,
+ * `apps/web/src/modes/computer.ts`), in a Web Worker, in a worker thread next
+ * to the server, or in a separate service reached over the network — which
  * matters, because where that CPU lives is the main constraint the hosting
  * decision (§12.1) has to satisfy.
  */

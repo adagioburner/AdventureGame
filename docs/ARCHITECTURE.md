@@ -278,12 +278,12 @@ what actually differs rather than by who calls it:
 | File | Role |
 |---|---|
 | `candidates.ts` | **The shared kernel.** Rank eligible POIs by weighted terrain cost; pick uniformly among the `CLOSE_CANDIDATE_COUNT` closest. Both §5.1 and §9 are exactly these two operations. |
-| `walk.ts` | The generic loop, plus `WalkDriver<TCursor>` — the three things that differ: which POIs are *eligible*, what *advancing* to a target means, and when the walk is *done*. [SOURCE §9, review] Not expected to survive the rollout: "we may end up sharing code for choosing the next target only". See [Q25](./OPEN_QUESTIONS.md#q25). |
+| `walk.ts` | The generic loop, plus `WalkDriver<TCursor>` — the three things that differ: which POIs are *eligible*, what *advancing* to a target means, and when the walk is *done*. [SOURCE §9, review] It did not survive the rollout, as expected: "we may end up sharing code for choosing the next target only". It is remoteness's own loop now. See [Q25](./OPEN_QUESTIONS.md#q25). |
 | `remoteness.ts` | §5.1's driver: eligible = unvisited, advance = move straight there charging path cost, done = all POIs visited. Runs `REMOTENESS_SIMULATION_RUNS` walks from a random plains node, then min-max normalises to [0,1]. |
-| `rollout.ts` | §9's driver: eligible = unclaimed POIs of any kind, advance = play real turns through `applyAction` (so allowance, stamina, guard rolls and turn boundaries all apply), done = no unclaimed gold left. |
+| `rollout.ts` | §9's rollout, its own small loop over `macroAdvanceToTarget` (phase 5): eligible = unclaimed POIs of any kind, advance = play real turns through `applyAction` (so allowance, stamina, guard rolls and turn boundaries all apply), each seat keeping its own target and resting when it cannot take a step (Q43), done = no unclaimed gold left or `SIMULATION_TURN_CAP` turns played (Q44). |
 
-Neither consumer contains a copy of the other's logic. If the generic loop does
-give way ([Q25](./OPEN_QUESTIONS.md#q25)), `candidates.ts` and the one distance
+Neither consumer contains a copy of the other's logic. The generic loop gave
+way ([Q25](./OPEN_QUESTIONS.md#q25)), and `candidates.ts` and the one distance
 metric are what stay shared — which is what §9 asks for. The distinction the
 split makes explicit: §5.1's walk is pure geometry — turn structure, stamina and
 skills play no part — while a rollout leg is a sequence of real turns. What they
@@ -430,10 +430,10 @@ One signature detail worth flagging, because it is the kind of thing that is
 expensive to change later:
 
 ```ts
-evaluate(node: MctsNode, rolledOut: RolloutCursor, subject: PlayerId): number
+evaluate(atNode: RolloutCursor, rolledOut: RolloutCursor, subject: PlayerId): number
 ```
 
-The evaluator receives **both** the rolled-out result and the node being
+The evaluator receives **both** the rolled-out result and the position at the node being
 evaluated, which is what lets all three kinds of evaluation sit behind one
 interface. [SOURCE §9, review] The three, and what each looks at
 (see [Q18](./OPEN_QUESTIONS.md#q18)):
@@ -483,11 +483,13 @@ term's divisor, and the five skill kinds are now one list (`SKILL_KINDS` in
 `@adventure/config`) shared by that helper and the evaluator, so the numerator
 and denominator cannot drift apart.
 
-`search()` documents the four phases (select / expand / simulate / backprop) and
-the `MCTS_TIME_BUDGET_PER_MOVE` loop, and throws: the loop itself is still to be
-written (§11 item 11). Every policy it drives is decided — two phases by §9, two
-by §12.2 — which is precisely why they sit behind their own interfaces instead
-of inside the function.
+`search()` runs the four phases (select / expand / simulate / backprop) until
+`MCTS_TIME_BUDGET_PER_MOVE` is spent, open-loop: a node holds no game state and
+every iteration replays its branches from the root, so dice and the other
+seats' moves are sampled afresh (phase 5). Every policy it drives is decided —
+two phases by §9, two by §12.2 — which is precisely why they sit behind their
+own interfaces instead of inside the function. `computer.ts` puts the v1
+choice of each in one place for callers.
 
 The session layer sees only:
 
@@ -497,10 +499,11 @@ interface AiPlayer {
 }
 ```
 
-Async and behind a port, because 10 seconds of CPU per move must not run in a
-request handler or on the UI thread — the same code works whether the search
-runs in a Web Worker, a worker thread, or a separate service. That is also the
-single biggest constraint on the hosting decision; see `STACK.md`.
+Async and behind a port, because 10 seconds of CPU per move must not block a
+request handler or the UI thread — the same code works whether the search runs
+a slice a frame on the page's thread (hot seat, since phase 5), in a Web
+Worker, a worker thread, or a separate service. That is also the single
+biggest constraint on the hosting decision; see `STACK.md`.
 
 ---
 
@@ -685,7 +688,8 @@ especially `REMOTENESS_SIMULATION_RUNS`, which §5.1 explicitly expects to chang
 (§2.1's targets are a statement about what a player is handed, not about the
 draft before the valleys are cut — Q28), compactness both after Smooth
 and after Carve Valleys (the latter expected to be worse, by design), remoteness
-and guard-strength histograms. `runSelfPlayBatch` is blocked on §12.2.
+and guard-strength histograms. `runSelfPlayBatch` plays computer-against-computer
+games (`pnpm selfplay`) and records the machine beside the numbers.
 
 ---
 
@@ -698,10 +702,11 @@ assignment, §5.2 guard strengths and `sealMap`. Phase 2 closed the rules engine
 a winner on a generated map. Phase 3 drew the map as a player sees it, with
 the art bound through `Art/manifest.json` (§9), and phase 4 made a two-seat
 hot seat game playable on it, through the move-mode controller online play
-will reuse. What is left, each independently implementable against the shapes
-above:
+will reuse. Phase 5 wrote the MCTS search and its rollouts and put the
+computer in either hot seat seat. What is left, each independently
+implementable against the shapes above:
 
-1. MCTS `search()` — every policy, evaluator and branch rule is written; the four-phase loop, `macroAdvanceToTarget` and the rest of `packages/sim/src/rollout.ts` are not.
+1. The balancing pass over §11's tunable values, from `pnpm selfplay`, as proposals for Andrei.
 2. `SetupFlow.start` — starting positions and `createGameState` are settled; needs the rest of setup, which needs the server.
 3. `state/client.ts` and a `Transport`, so the same game screen can play a game the server holds.
 

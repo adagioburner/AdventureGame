@@ -190,6 +190,8 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 [SOURCE §intro, review] **The current player's character blinks until they pick it up, then is highlighted.** Andrei, trying the hotseat game on 2026-09-23: "it is hard to find your character on the map. Can we make it so it blinks when it's your turn, and, once you clicked it to start planning your move, it stops blinking and highlights instead." Registered as Q34.
 
+[SOURCE §5, review] **Either hot seat seat, or both, can be played by the computer (§9).** Andrei, 2026-09-24, asked that phase 5 bring this to the start game panel rather than wait for multiplayer (Q40). Each seat has Human and Computer buttons, both starting on Human; a computer seat has its own thinking time, whole seconds from 1 to 60, starting at §11's 10; its name and figurine are picked as a person's are (Q41). On its turn the line above the buttons reads "<name> is thinking…" over a bar that fills across the thinking time, its figure blinks, and Plan a move, Rest and End turn are hidden until it has moved; the move then plays out like a person's End turn. Its die card closes by itself after 3 seconds: "the computer's die panel closes itself, pressing OK is [not] necessary" (Q42).
+
 ### 7.3 Game master controls
 
 [SOURCE §4] If a player takes too long, the game master can force their currently-planned move (or force a rest, if none was planned). [SOURCE §4, chat] No fixed time threshold — entirely at the game master's discretion.
@@ -239,6 +241,10 @@ At the opening almost no gold is claimed, so `progress` ≈ 0 and the skill term
 
 [SOURCE §5, chat] Time budget per AI move: starting value **10 seconds**.
 
+[SOURCE §5, review] **A simulated player rests when it cannot take a single step** toward its target, then carries on toward it; the computer's real move follows the same rule (Q43).
+
+[SOURCE §5, review] **A simulated game also ends after 250 turns.** Andrei, 2026-09-24: "we can end the simulation after 250 turns and give the victory to whatever player has more gold." The turns are counted from the position the computer is thinking about, and a game stopped there is scored like any other, by the gold each player holds. This covers the games the computer plays in its head, not real games (Q44).
+
 > [OPEN] The tree/selection policy (e.g. the exploration-vs-exploitation formula) is unspecified. See §12.
 
 ---
@@ -286,7 +292,8 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `STARTING_STAMINA_INCREMENT` | 10 | tunable |
 | `PLAYER_COUNT_MIN` / `MAX` | 2 / 5 | tunable, not a hard limit |
 | `GUARD_DIE` | d6 | fixed |
-| `MCTS_TIME_BUDGET_PER_MOVE` | 10 seconds | tunable |
+| `MCTS_TIME_BUDGET_PER_MOVE` | 10 seconds | tunable; per computer seat on the hot seat start game panel, 1 to 60 seconds [SOURCE §5, review] |
+| `SIMULATION_TURN_CAP` | 250 turns | the most turns one simulated game runs, §9 [SOURCE §5, review] |
 | MCTS tree/selection policy, exploration constant | — | **OPEN**, unspecified |
 
 ---
