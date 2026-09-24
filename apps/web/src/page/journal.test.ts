@@ -118,11 +118,11 @@ describe('the turn log, in words that can be checked by hand', () => {
     );
   });
 
-  it('says a roll that only ties the guard loses, and that losing costs nothing else', () => {
+  it('says a roll that only ties the guard loses, and that the reward stays', () => {
     const entry = describeTurn(game(workedExample), { kind: 'move', path: path(1, 2, 3, 4, 5) }, dice(3));
     expect(entry.headline).toBe('Walked 5 steps, lost to the guard');
     expect(entry.details.at(-1)).toBe(
-      'Combat guard 5: rolled 3 + combat 2 = 5, not more than 5. The gold stays; losing costs nothing else.',
+      'Combat guard 5: rolled 3 + combat 2 = 5, not more than 5. The gold stays.',
     );
     expect(entry.tone).toBe('missed');
   });

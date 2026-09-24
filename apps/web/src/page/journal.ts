@@ -220,7 +220,7 @@ function describeInteraction(
     ? { headline: `, beat the guard and took ${prize}`, detail: `${kind}: ${sum}, more than ${guard.strength}. Took ${prize}.` }
     : {
         headline: `, lost to the guard`,
-        detail: `${kind}: ${sum}, not more than ${guard.strength}. The ${STAT_LABEL[reward.kind]} stays; losing costs nothing else.`,
+        detail: `${kind}: ${sum}, not more than ${guard.strength}. The ${STAT_LABEL[reward.kind]} stays.`,
       };
 }
 

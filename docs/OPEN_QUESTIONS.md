@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q37.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q39.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -962,6 +962,34 @@ This one can be postponed, because with multiplayer the game [state] will be
 persisted anyway."* Nothing is built for it now. It is recorded here so the
 multiplayer work picks it up; the plan's phase 7 already expects a game to
 survive a reload on both sides.
+
+### Q38. ~~How does the page show what a POI gave?~~ — **answered 2026-09-24: unguarded fades, a guard fight waits for OK**
+
+Phase 4 showed a card after every POI a turn ended on, and it stayed until OK,
+unguarded claims included. That was never put to Andrei; it was item 2 on the
+list of choices made without asking him. His rulings:
+
+- *"the unguarded poi should produce a card that fades itself. The guarded
+  POI produce a card with a die roll that has an ok button"*, and it stays 4
+  seconds before it fades (his pick of 2, 4 or 6). The fade itself takes half
+  a second, which he was told and did not change.
+- *"the message for unguarded poi should be simpler, like 'plains speed
+  +2'"*: the card reads only that, with no portrait or heading (his pick of
+  text only, portrait and text, or icon and text).
+- *"please remove the 'costs nothing' phrase in case of a failed die roll"*,
+  from the card and, at his pick, from the turn log too. The rule itself is
+  unchanged: a failed roll still has no other cost (GDD §8).
+
+On the winning turn, an unguarded claim's card fades before the end-of-game
+card comes up. GDD §8 carries the ruling as a `[SOURCE §2, review]` note.
+
+### Q39. ~~In what order does the page list the stats?~~ — **answered 2026-09-24: GDD §6's, gold last**
+
+Phase 4 listed gold second, after stamina, where GDD §6 lists it last. That
+was never put to Andrei; it was item 5 on the list. Andrei: *"please list gold
+last"*, and at his pick in all three places that share the order: the stats
+panel, the end-of-game table and the turn log. `STAT_ORDER` in
+`apps/web/src/page/journal.ts` is the one list.
 
 ---
 

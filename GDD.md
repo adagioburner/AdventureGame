@@ -202,6 +202,8 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 [SOURCE §2] On arrival at a POI, interaction is automatic. If unguarded, the reward is simply taken. If guarded: roll 1d6; if `roll + relevant skill (fighting or magic, matching the guard's color) > guard_strength`, the reward is taken; otherwise the reward stays on the node and the roll has no other cost. Either outcome ends the turn.
 
+[SOURCE §2, review] **An unguarded POI's result fades by itself; a guard fight's waits for OK.** Andrei, 2026-09-24: "the unguarded poi should produce a card that fades itself. The guarded POI produce a card with a die roll that has an ok button", and "the message for unguarded poi should be simpler, like 'plains speed +2'". The unguarded card reads only that, stays 4 seconds and fades; a failed roll's card and turn log no longer add that losing costs nothing else, though the rule above is unchanged. Registered as Q38.
+
 [SOURCE §2, chat] Any player may attempt a guarded POI on their turn — not only the one who first failed. A player may leave and return later, or remain stationed on the node. Multiple players may occupy the same node simultaneously, without restriction.
 
 [SOURCE §2] Worked example: stamina 14, plains-move 3, forest-move 1, mountain-move 0, fighting 2, standing on a plains node. Moves 3 plains nodes free, a 4th plains node costs 1 stamina (13 left), then 1 forest node free. Stops on a POI guarded at strength 5 (red). Rolls a 4, +2 fighting = 6 > 5: reward taken, turn ends.

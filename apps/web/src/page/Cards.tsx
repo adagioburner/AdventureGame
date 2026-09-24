@@ -32,45 +32,45 @@ export function ResultCard({
   const guard = poiAt(turn.after.map, interacted.resolution.node)?.guard ?? null;
   const avatar = turn.after.players.find((player) => player.id === turn.player)?.avatarId ?? '';
   const prize = `${reward.units} ${STAT_LABEL[reward.kind]}`;
+  const className = `card result${rolling ? ' rolling' : claimed ? ' took' : ' missed'}${fading ? ' fading' : ''}`;
+
+  // [Andrei, 2026-09-24] The unguarded card says only what was taken, as
+  // "plains speed +2": no portrait and no heading.
+  if (roll === null || skillUsed === null || guard === null) {
+    return (
+      <div className={className} style={{ transitionDuration: `${fadeMs}ms` }} role="status" aria-live="polite">
+        <h2>
+          {STAT_LABEL[reward.kind]} +{reward.units}
+        </h2>
+      </div>
+    );
+  }
 
   return (
-    <div
-      className={`card result${rolling ? ' rolling' : claimed ? ' took' : ' missed'}${fading ? ' fading' : ''}`}
-      style={{ transitionDuration: `${fadeMs}ms` }}
-      role="status"
-      aria-live="polite"
-    >
+    <div className={className} role="status" aria-live="polite">
       <header>
         <Portrait catalog={catalog} avatarId={avatar} size={40} label={turn.name} />
-        <h2>
-          {guard === null ? `${turn.name} found ${prize}` : `${turn.name} faces a ${GUARD_LABEL[guard.type]} guard of ${guard.strength}`}
-        </h2>
+        <h2>{`${turn.name} faces a ${GUARD_LABEL[guard.type]} guard of ${guard.strength}`}</h2>
       </header>
-      {roll === null || skillUsed === null || guard === null ? (
-        <p className="outcome">Unguarded, so it is taken: +{prize}.</p>
-      ) : (
-        <>
-          <div className="roll">
-            <Die catalog={catalog} value={roll.value} rolling={rolling} size={72} />
-            {rolling ? (
-              <p className="sum">Rolling…</p>
-            ) : (
-              <p className="sum">
-                <b>{roll.value}</b> rolled + <b>{turn.statsBefore[skillUsed]}</b> {STAT_LABEL[skillUsed]} ={' '}
-                <b>{roll.value + turn.statsBefore[skillUsed]}</b> against <b>{guard.strength}</b>
-              </p>
-            )}
-          </div>
-          {rolling ? null : (
-            <p className="outcome">
-              {claimed
-                ? `More than ${guard.strength}: the guard is beaten. +${prize}.`
-                : `Not more than ${guard.strength}: the ${STAT_LABEL[reward.kind]} stays on the node.`}
-            </p>
-          )}
-        </>
+      <div className="roll">
+        <Die catalog={catalog} value={roll.value} rolling={rolling} size={72} />
+        {rolling ? (
+          <p className="sum">Rolling…</p>
+        ) : (
+          <p className="sum">
+            <b>{roll.value}</b> rolled + <b>{turn.statsBefore[skillUsed]}</b> {STAT_LABEL[skillUsed]} ={' '}
+            <b>{roll.value + turn.statsBefore[skillUsed]}</b> against <b>{guard.strength}</b>
+          </p>
+        )}
+      </div>
+      {rolling ? null : (
+        <p className="outcome">
+          {claimed
+            ? `More than ${guard.strength}: the guard is beaten. +${prize}.`
+            : `Not more than ${guard.strength}: the ${STAT_LABEL[reward.kind]} stays on the node.`}
+        </p>
       )}
-      {rolling || guard === null ? null : (
+      {rolling ? null : (
         <button className="btn" type="button" onClick={onClose}>
           OK
         </button>
