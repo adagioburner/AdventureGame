@@ -1,8 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { Application } from 'pixi.js';
-import type { GameMap, GameState, NodeId, PathPreview, Point } from '@adventure/core';
+import type { GameMap, GameState, NodeId, PathPreview, PlayerId, Point } from '@adventure/core';
 import { createCameraController, type CameraController } from '../interaction/camera.ts';
-import { pick, planeToScreen, screenToPlane, type Pick } from '../interaction/picking.ts';
+import { figureTop, pick, planeToScreen, screenToPlane, type Pick } from '../interaction/picking.ts';
 import { fitToViewport } from '../render/isometric.ts';
 import { position } from '../render/geometry.ts';
 import { PixiMapRenderer } from '../render/pixi/renderer.ts';
@@ -13,6 +13,8 @@ import { SPACING_PX, type FigureCue, type MapScene, type Walker } from '../rende
 export interface MapHandle {
   /** Where a node shows in the map's box, in CSS pixels. */
   screenOf(node: NodeId): Point;
+  /** Where the top of a player's figure shows in the map's box, as it is drawn right now. */
+  screenOfFigure(player: PlayerId): Point | null;
   /** Bring a node to the middle, zoomed in enough to play at. */
   centerOn(node: NodeId): void;
 }
@@ -195,6 +197,10 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
       const planeOf = (node: NodeId): Point => scene.projection.toScreen(position(gameMap.graph, node));
       latest.current.onReady?.({
         screenOf: (node) => planeToScreen(camera.camera, viewport(), planeOf(node)),
+        screenOfFigure: (player) => {
+          const top = figureTop(map.characters, art.shape, player);
+          return top === null ? null : planeToScreen(camera.camera, viewport(), top);
+        },
         centerOn: (node) => {
           camera.centerOn(planeOf(node), fit().zoom * PLAY_ZOOM_OF_FIT);
           touched = true;

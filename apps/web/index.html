@@ -470,12 +470,25 @@
       .result.missed {
         border-top: 4px solid var(--missed);
       }
-      .result {
-        transition-property: opacity;
-        transition-timing-function: ease-in;
+      /* [Andrei, 2026-09-24] An unguarded claim's notice: the result card's look, small, on the figure's head. */
+      .claim-anchor {
+        position: absolute;
+        z-index: 3;
+        transform: translate(-50%, -100%);
+        pointer-events: none;
       }
-      .result.fading {
+      .claim {
+        white-space: nowrap;
+        padding: 2px 9px 3px;
+        border-radius: 7px;
+        background: var(--panel);
+        border: 1px solid var(--line);
+        border-top: 3px solid var(--took);
+        box-shadow: 0 3px 10px rgb(0 0 0 / 0.2);
         opacity: 0;
+      }
+      .claim h2 {
+        font: 400 16px/1.2 var(--display);
       }
       .roll {
         display: flex;

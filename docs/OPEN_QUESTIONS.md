@@ -963,7 +963,7 @@ persisted anyway."* Nothing is built for it now. It is recorded here so the
 multiplayer work picks it up; the plan's phase 7 already expects a game to
 survive a reload on both sides.
 
-### Q38. ~~How does the page show what a POI gave?~~ — **answered 2026-09-24: unguarded fades, a guard fight waits for OK**
+### Q38. ~~How does the page show what a POI gave?~~ — **answered 2026-09-24: unguarded floats up from the figure and fades, a guard fight waits for OK**
 
 Phase 4 showed a card after every POI a turn ended on, and it stayed until OK,
 unguarded claims included. That was never put to Andrei; it was item 2 on the
@@ -979,8 +979,17 @@ list of choices made without asking him. His rulings:
 - *"please remove the 'costs nothing' phrase in case of a failed die roll"*,
   from the card and, at his pick, from the turn log too. The rule itself is
   unchanged: a failed roll still has no other cost (GDD §8).
+- Later the same night: *"can the disappearing card be smaller? i would
+  prefer it if it was floating up from the figure as it lands on the POI"*.
+  From a preview of three looks he picked the small card (the result card's
+  light box and green top edge, shrunk, over a dark pill or bare text) and 2
+  seconds over 4. So the unguarded notice now appears on the figure's head as
+  the walk ends, fades in over a fifth of a second, drifts up about 40 pixels,
+  stays 2 seconds and fades out over half a second. It keeps its size at any
+  zoom and moves with the figure through a pan. The fade-in, the rise and
+  following the figure were shown in the preview before he picked.
 
-On the winning turn, an unguarded claim's card fades before the end-of-game
+On the winning turn, an unguarded claim's notice fades before the end-of-game
 card comes up. GDD §8 carries the ruling as a `[SOURCE §2, review]` note.
 
 ### Q39. ~~In what order does the page list the stats?~~ — **answered 2026-09-24: GDD §6's, gold last**

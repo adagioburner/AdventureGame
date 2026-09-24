@@ -7,7 +7,7 @@ import { position } from '../render/geometry.ts';
 import { pictureBox, ROUGH_SHAPE, type Box } from '../render/placement.ts';
 import { previewGame } from '../render/scene.fixture.ts';
 import { buildMapScene, buildStateScene, SPACING_PX } from '../render/sceneModel.ts';
-import { pick, pickCharacters, pickNode, planeToScreen, screenToPlane, TOUCH_SLOP_PX } from './picking.ts';
+import { figureTop, pick, pickCharacters, pickNode, planeToScreen, screenToPlane, TOUCH_SLOP_PX } from './picking.ts';
 
 const catalog = buildArtCatalog(ART_FILES);
 const game = previewGame('adventure', DEFAULT_RULESET);
@@ -78,6 +78,23 @@ describe('where a click lands', () => {
     // Both start on one node, side by side: one click there finds both.
     expect(new Set(tapped.players)).toEqual(new Set(game.state.players.map((player) => player.id)));
     expect(pickCharacters(characters, ROUGH_SHAPE, { x: screenOf(start).x + SPACING_PX * 3, y: screenOf(start).y })).toEqual([]);
+  });
+
+  it('finds the top of a player’s figure, where a claim’s notice floats up from', () => {
+    const characters = buildStateScene(scene, game.state, catalog).characters;
+    for (const figure of characters) {
+      if (figure.player === undefined) continue;
+      const top = figureTop(characters, ROUGH_SHAPE, figure.player);
+      if (top === null) throw new Error('no top');
+      const box = pictureBox(figure.foot, figure.size, ROUGH_SHAPE(figure.sprite));
+      expect(top.y).toBe(box.minY);
+      expect(top.y).toBeLessThan(figure.foot.y);
+      expect(top.x).toBeGreaterThan(box.minX);
+      expect(top.x).toBeLessThan(box.maxX);
+      // Just below the top is the figure itself.
+      expect(pickCharacters(characters, ROUGH_SHAPE, { x: top.x, y: top.y + 1 })).toContain(figure.player);
+    }
+    expect(figureTop([], ROUGH_SHAPE, game.state.players[0]?.id ?? ('nobody' as never))).toBeNull();
   });
 });
 

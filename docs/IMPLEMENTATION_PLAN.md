@@ -894,9 +894,10 @@ figurines, then play it out on one screen until the engine declares a winner.
   result card holds the matching face beside "4 rolled + 2 combat = 6
   against 5" and says what was taken or that the gold stays. The engine has
   already resolved the turn before the first beat; the beats only reveal it.
-  Since Andrei's ruling on 2026-09-24 (Q38), an unguarded claim's card reads
-  only what was taken, "plains speed +2", and fades by itself after 4
-  seconds; a guard fight's card still waits for OK.
+  Since Andrei's rulings on 2026-09-24 (Q38), an unguarded claim shows a
+  small card reading only what was taken, "plains speed +2", that floats up
+  from the figure and fades by itself after 2 seconds; a guard fight's card
+  still waits for OK.
 - **Every number on screen comes from the engine**: the stats panel shows the
   engine's seven stats for each player and the free steps left in this turn's
   allowance, the route's colours and its hint ("All 9 steps this turn, for
