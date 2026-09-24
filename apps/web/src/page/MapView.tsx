@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Application } from 'pixi.js';
 import type { GameMap, GameState, NodeId, PathPreview, PlayerId, Point } from '@adventure/core';
-import { createCameraController, glideCenter, GLIDE_MS, type CameraController } from '../interaction/camera.ts';
+import { createCameraController, FOLLOW_MARGIN_OF_VIEW, followInto, glideCenter, GLIDE_MS, type CameraController } from '../interaction/camera.ts';
 import { figureTop, pick, planeToScreen, screenToPlane, type Pick } from '../interaction/picking.ts';
 import { fitToViewport } from '../render/isometric.ts';
 import { position } from '../render/geometry.ts';
@@ -19,7 +19,8 @@ export interface MapHandle {
   centerOn(node: NodeId): void;
   /**
    * Slide a node to the middle over `GLIDE_MS`, at the zoom the view already
-   * has. Panning, zooming or `centerOn` while it slides stops it where it is.
+   * has. Panning, zooming or `centerOn` while it slides stops it where it is,
+   * and so does a walk that has to take the map along (Q47).
    */
   glideTo(node: NodeId): void;
 }
@@ -103,7 +104,27 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
       apply();
 
       let glide: { from: Point; to: Point; start: number } | null = null;
+      // [Andrei, 2026-09-24] Q47: a walking figure that nears the edge of the
+      // view takes the map along with it, unless someone has moved the map
+      // themselves since this walk began.
+      let following = true;
+      const stopCamera = (): void => {
+        glide = null;
+        following = false;
+      };
       const onTick = (): void => {
+        const walker = latest.current.walker;
+        if (walker === null) following = true;
+        else if (following) {
+          const to = followInto(camera.camera, viewport(), scene.projection.toScreen(walker.at), FOLLOW_MARGIN_OF_VIEW);
+          if (to.x !== camera.camera.center.x || to.y !== camera.camera.center.y) {
+            // A walk that starts while the turn's glide is still sliding takes over from it.
+            glide = null;
+            camera.lookAt(to);
+            touched = true;
+            apply();
+          }
+        }
         if (glide === null) return;
         const t = (performance.now() - glide.start) / GLIDE_MS;
         camera.lookAt(glideCenter(glide.from, glide.to, t));
@@ -133,6 +154,8 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
         return { x: event.clientX - box.left, y: event.clientY - box.top };
       };
       const onDown = (event: PointerEvent): void => {
+        // A press stops the glide; only an actual drag or pinch counts as
+        // moving the map, which stops the following too.
         glide = null;
         element.setPointerCapture(event.pointerId);
         const at = local(event);
@@ -159,6 +182,7 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
           }
         }
         pointers.set(event.pointerId, now);
+        stopCamera();
         touched = true;
         apply();
       };
@@ -176,7 +200,7 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
       };
       const onWheel = (event: WheelEvent): void => {
         event.preventDefault();
-        glide = null;
+        stopCamera();
         camera.zoomAt(local(event), Math.exp(-event.deltaY * 0.0015));
         touched = true;
         apply();
@@ -186,7 +210,7 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
         if (event.key === '+' || event.key === '=') camera.zoomIn();
         else if (event.key === '-' || event.key === '_') camera.zoomOut();
         else return;
-        glide = null;
+        stopCamera();
         touched = true;
         apply();
       };
@@ -206,7 +230,7 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
       });
 
       zoomButtons.current = (action) => {
-        glide = null;
+        stopCamera();
         if (action === 'in') camera.zoomIn();
         else if (action === 'out') camera.zoomOut();
         else camera.resetToFit();
@@ -222,7 +246,7 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
           return top === null ? null : planeToScreen(camera.camera, viewport(), top);
         },
         centerOn: (node) => {
-          glide = null;
+          stopCamera();
           camera.centerOn(planeOf(node), fit().zoom * PLAY_ZOOM_OF_FIT);
           touched = true;
           apply();

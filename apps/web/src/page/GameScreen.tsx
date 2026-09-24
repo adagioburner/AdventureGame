@@ -263,6 +263,7 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
       busy: () => busy,
       thinking: () => !busy && shown === game.state && shown.status === 'in_progress' && active?.control === 'ai',
       screenOf: (node: number): Point | null => handle.current?.screenOf(node as NodeId) ?? null,
+      figureOf: (player: string): Point | null => handle.current?.screenOfFigure(player as PlayerId) ?? null,
       setTiming: (next: Partial<typeof timing>) => Object.assign(timing, next),
     };
     (window as unknown as { __adventure?: typeof hooks }).__adventure = hooks;

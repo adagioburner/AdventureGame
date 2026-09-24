@@ -194,6 +194,8 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 [SOURCE chat, review] **Each turn starts with the map on the current player's figure.** Andrei, 2026-09-24: "we need to center the map on the current player's figure at the beginning of each turn, both human and AI". The map glides there over about half a second at the zoom it already has, from the first turn on; after an unguarded claim it waits until the claim's notice has faded (Q46).
 
+[SOURCE chat, review] **The map follows a walking figure that nears the edge.** Andrei, 2026-09-24: "as the figures move, if they get out of view, the map should also pan to follow them automatically". Once a walking figure is within a fifth of the view from an edge, the map keeps pace with it, so it never leaves the screen; if someone pans or zooms during the walk, the map stops following for the rest of that walk (Q47).
+
 ### 7.3 Game master controls
 
 [SOURCE §4] If a player takes too long, the game master can force their currently-planned move (or force a rest, if none was planned). [SOURCE §4, chat] No fixed time threshold — entirely at the game master's discretion.
