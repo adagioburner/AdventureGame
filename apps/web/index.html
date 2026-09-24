@@ -363,6 +363,15 @@
         flex-wrap: wrap;
         gap: 6px;
       }
+      .thinking {
+        display: grid;
+        gap: 6px;
+        align-content: start;
+        min-height: 3em;
+      }
+      .thinking .hint {
+        min-height: 0;
+      }
       .thinking-bar {
         height: 8px;
         border-radius: 999px;
@@ -745,6 +754,9 @@
         }
         .hint {
           font-size: 12.5px;
+          min-height: 0;
+        }
+        .thinking {
           min-height: 0;
         }
         .buttons .ghost {

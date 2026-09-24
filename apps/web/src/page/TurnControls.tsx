@@ -50,14 +50,16 @@ export function TurnControls(props: TurnControlsProps) {
   if (props.thinkingMs !== null) {
     return (
       <section className="controls" aria-label={`${player.name}’s turn`}>
-        <p className="hint" aria-live="polite">
-          {busy ? `${player.name} is moving…` : `${player.name} is thinking…`}
-        </p>
-        {busy ? null : (
-          <div className="thinking-bar" role="presentation">
-            <i key={state.turn.number} style={{ animationDuration: `${props.thinkingMs}ms` }} />
-          </div>
-        )}
+        <div className="thinking">
+          <p className="hint" aria-live="polite">
+            {busy ? `${player.name} is moving…` : `${player.name} is thinking…`}
+          </p>
+          {busy ? null : (
+            <div className="thinking-bar" role="presentation">
+              <i key={state.turn.number} style={{ animationDuration: `${props.thinkingMs}ms` }} />
+            </div>
+          )}
+        </div>
         <div className="buttons">{find}</div>
       </section>
     );
