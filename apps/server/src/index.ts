@@ -3,14 +3,14 @@ import type { SessionPorts } from '@adventure/session';
 import { createMemoryBroadcaster, createMemoryGameStore, systemClock } from './adapters/memory.ts';
 
 /**
- * Composition root. The only place in the system where a concrete host is
- * named — everything else depends on `SessionPorts`.
+ * The in-memory composition, for tests and local runs. The deployed server
+ * composes the same ports from the Durable Object adapters instead, one object
+ * per game (`adapters/durable-object.ts`).
  *
- * Deliberately incomplete: `maps`, `ai`, `dice`, `board` and `gmAbsence` have
- * no adapters yet. Two of those are blocked on open design items (§12.3 message
- * board retention, §12.4 GM absence) and two are blocked on the hosting
- * decision (§12.1) for where their CPU should live. Writing plausible defaults
- * for them here would bury four unanswered questions inside a wiring file.
+ * `maps`, `ai` and `dice` have no adapters yet: map generation and the AI run
+ * on the game master's machine (§12.1), so those two are round trips over the
+ * game's sockets and arrive with the setup flow and phase 8, and the server's
+ * dice arrive with online turns in phase 7.
  */
 export function createSessionPorts(): Partial<SessionPorts> {
   return {
@@ -21,5 +21,6 @@ export function createSessionPorts(): Partial<SessionPorts> {
 }
 
 export const SERVER_RULESET = DEFAULT_RULESET;
-export { createMemoryBroadcaster, createMemoryGameStore, systemClock } from './adapters/memory.ts';
-export { DURABLE_OBJECT_ADAPTER_STATUS } from './adapters/durable-object.ts';
+export { createMemoryAccountStore, createMemoryBroadcaster, createMemoryGameStore, systemClock } from './adapters/memory.ts';
+export { createDurableGameStore, createSocketBroadcaster, userSocketTag } from './adapters/durable-object.ts';
+export { AccountError, PasswordAccounts, type AccountRules, type AccountStore } from './auth/accounts.ts';

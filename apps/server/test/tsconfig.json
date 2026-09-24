@@ -1,0 +1,12 @@
+{
+  // Tests that need Node itself: a real SQLite behind the account store, and
+  // the whole Worker started in Cloudflare's local runtime through wrangler.
+  // Kept apart from `../tsconfig.json` so the server's own code never sees
+  // Node's globals, which the Workers runtime does not have.
+  "extends": "../../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["node"]
+  },
+  "include": ["./**/*.ts"]
+}
