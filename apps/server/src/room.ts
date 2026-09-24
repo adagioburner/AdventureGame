@@ -78,7 +78,14 @@ export class GameRoom extends DurableObject<Env> {
         ws.send(encodeMessage({ type: 'error', code: 'invalid_action', message: 'that message could not be read' }));
         return;
       }
-      await this.session(gameId).handle(who.userId, message);
+      try {
+        await this.session(gameId).handle(who.userId, message);
+      } catch (error) {
+        // `handle` answers every refusal itself; this is anything else, and
+        // the page should hear that its change did not happen.
+        console.error(error);
+        ws.send(encodeMessage({ type: 'error', code: 'invalid_action', message: 'something went wrong on the server; try again' }));
+      }
     });
   }
 

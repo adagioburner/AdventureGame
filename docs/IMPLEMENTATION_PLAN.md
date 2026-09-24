@@ -1135,6 +1135,48 @@ until the host is real. That is the substance of this phase.
 one can create a game the other joins and is accepted into, up to the point
 where the GM starts it.
 
+### What actually landed
+
+Built to Andrei's answers in [Q48](./OPEN_QUESTIONS.md#q48) and
+[Q49](./OPEN_QUESTIONS.md#q49). Three browsers played it through against the
+local Workers runtime: register, list, ask to join, both figure clashes,
+accept, change the map, start, decline, cancel, and hot seat from the login
+page.
+
+- **One Worker** (`apps/server/src/worker.ts`) serves the pages, the account
+  endpoints and two kinds of socket. **The lobby is one Durable Object**
+  (`lobby.ts`), item 5's first proposal: it holds the accounts, the logins
+  and one row per game, and pushes the whole list to every open game list
+  when a row changes. **Each game is a `GameRoom`** (`room.ts`), which gives
+  `GameSession` storage, sockets and the lobby and feeds it one message at a
+  time through a queue, since waiting on the lobby lets the object take the
+  next message.
+- **Accounts** are `PasswordAccounts` behind the account rules of Q48 2 to 4
+  (`auth/rules.ts`): PBKDF2-SHA256 at 100,000 iterations (the most WebCrypto
+  in Workers allows), random tokens stored only as hashes, 30 days.
+- **The setup flow** is pure functions over `SetupState` in
+  `packages/session/src/setup.ts`, the Q48 and Q49 rules with a test each.
+  `SetupSeat.id` names a seat's holder so a change survives seats moving up.
+- **The map round trip at Start is two messages**, not a call:
+  `setup.start` moves the game to `starting` and asks the game master's
+  browser for the map; `gm.mapGenerated` starts it. A Durable Object may sleep
+  between the two, so nothing waits in memory, and a game master who reloads
+  while a game is starting is asked again. `MapService` is unused.
+- **The pages** are `apps/web/src/online/`, built by `pnpm build:site`
+  (`vite build --mode site`) into `apps/web/dist-site/`, which the Worker
+  serves. `main.tsx` picks the site only in that mode, and the hot seat build
+  (`pnpm build:web`, and the game page made from it) comes out byte for byte
+  as before. `/hotseat` is the hot seat page, unchanged (Q48 1).
+- **Tests** run the server in Cloudflare's local runtime from Node, through
+  wrangler's `unstable_startWorker` (`apps/server/test/worker.test.ts`),
+  because `@cloudflare/vitest-pool-workers` needs Vitest 4 and the repository
+  is on 5.
+- **Deploying** is `.github/workflows/deploy.yml`: main to the live Worker,
+  pull requests to one shared preview Worker (Cloudflare gives a Worker with
+  Durable Objects no address per version). It deploys nothing until the
+  repository has the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
+  secrets.
+
 ---
 
 ## Phase 7 — online play

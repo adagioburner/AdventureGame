@@ -94,11 +94,18 @@ export class Lobby extends DurableObject<Env> {
       return;
     }
     const gameId = newGameId();
-    const created = await roomOf(this.env, gameId).create(gameId, {
-      name: message.name,
-      gameMaster: { userId: who.userId, displayName: who.displayName },
-      mapSeed: friendlySeed(Math.random),
-    });
+    let created: { ok: true } | { ok: false; message: string };
+    try {
+      created = await roomOf(this.env, gameId).create(gameId, {
+        name: message.name,
+        gameMaster: { userId: who.userId, displayName: who.displayName },
+        mapSeed: friendlySeed(cryptoRandom),
+      });
+    } catch (error) {
+      // The page waits for an answer, so a failure gets one too.
+      console.error(error);
+      created = { ok: false, message: 'the game could not be created; try again' };
+    }
     reply(created.ok ? { type: 'lobby.created', gameId } : { type: 'error', code: 'invalid_action', message: created.message });
   }
 
@@ -134,6 +141,16 @@ export class Lobby extends DurableObject<Env> {
 }
 
 /** Ten random base-32 characters: unguessable enough to name a game, short enough for an address. */
+/**
+ * A number in [0, 1) from the platform's secure generator. With `Math.random`
+ * here, every game made in the local Workers runtime got a seed with its word
+ * twice ("cairn-cairn-533", three games in a row); a plain Worker's
+ * `Math.random` looked fine, and the cause was not found.
+ */
+function cryptoRandom(): number {
+  return (crypto.getRandomValues(new Uint32Array(1))[0] ?? 0) / 2 ** 32;
+}
+
 function newGameId(): GameId {
   const alphabet = 'abcdefghijkmnpqrstuvwxyz23456789';
   const bytes = crypto.getRandomValues(new Uint8Array(10));

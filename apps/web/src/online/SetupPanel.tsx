@@ -80,6 +80,49 @@ export function SetupPanel({ art, setup, opening, me, connected, declined, send 
         />
       ) : null}
 
+      {isGameMaster && setup.pending.length > 0 ? (
+        <fieldset className="seat requests">
+          <legend>Asking to join</legend>
+          {people.length >= setup.playerCount ? (
+            <p className="muted">Every seat is taken by a person. Raise the number of players to accept someone.</p>
+          ) : null}
+          {setup.pending.map((pending) => {
+            const holder = figureHolder(setup, pending.requestedAvatarId);
+            return (
+              <div key={pending.userId} className="request">
+                <Figurine catalog={catalog} avatarId={pending.requestedAvatarId} size={40} />
+                <div className="who-asks">
+                  <b>{pending.requestedName}</b>
+                  {holder === null ? null : (
+                    <small>
+                      {holder.name} has taken this figure. Waiting for {pending.requestedName} to pick another.
+                    </small>
+                  )}
+                </div>
+                <div className="buttons">
+                  <button
+                    className="btn primary"
+                    type="button"
+                    disabled={idle || people.length >= setup.playerCount || holder !== null}
+                    onClick={() => send({ type: 'setup.respondToJoin', gameId, userId: pending.userId, accept: true })}
+                  >
+                    Accept
+                  </button>
+                  <button
+                    className="btn"
+                    type="button"
+                    disabled={idle}
+                    onClick={() => send({ type: 'setup.respondToJoin', gameId, userId: pending.userId, accept: false })}
+                  >
+                    Decline
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </fieldset>
+      ) : null}
+
       {isGameMaster ? (
         <div className="choice">
           <span>Players</span>
@@ -137,49 +180,6 @@ export function SetupPanel({ art, setup, opening, me, connected, declined, send 
           disabled={idle}
           onChange={(seconds) => send({ type: 'setup.setThinkingTime', gameId, seconds })}
         />
-      ) : null}
-
-      {isGameMaster && setup.pending.length > 0 ? (
-        <fieldset className="seat requests">
-          <legend>Asking to join</legend>
-          {people.length >= setup.playerCount ? (
-            <p className="muted">Every seat is taken by a person. Raise the number of players to accept someone.</p>
-          ) : null}
-          {setup.pending.map((pending) => {
-            const holder = figureHolder(setup, pending.requestedAvatarId);
-            return (
-              <div key={pending.userId} className="request">
-                <Figurine catalog={catalog} avatarId={pending.requestedAvatarId} size={40} />
-                <div className="who-asks">
-                  <b>{pending.requestedName}</b>
-                  {holder === null ? null : (
-                    <small>
-                      {holder.name} has taken this figure. Waiting for {pending.requestedName} to pick another.
-                    </small>
-                  )}
-                </div>
-                <div className="buttons">
-                  <button
-                    className="btn primary"
-                    type="button"
-                    disabled={idle || people.length >= setup.playerCount || holder !== null}
-                    onClick={() => send({ type: 'setup.respondToJoin', gameId, userId: pending.userId, accept: true })}
-                  >
-                    Accept
-                  </button>
-                  <button
-                    className="btn"
-                    type="button"
-                    disabled={idle}
-                    onClick={() => send({ type: 'setup.respondToJoin', gameId, userId: pending.userId, accept: false })}
-                  >
-                    Decline
-                  </button>
-                </div>
-              </div>
-            );
-          })}
-        </fieldset>
       ) : null}
 
       {isGameMaster ? (
@@ -254,9 +254,11 @@ function JoinRequestForm({
   send(message: ClientMessage): boolean;
 }) {
   const taken = takenFor(setup, null);
+  // A figure no seat holds to begin with, so asking takes nobody's figure
+  // unless the person picks one.
   const [draft, setDraft] = useState(() => ({
     name: me.displayName.slice(0, NAME_MAX),
-    avatarId: figures.find((id) => !taken.has(id)) ?? figures[0] ?? '',
+    avatarId: figures.find((id) => !setup.seats.some((seat) => seat.avatarId === id)) ?? figures[0] ?? '',
   }));
   const gameId = setup.gameId;
 

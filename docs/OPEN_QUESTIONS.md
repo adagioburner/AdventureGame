@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q48.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q49.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -1175,6 +1175,41 @@ said *"everything as recommended"*.
     computer seats plays to the end as soon as online turns work. Phase 8
     keeps the Web Worker, resigning to the computer and switching a seat
     between person and computer mid-game.
+
+### Q49. ~~Who gets a figure two seats want?~~ — **answered 2026-09-24: as recommended, with every clash detected and told**
+
+Building Q48 turned up two clashes its answers left open. Andrei took both
+recommendations, and added: *"What conflict resolution happens by default
+doesn't matter as long as such races are properly detected and resolved and
+the players are notified and allowed to act on it."*
+
+18. **A person wants a figure a computer holds:** the person gets it, and the
+    computer switches to the first figure nobody holds. There are six figures
+    and at most five seats, so there always is one.
+19. **Two people ask to join with the same figure:** a request holds no
+    figure. Whoever the game master accepts first gets it; the other request
+    stays, and its sender is asked to pick another before the game master can
+    accept them.
+
+What "detected, resolved and told" became (`packages/session/src/setup.ts`,
+`apps/web/src/online/SetupPanel.tsx`):
+
+- A change the server refuses because someone else just took the figure says
+  who: "Bea holds that figure now; pick another". The page shows it at the
+  bottom of the map for a few seconds, and the figure is greyed from then on.
+- A request whose figure a seated person now holds says so to its sender
+  ("Bea has taken the figure you asked for. Pick another so the game master
+  can accept you.") and to the game master, whose Accept waits with the same
+  reason. Both read it off the setup state, so it survives a reload.
+- Seats are named by a stable id (`SetupSeat.id`), not by number, since
+  numbers move up as people join and leave. A change to a computer that has
+  just made way for a person is refused, rather than landing on whichever
+  computer holds that seat number now.
+- A change to a request that crosses the game master's answer is refused
+  ("the game master has already answered your request"), so an edit arriving
+  after a "no" does not ask again.
+- Someone whose request was still waiting when the game master pressed Start
+  sees "This game started without you" over the map.
 
 ---
 

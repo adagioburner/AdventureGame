@@ -526,6 +526,14 @@ master's machine**, so the Durable Object adapter implements both as round trips
 to the GM's client. The session core never learns this — which is what the ports
 were for.
 
+Phase 6 built the map's round trip without `MapService` after all: a call that
+waits for the GM's browser would have to stay in memory, and a Durable Object
+may sleep between two messages. So Start is two messages, `setup.start` asking
+the GM's browser for the map and `gm.mapGenerated` answering it, with the game
+in a `starting` phase between them (`docs/IMPLEMENTATION_PLAN.md` phase 6).
+`MapService` stays in `ports.ts`, unused; the computers' turns in phase 7 are
+likely to go the same way for `AiService`.
+
 That composition has a consequence stronger than §12.4 states on its own: with
 AI on the GM's machine, a disconnected game master blocks not just forced turns
 but every AI turn and map creation, so even an all-AI game cannot advance.

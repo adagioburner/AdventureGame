@@ -1,0 +1,76 @@
+name: Deploy
+
+# The online site goes to Cloudflare as one Worker (docs/STACK.md §5): the
+# pages, built from apps/web with `--mode site`, and the server in apps/server.
+#
+# A push to main deploys the live Worker, "adventure". A pull request deploys
+# the preview Worker, "adventure-preview", which every pull request shares:
+# Cloudflare gives no address per version to a Worker with Durable Objects, so
+# the preview shows whichever pull request pushed last. The preview keeps its
+# own accounts and games, apart from the live ones.
+#
+# Until the repository has the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID
+# secrets, the job says so and deploys nothing. Pull requests from forks never
+# see the secrets, so they never deploy.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# One deploy at a time per Worker. A newer push to a pull request replaces a
+# preview deploy still waiting; a deploy of main always runs to the end.
+concurrency:
+  group: deploy-${{ github.event_name == 'push' && 'live' || 'preview' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - name: Look for the Cloudflare secrets
+        id: secrets
+        run: |
+          if [ -n "$CLOUDFLARE_API_TOKEN" ] && [ -n "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::The repository has no Cloudflare secrets yet, so nothing was deployed."
+          fi
+
+      - uses: actions/checkout@v7
+        if: steps.secrets.outputs.ready == 'true'
+
+      - uses: pnpm/action-setup@v6
+        if: steps.secrets.outputs.ready == 'true'
+
+      - uses: actions/setup-node@v7
+        if: steps.secrets.outputs.ready == 'true'
+        with:
+          node-version: '22'
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+        if: steps.secrets.outputs.ready == 'true'
+
+      - name: Build the site
+        if: steps.secrets.outputs.ready == 'true'
+        run: pnpm --filter @adventure/web build:site
+
+      # `--env ""` is the top level of wrangler.jsonc, the live Worker.
+      - name: Deploy the live Worker
+        if: steps.secrets.outputs.ready == 'true' && github.event_name == 'push'
+        working-directory: apps/server
+        run: pnpm exec wrangler deploy --env ""
+
+      - name: Deploy the preview Worker
+        if: steps.secrets.outputs.ready == 'true' && github.event_name == 'pull_request'
+        working-directory: apps/server
+        run: pnpm exec wrangler deploy --env preview

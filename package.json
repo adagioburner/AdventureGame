@@ -13,7 +13,9 @@
     "game": "node tools/balance/src/cli.ts game",
     "selfplay": "node tools/balance/src/cli.ts selfplay",
     "dev": "pnpm --filter @adventure/web dev",
-    "build:web": "pnpm --filter @adventure/web build"
+    "dev:site": "pnpm --filter @adventure/web dev:site",
+    "build:web": "pnpm --filter @adventure/web build",
+    "build:site": "pnpm --filter @adventure/web build:site"
   },
   "devDependencies": {
     "@types/node": "^26.6.2",

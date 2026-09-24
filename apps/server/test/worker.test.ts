@@ -211,6 +211,41 @@ describe('the server, in the local Workers runtime', () => {
     for (const client of [gmList, beaList, gmGame, beaGame, reopened]) client.close();
   }, 60_000);
 
+  it('settles two people reaching for one figure at once: one gets it, the other is told who has it (Q49)', async () => {
+    const gm = await register('Race_gm');
+    const ann = await register('Race_ann');
+    const bo = await register('Race_bo');
+    const lobby = await Client.open('/api/lobby', gm.token);
+    lobby.send({ type: 'lobby.create', name: 'Race' });
+    const { gameId } = await lobby.next((m): m is Extract<ServerMessage, { type: 'lobby.created' }> => m.type === 'lobby.created');
+    const gmGame = await Client.open(`/api/games/${gameId}`, gm.token);
+    const annGame = await Client.open(`/api/games/${gameId}`, ann.token);
+    const boGame = await Client.open(`/api/games/${gameId}`, bo.token);
+    gmGame.send({ type: 'setup.setPlayerCount', gameId, count: 3 });
+    annGame.send({ type: 'setup.requestJoin', gameId, name: 'Ann', avatarId: 'player_avatars_03' });
+    boGame.send({ type: 'setup.requestJoin', gameId, name: 'Bo', avatarId: 'player_avatars_04' });
+    await gmGame.next(isSetup((setup) => setup.pending.length === 2 && setup.playerCount === 3));
+    gmGame.send({ type: 'setup.respondToJoin', gameId, userId: ann.user.userId, accept: true });
+    gmGame.send({ type: 'setup.respondToJoin', gameId, userId: bo.user.userId, accept: true });
+    await annGame.next(isSetup((setup) => setup.seats.filter((seat) => seat.userId !== null).length === 3));
+    await boGame.next(isSetup((setup) => setup.seats.filter((seat) => seat.userId !== null).length === 3));
+
+    const marks = { ann: annGame.heard.length, bo: boGame.heard.length };
+    const figure = 'player_avatars_05';
+    annGame.send({ type: 'setup.updateSeat', gameId, seatId: `person:${ann.user.userId}`, name: 'Ann', avatarId: figure });
+    boGame.send({ type: 'setup.updateSeat', gameId, seatId: `person:${bo.user.userId}`, name: 'Bo', avatarId: figure });
+
+    const settled = await gmGame.next(isSetup((setup) => setup.seats.some((seat) => seat.avatarId === figure)));
+    const winner = settled.setup.seats.find((seat) => seat.avatarId === figure);
+    const [loser, mark] = winner?.userId === ann.user.userId ? [boGame, marks.bo] : [annGame, marks.ann];
+    const told = await loser.next((m): m is Extract<ServerMessage, { type: 'error' }> => m.type === 'error', mark);
+    expect(told.message).toBe(`${winner?.name} holds that figure now; pick another`);
+    const figures = settled.setup.seats.map((seat) => seat.avatarId);
+    expect(new Set(figures).size).toBe(figures.length);
+
+    for (const client of [lobby, gmGame, annGame, boGame]) client.close();
+  }, 60_000);
+
   it('answers a game that does not exist', async () => {
     const who = await register('Nobody_here');
     const client = await Client.open('/api/games/doesnotexist', who.token);
