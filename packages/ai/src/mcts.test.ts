@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_GAME_CONFIG } from '@adventure/config';
 import { applyAction, createDiceSource, createRng, type GameState } from '@adventure/core';
-import { goldExhaustedTermination, rolloutCursor, runRollout, type RestRule } from '@adventure/sim';
+import { goldExhaustedTermination, restWhenStuck, rolloutCursor, runRollout } from '@adventure/sim';
 import {
   fixtureGame,
   fixtureMap,
@@ -21,11 +21,7 @@ import { closestPoiRolloutPolicy } from './policies/rollout.ts';
 import { closestUnclaimedPoiEnumerator, previewReachability, uctTreePolicy } from './policies/tree.ts';
 import type { MctsOptions } from './types.ts';
 
-/** For these tests only: which rule the game uses is the designer's call. */
-const restWhenStuck: RestRule = {
-  name: 'test: rest when stuck',
-  restsInstead: (_state, _player, _route, preview) => preview.reachableStepCount === 0,
-};
+const restRule = restWhenStuck();
 
 /**
  * A star of plains around node 0, with a spur of forest: seven POIs, two of
@@ -70,10 +66,10 @@ function optionsFor(state: GameState, overrides: Partial<MctsOptions> = {}): Mct
     config,
     treePolicy: uctTreePolicy(config.ai.MCTS_EXPLORATION_CONSTANT),
     actions: closestUnclaimedPoiEnumerator(config, previewReachability()),
-    rollout: closestPoiRolloutPolicy({ config, termination, restRule: restWhenStuck }),
+    rollout: closestPoiRolloutPolicy({ config, termination, restRule }),
     evaluator: simulatedRolloutEvaluator(),
     termination,
-    restRule: restWhenStuck,
+    restRule,
     dice: createDiceSource(createRng('search-dice'), config),
     rng: createRng('search'),
     timeBudgetMs: 200,
@@ -131,7 +127,7 @@ describe('evaluators', () => {
       const end = runRollout(rolloutCursor(state, player('one')), {
         config: DEFAULT_GAME_CONFIG,
         termination: goldExhaustedTermination(),
-        restRule: restWhenStuck,
+        restRule,
         rng: createRng(seed),
         dice: createDiceSource(createRng(seed), DEFAULT_GAME_CONFIG),
       });

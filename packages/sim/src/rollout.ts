@@ -102,16 +102,48 @@ export function goldExhaustedTermination(): RolloutTermination {
 }
 
 /**
+ * A turn cap on top of another termination, counted from the position the
+ * search is thinking about: `startTurn` is that position's turn number.
+ *
+ * [SOURCE §9, review] Andrei, 2026-09-24 (Q44): "we can end the simulation
+ * after 250 turns and give the victory to whatever player has more gold." It
+ * exists for Q30's position, where the gold left is behind guards nobody can
+ * beat and nothing else would ever stop a simulated game. A capped game is
+ * scored like any other — the simulated evaluation reads the subject's gold —
+ * so whoever holds more gold at the cap comes out ahead.
+ */
+export function turnCapTermination(inner: RolloutTermination, startTurn: number, cap: number): RolloutTermination {
+  return {
+    isTerminal(cursor: RolloutCursor, turnsTaken: number): boolean {
+      return cursor.state.turn.number - startTurn >= cap || inner.isTerminal(cursor, turnsTaken);
+    },
+  };
+}
+
+/**
  * Whether a player heading for a target spends this turn resting instead of
  * walking. Given the route to the target and this turn's preview of it.
  *
  * §9 says a simulated player keeps moving to its POI, and nothing about when
- * it rests; stamina runs out often, so the rollout needs a rule. Injected, with
- * no default, because which rule is the designer's call.
+ * it rests; stamina runs out often, so the rollout needs a rule. Injected so
+ * tests can fix one; `restWhenStuck()` is the designer's.
  */
 export interface RestRule {
   readonly name: string;
   restsInstead(state: GameState, player: PlayerState, route: readonly NodeId[], preview: PathPreview): boolean;
+}
+
+/**
+ * [SOURCE §9, review] Andrei, 2026-09-24 (Q43): a player heading for a target
+ * "rests on any turn it cannot take a single step towards its target, then
+ * carries on to the same target". Otherwise it walks as far as the turn
+ * affords. The computer's real move follows the same rule.
+ */
+export function restWhenStuck(): RestRule {
+  return {
+    name: 'rest-when-stuck',
+    restsInstead: (_state, _player, _route, preview) => preview.reachableStepCount === 0,
+  };
 }
 
 export interface RolloutOptions {

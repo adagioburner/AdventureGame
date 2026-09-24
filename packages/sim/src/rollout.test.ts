@@ -16,23 +16,17 @@ import {
   macroAdvanceToTarget,
   playRolloutTurn,
   playUntilTurnOf,
+  restWhenStuck,
   rolloutCursor,
   runRollout,
+  turnCapTermination,
   turnTowards,
   unclaimedPoiNodes,
   type RestRule,
   type RolloutOptions,
 } from './rollout.ts';
 
-/**
- * A rule for these tests only: rest when not a single step can be paid.
- * Which rule the game uses is the designer's to pick, so none ships as a
- * default and the tests do not assume one.
- */
-const restWhenStuck: RestRule = {
-  name: 'test: rest when stuck',
-  restsInstead: (_state, _player, _route, preview) => preview.reachableStepCount === 0,
-};
+const restRule = restWhenStuck();
 const neverRest: RestRule = { name: 'test: never rest', restsInstead: () => false };
 
 function withK(k: number): GameConfig {
@@ -43,7 +37,7 @@ function options(overrides: Partial<RolloutOptions> = {}): RolloutOptions {
   return {
     config: withK(1),
     termination: goldExhaustedTermination(),
-    restRule: restWhenStuck,
+    restRule,
     dice: createDiceSource(createRng('dice'), DEFAULT_GAME_CONFIG),
     rng: createRng('rollout'),
     ...overrides,
@@ -106,10 +100,10 @@ describe('turnTowards', () => {
     expect(turnTowards(state, n(5), neverRest)).toEqual({ kind: 'move', player: player('one'), path: [], waypoint: null });
   });
 
-  it('asks the rest rule, with this turn’s preview of the route', () => {
-    expect(turnTowards(stuckGame(), n(5), restWhenStuck)).toEqual({ kind: 'rest', player: player('one') });
+  it('rests when stuck, the designer’s rule (Q43): only when not one step can be paid', () => {
+    expect(turnTowards(stuckGame(), n(5), restRule)).toEqual({ kind: 'rest', player: player('one') });
     const able = withStats(stuckGame(), player('one'), { stamina: 1 });
-    expect(turnTowards(able, n(5), restWhenStuck).kind).toBe('move');
+    expect(turnTowards(able, n(5), restRule).kind).toBe('move');
   });
 });
 
@@ -230,5 +224,22 @@ describe('runRollout', () => {
         options({ config: DEFAULT_GAME_CONFIG, rng: createRng('same'), dice: createDiceSource(createRng('same'), DEFAULT_GAME_CONFIG) }),
       ).state;
     expect(play()).toEqual(play());
+  });
+});
+
+describe('turnCapTermination', () => {
+  it('stops a simulated game SIMULATION_TURN_CAP turns after the position it started from (Q44)', () => {
+    const cap = turnCapTermination(goldExhaustedTermination(), 7, DEFAULT_GAME_CONFIG.ai.SIMULATION_TURN_CAP);
+    const at = (turn: number) => rolloutCursor({ ...fixtureGame(line, 0), turn: { ...fixtureGame(line, 0).turn, number: turn } }, player('one'));
+    expect(cap.isTerminal(at(7), 0)).toBe(false);
+    expect(cap.isTerminal(at(7 + 249), 0)).toBe(false);
+    expect(cap.isTerminal(at(7 + 250), 0)).toBe(true);
+  });
+
+  it('still stops when the gold runs out first', () => {
+    let state = withPosition(withPosition(fixtureGame(line, 0), player('one'), 5), player('two'), 5);
+    state = withStats(state, player('one'), { stamina: 10 });
+    const end = runRollout(rolloutCursor(state, player('one')), options({ termination: turnCapTermination(goldExhaustedTermination(), 1, 250) }));
+    expect(unclaimedGoldUnits(end.state)).toBe(0);
   });
 });

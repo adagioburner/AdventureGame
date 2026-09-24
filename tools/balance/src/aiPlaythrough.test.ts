@@ -1,19 +1,9 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_RULESET } from '@adventure/config';
-import { goldExhaustedTermination, type RestRule } from '@adventure/sim';
 import { computerDriver } from './aiPlaythrough.ts';
 import { formatPlaythrough, playGame } from './playthrough.ts';
 import { formatSelfPlayReport, runSelfPlayBatch } from './selfplay.ts';
-
-/**
- * For these tests only. When a computer rests is the designer's to pick, so
- * the harness takes the rule as an argument and the tests bring their own.
- */
-const restWhenStuck: RestRule = {
-  name: 'test: rest when stuck',
-  restsInstead: (_state, _player, _route, preview) => preview.reachableStepCount === 0,
-};
 
 /** A clock that ticks once per read, so a budget of N is about N iterations. */
 function counter(): () => number {
@@ -23,8 +13,6 @@ function counter(): () => number {
 
 const computer = (iterations: number) => ({
   thinkingMs: iterations,
-  restRule: restWhenStuck,
-  termination: goldExhaustedTermination(),
   now: counter(),
 });
 

@@ -11,7 +11,6 @@ import {
   type PlayerId,
 } from '@adventure/core';
 import { chooseComputerMove, type MctsNode } from '@adventure/ai';
-import type { RestRule, RolloutTermination } from '@adventure/sim';
 import type { PlaythroughDriver, TurnChoice } from './playthrough.ts';
 
 /** How the computer player thinks in a playthrough. */
@@ -19,8 +18,6 @@ export interface ComputerSettings {
   readonly ruleset: Ruleset;
   /** Per move, in the clock's units. */
   readonly thinkingMs: number;
-  readonly restRule: RestRule;
-  readonly termination: RolloutTermination;
   /** Seeds the search's own randomness and dice, never the game's. */
   readonly seed: string;
   /**
@@ -58,8 +55,6 @@ export function computerDriver(settings: ComputerSettings): PlaythroughDriver {
       const { action, search: result } = chooseComputerMove(state, playerId, {
         config,
         thinkingMs: settings.thinkingMs,
-        restRule: settings.restRule,
-        termination: settings.termination,
         rng,
         dice,
         now: settings.now,
