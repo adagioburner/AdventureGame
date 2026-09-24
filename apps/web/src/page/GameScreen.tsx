@@ -57,6 +57,7 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
   // do, it blinks, even over a route saved from their last turn.
   const [engagedTurn, setEngagedTurn] = useState<number | null>(null);
   const handle = useRef<MapHandle | null>(null);
+  const [mapReady, setMapReady] = useState(false);
   const busy = inFlight !== null;
   const computer = useMemo(() => hotseatComputer(game), [game]);
 
@@ -182,6 +183,22 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
     };
   }, [computer, game, shown, busy, say]);
 
+  // [Andrei, 2026-09-24] "we need to center the map on the current player's
+  // figure at the beginning of each turn, both human and AI" (Q46): the map
+  // glides there at the zoom it already has, from the first turn on. After an
+  // unguarded claim it waits until the claim's notice has faded, since the
+  // notice rides on the figure that made the claim.
+  const centeredTurn = useRef<number | null>(null);
+  useEffect(() => {
+    if (!mapReady || busy || shown.status !== 'in_progress') return;
+    if (result !== null && isUnguardedClaim(result.turn)) return;
+    if (centeredTurn.current === shown.turn.number) return;
+    const player = shown.players[shown.turn.activeSeat - 1];
+    if (player === undefined) return;
+    centeredTurn.current = shown.turn.number;
+    handle.current?.glideTo(player.position);
+  }, [mapReady, busy, shown, result]);
+
   const refuse = (why: EnterRefusal): void => {
     const active = shown.players[shown.turn.activeSeat - 1];
     if (why === 'not_your_turn' && active !== undefined) say(`It is ${active.name}’s turn. In hot seat nobody plans out of turn.`);
@@ -293,6 +310,7 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
           onTap={onTap}
           onReady={(ready) => {
             handle.current = ready;
+            setMapReady(ready !== null);
           }}
         />
         {notice === null ? null : (

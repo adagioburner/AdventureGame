@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { Application } from 'pixi.js';
 import type { GameMap, GameState, NodeId, PathPreview, PlayerId, Point } from '@adventure/core';
-import { createCameraController, type CameraController } from '../interaction/camera.ts';
+import { createCameraController, glideCenter, GLIDE_MS, type CameraController } from '../interaction/camera.ts';
 import { figureTop, pick, planeToScreen, screenToPlane, type Pick } from '../interaction/picking.ts';
 import { fitToViewport } from '../render/isometric.ts';
 import { position } from '../render/geometry.ts';
@@ -17,6 +17,11 @@ export interface MapHandle {
   screenOfFigure(player: PlayerId): Point | null;
   /** Bring a node to the middle, zoomed in enough to play at. */
   centerOn(node: NodeId): void;
+  /**
+   * Slide a node to the middle over `GLIDE_MS`, at the zoom the view already
+   * has. Panning, zooming or `centerOn` while it slides stops it where it is.
+   */
+  glideTo(node: NodeId): void;
 }
 
 interface MapViewProps {
@@ -97,6 +102,17 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
       };
       apply();
 
+      let glide: { from: Point; to: Point; start: number } | null = null;
+      const onTick = (): void => {
+        if (glide === null) return;
+        const t = (performance.now() - glide.start) / GLIDE_MS;
+        camera.lookAt(glideCenter(glide.from, glide.to, t));
+        if (t >= 1) glide = null;
+        apply();
+      };
+      app.ticker.add(onTick);
+      cleanups.push(() => app.ticker.remove(onTick));
+
       // Pixi's `resizeTo` follows the window only, and on a phone the map's
       // box also changes as the panels round it do, so resize the canvas here.
       const observer = new ResizeObserver(() => {
@@ -117,6 +133,7 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
         return { x: event.clientX - box.left, y: event.clientY - box.top };
       };
       const onDown = (event: PointerEvent): void => {
+        glide = null;
         element.setPointerCapture(event.pointerId);
         const at = local(event);
         pointers.set(event.pointerId, at);
@@ -159,6 +176,7 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
       };
       const onWheel = (event: WheelEvent): void => {
         event.preventDefault();
+        glide = null;
         camera.zoomAt(local(event), Math.exp(-event.deltaY * 0.0015));
         touched = true;
         apply();
@@ -168,6 +186,7 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
         if (event.key === '+' || event.key === '=') camera.zoomIn();
         else if (event.key === '-' || event.key === '_') camera.zoomOut();
         else return;
+        glide = null;
         touched = true;
         apply();
       };
@@ -187,6 +206,7 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
       });
 
       zoomButtons.current = (action) => {
+        glide = null;
         if (action === 'in') camera.zoomIn();
         else if (action === 'out') camera.zoomOut();
         else camera.resetToFit();
@@ -202,9 +222,14 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
           return top === null ? null : planeToScreen(camera.camera, viewport(), top);
         },
         centerOn: (node) => {
+          glide = null;
           camera.centerOn(planeOf(node), fit().zoom * PLAY_ZOOM_OF_FIT);
           touched = true;
           apply();
+        },
+        glideTo: (node) => {
+          glide = { from: camera.camera.center, to: planeOf(node), start: performance.now() };
+          touched = true;
         },
       });
     })();

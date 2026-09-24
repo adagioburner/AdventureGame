@@ -31,6 +31,8 @@ export interface CameraController {
    * the view is further out than that.
    */
   centerOn(plane: Point, zoom: number): void;
+  /** Bring a zoom-1 plane point to the middle of the view at the zoom it already has. */
+  lookAt(plane: Point): void;
   /** A new fit, when the viewport changes size. */
   setFit(fit: Camera, viewport: Point): void;
 }
@@ -41,6 +43,20 @@ export const ZOOM_STEP = 1.25;
 export const MIN_ZOOM_OF_FIT = 0.8;
 /** Close enough that a POI fills a good part of a phone screen. */
 export const MAX_ZOOM = 4;
+/**
+ * [Andrei, 2026-09-24] Q46: at the start of each turn the map glides to the
+ * current player's figure "over about half a second".
+ */
+export const GLIDE_MS = 500;
+
+/**
+ * Where a glide from `from` to `to` has got to at `t`, from 0 to 1. It eases
+ * in and out, so the map starts and stops gently rather than at full speed.
+ */
+export function glideCenter(from: Point, to: Point, t: number): Point {
+  const eased = t <= 0 ? 0 : t >= 1 ? 1 : (1 - Math.cos(Math.PI * t)) / 2;
+  return { x: from.x + (to.x - from.x) * eased, y: from.y + (to.y - from.y) * eased };
+}
 
 export function createCameraController(fit: Camera, viewport: Point): CameraController {
   let whole = fit;
@@ -87,6 +103,9 @@ export function createCameraController(fit: Camera, viewport: Point): CameraCont
     },
     centerOn(plane, zoom) {
       camera = { zoom: clampZoom(Math.max(camera.zoom, zoom)), center: plane };
+    },
+    lookAt(plane) {
+      camera = { zoom: camera.zoom, center: plane };
     },
     setFit(next, nextViewport) {
       whole = next;

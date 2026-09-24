@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q45.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q46.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -1084,6 +1084,26 @@ on a slow page, but a turn never takes longer than the time set), or keep
 thinking until it has had its full seconds (as strong, but a slow page makes
 the turn run longer). Recommended and chosen: **as now**, which keeps Q20's
 rule of thinking in seconds rather than for strength. Nothing changed.
+
+### Q46. ~~How does the map come to the current player at the start of a turn?~~ — **answered 2026-09-24: it glides, keeps the zoom, and waits for a claim's notice**
+
+Andrei: *"we need to center the map on the current player's figure at the
+beginning of each turn, both human and AI"*. That covers people and the
+computer, phones too, from the first turn on. Three details it left open, put
+to him with a recommendation each:
+
+- **Glide**, as recommended: the map slides to the figure over about half a
+  second (`GLIDE_MS`), easing in and out. The Find button still jumps.
+- **Keep the zoom**, over the recommendation to zoom in as Find does: only the
+  map's position changes, so on the whole-map view it stays that far out,
+  centred on the figure.
+- **After the notice**, as recommended: when the move before ended with an
+  unguarded claim, the map waits until that claim's notice has faded, since the
+  notice rides on the figure that made the claim. A guard fight's die card sits
+  at the top of the screen and does not hold it up.
+
+Panning, zooming or pressing Find while it glides stops it where it is.
+`glideTo` in `apps/web/src/page/MapView.tsx`, called from `GameScreen.tsx`.
 
 ---
 
