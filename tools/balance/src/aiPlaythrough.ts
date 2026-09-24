@@ -10,16 +10,8 @@ import {
   type NodeId,
   type PlayerId,
 } from '@adventure/core';
-import {
-  closestPoiRolloutPolicy,
-  closestUnclaimedPoiEnumerator,
-  previewReachability,
-  searchTree,
-  simulatedRolloutEvaluator,
-  uctTreePolicy,
-  type MctsNode,
-} from '@adventure/ai';
-import { turnTowards, type RestRule, type RolloutTermination } from '@adventure/sim';
+import { chooseComputerMove, type MctsNode } from '@adventure/ai';
+import type { RestRule, RolloutTermination } from '@adventure/sim';
 import type { PlaythroughDriver, TurnChoice } from './playthrough.ts';
 
 /** How the computer player thinks in a playthrough. */
@@ -41,9 +33,8 @@ export interface ComputerSettings {
 
 /**
  * §9's computer player as a playthrough driver: every seat searches for its
- * move with the v1 setup (UCT with `MCTS_EXPLORATION_CONSTANT`, the
- * `CLOSE_CANDIDATE_COUNT` closest unclaimed POIs plus rest, the §9 rollout
- * policy, the simulated evaluation).
+ * move with `chooseComputerMove`, the same v1 setup the game's computer seats
+ * use.
  *
  * What it adds to the transcript is why: how many games the search played in
  * its head, how the chosen target did in them, and the runners-up — so a
@@ -64,18 +55,13 @@ export function computerDriver(settings: ComputerSettings): PlaythroughDriver {
     ],
     choose(state: GameState, playerId: PlayerId): TurnChoice {
       const started = settings.now();
-      const result = searchTree(state, {
-        subject: playerId,
+      const { action, search: result } = chooseComputerMove(state, playerId, {
         config,
-        treePolicy: uctTreePolicy(config.ai.MCTS_EXPLORATION_CONSTANT),
-        actions: closestUnclaimedPoiEnumerator(config, previewReachability()),
-        rollout: closestPoiRolloutPolicy({ config, termination: settings.termination, restRule: settings.restRule }),
-        evaluator: simulatedRolloutEvaluator(),
-        termination: settings.termination,
+        thinkingMs: settings.thinkingMs,
         restRule: settings.restRule,
-        dice,
+        termination: settings.termination,
         rng,
-        timeBudgetMs: settings.thinkingMs,
+        dice,
         now: settings.now,
       });
       const took = settings.now() - started;
@@ -83,14 +69,14 @@ export function computerDriver(settings: ComputerSettings): PlaythroughDriver {
 
       const branch = result.best.action;
       if (branch === null) throw new Error('the search chose nothing');
-      if (branch.kind === 'rest') return { action: { kind: 'rest', player: playerId }, heading: null, why };
+      if (branch.kind === 'rest') return { action, heading: null, why };
 
       const target = branch.target.node;
       const player = activePlayer(state);
       const route = shortestPath(state.map.graph, player.position, target, config);
       if (route === null) throw new Error(`node ${target} is unreachable from ${player.position}`);
       return {
-        action: turnTowards(state, target, settings.restRule),
+        action,
         heading: { target, route, reason: 'the computer’s choice' },
         why,
       };

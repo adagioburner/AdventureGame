@@ -150,7 +150,7 @@ function realise(cursor: RolloutCursor, branch: MctsBranch, options: MctsOptions
 }
 
 /** The move a branch makes this turn: the first turn of its macro-action. */
-function firstTurnOf(state: GameState, branch: MctsBranch | null, options: MctsOptions): TurnAction {
+export function firstTurnOf(state: GameState, branch: MctsBranch | null, options: MctsOptions): TurnAction {
   if (branch === null) throw new RangeError('the search found no branch to take');
   if (branch.kind === 'rest') return { kind: 'rest', player: options.subject };
   return turnTowards(state, branch.target.node, options.restRule);

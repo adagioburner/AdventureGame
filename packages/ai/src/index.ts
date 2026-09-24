@@ -10,6 +10,7 @@
 export * from './types.ts';
 export * from './mcts.ts';
 export * from './runner.ts';
+export * from './computer.ts';
 export { closestPoiRolloutPolicy, type ClosestPoiRolloutSettings } from './policies/rollout.ts';
 export {
   uctTreePolicy,
