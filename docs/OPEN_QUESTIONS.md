@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q44.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q45.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -1070,6 +1070,20 @@ median runs 181); from turn 50, 1%; from turns 100 and 150, none. Random play
 is slow to finish early on, so near the opening the cap stops about a sixth of
 what the computer imagines, and each of those is scored on the gold held at
 turn 250.
+
+### Q45. ~~Does a busy page cut the computer's thinking short?~~ — **answered 2026-09-24: yes, it moves when its seconds are up**
+
+The computer thinks in 12 ms slices between the page's frames
+(`apps/web/src/modes/computer.ts`), and its thinking time counts clock seconds
+from the start of its turn. When the page stutters or freezes, part of that
+time passes with no thinking done. In the headless browser used for checks,
+which has no graphics card, the page froze for up to 17 seconds at each turn
+change, a move got one or two slices, and the computer played almost at
+random. Put to Andrei with two options: move when the seconds are up (weaker
+on a slow page, but a turn never takes longer than the time set), or keep
+thinking until it has had its full seconds (as strong, but a slow page makes
+the turn run longer). Recommended and chosen: **as now**, which keeps Q20's
+rule of thinking in seconds rather than for strength. Nothing changed.
 
 ---
 
