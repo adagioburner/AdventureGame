@@ -299,10 +299,12 @@ export function MapView({
           following.current = true;
           const walking = latest.current.walker;
           if (walking !== null) {
-            let last = walking.at;
+            // Wherever the figure has got to; once its walk is over, the node it stands on.
             const to = (): Point => {
-              last = latest.current.walker?.at ?? last;
-              return scene.projection.toScreen(last);
+              const now = latest.current.walker;
+              if (now !== null && now.player === walking.player) return scene.projection.toScreen(now.at);
+              const stands = latest.current.state.players.find((player) => player.id === walking.player);
+              return stands === undefined ? scene.projection.toScreen(walking.at) : planeOf(stands.position);
             };
             glide = { from: camera.camera.center, to, start: performance.now(), chasing: true };
           } else if (node !== null) {
