@@ -1235,6 +1235,14 @@ switch turned on again.
    `gm.aiMove`), which thinks with the hot seat's `startComputerMove` for the
    setup screen's thinking time. With no GM connected the game waits (§12.4).
 
+9. **Game lifetime** ([Q55](./OPEN_QUESTIONS.md#q55)). A stored game has a
+   lifetime chosen on the new game screen, 1, 3, 7 or 14 days from creation
+   (3 by default), which the game master can extend up to 14 days. When it
+   runs out the game ends, the most gold winning; a finished game stays in
+   Your games for 7 days and is then deleted, as is a cancelled one. The game
+   master can end a game in progress. Each game's Durable Object deletes
+   itself on an alarm, so no scheduled job is needed.
+
 **Done when:** a full 2-player online game is playable end to end from two
 browsers, survives a reload on both sides, the GM can force a stalling
 player's move, and a game with computer seats plays to the end.

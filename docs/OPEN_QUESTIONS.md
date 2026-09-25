@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q54.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q55.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -1149,7 +1149,8 @@ said *"everything as recommended"*.
 5. **The game list** has two parts. Your games: every game you are in,
    waiting or started. Open games: games still waiting for players, with the
    name, the game master, seats filled ("2 of 3") and an Ask to join button.
-   Finished games are not listed.
+   Finished games are not listed. *[Q55](#q55) 36 keeps a finished game in Your
+   games for 7 days.*
 6. **Game names:** the creator types one, filled in as "<username>'s game".
 7. **The game master plays**, always in seat 1. Later seats go in the order
    the game master accepts people (§6).
@@ -1348,6 +1349,54 @@ computer turns included.
     that game. There are no emails.
 35. **Two devices:** one person may have a game open on several devices;
     whichever acts first counts, and the others see the result.
+
+<a id="q55"></a>
+### Q55. ~~How long does a stored game stay on the site?~~ — **answered 2026-09-25: a lifetime set at creation, 3 days by default, up to 14**
+
+Andrei: *"we don't want finished games to stick around polluting the view,
+and we want to garbage collect abandoned games as well"*. Until now nothing
+was ever deleted: a cancelled game left the list but kept its data, and games
+that never started or that everyone left stayed for good. He took details 36
+to 41 as recommended and added: *"I'd make the lifetime explicit when a game
+is created, with probably a shorter default (few people want a game to last
+more than 3 days), and a possibility to extend the lifetime to 14 days."* The
+details that raised, 42 to 47, he also took as recommended. All of it is for
+phase 7.
+
+36. **Finished games** stay in Your games for 7 days, marked "Finished · Bea
+    won", with Open to see the final map and turn log, then leave the list.
+    This replaces Q48 5, which took a finished game off the list at once.
+37. **Deletion:** a finished or cancelled game is deleted from the server 7
+    days after it finished or was cancelled; its old address then says "This
+    game has ended and been removed."
+38. ~~Games that never start are cancelled after 7 days with no changes.~~
+    Replaced by the lifetime (47).
+39. ~~A game in progress with no turn for 30 days ends and is removed.~~
+    Replaced by the lifetime (47).
+40. **The game master can end a game in progress** with "End the game", which
+    asks first. It ends without a winner, everyone sees "The game master
+    ended this game.", and it is kept and deleted like a finished game.
+41. **Built in phase 7**, with Q54.
+42. **The lifetime counts from creation**, so a game that never starts also
+    goes when its time is up.
+43. **Chosen on the new game screen** while "Play online" is on, under the
+    game name: "Game lasts" 1, 3, 7 or 14 days, starting at 3, changeable
+    until Start.
+44. **Extending:** the game master can extend it at any time before it ends,
+    a day at a time, up to 14 days from creation; everyone sees the new end.
+45. **Time running out mid-game:** the game ends and the player holding the
+    most gold wins, a tie shared, as the computer's simulated games do at
+    their turn limit (Q44). It then follows 36 and 37.
+46. **Time left** shows in Your games, the open games list and on the game
+    page ("Ends Sunday 14:00"); in the last 24 hours it reads "Ends in 5
+    hours" and is highlighted.
+47. **The lifetime replaces 38 and 39**, since every game ends within 14 days.
+
+**Who deletes:** each game deletes itself. A game is its own Durable Object,
+which sets a Cloudflare alarm (`setAlarm`) for when its lifetime runs out and
+another for its deletion 7 days after it ends; the alarm wakes it even with
+nobody connected, and it ends the game or deletes its storage and takes its
+row off the lobby's list. Extending moves the alarm. No scheduled job runs.
 
 ---
 
