@@ -460,6 +460,10 @@ export function GameScreen({
   }, [source, controller, shown, busy, active, tracking]);
 
   const path = inFlight !== null ? inFlight.path : move.kind === 'previewing' ? move.preview : null;
+  // A committed or walking route is the player on turn's; a route being
+  // planned is its planner's, online perhaps someone waiting for their turn
+  // ([Q56, 49]), so it starts at their figure.
+  const pathFrom = inFlight !== null || planner === null ? active?.position : shown.players.find((player) => player.id === planner)?.position;
   const waypoint = inFlight !== null ? inFlight.waypoint : move.kind === 'idle' ? null : move.waypoint;
   const cue: FigureCue =
     shown.status !== 'in_progress' || busy
@@ -503,6 +507,7 @@ export function GameScreen({
           scene={scene}
           state={shown}
           path={path}
+          pathFrom={pathFrom ?? null}
           waypoint={waypoint}
           walker={walker}
           cue={cue}

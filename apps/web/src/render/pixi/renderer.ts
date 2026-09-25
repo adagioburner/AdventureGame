@@ -74,6 +74,7 @@ export class PixiMapRenderer implements MapRenderer {
   private state: GameState | null = null;
   private stateScene: StateScene | null = null;
   private preview: PathPreview | null = null;
+  private previewFrom: NodeId | null = null;
   private waypoint: NodeId | null = null;
   private walker: Walker | null = null;
   private viewport: Point = { x: 1, y: 1 };
@@ -146,8 +147,9 @@ export class PixiMapRenderer implements MapRenderer {
     return this.stateScene?.characters ?? [];
   }
 
-  setPathPreview(preview: PathPreview | null): void {
+  setPathPreview(preview: PathPreview | null, from: NodeId | null): void {
     this.preview = preview;
+    this.previewFrom = from;
     this.invalidate('path-overlay');
   }
 
@@ -372,11 +374,9 @@ export class PixiMapRenderer implements MapRenderer {
 
   private drawPath(): void {
     this.groundAbove.removeChildren().forEach((child) => child.destroy());
-    const state = this.state;
     const preview = this.preview;
-    if (state === null || preview === null) return;
-    const from = state.players[state.turn.activeSeat - 1]?.position;
-    if (from === undefined) return;
+    const from = this.previewFrom;
+    if (preview === null || from === null) return;
     const path = buildPathScene(this.scene, this.map, from, preview, this.art.catalog);
     const prospect = this.art.catalog.manifest.moveProspect;
     const atlas = atlasOf(this.art.catalog, prospect.sheet);

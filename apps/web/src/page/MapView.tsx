@@ -36,8 +36,14 @@ interface MapViewProps {
   /** `buildMapScene` of `map`: built once per map by the page, not per render. */
   readonly scene: MapScene;
   readonly state: GameState;
-  /** §7.1's dotted route and cross, from the current player's node. */
+  /** §7.1's dotted route and cross. */
   readonly path: PathPreview | null;
+  /**
+   * The node `path` starts from: the figure of the player it is for, who
+   * online may be someone planning out of turn ([Q56, 49]). The current
+   * player's node if omitted.
+   */
+  readonly pathFrom?: NodeId | null;
   readonly waypoint: NodeId | null;
   readonly walker: Walker | null;
   /** How the current player's figure calls attention to itself; `none` if omitted. */
@@ -73,6 +79,7 @@ export function MapView({
   scene,
   state,
   path,
+  pathFrom,
   waypoint,
   walker,
   cue = 'none',
@@ -88,8 +95,9 @@ export function MapView({
   const zoomButtons = useRef<((action: 'in' | 'out' | 'fit') => void) | null>(null);
   // Read when the renderer comes up, and by the pointer handlers, which are
   // bound once per map.
-  const latest = useRef({ state, path, waypoint, walker, cue, planner, onTap, onMoved, onReady });
-  latest.current = { state, path, waypoint, walker, cue, planner, onTap, onMoved, onReady };
+  const from = pathFrom ?? state.players[state.turn.activeSeat - 1]?.position ?? null;
+  const latest = useRef({ state, path, from, waypoint, walker, cue, planner, onTap, onMoved, onReady });
+  latest.current = { state, path, from, waypoint, walker, cue, planner, onTap, onMoved, onReady };
   // Whether a walk takes the map along. It follows Track, and stops at once
   // when the map is moved, before the page has unpressed Track.
   const following = useRef(tracking);
@@ -121,7 +129,7 @@ export function MapView({
       map.setWalker(now.walker);
       map.setPlanner(now.planner);
       map.setState(now.state);
-      map.setPathPreview(now.path);
+      map.setPathPreview(now.path, now.from);
       map.setWaypoint(now.waypoint);
       map.setCue(now.cue);
       app.stage.addChild(map.root);
@@ -333,8 +341,8 @@ export function MapView({
     renderer.current?.setWalker(walker);
   }, [walker]);
   useEffect(() => {
-    renderer.current?.setPathPreview(path);
-  }, [path]);
+    renderer.current?.setPathPreview(path, from);
+  }, [path, from]);
   useEffect(() => {
     renderer.current?.setWaypoint(waypoint);
   }, [waypoint]);
