@@ -1581,6 +1581,13 @@ should follow the turn, showing the active players card"* (79).
     connection to the server dropped. Try again once it is back." stays out,
     since there is nothing to try again.
 
+Two details were settled while building 84 and 85 rather than asked first,
+and shown to him with the screenshots of the result: the Menu's list opens
+under the top bar at its right and closes when an item is pressed or anything
+else is tapped, and on phones the notice sits above the new row of map
+buttons, which it would otherwise cover. Andrei: *"the screenshots look good,
+let's proceed"*.
+
 The layout is CSS in `apps/web/index.html` (the play screen) and
 `apps/web/src/online/site.css` (the top bar and Menu); 79 is in
 `apps/web/src/page/Players.tsx`, 84 in `OnlineGameScreen.tsx`, 86 in
