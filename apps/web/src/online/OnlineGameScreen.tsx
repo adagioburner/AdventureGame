@@ -102,10 +102,10 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
             return;
           }
           // [Q54, 32] Back after a dropped connection: the turns missed meanwhile.
-          // A turn this page sent that is not among them never arrived, and
-          // can be sent again.
+          // A turn this page sent that is not among them never arrived: a
+          // computer's move goes again, and a person's can be sent again.
           receive(current, message.records, 'caught_up');
-          current.refused(null);
+          current.reconnected();
           return;
         }
         case 'game.played':

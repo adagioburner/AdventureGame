@@ -45,22 +45,23 @@ function record(state: GameState, seq: number, action: GameAction): { record: Ga
   return { record: { seq, action, rolls: [], at: seq, by: null }, after };
 }
 
-/** A page's play for `me`, with what it sent and what it heard. */
+/** A page's play for `me`, with what it sent and what it heard; `link.up` is whether its connection is. */
 function pageFor(me: typeof andrei, connected = true) {
   const opening = openingStateOf(setup, map);
   const sent: ClientMessage[] = [];
   const heard: PlayUpdate[] = [];
+  const link = { up: connected };
   const play = onlinePlay({
     setup,
     me,
     ...OnlineGame.open(setup, opening, []),
     send: (message) => {
-      if (connected) sent.push(message);
-      return connected;
+      if (link.up) sent.push(message);
+      return link.up;
     },
   });
   play.subscribe((update) => heard.push(update));
-  return { play, sent, heard, opening };
+  return { play, sent, heard, opening, link };
 }
 
 describe('onlinePlay', () => {
@@ -98,6 +99,36 @@ describe('onlinePlay', () => {
     const { play, sent } = pageFor(andrei, false);
     expect(() => play.commit({ kind: 'rest', player: one })).toThrow(/connection/);
     expect(sent).toEqual([]);
+  });
+
+  it('sends a computer’s move that could not be sent once the connection is back', () => {
+    const { play, sent, heard, opening, link } = pageFor(andrei);
+    play.receive(record(opening, 1, { kind: 'rest', player: one }).record, 'played');
+    link.up = false;
+    play.commit({ kind: 'rest', player: two });
+    expect(sent).toEqual([]);
+
+    link.up = true;
+    play.reconnected();
+    expect(sent).toEqual([{ type: 'gm.aiMove', gameId: setup.gameId, requestId: 'turn-2', player: two, action: { kind: 'rest', player: two } }]);
+    expect(heard.filter((update) => update.kind === 'refused')).toEqual([]);
+  });
+
+  it('sends a computer’s move again after a reconnect until its turn has been played', () => {
+    const { play, sent, heard, opening } = pageFor(andrei);
+    const first = record(opening, 1, { kind: 'rest', player: one });
+    play.receive(first.record, 'played');
+    play.commit({ kind: 'rest', player: two });
+    // Sent on a connection that had died unnoticed: the reconnect finds turn 2 still waiting.
+    play.reconnected();
+    expect(sent.map((message) => message.type)).toEqual(['gm.aiMove', 'gm.aiMove']);
+    expect(sent[1]).toEqual(sent[0]);
+
+    // It arrived after all: its turn is played, and a later reconnect sends nothing.
+    play.receive(record(first.after, 2, { kind: 'rest', player: two }).record, 'played');
+    play.reconnected();
+    expect(sent).toHaveLength(2);
+    expect(heard.at(-1)).toEqual({ kind: 'refused', reason: null });
   });
 
   it('tells the screen of every record in order, how to show it, and of refusals', () => {

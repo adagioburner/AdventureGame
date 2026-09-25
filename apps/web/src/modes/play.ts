@@ -64,9 +64,10 @@ export interface PlaySource {
   thinkingSecondsOf(player: PlayerState): number | null;
   /**
    * Plays End Turn or Rest for a local player, or a computer's move this page
-   * thought of. Throws if it cannot be sent or the rules refuse it. The turn
-   * comes back through `subscribe`: at once on one device, online once the
-   * server has played it, or a refusal if the server would not.
+   * thought of. Throws if it cannot be sent or the rules refuse it, except
+   * online for a computer's move, which waits for the connection instead. The
+   * turn comes back through `subscribe`: at once on one device, online once
+   * the server has played it, or a refusal if the server would not.
    */
   commit(action: TurnAction): void;
   /** Hears every update from now on, in order. */
@@ -115,12 +116,14 @@ export interface OnlinePlay extends PlaySource {
    * while the connection was down. Throws `MissedRecords` if one before it is missing.
    */
   receive(record: GameRecord, shown: 'played' | 'caught_up'): void;
-  /**
-   * The server refused something this page sent, saying why in `reason`
-   * with `code`; `null` once a reconnect has brought the game up to date, for
-   * anything sent that never arrived.
-   */
+  /** The server refused something this page sent, saying why in `reason` with `code`. */
   refused(reason: string | null, code?: ProtocolErrorCode): void;
+  /**
+   * A reconnect has brought the game up to date ([Q54, 32]). A computer's
+   * move this page thought of goes again if its turn is still waiting;
+   * otherwise anything sent that never arrived is refused with no reason.
+   */
+  reconnected(): void;
   /** The game's setup changed: a resigned seat's thinking time, the end time. */
   setSetup(setup: SetupState): void;
 }
@@ -175,6 +178,11 @@ export function onlinePlay(options: OnlinePlayOptions): OnlinePlay {
   refreshLocal();
   // [Q56, 55] The game master's Move on still waiting for its answer.
   let movingOn: { readonly player: PlayerState; readonly turn: number } | null = null;
+  // The computer's move this page sent last, until its turn has been played.
+  // One that could not be sent, or was lost with a connection that had died
+  // unnoticed, goes again once the connection is back: without it the
+  // computer's turn would wait for good.
+  let computerMove: Extract<ClientMessage, { type: 'gm.aiMove' }> | null = null;
 
   const changeOf = ({ record, before, after, turn }: AppliedRecord): PlayedChange => ({
     before,
@@ -215,7 +223,8 @@ export function onlinePlay(options: OnlinePlayOptions): OnlinePlay {
       const state = game.state;
       const player = state.players.find((candidate) => candidate.id === action.player);
       if (player?.control === 'ai') {
-        deliver({ type: 'gm.aiMove', gameId, requestId: computerMoveRequestId(state), player: player.id, action });
+        computerMove = { type: 'gm.aiMove', gameId, requestId: computerMoveRequestId(state), player: player.id, action };
+        send(computerMove);
         return;
       }
       if (action.kind === 'rest') {
@@ -232,6 +241,7 @@ export function onlinePlay(options: OnlinePlayOptions): OnlinePlay {
     receive(record, shown) {
       const applied = game.apply(record);
       if (record.action.kind === 'force_turn' && movingOn !== null && movingOn.turn === applied.before.turn.number) movingOn = null;
+      if (computerMove !== null && computerMove.requestId !== computerMoveRequestId(game.state)) computerMove = null;
       if (record.action.kind === 'resign') refreshLocal();
       tell({ kind: 'change', change: changeOf(applied), shown });
     },
@@ -246,6 +256,15 @@ export function onlinePlay(options: OnlinePlayOptions): OnlinePlay {
         return;
       }
       tell({ kind: 'refused', reason });
+    },
+    reconnected() {
+      const waiting = computerMove;
+      if (waiting !== null && game.state.status === 'in_progress' && waiting.requestId === computerMoveRequestId(game.state)) {
+        send(waiting);
+        return;
+      }
+      computerMove = null;
+      tell({ kind: 'refused', reason: null });
     },
     setSetup(next) {
       setup = next;
