@@ -1217,17 +1217,25 @@ switch turned on again.
    is saved for the next turn and can still be changed. This is the *one*
    behaviour §7.2 says hotseat does not have, so it is the flag from phase 4
    turned on, and it is easy to forget precisely because phase 4 built the move
-   UI without it.
+   UI without it. How it looks, and how everyone else's turns show, are
+   [Q56](./OPEN_QUESTIONS.md#q56) 48 to 53: as in hot seat, with the route
+   saved on the server as it is drawn and an explicit Track button for
+   following the players on turn ([Q57](./OPEN_QUESTIONS.md#q57)).
 5. **Message board (§7.1).** Human players post messages visible to everyone.
    Game state per §12.3, so it rides `GameStore` and the normal broadcast. Its
-   persistence and scope were the §12.3 item, decided as per-game state.
+   persistence and scope were the §12.3 item, decided as per-game state. Its
+   look is [Q56](./OPEN_QUESTIONS.md#q56) 58 to 60: a Messages button beside
+   Turn log, posts of up to 500 characters, and an unread count.
 6. **GM controls (§7.3).** Force a player's currently-planned move, or force a
    rest if none was planned, at the GM's discretion with no fixed time
    threshold. A GM-only request with no game master connected is answered
    `game_master_unavailable` and the game waits (§12.4) — there is no fallback
-   to configure.
-7. **Resignation.** A human may resign at any time. Only the GM can hand control
-   back to a human. The AI takeover half of this needs phase 8.
+   to configure. Move on, its races and the game master's end time panel are
+   [Q56](./OPEN_QUESTIONS.md#q56) 54 to 56.
+7. **Resignation.** A human may resign at any time, and the computer plays the
+   seat from then on ([Q56](./OPEN_QUESTIONS.md#q56) 57, built here since
+   computer seats already play in this phase). Only the GM can hand control
+   back to a human, which stays in phase 8.
 8. **Computer seats' turns** (Q48). Andrei's answer on phase 6 lets the GM start
    with seats empty, played by the computer, so a started game has computer
    turns straight away. They are played here rather than in phase 8: the
@@ -1241,11 +1249,80 @@ switch turned on again.
    runs out the game ends, the most gold winning; a finished game stays in
    Your games for 7 days and is then deleted, as is a cancelled one. The game
    master can end a game in progress. Each game's Durable Object deletes
-   itself on an alarm, so no scheduled job is needed.
+   itself on an alarm, so no scheduled job is needed. The end card, the game
+   list's rows, a game that times out before it starts and the games already
+   on the site are [Q56](./OPEN_QUESTIONS.md#q56) 61 to 64.
+10. **A game on one device survives a reload** ([Q56](./OPEN_QUESTIONS.md#q56)
+   66, from Q37): it is kept in that browser.
 
 **Done when:** a full 2-player online game is playable end to end from two
 browsers, survives a reload on both sides, the GM can force a stalling
 player's move, and a game with computer seats plays to the end.
+
+### What actually landed
+
+Built to [Q54](./OPEN_QUESTIONS.md#q54), [Q55](./OPEN_QUESTIONS.md#q55) and
+[Q56](./OPEN_QUESTIONS.md#q56) 48 to 71, with Q56 52 replaced by the Track
+button ([Q57](./OPEN_QUESTIONS.md#q57)), and the phone layout of
+[Q58](./OPEN_QUESTIONS.md#q58). Two browsers played a stored game against the local
+Workers runtime: planning out of turn, the other page walking each turn,
+Move on, a post, Add a day, a resignation with the computer taking the seat,
+and End the game. A game against a computer seat was reloaded at turn 40 and
+came back with all 39 turns in its log.
+
+- **The server plays every turn** (`GameSession.play`,
+  `packages/session/src/session.ts`): the action goes through `applyAction`
+  with rolls drawn fresh from `crypto.getRandomValues`
+  (`createSecureDiceService`), so there is no dice seed to leak (Q56 65), and
+  each change is stored as a numbered record of the action and its rolls,
+  which replays exactly (`replayRecord`, `packages/protocol/src/records.ts`).
+  A turn message names its turn; one already over is refused as `turn_over`
+  and never played on the next (Q54 35, Q56 55).
+- **A page opens a game from its records** (`OnlineGame`,
+  `apps/web/src/modes/online.ts`), replaying them from the opening position
+  for the turn log, and applies each new one as it arrives; a gap reloads the
+  game. Turns missed while a page was away are in the log with no walk (Q54
+  32).
+- **One play screen for both games.** `GameScreen` plays a `PlaySource`
+  (`apps/web/src/modes/play.ts`): `hotseatPlay` plays on this device,
+  `onlinePlay` sends End turn, Rest, the route being drawn (`turn.plan`),
+  Move on and the computer's moves, and reports each change in order.
+  Hot seat is unchanged by it.
+- **Track** (Q57) is `tracking` in `GameScreen`: the turn's glide (Q46) and
+  the following of a walk (Q47) happen only while it is pressed. `MapView`
+  draws the button and reports the viewer moving the map; planning unpresses
+  it, and pressing it closes planning with `putDown`, keeping the route. On
+  one device it presses itself at every turn, so hot seat moves the map as
+  before.
+- **A computer's move survives a dropped connection.** `onlinePlay` keeps
+  the move it could not send, and `reconnected()` sends it once the caught-up
+  records show its turn still waiting; meanwhile the line reads
+  "Reconnecting to the server…" (Q58 86 and 87).
+- **Phones** (Q58) are CSS in `apps/web/index.html` and
+  `apps/web/src/online/site.css`: below 900 wide the cards are one row that
+  `Players` slides to the player on turn, a screen at least 4:3 wide puts
+  them in a 300-wide column on the left, the line sits beside the buttons
+  from 560 wide, a portrait phone's top bar folds four buttons into Menu,
+  and the map's buttons are a row.
+- **Presence** is a ping every 20 seconds that Cloudflare answers without
+  waking the game; the game's alarm reads the times while it is watched, and
+  a minute's silence is "Away" (Q54 31).
+- **Lifetime** is one alarm per game for the sooner of its end and the next
+  presence check; a game ends on time, is deleted 7 days after it closes and
+  leaves a tombstone so its address says it was removed (Q55). Games from
+  before lifetimes take their 3 days from the moment they are met: the lobby
+  wakes every listed one, and any other takes it when opened (Q56 64).
+- **Resigning** (`player.resign`) keeps the seat a person's in the setup, so
+  the opening position replays, and sets its thinking time to 10 seconds; the
+  engine hands the player to the computer. **The board** is
+  `board.post`, played as the engine's `post_message`, so posts ride the
+  records and replay with the game.
+- **A game on one device** is kept in `localStorage` as its seed, seats, dice
+  seed and actions, and replayed on reload (`apps/web/src/modes/kept.ts`,
+  Q56 66).
+- **Not reachable:** a game cancelled or finished before phase 7 is no longer
+  on the lobby's list, and Durable Objects cannot be listed, so it takes its
+  lifetime only if someone opens its address.
 
 ---
 
@@ -1273,9 +1350,9 @@ player's move, and a game with computer seats plays to the end.
 5. ~~**AI settings**~~ — landed in phase 6 instead (Q48): one thinking time
    for all of a game's computer seats, 1 to 60 seconds, set on the setup
    screen and carried in the setup state.
-6. **Handover** — an AI takes over a resigned seat so play continues, and the GM
-   may switch any player between human and AI control at will. Only the GM hands
-   control back to a human.
+6. **Handover** — the GM may switch any player between human and AI control at
+   will. Only the GM hands control back to a human. (An AI taking over a
+   resigned seat landed in phase 7 instead, [Q56](./OPEN_QUESTIONS.md#q56) 57.)
 
 **Done when:** a mixed human/AI online game plays to a finish, AI turns do not
 freeze the GM's browser, and the GM can flip a seat either way mid-game.

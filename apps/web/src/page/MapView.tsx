@@ -23,6 +23,11 @@ export interface MapHandle {
    * and so does a walk that has to take the map along (Q47).
    */
   glideTo(node: NodeId): void;
+  /**
+   * [Q57, 74] Track was pressed: glide to the figure that is walking, if one
+   * is, or else to `node`, and follow walks from now on.
+   */
+  track(node: NodeId | null): void;
 }
 
 interface MapViewProps {
@@ -31,14 +36,31 @@ interface MapViewProps {
   /** `buildMapScene` of `map`: built once per map by the page, not per render. */
   readonly scene: MapScene;
   readonly state: GameState;
-  /** §7.1's dotted route and cross, from the current player's node. */
+  /** §7.1's dotted route and cross. */
   readonly path: PathPreview | null;
+  /**
+   * The node `path` starts from: the figure of the player it is for, who
+   * online may be someone planning out of turn ([Q56, 49]). The current
+   * player's node if omitted.
+   */
+  readonly pathFrom?: NodeId | null;
   readonly waypoint: NodeId | null;
   readonly walker: Walker | null;
   /** How the current player's figure calls attention to itself; `none` if omitted. */
   readonly cue?: FigureCue;
+  /** [Q56, 49] Online, the player planning out of turn, whose figure is highlighted. */
+  readonly planner?: PlayerId | null;
   /** A click or tap, as opposed to a drag; `shift` for a shift-click. */
   readonly onTap?: (target: Pick, shift: boolean) => void;
+  /**
+   * [Q57] Whether Track is pressed: a walking figure takes the map along only
+   * while it is (Q47). Pressed if omitted.
+   */
+  readonly tracking?: boolean;
+  /** [Q57, 72] Shows the Track button, above "+", which calls this. */
+  readonly onTrack?: (() => void) | undefined;
+  /** [Q57, 73] The viewer dragged, pinched or zoomed the map, or pressed "+", "−" or "Whole map". */
+  readonly onMoved?: () => void;
   readonly onReady?: (handle: MapHandle | null) => void;
 }
 
@@ -51,14 +73,34 @@ const TAP_TRAVEL_PX = 8;
 /** Zoom, relative to the whole-map view, that "find" brings the map to at least. */
 const PLAY_ZOOM_OF_FIT = 2.2;
 
-export function MapView({ art, map: gameMap, scene, state, path, waypoint, walker, cue = 'none', onTap, onReady }: MapViewProps) {
+export function MapView({
+  art,
+  map: gameMap,
+  scene,
+  state,
+  path,
+  pathFrom,
+  waypoint,
+  walker,
+  cue = 'none',
+  planner = null,
+  onTap,
+  tracking = true,
+  onTrack,
+  onMoved,
+  onReady,
+}: MapViewProps) {
   const host = useRef<HTMLDivElement>(null);
   const renderer = useRef<PixiMapRenderer | null>(null);
   const zoomButtons = useRef<((action: 'in' | 'out' | 'fit') => void) | null>(null);
   // Read when the renderer comes up, and by the pointer handlers, which are
   // bound once per map.
-  const latest = useRef({ state, path, waypoint, walker, cue, onTap, onReady });
-  latest.current = { state, path, waypoint, walker, cue, onTap, onReady };
+  const from = pathFrom ?? state.players[state.turn.activeSeat - 1]?.position ?? null;
+  const latest = useRef({ state, path, from, waypoint, walker, cue, planner, onTap, onMoved, onReady });
+  latest.current = { state, path, from, waypoint, walker, cue, planner, onTap, onMoved, onReady };
+  // Whether a walk takes the map along. It follows Track, and stops at once
+  // when the map is moved, before the page has unpressed Track.
+  const following = useRef(tracking);
 
   useEffect(() => {
     const element = host.current;
@@ -85,8 +127,9 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
       const map = new PixiMapRenderer(art, gameMap, scene);
       const now = latest.current;
       map.setWalker(now.walker);
+      map.setPlanner(now.planner);
       map.setState(now.state);
-      map.setPathPreview(now.path);
+      map.setPathPreview(now.path, now.from);
       map.setWaypoint(now.waypoint);
       map.setCue(now.cue);
       app.stage.addChild(map.root);
@@ -103,19 +146,23 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
       };
       apply();
 
-      let glide: { from: Point; to: Point; start: number } | null = null;
+      // `chasing` for Track's glide to a walking figure, which the walk's
+      // own following waits for; it aims at wherever the figure is by then.
+      let glide: { from: Point; to: () => Point; start: number; chasing: boolean } | null = null;
       // [Andrei, 2026-09-24] Q47: a walking figure that nears the edge of the
-      // view takes the map along with it, unless someone has moved the map
-      // themselves since this walk began.
-      let following = true;
+      // view takes the map along with it; since Q57, while Track is pressed.
       const stopCamera = (): void => {
         glide = null;
-        following = false;
+        following.current = false;
+      };
+      /** The viewer moved the map: [Q57, 73] Track unpresses. */
+      const moved = (): void => {
+        stopCamera();
+        latest.current.onMoved?.();
       };
       const onTick = (): void => {
         const walker = latest.current.walker;
-        if (walker === null) following = true;
-        else if (following) {
+        if (walker !== null && following.current && glide?.chasing !== true) {
           const to = followInto(camera.camera, viewport(), scene.projection.toScreen(walker.at), FOLLOW_MARGIN_OF_VIEW);
           if (to.x !== camera.camera.center.x || to.y !== camera.camera.center.y) {
             // A walk that starts while the turn's glide is still sliding takes over from it.
@@ -127,7 +174,7 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
         }
         if (glide === null) return;
         const t = (performance.now() - glide.start) / GLIDE_MS;
-        camera.lookAt(glideCenter(glide.from, glide.to, t));
+        camera.lookAt(glideCenter(glide.from, glide.to(), t));
         if (t >= 1) glide = null;
         apply();
       };
@@ -182,7 +229,7 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
           }
         }
         pointers.set(event.pointerId, now);
-        stopCamera();
+        moved();
         touched = true;
         apply();
       };
@@ -200,7 +247,7 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
       };
       const onWheel = (event: WheelEvent): void => {
         event.preventDefault();
-        stopCamera();
+        moved();
         camera.zoomAt(local(event), Math.exp(-event.deltaY * 0.0015));
         touched = true;
         apply();
@@ -210,7 +257,7 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
         if (event.key === '+' || event.key === '=') camera.zoomIn();
         else if (event.key === '-' || event.key === '_') camera.zoomOut();
         else return;
-        stopCamera();
+        moved();
         touched = true;
         apply();
       };
@@ -230,7 +277,7 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
       });
 
       zoomButtons.current = (action) => {
-        stopCamera();
+        moved();
         if (action === 'in') camera.zoomIn();
         else if (action === 'out') camera.zoomOut();
         else camera.resetToFit();
@@ -252,7 +299,26 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
           apply();
         },
         glideTo: (node) => {
-          glide = { from: camera.camera.center, to: planeOf(node), start: performance.now() };
+          const to = planeOf(node);
+          glide = { from: camera.camera.center, to: () => to, start: performance.now(), chasing: false };
+          touched = true;
+        },
+        track: (node) => {
+          following.current = true;
+          const walking = latest.current.walker;
+          if (walking !== null) {
+            // Wherever the figure has got to; once its walk is over, the node it stands on.
+            const to = (): Point => {
+              const now = latest.current.walker;
+              if (now !== null && now.player === walking.player) return scene.projection.toScreen(now.at);
+              const stands = latest.current.state.players.find((player) => player.id === walking.player);
+              return stands === undefined ? scene.projection.toScreen(walking.at) : planeOf(stands.position);
+            };
+            glide = { from: camera.camera.center, to, start: performance.now(), chasing: true };
+          } else if (node !== null) {
+            const to = planeOf(node);
+            glide = { from: camera.camera.center, to: () => to, start: performance.now(), chasing: false };
+          }
           touched = true;
         },
       });
@@ -275,19 +341,30 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
     renderer.current?.setWalker(walker);
   }, [walker]);
   useEffect(() => {
-    renderer.current?.setPathPreview(path);
-  }, [path]);
+    renderer.current?.setPathPreview(path, from);
+  }, [path, from]);
   useEffect(() => {
     renderer.current?.setWaypoint(waypoint);
   }, [waypoint]);
   useEffect(() => {
     renderer.current?.setCue(cue);
   }, [cue]);
+  useEffect(() => {
+    renderer.current?.setPlanner(planner);
+  }, [planner]);
+  useEffect(() => {
+    following.current = tracking;
+  }, [tracking]);
 
   return (
     <>
       <div ref={host} className="canvas-host" aria-label="The map" role="img" />
       <div className="overlay zoom">
+        {onTrack === undefined ? null : (
+          <button className="btn" type="button" aria-pressed={tracking} onClick={onTrack}>
+            Track
+          </button>
+        )}
         <button className="btn" type="button" aria-label="Zoom in" onClick={() => zoomButtons.current?.('in')}>
           +
         </button>

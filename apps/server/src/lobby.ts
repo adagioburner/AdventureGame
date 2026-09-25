@@ -3,6 +3,8 @@ import { asGameId, asUserId, friendlySeed, type GameId, type UserId } from '@adv
 import {
   decodeClientMessage,
   encodeMessage,
+  HEARTBEAT_PING,
+  HEARTBEAT_PONG,
   type AuthFailure,
   type AuthResult,
   type AuthToken,
@@ -34,11 +36,15 @@ interface LobbySocket {
 export class Lobby extends DurableObject<Env> {
   private readonly accounts: PasswordAccounts;
   private readonly listings: ListingStore;
+  /** Set once the games listed before lifetimes have been asked to take one ([Q56, 64]). */
+  private adopting = false;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
     this.accounts = new PasswordAccounts(createSqlAccountStore(ctx.storage.sql), ACCOUNT_RULES, systemClock);
     this.listings = createSqlListingStore(ctx.storage.sql);
+    // [Q54, 31] Pages ping every socket they keep open; answered here without waking the lobby.
+    ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair(HEARTBEAT_PING, HEARTBEAT_PONG));
   }
 
   register(username: string, password: string): Promise<AccountOutcome> {
@@ -50,6 +56,7 @@ export class Lobby extends DurableObject<Env> {
   }
 
   verify(token: string): Promise<Principal | null> {
+    this.adoptLifetimes();
     return this.accounts.verify(token as AuthToken);
   }
 
@@ -113,6 +120,22 @@ export class Lobby extends DurableObject<Env> {
 
   override async webSocketClose(ws: WebSocket, code: number, reason: string): Promise<void> {
     closeQuietly(ws, code, reason);
+  }
+
+  /**
+   * [Q56, 64] Wakes every game listed before games had a lifetime, once per
+   * waking of the lobby, so each takes its 3 days from now and sets its alarm
+   * even if nobody opens it. Each sends its row back with its end time.
+   */
+  private adoptLifetimes(): void {
+    if (this.adopting) return;
+    this.adopting = true;
+    for (const listing of this.listings.all()) {
+      if (typeof listing.endsAt === 'number') continue;
+      roomOf(this.env, listing.gameId)
+        .adoptLifetime()
+        .catch((error: unknown) => console.error('a game could not take its lifetime', listing.gameId, error));
+    }
   }
 
   private listFor(userId: UserId): ServerMessage {

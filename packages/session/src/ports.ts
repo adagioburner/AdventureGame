@@ -1,7 +1,7 @@
 import type { Ruleset } from '@adventure/config';
 import type { DiceSource, GameId, GameMap, GameState, PlayerId, Seed, UserId } from '@adventure/core';
 import type { AiPlayer } from '@adventure/ai';
-import type { ServerMessage, SetupState } from '@adventure/protocol';
+import type { GameRecord, GameResult, ServerMessage, SetupState } from '@adventure/protocol';
 
 /**
  * The session layer's ports. Every one of these is an interface with no
@@ -25,6 +25,19 @@ export interface GameStore {
   save(state: GameState): Promise<void>;
   loadSetup(gameId: GameId): Promise<SetupState | null>;
   saveSetup(setup: SetupState): Promise<void>;
+  /**
+   * [Q54, 32] Stores the next change of a game's history, numbering it one
+   * past the last, and returns it as stored.
+   */
+  appendRecord(gameId: GameId, record: Omit<GameRecord, 'seq'>): Promise<GameRecord>;
+  /** Every record of the game, in order. */
+  loadRecords(gameId: GameId): Promise<readonly GameRecord[]>;
+  /**
+   * [Q55, 37] Deletes everything the game stored, keeping only the fact that
+   * it was removed, so its old address can say so.
+   */
+  remove(gameId: GameId): Promise<void>;
+  isRemoved(gameId: GameId): Promise<boolean>;
 }
 
 /**
@@ -37,11 +50,17 @@ export interface GameListing {
   readonly name: string;
   readonly gameMaster: UserId;
   readonly gameMasterName: string;
-  readonly phase: 'setup' | 'in_progress';
+  readonly phase: 'setup' | 'in_progress' | 'finished';
   readonly seatsTaken: number;
   readonly seatsTotal: number;
   readonly createdAt: number;
+  /** [Q55, 46] When the game's lifetime runs out. */
+  readonly endsAt: number;
   readonly members: readonly UserId[];
+  /** [Q54, 34] The person whose turn it is; `null` on a computer's turn and outside play. */
+  readonly turnOf: UserId | null;
+  /** [Q55, 36] Set once the game has finished. */
+  readonly result: GameResult | null;
 }
 
 export interface GameDirectory {
@@ -76,9 +95,11 @@ export interface MapService {
 }
 
 /**
- * [SOURCE §12.1, chat] Also on the game master's machine. The DO adapter
- * implements this as a round trip too: send `gm.requestAiMove`, await
- * `gm.aiMove`.
+ * [SOURCE §12.1, chat] Also on the game master's machine. For the reason
+ * `MapService` gives, `GameSession` does this round trip as two messages too:
+ * a computer's turn sends `gm.requestAiMove` to the game master, and
+ * `gm.aiMove` plays the move. Nothing implements this port; it stays as the
+ * shape a server-side computer player would take.
  *
  * This is why `AiPlayer.chooseAction` was already async and behind a port: 10
  * seconds of CPU per move (§9) never belonged in a request handler, and it now
@@ -122,17 +143,16 @@ export interface DiceService {
 export const GAME_MASTER_ABSENCE_BEHAVIOUR = 'stall' as const;
 
 /**
- * Six ports, down from eight: §12.3 removed `MessageBoardStore` (the board is
+ * What `GameSession` runs on. §12.3 removed `MessageBoardStore` (the board is
  * game state, so `GameStore` already covers it) and §12.4 removed
- * `GameMasterAbsencePolicy` (there is no fallback to configure).
+ * `GameMasterAbsencePolicy` (there is no fallback to configure); the map and
+ * the computer's moves are messages to the game master rather than ports
+ * (`MapService`, `AiService`).
  */
 export interface SessionPorts {
   readonly games: GameStore;
   readonly broadcaster: Broadcaster;
   readonly clock: Clock;
-  /** Round-trips to the game master's client; see the interface. */
-  readonly maps: MapService;
-  /** Round-trips to the game master's client; see the interface. */
-  readonly ai: AiService;
+  readonly directory: GameDirectory;
   readonly dice: DiceService;
 }

@@ -5,7 +5,7 @@
  * no runtime globals. Everything it needs arrives through `SessionPorts`.
  */
 export * from './ports.ts';
-export { GameSession, listingOf, type SetupSessionPorts } from './session.ts';
+export { GameSession, listingOf } from './session.ts';
 export {
   applySetupAction,
   createSetup,

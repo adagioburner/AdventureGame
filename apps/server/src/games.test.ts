@@ -16,7 +16,10 @@ const listing = (id: string, over: Partial<GameListing>): GameListing => ({
   seatsTaken: 1,
   seatsTotal: 2,
   createdAt: 0,
+  endsAt: 100,
   members: [andrei],
+  turnOf: null,
+  result: null,
   ...over,
 });
 
@@ -54,7 +57,29 @@ describe('gameListFor (Q48, 5)', () => {
       seatsTaken: 1,
       seatsTotal: 2,
       createdAt: 5,
+      endsAt: 100,
       mine: false,
+      yourTurn: false,
+      result: null,
     });
+  });
+
+  it('keeps a finished game in its players’ list, and says whose turn it is (Q54 34, Q55 36)', () => {
+    const rows = [
+      listing('finished', { phase: 'finished', members: [andrei, bea], result: { ending: 'won', winners: ['Bea'] } }),
+      listing('beas-turn', { phase: 'in_progress', members: [andrei, bea], turnOf: bea }),
+    ];
+    expect(gameListFor(bea, rows).map((row) => [row.gameId, row.phase, row.yourTurn])).toEqual([
+      ['finished', 'finished', false],
+      ['beas-turn', 'in_progress', true],
+    ]);
+    expect(gameListFor(andrei, rows)[1]?.yourTurn).toBe(false);
+    // A finished game is nobody's to join.
+    expect(gameListFor(asUserId('cal'), rows)).toEqual([]);
+  });
+
+  it('reads a row stored before games had a lifetime', () => {
+    const { endsAt: _endsAt, turnOf: _turnOf, result: _result, ...old } = listing('old', {});
+    expect(gameListFor(andrei, [old as GameListing])[0]).toMatchObject({ endsAt: null, yourTurn: false, result: null });
   });
 });

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  applyAction,
   pathCost,
   previewPath,
   refreshAllowance,
@@ -10,6 +11,7 @@ import {
   type TurnAction,
 } from '@adventure/core';
 import { HotseatGame, HOTSEAT_MODE } from '../modes/hotseat.ts';
+import { ONLINE_MODE } from '../modes/online.ts';
 import { mapFor } from '../page/seed.ts';
 import { createMoveModeController, type MoveModeController } from './moveMode.ts';
 
@@ -190,5 +192,156 @@ describe('move mode (§7.1), idle → selecting → previewing', () => {
     expect(controller.state.kind).toBe('idle');
     controller.endTurn();
     expect(sent).toEqual([{ kind: 'move', player: player.id, path: [], waypoint: null }]);
+  });
+});
+
+/** Online, seen from the page of the second seat's player: the engine plays every turn, as the server would. */
+function onlineSetup(): { game: HotseatGame; controller: MoveModeController; sent: TurnAction[]; play(action: TurnAction): void } {
+  const game = new HotseatGame({
+    map,
+    seats: [
+      { name: 'Ada', avatarId: 'player_avatars_01', control: 'human', thinkingSeconds: 10 },
+      { name: 'Bram', avatarId: 'player_avatars_02', control: 'human', thinkingSeconds: 10 },
+    ],
+    diceSeed: 'move-mode-online',
+  });
+  const sent: TurnAction[] = [];
+  const play = (action: TurnAction): void => {
+    game.play(action);
+    controller.setGame(game.state);
+  };
+  const controller = createMoveModeController({
+    mode: ONLINE_MODE,
+    localPlayers: new Set([seat(game.state, 1).id]),
+    commit: (action) => {
+      sent.push(action);
+      play(action);
+    },
+  });
+  controller.setGame(game.state);
+  return { game, controller, sent, play };
+}
+
+/** A state with `player`'s saved route set, as the server's `turn.plan` would leave it. */
+function planned(state: GameState, player: GameState['players'][number]['id'], path: readonly NodeId[]): GameState {
+  const noDice = {
+    roll: () => {
+      throw new Error('a saved route rolls no die');
+    },
+  };
+  return applyAction(state, { kind: 'plan', player, path, waypoint: null }, noDice).state;
+}
+
+describe('move mode online (§7.1): planning out of turn (Q56, 49 to 53)', () => {
+  it('plans for this page’s player while another plays, and does not pick the figure up until they do', () => {
+    const { game, controller } = onlineSetup();
+    const bram = seat(game.state, 1);
+    expect(controller.planner).toBe(bram.id);
+    expect(controller.engaged).toBe(false);
+    expect(controller.enter(seat(game.state, 0).id)).toBe('not_local');
+    expect(controller.enter(bram.id)).toBeNull();
+    expect(controller.engaged).toBe(true);
+    expect(controller.state.kind).toBe('selecting');
+  });
+
+  it('carries a route being drawn through another player’s turn into this player’s own, then End turn plays it', () => {
+    const { game, controller, sent, play } = onlineSetup();
+    const ada = seat(game.state, 0);
+    const bram = seat(game.state, 1);
+    const target = nodeAlong(game.state, 3).target;
+    controller.enter(bram.id);
+    controller.selectDestination(target);
+    const route = controller.state.kind === 'previewing' ? controller.state.path : null;
+    expect(route).not.toBeNull();
+    play({ kind: 'rest', player: ada.id });
+    expect(game.state.turn.activeSeat).toBe(2);
+    expect(controller.engaged).toBe(true);
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: route });
+    controller.endTurn();
+    expect(sent).toEqual([{ kind: 'move', player: bram.id, path: route, waypoint: null }]);
+    expect(controller.engaged).toBe(false);
+  });
+
+  it('shows the saved route while the figure is not picked up, following it as it changes', () => {
+    const { game, controller } = onlineSetup();
+    const bram = seat(game.state, 1);
+    const route = nodeAlong(game.state, 3).route;
+    controller.setGame(planned(game.state, bram.id, route));
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: route });
+    expect(controller.engaged).toBe(false);
+    controller.setGame(planned(game.state, bram.id, []));
+    expect(controller.state.kind).toBe('idle');
+  });
+
+  it('keeps a picked-up route as drawn when the saved one lags behind it', () => {
+    const { game, controller } = onlineSetup();
+    const bram = seat(game.state, 1);
+    const { route, target } = nodeAlong(game.state, 4);
+    controller.enter(bram.id);
+    controller.selectDestination(target);
+    const drawn = controller.state.kind === 'previewing' ? controller.state.path : null;
+    controller.setGame(planned(game.state, bram.id, route.slice(0, 2)));
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: drawn });
+  });
+
+  it('puts the route down when this player’s own turn ends', () => {
+    const { game, controller, play } = onlineSetup();
+    const ada = seat(game.state, 0);
+    const bram = seat(game.state, 1);
+    play({ kind: 'rest', player: ada.id });
+    controller.enter(bram.id);
+    controller.selectDestination(nodeAlong(game.state, 3).target);
+    controller.rest();
+    expect(controller.engaged).toBe(false);
+    expect(game.state.turn.activeSeat).toBe(1);
+    expect(controller.planner).toBe(bram.id);
+  });
+});
+
+describe('Track closes planning (Q57, 75)', () => {
+  it('keeps the route drawn with the figure put down, and End turn still plays it', () => {
+    const { game, controller, sent } = setup();
+    const player = seat(game.state, 0);
+    controller.enter(player.id);
+    controller.selectDestination(nodeAlong(game.state, 3).target);
+    const route = controller.state.kind === 'previewing' ? controller.state.path : null;
+    controller.armWaypoint(true);
+    controller.putDown();
+    expect(controller.engaged).toBe(false);
+    expect(controller.waypointArmed).toBe(false);
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: route });
+    controller.endTurn();
+    expect(sent).toEqual([{ kind: 'move', player: player.id, path: route, waypoint: null }]);
+  });
+
+  it('drops a route that has no destination yet', () => {
+    const { game, controller } = setup();
+    controller.enter(seat(game.state, 0).id);
+    controller.putDown();
+    expect(controller.state.kind).toBe('idle');
+    expect(controller.engaged).toBe(false);
+  });
+
+  it('online, shows the saved route after it, and the next turn opens on it', () => {
+    const { game, controller } = onlineSetup();
+    const ada = seat(game.state, 0);
+    const bram = seat(game.state, 1);
+    const route = nodeAlong(game.state, 3).route;
+    controller.enter(bram.id);
+    controller.selectDestination(route[route.length - 1] as NodeId);
+    // The page saves the route on the server as it is drawn; the game then carries it.
+    const saved = planned(game.state, bram.id, route);
+    controller.setGame(saved);
+    controller.putDown();
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: route });
+    const noDice = {
+      roll: () => {
+        throw new Error('resting rolls no die');
+      },
+    };
+    controller.setGame(applyAction(saved, { kind: 'rest', player: ada.id }, noDice).state);
+    expect(controller.engaged).toBe(false);
+    expect(controller.planner).toBe(bram.id);
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: route });
   });
 });

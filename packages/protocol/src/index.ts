@@ -8,4 +8,6 @@ export * from './auth.ts';
 export * from './lobby.ts';
 export * from './messageboard.ts';
 export * from './messages.ts';
+export * from './records.ts';
+export * from './lifetime.ts';
 export * from './wire.ts';

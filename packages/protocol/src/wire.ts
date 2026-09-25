@@ -51,10 +51,13 @@ const CLIENT_MESSAGE_TYPE_RECORD: Record<ClientMessage['type'], true> = {
   'setup.setThinkingTime': true,
   'setup.cancel': true,
   'setup.start': true,
+  'setup.setLifetime': true,
   'turn.plan': true,
   'turn.end': true,
   'turn.rest': true,
   'gm.forceTurn': true,
+  'gm.extendLifetime': true,
+  'gm.endGame': true,
   'gm.setControl': true,
   'player.resign': true,
   'board.post': true,
@@ -80,6 +83,18 @@ export function decodeClientMessage(text: string): ClientMessage {
   if (typeof type !== 'string' || !CLIENT_MESSAGE_TYPES.has(type)) throw new WireError(`unknown message type`);
   return value as ClientMessage;
 }
+
+/**
+ * [Q54, 31] The heartbeat: a page sends `HEARTBEAT_PING` every
+ * `HEARTBEAT_INTERVAL_MS`, and Cloudflare answers `HEARTBEAT_PONG` without
+ * waking the game. Neither is a message of this contract, so neither is
+ * decoded.
+ */
+export const HEARTBEAT_PING = 'ping';
+export const HEARTBEAT_PONG = 'pong';
+export const HEARTBEAT_INTERVAL_MS = 20_000;
+/** [Q54, 31] A person whose pages have all been silent this long is away. */
+export const AWAY_AFTER_MS = 60_000;
 
 /** Parses one socket frame from the server. The server is trusted. */
 export function decodeServerMessage(text: string): ServerMessage {

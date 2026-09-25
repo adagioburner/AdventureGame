@@ -1,9 +1,11 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { DEFAULT_RULESET } from '@adventure/config';
 import type { GameMap } from '@adventure/core';
 import { atlasOf, buildArtCatalog, type ArtCatalog } from '../art/catalog.ts';
 import { ART_FILES } from '../art/files.ts';
 import { HotseatGame, newDiceSeed } from '../modes/hotseat.ts';
+import { forgetKept, keep, readKept, replayKept } from '../modes/kept.ts';
+import { hotseatPlay } from '../modes/play.ts';
 import { loadArt, type LoadedArt } from '../render/pixi/textures.ts';
 import { buildMapScene, type MapScene } from '../render/sceneModel.ts';
 import { newLocalSetup, toHotseatSeats, type LocalLimits, type LocalSetup } from '../setup/local.ts';
@@ -33,7 +35,10 @@ export interface AppProps {
  * chosen and written back into the address so it can be shared.
  */
 export function App({ playOnline, carried, barExtra }: AppProps = {}) {
-  const [seed, setSeed] = useState(initialSeed);
+  // [Q56, 66] The game this browser kept, picked up where it was, unless a
+  // stored game's setup was just carried here to start a new one.
+  const [kept] = useState(() => (carried === undefined ? readKept() : null));
+  const [seed, setSeed] = useState(() => kept?.seed ?? initialSeed());
   const [draft, setDraft] = useState(seed);
   const [logOpen, setLogOpen] = useState(false);
   const [art, setArt] = useState<LoadedArt | null>(null);
@@ -41,6 +46,7 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
   const [problem, setProblem] = useState<string | null>(null);
   const [setup, setSetup] = useState<LocalSetup | null>(null);
   const [game, setGame] = useState<HotseatGame | null>(null);
+  const play = useMemo(() => (game === null ? null : hotseatPlay(game)), [game]);
   const [goingOnline, setGoingOnline] = useState<{ readonly busy: boolean; readonly problem: string | null }>({
     busy: false,
     problem: null,
@@ -59,7 +65,7 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
 
   useEffect(() => {
     if (catalog === null || limits === null) return;
-    setSetup(carried ?? newLocalSetup(limits));
+    setSetup(carried ?? kept?.setup ?? newLocalSetup(limits));
     loadArt(catalog).then(setArt, (error: unknown) => setProblem(String(error)));
   }, [catalog, limits]);
 
@@ -76,6 +82,27 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
     }, 30);
     return () => window.clearTimeout(timer);
   }, [seed]);
+
+  // [Q56, 66] Once its map is drawn, the kept game is played again to where it was.
+  const resumed = useRef(false);
+  useEffect(() => {
+    if (kept === null || resumed.current || map === null || map.seed !== kept.seed) return;
+    resumed.current = true;
+    const again = replayKept(kept, map);
+    if (again === null) forgetKept();
+    else setGame(again);
+  }, [kept, map]);
+  // Every turn is kept as it is played, until New game.
+  useEffect(() => {
+    if (game === null || play === null || setup === null) return;
+    const save = (): void => keep(game.setup.map.seed, setup, game);
+    save();
+    return play.subscribe(save);
+  }, [game, play, setup]);
+  const newGame = (): void => {
+    forgetKept();
+    setGame(null);
+  };
 
   const scene = useMemo<MapScene | null>(
     () => (art === null || map === null ? null : buildMapScene(map, art.catalog, art.shape)),
@@ -123,7 +150,7 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
             <span className="seed-shown">
               Seed <code>{seed}</code>
             </span>
-            <button className="btn" type="button" onClick={() => setGame(null)}>
+            <button className="btn" type="button" onClick={newGame}>
               New game
             </button>
             <button
@@ -168,15 +195,15 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
             {status}
           </div>
         </main>
-      ) : game !== null ? (
+      ) : game !== null && play !== null ? (
         <GameScreen
           key={game.setup.diceSeed}
           art={art}
           scene={scene}
-          game={game}
+          play={play}
           logOpen={logOpen}
           onCloseLog={() => setLogOpen(false)}
-          onNewGame={() => setGame(null)}
+          onNewGame={newGame}
         />
       ) : (
         <main className="stage setting-up">

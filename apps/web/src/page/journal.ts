@@ -77,7 +77,11 @@ const TERRAIN_SKILL: Readonly<Record<Terrain, RewardKind>> = {
   mountain: 'mountain_move',
 };
 
-export function journalEntry(turn: PlayedTurn, before: GameState): JournalEntry {
+/**
+ * One turn in words. `movedOn` marks a turn the game master played for its
+ * player ([Q56, 54]): their saved route, or a rest if they had none.
+ */
+export function journalEntry(turn: PlayedTurn, before: GameState, movedOn = false): JournalEntry {
   const map = before.map;
   const mover = turn.after.players.find((player) => player.id === turn.player);
   if (mover === undefined) throw new RangeError(`no player ${turn.player}`);
@@ -88,7 +92,7 @@ export function journalEntry(turn: PlayedTurn, before: GameState): JournalEntry 
   const interacted = find(turn.events, 'interacted');
   const won = find(turn.events, 'game_won');
 
-  const details: string[] = [];
+  const details: string[] = movedOn ? ['Moved on by the game master.'] : [];
   let headline: string;
   let tone: JournalEntry['tone'] = 'plain';
 

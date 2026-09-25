@@ -28,9 +28,10 @@ describe('wire', () => {
   });
 
   it('accepts a client message this contract names', () => {
-    expect(decodeClientMessage(encodeMessage({ type: 'turn.rest', gameId: asGameId('g1') }))).toEqual({
+    expect(decodeClientMessage(encodeMessage({ type: 'turn.rest', gameId: asGameId('g1'), turn: 3 }))).toEqual({
       type: 'turn.rest',
       gameId: 'g1',
+      turn: 3,
     });
   });
 

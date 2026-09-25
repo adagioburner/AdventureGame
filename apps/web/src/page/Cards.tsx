@@ -142,23 +142,48 @@ export function ClaimNotice({
  * on the map, or in a shared victory when players are tied with none left.
  * The engine decides that; this only says who and shows the final stats.
  */
-export function EndCard({ catalog, state, onNewGame, onClose }: { catalog: ArtCatalog; state: GameState; onNewGame: () => void; onClose: () => void }) {
+export function EndCard({
+  catalog,
+  state,
+  newGameLabel = 'New game',
+  onNewGame,
+  onClose,
+}: {
+  catalog: ArtCatalog;
+  state: GameState;
+  /** [Q56, 61] Online the button reads "Your games". */
+  newGameLabel?: string | undefined;
+  onNewGame: () => void;
+  onClose: () => void;
+}) {
   const winners = state.players.filter((player) => state.winners.includes(player.id));
   const left = unclaimedGoldUnits(state);
+  const names = listOf(winners.map((player) => player.name));
+  // [Q56, 61] A game the game master ended has no winner.
   const title =
-    winners.length === 1 ? `${winners[0]?.name ?? ''} wins!` : `Shared victory: ${winners.map((player) => player.name).join(' and ')}`;
+    state.ending === 'game_master'
+      ? 'The game master ended this game.'
+      : winners.length === 1
+        ? `${winners[0]?.name ?? ''} wins!`
+        : `Shared victory: ${winners.map((player) => player.name).join(' and ')}`;
   const ranked = [...state.players].sort((a, b) => b.stats.gold - a.stats.gold);
   const [first, second] = ranked;
   const why =
-    winners.length > 1
-      ? `Tied on ${first?.stats.gold ?? 0} gold with no gold left on the map.`
-      : `${first?.stats.gold ?? 0} gold against ${second?.stats.gold ?? 0}: a lead of ${(first?.stats.gold ?? 0) - (second?.stats.gold ?? 0)}, more than the ${left} gold left on the map.`;
+    state.ending === 'game_master'
+      ? null
+      : state.ending === 'time_out'
+        ? winners.length > 1
+          ? `Time ran out with ${names} on ${first?.stats.gold ?? 0} gold each.`
+          : `Time ran out. ${names} held the most gold, ${first?.stats.gold ?? 0} against ${second?.stats.gold ?? 0}.`
+        : winners.length > 1
+          ? `Tied on ${first?.stats.gold ?? 0} gold with no gold left on the map.`
+          : `${first?.stats.gold ?? 0} gold against ${second?.stats.gold ?? 0}: a lead of ${(first?.stats.gold ?? 0) - (second?.stats.gold ?? 0)}, more than the ${left} gold left on the map.`;
 
   return (
     <div className="card end" role="dialog" aria-label="The game is over">
       <h2>{title}</h2>
       <p className="outcome">
-        {why} Game over after {state.turn.number} turns.
+        {why === null ? null : `${why} `}Game over after {state.turn.number} turns.
       </p>
       <table>
         <thead>
@@ -187,7 +212,7 @@ export function EndCard({ catalog, state, onNewGame, onClose }: { catalog: ArtCa
       </table>
       <div className="buttons">
         <button className="btn primary" type="button" onClick={onNewGame}>
-          New game
+          {newGameLabel}
         </button>
         <button className="btn" type="button" onClick={onClose}>
           Look at the map
@@ -195,4 +220,9 @@ export function EndCard({ catalog, state, onNewGame, onClose }: { catalog: ArtCa
       </div>
     </div>
   );
+}
+
+/** "Bea", "Bea and Cal", "Bea, Cal and Dan". */
+function listOf(names: readonly string[]): string {
+  return names.length <= 1 ? (names[0] ?? '') : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
 }

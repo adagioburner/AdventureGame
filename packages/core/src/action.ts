@@ -1,6 +1,6 @@
 import type { RewardKind } from '@adventure/config';
 import type { NodeId, PlayerId, Seat } from './ids.ts';
-import type { ControlMode } from './player.ts';
+import type { ControlMode, PlannedPath } from './player.ts';
 import type { Reward } from './reward.ts';
 import type { BoardPost } from './messageboard.ts';
 
@@ -105,7 +105,51 @@ export interface PostMessageAction {
   readonly postedAt: number;
 }
 
-export type GameAction = TurnAction | SetControlAction | ResignAction | ForceTurnAction | PostMessageAction;
+/**
+ * [SOURCE §4] "Players may plan their next move out of turn while others play
+ * [...] An unfinished path is saved for the next turn and can still be
+ * changed."
+ *
+ * Online, the route a player draws is saved as they draw it, whoever's turn it
+ * is, so that their own End Turn and the game master's forced move (§7.3) play
+ * the same route, and a reload or another device shows it again. An empty path
+ * clears the saved route. It is not a turn: it neither ends one nor waits for
+ * one.
+ */
+export interface PlanAction {
+  readonly kind: 'plan';
+  readonly player: PlayerId;
+  /** Nodes to walk, excluding the player's current node; each adjacent to the last. */
+  readonly path: readonly NodeId[];
+  /** The waypoint the route was drawn through; on the path, or `null`. */
+  readonly waypoint: NodeId | null;
+}
+
+/**
+ * How a game can end other than by §1's win.
+ *
+ * [Q55, 45] "Time running out mid-game: the game ends and the player holding
+ * the most gold wins, a tie shared." [Q55, 40] "The game master can end a game
+ * in progress [...] It ends without a winner."
+ */
+export type GameEndReason = 'time_out' | 'game_master';
+
+/** How a finished game ended: §1's win, or one of `GameEndReason`. */
+export type GameEnding = 'won' | GameEndReason;
+
+export interface EndGameAction {
+  readonly kind: 'end_game';
+  readonly reason: GameEndReason;
+}
+
+export type GameAction =
+  | TurnAction
+  | SetControlAction
+  | ResignAction
+  | ForceTurnAction
+  | PostMessageAction
+  | PlanAction
+  | EndGameAction;
 
 /** [SOURCE §2] One `GUARD_DIE` roll. Supplied by the caller — see `DiceSource`. */
 export interface DieRoll {
@@ -154,4 +198,6 @@ export type GameEvent =
   | { readonly type: 'resigned'; readonly player: PlayerId }
   | { readonly type: 'turn_ended'; readonly player: PlayerId; readonly nextSeat: Seat }
   | { readonly type: 'message_posted'; readonly post: BoardPost }
-  | { readonly type: 'game_won'; readonly winners: readonly PlayerId[] };
+  | { readonly type: 'planned'; readonly player: PlayerId; readonly plan: PlannedPath | null }
+  | { readonly type: 'game_won'; readonly winners: readonly PlayerId[] }
+  | { readonly type: 'game_ended'; readonly reason: GameEndReason; readonly winners: readonly PlayerId[] };

@@ -1,6 +1,5 @@
 import type {
   ControlMode,
-  GameEvent,
   GameId,
   GameMap,
   GameState,
@@ -10,6 +9,7 @@ import type {
   UserId,
 } from '@adventure/core';
 import type { GameSummary, SetupState } from './lobby.ts';
+import type { GameRecord } from './records.ts';
 
 /**
  * The client↔server contract.
@@ -65,32 +65,62 @@ export type ClientMessage =
   | { readonly type: 'setup.cancel'; readonly gameId: GameId }
   | { readonly type: 'setup.start'; readonly gameId: GameId }
   /**
+   * [Q55, 43] "Game lasts" on the new game screen: 1, 3, 7 or 14 days from
+   * creation (`LIFETIME_DAYS`), changeable until Start.
+   */
+  | { readonly type: 'setup.setLifetime'; readonly gameId: GameId; readonly days: number }
+  /**
    * [SOURCE §4] Out-of-turn planning: a player may plan while others play, and
    * an unfinished path is saved and may still be changed. Sent whenever the
-   * plan changes, by any player, at any time.
+   * plan changes, by any player, at any time. The route is the one the page
+   * drew with `routeVia`, excluding the player's own node; an empty path
+   * clears it.
    * [SOURCE §intro, chat] In hotseat mode the client never sends this for a
    * player who is not the active one — there is no out-of-turn planning there.
    */
   | {
       readonly type: 'turn.plan';
       readonly gameId: GameId;
-      readonly destination: NodeId;
+      readonly path: readonly NodeId[];
       readonly waypoint: NodeId | null;
     }
-  /** [SOURCE §4] "End Turn" commits the last-shown path. */
-  | { readonly type: 'turn.end'; readonly gameId: GameId }
-  /** [SOURCE §2] Rest instead of moving. */
-  | { readonly type: 'turn.rest'; readonly gameId: GameId }
-  /** [SOURCE §4] GM forces a slow player's planned move, or a rest if none. */
-  | { readonly type: 'gm.forceTurn'; readonly gameId: GameId; readonly player: PlayerId }
+  /**
+   * [SOURCE §4] "End Turn" commits the last-shown path. `turn` is the turn
+   * number the page ended, so an End Turn sent twice (a reconnect, a second
+   * device, [Q54, 35]) is played once: the second names a turn already over.
+   */
+  | {
+      readonly type: 'turn.end';
+      readonly gameId: GameId;
+      readonly turn: number;
+      readonly path: readonly NodeId[];
+      readonly waypoint: NodeId | null;
+    }
+  /** [SOURCE §2] Rest instead of moving. `turn` as for `turn.end`. */
+  | { readonly type: 'turn.rest'; readonly gameId: GameId; readonly turn: number }
+  /**
+   * [SOURCE §4] GM forces a slow player's planned move, or a rest if none.
+   * `turn` is the turn the game master saw, so a Move on that crosses the
+   * player's own End Turn is refused rather than played on the next turn.
+   */
+  | { readonly type: 'gm.forceTurn'; readonly gameId: GameId; readonly player: PlayerId; readonly turn: number }
+  /** [Q55, 44] Adds a day to the game's lifetime, up to 14 days from creation. */
+  | { readonly type: 'gm.extendLifetime'; readonly gameId: GameId }
+  /** [Q55, 40] Ends a game in progress without a winner. */
+  | { readonly type: 'gm.endGame'; readonly gameId: GameId }
   /** [SOURCE §4] GM switches any player between human and AI control at will. */
   | { readonly type: 'gm.setControl'; readonly gameId: GameId; readonly player: PlayerId; readonly control: ControlMode }
-  /** [SOURCE §4] A human may resign at any time; an AI takes over. */
+  /**
+   * [SOURCE §4] A human may resign at any time; an AI takes over.
+   * [Q56, 57] The computer plays the seat from then on, thinking for
+   * `RESIGNED_THINKING_SECONDS`.
+   */
   | { readonly type: 'player.resign'; readonly gameId: GameId }
   /**
    * [SOURCE §12.3, chat] The board is game state, so a post is an ordinary
-   * state change; the reply arrives inside `game.events`, not a board-specific
-   * message.
+   * state change: it comes back to everyone as a `game.played` record.
+   * [Q56, 59] Anyone holding a seat may post, from Start until the game is
+   * removed, up to `BOARD_POST_MAX` characters.
    */
   | { readonly type: 'board.post'; readonly gameId: GameId; readonly body: string }
   /* ---- game-master compute (§12.1) ---- */
@@ -143,11 +173,25 @@ export type ServerMessage =
   /** Full state, sent on join/reconnect. Cheap enough at this scale, and exact. */
   | { readonly type: 'game.state'; readonly state: GameState }
   /**
-   * Incremental updates during play. Clients apply these to the last full
-   * state; the client's copy of `@adventure/core` performs the same transition
-   * the server did, so a desync is a bug rather than a design allowance.
+   * [Q54, 32] Everything played since the start, sent after `game.state` on
+   * every connect, so a page that opens mid-game can show every turn in its
+   * log, the ones played while its player was away included.
    */
-  | { readonly type: 'game.events'; readonly gameId: GameId; readonly events: readonly GameEvent[] }
+  | { readonly type: 'game.history'; readonly gameId: GameId; readonly records: readonly GameRecord[] }
+  /**
+   * One change during play, to everyone. Clients apply it to the last full
+   * state with `replayRecord`; the client's copy of `@adventure/core` performs
+   * the same transition the server did, so a desync is a bug rather than a
+   * design allowance. A `seq` that does not follow the last one means a
+   * message was missed, and the page reloads the game.
+   */
+  | { readonly type: 'game.played'; readonly gameId: GameId; readonly record: GameRecord }
+  /**
+   * [Q54, 31] The people in the game who are away: no page of theirs has the
+   * game open, or none has been heard from for a minute. Sent on connect and
+   * whenever it changes.
+   */
+  | { readonly type: 'game.presence'; readonly gameId: GameId; readonly away: readonly UserId[] }
   /**
    * [SOURCE §12.1, chat] Sent only to the game master's client, asking it to run
    * the MCTS search for an AI-controlled seat and reply with `gm.aiMove`. The
@@ -171,8 +215,16 @@ export type ProtocolErrorCode =
   | 'unauthenticated'
   | 'not_game_master'
   | 'not_your_turn'
+  /**
+   * [Q54, 35; Q56, 55] The turn a message named is over: someone else acted
+   * first (the game master's Move on, the player's own End turn, another of
+   * their devices). The page already has the turn that was played.
+   */
+  | 'turn_over'
   | 'invalid_action'
   | 'game_not_found'
+  /** [Q55, 37] The game ended or was cancelled more than 7 days ago and has been deleted. */
+  | 'game_removed'
   | 'game_full'
   /**
    * [SOURCE §12.4, chat] "The game cannot proceed for a player that cannot
@@ -185,3 +237,9 @@ export type ProtocolErrorCode =
   | 'game_master_unavailable'
   /** Raised when a request needs a decision GDD.md has not made yet. */
   | 'unresolved_design_item';
+
+/** [Q56, 59] The longest post on a game's board, in characters. */
+export const BOARD_POST_MAX = 500;
+
+/** [Q56, 57] How long the computer thinks for a seat whose player resigned, in seconds. */
+export const RESIGNED_THINKING_SECONDS = 10;

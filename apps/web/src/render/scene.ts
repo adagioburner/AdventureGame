@@ -35,8 +35,11 @@ export interface MapRenderer {
   setCamera(camera: Camera): void;
   /** Full redraw source of truth; no rendering state is derived from events. */
   setState(state: GameState): void;
-  /** [SOURCE §4] The thick dotted path, its colours, and the destination cross. */
-  setPathPreview(preview: PathPreview | null): void;
+  /**
+   * [SOURCE §4] The thick dotted path, its colours, and the destination
+   * cross, starting at `from`: the node of the figure whose route it is.
+   */
+  setPathPreview(preview: PathPreview | null, from: NodeId | null): void;
   /** [SOURCE §4] Shift-click waypoint marker. */
   setWaypoint(node: NodeId | null): void;
   /** Whether the current player's figure blinks, is highlighted, or neither. */

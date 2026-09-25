@@ -8,17 +8,20 @@ import type { SqlLike } from './adapters/durable-object.ts';
  * logged-in user is sent the rows that concern them.
  */
 
-/** [Q48, 5] Your games, waiting or started, then the open games waiting for players; newest first in each. */
+/**
+ * [Q48, 5] Your games, waiting, started or finished ([Q55, 36]), then the open
+ * games waiting for players; newest first in each.
+ */
 export function gameListFor(user: UserId, listings: readonly GameListing[]): GameSummary[] {
   const newestFirst = [...listings].sort((a, b) => b.createdAt - a.createdAt);
   const mine = newestFirst.filter((listing) => listing.members.includes(user));
   const open = newestFirst.filter(
     (listing) => !listing.members.includes(user) && listing.phase === 'setup' && listing.seatsTaken < listing.seatsTotal,
   );
-  return [...mine.map((listing) => summary(listing, true)), ...open.map((listing) => summary(listing, false))];
+  return [...mine.map((listing) => summary(listing, true, user)), ...open.map((listing) => summary(listing, false, user))];
 }
 
-function summary(listing: GameListing, mine: boolean): GameSummary {
+function summary(listing: GameListing, mine: boolean, user: UserId): GameSummary {
   return {
     gameId: listing.gameId,
     name: listing.name,
@@ -28,7 +31,11 @@ function summary(listing: GameListing, mine: boolean): GameSummary {
     seatsTaken: listing.seatsTaken,
     seatsTotal: listing.seatsTotal,
     createdAt: listing.createdAt,
+    // A row stored before games had a lifetime has none.
+    endsAt: listing.endsAt ?? null,
     mine,
+    yourTurn: listing.turnOf === user,
+    result: listing.result ?? null,
   };
 }
 
@@ -64,5 +71,10 @@ export function createSqlListingStore(sql: SqlLike): ListingStore {
 }
 
 function revive(listing: GameListing): GameListing {
-  return { ...listing, gameId: asGameId(listing.gameId), members: listing.members.map((id) => asUserId(id)) };
+  return {
+    ...listing,
+    gameId: asGameId(listing.gameId),
+    members: listing.members.map((id) => asUserId(id)),
+    turnOf: listing.turnOf === undefined || listing.turnOf === null ? null : asUserId(listing.turnOf),
+  };
 }

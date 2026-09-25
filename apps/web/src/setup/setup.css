@@ -38,8 +38,17 @@
 .setup .choice .control-toggle {
   flex: 1 1 auto;
 }
-.control-toggle.count {
+.control-toggle.count,
+.control-toggle.lasts {
   grid-template-columns: repeat(4, 1fr);
+}
+/* [Q55, 43] "Game lasts" and its four lengths each keep to one line. */
+.setup .choice > span,
+.control-toggle.lasts button {
+  white-space: nowrap;
+}
+.control-toggle.lasts button {
+  padding-inline: 4px;
 }
 .control-toggle button:disabled {
   cursor: default;

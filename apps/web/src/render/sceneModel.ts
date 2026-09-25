@@ -274,6 +274,11 @@ export interface StateScene {
   readonly characters: readonly Billboard[];
   /** [SOURCE §7.2] The current player's character is highlighted on the map. */
   readonly active: { readonly at: Point; readonly size: number; readonly sprite: SpriteRef } | null;
+  /**
+   * [Q56, 49] Online, the figure of a player planning out of turn, highlighted
+   * as their own would be on their turn; `null` when nobody is.
+   */
+  readonly planning: { readonly at: Point; readonly size: number; readonly sprite: SpriteRef } | null;
 }
 
 /**
@@ -295,7 +300,13 @@ export interface Walker {
  */
 export type FigureCue = 'blink' | 'selected' | 'none';
 
-export function buildStateScene(scene: MapScene, state: GameState, catalog: ArtCatalog, walker: Walker | null = null): StateScene {
+export function buildStateScene(
+  scene: MapScene,
+  state: GameState,
+  catalog: ArtCatalog,
+  walker: Walker | null = null,
+  planner: PlayerId | null = null,
+): StateScene {
   const claimed = new Set<NodeId>();
   state.map.pois.forEach((poi, index) => {
     const runtime = state.poiRuntime[index];
@@ -306,7 +317,7 @@ export function buildStateScene(scene: MapScene, state: GameState, catalog: ArtC
       ? nodeMark(catalog, scene.spacing, { id: mark.node, position: mark.at, terrain: mark.terrain }, null)
       : mark,
   );
-  return { claimed, nodes, ...buildCharacters(scene, state, catalog, walker) };
+  return { claimed, nodes, ...buildCharacters(scene, state, catalog, walker, planner) };
 }
 
 /**
@@ -318,7 +329,8 @@ export function buildCharacters(
   state: GameState,
   catalog: ArtCatalog,
   walker: Walker | null = null,
-): Pick<StateScene, 'characters' | 'active'> {
+  planner: PlayerId | null = null,
+): Pick<StateScene, 'characters' | 'active' | 'planning'> {
   const { manifest } = catalog;
   const figurines = atlasOf(catalog, manifest.figurines.sheet);
   const size = manifest.figurines.size * SPACING_PX;
@@ -331,6 +343,8 @@ export function buildCharacters(
 
   const characters: Billboard[] = [];
   let active: StateScene['active'] = null;
+  let planning: StateScene['planning'] = null;
+  const ring = { sheet: manifest.moveProspect.sheet, index: spriteIndex(atlasOf(catalog, manifest.moveProspect.sheet), manifest.moveProspect.active) };
   state.players.forEach((player, index) => {
     const walking = player.id === walker?.player;
     const together = walking ? [index] : (byNode.get(player.position) ?? [index]);
@@ -351,14 +365,12 @@ export function buildCharacters(
       player: player.id,
     });
     if (player.seat === state.turn.activeSeat && state.status !== 'finished') {
-      active = {
-        at: scene.projection.toWorld(foot),
-        size: manifest.moveProspect.activeSize * scene.spacing,
-        sprite: { sheet: manifest.moveProspect.sheet, index: spriteIndex(atlasOf(catalog, manifest.moveProspect.sheet), manifest.moveProspect.active) },
-      };
+      active = { at: scene.projection.toWorld(foot), size: manifest.moveProspect.activeSize * scene.spacing, sprite: ring };
+    } else if (player.id === planner && state.status !== 'finished') {
+      planning = { at: scene.projection.toWorld(foot), size: manifest.moveProspect.activeSize * scene.spacing, sprite: ring };
     }
   });
-  return { characters, active };
+  return { characters, active, planning };
 }
 
 // --- a prospective move ------------------------------------------------------

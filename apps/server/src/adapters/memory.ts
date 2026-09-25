@@ -1,6 +1,6 @@
 import type { GameId, GameState, UserId } from '@adventure/core';
 import type { Broadcaster, Clock, GameDirectory, GameListing, GameStore } from '@adventure/session';
-import type { ServerMessage, SetupState } from '@adventure/protocol';
+import type { GameRecord, ServerMessage, SetupState } from '@adventure/protocol';
 import type { AccountRecord, AccountStore, LoginRecord } from '../auth/accounts.ts';
 
 /**
@@ -13,6 +13,8 @@ import type { AccountRecord, AccountStore, LoginRecord } from '../auth/accounts.
 export function createMemoryGameStore(): GameStore {
   const games = new Map<GameId, GameState>();
   const setups = new Map<GameId, SetupState>();
+  const records = new Map<GameId, GameRecord[]>();
+  const removed = new Set<GameId>();
   return {
     load: async (gameId) => games.get(gameId) ?? null,
     save: async (state) => {
@@ -22,6 +24,20 @@ export function createMemoryGameStore(): GameStore {
     saveSetup: async (setup) => {
       setups.set(setup.gameId, setup);
     },
+    appendRecord: async (gameId, record) => {
+      const list = records.get(gameId) ?? [];
+      const stored: GameRecord = { ...record, seq: list.length + 1 };
+      records.set(gameId, [...list, stored]);
+      return stored;
+    },
+    loadRecords: async (gameId) => records.get(gameId) ?? [],
+    remove: async (gameId) => {
+      games.delete(gameId);
+      setups.delete(gameId);
+      records.delete(gameId);
+      removed.add(gameId);
+    },
+    isRemoved: async (gameId) => removed.has(gameId),
   };
 }
 

@@ -94,6 +94,8 @@ describe('turning "Play online" on and off (Q51, 25)', () => {
       nextSeatId: 5,
       pending: [],
       mapSeed: 'amber-birch-1',
+      endsAt: 1 + 3 * 86_400_000,
+      closedAt: 2,
     };
     const local = fromOnlineSetup(online, limits);
     expect(shown(local.seats)).toEqual([

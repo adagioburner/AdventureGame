@@ -1,15 +1,17 @@
 import type { IntRange, Ruleset } from '@adventure/config';
 import {
   asPlayerId,
-  createGameState,
-  startingNodeFor,
   type GameId,
   type GameMap,
   type GameState,
   type UserId,
 } from '@adventure/core';
 import {
+  DAY_MS,
+  DEFAULT_LIFETIME_DAYS,
   isOpenSeat,
+  LIFETIME_DAYS,
+  openingStateOf,
   type ClientMessage,
   type JoinRequest,
   type NewGameSeat,
@@ -152,6 +154,9 @@ export function createSetup(game: NewSetup, limits: SetupLimits): SetupState {
     nextSeatId,
     pending: [],
     mapSeed: seed,
+    // [Q55, 42 and 43] Counted from creation, 3 days until the game master chooses.
+    endsAt: game.createdAt + DEFAULT_LIFETIME_DAYS * DAY_MS,
+    closedAt: null,
   };
 }
 
@@ -172,7 +177,8 @@ export type SetupAction = Extract<
       | 'setup.setSeatControl'
       | 'setup.setThinkingTime'
       | 'setup.cancel'
-      | 'setup.start';
+      | 'setup.start'
+      | 'setup.setLifetime';
   }
 >;
 
@@ -349,7 +355,18 @@ export function applySetupAction(
 
     case 'setup.cancel': {
       gameMasterOnly();
-      return { state: { ...state, phase: 'cancelled', pending: [] } };
+      return { state: { ...state, phase: 'cancelled', pending: [], closedAt: now } };
+    }
+
+    case 'setup.setLifetime': {
+      // [Q55, 43] "Game lasts" 1, 3, 7 or 14 days, counted from creation.
+      gameMasterOnly();
+      if (!LIFETIME_DAYS.includes(action.days)) {
+        throw new SetupError('invalid_action', `a game lasts ${LIFETIME_DAYS.join(', ')} days`);
+      }
+      const endsAt = state.createdAt + action.days * DAY_MS;
+      if (endsAt <= now) throw new SetupError('invalid_action', `this game is already more than ${action.days} days old`);
+      return { state: { ...state, endsAt } };
     }
 
     case 'setup.start': {
@@ -375,18 +392,8 @@ export function applySetupAction(
 export function startGame(state: SetupState, map: GameMap): { readonly setup: SetupState; readonly game: GameState } {
   if (state.phase !== 'starting') throw new SetupError('invalid_action', 'the game is not starting');
   if (map.seed !== state.mapSeed) throw new SetupError('invalid_action', 'that map is for another seed');
-  const game = createGameState({
-    id: state.gameId,
-    map,
-    players: state.seats.map((seat) => ({
-      id: seat.playerId,
-      name: seat.name,
-      avatarId: seat.avatarId,
-      control: seat.control,
-    })),
-    startingNode: startingNodeFor(map),
-  });
-  return { setup: { ...state, phase: 'started', pending: [] }, game };
+  const setup: SetupState = { ...state, phase: 'started', pending: [] };
+  return { setup, game: openingStateOf(setup, map) };
 }
 
 /* --------------------------------- seats --------------------------------- */
