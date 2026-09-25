@@ -15,6 +15,7 @@ import { Portrait, StatIcon } from './Sprites.tsx';
  * Every number is read straight off the engine's `GameState`.
  *
  * [Q54, 31 and 33] Online, a player with no connection has "Away" on their card.
+ * [Q56, 57] One who resigned reads "Resigned · the computer plays".
  */
 export function Players({ catalog, state, away }: { catalog: ArtCatalog; state: GameState; away?: ReadonlySet<PlayerId> | undefined }) {
   const playing = state.status === 'in_progress';
@@ -46,7 +47,13 @@ export function Players({ catalog, state, away }: { catalog: ArtCatalog; state: 
               <div className="who">
                 <h2>{player.name}</h2>
                 <span className="tag">
-                  {winner ? 'Winner' : current ? `Turn ${state.turn.number} · playing now` : `Seat ${player.seat}`}
+                  {winner
+                    ? 'Winner'
+                    : current
+                      ? `Turn ${state.turn.number} · playing now`
+                      : player.resigned
+                        ? 'Resigned · the computer plays'
+                        : `Seat ${player.seat}`}
                   {away?.has(player.id) === true ? ' · Away' : null}
                 </span>
               </div>

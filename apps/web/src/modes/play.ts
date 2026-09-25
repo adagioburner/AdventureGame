@@ -87,7 +87,8 @@ export function hotseatPlay(game: HotseatGame): PlaySource {
     // is never brought back as a preview, and its figure cannot be picked up.
     localPlayers: new Set(game.state.players.filter((player) => player.control === 'human').map((player) => player.id)),
     diceSeed: game.setup.diceSeed,
-    history: [],
+    // A game brought back after a reload ([Q56, 66]) opens with its turns in the log.
+    history: game.turns.map((turn, index) => ({ before: game.turns[index - 1]?.after ?? game.opening, after: turn.after, turn })),
     computer,
     savePlan: null,
     moveOn: null,

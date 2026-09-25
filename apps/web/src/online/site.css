@@ -65,3 +65,96 @@
   color: var(--won);
   font-weight: 600;
 }
+
+/* [Q56, 56] The game master's end time is a button opening Add a day and End the game. */
+.ends-menu {
+  position: relative;
+}
+.btn.ends-button {
+  font-weight: 400;
+}
+.ends-panel {
+  position: absolute;
+  z-index: 6;
+  top: calc(100% + 6px);
+  left: 0;
+  display: grid;
+  gap: 8px;
+  width: max-content;
+  max-width: min(260px, calc(100vw - 32px));
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+.ends-panel p {
+  font-size: 12px;
+}
+
+/* [Q56, 58] Online, Turn log and Messages show on every width: the board opens where the log is. */
+.side-toggle {
+  display: inline-block;
+}
+
+/* [Q56, 59] The message board: oldest post at the top, the box and Send at the bottom. */
+.log.board {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+.posts {
+  flex: 1 1 auto;
+  align-content: start;
+}
+.post {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--ground);
+  font-size: 12.5px;
+}
+.post > div {
+  min-width: 0;
+}
+.post .by {
+  color: var(--muted);
+  font-size: 11.5px;
+}
+.post .by b {
+  color: var(--ink);
+}
+.post .body {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.compose {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  gap: 6px;
+  padding-top: 8px;
+  background: var(--panel);
+}
+.compose textarea {
+  resize: vertical;
+  min-height: 3.5em;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--ground);
+  font: inherit;
+  color: inherit;
+}
+.compose .btn {
+  justify-self: end;
+}
+
+/* [Q56, 63] "Your turn" at the front of a row, and an end time in its last day, highlighted as on the game page. */
+.highlight {
+  color: var(--won);
+  font-weight: 600;
+}

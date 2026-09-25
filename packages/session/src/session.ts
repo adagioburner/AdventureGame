@@ -16,6 +16,7 @@ import {
   BOARD_POST_MAX,
   computerMoveRequestId,
   DAY_MS,
+  DEFAULT_LIFETIME_DAYS,
   RESIGNED_THINKING_SECONDS,
   isOpenSeat,
   KEPT_AFTER_END_DAYS,
@@ -274,6 +275,27 @@ export class GameSession {
         // Switching a seat between person and computer is the game master's in phase 8.
         throw new SetupError('invalid_action', 'that is not playable yet');
     }
+  }
+
+  /**
+   * [Q56, 64] A game made before games had a lifetime gets the 3-day default
+   * counted from the moment this meets it, so none disappears on the day
+   * phase 7 goes live. One already over (cancelled) is kept 7 days from then,
+   * as any closed game is, and then deleted. Does nothing to any other game.
+   */
+  async adoptLifetime(): Promise<void> {
+    const setup = await this.ports.games.loadSetup(this.gameId);
+    if (setup === null || typeof setup.endsAt === 'number') return;
+    const now = this.ports.clock.now();
+    const game = await this.ports.games.load(this.gameId);
+    const over = setup.phase === 'cancelled' || setup.phase === 'expired' || game?.status === 'finished';
+    const adopted: SetupState = {
+      ...setup,
+      endsAt: now + DEFAULT_LIFETIME_DAYS * DAY_MS,
+      closedAt: setup.closedAt ?? (over ? now : null),
+    };
+    await this.ports.games.saveSetup(adopted);
+    await this.ports.directory.update(this.gameId, listingOf(adopted, game));
   }
 
   /**

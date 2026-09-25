@@ -102,6 +102,8 @@ export interface PlayedTurn {
  */
 export class HotseatGame {
   readonly setup: HotseatSetup;
+  /** The game as it started, before the first turn. */
+  readonly opening: GameState;
   private current: GameState;
   private readonly dice: DiceSource;
   private readonly played: PlayedTurn[] = [];
@@ -131,6 +133,7 @@ export class HotseatGame {
       })),
       startingNode: hotseatStartingNode(setup.map),
     });
+    this.opening = this.current;
     this.dice = createDiceSource(createRng(setup.diceSeed), setup.map.ruleset.config);
   }
 

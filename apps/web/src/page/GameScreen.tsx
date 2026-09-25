@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import {
   previewPath,
   type GameEvent,
@@ -25,7 +25,7 @@ import { TurnControls } from './TurnControls.tsx';
 import { TurnLog } from './TurnLog.tsx';
 
 /** The page's phone layout, as `index.html` switches to it. */
-const PHONE = '(max-width: 899px)';
+export const PHONE = '(max-width: 899px)';
 
 /**
  * How long End Turn's walk takes per step, the die tumbles, a notice stays up,
@@ -46,6 +46,10 @@ interface GameScreenProps {
   readonly waitingOn?: ((state: GameState) => string | null) | undefined;
   /** [Q56, 71] Online, the connection to the server is down and being brought back. */
   readonly offline?: boolean;
+  /** [Q56, 58] Online, the message board, shown where the turn log is while it is open. */
+  readonly board?: ReactNode;
+  /** [Q56, 61] What the end card's button reads: "New game" unless given. */
+  readonly newGameLabel?: string;
   onCloseLog(): void;
   onNewGame(): void;
 }
@@ -66,7 +70,19 @@ interface Planned {
  * whole turn before the first beat; the beats only reveal it. Turns are shown
  * one after another, in the order `play` reports them.
  */
-export function GameScreen({ art, scene, play: source, logOpen, away, waitingOn, offline = false, onCloseLog, onNewGame }: GameScreenProps) {
+export function GameScreen({
+  art,
+  scene,
+  play: source,
+  logOpen,
+  away,
+  waitingOn,
+  offline = false,
+  board = null,
+  newGameLabel,
+  onCloseLog,
+  onNewGame,
+}: GameScreenProps) {
   const catalog = art.catalog;
   const [shown, setShown] = useState<GameState>(source.state);
   const [move, setMove] = useState<MoveModeState>({ kind: 'idle' });
@@ -444,8 +460,8 @@ export function GameScreen({ art, scene, play: source, logOpen, away, waitingOn,
         onRest={() => controller.rest()}
         onFind={findActive}
       />
-      <div className={`log-host${logOpen ? ' open' : ''}`}>
-        <TurnLog entries={entries} map={source.map} diceSeed={source.diceSeed} onClose={onCloseLog} />
+      <div className={`log-host${logOpen || board !== null ? ' open' : ''}`}>
+        {board ?? <TurnLog entries={entries} map={source.map} diceSeed={source.diceSeed} onClose={onCloseLog} />}
       </div>
       <main className="stage">
         <MapView
@@ -483,7 +499,7 @@ export function GameScreen({ art, scene, play: source, logOpen, away, waitingOn,
         )}
         {/* The winning turn's own card comes first; OK on it brings up the end. */}
         {shown.status === 'finished' && endOpen && inFlight === null && result === null ? (
-          <EndCard catalog={catalog} state={shown} onNewGame={onNewGame} onClose={() => setEndOpen(false)} />
+          <EndCard catalog={catalog} state={shown} newGameLabel={newGameLabel} onNewGame={onNewGame} onClose={() => setEndOpen(false)} />
         ) : null}
       </main>
     </div>

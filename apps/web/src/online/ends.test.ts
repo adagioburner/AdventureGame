@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { endsLabel } from './ends.ts';
+import { endsLabel, postedLabel } from './ends.ts';
 
 const HOUR = 60 * 60 * 1000;
 /** Friday 25 September 2026, 10:00 on this machine's clock. */
@@ -18,5 +18,14 @@ describe('endsLabel', () => {
     expect(endsLabel(now + HOUR, now)).toEqual({ text: 'Ends in 1 hour', soon: true });
     expect(endsLabel(now + 40 * 60 * 1000, now)).toEqual({ text: 'Ends in 40 minutes', soon: true });
     expect(endsLabel(now + 1000, now)).toEqual({ text: 'Ends in 1 minute', soon: true });
+  });
+});
+
+describe('postedLabel (Q56, 59)', () => {
+  it('gives the time alone today, the day before that, and the date six days or more back', () => {
+    expect(postedLabel(new Date(2026, 8, 25, 0, 5).getTime(), now)).toBe('00:05');
+    expect(postedLabel(new Date(2026, 8, 24, 23, 59).getTime(), now)).toBe('Thursday 23:59');
+    expect(postedLabel(new Date(2026, 8, 20, 14, 2).getTime(), now)).toBe('Sunday 14:02');
+    expect(postedLabel(new Date(2026, 8, 18, 14, 2).getTime(), now)).toBe('Friday 18 September 14:02');
   });
 });

@@ -32,6 +32,21 @@ export function endsLabel(endsAt: number, now: number): EndsLabel {
   return { text: `Ends ${day}${date} ${time}`, soon: false };
 }
 
+/**
+ * [Q56, 59] When a post was written: "14:02" today, otherwise with the day,
+ * "Tuesday 14:02", and six days or more back with the date as well, as an
+ * end time further off has it ([Q56, 68]). In this device's own time zone.
+ */
+export function postedLabel(postedAt: number, now: number): string {
+  const at = new Date(postedAt);
+  const time = `${String(at.getHours()).padStart(2, '0')}:${String(at.getMinutes()).padStart(2, '0')}`;
+  const today = new Date(now);
+  if (at.getFullYear() === today.getFullYear() && at.getMonth() === today.getMonth() && at.getDate() === today.getDate()) return time;
+  const day = WEEKDAYS[at.getDay()] ?? '';
+  const date = now - postedAt < 6 * DAY_MS ? '' : ` ${at.getDate()} ${MONTHS[at.getMonth()] ?? ''}`;
+  return `${day}${date} ${time}`;
+}
+
 /** The time now, updated every minute, for labels that count down. */
 export function useMinuteClock(): number {
   const [now, setNow] = useState(() => Date.now());

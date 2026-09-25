@@ -3,6 +3,7 @@ import type { GameId } from '@adventure/core';
 import type { GameSummary } from '@adventure/protocol';
 import { socketUrl, type Login } from './api.ts';
 import { sentence } from '../setup/text.ts';
+import { endsLabel, useMinuteClock } from './ends.ts';
 import { useChannel } from './socket.ts';
 
 interface GameListScreenProps {
@@ -49,6 +50,18 @@ export function GameListScreen({ login, onOpen, onLogOut, onRefused }: GameListS
 
   const mine = games?.filter((game) => game.mine) ?? [];
   const open = games?.filter((game) => !game.mine) ?? [];
+  const now = useMinuteClock();
+  // [Q55, 46] When a game ends, highlighted in its last 24 hours; none for a finished game.
+  const endsOf = (game: GameSummary) => {
+    if (game.phase === 'finished' || game.endsAt === null) return null;
+    const ends = endsLabel(game.endsAt, now);
+    return (
+      <>
+        {' · '}
+        <span className={ends.soon ? 'highlight' : undefined}>{ends.text}</span>
+      </>
+    );
+  };
 
   return (
     <div className="shell">
@@ -88,8 +101,17 @@ export function GameListScreen({ login, onOpen, onLogOut, onRefused }: GameListS
                       <div>
                         <h3>{game.name}</h3>
                         <p className="muted">
-                          {game.gameMaster === me.userId ? 'You are the game master' : `Game master: ${game.gameMasterName}`} ·{' '}
-                          {game.phase === 'setup' ? `waiting for players, ${game.seatsTaken} of ${game.seatsTotal}` : 'started'}
+                          {/* [Q56, 63] Waiting, started (with "Your turn" at the front on your turn) or finished. */}
+                          {game.phase === 'finished' ? (
+                            resultOf(game)
+                          ) : (
+                            <>
+                              {game.yourTurn ? <span className="highlight">Your turn · </span> : null}
+                              {game.gameMaster === me.userId ? 'You are the game master' : `Game master: ${game.gameMasterName}`} ·{' '}
+                              {game.phase === 'setup' ? `waiting for players, ${game.seatsTaken} of ${game.seatsTotal}` : 'started'}
+                              {endsOf(game)}
+                            </>
+                          )}
                         </p>
                       </div>
                       <button className="btn" type="button" onClick={() => onOpen(game.gameId)}>
@@ -112,6 +134,7 @@ export function GameListScreen({ login, onOpen, onLogOut, onRefused }: GameListS
                         <h3>{game.name}</h3>
                         <p className="muted">
                           Game master: {game.gameMasterName} · {game.seatsTaken} of {game.seatsTotal}
+                          {endsOf(game)}
                         </p>
                       </div>
                       <button className="btn primary" type="button" onClick={() => onOpen(game.gameId)}>
@@ -132,4 +155,14 @@ export function GameListScreen({ login, onOpen, onLogOut, onRefused }: GameListS
       </main>
     </div>
   );
+}
+
+/** [Q56, 63] "Finished · Bea won", "Finished · Bea and Cal share the win" or "Ended by the game master". */
+function resultOf(game: GameSummary): string {
+  const result = game.result;
+  if (result?.ending === 'game_master') return 'Ended by the game master';
+  const names = result?.winners ?? [];
+  if (names.length === 0) return 'Finished';
+  if (names.length === 1) return `Finished · ${names[0] ?? ''} won`;
+  return `Finished · ${names.slice(0, -1).join(', ')} and ${names[names.length - 1] ?? ''} share the win`;
 }

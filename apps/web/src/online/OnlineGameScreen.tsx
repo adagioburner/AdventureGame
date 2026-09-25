@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createGameState, startingNodeFor, type GameId, type GameMap, type GameState, type PlayerId, type UserId } from '@adventure/core';
-import { isOpenSeat, type GameRecord, type SetupState } from '@adventure/protocol';
+import { DAY_MS, isOpenSeat, LONGEST_LIFETIME_DAYS, type GameRecord, type SetupState } from '@adventure/protocol';
 import { MissedRecords, OnlineGame } from '../modes/online.ts';
 import { onlinePlay, type OnlinePlay } from '../modes/play.ts';
-import { GameScreen } from '../page/GameScreen.tsx';
+import { GameScreen, PHONE } from '../page/GameScreen.tsx';
 import { MapView } from '../page/MapView.tsx';
 import { randomSeed } from '../page/seed.ts';
 import { buildMapScene, type MapScene } from '../render/sceneModel.ts';
@@ -15,6 +15,7 @@ import { sentence } from '../setup/text.ts';
 import { socketUrl, type Login } from './api.ts';
 import { endsLabel, useMinuteClock } from './ends.ts';
 import { mapForSeed, useArt, useMapFor } from './assets.ts';
+import { MessageBoard } from './MessageBoard.tsx';
 import { useChannel } from './socket.ts';
 
 interface OnlineGameScreenProps {
@@ -54,7 +55,9 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
   // Play: the game once its records have arrived, the people away, and the log.
   const [play, setPlay] = useState<OnlinePlay | null>(null);
   const [away, setAway] = useState<readonly UserId[]>([]);
-  const [logOpen, setLogOpen] = useState(false);
+  // [Q56, 58] The turn log or the message board, in the one place either
+  // opens; on a phone, over the map, and neither while both are closed.
+  const [panel, setPanel] = useState<'log' | 'board' | null>(() => (phone() ? null : 'log'));
   // The latest setup and started state, for the history that follows them.
   const latest = useRef<{ setup: SetupState | null; started: GameState | null; play: OnlinePlay | null }>({
     setup: null,
@@ -145,18 +148,17 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
     }
   };
 
-  // [Q54, 34] The tab reads "Your turn · Adventure" while it is this player's turn.
-  const [yourTurn, setYourTurn] = useState(false);
+  // The game as the server has it, as each change arrives: for the tab title,
+  // the board and the top bar, which do not wait for a turn to play out.
+  const [live, setLive] = useState<GameState | null>(null);
   useEffect(() => {
     if (play === null) return;
-    const check = (): void => {
-      const state = play.state;
-      const active = state.players[state.turn.activeSeat - 1];
-      setYourTurn(state.status === 'in_progress' && active !== undefined && play.localPlayers.has(active.id));
-    };
-    check();
-    return play.subscribe(check);
+    setLive(play.state);
+    return play.subscribe(() => setLive(play.state));
   }, [play]);
+  // [Q54, 34] The tab reads "Your turn · Adventure" while it is this player's turn.
+  const liveActive = live === null ? undefined : live.players[live.turn.activeSeat - 1];
+  const yourTurn = live !== null && live.status === 'in_progress' && liveActive !== undefined && play !== null && play.localPlayers.has(liveActive.id);
   useEffect(() => {
     if (!yourTurn) return;
     document.title = 'Your turn · Adventure';
@@ -189,6 +191,33 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
     [setup, away, me.userId],
   );
   const now = useMinuteClock();
+
+  // [Q56, 57 and 59] The seat this person holds, if any: they can post, and resign while a person plays it.
+  const mySeat = setup?.seats.find((seat) => seat.userId === me.userId) ?? null;
+  const myPlayer = mySeat === null || live === null ? undefined : live.players.find((player) => player.id === mySeat.playerId);
+  const inProgress = live !== null && live.status === 'in_progress';
+
+  // [Q56, 60] Posts not yet seen on this device, counted on the Messages button while the board is closed.
+  const posts = live?.messageBoard ?? [];
+  const [seen, setSeen] = useState(() => readSeen(gameId));
+  useEffect(() => {
+    if (panel !== 'board' || posts.length <= seen) return;
+    setSeen(posts.length);
+    writeSeen(gameId, posts.length);
+  }, [panel, posts.length, seen, gameId]);
+  const unread = panel === 'board' ? 0 : posts.slice(seen).filter((post) => post.author !== mySeat?.playerId).length;
+
+  // [Q56, 56] The game master's panel under the end time.
+  const [endsOpen, setEndsOpen] = useState(false);
+  const endsMenu = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!endsOpen) return;
+    const close = (event: PointerEvent): void => {
+      if (!(event.target instanceof Node) || endsMenu.current?.contains(event.target) !== true) setEndsOpen(false);
+    };
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
+  }, [endsOpen]);
 
   useEffect(() => {
     if (notice === null) return;
@@ -260,6 +289,8 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
   const endsShown = ends === null ? null : <span className={`ends${ends.soon ? ' soon' : ''}`}>{ends.text}</span>;
 
   if (play !== null && status === null && art !== null && scene !== null && setup !== null) {
+    const offline = channel.status !== 'open';
+    const longest = setup.createdAt + LONGEST_LIFETIME_DAYS * DAY_MS;
     return (
       <div className="shell playing">
         <header className="bar">
@@ -267,12 +298,76 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
           <span className="seed-shown">
             {setup.name} · Seed <code>{setup.mapSeed}</code>
           </span>
-          {endsShown}
+          {/* [Q56, 56] For the game master the end time opens Add a day and End the game. */}
+          {isGameMaster && inProgress && endsShown !== null ? (
+            <div className="ends-menu" ref={endsMenu}>
+              <button className="btn ends-button" type="button" aria-expanded={endsOpen} onClick={() => setEndsOpen(!endsOpen)}>
+                {endsShown}
+              </button>
+              {endsOpen ? (
+                <div className="ends-panel" role="group" aria-label="The game’s end">
+                  <button
+                    className="btn"
+                    type="button"
+                    disabled={offline || setup.endsAt >= longest}
+                    onClick={() => channel.send({ type: 'gm.extendLifetime', gameId })}
+                  >
+                    Add a day
+                  </button>
+                  {setup.endsAt >= longest ? <p className="muted">A game lasts at most {LONGEST_LIFETIME_DAYS} days.</p> : null}
+                  <button
+                    className="btn"
+                    type="button"
+                    disabled={offline}
+                    onClick={() => {
+                      if (!window.confirm('End the game now? It ends with no winner.')) return;
+                      if (channel.send({ type: 'gm.endGame', gameId })) setEndsOpen(false);
+                    }}
+                  >
+                    End the game
+                  </button>
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            endsShown
+          )}
+          {/* [Q56, 57] Anyone whose seat a person still plays can resign it to the computer. */}
+          {inProgress && myPlayer !== undefined && myPlayer.control === 'human' ? (
+            <button
+              className="btn"
+              type="button"
+              disabled={offline}
+              onClick={() => {
+                if (
+                  !window.confirm(`Resign from this game? The computer plays ${myPlayer.name} from now on. You can still watch and post messages.`)
+                ) {
+                  return;
+                }
+                channel.send({ type: 'player.resign', gameId });
+              }}
+            >
+              Resign
+            </button>
+          ) : null}
           <button className="btn" type="button" onClick={onBack}>
             Your games
           </button>
-          <button id="toggle-log" className="btn" type="button" aria-pressed={logOpen} onClick={() => setLogOpen(!logOpen)}>
+          <button
+            className="btn side-toggle"
+            type="button"
+            aria-pressed={panel === 'log'}
+            onClick={() => setPanel(panel === 'log' && phone() ? null : 'log')}
+          >
             Turn log
+          </button>
+          <button
+            className="btn side-toggle"
+            type="button"
+            aria-pressed={panel === 'board'}
+            onClick={() => setPanel(panel === 'board' ? (phone() ? null : 'log') : 'board')}
+          >
+            {unread > 0 ? `Messages ${unread}` : 'Messages'}
           </button>
         </header>
         <GameScreen
@@ -280,11 +375,24 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
           art={art}
           scene={scene}
           play={play}
-          logOpen={logOpen}
+          logOpen={panel === 'log'}
           away={awayPlayers}
           waitingOn={waitingOn}
-          offline={channel.status !== 'open'}
-          onCloseLog={() => setLogOpen(false)}
+          offline={offline}
+          board={
+            panel === 'board' && live !== null ? (
+              <MessageBoard
+                catalog={art.catalog}
+                posts={posts}
+                players={live.players}
+                now={now}
+                onPost={mySeat === null ? null : (body) => channel.send({ type: 'board.post', gameId, body })}
+                onClose={() => setPanel(null)}
+              />
+            ) : null
+          }
+          newGameLabel="Your games"
+          onCloseLog={() => setPanel(null)}
           onNewGame={onBack}
         />
       </div>
@@ -382,6 +490,28 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
       )}
     </div>
   );
+}
+
+function phone(): boolean {
+  return window.matchMedia(PHONE).matches;
+}
+
+/** [Q56, 60] How many of a game's posts this device has shown; kept in the browser, and 0 where it cannot be. */
+function readSeen(gameId: GameId): number {
+  try {
+    const stored = Number(window.localStorage.getItem(`adventure.postsSeen.${gameId}`));
+    return Number.isFinite(stored) && stored > 0 ? stored : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function writeSeen(gameId: GameId, count: number): void {
+  try {
+    window.localStorage.setItem(`adventure.postsSeen.${gameId}`, String(count));
+  } catch {
+    // Without storage the count starts again on the next visit.
+  }
 }
 
 /** "Bea", "Bea and Cal", "Bea, Cal and Dan". */

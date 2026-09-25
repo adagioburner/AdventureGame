@@ -75,6 +75,10 @@ function harness(rolls: readonly number[] = []) {
     put: (state: GameState) => {
       games = state;
     },
+    /** Replaces the stored setup, as a game from an earlier version would have left it. */
+    putSetup: (state: SetupState) => {
+      setup = state;
+    },
     at: (time: number) => {
       now = time;
     },
@@ -357,6 +361,34 @@ describe('GameSession lifetime (Q55)', () => {
     h.take();
     await h.session.connected(bea);
     expect(h.take()[0]?.message).toMatchObject({ type: 'error', code: 'game_removed' });
+  });
+
+  it('gives a game made before lifetimes 3 days from the moment it is met (Q56, 64)', async () => {
+    const h = await started();
+    const { endsAt: _endsAt, closedAt: _closedAt, ...before } = h.setup() as SetupState;
+    await h.session.adoptLifetime();
+    h.putSetup(before as SetupState);
+    h.at(20 * DAY_MS);
+    await h.session.adoptLifetime();
+    expect(h.setup()).toMatchObject({ endsAt: 23 * DAY_MS, closedAt: null });
+    expect(h.rows.get(G)).toMatchObject({ phase: 'in_progress', endsAt: 23 * DAY_MS });
+    expect(await h.session.nextDeadline()).toBe(23 * DAY_MS);
+    h.at(21 * DAY_MS);
+    await h.session.adoptLifetime();
+    expect(h.setup()?.endsAt).toBe(23 * DAY_MS);
+  });
+
+  it('keeps a cancelled game from before lifetimes 7 days from the moment it is met, then deletes it', async () => {
+    const h = harness();
+    await h.session.create({ name: 'g', gameMaster: { userId: andrei, displayName: 'Andrei' }, mapSeed: 'fixture' });
+    await send(h.session, andrei, { type: 'setup.cancel', gameId: G });
+    const { endsAt: _endsAt, closedAt: _closedAt, ...before } = h.setup() as SetupState;
+    h.putSetup(before as SetupState);
+    h.at(20 * DAY_MS);
+    await h.session.adoptLifetime();
+    expect(h.setup()).toMatchObject({ phase: 'cancelled', closedAt: 20 * DAY_MS });
+    expect(h.rows.has(G)).toBe(false);
+    expect(await h.session.nextDeadline()).toBe(27 * DAY_MS);
   });
 
   it('ends a game in progress when time runs out, the most gold winning', async () => {

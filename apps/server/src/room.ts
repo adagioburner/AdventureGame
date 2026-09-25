@@ -53,6 +53,8 @@ const AWAY_KEY = 'away';
 export class GameRoom extends DurableObject<Env> {
   private queue: Promise<void> = Promise.resolve();
   private readonly dice = createSecureDiceService();
+  /** Whether this object has checked its game has a lifetime ([Q56, 64]). */
+  private adopted = false;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -73,6 +75,19 @@ export class GameRoom extends DurableObject<Env> {
         if (error instanceof SetupError) return { ok: false, message: error.message };
         throw error;
       }
+    });
+  }
+
+  /**
+   * [Q56, 64] Called by the lobby for a game listed before games had a
+   * lifetime, so it gets one, and its alarm, even if nobody opens it.
+   */
+  async adoptLifetime(): Promise<void> {
+    await this.inTurn(async () => {
+      const gameId = await this.gameId();
+      if (gameId === null) return;
+      await this.ready(gameId);
+      await this.schedule(gameId);
     });
   }
 
@@ -99,6 +114,7 @@ export class GameRoom extends DurableObject<Env> {
         );
         return;
       }
+      await this.ready(gameId);
       await this.session(gameId).connected(who.userId);
       await this.checkPresence(gameId, server);
       await this.schedule(gameId);
@@ -119,6 +135,7 @@ export class GameRoom extends DurableObject<Env> {
         ws.send(encodeMessage({ type: 'error', code: 'invalid_action', message: 'that message could not be read' }));
         return;
       }
+      await this.ready(gameId);
       try {
         await this.session(gameId).handle(who.userId, message);
       } catch (error) {
@@ -145,6 +162,7 @@ export class GameRoom extends DurableObject<Env> {
     await this.inTurn(async () => {
       const gameId = await this.gameId();
       if (gameId === null) return;
+      await this.ready(gameId);
       await this.session(gameId).wake();
       if (await wasRemoved(this.ctx.storage)) {
         await this.ctx.storage.deleteAlarm();
@@ -214,6 +232,13 @@ export class GameRoom extends DurableObject<Env> {
     }
     if (next === null) await this.ctx.storage.deleteAlarm();
     else await this.ctx.storage.setAlarm(next);
+  }
+
+  /** [Q56, 64] Gives a game from before lifetimes its 3 days, once per waking of this object. */
+  private async ready(gameId: GameId): Promise<void> {
+    if (this.adopted) return;
+    await this.session(gameId).adoptLifetime();
+    this.adopted = true;
   }
 
   private async gameId(): Promise<GameId | null> {
