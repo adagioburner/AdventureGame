@@ -73,6 +73,16 @@ export function createRng(seed: Seed): Rng {
     return next >>> 0;
   };
 
+  return rngOver(nextUint32, (label) => createRng(`${seed}::${label}`));
+}
+
+/**
+ * An `Rng` over any source of uniform 32-bit words: `createRng`'s seeded sfc32,
+ * or a platform's secure generator where no seed may exist, as for the
+ * server's dice (§8), which no page may be able to work out. `fork` gives the
+ * stream kept apart for `label`.
+ */
+export function rngOver(nextUint32: () => number, fork: (label: string) => Rng): Rng {
   const rng: Rng = {
     nextUint32,
     nextFloat: () => nextUint32() / 4294967296,
@@ -116,7 +126,7 @@ export function createRng(seed: Seed): Rng {
       }
       return copy;
     },
-    fork: (label) => createRng(`${seed}::${label}`),
+    fork,
   };
 
   return rng;

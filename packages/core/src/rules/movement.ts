@@ -102,8 +102,11 @@ function terrainOf(graph: MapGraph, node: NodeId): Terrain {
   return target.terrain;
 }
 
-/** A path is a sequence of nodes each adjacent to the last, starting from `from`. */
-function assertWalkable(graph: MapGraph, from: NodeId, path: readonly NodeId[]): void {
+/**
+ * A path is a sequence of nodes each adjacent to the last, starting from
+ * `from`. Throws `RuleViolationError` for anything else.
+ */
+export function assertWalkable(graph: MapGraph, from: NodeId, path: readonly NodeId[]): void {
   let cursor = from;
   for (const node of path) {
     if (!neighbours(graph, cursor).includes(node)) {

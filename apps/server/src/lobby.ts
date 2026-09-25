@@ -3,6 +3,8 @@ import { asGameId, asUserId, friendlySeed, type GameId, type UserId } from '@adv
 import {
   decodeClientMessage,
   encodeMessage,
+  HEARTBEAT_PING,
+  HEARTBEAT_PONG,
   type AuthFailure,
   type AuthResult,
   type AuthToken,
@@ -39,6 +41,8 @@ export class Lobby extends DurableObject<Env> {
     super(ctx, env);
     this.accounts = new PasswordAccounts(createSqlAccountStore(ctx.storage.sql), ACCOUNT_RULES, systemClock);
     this.listings = createSqlListingStore(ctx.storage.sql);
+    // [Q54, 31] Pages ping every socket they keep open; answered here without waking the lobby.
+    ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair(HEARTBEAT_PING, HEARTBEAT_PONG));
   }
 
   register(username: string, password: string): Promise<AccountOutcome> {

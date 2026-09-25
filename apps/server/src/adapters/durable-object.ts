@@ -1,6 +1,7 @@
-import { asUserId, type GameId, type GameState, type UserId } from '@adventure/core';
-import { encodeMessage, type ServerMessage, type SetupState } from '@adventure/protocol';
-import type { Broadcaster, GameStore } from '@adventure/session';
+import { asUserId, createDiceSource, rngOver, type GameId, type GameState, type Rng, type UserId } from '@adventure/core';
+import { DEFAULT_RULESET } from '@adventure/config';
+import { encodeMessage, type GameRecord, type ServerMessage, type SetupState } from '@adventure/protocol';
+import type { Broadcaster, DiceService, GameStore } from '@adventure/session';
 import type { AccountRecord, AccountStore } from '../auth/accounts.ts';
 import type { PasswordHash } from '../auth/password.ts';
 
@@ -11,7 +12,10 @@ import type { PasswordHash } from '../auth/password.ts';
  * `gameId`, which gives `GameSession` the single-writer guarantee it already
  * assumes. The mapping:
  *
- *   - `GameStore`   → the object's own transactional storage;
+ *   - `GameStore`   → the object's own transactional storage, one key per
+ *     record of play so no value grows with the game;
+ *   - `DiceService` → the platform's secure generator, so no seed exists that
+ *     a page could learn and roll ahead with (§8);
  *   - `Broadcaster` → the object's hibernating WebSockets, each tagged with the
  *     user it belongs to;
  *   - `Clock`       → `systemClock` from `memory.ts`, which is `Date.now()`;
@@ -30,6 +34,8 @@ import type { PasswordHash } from '../auth/password.ts';
 export interface DurableStorageLike {
   get<T>(key: string): Promise<T | undefined>;
   put<T>(key: string, value: T): Promise<void>;
+  list<T>(options: { prefix: string }): Promise<Map<string, T>>;
+  deleteAll(): Promise<void>;
 }
 
 /** The part of a Workers `WebSocket` a broadcaster uses. */
@@ -49,6 +55,14 @@ export function userSocketTag(userId: UserId): string {
 
 const STATE_KEY = 'state';
 const SETUP_KEY = 'setup';
+const RECORD_COUNT_KEY = 'records';
+const RECORD_PREFIX = 'record:';
+const REMOVED_KEY = 'removed';
+
+/** Record keys sort in play order: `record:000001`, `record:000002`, … */
+function recordKey(seq: number): string {
+  return `${RECORD_PREFIX}${String(seq).padStart(6, '0')}`;
+}
 
 /**
  * One object holds one game, so the store keeps a single state and a single
@@ -71,7 +85,49 @@ export function createDurableGameStore(gameId: GameId, storage: DurableStorageLi
       mine(setup.gameId, 'setup');
       await storage.put(SETUP_KEY, setup);
     },
+    appendRecord: async (id, record) => {
+      mine(id, 'record');
+      const seq = ((await storage.get<number>(RECORD_COUNT_KEY)) ?? 0) + 1;
+      const stored: GameRecord = { ...record, seq };
+      await storage.put(recordKey(seq), stored);
+      await storage.put(RECORD_COUNT_KEY, seq);
+      return stored;
+    },
+    loadRecords: async (id) => (id === gameId ? [...(await storage.list<GameRecord>({ prefix: RECORD_PREFIX })).values()] : []),
+    remove: async (id) => {
+      mine(id, 'removal');
+      await storage.deleteAll();
+      await storage.put(REMOVED_KEY, true);
+    },
+    isRemoved: async (id) => id === gameId && (await storage.get<boolean>(REMOVED_KEY)) === true,
   };
+}
+
+/** Whether this object's game was removed ([Q55, 37]), for an object that no longer knows its own id. */
+export async function wasRemoved(storage: DurableStorageLike): Promise<boolean> {
+  return (await storage.get<boolean>(REMOVED_KEY)) === true;
+}
+
+/**
+ * The server's dice (§8): every roll drawn fresh from the platform's secure
+ * generator. No seed exists, so there is none a page could learn and roll
+ * ahead with; each roll is kept in the game's records instead, which is all a
+ * replay needs.
+ */
+export function createSecureDiceService(): DiceService {
+  const dice = createDiceSource(secureRng(), DEFAULT_RULESET.config);
+  return { forGame: async () => dice };
+}
+
+function secureRng(): Rng {
+  const word = new Uint32Array(1);
+  return rngOver(
+    () => {
+      crypto.getRandomValues(word);
+      return word[0] ?? 0;
+    },
+    () => secureRng(),
+  );
 }
 
 /**

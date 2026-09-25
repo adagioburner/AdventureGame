@@ -1,4 +1,4 @@
-import type { GameId, PlayerId, Seat, UserId } from '@adventure/core';
+import type { GameEnding, GameId, PlayerId, Seat, UserId } from '@adventure/core';
 import type { ControlMode } from '@adventure/core';
 
 /**
@@ -13,14 +13,28 @@ export interface GameSummary {
   readonly name: string;
   readonly gameMaster: UserId;
   readonly gameMasterName: string;
-  readonly phase: 'setup' | 'in_progress';
+  /** [Q55, 36] A finished game stays in Your games for 7 days. */
+  readonly phase: 'setup' | 'in_progress' | 'finished';
   /** Seats people have taken, the game master's included. */
   readonly seatsTaken: number;
   /** [Q51, 22] Seats for people: those taken and the Human seats still open. */
   readonly seatsTotal: number;
   readonly createdAt: number;
+  /** [Q55, 46] When the game's lifetime runs out; `null` for a row from before lifetimes. */
+  readonly endsAt: number | null;
   /** Whether the user this row was sent to holds a seat in the game. */
   readonly mine: boolean;
+  /** [Q54, 34] Whether it is this user's turn. */
+  readonly yourTurn: boolean;
+  /** [Q55, 36] How a finished game ended and who won; `null` until then. */
+  readonly result: GameResult | null;
+}
+
+/** [Q55, 36 and 40] "Finished · Bea won", or ended with no winner. */
+export interface GameResult {
+  readonly ending: GameEnding;
+  /** The winners' names; empty when nobody won. */
+  readonly winners: readonly string[];
 }
 
 /**
@@ -106,9 +120,21 @@ export interface SetupState {
   /**
    * `starting` is the moment between the game master pressing Start and their
    * browser sending the map (§12.1); `cancelled` is [Q48, 11]'s cancel before
-   * the start.
+   * the start, and `expired` a game whose lifetime ran out before it started
+   * ([Q55, 42]). A started game stays `started` once it has finished; its
+   * `GameState` says how it ended.
    */
-  readonly phase: 'setup' | 'starting' | 'started' | 'cancelled';
+  readonly phase: 'setup' | 'starting' | 'started' | 'cancelled' | 'expired';
+  /**
+   * [Q55, 42 to 44] When the game's lifetime runs out: from creation, 1, 3, 7
+   * or 14 days as chosen, extended a day at a time up to 14.
+   */
+  readonly endsAt: number;
+  /**
+   * [Q55, 37] When the game finished, was cancelled or ran out of time; it is
+   * deleted `KEPT_AFTER_END_DAYS` later. `null` while it goes on.
+   */
+  readonly closedAt: number | null;
   /** Within `PLAYER_COUNT` (§11), never below the seats people hold. */
   readonly playerCount: number;
   /** Exactly `playerCount` of them, in seat order. */

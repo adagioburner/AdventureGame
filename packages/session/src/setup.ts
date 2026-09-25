@@ -9,7 +9,10 @@ import {
   type UserId,
 } from '@adventure/core';
 import {
+  DAY_MS,
+  DEFAULT_LIFETIME_DAYS,
   isOpenSeat,
+  LIFETIME_DAYS,
   type ClientMessage,
   type JoinRequest,
   type NewGameSeat,
@@ -152,6 +155,9 @@ export function createSetup(game: NewSetup, limits: SetupLimits): SetupState {
     nextSeatId,
     pending: [],
     mapSeed: seed,
+    // [Q55, 42 and 43] Counted from creation, 3 days until the game master chooses.
+    endsAt: game.createdAt + DEFAULT_LIFETIME_DAYS * DAY_MS,
+    closedAt: null,
   };
 }
 
@@ -172,7 +178,8 @@ export type SetupAction = Extract<
       | 'setup.setSeatControl'
       | 'setup.setThinkingTime'
       | 'setup.cancel'
-      | 'setup.start';
+      | 'setup.start'
+      | 'setup.setLifetime';
   }
 >;
 
@@ -349,7 +356,18 @@ export function applySetupAction(
 
     case 'setup.cancel': {
       gameMasterOnly();
-      return { state: { ...state, phase: 'cancelled', pending: [] } };
+      return { state: { ...state, phase: 'cancelled', pending: [], closedAt: now } };
+    }
+
+    case 'setup.setLifetime': {
+      // [Q55, 43] "Game lasts" 1, 3, 7 or 14 days, counted from creation.
+      gameMasterOnly();
+      if (!LIFETIME_DAYS.includes(action.days)) {
+        throw new SetupError('invalid_action', `a game lasts ${LIFETIME_DAYS.join(', ')} days`);
+      }
+      const endsAt = state.createdAt + action.days * DAY_MS;
+      if (endsAt <= now) throw new SetupError('invalid_action', `this game is already more than ${action.days} days old`);
+      return { state: { ...state, endsAt } };
     }
 
     case 'setup.start': {

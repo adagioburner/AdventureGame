@@ -264,3 +264,57 @@ describe('applyAction — the out-of-turn actions', () => {
     expect(state.turn).toEqual(start.turn);
   });
 });
+
+describe('applyAction — a saved route (§7.1)', () => {
+  it('saves the route a player draws, out of turn as well, without ending a turn', () => {
+    const start = fixtureGame(map, 0);
+    const { state, events } = applyAction(start, { kind: 'plan', player: two, path: [n(1), n(2)], waypoint: n(1) }, noDice);
+    expect(state.players[1]?.plannedPath).toEqual({ path: [n(1), n(2)], waypoint: n(1) });
+    expect(state.turn).toEqual(start.turn);
+    expect(events).toEqual([{ type: 'planned', player: two, plan: { path: [n(1), n(2)], waypoint: n(1) } }]);
+  });
+
+  it('clears the route with an empty path', () => {
+    const planned = applyAction(fixtureGame(map, 0), { kind: 'plan', player: one, path: [n(1)], waypoint: null }, noDice).state;
+    const { state } = applyAction(planned, { kind: 'plan', player: one, path: [], waypoint: null }, noDice);
+    expect(state.players[0]?.plannedPath).toBeNull();
+  });
+
+  it('is what a forced turn then walks', () => {
+    const planned = applyAction(fixtureGame(map, 0), { kind: 'plan', player: one, path: [n(1), n(2)], waypoint: null }, noDice).state;
+    const { state } = applyAction(planned, { kind: 'force_turn', player: one }, noDice);
+    expect(state.players[0]?.position).toBe(n(2));
+  });
+
+  it('refuses a route that is not a walk from where the player stands, or a waypoint off it', () => {
+    const start = fixtureGame(map, 0);
+    expect(() => applyAction(start, { kind: 'plan', player: one, path: [n(2)], waypoint: null }, noDice)).toThrow(RuleViolationError);
+    expect(() => applyAction(start, { kind: 'plan', player: one, path: [n(1)], waypoint: n(2) }, noDice)).toThrow(RuleViolationError);
+  });
+});
+
+describe('applyAction — ending a game early (Q55)', () => {
+  it('gives the win to the most gold when time runs out, shared on a tie', () => {
+    const rich = withStats(withStats(fixtureGame(map, 0), one, { gold: 4 }), two, { gold: 2 });
+    const { state, events } = applyAction(rich, { kind: 'end_game', reason: 'time_out' }, noDice);
+    expect(state).toMatchObject({ status: 'finished', winners: [one], ending: 'time_out' });
+    expect(events).toEqual([{ type: 'game_ended', reason: 'time_out', winners: [one] }]);
+
+    const tied = withStats(withStats(fixtureGame(map, 0), one, { gold: 3 }), two, { gold: 3 });
+    expect(applyAction(tied, { kind: 'end_game', reason: 'time_out' }, noDice).state.winners).toEqual([one, two]);
+  });
+
+  it('ends without a winner when the game master ends it, and nothing can be played after', () => {
+    const { state } = applyAction(fixtureGame(map, 0), { kind: 'end_game', reason: 'game_master' }, noDice);
+    expect(state).toMatchObject({ status: 'finished', winners: [], ending: 'game_master' });
+    expect(() => applyAction(state, { kind: 'rest', player: one }, noDice)).toThrow(RuleViolationError);
+  });
+
+  it('records a §1 win as won, and a game in progress as not ended', () => {
+    // 5 gold against 0, with 3 left on the map.
+    const start = withPosition(withStats(fixtureGame(map, 0), one, { stamina: 30 }), one, 5);
+    expect(start.ending).toBeNull();
+    const { state } = applyAction(start, { kind: 'move', player: one, path: [n(6)] }, noDice);
+    expect(state).toMatchObject({ status: 'finished', winners: [one], ending: 'won' });
+  });
+});

@@ -88,5 +88,6 @@ export function createGameState(game: NewGame): GameState {
     messageBoard: [],
     status: 'in_progress',
     winners: [],
+    ending: null,
   };
 }

@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { asGameId, asUserId, type GameState } from '@adventure/core';
+import { asGameId, asPlayerId, asUserId, type GameState } from '@adventure/core';
 import { decodeServerMessage, type ServerMessage } from '@adventure/protocol';
 import {
   createDurableGameStore,
+  createSecureDiceService,
   createSocketBroadcaster,
   userSocketTag,
   type DurableStorageLike,
@@ -19,6 +20,15 @@ function fakeStorage(): DurableStorageLike & { readonly data: Map<string, unknow
     get: async <T>(key: string) => data.get(key) as T | undefined,
     put: async <T>(key: string, value: T) => {
       data.set(key, structuredClone(value));
+    },
+    list: async <T>({ prefix }: { prefix: string }) =>
+      new Map(
+        [...data.entries()]
+          .filter(([key]) => key.startsWith(prefix))
+          .sort(([a], [b]) => (a < b ? -1 : 1)) as [string, T][],
+      ),
+    deleteAll: async () => {
+      data.clear();
     },
   };
 }
@@ -50,6 +60,28 @@ describe('createDurableGameStore', () => {
     const loaded = await store.load(G1);
     expect(loaded?.id).toBe('g1');
     expect(loaded?.map.poiByNode).toBeInstanceOf(Map);
+  });
+
+  it('numbers records in order, and gives them back in play order past nine', async () => {
+    const store = createDurableGameStore(G1, fakeStorage());
+    const rest = { kind: 'rest', player: asPlayerId('seat-1') } as const;
+    for (let at = 0; at < 12; at++) await store.appendRecord(G1, { action: rest, rolls: [], at, by: null });
+    const records = await store.loadRecords(G1);
+    expect(records.map((record) => record.seq)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    expect(records.map((record) => record.at)).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+  });
+
+  it('removes everything and remembers only that the game was removed', async () => {
+    const storage = fakeStorage();
+    const store = createDurableGameStore(G1, storage);
+    await store.save(state('g1'));
+    await store.appendRecord(G1, { action: { kind: 'rest', player: asPlayerId('seat-1') }, rolls: [], at: 0, by: null });
+    expect(await store.isRemoved(G1)).toBe(false);
+    await store.remove(G1);
+    expect(await store.load(G1)).toBeNull();
+    expect(await store.loadRecords(G1)).toEqual([]);
+    expect(await store.isRemoved(G1)).toBe(true);
+    expect([...storage.data.keys()]).toEqual(['removed']);
   });
 
   it('refuses another game, which would mean a message reached the wrong object', async () => {
@@ -97,5 +129,20 @@ describe('createSocketBroadcaster', () => {
   it('refuses to broadcast for another game', async () => {
     const broadcaster = createSocketBroadcaster(G1, directory([]));
     await expect(broadcaster.broadcast(asGameId('g2'), message)).rejects.toThrow(RangeError);
+  });
+});
+
+describe('createSecureDiceService', () => {
+  it('rolls the guard die, every face in time', async () => {
+    const dice = await createSecureDiceService().forGame(G1);
+    const seen = new Set<number>();
+    for (let roll = 0; roll < 600; roll++) {
+      const { value, sides } = dice.roll();
+      expect(sides).toBe(6);
+      expect(value).toBeGreaterThanOrEqual(1);
+      expect(value).toBeLessThanOrEqual(6);
+      seen.add(value);
+    }
+    expect(seen.size).toBe(6);
   });
 });

@@ -3,6 +3,7 @@ import type { GameMap } from './gamemap.ts';
 import type { MovementAllowance, PlayerState } from './player.ts';
 import type { PoiRuntimeState } from './poi.ts';
 import type { BoardPost } from './messageboard.ts';
+import type { GameEnding } from './action.ts';
 
 export type GameStatus = 'setup' | 'in_progress' | 'finished';
 
@@ -47,6 +48,8 @@ export interface GameState {
   readonly status: GameStatus;
   /** Empty until `status === 'finished'`; more than one entry on a shared win. */
   readonly winners: readonly PlayerId[];
+  /** How the game finished; `null` while it is in progress. */
+  readonly ending: GameEnding | null;
 }
 
 export function playerBySeat(state: GameState, seat: Seat): PlayerState {

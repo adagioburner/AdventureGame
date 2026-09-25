@@ -1,14 +1,14 @@
 import { assertNever, RuleViolationError } from '../errors.ts';
-import type { DieRoll, GameAction, GameEvent, TurnAction } from '../action.ts';
+import type { DieRoll, GameAction, GameEndReason, GameEvent, PlanAction, TurnAction } from '../action.ts';
 import { poiAt } from '../gamemap.ts';
 import type { NodeId, PlayerId, Seat } from '../ids.ts';
 import type { BoardPost } from '../messageboard.ts';
 import type { ControlMode, PlannedPath, PlayerState, PlayerStats } from '../player.ts';
 import { isClaimed, type PoiRuntimeState } from '../poi.ts';
 import { activePlayer, playerById, playerBySeat, poiRuntimeAt, type GameState } from '../state.ts';
-import { refreshAllowance, resolveMovement } from './movement.ts';
+import { assertWalkable, refreshAllowance, resolveMovement } from './movement.ts';
 import { resolveInteraction } from './interaction.ts';
-import { checkVictory } from './victory.ts';
+import { checkVictory, mostGold } from './victory.ts';
 
 /**
  * Supplies `GUARD_DIE` rolls. The engine never owns randomness: the session
@@ -69,6 +69,10 @@ export function applyAction(state: GameState, action: GameAction, dice: DiceSour
         events: [{ type: 'message_posted', post }],
       };
     }
+    case 'plan':
+      return applyPlan(state, action);
+    case 'end_game':
+      return applyEndGame(state, action.reason);
     default:
       return assertNever(action, 'GameAction');
   }
@@ -192,7 +196,7 @@ function applyArrival(state: GameState, playerId: PlayerId, dice: DiceSource, ev
   if (winners.length === 0) return claimed;
 
   events.push({ type: 'game_won', winners });
-  return { ...claimed, status: 'finished', winners };
+  return { ...claimed, status: 'finished', winners, ending: 'won' };
 }
 
 /**
@@ -251,6 +255,39 @@ function applyResignation(state: GameState, playerId: PlayerId): ActionOutcome {
   return {
     state: withPlayer(state, playerId, (current) => ({ ...current, resigned: true, control: 'ai' })),
     events: [{ type: 'resigned', player: playerId }],
+  };
+}
+
+/**
+ * [SOURCE §4] A saved route, changed by its player at any time during play.
+ * The route has to be one the player could walk from where they stand, and a
+ * waypoint has to lie on it, since End Turn and a forced move walk exactly
+ * this; whether this turn affords it is for the walk to find out.
+ */
+function applyPlan(state: GameState, action: PlanAction): ActionOutcome {
+  requireInProgress(state);
+  const player = playerById(state, action.player);
+  assertWalkable(state.map.graph, player.position, action.path);
+  if (action.waypoint !== null && !action.path.includes(action.waypoint)) {
+    throw new RuleViolationError(`waypoint ${action.waypoint} is not on the route`);
+  }
+  const plan: PlannedPath | null = action.path.length === 0 ? null : { path: action.path, waypoint: action.waypoint };
+  return {
+    state: withPlayer(state, player.id, (current) => ({ ...current, plannedPath: plan })),
+    events: [{ type: 'planned', player: player.id, plan }],
+  };
+}
+
+/**
+ * [Q55, 40 and 45] Ends a game in progress before anyone has won: on time,
+ * the most gold wins and a tie is shared; by the game master, nobody wins.
+ */
+function applyEndGame(state: GameState, reason: GameEndReason): ActionOutcome {
+  requireInProgress(state);
+  const winners = reason === 'time_out' ? mostGold(state) : [];
+  return {
+    state: { ...state, status: 'finished', winners, ending: reason },
+    events: [{ type: 'game_ended', reason, winners }],
   };
 }
 

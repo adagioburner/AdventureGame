@@ -286,6 +286,91 @@ describe('the server, in the local Workers runtime', () => {
     for (const client of [lobby, gmGame, annGame, boGame]) client.close();
   }, 60_000);
 
+  it('plays online: turns, a route saved out of turn, a computer’s move from the game master, and every turn on reopening', async () => {
+    const gm = await register('Play_gm');
+    const bea = await register('Play_bea');
+    const gmList = await Client.open('/api/lobby', gm.token);
+    gmList.send({ type: 'lobby.create', name: 'Play' });
+    const { gameId } = await gmList.next((m): m is Extract<ServerMessage, { type: 'lobby.created' }> => m.type === 'lobby.created');
+    const gmGame = await Client.open(`/api/games/${gameId}`, gm.token);
+    const beaGame = await Client.open(`/api/games/${gameId}`, bea.token);
+    gmGame.send({ type: 'setup.setPlayerCount', gameId, count: 3 });
+    beaGame.send({ type: 'setup.requestJoin', gameId, name: 'Bea', avatarId: 'player_avatars_04' });
+    await gmGame.next(isSetup((setup) => setup.pending.length === 1 && setup.playerCount === 3));
+    gmGame.send({ type: 'setup.respondToJoin', gameId, userId: bea.user.userId, accept: true });
+    await gmGame.next(isSetup((setup) => setup.seats[1]?.userId === bea.user.userId));
+    gmGame.send({ type: 'setup.start', gameId });
+    const request = await gmGame.next((m): m is Extract<ServerMessage, { type: 'gm.requestMapGeneration' }> => m.type === 'gm.requestMapGeneration');
+    const map = generateMap({ seed: request.seed, ruleset: DEFAULT_RULESET, remotenessScorer: defaultRemotenessScorer });
+    gmGame.send({ type: 'gm.mapGenerated', gameId, map });
+    const { state } = await beaGame.next((m): m is Extract<ServerMessage, { type: 'game.state' }> => m.type === 'game.state');
+
+    type Played = Extract<ServerMessage, { type: 'game.played' }>;
+    const played = (seq: number) => (m: ServerMessage): m is Played => m.type === 'game.played' && m.record.seq === seq;
+
+    // [Q54, 31] Both have the game open: nobody is away.
+    const presence = await beaGame.next((m): m is Extract<ServerMessage, { type: 'game.presence' }> => m.type === 'game.presence');
+    expect(presence.away).toEqual([]);
+
+    gmGame.send({ type: 'turn.rest', gameId, turn: 1 });
+    expect((await beaGame.next(played(1))).record).toMatchObject({ action: { kind: 'rest' }, by: gm.user.userId, rolls: [] });
+
+    // Bea saves a route, then ends her turn with it; a second End turn for the same turn is refused.
+    const start = state.players[1]?.position ?? 0;
+    const step = map.graph.adjacency[start]?.[0];
+    expect(step).toBeDefined();
+    beaGame.send({ type: 'turn.plan', gameId, path: [step as never], waypoint: null });
+    await gmGame.next(played(2));
+    beaGame.send({ type: 'turn.end', gameId, turn: 2, path: [step as never], waypoint: null });
+    beaGame.send({ type: 'turn.end', gameId, turn: 2, path: [step as never], waypoint: null });
+    await gmGame.next(played(3));
+    const refused = await beaGame.next((m): m is Extract<ServerMessage, { type: 'error' }> => m.type === 'error');
+    expect(refused.code).toBe('not_your_turn');
+
+    // The computer's turn: the server asks the game master's page for the move.
+    const ask = await gmGame.next((m): m is Extract<ServerMessage, { type: 'gm.requestAiMove' }> => m.type === 'gm.requestAiMove');
+    expect(ask).toMatchObject({ requestId: 'turn-3', player: 'seat-3' });
+    gmGame.send({ type: 'gm.aiMove', gameId, requestId: ask.requestId, player: ask.player, action: { kind: 'rest', player: ask.player } });
+    await beaGame.next(played(4));
+
+    // [Q54, 34] The game master's list says it is their turn.
+    await gmList.next(
+      (m): m is ServerMessage => m.type === 'lobby.games' && m.games.some((game) => game.gameId === gameId && game.yourTurn),
+    );
+
+    // [Q54, 32] Reopening sends every turn played.
+    const again = await Client.open(`/api/games/${gameId}`, bea.token);
+    const history = await again.next((m): m is Extract<ServerMessage, { type: 'game.history' }> => m.type === 'game.history');
+    expect(history.records.map((record) => [record.seq, record.action.kind])).toEqual([
+      [1, 'rest'],
+      [2, 'plan'],
+      [3, 'move'],
+      [4, 'rest'],
+    ]);
+
+    // [Q54, 31] Closing every page of hers makes Bea away at once.
+    const mark = gmGame.heard.length;
+    beaGame.close();
+    again.close();
+    const away = await gmGame.next(
+      (m): m is Extract<ServerMessage, { type: 'game.presence' }> => m.type === 'game.presence' && m.away.length > 0,
+      mark,
+    );
+    expect(away.away).toEqual([bea.user.userId]);
+
+    // [Q55, 40] The game master ends it; it stays in the list as finished.
+    gmGame.send({ type: 'gm.endGame', gameId });
+    const ended = await gmGame.next(played(5));
+    expect(ended.record.action).toEqual({ kind: 'end_game', reason: 'game_master' });
+    const listed = await gmList.next(
+      (m): m is Extract<ServerMessage, { type: 'lobby.games' }> =>
+        m.type === 'lobby.games' && m.games.some((game) => game.gameId === gameId && game.phase === 'finished'),
+    );
+    expect(listed.games.find((game) => game.gameId === gameId)?.result).toEqual({ ending: 'game_master', winners: [] });
+
+    for (const client of [gmList, gmGame]) client.close();
+  }, 60_000);
+
   it('answers a game that does not exist', async () => {
     const who = await register('Nobody_here');
     const client = await Client.open('/api/games/doesnotexist', who.token);
