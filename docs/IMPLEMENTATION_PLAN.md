@@ -1267,8 +1267,8 @@ to 77) waits on Andrei's answers; until then the map moves at each turn as in
 hot seat (Q46, Q47). Two browsers played a stored game against the local
 Workers runtime: planning out of turn, the other page walking each turn,
 Move on, a post, Add a day, a resignation with the computer taking the seat,
-and End the game; one browser played a game against a computer seat to its
-winner, reloading half way.
+and End the game. A game against a computer seat was reloaded at turn 40 and
+came back with all 39 turns in its log.
 
 - **The server plays every turn** (`GameSession.play`,
   `packages/session/src/session.ts`): the action goes through `applyAction`
