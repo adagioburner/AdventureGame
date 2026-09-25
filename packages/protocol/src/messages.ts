@@ -28,13 +28,41 @@ import type { GameSummary, SetupState } from './lobby.ts';
 /* ----------------------------- client → server ---------------------------- */
 
 export type ClientMessage =
-  | { readonly type: 'lobby.list' }
-  | { readonly type: 'lobby.create'; readonly name: string; readonly mode: 'online' | 'hotseat' }
-  | { readonly type: 'lobby.requestJoin'; readonly gameId: GameId; readonly name: string; readonly avatarId: string }
+  /* ---- the lobby socket ---- */
+  /**
+   * [Q48, 6] Creates a game in setup, with the sender as its game master in
+   * seat 1. [Q51, 25 and 26] Turning "Play online" on sends the setup the page
+   * already has, in `setup`; the game list's New game sends none, and the game
+   * starts as a new game does on the hot seat screen, two seats both Human.
+   */
+  | { readonly type: 'lobby.create'; readonly name: string; readonly setup?: NewGameSetup }
+  /* ---- a game's socket, before the start (§6.1, Q48) ---- */
+  /** Ask to join with the name and figure to play as. Asking twice changes the request. */
+  | { readonly type: 'setup.requestJoin'; readonly gameId: GameId; readonly name: string; readonly avatarId: string }
+  /**
+   * Change a request still waiting. Refused once the game master has
+   * answered it, so an edit that crosses a "no" does not ask again.
+   */
+  | { readonly type: 'setup.updateRequest'; readonly gameId: GameId; readonly name: string; readonly avatarId: string }
+  | { readonly type: 'setup.withdraw'; readonly gameId: GameId }
+  /** A seated person other than the game master gives up their seat. */
+  | { readonly type: 'setup.leave'; readonly gameId: GameId }
+  /**
+   * A person changes their own seat's name and figure, or the game master a
+   * computer seat's ([Q48, 10 and 14]). `seatId` is `SetupSeat.id`.
+   */
+  | { readonly type: 'setup.updateSeat'; readonly gameId: GameId; readonly seatId: string; readonly name: string; readonly avatarId: string }
   // [SOURCE §3] GM-only setup actions. Authority is checked by the session layer.
   | { readonly type: 'setup.setPlayerCount'; readonly gameId: GameId; readonly count: number }
   | { readonly type: 'setup.respondToJoin'; readonly gameId: GameId; readonly userId: UserId; readonly accept: boolean }
-  | { readonly type: 'setup.addAiPlayer'; readonly gameId: GameId; readonly name: string; readonly avatarId: string }
+  | { readonly type: 'setup.setSeed'; readonly gameId: GameId; readonly seed: string }
+  /** [Q51, 27] The game's name, as the game list shows it. */
+  | { readonly type: 'setup.rename'; readonly gameId: GameId; readonly name: string }
+  /** [Q51, 22] Makes a seat Human (kept for someone who joins) or Computer. */
+  | { readonly type: 'setup.setSeatControl'; readonly gameId: GameId; readonly seatId: string; readonly control: ControlMode }
+  /** [Q51, 24] One computer seat's thinking time, whole seconds. */
+  | { readonly type: 'setup.setThinkingTime'; readonly gameId: GameId; readonly seatId: string; readonly seconds: number }
+  | { readonly type: 'setup.cancel'; readonly gameId: GameId }
   | { readonly type: 'setup.start'; readonly gameId: GameId }
   /**
    * [SOURCE §4] Out-of-turn planning: a player may plan while others play, and
@@ -87,11 +115,31 @@ export type ClientMessage =
       readonly action: TurnAction;
     };
 
+/**
+ * The setup a game is created with when "Play online" is turned on
+ * ([Q51, 25]). Seat 1 is the sender's: only its figure is used, and its name is
+ * their username. Every other Human seat is kept for someone who asks to join;
+ * a computer seat keeps its name, figure and thinking time.
+ */
+export interface NewGameSetup {
+  readonly mapSeed: string;
+  readonly seats: readonly NewGameSeat[];
+}
+
+export type NewGameSeat =
+  | { readonly control: 'human'; readonly avatarId?: string }
+  | { readonly control: 'ai'; readonly name: string; readonly avatarId: string; readonly thinkingSeconds: number };
+
 /* ----------------------------- server → client ---------------------------- */
 
 export type ServerMessage =
+  /** The whole list, sent on connect and again whenever it changes. */
   | { readonly type: 'lobby.games'; readonly games: readonly GameSummary[] }
+  /** The answer to `lobby.create`, to the creator only. */
+  | { readonly type: 'lobby.created'; readonly gameId: GameId }
   | { readonly type: 'setup.state'; readonly setup: SetupState }
+  /** [Q48, 11] To a declined user only. They may ask again. */
+  | { readonly type: 'setup.declined'; readonly gameId: GameId }
   /** Full state, sent on join/reconnect. Cheap enough at this scale, and exact. */
   | { readonly type: 'game.state'; readonly state: GameState }
   /**

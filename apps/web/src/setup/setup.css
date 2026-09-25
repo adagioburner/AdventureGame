@@ -1,0 +1,134 @@
+/*
+ * The one setup screen (Q51), for a game on this device and a game online
+ * alike, so both builds load it. The rest of its look is index.html's `.setup`,
+ * `.seat`, `.control-toggle` and `.figurines`.
+ */
+
+.field {
+  display: grid;
+  gap: 4px;
+  font-weight: 600;
+}
+.field input {
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--ground);
+  font-weight: 400;
+}
+.field small {
+  font-weight: 400;
+  color: var(--muted);
+}
+.problem {
+  color: var(--missed);
+  font-weight: 600;
+}
+.waiting {
+  color: var(--accent);
+  font-weight: 600;
+}
+.setup .choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+.setup .choice .control-toggle {
+  flex: 1 1 auto;
+}
+.control-toggle.count {
+  grid-template-columns: repeat(4, 1fr);
+}
+.control-toggle button:disabled {
+  cursor: default;
+  opacity: 0.4;
+}
+.seat .tag {
+  margin: -4px 0 0;
+}
+.seated,
+.request {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.seated b,
+.request b {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.who-asks {
+  flex: 1 1 auto;
+  display: grid;
+  min-width: 0;
+}
+.who-asks small {
+  color: var(--missed);
+  font-weight: 600;
+}
+.request + .request {
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+.seat input:disabled {
+  opacity: 0.6;
+}
+.problem-notice {
+  background: var(--missed);
+}
+
+/* [Q51, 28] "Play online": a switch, with what it means beside it. */
+.play-online {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.play-online > div {
+  display: grid;
+}
+.play-online small {
+  color: var(--muted);
+}
+.play-online button {
+  flex: 0 0 auto;
+  position: relative;
+  width: 42px;
+  height: 24px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--ground);
+  cursor: pointer;
+}
+.play-online button[aria-checked='true'] {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+.play-online button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.play-online .knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: left 0.15s;
+}
+.play-online button[aria-checked='true'] .knob {
+  left: 20px;
+  background: var(--accent-ink);
+}
+/* [Q51, 22] A Human seat nobody holds yet. */
+.open-seat {
+  margin: 0;
+  color: var(--muted);
+}

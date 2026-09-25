@@ -27,7 +27,7 @@ applies to this repo:
 and the computer player work.** `generateMap(seed, ruleset)` runs GDD.md
 §2.1's eight steps end to end and returns a sealed `GameMap`,
 `applyAction(state, action, dice)` plays §7 and §8's turns on it, and
-`apps/web` draws it isometrically from the art in `Art/` and lets two seats,
+`apps/web` draws it isometrically from the art in `Art/` and lets 2 to 5 seats,
 each a person or §9's MCTS computer player, take turns on one screen until the
 engine declares a winner — `pnpm map <seed>` draws the generator's diagnostic
 view, `pnpm game <seed>` plays a game to a winner and prints it turn by turn,

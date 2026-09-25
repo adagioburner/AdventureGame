@@ -5,5 +5,15 @@
  * no runtime globals. Everything it needs arrives through `SessionPorts`.
  */
 export * from './ports.ts';
-export { GameSession } from './session.ts';
-export { SetupFlow } from './setup.ts';
+export { GameSession, listingOf, type SetupSessionPorts } from './session.ts';
+export {
+  applySetupAction,
+  createSetup,
+  setupLimitsFor,
+  SetupError,
+  startGame,
+  type NewSetup,
+  type SetupAction,
+  type SetupLimits,
+  type SetupOutcome,
+} from './setup.ts';

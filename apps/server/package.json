@@ -10,5 +10,10 @@
     "@adventure/mapgen": "workspace:*",
     "@adventure/protocol": "workspace:*",
     "@adventure/session": "workspace:*"
+  },
+  "devDependencies": {
+    "@adventure/sim": "workspace:*",
+    "@cloudflare/workers-types": "^5.20260924.1",
+    "wrangler": "4.138.0"
   }
 }

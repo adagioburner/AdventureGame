@@ -13,8 +13,10 @@ export default defineConfig({
     // so they import through the same relative `.ts` paths the modules already
     // use and need no build step and no second tsconfig. `tsconfig.json`
     // already includes `packages/*/src/**/*.ts`, so `pnpm run typecheck` checks
-    // the tests too.
-    include: ['{packages,apps,tools}/*/src/**/*.test.ts'],
+    // the tests too. The one exception is `apps/server/test/`: tests that need
+    // Node itself (a real SQLite, the Worker in Cloudflare's local runtime),
+    // which the server's own Workers-only program must not see.
+    include: ['{packages,apps,tools}/*/src/**/*.test.ts', 'apps/server/test/**/*.test.ts'],
 
     // No `globals: true`. Tests import `describe`/`it`/`expect` explicitly,
     // which keeps `verbatimModuleSyntax` happy and means the typecheck needs no

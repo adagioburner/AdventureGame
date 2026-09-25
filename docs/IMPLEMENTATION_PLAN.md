@@ -128,9 +128,9 @@ half needs the AI, so it sits at the end of phase 5.
 | [3](#phase-3--art-binding-and-the-isometric-renderer) ✅ | Atlas loader, reward-kind-to-sheet mapping, isometric projection, draw layers | new |
 | [4](#phase-4--hotseat-ui) ✅ | Pan/zoom, move mode, path preview, End Turn, Rest, stats, game end | 2 |
 | [5](#phase-5--ai-players-the-engine) ✅ | MCTS `search()`, rollouts, computer seats and thinking time in hot seat (Q40), self-play harness; the balancing pass comes next | part of 5 |
-| [6](#phase-6--server-foundation-auth-and-lobby) | Host decision made real, transport, auth, game list, join/accept setup | 3 |
-| [7](#phase-7--online-play) | Authoritative state, broadcast, reconnect, message board, out-of-turn planning, GM controls | 4 |
-| [8](#phase-8--ai-in-multiplayer) | Web Worker on the GM's machine, AI seats and settings in online games, resign-to-AI, human/AI switching | rest of 5 |
+| [6](#phase-6--server-foundation-auth-and-lobby) | Host decision made real, transport, auth, game list, join/accept setup, computers in empty seats (Q48) | 3 |
+| [7](#phase-7--online-play) | Authoritative state, broadcast, reconnect, message board, out-of-turn planning, GM controls, computer seats' turns (Q48) | 4 |
+| [8](#phase-8--ai-in-multiplayer) | Web Worker on the GM's machine, resign-to-AI, human/AI switching (computer seats moved to phases 6 and 7, Q48) | rest of 5 |
 
 Phases 0–2 are strictly sequential. Phase 3 can start any time after phase 0
 (it touches no game logic). Phase 5 is independent of 6–8.
@@ -1135,6 +1135,60 @@ until the host is real. That is the substance of this phase.
 one can create a game the other joins and is accepted into, up to the point
 where the GM starts it.
 
+### What actually landed
+
+Built to Andrei's answers in [Q48](./OPEN_QUESTIONS.md#q48),
+[Q49](./OPEN_QUESTIONS.md#q49), [Q50](./OPEN_QUESTIONS.md#q50) and
+[Q51](./OPEN_QUESTIONS.md#q51). Three browsers played it through against the
+local Workers runtime: register, list, ask to join, both figure clashes,
+accept, change the map, start, decline, cancel, and hot seat from the login
+page and the game list. Two more then played Q51's one setup screen through:
+a stored game with four seats, a join into a kept Human seat, the switch
+turned off with the joiner told, five seats played on one device, and the
+switch turned on again.
+
+- **One Worker** (`apps/server/src/worker.ts`) serves the pages, the account
+  endpoints and two kinds of socket. **The lobby is one Durable Object**
+  (`lobby.ts`), item 5's first proposal: it holds the accounts, the logins
+  and one row per game, and pushes the whole list to every open game list
+  when a row changes. **Each game is a `GameRoom`** (`room.ts`), which gives
+  `GameSession` storage, sockets and the lobby and feeds it one message at a
+  time through a queue, since waiting on the lobby lets the object take the
+  next message.
+- **Accounts** are `PasswordAccounts` behind the account rules of Q48 2 to 4
+  (`auth/rules.ts`): PBKDF2-SHA256 at 100,000 iterations (the most WebCrypto
+  in Workers allows), random tokens stored only as hashes, 30 days.
+- **The setup flow** is pure functions over `SetupState` in
+  `packages/session/src/setup.ts`, the Q48, Q49 and Q51 rules with a test
+  each. `SetupSeat.id` names a seat's holder so a change survives seats
+  changing hands.
+- **The map round trip at Start is two messages**, not a call:
+  `setup.start` moves the game to `starting` and asks the game master's
+  browser for the map; `gm.mapGenerated` starts it. A Durable Object may sleep
+  between the two, so nothing waits in memory, and a game master who reloads
+  while a game is starting is asked again. `MapService` is unused.
+- **The pages** are `apps/web/src/online/`, built by `pnpm build:site`
+  (`vite build --mode site`) into `apps/web/dist-site/`, which the Worker
+  serves. `main.tsx` picks the site only in that mode, and the hot seat build
+  (`pnpm build:web`, and the game page made from it) comes out byte for byte
+  as before.
+- **One setup screen** (Q51, `apps/web/src/setup/`): `SetupPanel.tsx` draws
+  a game on one device (`local.ts`, 2 to 5 seats) and a stored game from the
+  same parts, and the "Play online" switch moves the seats from one to the
+  other. `/hotseat` shows it with the switch off, reached from the login page
+  (Q48 1) and by turning the switch off; the game list's New game button
+  opens it on (Q50's button is gone). The game page artifact shows it without
+  the switch.
+- **Tests** run the server in Cloudflare's local runtime from Node, through
+  wrangler's `unstable_startWorker` (`apps/server/test/worker.test.ts`),
+  because `@cloudflare/vitest-pool-workers` needs Vitest 4 and the repository
+  is on 5.
+- **Deploying** is `.github/workflows/deploy.yml`: main to the live Worker,
+  pull requests to one shared preview Worker (Cloudflare gives a Worker with
+  Durable Objects no address per version). It deploys nothing until the
+  repository has the `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`
+  secrets.
+
 ---
 
 ## Phase 7 — online play
@@ -1152,7 +1206,12 @@ where the GM starts it.
 3. **Reconnect and resume.** Players idle for minutes and hibernation keeps
    sockets open, so a returning client has to be able to load the current state
    and the map from scratch. Not called out in the design; unavoidable in
-   practice.
+   practice. Andrei's answers are [Q54](./OPEN_QUESTIONS.md#q54): an "Away"
+   tag decided by a heartbeat (a message every 20 seconds, away after a
+   minute of silence), a turn log that includes turns played while someone
+   was away, a line saying when the game waits on the game master, "Your
+   turn" in the tab title and in Your games, and one person on several
+   devices.
 4. **Out-of-turn planning (§7.1).** Players may plan their next move while
    others play, and End Turn then executes it in one click; an unfinished path
    is saved for the next turn and can still be changed. This is the *one*
@@ -1169,10 +1228,24 @@ where the GM starts it.
    to configure.
 7. **Resignation.** A human may resign at any time. Only the GM can hand control
    back to a human. The AI takeover half of this needs phase 8.
+8. **Computer seats' turns** (Q48). Andrei's answer on phase 6 lets the GM start
+   with seats empty, played by the computer, so a started game has computer
+   turns straight away. They are played here rather than in phase 8: the
+   server asks the GM's browser for the move (`gm.requestAiMove` /
+   `gm.aiMove`), which thinks with the hot seat's `startComputerMove` for the
+   setup screen's thinking time. With no GM connected the game waits (§12.4).
+
+9. **Game lifetime** ([Q55](./OPEN_QUESTIONS.md#q55)). A stored game has a
+   lifetime chosen on the new game screen, 1, 3, 7 or 14 days from creation
+   (3 by default), which the game master can extend up to 14 days. When it
+   runs out the game ends, the most gold winning; a finished game stays in
+   Your games for 7 days and is then deleted, as is a cancelled one. The game
+   master can end a game in progress. Each game's Durable Object deletes
+   itself on an alarm, so no scheduled job is needed.
 
 **Done when:** a full 2-player online game is playable end to end from two
-browsers, survives a reload on both sides, and the GM can force a stalling
-player's move.
+browsers, survives a reload on both sides, the GM can force a stalling
+player's move, and a game with computer seats plays to the end.
 
 ---
 
@@ -1194,15 +1267,12 @@ player's move.
    GM online. That is §12.1 and §12.4 composed, and it is stronger than either
    alone. Worth surfacing in the UI so a stalled game is legible rather than
    mysterious.
-4. **AI seats at setup** — including AI players in a game from the setup screen.
-   Hot seat has these since phase 5 (Q40, Q41); this carries the same Human and
-   Computer choice into online setup.
-5. **AI settings** — thinking time per turn, in seconds: Andrei confirmed the
-   budget stays wall-clock rather than a rollout count, because the game is for
-   fun rather than for a consistently strong AI.
-   `MCTS_TIME_BUDGET_PER_MOVE_MS` is config, so a per-game override needs a
-   path through the protocol. Hot seat's per-seat box, 1 to 60 seconds, is the
-   one to carry over (Q41).
+4. ~~**AI seats at setup**~~ — landed in phase 6 instead (Q48): the GM may start
+   with seats empty and a computer plays each one. Their turns arrive in phase
+   7.
+5. ~~**AI settings**~~ — landed in phase 6 instead (Q48): one thinking time
+   for all of a game's computer seats, 1 to 60 seconds, set on the setup
+   screen and carried in the setup state.
 6. **Handover** — an AI takes over a resigned seat so play continues, and the GM
    may switch any player between human and AI control at will. Only the GM hands
    control back to a human.

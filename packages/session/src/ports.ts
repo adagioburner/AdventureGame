@@ -1,7 +1,7 @@
 import type { Ruleset } from '@adventure/config';
 import type { DiceSource, GameId, GameMap, GameState, PlayerId, Seed, UserId } from '@adventure/core';
 import type { AiPlayer } from '@adventure/ai';
-import type { ServerMessage } from '@adventure/protocol';
+import type { ServerMessage, SetupState } from '@adventure/protocol';
 
 /**
  * The session layer's ports. Every one of these is an interface with no
@@ -15,10 +15,38 @@ import type { ServerMessage } from '@adventure/protocol';
  * and swapping it means writing a different adapter, not touching this package.
  */
 
-/** Persistence for one game's authoritative state. */
+/**
+ * Persistence for one game's authoritative state, and for its setup (§6.1),
+ * which lives on beside the game once it starts: phase 7's computer seats read
+ * their thinking time from it (Q48).
+ */
 export interface GameStore {
   load(gameId: GameId): Promise<GameState | null>;
   save(state: GameState): Promise<void>;
+  loadSetup(gameId: GameId): Promise<SetupState | null>;
+  saveSetup(setup: SetupState): Promise<void>;
+}
+
+/**
+ * What the game list (§6.1, Q48 item 5) shows for one game, and who holds a
+ * seat in it. Listing spans every game, which one object per game cannot do
+ * on its own, so each game reports here whenever its row changes.
+ */
+export interface GameListing {
+  readonly gameId: GameId;
+  readonly name: string;
+  readonly gameMaster: UserId;
+  readonly gameMasterName: string;
+  readonly phase: 'setup' | 'in_progress';
+  readonly seatsTaken: number;
+  readonly seatsTotal: number;
+  readonly createdAt: number;
+  readonly members: readonly UserId[];
+}
+
+export interface GameDirectory {
+  /** Records the game's row, or takes it off the list with `null`. */
+  update(gameId: GameId, listing: GameListing | null): Promise<void>;
 }
 
 /** Fan-out to everyone watching a game. */
@@ -34,12 +62,14 @@ export interface Clock {
 
 /**
  * [SOURCE §12.1, chat] "Map generation and player AI run on the game master's
- * machine." So the server never executes the §2.1 pipeline. The Durable Object
- * adapter implements this port as a **round trip to the game master's client**:
- * send `gm.requestMapGeneration`, await `gm.mapGenerated`.
+ * machine." So the server never executes the §2.1 pipeline.
  *
- * The session core is unaware of any of that — which is the point of the port,
- * and why moving generation back server-side later would change one adapter.
+ * Phase 6 found that a Durable Object cannot hold this as an awaited promise:
+ * while it waits for the game master's reply the object may hibernate, and the
+ * promise goes with it. So `GameSession` does the round trip as two messages
+ * instead — Start sends `gm.requestMapGeneration`, and `gm.mapGenerated`
+ * finishes starting the game — and nothing implements this port. It stays as
+ * the shape a server-side generator would take if generation ever moved back.
  */
 export interface MapService {
   generate(seed: Seed, ruleset: Ruleset): Promise<GameMap>;

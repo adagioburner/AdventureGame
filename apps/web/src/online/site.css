@@ -1,0 +1,56 @@
+/*
+ * The online site's own pages (Q48, 13): login and the game list, in the hot
+ * seat panel's look, from the variables and classes in index.html, with no new
+ * art. The setup screen, which the game page shares, is ../setup/setup.css.
+ */
+
+.site-page {
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  align-content: start;
+  justify-items: center;
+  gap: 16px;
+  padding: 24px 16px calc(24px + env(safe-area-inset-bottom, 0px));
+}
+.card.site-card {
+  position: static;
+  width: min(460px, 100%);
+  box-sizing: border-box;
+}
+.site-card hr {
+  width: 100%;
+  margin: 4px 0;
+  border: 0;
+  border-top: 1px solid var(--line);
+}
+.games {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.game-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--ground);
+}
+.game-row > div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.game-row h3 {
+  margin: 0;
+  font: 400 19px/1.2 var(--display);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.game-row p {
+  font-size: 12.5px;
+}

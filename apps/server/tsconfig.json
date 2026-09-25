@@ -1,0 +1,14 @@
+{
+  // The server runs on Cloudflare Workers (docs/STACK.md §5), so this program
+  // gets the Workers runtime's globals and nothing else: no DOM, no Node. Its
+  // tests run under Vitest on Node, which has the same WebCrypto and
+  // `btoa`/`atob` the Workers runtime provides, so the same types cover both.
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["@cloudflare/workers-types"],
+    // `limits.ts` reads the figure ids from the figurine atlas in `Art/`.
+    "resolveJsonModule": true
+  },
+  "include": ["./src/**/*.ts"]
+}

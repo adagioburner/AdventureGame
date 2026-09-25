@@ -4,7 +4,7 @@ import { dijkstra, poiAt, type GameState, type NodeId, type PlayerId } from '@ad
 import { createMoveModeController } from '../interaction/moveMode.ts';
 import { isUnguardedClaim, journalEntry, statLine } from '../page/journal.ts';
 import { mapFor } from '../page/seed.ts';
-import { HotseatGame, HOTSEAT_MODE, HOTSEAT_SEATS, hotseatStartingNode, newDiceSeed } from './hotseat.ts';
+import { HotseatGame, HOTSEAT_MODE, hotseatStartingNode, newDiceSeed } from './hotseat.ts';
 
 const map = mapFor('adventure');
 const seats = [
@@ -12,16 +12,28 @@ const seats = [
   { name: 'Bram', avatarId: 'player_avatars_05', control: 'human' as const, thinkingSeconds: 10 },
 ];
 
-describe('hotseat setup (§6, Q22)', () => {
+describe('hotseat setup (§6, Q51)', () => {
   const game = new HotseatGame({ map, seats, diceSeed: 'setup-test' });
+  const more = (count: number) =>
+    Array.from({ length: count }, (_unused, index) => ({
+      name: `P${index + 1}`,
+      avatarId: `player_avatars_0${index + 1}`,
+      control: 'human' as const,
+      thinkingSeconds: 10,
+    }));
 
-  it('seats exactly two players, in the order given, with their names and figurines', () => {
-    expect(HOTSEAT_SEATS).toBe(2);
+  it('seats its players in the order given, with their names and figurines', () => {
     expect(game.state.players.map((player) => [player.seat, player.name, player.avatarId, player.control])).toEqual([
       [1, 'Ada', 'player_avatars_03', 'human'],
       [2, 'Bram', 'player_avatars_05', 'human'],
     ]);
-    expect(() => new HotseatGame({ map, seats: [...seats, { name: 'Cy', avatarId: 'player_avatars_01', control: 'human' as const, thinkingSeconds: 10 }], diceSeed: 'x' })).toThrow();
+  });
+
+  it('takes 2 to 5 players, as an online game does (Q51, 21)', () => {
+    const five = new HotseatGame({ map, seats: more(5), diceSeed: 'x' });
+    expect(five.state.players.map((player) => player.stats.stamina)).toEqual([30, 40, 50, 60, 70]);
+    expect(() => new HotseatGame({ map, seats: more(1), diceSeed: 'x' })).toThrow(/2 to 5 players/);
+    expect(() => new HotseatGame({ map, seats: more(6), diceSeed: 'x' })).toThrow(/2 to 5 players/);
   });
 
   it('hands a seat to the computer, with a thinking time of whole seconds from 1 to 60 (Q41)', () => {
