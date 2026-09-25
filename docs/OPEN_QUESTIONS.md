@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q53.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q54.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -1309,6 +1309,45 @@ the recommendations: the screen has no opening line at all ("Each seat takes
 its turn on this screen, played by a person or by the computer." is gone),
 the game master's line is just "You are the game master.", and a kept seat's
 line and the "1 to 60" beside the thinking time stay.
+
+<a id="q54"></a>
+### Q54. ~~How does a player who lost the connection get back into a game in progress?~~ — **answered 2026-09-25: as recommended, for phase 7**
+
+Andrei: *"we need to think through the scenario when a player got
+disconnected and needs to go back to the game in progress. how does that
+work"*. What was already settled went on a page with five open details,
+numbered on from phase 6's, and he asked how "away" would be known: there was
+no heartbeat. He took every recommendation (*"the recommendations are
+good"*), to be built in phase 7.
+
+Already settled: the whole game lives on the server, an open page reconnects
+by itself, a closed one reopens from Your games, and on opening the page gets
+the whole game including each player's saved route. The game waits on an
+absent player's turn (§12.4), the game master may force their planned move or
+a rest at any time (§7.3), and a game master's absence stalls everything,
+computer turns included.
+
+31. **Away:** a player with no connection shows an "Away" tag on their card,
+    and on their turn the line above the buttons reads "Waiting for Bea, who
+    is away. The game master can move Bea on." A **heartbeat** decides it:
+    each open page sends a tiny message every 20 seconds, answered by
+    Cloudflare without waking the game (`setWebSocketAutoResponse`); while a
+    game is in progress the server checks those times every 20 seconds, and a
+    player whose pages have all been silent for a minute, or who closed the
+    game, is away. The page also uses the missing answers to notice its own
+    dead connection and reconnect.
+32. **Missed turns:** the turn log shows every turn of the game, the ones
+    played while a player was away included; the map shows where everyone is
+    now, without replaying walks. The server keeps a record of each turn, so
+    a reload does not empty anyone's log either.
+33. **Game master away:** their card shows "Away", and whenever the game is
+    waiting on them, computer turns included, the line reads "Waiting for the
+    game master, Andrei, to come back."
+34. **Your turn while not looking:** the browser tab's title reads "Your turn
+    · Adventure" while it is your turn, and Your games says "Your turn" on
+    that game. There are no emails.
+35. **Two devices:** one person may have a game open on several devices;
+    whichever acts first counts, and the others see the result.
 
 ---
 

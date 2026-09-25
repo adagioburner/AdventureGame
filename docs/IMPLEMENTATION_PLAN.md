@@ -1206,7 +1206,12 @@ switch turned on again.
 3. **Reconnect and resume.** Players idle for minutes and hibernation keeps
    sockets open, so a returning client has to be able to load the current state
    and the map from scratch. Not called out in the design; unavoidable in
-   practice.
+   practice. Andrei's answers are [Q54](./OPEN_QUESTIONS.md#q54): an "Away"
+   tag decided by a heartbeat (a message every 20 seconds, away after a
+   minute of silence), a turn log that includes turns played while someone
+   was away, a line saying when the game waits on the game master, "Your
+   turn" in the tab title and in Your games, and one person on several
+   devices.
 4. **Out-of-turn planning (§7.1).** Players may plan their next move while
    others play, and End Turn then executes it in one click; an unfinished path
    is saved for the next turn and can still be changed. This is the *one*
