@@ -224,7 +224,7 @@ function endTurn(state: GameState, playerId: PlayerId, events: GameEvent[]): Gam
  * than by the caller, so the GM's control and a player's own End Turn go down
  * the identical path and can never resolve differently.
  */
-function plannedTurnActionFor(state: GameState, playerId: PlayerId): TurnAction {
+export function plannedTurnActionFor(state: GameState, playerId: PlayerId): TurnAction {
   const planned = playerById(state, playerId).plannedPath;
   if (planned === null || planned.path.length === 0) return { kind: 'rest', player: playerId };
   return { kind: 'move', player: playerId, path: planned.path };

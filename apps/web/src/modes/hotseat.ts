@@ -145,25 +145,30 @@ export class HotseatGame {
   /** Play the active seat's turn. Throws `RuleViolationError` for anyone else's. */
   play(action: TurnAction): PlayedTurn {
     const before = this.current;
-    const player = before.players[before.turn.activeSeat - 1];
-    if (player === undefined) throw new RangeError(`no player in seat ${before.turn.activeSeat}`);
     const outcome = applyAction(before, action, this.dice);
     this.current = outcome.state;
-    const turn: PlayedTurn = {
-      number: before.turn.number,
-      seat: player.seat,
-      player: player.id,
-      name: player.name,
-      action,
-      events: outcome.events,
-      positionBefore: player.position,
-      allowanceBefore: before.turn.allowance,
-      statsBefore: player.stats,
-      after: outcome.state,
-    };
+    const turn = playedTurnOf(before, action, outcome.events, outcome.state);
     this.played.push(turn);
     return turn;
   }
+}
+
+/** The turn the active seat played in `before`, as the page shows and logs it. */
+export function playedTurnOf(before: GameState, action: TurnAction, events: readonly GameEvent[], after: GameState): PlayedTurn {
+  const player = before.players[before.turn.activeSeat - 1];
+  if (player === undefined) throw new RangeError(`no player in seat ${before.turn.activeSeat}`);
+  return {
+    number: before.turn.number,
+    seat: player.seat,
+    player: player.id,
+    name: player.name,
+    action,
+    events,
+    positionBefore: player.position,
+    allowanceBefore: before.turn.allowance,
+    statsBefore: player.stats,
+    after,
+  };
 }
 
 /**

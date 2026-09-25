@@ -1,8 +1,6 @@
 import type { IntRange, Ruleset } from '@adventure/config';
 import {
   asPlayerId,
-  createGameState,
-  startingNodeFor,
   type GameId,
   type GameMap,
   type GameState,
@@ -13,6 +11,7 @@ import {
   DEFAULT_LIFETIME_DAYS,
   isOpenSeat,
   LIFETIME_DAYS,
+  openingStateOf,
   type ClientMessage,
   type JoinRequest,
   type NewGameSeat,
@@ -393,18 +392,8 @@ export function applySetupAction(
 export function startGame(state: SetupState, map: GameMap): { readonly setup: SetupState; readonly game: GameState } {
   if (state.phase !== 'starting') throw new SetupError('invalid_action', 'the game is not starting');
   if (map.seed !== state.mapSeed) throw new SetupError('invalid_action', 'that map is for another seed');
-  const game = createGameState({
-    id: state.gameId,
-    map,
-    players: state.seats.map((seat) => ({
-      id: seat.playerId,
-      name: seat.name,
-      avatarId: seat.avatarId,
-      control: seat.control,
-    })),
-    startingNode: startingNodeFor(map),
-  });
-  return { setup: { ...state, phase: 'started', pending: [] }, game };
+  const setup: SetupState = { ...state, phase: 'started', pending: [] };
+  return { setup, game: openingStateOf(setup, map) };
 }
 
 /* --------------------------------- seats --------------------------------- */

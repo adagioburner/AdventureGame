@@ -1,13 +1,17 @@
 import {
   applyAction,
+  createGameState,
   RuleViolationError,
+  startingNodeFor,
   type ActionOutcome,
   type DiceSource,
   type DieRoll,
   type GameAction,
+  type GameMap,
   type GameState,
   type UserId,
 } from '@adventure/core';
+import type { SetupState } from './lobby.ts';
 
 /**
  * One change the server made to a game during play, as it stores it and
@@ -51,4 +55,23 @@ export function recordedDice(rolls: readonly DieRoll[]): DiceSource {
       return roll;
     },
   };
+}
+
+/**
+ * The state a game started in, from its setup as Start left it and its map:
+ * every seat in seat order, all on the starting node (§6). The server starts
+ * the game with it, and a page replays the records from it.
+ */
+export function openingStateOf(setup: SetupState, map: GameMap): GameState {
+  return createGameState({
+    id: setup.gameId,
+    map,
+    players: setup.seats.map((seat) => ({
+      id: seat.playerId,
+      name: seat.name,
+      avatarId: seat.avatarId,
+      control: seat.control,
+    })),
+    startingNode: startingNodeFor(map),
+  });
 }

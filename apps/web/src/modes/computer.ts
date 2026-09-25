@@ -1,4 +1,5 @@
 import { startComputerMove, type AiPlayer, type Cancellation } from '@adventure/ai';
+import type { GameConfig } from '@adventure/config';
 import { createDiceSource, createRng, type GameState, type PlayerId, type TurnAction } from '@adventure/core';
 import type { HotseatGame } from './hotseat.ts';
 
@@ -21,14 +22,29 @@ export const SLICE_MS = 12;
  * the games it plays in its head never use up a real roll.
  */
 export function hotseatComputer(game: HotseatGame): AiPlayer {
-  const config = game.setup.map.ruleset.config;
-  const rng = createRng(`computer-${game.setup.diceSeed}`);
+  return pageComputer(game.setup.map.ruleset.config, `computer-${game.setup.diceSeed}`, (state, subject) => {
+    const seat = state.players.find((player) => player.id === subject)?.seat;
+    return seat === undefined ? undefined : game.setup.seats[seat - 1]?.thinkingSeconds;
+  });
+}
+
+/**
+ * The computer thinking on this page, for as many seconds as `secondsFor`
+ * gives the seat: hot seat's computer seats, and online the computer seats of
+ * a game this page's player is the game master of (§12.1, plan phase 7 item
+ * 8). `seed` seeds the games it plays in its head.
+ */
+export function pageComputer(
+  config: GameConfig,
+  seed: string,
+  secondsFor: (state: GameState, subject: PlayerId) => number | undefined,
+): AiPlayer {
+  const rng = createRng(seed);
   const dice = createDiceSource(rng.fork('dice'), config);
 
   return {
     chooseAction(state: GameState, subject: PlayerId, cancel?: Cancellation): Promise<TurnAction> {
-      const seat = state.players.find((player) => player.id === subject)?.seat;
-      const seconds = seat === undefined ? undefined : game.setup.seats[seat - 1]?.thinkingSeconds;
+      const seconds = secondsFor(state, subject);
       if (seconds === undefined) return Promise.reject(new RangeError(`no seat for ${subject}`));
 
       const thinking = startComputerMove(state, subject, { config, thinkingMs: seconds * 1000, rng, dice, now: () => performance.now() });

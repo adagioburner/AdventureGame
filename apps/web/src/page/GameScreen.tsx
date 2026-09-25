@@ -1,9 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { previewPath, type GameEvent, type GameState, type NodeId, type PathPreview, type PlayerId, type Point, type TurnAction } from '@adventure/core';
+import {
+  previewPath,
+  type GameEvent,
+  type GameState,
+  type NodeId,
+  type PathPreview,
+  type PlayerId,
+  type PlayerState,
+  type Point,
+  type TurnAction,
+} from '@adventure/core';
 import { createMoveModeController, type EnterRefusal, type MoveModeState } from '../interaction/moveMode.ts';
 import type { Pick } from '../interaction/picking.ts';
-import { hotseatComputer } from '../modes/computer.ts';
-import { HOTSEAT_MODE, type HotseatGame, type PlayedTurn } from '../modes/hotseat.ts';
+import type { PlayedTurn } from '../modes/hotseat.ts';
+import type { PlayedChange, PlaySource } from '../modes/play.ts';
 import { position } from '../render/geometry.ts';
 import type { LoadedArt } from '../render/pixi/textures.ts';
 import type { FigureCue, MapScene, Walker } from '../render/sceneModel.ts';
@@ -28,29 +38,37 @@ export const timing = { stepMs: 220, tumbleMs: 1100, noticeMs: 2200, appearMs: 2
 interface GameScreenProps {
   readonly art: LoadedArt;
   readonly scene: MapScene;
-  readonly game: HotseatGame;
+  readonly play: PlaySource;
   readonly logOpen: boolean;
   onCloseLog(): void;
   onNewGame(): void;
 }
 
+/** The route a turn's walk is shown along: the one drawn when it was committed. */
+interface Planned {
+  readonly path: PathPreview | null;
+  readonly waypoint: NodeId | null;
+}
+
 /**
- * One hotseat game (§7.2): the §7.1 UI with no out-of-turn planning.
+ * One game on the §7.1 UI: a hotseat game (§7.2), with no out-of-turn
+ * planning, or a stored game the server plays (`play`).
  *
  * End Turn plays out in three beats — the figure walks the steps the engine
  * says it walked, the die tumbles if a guard was faced, then the new state is
  * shown and the next seat's controls come up. The engine has resolved the
- * whole turn before the first beat; the beats only reveal it.
+ * whole turn before the first beat; the beats only reveal it. Turns are shown
+ * one after another, in the order `play` reports them.
  */
-export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }: GameScreenProps) {
+export function GameScreen({ art, scene, play: source, logOpen, onCloseLog, onNewGame }: GameScreenProps) {
   const catalog = art.catalog;
-  const [shown, setShown] = useState<GameState>(game.state);
+  const [shown, setShown] = useState<GameState>(source.state);
   const [move, setMove] = useState<MoveModeState>({ kind: 'idle' });
   const [armed, setArmed] = useState(false);
   const [walker, setWalker] = useState<Walker | null>(null);
   const [inFlight, setInFlight] = useState<{ path: PathPreview | null; waypoint: NodeId | null } | null>(null);
   const [result, setResult] = useState<{ turn: PlayedTurn; rolling: boolean } | null>(null);
-  const [entries, setEntries] = useState<readonly JournalEntry[]>([]);
+  const [entries, setEntries] = useState<readonly JournalEntry[]>(() => journalOf(source.history));
   const [notice, setNotice] = useState<string | null>(null);
   const [endOpen, setEndOpen] = useState(true);
   // The turn in which the current player picked their figure up; until they
@@ -59,7 +77,6 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
   const handle = useRef<MapHandle | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const busy = inFlight !== null;
-  const computer = useMemo(() => hotseatComputer(game), [game]);
 
   const say = useCallback((text: string) => setNotice(text), []);
   useEffect(() => {
@@ -87,18 +104,18 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
   const locateFigure = useCallback((player: PlayerId) => handle.current?.screenOfFigure(player) ?? null, []);
 
   const commit = useRef<(action: TurnAction) => void>(() => undefined);
-  /** Play a turn, then show it: the walk along `planned`, the die, the new state. */
-  const play = useRef<(action: TurnAction, planned: { path: PathPreview | null; waypoint: NodeId | null }) => void>(() => undefined);
+  /** Commit a turn to `play`, keeping `planned` to walk it along when it comes back. */
+  const play = useRef<(action: TurnAction, planned: Planned) => void>(() => undefined);
+  /** The route of the turn this page committed last, until that turn is shown. */
+  const committed = useRef<{ readonly turn: number; readonly planned: Planned } | null>(null);
   const controller = useMemo(
     () =>
       createMoveModeController({
-        mode: HOTSEAT_MODE,
-        // A computer seat is not this screen's to plan for: its saved route
-        // is never brought back as a preview, and its figure cannot be picked up.
-        localPlayers: new Set(game.state.players.filter((player) => player.control === 'human').map((player) => player.id)),
+        mode: source.mode,
+        localPlayers: source.localPlayers,
         commit: (action) => commit.current(action),
       }),
-    [game],
+    [source],
   );
   useEffect(() => {
     const sync = (): void => {
@@ -106,10 +123,10 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
       setArmed(controller.waypointArmed);
     };
     const unsubscribe = controller.subscribe(sync);
-    controller.setGame(game.state);
+    controller.setGame(source.state);
     sync();
     return unsubscribe;
-  }, [controller, game]);
+  }, [controller, source]);
 
   commit.current = (action) => {
     // The route End Turn committed stays drawn while the figure walks it.
@@ -118,35 +135,62 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
     play.current(action, planned);
   };
   play.current = (action, planned) => {
-    const before = game.state;
-    let turn: PlayedTurn;
+    committed.current = { turn: source.state.turn.number, planned };
     try {
-      turn = game.play(action);
+      source.commit(action);
     } catch (error) {
+      committed.current = null;
       say(error instanceof Error ? error.message : String(error));
-      controller.setGame(game.state);
+      controller.setGame(source.state);
+    }
+  };
+
+  // Every change `play` reports is shown in turn: a turn plays out before the
+  // next one starts, and a change that is not a turn just shows the new state.
+  const queue = useRef<PlayedChange[]>([]);
+  const showing = useRef(false);
+  const show = useRef<(change: PlayedChange) => Promise<void>>(async () => undefined);
+  show.current = async ({ before, after, turn }) => {
+    if (turn === null) {
+      setShown(after);
+      controller.setGame(after);
       return;
     }
+    const mine = committed.current;
+    if (mine !== null && mine.turn <= before.turn.number) committed.current = null;
     setResult(null);
-    setInFlight(planned);
+    setInFlight(mine !== null && mine.turn === before.turn.number ? mine.planned : { path: null, waypoint: null });
     // Whatever happens while it plays out, the turn has been played: the
     // page must end up showing it, never stuck part-way.
-    void playOut(turn, before)
-      .catch(() => undefined)
-      .then(() => {
-        setWalker(null);
-        setShown(turn.after);
-        setEntries((current) => [journalEntry(turn, before), ...current]);
-        setInFlight(null);
-        controller.setGame(turn.after);
-        if (turn.after.status === 'finished') {
-          setEndOpen(true);
-          return;
-        }
-        const next = turn.after.players[turn.after.turn.activeSeat - 1];
-        if (next !== undefined) say(`${next.name}’s turn`);
-      });
+    await playOut(turn, before).catch(() => undefined);
+    setWalker(null);
+    setShown(turn.after);
+    setEntries((current) => [journalEntry(turn, before), ...current]);
+    setInFlight(null);
+    controller.setGame(turn.after);
+    if (turn.after.status === 'finished') {
+      setEndOpen(true);
+      return;
+    }
+    const next = turn.after.players[turn.after.turn.activeSeat - 1];
+    if (next !== undefined) say(`${next.name}’s turn`);
   };
+  useEffect(() => {
+    const drain = async (): Promise<void> => {
+      if (showing.current) return;
+      showing.current = true;
+      for (let change = queue.current.shift(); change !== undefined; change = queue.current.shift()) await show.current(change);
+      showing.current = false;
+    };
+    const unsubscribe = source.subscribe((change) => {
+      queue.current.push(change);
+      void drain();
+    });
+    return () => {
+      unsubscribe();
+      queue.current = [];
+    };
+  }, [source]);
 
   /** The walk, then the die: what End Turn shows before the result is revealed. */
   const playOut = async (turn: PlayedTurn, before: GameState): Promise<void> => {
@@ -168,9 +212,10 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
   // seat's time, while its figure blinks, and then plays out like a person's
   // End turn: its route drawn, the walk, the die. Leaving the game stops it.
   useEffect(() => {
-    if (busy || shown !== game.state || shown.status !== 'in_progress') return;
+    const computer = source.computer;
+    if (computer === null || busy || shown !== source.state || shown.status !== 'in_progress') return;
     const player = shown.players[shown.turn.activeSeat - 1];
-    if (player === undefined || player.control !== 'ai') return;
+    if (player === undefined || !source.thinksFor(player)) return;
     const cancel = { aborted: false };
     computer.chooseAction(shown, player.id, cancel).then(
       (action) => {
@@ -181,7 +226,7 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
     return () => {
       cancel.aborted = true;
     };
-  }, [computer, game, shown, busy, say]);
+  }, [source, shown, busy, say]);
 
   // [Andrei, 2026-09-24] "we need to center the map on the current player's
   // figure at the beginning of each turn, both human and AI" (Q46): the map
@@ -257,17 +302,17 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
   // node is on screen, and the game as the engine holds it.
   useEffect(() => {
     const hooks = {
-      state: () => game.state,
+      state: () => source.state,
       shown: () => shown,
-      diceSeed: game.setup.diceSeed,
+      diceSeed: source.diceSeed,
       busy: () => busy,
-      thinking: () => !busy && shown === game.state && shown.status === 'in_progress' && active?.control === 'ai',
+      thinking: () => !busy && shown === source.state && shown.status === 'in_progress' && active !== undefined && source.thinksFor(active),
       screenOf: (node: number): Point | null => handle.current?.screenOf(node as NodeId) ?? null,
       figureOf: (player: string): Point | null => handle.current?.screenOfFigure(player as PlayerId) ?? null,
       setTiming: (next: Partial<typeof timing>) => Object.assign(timing, next),
     };
     (window as unknown as { __adventure?: typeof hooks }).__adventure = hooks;
-  }, [game, shown, busy, active]);
+  }, [source, shown, busy, active]);
 
   const path = inFlight !== null ? inFlight.path : move.kind === 'previewing' ? move.preview : null;
   const waypoint = inFlight !== null ? inFlight.waypoint : move.kind === 'idle' ? null : move.waypoint;
@@ -286,7 +331,7 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
         move={move}
         waypointArmed={armed}
         busy={busy}
-        thinkingMs={active?.control === 'ai' ? (game.setup.seats[active.seat - 1]?.thinkingSeconds ?? 0) * 1000 : null}
+        thinkingMs={thinkingMsOf(source, active)}
         onPlan={plan}
         onCancel={() => controller.cancel()}
         onArmWaypoint={(on) => controller.armWaypoint(on)}
@@ -296,12 +341,12 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
         onFind={findActive}
       />
       <div className={`log-host${logOpen ? ' open' : ''}`}>
-        <TurnLog entries={entries} map={game.setup.map} diceSeed={game.setup.diceSeed} onClose={onCloseLog} />
+        <TurnLog entries={entries} map={source.map} diceSeed={source.diceSeed} onClose={onCloseLog} />
       </div>
       <main className="stage">
         <MapView
           art={art}
-          map={game.setup.map}
+          map={source.map}
           scene={scene}
           state={shown}
           path={path}
@@ -338,6 +383,17 @@ export function GameScreen({ art, scene, game, logOpen, onCloseLog, onNewGame }:
       </main>
     </div>
   );
+}
+
+/** The turn log's entries for the turns played before the screen opened, newest first. */
+function journalOf(history: readonly PlayedChange[]): JournalEntry[] {
+  return history.flatMap(({ before, turn }) => (turn === null ? [] : [journalEntry(turn, before)])).reverse();
+}
+
+/** How long the player on turn thinks, for a computer seat; `null` for a person. */
+function thinkingMsOf(source: PlaySource, active: PlayerState | undefined): number | null {
+  const seconds = active === undefined ? null : source.thinkingSecondsOf(active);
+  return seconds === null ? null : seconds * 1000;
 }
 
 /** Walk a figure along `nodes` (world units), one road at a time. */

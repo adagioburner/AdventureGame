@@ -4,6 +4,7 @@ import type { GameMap } from '@adventure/core';
 import { atlasOf, buildArtCatalog, type ArtCatalog } from '../art/catalog.ts';
 import { ART_FILES } from '../art/files.ts';
 import { HotseatGame, newDiceSeed } from '../modes/hotseat.ts';
+import { hotseatPlay } from '../modes/play.ts';
 import { loadArt, type LoadedArt } from '../render/pixi/textures.ts';
 import { buildMapScene, type MapScene } from '../render/sceneModel.ts';
 import { newLocalSetup, toHotseatSeats, type LocalLimits, type LocalSetup } from '../setup/local.ts';
@@ -41,6 +42,7 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
   const [problem, setProblem] = useState<string | null>(null);
   const [setup, setSetup] = useState<LocalSetup | null>(null);
   const [game, setGame] = useState<HotseatGame | null>(null);
+  const play = useMemo(() => (game === null ? null : hotseatPlay(game)), [game]);
   const [goingOnline, setGoingOnline] = useState<{ readonly busy: boolean; readonly problem: string | null }>({
     busy: false,
     problem: null,
@@ -168,12 +170,12 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
             {status}
           </div>
         </main>
-      ) : game !== null ? (
+      ) : game !== null && play !== null ? (
         <GameScreen
           key={game.setup.diceSeed}
           art={art}
           scene={scene}
-          game={game}
+          play={play}
           logOpen={logOpen}
           onCloseLog={() => setLogOpen(false)}
           onNewGame={() => setGame(null)}
