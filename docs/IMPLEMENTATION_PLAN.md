@@ -1259,6 +1259,55 @@ switch turned on again.
 browsers, survives a reload on both sides, the GM can force a stalling
 player's move, and a game with computer seats plays to the end.
 
+### What actually landed
+
+Built to [Q54](./OPEN_QUESTIONS.md#q54), [Q55](./OPEN_QUESTIONS.md#q55) and
+[Q56](./OPEN_QUESTIONS.md#q56) 48 to 71. The Track button (Q56 52, details 72
+to 77) waits on Andrei's answers; until then the map moves at each turn as in
+hot seat (Q46, Q47). Two browsers played a stored game against the local
+Workers runtime: planning out of turn, the other page walking each turn,
+Move on, a post, Add a day, a resignation with the computer taking the seat,
+and End the game; one browser played a game against a computer seat to its
+winner, reloading half way.
+
+- **The server plays every turn** (`GameSession.play`,
+  `packages/session/src/session.ts`): the action goes through `applyAction`
+  with rolls drawn fresh from `crypto.getRandomValues`
+  (`createSecureDiceService`), so there is no dice seed to leak (Q56 65), and
+  each change is stored as a numbered record of the action and its rolls,
+  which replays exactly (`replayRecord`, `packages/protocol/src/records.ts`).
+  A turn message names its turn; one already over is refused as `turn_over`
+  and never played on the next (Q54 35, Q56 55).
+- **A page opens a game from its records** (`OnlineGame`,
+  `apps/web/src/modes/online.ts`), replaying them from the opening position
+  for the turn log, and applies each new one as it arrives; a gap reloads the
+  game. Turns missed while a page was away are in the log with no walk (Q54
+  32).
+- **One play screen for both games.** `GameScreen` plays a `PlaySource`
+  (`apps/web/src/modes/play.ts`): `hotseatPlay` plays on this device,
+  `onlinePlay` sends End turn, Rest, the route being drawn (`turn.plan`),
+  Move on and the computer's moves, and reports each change in order.
+  Hot seat is unchanged by it.
+- **Presence** is a ping every 20 seconds that Cloudflare answers without
+  waking the game; the game's alarm reads the times while it is watched, and
+  a minute's silence is "Away" (Q54 31).
+- **Lifetime** is one alarm per game for the sooner of its end and the next
+  presence check; a game ends on time, is deleted 7 days after it closes and
+  leaves a tombstone so its address says it was removed (Q55). Games from
+  before lifetimes take their 3 days from the moment they are met: the lobby
+  wakes every listed one, and any other takes it when opened (Q56 64).
+- **Resigning** (`player.resign`) keeps the seat a person's in the setup, so
+  the opening position replays, and sets its thinking time to 10 seconds; the
+  engine hands the player to the computer. **The board** is
+  `board.post`, played as the engine's `post_message`, so posts ride the
+  records and replay with the game.
+- **A game on one device** is kept in `localStorage` as its seed, seats, dice
+  seed and actions, and replayed on reload (`apps/web/src/modes/kept.ts`,
+  Q56 66).
+- **Not reachable:** a game cancelled or finished before phase 7 is no longer
+  on the lobby's list, and Durable Objects cannot be listed, so it takes its
+  lifetime only if someone opens its address.
+
 ---
 
 ## Phase 8 — AI in multiplayer
