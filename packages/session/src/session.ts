@@ -13,8 +13,10 @@ import {
   type UserId,
 } from '@adventure/core';
 import {
+  BOARD_POST_MAX,
   computerMoveRequestId,
   DAY_MS,
+  RESIGNED_THINKING_SECONDS,
   isOpenSeat,
   KEPT_AFTER_END_DAYS,
   LONGEST_LIFETIME_DAYS,
@@ -236,8 +238,40 @@ export class GameSession {
         return;
       }
 
+      case 'player.resign': {
+        // [Q56, 57] Anyone holding a seat, the game master included. The
+        // computer plays it from then on; only the game master can hand it
+        // back, which is phase 8.
+        const game = await this.gameInProgress();
+        const player = humanPlayerOf(setup, game, from);
+        const resigned: SetupState = {
+          ...setup,
+          seats: setup.seats.map((seat) => (seat.playerId === player ? { ...seat, thinkingSeconds: RESIGNED_THINKING_SECONDS } : seat)),
+        };
+        await this.ports.games.saveSetup(resigned);
+        await this.ports.broadcaster.broadcast(this.gameId, { type: 'setup.state', setup: resigned });
+        await this.play(resigned, game, { kind: 'resign', player }, from);
+        return;
+      }
+
+      case 'board.post': {
+        // [Q56, 59] Anyone holding a seat, resigned or not, from Start until the
+        // game is removed, after it ends too. The computer never posts.
+        const game = await this.ports.games.load(this.gameId);
+        if (game === null) throw new SetupError('invalid_action', 'the board opens when the game starts');
+        const seat = setup.seats.find((candidate) => candidate.userId === from);
+        if (seat === undefined) throw new SetupError('invalid_action', 'only the players in this game can post');
+        const body = message.body.trim();
+        if (body.length === 0) throw new SetupError('invalid_action', 'a post needs some words');
+        if ([...body].length > BOARD_POST_MAX) throw new SetupError('invalid_action', `a post is at most ${BOARD_POST_MAX} characters`);
+        const postedAt = this.ports.clock.now();
+        const id = `post-${game.messageBoard.length + 1}`;
+        await this.play(setup, game, { kind: 'post_message', player: seat.playerId, body, id, postedAt }, from);
+        return;
+      }
+
       default:
-        // The board and resigning wait on Andrei's answers to phase 7's open details.
+        // Switching a seat between person and computer is the game master's in phase 8.
         throw new SetupError('invalid_action', 'that is not playable yet');
     }
   }
@@ -319,7 +353,8 @@ export class GameSession {
     const before = listingOf(setup, game);
     const after = listingOf(current, outcome.state);
     if (JSON.stringify(before) !== JSON.stringify(after)) await this.ports.directory.update(this.gameId, after);
-    if (outcome.state.turn.number !== game.turn.number) await this.requestAiMove(current, outcome.state);
+    // A new turn, or a resignation handing the turn on to the computer.
+    if (outcome.state.turn.number !== game.turn.number || action.kind === 'resign') await this.requestAiMove(current, outcome.state);
   }
 
   private async gameInProgress(): Promise<GameState> {
@@ -403,7 +438,7 @@ function humanPlayerOf(setup: SetupState, game: GameState, user: UserId): Player
 
 /** [Q54, 35] A turn message names the turn it was for; one already over is refused, never played on the next. */
 function requireTurn(game: GameState, turn: number): void {
-  if (turn !== game.turn.number) throw new SetupError('not_your_turn', 'that turn has already been played');
+  if (turn !== game.turn.number) throw new SetupError('turn_over', 'that turn has already been played');
 }
 
 function notFound(gameId: GameId): ServerMessage {

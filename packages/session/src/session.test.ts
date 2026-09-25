@@ -218,7 +218,7 @@ describe('GameSession in play', () => {
     expect(h.take().map(({ to, message }) => [to, message.type === 'error' ? message.code : message.type])).toEqual([
       ['bea', 'not_your_turn'],
       ['all', 'game.played'],
-      ['andrei', 'not_your_turn'],
+      ['andrei', 'turn_over'],
     ]);
     expect(h.records()).toHaveLength(1);
   });
@@ -265,6 +265,47 @@ describe('GameSession in play', () => {
     await send(h.session, andrei, move);
     expect(h.records().map((record) => record.action.kind)).toEqual(['rest', 'rest']);
     expect(h.game()?.turn.number).toBe(3);
+  });
+
+  it('lets anyone holding a seat resign, after which the computer plays it for 10 seconds a move (Q56 57)', async () => {
+    const h = await started();
+    await send(h.session, bea, { type: 'player.resign', gameId: G });
+    expect(h.game()?.players[1]).toMatchObject({ control: 'ai', resigned: true });
+    expect(h.setup()?.seats[1]).toMatchObject({ userId: bea, thinkingSeconds: 10 });
+    expect(h.records().at(-1)).toMatchObject({ action: { kind: 'resign', player: 'seat-2' }, by: bea });
+    // The computer's turn comes: the game master's page is asked for it.
+    h.take();
+    await send(h.session, andrei, { type: 'turn.rest', gameId: G, turn: 1 });
+    expect(h.take().find(({ message }) => message.type === 'gm.requestAiMove')).toMatchObject({ to: andrei, message: { player: 'seat-2' } });
+    // Resigned, Bea can no longer play the seat, nor resign again.
+    await send(h.session, bea, { type: 'player.resign', gameId: G });
+    expect(h.take().map(({ message }) => message.type === 'error' && message.message)).toEqual(['the computer plays your seat']);
+  });
+
+  it('asks the game master for the computer’s move at once when the player on turn resigns', async () => {
+    const h = await started();
+    h.take();
+    await send(h.session, andrei, { type: 'player.resign', gameId: G });
+    expect(h.take().find(({ message }) => message.type === 'gm.requestAiMove')).toMatchObject({ message: { requestId: 'turn-1', player: 'seat-1' } });
+  });
+
+  it('keeps posts on the board from anyone holding a seat, after the end too (Q56 59)', async () => {
+    const h = await started();
+    await send(h.session, bea, { type: 'board.post', gameId: G, body: '  good luck  ' });
+    await send(h.session, asUserId('cal'), { type: 'board.post', gameId: G, body: 'hi' });
+    await send(h.session, andrei, { type: 'board.post', gameId: G, body: '   ' });
+    await send(h.session, andrei, { type: 'board.post', gameId: G, body: 'x'.repeat(501) });
+    await send(h.session, andrei, { type: 'gm.endGame', gameId: G });
+    await send(h.session, andrei, { type: 'board.post', gameId: G, body: 'x'.repeat(500) });
+    expect(h.game()?.messageBoard.map((post) => [post.id, post.author, post.body.length, post.postedAt])).toEqual([
+      ['post-1', 'seat-2', 9, 5],
+      ['post-2', 'seat-1', 500, 5],
+    ]);
+    expect(h.take().filter(({ message }) => message.type === 'error').map(({ to, message }) => [to, message.type === 'error' && message.message])).toEqual([
+      ['cal', 'only the players in this game can post'],
+      ['andrei', 'a post needs some words'],
+      ['andrei', 'a post is at most 500 characters'],
+    ]);
   });
 
   it('lets the game master end the game, which closes it and marks the row finished', async () => {

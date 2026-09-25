@@ -44,6 +44,8 @@ interface GameScreenProps {
   readonly away?: ReadonlySet<PlayerId> | undefined;
   /** [Q54, 31 and 33] Online, what the game shown waits on when someone is away; `null` when nobody is. */
   readonly waitingOn?: ((state: GameState) => string | null) | undefined;
+  /** [Q56, 71] Online, the connection to the server is down and being brought back. */
+  readonly offline?: boolean;
   onCloseLog(): void;
   onNewGame(): void;
 }
@@ -64,7 +66,7 @@ interface Planned {
  * whole turn before the first beat; the beats only reveal it. Turns are shown
  * one after another, in the order `play` reports them.
  */
-export function GameScreen({ art, scene, play: source, logOpen, away, waitingOn, onCloseLog, onNewGame }: GameScreenProps) {
+export function GameScreen({ art, scene, play: source, logOpen, away, waitingOn, offline = false, onCloseLog, onNewGame }: GameScreenProps) {
   const catalog = art.catalog;
   const [shown, setShown] = useState<GameState>(source.state);
   const [move, setMove] = useState<MoveModeState>({ kind: 'idle' });
@@ -75,9 +77,11 @@ export function GameScreen({ art, scene, play: source, logOpen, away, waitingOn,
   const [entries, setEntries] = useState<readonly JournalEntry[]>(() => journalOf(source.history));
   const [notice, setNotice] = useState<string | null>(null);
   const [endOpen, setEndOpen] = useState(true);
-  // The turn in which the current player picked their figure up; until they
-  // do, it blinks, even over a route saved from their last turn.
-  const [engagedTurn, setEngagedTurn] = useState<number | null>(null);
+  // Whether the player planning has picked their figure up; until they do,
+  // the current player's figure blinks, even over a route saved from their
+  // last turn.
+  const [engaged, setEngaged] = useState(false);
+  const [planner, setPlanner] = useState<PlayerId | null>(null);
   const handle = useRef<MapHandle | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const busy = inFlight !== null;
@@ -98,13 +102,14 @@ export function GameScreen({ art, scene, play: source, logOpen, away, waitingOn,
     return () => window.clearTimeout(timer);
   }, [result]);
   // [Andrei, 2026-09-24] Q42: "the computer's die panel closes itself, pressing
-  // OK is not necessary". OK still closes it sooner.
+  // OK is not necessary". OK still closes it sooner. [Q56, 50] Online, so does every other player's:
+  // only a card of this page's own player waits for OK.
   useEffect(() => {
     if (result === null || result.rolling || isUnguardedClaim(result.turn)) return;
-    if (result.turn.after.players.find((player) => player.id === result.turn.player)?.control !== 'ai') return;
+    if (source.localPlayers.has(result.turn.player)) return;
     const timer = window.setTimeout(() => setResult(null), timing.computerCardMs);
     return () => window.clearTimeout(timer);
-  }, [result]);
+  }, [result, source]);
   const locateFigure = useCallback((player: PlayerId) => handle.current?.screenOfFigure(player) ?? null, []);
 
   const commit = useRef<(action: TurnAction) => void>(() => undefined);
@@ -121,10 +126,25 @@ export function GameScreen({ art, scene, play: source, logOpen, away, waitingOn,
       }),
     [source],
   );
+  // [Q56, 53] Online, the route being drawn is saved on the server as it is
+  // drawn: what was sent last, until the game shows it saved.
+  const sent = useRef<string | null>(null);
   useEffect(() => {
     const sync = (): void => {
       setMove(controller.state);
       setArmed(controller.waypointArmed);
+      setEngaged(controller.engaged);
+      setPlanner(controller.planner);
+      const save = source.savePlan;
+      const who = controller.planner;
+      if (save === null || who === null) return;
+      const saved = savedRouteKey(source.state, who);
+      if (sent.current === saved) sent.current = null;
+      const now = controller.state;
+      if (!controller.engaged || now.kind !== 'previewing') return;
+      const key = routeKey(now.path, now.waypoint);
+      if (key === saved || key === sent.current) return;
+      if (save(who, now.path, now.waypoint)) sent.current = key;
     };
     const unsubscribe = controller.subscribe(sync);
     controller.setGame(source.state);
@@ -169,11 +189,11 @@ export function GameScreen({ art, scene, play: source, logOpen, away, waitingOn,
       if (update.reason !== null) say(update.reason);
       return;
     }
-    const { before, after, turn } = update.change;
+    const { before, after, turn, movedOn = false } = update.change;
     if (turn === null || update.shown === 'caught_up') {
       // [Q54, 32] A turn missed while the connection was down is in the log,
       // and the map shows where it left everyone, with no walk.
-      if (turn !== null) setEntries((current) => [journalEntry(turn, before), ...current]);
+      if (turn !== null) setEntries((current) => [journalEntry(turn, before, movedOn), ...current]);
       const mine = committed.current;
       if (turn !== null && mine !== null && mine.turn <= before.turn.number) {
         committed.current = null;
@@ -187,21 +207,34 @@ export function GameScreen({ art, scene, play: source, logOpen, away, waitingOn,
     const mine = committed.current;
     if (mine !== null && mine.turn <= before.turn.number) committed.current = null;
     setResult(null);
-    setInFlight(mine !== null && mine.turn === before.turn.number ? mine.planned : { path: null, waypoint: null });
+    // [Q56, 50] A turn this page did not commit, another player's online, is
+    // walked along its own route, drawn as their End turn drew it.
+    setInFlight(
+      mine !== null && mine.turn === before.turn.number
+        ? mine.planned
+        : { path: routeOf(before, turn.action), waypoint: turn.action.kind === 'move' ? (turn.action.waypoint ?? null) : null },
+    );
     // Whatever happens while it plays out, the turn has been played: the
     // page must end up showing it, never stuck part-way.
     await playOut(turn, before).catch(() => undefined);
     setWalker(null);
     setShown(turn.after);
-    setEntries((current) => [journalEntry(turn, before), ...current]);
+    setEntries((current) => [journalEntry(turn, before, movedOn), ...current]);
     setInFlight(null);
     controller.setGame(turn.after);
     if (turn.after.status === 'finished') {
       setEndOpen(true);
       return;
     }
+    // [Q56, 55] A player the game master moved on is told so, whenever it happens.
+    if (movedOn && source.localPlayers.has(turn.player) && source.mode.allowOutOfTurnPlanning) {
+      say('The game master moved you on.');
+      return;
+    }
+    // [Q56, 52] Online, the notice reads "Your turn" on the page of the player whose turn it is.
     const next = turn.after.players[turn.after.turn.activeSeat - 1];
-    if (next !== undefined) say(`${next.name}’s turn`);
+    if (next === undefined) return;
+    say(source.mode.allowOutOfTurnPlanning && source.localPlayers.has(next.id) ? 'Your turn' : `${next.name}’s turn`);
   };
   useEffect(() => {
     const drain = async (): Promise<void> => {
@@ -278,53 +311,86 @@ export function GameScreen({ art, scene, play: source, logOpen, away, waitingOn,
   };
 
   const active = shown.players[shown.turn.activeSeat - 1];
+  const online = source.mode.allowOutOfTurnPlanning;
+  // [Q56, 48 and 49] Online, a turn that is not this page's player's: they
+  // watch it, and can plan their own next move meanwhile.
+  const othersTurn = online && active !== undefined && !source.localPlayers.has(active.id);
+  /** Who Plan a move plans for: the player on turn on one device, this page's own player online. */
+  const planFor = online ? shown.players.find((player) => source.localPlayers.has(player.id)) : active;
+  const canPlan = online ? planFor !== undefined : active?.control !== 'ai';
   const onTap = (target: Pick, shift: boolean): void => {
     if (busy || shown.status !== 'in_progress') return;
     if (controller.state.kind === 'idle') {
-      const clicked = target.players.find((player) => player === active?.id) ?? target.players[0];
+      // On one device the figure on turn is the one picked up where figures
+      // stand together; online it is this page's own.
+      const clicked = online
+        ? (target.players.find((player) => source.localPlayers.has(player)) ?? target.players[0])
+        : (target.players.find((player) => player === active?.id) ?? target.players[0]);
       if (clicked === undefined) {
-        if (target.node !== null && active?.control !== 'ai') say('Tap your figure, or Plan a move, before choosing where to go.');
+        if (target.node !== null && canPlan) say('Tap your figure, or Plan a move, before choosing where to go.');
         return;
       }
       const refused = controller.enter(clicked);
       if (refused !== null) return refuse(refused);
       setResult(null);
-      setEngagedTurn(shown.turn.number);
       return;
     }
     // Tapping your own figure while a route is up picks it up; it does not
     // make its own node the destination.
-    if (active !== undefined && target.players.includes(active.id)) {
-      setEngagedTurn(shown.turn.number);
+    const planning = controller.planner;
+    if (planning !== null && target.players.includes(planning)) {
+      controller.engage();
       return;
     }
     const node = target.node;
     if (node === null) return;
-    setEngagedTurn(shown.turn.number);
     controller.choose(node, shift);
   };
 
   const plan = (): void => {
-    if (active === undefined) return;
-    const refused = controller.enter(active.id);
+    if (planFor === undefined) return;
+    const refused = controller.enter(planFor.id);
     if (refused !== null) return refuse(refused);
     setResult(null);
-    setEngagedTurn(shown.turn.number);
     // A phone shows the whole map too small to find a figure or tap a node,
     // so planning from the button there starts close in on the player.
-    if (window.matchMedia(PHONE).matches) findActive();
+    if (window.matchMedia(PHONE).matches) handle.current?.centerOn(planFor.position);
   };
   const findActive = (): void => {
     if (active !== undefined) handle.current?.centerOn(active.position);
   };
+  /** Cancel puts the route down, and online clears the saved one too ([Q56, 53]). */
+  const cancel = useRef<() => void>(() => undefined);
+  cancel.current = () => {
+    const who = controller.planner;
+    controller.cancel();
+    const save = source.savePlan;
+    if (save === null || who === null) return;
+    const empty = routeKey([], null);
+    if (savedRouteKey(source.state, who) === empty && (sent.current === null || sent.current === empty)) return;
+    if (save(who, [], null)) sent.current = empty;
+  };
+  // [Q56, 54] The game master's Move on, asked first, for a person on turn.
+  const moveOn = source.moveOn;
+  const onMoveOn =
+    moveOn !== null && othersTurn && active !== undefined && active.control === 'human'
+      ? () => {
+          if (!window.confirm(`Play ${active.name}’s saved route now? With none saved, ${active.name} rests.`)) return;
+          try {
+            moveOn(active);
+          } catch (error) {
+            say(error instanceof Error ? error.message : String(error));
+          }
+        }
+      : null;
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') controller.cancel();
+      if (event.key === 'Escape') cancel.current();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [controller]);
+  }, []);
 
   // A read-only window for the screenshot scripts and browser checks: where a
   // node is on screen, and the game as the engine holds it.
@@ -335,21 +401,26 @@ export function GameScreen({ art, scene, play: source, logOpen, away, waitingOn,
       diceSeed: source.diceSeed,
       busy: () => busy,
       thinking: () => !busy && shown === source.state && shown.status === 'in_progress' && active !== undefined && source.thinksFor(active),
+      move: () => controller.state,
+      planner: () => (controller.engaged ? controller.planner : null),
       screenOf: (node: number): Point | null => handle.current?.screenOf(node as NodeId) ?? null,
       figureOf: (player: string): Point | null => handle.current?.screenOfFigure(player as PlayerId) ?? null,
       setTiming: (next: Partial<typeof timing>) => Object.assign(timing, next),
     };
     (window as unknown as { __adventure?: typeof hooks }).__adventure = hooks;
-  }, [source, shown, busy, active]);
+  }, [source, controller, shown, busy, active]);
 
   const path = inFlight !== null ? inFlight.path : move.kind === 'previewing' ? move.preview : null;
   const waypoint = inFlight !== null ? inFlight.waypoint : move.kind === 'idle' ? null : move.waypoint;
   const cue: FigureCue =
     shown.status !== 'in_progress' || busy
       ? 'none'
-      : move.kind !== 'idle' && engagedTurn === shown.turn.number
+      : move.kind !== 'idle' && engaged && planner === active?.id
         ? 'selected'
         : 'blink';
+  // [Q56, 49] Online, a figure picked up out of turn is highlighted as on its own turn.
+  const plannerShown =
+    shown.status === 'in_progress' && !busy && move.kind !== 'idle' && engaged && planner !== active?.id ? planner : null;
 
   return (
     <div className="game">
@@ -361,8 +432,12 @@ export function GameScreen({ art, scene, play: source, logOpen, away, waitingOn,
         busy={busy}
         thinkingMs={thinkingMsOf(source, active)}
         waiting={waitingOn?.(shown) ?? null}
+        othersTurn={othersTurn}
+        canPlan={canPlan}
+        offline={offline}
+        onMoveOn={onMoveOn}
         onPlan={plan}
-        onCancel={() => controller.cancel()}
+        onCancel={() => cancel.current()}
         onArmWaypoint={(on) => controller.armWaypoint(on)}
         onClearWaypoint={() => controller.clearWaypoint()}
         onEndTurn={() => controller.endTurn()}
@@ -382,6 +457,7 @@ export function GameScreen({ art, scene, play: source, logOpen, away, waitingOn,
           waypoint={waypoint}
           walker={walker}
           cue={cue}
+          planner={plannerShown}
           onTap={onTap}
           onReady={(ready) => {
             handle.current = ready;
@@ -416,7 +492,18 @@ export function GameScreen({ art, scene, play: source, logOpen, away, waitingOn,
 
 /** The turn log's entries for the turns played before the screen opened, newest first. */
 function journalOf(history: readonly PlayedChange[]): JournalEntry[] {
-  return history.flatMap(({ before, turn }) => (turn === null ? [] : [journalEntry(turn, before)])).reverse();
+  return history.flatMap(({ before, turn, movedOn = false }) => (turn === null ? [] : [journalEntry(turn, before, movedOn)])).reverse();
+}
+
+/** A route as the page compares routes: its steps and its waypoint. */
+function routeKey(path: readonly NodeId[], waypoint: NodeId | null): string {
+  return `${path.join(' ')}|${path.length === 0 ? '' : (waypoint ?? '')}`;
+}
+
+/** The route `player` has saved in `state`. */
+function savedRouteKey(state: GameState, player: PlayerId): string {
+  const saved = state.players.find((candidate) => candidate.id === player)?.plannedPath ?? null;
+  return routeKey(saved?.path ?? [], saved?.waypoint ?? null);
 }
 
 /** How long the player on turn thinks, for a computer seat; `null` for a person. */

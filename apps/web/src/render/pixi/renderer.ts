@@ -1,8 +1,8 @@
 import { TERRAINS } from '@adventure/config';
-import type { GameMap, GameState, NodeId, PathPreview, Point } from '@adventure/core';
+import type { GameMap, GameState, NodeId, PathPreview, PlayerId, Point } from '@adventure/core';
 import { Container, Graphics, Matrix, Sprite, Text, TilingSprite } from 'pixi.js';
 import { spriteIndex } from '../../art/atlas.ts';
-import { atlasOf } from '../../art/catalog.ts';
+import { atlasOf, type SpriteRef } from '../../art/catalog.ts';
 import type { Camera, Projection } from '../isometric.ts';
 import type { MapRenderer, SceneLayer } from '../scene.ts';
 import {
@@ -67,6 +67,7 @@ export class PixiMapRenderer implements MapRenderer {
   private characterSprites: Sprite[] = [];
   private waypointSprite: Sprite | null = null;
   private cue: FigureCue = 'none';
+  private planner: PlayerId | null = null;
   /** What the blink animates: the current player's figure, its ring and the ripple. */
   private cued: { figure: Sprite | null; ring: Sprite | null; ripple: Graphics; at: Point } | null = null;
 
@@ -119,7 +120,7 @@ export class PixiMapRenderer implements MapRenderer {
   setState(state: GameState): void {
     if (state.map !== this.map) throw new Error('this renderer draws one map; make a new one for another');
     this.state = state;
-    this.stateScene = buildStateScene(this.scene, state, this.art.catalog, this.walker);
+    this.stateScene = buildStateScene(this.scene, state, this.art.catalog, this.walker, this.planner);
     for (const layer of ['nodes', 'pois', 'characters', 'ui', 'path-overlay'] as const) this.invalidate(layer);
   }
 
@@ -127,7 +128,16 @@ export class PixiMapRenderer implements MapRenderer {
   setWalker(walker: Walker | null): void {
     this.walker = walker;
     if (this.state === null || this.stateScene === null) return;
-    this.stateScene = { ...this.stateScene, ...buildCharacters(this.scene, this.state, this.art.catalog, walker) };
+    this.stateScene = { ...this.stateScene, ...buildCharacters(this.scene, this.state, this.art.catalog, walker, this.planner) };
+    this.invalidate('characters');
+  }
+
+  /** [Q56, 49] The player planning out of turn, whose figure is highlighted; `null` for none. */
+  setPlanner(planner: PlayerId | null): void {
+    if (planner === this.planner) return;
+    this.planner = planner;
+    if (this.state === null || this.stateScene === null) return;
+    this.stateScene = { ...this.stateScene, ...buildCharacters(this.scene, this.state, this.art.catalog, this.walker, planner) };
     this.invalidate('characters');
   }
 
@@ -311,19 +321,12 @@ export class PixiMapRenderer implements MapRenderer {
       if (item.player === current) figure = sprite;
     }
     const active = this.stateScene?.active ?? null;
+    const planning = this.stateScene?.planning ?? null;
+    // [Q56, 49] A player planning out of turn has their figure highlighted as
+    // on their own turn, while the figure on turn keeps its own cue.
+    if (planning !== null) this.drawRing(planning, true);
     if (active !== null) {
-      const selected = this.cue === 'selected';
-      const ring = new Sprite(this.art.frame(active.sprite));
-      ring.anchor.set(0.5);
-      ring.scale.set((active.size * (selected ? CUE.highlightScale : 1)) / ring.texture.width);
-      ring.position.set(active.at.x, active.at.y);
-      this.activeLayer.addChild(ring);
-      if (selected) {
-        const edge = new Graphics()
-          .circle(active.at.x, active.at.y, (active.size * CUE.highlightScale) / 2)
-          .stroke({ color: CUE.color, width: CUE.highlightWidth * this.scene.spacing });
-        this.activeLayer.addChild(edge);
-      }
+      const ring = this.drawRing(active, this.cue === 'selected');
       if (this.cue === 'blink') {
         const ripple = new Graphics();
         this.activeLayer.addChild(ripple);
@@ -333,6 +336,22 @@ export class PixiMapRenderer implements MapRenderer {
     if (this.waypoint !== null) {
       this.waypointSprite = this.stand(buildWaypoint(this.scene, this.map, this.waypoint, this.art.catalog), 1);
     }
+  }
+
+  /** The ring under a figure, larger and with a bright edge when `selected`. */
+  private drawRing(at: { readonly at: Point; readonly size: number; readonly sprite: SpriteRef }, selected: boolean): Sprite {
+    const ring = new Sprite(this.art.frame(at.sprite));
+    ring.anchor.set(0.5);
+    ring.scale.set((at.size * (selected ? CUE.highlightScale : 1)) / ring.texture.width);
+    ring.position.set(at.at.x, at.at.y);
+    this.activeLayer.addChild(ring);
+    if (selected) {
+      const edge = new Graphics()
+        .circle(at.at.x, at.at.y, (at.size * CUE.highlightScale) / 2)
+        .stroke({ color: CUE.color, width: CUE.highlightWidth * this.scene.spacing });
+      this.activeLayer.addChild(edge);
+    }
+    return ring;
   }
 
   private stand(item: Billboard, alpha: number, parent: Container = this.standing): Sprite {

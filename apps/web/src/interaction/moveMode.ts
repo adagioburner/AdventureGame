@@ -41,6 +41,12 @@ export interface MoveModeController {
   /** The player whose route is being edited, or `null` when none is. */
   readonly planner: PlayerId | null;
   /**
+   * Whether the planner has picked their figure up: entered moving mode, or
+   * chosen a node, since the route was last brought back or put down. A
+   * route brought back at the start of a turn is shown, but not picked up.
+   */
+  readonly engaged: boolean;
+  /**
    * Touch screens have no shift key, so the waypoint can also be armed with a
    * button: while armed, the next node chosen becomes the waypoint.
    */
@@ -58,6 +64,8 @@ export interface MoveModeController {
    * their turn.
    */
   enter(player: PlayerId): EnterRefusal | null;
+  /** The planner's own figure was tapped while their route is up: it is picked up. */
+  engage(): void;
   /** A node was clicked; `shift` for a shift-click. */
   choose(node: NodeId, shift: boolean): void;
   selectDestination(node: NodeId): void;
@@ -150,6 +158,7 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
   let state: MoveModeState = IDLE;
   let planner: PlayerId | null = null;
   let armed = false;
+  let engaged = false;
   /** Which turn `state` was planned in, so a new turn starts over. */
   let turnOf: number | null = null;
   const listeners = new Set<() => void>();
@@ -209,23 +218,45 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
     get waypointArmed() {
       return armed;
     },
+    get engaged() {
+      return engaged;
+    },
 
     setGame(next) {
+      const before = game;
       const newTurn = turnOf !== next.turn.number;
       game = next;
       turnOf = next.turn.number;
       if (next.status !== 'in_progress') {
         planner = null;
         armed = false;
+        engaged = false;
         return set(IDLE);
       }
-      if (newTurn) {
+      // [Q56, 51] Online, a route someone is planning out of turn carries on
+      // through other players' turns; only the planner's own turn ending
+      // (End Turn, Rest, or the game master moving them on) puts it down.
+      const carried =
+        newTurn &&
+        options.mode.allowOutOfTurnPlanning &&
+        engaged &&
+        planner !== null &&
+        state.kind !== 'idle' &&
+        before !== null &&
+        before.players[before.turn.activeSeat - 1]?.id !== planner &&
+        playerIn(next, planner).control === 'human';
+      if (newTurn && !carried) {
         planner = defaultPlanner(next);
         armed = false;
+        engaged = false;
         return set(resume(next));
       }
-      // Same turn, new state (another player's move arriving, online): the
-      // route stands, its colours are recomputed.
+      // [Q56, 53] A route not picked up is the saved one, which another of
+      // this player's devices, or a Cancel from this one, may have changed.
+      if (!engaged && planner !== null) return set(resume(next));
+      // Same turn, new state (another player's move arriving, online), or a
+      // route carried into a new turn: the route stands, its colours are
+      // recomputed.
       if (state.kind === 'previewing') {
         const planned = playerIn(next, planner as PlayerId);
         return set({ ...state, preview: previewFor(next, planned, state.path) });
@@ -242,13 +273,21 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
         planner = player;
         state = resume(game);
       }
+      engaged = true;
       if (state.kind === 'idle') set({ kind: 'selecting', waypoint: null });
       else notify();
       return null;
     },
 
+    engage() {
+      if (state.kind === 'idle' || engaged) return;
+      engaged = true;
+      notify();
+    },
+
     choose(node, shift) {
       if (state.kind === 'idle') return;
+      engaged = true;
       if (shift || armed) {
         armed = false;
         controller.setWaypoint(node);
@@ -282,6 +321,7 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
 
     cancel() {
       armed = false;
+      engaged = false;
       set(IDLE);
     },
 
@@ -291,6 +331,7 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
       const path = state.kind === 'previewing' ? state.path : [];
       const waypoint = state.kind === 'idle' ? null : state.waypoint;
       armed = false;
+      engaged = false;
       state = IDLE;
       options.commit({ kind: 'move', player: who, path, waypoint: path.length === 0 ? null : waypoint });
     },
@@ -299,6 +340,7 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
       const who = activePlanner();
       if (who === null) return;
       armed = false;
+      engaged = false;
       state = IDLE;
       options.commit({ kind: 'rest', player: who });
     },

@@ -1,6 +1,6 @@
 import type { AiPlayer } from '@adventure/ai';
-import type { GameMap, GameState, PlayerId, PlayerState, TurnAction, UserId } from '@adventure/core';
-import { computerMoveRequestId, type ClientMessage, type GameRecord, type SetupState } from '@adventure/protocol';
+import type { GameMap, GameState, NodeId, PlayerId, PlayerState, TurnAction, UserId } from '@adventure/core';
+import { computerMoveRequestId, type ClientMessage, type GameRecord, type ProtocolErrorCode, type SetupState } from '@adventure/protocol';
 import { hotseatComputer, pageComputer } from './computer.ts';
 import { HOTSEAT_MODE, type HotseatGame, type PlayedTurn, type UiModeConfig } from './hotseat.ts';
 import { ONLINE_MODE, type AppliedRecord, type OnlineGame } from './online.ts';
@@ -11,6 +11,8 @@ export interface PlayedChange {
   readonly after: GameState;
   /** `null` for a change that is not a turn: nothing walks, and the log has no entry. */
   readonly turn: PlayedTurn | null;
+  /** [Q56, 54] The game master moved the player on: their saved route, or a rest. */
+  readonly movedOn?: boolean;
 }
 
 /** What the play screen hears from its game, in order: a change, or a turn it committed being refused. */
@@ -47,6 +49,17 @@ export interface PlaySource {
   readonly computer: AiPlayer | null;
   /** Whether this page thinks for `player`'s moves. */
   thinksFor(player: PlayerState): boolean;
+  /**
+   * [Q56, 53] Online, saves the route a local player has drawn, as they draw
+   * it; an empty path clears it. `false` if it could not be sent. `null` on
+   * one device, where a route is kept only by the turn that walks it.
+   */
+  readonly savePlan: ((player: PlayerId, path: readonly NodeId[], waypoint: NodeId | null) => boolean) | null;
+  /**
+   * [Q56, 54] The game master's Move on for a person on turn: their saved
+   * route, or a rest. `null` on every page but the game master's online.
+   */
+  readonly moveOn: ((player: PlayerState) => void) | null;
   /** A computer seat's thinking time in seconds; `null` for a person's seat. */
   thinkingSecondsOf(player: PlayerState): number | null;
   /**
@@ -76,6 +89,8 @@ export function hotseatPlay(game: HotseatGame): PlaySource {
     diceSeed: game.setup.diceSeed,
     history: [],
     computer,
+    savePlan: null,
+    moveOn: null,
     thinksFor: (player) => player.control === 'ai',
     thinkingSecondsOf: (player) => (player.control === 'ai' ? (game.setup.seats[player.seat - 1]?.thinkingSeconds ?? 0) : null),
     commit(action) {
@@ -100,14 +115,17 @@ export interface OnlinePlay extends PlaySource {
    */
   receive(record: GameRecord, shown: 'played' | 'caught_up'): void;
   /**
-   * The server refused something this page sent; `null` once a reconnect has
-   * brought the game up to date, for anything sent that never arrived.
+   * The server refused something this page sent, saying why in `reason`
+   * with `code`; `null` once a reconnect has brought the game up to date, for
+   * anything sent that never arrived.
    */
-  refused(reason: string | null): void;
+  refused(reason: string | null, code?: ProtocolErrorCode): void;
+  /** The game's setup changed: a resigned seat's thinking time, the end time. */
+  setSetup(setup: SetupState): void;
 }
 
 export interface OnlinePlayOptions {
-  /** The game's setup as Start left it: its seats, their holders and thinking times. */
+  /** The game's setup: its seats, their holders and thinking times. */
   readonly setup: SetupState;
   readonly me: UserId;
   /** The game as the page opened it (`OnlineGame.open`). */
@@ -126,7 +144,9 @@ export interface OnlinePlayOptions {
  * phase 7 item 8), each for its seat's thinking time, and sends the move.
  */
 export function onlinePlay(options: OnlinePlayOptions): OnlinePlay {
-  const { setup, me, game, send } = options;
+  const { me, game, send } = options;
+  let setup = options.setup;
+  const gameId = setup.gameId;
   const listeners = new Set<(update: PlayUpdate) => void>();
   const tell = (update: PlayUpdate): void => {
     for (const listener of listeners) listener(update);
@@ -135,11 +155,32 @@ export function onlinePlay(options: OnlinePlayOptions): OnlinePlay {
   const isGameMaster = setup.gameMaster === me;
   const map = game.state.map;
   const computer = isGameMaster
-    ? pageComputer(map.ruleset.config, `computer-${setup.gameId}`, (_state, subject) => seatOf(subject)?.thinkingSeconds)
+    ? pageComputer(map.ruleset.config, `computer-${gameId}`, (_state, subject) => seatOf(subject)?.thinkingSeconds)
     : null;
   const deliver = (message: ClientMessage): void => {
     if (!send(message)) throw new Error('The connection to the server dropped. Try again once it is back.');
   };
+  // The seats this page plans for: its player's, while a person plays them.
+  // One set, kept current, since the move controller holds on to it; a seat
+  // leaves it when its player resigns ([Q56, 57]).
+  const localPlayers = new Set<PlayerId>();
+  const refreshLocal = (): void => {
+    localPlayers.clear();
+    for (const seat of setup.seats) {
+      const player = game.state.players.find((candidate) => candidate.id === seat.playerId);
+      if (seat.userId === me && player?.control === 'human') localPlayers.add(seat.playerId);
+    }
+  };
+  refreshLocal();
+  // [Q56, 55] The game master's Move on still waiting for its answer.
+  let movingOn: { readonly player: PlayerState; readonly turn: number } | null = null;
+
+  const changeOf = ({ record, before, after, turn }: AppliedRecord): PlayedChange => ({
+    before,
+    after,
+    turn,
+    movedOn: record.action.kind === 'force_turn',
+  });
 
   return {
     mode: ONLINE_MODE,
@@ -150,42 +191,64 @@ export function onlinePlay(options: OnlinePlayOptions): OnlinePlay {
     get lastSeq() {
       return game.lastSeq;
     },
-    localPlayers: new Set(setup.seats.filter((seat) => seat.control === 'human' && seat.userId === me).map((seat) => seat.playerId)),
+    localPlayers,
     diceSeed: null,
-    history: options.applied,
+    history: options.applied.map(changeOf),
     computer,
     thinksFor: (player) => isGameMaster && player.control === 'ai',
     thinkingSecondsOf: (player) => (player.control === 'ai' ? (seatOf(player.id)?.thinkingSeconds ?? 0) : null),
+    savePlan(player, path, waypoint) {
+      if (!localPlayers.has(player)) return false;
+      // A route that cannot be saved now is sent again with the next change
+      // once the connection is back, or goes with End turn.
+      return send({ type: 'turn.plan', gameId, path, waypoint: path.length === 0 ? null : waypoint });
+    },
+    moveOn: isGameMaster
+      ? (player) => {
+          const turn = game.state.turn.number;
+          deliver({ type: 'gm.forceTurn', gameId, player: player.id, turn });
+          movingOn = { player, turn };
+        }
+      : null,
     commit(action) {
       const state = game.state;
       const player = state.players.find((candidate) => candidate.id === action.player);
       if (player?.control === 'ai') {
-        deliver({ type: 'gm.aiMove', gameId: setup.gameId, requestId: computerMoveRequestId(state), player: player.id, action });
+        deliver({ type: 'gm.aiMove', gameId, requestId: computerMoveRequestId(state), player: player.id, action });
         return;
       }
       if (action.kind === 'rest') {
-        deliver({ type: 'turn.rest', gameId: setup.gameId, turn: state.turn.number });
+        deliver({ type: 'turn.rest', gameId, turn: state.turn.number });
         return;
       }
       if (action.kind !== 'move') throw new Error('Only a move or a rest can end a turn.');
-      deliver({
-        type: 'turn.end',
-        gameId: setup.gameId,
-        turn: state.turn.number,
-        path: action.path,
-        waypoint: action.waypoint ?? null,
-      });
+      deliver({ type: 'turn.end', gameId, turn: state.turn.number, path: action.path, waypoint: action.waypoint ?? null });
     },
     subscribe(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
     receive(record, shown) {
-      const { before, after, turn } = game.apply(record);
-      tell({ kind: 'change', change: { before, after, turn }, shown });
+      const applied = game.apply(record);
+      if (record.action.kind === 'force_turn' && movingOn !== null && movingOn.turn === applied.before.turn.number) movingOn = null;
+      if (record.action.kind === 'resign') refreshLocal();
+      tell({ kind: 'change', change: changeOf(applied), shown });
     },
-    refused(reason) {
+    refused(reason, code) {
+      if (code === 'turn_over') {
+        // [Q56, 55] Someone acted on this turn first, and the page has the
+        // turn that was played. The game master is told who; a player whose
+        // End turn crossed the game master's Move on hears of it from that.
+        const crossed = movingOn;
+        movingOn = null;
+        tell({ kind: 'refused', reason: crossed === null ? null : `${crossed.player.name} ended the turn first.` });
+        return;
+      }
       tell({ kind: 'refused', reason });
+    },
+    setSetup(next) {
+      setup = next;
+      refreshLocal();
     },
   };
 }

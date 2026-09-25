@@ -37,6 +37,8 @@ interface MapViewProps {
   readonly walker: Walker | null;
   /** How the current player's figure calls attention to itself; `none` if omitted. */
   readonly cue?: FigureCue;
+  /** [Q56, 49] Online, the player planning out of turn, whose figure is highlighted. */
+  readonly planner?: PlayerId | null;
   /** A click or tap, as opposed to a drag; `shift` for a shift-click. */
   readonly onTap?: (target: Pick, shift: boolean) => void;
   readonly onReady?: (handle: MapHandle | null) => void;
@@ -51,14 +53,14 @@ const TAP_TRAVEL_PX = 8;
 /** Zoom, relative to the whole-map view, that "find" brings the map to at least. */
 const PLAY_ZOOM_OF_FIT = 2.2;
 
-export function MapView({ art, map: gameMap, scene, state, path, waypoint, walker, cue = 'none', onTap, onReady }: MapViewProps) {
+export function MapView({ art, map: gameMap, scene, state, path, waypoint, walker, cue = 'none', planner = null, onTap, onReady }: MapViewProps) {
   const host = useRef<HTMLDivElement>(null);
   const renderer = useRef<PixiMapRenderer | null>(null);
   const zoomButtons = useRef<((action: 'in' | 'out' | 'fit') => void) | null>(null);
   // Read when the renderer comes up, and by the pointer handlers, which are
   // bound once per map.
-  const latest = useRef({ state, path, waypoint, walker, cue, onTap, onReady });
-  latest.current = { state, path, waypoint, walker, cue, onTap, onReady };
+  const latest = useRef({ state, path, waypoint, walker, cue, planner, onTap, onReady });
+  latest.current = { state, path, waypoint, walker, cue, planner, onTap, onReady };
 
   useEffect(() => {
     const element = host.current;
@@ -85,6 +87,7 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
       const map = new PixiMapRenderer(art, gameMap, scene);
       const now = latest.current;
       map.setWalker(now.walker);
+      map.setPlanner(now.planner);
       map.setState(now.state);
       map.setPathPreview(now.path);
       map.setWaypoint(now.waypoint);
@@ -283,6 +286,9 @@ export function MapView({ art, map: gameMap, scene, state, path, waypoint, walke
   useEffect(() => {
     renderer.current?.setCue(cue);
   }, [cue]);
+  useEffect(() => {
+    renderer.current?.setPlanner(planner);
+  }, [planner]);
 
   return (
     <>

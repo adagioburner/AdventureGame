@@ -325,7 +325,7 @@ describe('the server, in the local Workers runtime', () => {
     beaGame.send({ type: 'turn.end', gameId, turn: 2, path: [step as never], waypoint: null });
     await gmGame.next(played(3));
     const refused = await beaGame.next((m): m is Extract<ServerMessage, { type: 'error' }> => m.type === 'error');
-    expect(refused.code).toBe('not_your_turn');
+    expect(refused.code).toBe('turn_over');
 
     // The computer's turn: the server asks the game master's page for the move.
     const ask = await gmGame.next((m): m is Extract<ServerMessage, { type: 'gm.requestAiMove' }> => m.type === 'gm.requestAiMove');

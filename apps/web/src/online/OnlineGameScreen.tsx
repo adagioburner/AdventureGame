@@ -75,6 +75,7 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
             return;
           }
           latest.current.setup = message.setup;
+          latest.current.play?.setSetup(message.setup);
           setSetup(message.setup);
           return;
         case 'setup.declined':
@@ -120,7 +121,7 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
           goingLocal.current = false;
           if (message.code === 'game_not_found') setMissing(true);
           else if (message.code === 'game_removed') setRemoved(true);
-          else if (latest.current.play !== null) latest.current.play.refused(sentence(message.message));
+          else if (latest.current.play !== null) latest.current.play.refused(sentence(message.message), message.code);
           else setNotice(sentence(message.message));
           return;
         default:
@@ -240,6 +241,8 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
       ? 'This game has ended and been removed.'
       : setup?.phase === 'cancelled'
       ? 'The game master cancelled this game.'
+      : setup?.phase === 'expired'
+      ? 'This game ran out of time before it started.'
       : (artProblem ??
         drawn.problem ??
         (setup === null
@@ -280,6 +283,7 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
           logOpen={logOpen}
           away={awayPlayers}
           waitingOn={waitingOn}
+          offline={channel.status !== 'open'}
           onCloseLog={() => setLogOpen(false)}
           onNewGame={onBack}
         />
@@ -336,13 +340,7 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
       ) : (
         <main className={`stage${game === null ? ' setting-up' : ''}`}>
           <MapView art={art} map={map} scene={scene} state={shown} path={null} waypoint={null} walker={null} />
-          {game !== null ? (
-            <div className="notice" role="status">
-              {setup.seats.some((seat) => seat.userId === me.userId)
-                ? 'Online turns arrive in the next phase.'
-                : 'This game started without you. Online turns arrive in the next phase.'}
-            </div>
-          ) : (
+          {game !== null ? null : (
             <SetupPanel
               art={art}
               panel={{

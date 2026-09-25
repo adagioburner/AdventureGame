@@ -110,12 +110,17 @@ export type ClientMessage =
   | { readonly type: 'gm.endGame'; readonly gameId: GameId }
   /** [SOURCE §4] GM switches any player between human and AI control at will. */
   | { readonly type: 'gm.setControl'; readonly gameId: GameId; readonly player: PlayerId; readonly control: ControlMode }
-  /** [SOURCE §4] A human may resign at any time; an AI takes over. */
+  /**
+   * [SOURCE §4] A human may resign at any time; an AI takes over.
+   * [Q56, 57] The computer plays the seat from then on, thinking for
+   * `RESIGNED_THINKING_SECONDS`.
+   */
   | { readonly type: 'player.resign'; readonly gameId: GameId }
   /**
    * [SOURCE §12.3, chat] The board is game state, so a post is an ordinary
-   * state change; the reply arrives inside `game.events`, not a board-specific
-   * message.
+   * state change: it comes back to everyone as a `game.played` record.
+   * [Q56, 59] Anyone holding a seat may post, from Start until the game is
+   * removed, up to `BOARD_POST_MAX` characters.
    */
   | { readonly type: 'board.post'; readonly gameId: GameId; readonly body: string }
   /* ---- game-master compute (§12.1) ---- */
@@ -210,6 +215,12 @@ export type ProtocolErrorCode =
   | 'unauthenticated'
   | 'not_game_master'
   | 'not_your_turn'
+  /**
+   * [Q54, 35; Q56, 55] The turn a message named is over: someone else acted
+   * first (the game master's Move on, the player's own End turn, another of
+   * their devices). The page already has the turn that was played.
+   */
+  | 'turn_over'
   | 'invalid_action'
   | 'game_not_found'
   /** [Q55, 37] The game ended or was cancelled more than 7 days ago and has been deleted. */
@@ -226,3 +237,9 @@ export type ProtocolErrorCode =
   | 'game_master_unavailable'
   /** Raised when a request needs a decision GDD.md has not made yet. */
   | 'unresolved_design_item';
+
+/** [Q56, 59] The longest post on a game's board, in characters. */
+export const BOARD_POST_MAX = 500;
+
+/** [Q56, 57] How long the computer thinks for a seat whose player resigned, in seconds. */
+export const RESIGNED_THINKING_SECONDS = 10;
