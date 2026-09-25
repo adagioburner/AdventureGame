@@ -38,7 +38,8 @@
 .setup .choice .control-toggle {
   flex: 1 1 auto;
 }
-.control-toggle.count {
+.control-toggle.count,
+.control-toggle.lasts {
   grid-template-columns: repeat(4, 1fr);
 }
 .control-toggle button:disabled {

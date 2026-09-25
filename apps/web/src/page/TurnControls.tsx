@@ -12,6 +12,11 @@ interface TurnControlsProps {
    * milliseconds; `null` for a person.
    */
   readonly thinkingMs: number | null;
+  /**
+   * [Q54, 31 and 33] Online, what the game waits on when the player on turn or
+   * the game master is away: shown on the line above the buttons.
+   */
+  readonly waiting: string | null;
   onPlan(): void;
   onCancel(): void;
   onArmWaypoint(armed: boolean): void;
@@ -52,9 +57,9 @@ export function TurnControls(props: TurnControlsProps) {
       <section className="controls" aria-label={`${player.name}’s turn`}>
         <div className="thinking">
           <p className="hint" aria-live="polite">
-            {busy ? `${player.name} is moving…` : `${player.name} is thinking…`}
+            {busy ? `${player.name} is moving…` : (props.waiting ?? `${player.name} is thinking…`)}
           </p>
-          {busy ? null : (
+          {busy || props.waiting !== null ? null : (
             <div className="thinking-bar" role="presentation">
               <i key={state.turn.number} style={{ animationDuration: `${props.thinkingMs}ms` }} />
             </div>
@@ -68,7 +73,7 @@ export function TurnControls(props: TurnControlsProps) {
   return (
     <section className="controls" aria-label={`${player.name}’s turn`}>
       <p className="hint" aria-live="polite">
-        {busy ? `${player.name} is moving…` : hint(move, waypointArmed, player.name, rest, onGuard)}
+        {busy ? `${player.name} is moving…` : (props.waiting ?? hint(move, waypointArmed, player.name, rest, onGuard))}
       </p>
       <div className="buttons">
         {planning ? (

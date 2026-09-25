@@ -13,6 +13,7 @@ import {
   type UserId,
 } from '@adventure/core';
 import {
+  computerMoveRequestId,
   DAY_MS,
   isOpenSeat,
   KEPT_AFTER_END_DAYS,
@@ -200,7 +201,7 @@ export class GameSession {
         // reload) changes nothing and needs no reply.
         if (from !== setup.gameMaster) throw new SetupError('not_game_master', 'only the game master sends computer moves');
         const game = await this.ports.games.load(this.gameId);
-        if (game === null || game.status !== 'in_progress' || message.requestId !== aiRequestId(game)) return;
+        if (game === null || game.status !== 'in_progress' || message.requestId !== computerMoveRequestId(game)) return;
         const active = activePlayer(game);
         if (active.control !== 'ai' || message.player !== active.id) return;
         const action = message.action;
@@ -340,7 +341,7 @@ export class GameSession {
     await this.ports.broadcaster.sendTo(setup.gameMaster, {
       type: 'gm.requestAiMove',
       gameId: this.gameId,
-      requestId: aiRequestId(game),
+      requestId: computerMoveRequestId(game),
       player: active.id,
     });
   }
@@ -389,11 +390,6 @@ export function listingOf(setup: SetupState, game: GameState | null): GameListin
             winners: game.players.filter((player) => game.winners.includes(player.id)).map((player) => player.name),
           },
   };
-}
-
-/** The request id of the computer's move the game waits for: its turn number. */
-function aiRequestId(game: GameState): string {
-  return `turn-${game.turn.number}`;
 }
 
 /** The seat `user` plays, which must be a person's seat the computer is not playing. */

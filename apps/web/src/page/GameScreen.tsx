@@ -13,7 +13,7 @@ import {
 import { createMoveModeController, type EnterRefusal, type MoveModeState } from '../interaction/moveMode.ts';
 import type { Pick } from '../interaction/picking.ts';
 import type { PlayedTurn } from '../modes/hotseat.ts';
-import type { PlayedChange, PlaySource } from '../modes/play.ts';
+import type { PlayedChange, PlaySource, PlayUpdate } from '../modes/play.ts';
 import { position } from '../render/geometry.ts';
 import type { LoadedArt } from '../render/pixi/textures.ts';
 import type { FigureCue, MapScene, Walker } from '../render/sceneModel.ts';
@@ -40,6 +40,10 @@ interface GameScreenProps {
   readonly scene: MapScene;
   readonly play: PlaySource;
   readonly logOpen: boolean;
+  /** [Q54, 31 and 33] Online, the players with no connection. */
+  readonly away?: ReadonlySet<PlayerId> | undefined;
+  /** [Q54, 31 and 33] Online, what the game shown waits on when someone is away; `null` when nobody is. */
+  readonly waitingOn?: ((state: GameState) => string | null) | undefined;
   onCloseLog(): void;
   onNewGame(): void;
 }
@@ -60,7 +64,7 @@ interface Planned {
  * whole turn before the first beat; the beats only reveal it. Turns are shown
  * one after another, in the order `play` reports them.
  */
-export function GameScreen({ art, scene, play: source, logOpen, onCloseLog, onNewGame }: GameScreenProps) {
+export function GameScreen({ art, scene, play: source, logOpen, away, waitingOn, onCloseLog, onNewGame }: GameScreenProps) {
   const catalog = art.catalog;
   const [shown, setShown] = useState<GameState>(source.state);
   const [move, setMove] = useState<MoveModeState>({ kind: 'idle' });
@@ -142,18 +146,42 @@ export function GameScreen({ art, scene, play: source, logOpen, onCloseLog, onNe
       committed.current = null;
       say(error instanceof Error ? error.message : String(error));
       controller.setGame(source.state);
+      return;
     }
+    // Online the turn comes back once the server has played it; until then
+    // its route stays drawn and nothing else can be committed.
+    if (committed.current !== null) setInFlight(planned);
   };
 
-  // Every change `play` reports is shown in turn: a turn plays out before the
+  // Every update `play` reports is shown in turn: a turn plays out before the
   // next one starts, and a change that is not a turn just shows the new state.
-  const queue = useRef<PlayedChange[]>([]);
+  const queue = useRef<PlayUpdate[]>([]);
   const showing = useRef(false);
-  const show = useRef<(change: PlayedChange) => Promise<void>>(async () => undefined);
-  show.current = async ({ before, after, turn }) => {
-    if (turn === null) {
+  const show = useRef<(update: PlayUpdate) => Promise<void>>(async () => undefined);
+  show.current = async (update) => {
+    if (update.kind === 'refused') {
+      // What this page committed was not played: its controls come back.
+      if (committed.current !== null) {
+        committed.current = null;
+        setInFlight(null);
+      }
+      controller.setGame(source.state);
+      if (update.reason !== null) say(update.reason);
+      return;
+    }
+    const { before, after, turn } = update.change;
+    if (turn === null || update.shown === 'caught_up') {
+      // [Q54, 32] A turn missed while the connection was down is in the log,
+      // and the map shows where it left everyone, with no walk.
+      if (turn !== null) setEntries((current) => [journalEntry(turn, before), ...current]);
+      const mine = committed.current;
+      if (turn !== null && mine !== null && mine.turn <= before.turn.number) {
+        committed.current = null;
+        setInFlight(null);
+      }
       setShown(after);
       controller.setGame(after);
+      if (after.status === 'finished') setEndOpen(true);
       return;
     }
     const mine = committed.current;
@@ -179,11 +207,11 @@ export function GameScreen({ art, scene, play: source, logOpen, onCloseLog, onNe
     const drain = async (): Promise<void> => {
       if (showing.current) return;
       showing.current = true;
-      for (let change = queue.current.shift(); change !== undefined; change = queue.current.shift()) await show.current(change);
+      for (let update = queue.current.shift(); update !== undefined; update = queue.current.shift()) await show.current(update);
       showing.current = false;
     };
-    const unsubscribe = source.subscribe((change) => {
-      queue.current.push(change);
+    const unsubscribe = source.subscribe((update) => {
+      queue.current.push(update);
       void drain();
     });
     return () => {
@@ -325,13 +353,14 @@ export function GameScreen({ art, scene, play: source, logOpen, onCloseLog, onNe
 
   return (
     <div className="game">
-      <Players catalog={catalog} state={shown} />
+      <Players catalog={catalog} state={shown} away={away} />
       <TurnControls
         state={shown}
         move={move}
         waypointArmed={armed}
         busy={busy}
         thinkingMs={thinkingMsOf(source, active)}
+        waiting={waitingOn?.(shown) ?? null}
         onPlan={plan}
         onCancel={() => controller.cancel()}
         onArmWaypoint={(on) => controller.armWaypoint(on)}

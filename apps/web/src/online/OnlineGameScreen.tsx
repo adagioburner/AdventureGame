@@ -1,6 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { createGameState, startingNodeFor, type GameId, type GameMap, type GameState } from '@adventure/core';
-import { isOpenSeat, type SetupState } from '@adventure/protocol';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createGameState, startingNodeFor, type GameId, type GameMap, type GameState, type PlayerId, type UserId } from '@adventure/core';
+import { isOpenSeat, type GameRecord, type SetupState } from '@adventure/protocol';
+import { MissedRecords, OnlineGame } from '../modes/online.ts';
+import { onlinePlay, type OnlinePlay } from '../modes/play.ts';
+import { GameScreen } from '../page/GameScreen.tsx';
 import { MapView } from '../page/MapView.tsx';
 import { randomSeed } from '../page/seed.ts';
 import { buildMapScene, type MapScene } from '../render/sceneModel.ts';
@@ -10,6 +13,7 @@ import { fromOnlineSetup, type LocalLimits, type LocalSetup } from '../setup/loc
 import { SetupPanel } from '../setup/SetupPanel.tsx';
 import { sentence } from '../setup/text.ts';
 import { socketUrl, type Login } from './api.ts';
+import { endsLabel, useMinuteClock } from './ends.ts';
 import { mapForSeed, useArt, useMapFor } from './assets.ts';
 import { useChannel } from './socket.ts';
 
@@ -30,8 +34,8 @@ const NOTICE_MS = 4000;
 
 /**
  * One online game (§6.1, Q48): its setup until the game master starts it, and
- * then the map with every figure on the starting node. Taking turns online is
- * phase 7.
+ * then the game itself, played on the server (§7.1, §12.1) and shown on the
+ * same play screen as a game on one device.
  *
  * [Q48, 8] Everyone sees the map for the game's seed as the game master picks
  * it, each browser drawing it from the seed as the hot seat page does. At
@@ -45,7 +49,18 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
   const [declined, setDeclined] = useState(false);
   const [missing, setMissing] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [removed, setRemoved] = useState(false);
   const [seedDraft, setSeedDraft] = useState('');
+  // Play: the game once its records have arrived, the people away, and the log.
+  const [play, setPlay] = useState<OnlinePlay | null>(null);
+  const [away, setAway] = useState<readonly UserId[]>([]);
+  const [logOpen, setLogOpen] = useState(false);
+  // The latest setup and started state, for the history that follows them.
+  const latest = useRef<{ setup: SetupState | null; started: GameState | null; play: OnlinePlay | null }>({
+    setup: null,
+    started: null,
+    play: null,
+  });
   const { art, problem: artProblem } = useArt();
   // Set when the game master turns "Play online" off, until the cancel lands.
   const goingLocal = useRef(false);
@@ -59,13 +74,41 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
             onGoLocal(fromOnlineSetup(message.setup, localLimits(art.catalog)), message.setup.mapSeed);
             return;
           }
+          latest.current.setup = message.setup;
           setSetup(message.setup);
           return;
         case 'setup.declined':
           setDeclined(true);
           return;
         case 'game.state':
+          // Once play has opened, a reconnect's records bring it up to date instead.
+          if (latest.current.play !== null) return;
+          latest.current.started = message.state;
           setGame(message.state);
+          return;
+        case 'game.history': {
+          const current = latest.current.play;
+          if (current === null) {
+            const { setup: now, started } = latest.current;
+            if (now === null || started === null) return;
+            const opened = OnlineGame.open(now, started, message.records);
+            const next = onlinePlay({ setup: now, me: me.userId, ...opened, send: (sent) => channel.send(sent) });
+            latest.current.play = next;
+            setPlay(next);
+            return;
+          }
+          // [Q54, 32] Back after a dropped connection: the turns missed meanwhile.
+          // A turn this page sent that is not among them never arrived, and
+          // can be sent again.
+          receive(current, message.records, 'caught_up');
+          current.refused(null);
+          return;
+        }
+        case 'game.played':
+          if (latest.current.play !== null) receive(latest.current.play, [message.record], 'played');
+          return;
+        case 'game.presence':
+          setAway(message.away);
           return;
         case 'gm.requestMapGeneration':
           // Let the page paint "Starting" before drawing takes the main thread.
@@ -76,6 +119,8 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
         case 'error':
           goingLocal.current = false;
           if (message.code === 'game_not_found') setMissing(true);
+          else if (message.code === 'game_removed') setRemoved(true);
+          else if (latest.current.play !== null) latest.current.play.refused(sentence(message.message));
           else setNotice(sentence(message.message));
           return;
         default:
@@ -84,6 +129,65 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
     },
     onRefused,
   );
+
+  /** Applies records the server sent, skipping any already applied; a gap means one was missed, and the game is loaded again. */
+  const receive = (current: OnlinePlay, records: readonly GameRecord[], shown: 'played' | 'caught_up'): void => {
+    for (const record of records) {
+      if (record.seq <= current.lastSeq) continue;
+      try {
+        current.receive(record, shown);
+      } catch (error) {
+        if (!(error instanceof MissedRecords)) throw error;
+        channel.restart();
+        return;
+      }
+    }
+  };
+
+  // [Q54, 34] The tab reads "Your turn · Adventure" while it is this player's turn.
+  const [yourTurn, setYourTurn] = useState(false);
+  useEffect(() => {
+    if (play === null) return;
+    const check = (): void => {
+      const state = play.state;
+      const active = state.players[state.turn.activeSeat - 1];
+      setYourTurn(state.status === 'in_progress' && active !== undefined && play.localPlayers.has(active.id));
+    };
+    check();
+    return play.subscribe(check);
+  }, [play]);
+  useEffect(() => {
+    if (!yourTurn) return;
+    document.title = 'Your turn · Adventure';
+    return () => {
+      document.title = 'Adventure';
+    };
+  }, [yourTurn]);
+
+  // [Q54, 31 and 33] Who is away, as players, and what the game waits on when it waits on them.
+  const awayPlayers = useMemo<ReadonlySet<PlayerId>>(() => {
+    const users = new Set(away);
+    return new Set((setup?.seats ?? []).filter((seat) => seat.userId !== null && users.has(seat.userId)).map((seat) => seat.playerId));
+  }, [away, setup]);
+  const waitingOn = useCallback(
+    (state: GameState): string | null => {
+      if (setup === null || state.status !== 'in_progress') return null;
+      const active = state.players[state.turn.activeSeat - 1];
+      if (active === undefined) return null;
+      const users = new Set(away);
+      if (active.control === 'ai') {
+        // A computer's move is thought on the game master's page.
+        if (setup.gameMaster === me.userId || !users.has(setup.gameMaster)) return null;
+        const master = setup.seats.find((seat) => seat.userId === setup.gameMaster)?.name;
+        return master === undefined ? 'Waiting for the game master to come back.' : `Waiting for the game master, ${master}, to come back.`;
+      }
+      const holder = setup.seats.find((seat) => seat.playerId === active.id)?.userId ?? null;
+      if (holder === null || holder === me.userId || !users.has(holder)) return null;
+      return `Waiting for ${active.name}, who is away. The game master can move ${active.name} on.`;
+    },
+    [setup, away, me.userId],
+  );
+  const now = useMinuteClock();
 
   useEffect(() => {
     if (notice === null) return;
@@ -132,7 +236,9 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
 
   const status = missing
     ? 'There is no game at this address.'
-    : setup?.phase === 'cancelled'
+    : removed
+      ? 'This game has ended and been removed.'
+      : setup?.phase === 'cancelled'
       ? 'The game master cancelled this game.'
       : (artProblem ??
         drawn.problem ??
@@ -145,6 +251,41 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
             : map === null || scene === null
               ? `Drawing the map for seed “${seed ?? ''}”…`
               : null));
+
+  // [Q55, 46] When the game ends, until it has.
+  const ends = setup === null || setup.closedAt !== null ? null : endsLabel(setup.endsAt, now);
+  const endsShown = ends === null ? null : <span className={`ends${ends.soon ? ' soon' : ''}`}>{ends.text}</span>;
+
+  if (play !== null && status === null && art !== null && scene !== null && setup !== null) {
+    return (
+      <div className="shell playing">
+        <header className="bar">
+          <h1>Adventure</h1>
+          <span className="seed-shown">
+            {setup.name} · Seed <code>{setup.mapSeed}</code>
+          </span>
+          {endsShown}
+          <button className="btn" type="button" onClick={onBack}>
+            Your games
+          </button>
+          <button id="toggle-log" className="btn" type="button" aria-pressed={logOpen} onClick={() => setLogOpen(!logOpen)}>
+            Turn log
+          </button>
+        </header>
+        <GameScreen
+          key={setup.gameId}
+          art={art}
+          scene={scene}
+          play={play}
+          logOpen={logOpen}
+          away={awayPlayers}
+          waitingOn={waitingOn}
+          onCloseLog={() => setLogOpen(false)}
+          onNewGame={onBack}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="shell">
@@ -181,6 +322,7 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
         ) : (
           <span className="seed-shown" />
         )}
+        {endsShown}
         <button className="btn" type="button" onClick={onBack}>
           Your games
         </button>

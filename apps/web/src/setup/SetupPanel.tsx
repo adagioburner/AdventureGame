@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { DEFAULT_RULESET, startingStaminaForSeat } from '@adventure/config';
 import type { ControlMode } from '@adventure/core';
-import { isOpenSeat, type ClientMessage, type Principal, type SetupSeat, type SetupState } from '@adventure/protocol';
+import { DAY_MS, isOpenSeat, LIFETIME_DAYS, type ClientMessage, type Principal, type SetupSeat, type SetupState } from '@adventure/protocol';
 import { atlasOf, type ArtCatalog } from '../art/catalog.ts';
 import { Figurine } from '../page/Sprites.tsx';
 import type { LoadedArt } from '../render/pixi/textures.ts';
@@ -186,6 +186,7 @@ function OnlineSetupPanel({ art, panel }: { readonly art: LoadedArt; readonly pa
         <>
           <PlayOnlineSwitch on disabled={idle} onChange={panel.onTurnOff} />
           <GameName name={setup.name} disabled={idle} onChange={(name) => send({ type: 'setup.rename', gameId, name })} />
+          <GameLasts setup={setup} disabled={idle} onChange={(days) => send({ type: 'setup.setLifetime', gameId, days })} />
         </>
       ) : null}
 
@@ -395,6 +396,37 @@ function GameName({ name, disabled, onChange }: { readonly name: string; readonl
         {...handlers}
       />
     </label>
+  );
+}
+
+/**
+ * [Q55, 43] "Game lasts" 1, 3, 7 or 14 days, counted from when the game was
+ * made, and changeable until Start. A length the game is already older than
+ * would end it at once, so it cannot be picked.
+ */
+function GameLasts({ setup, disabled, onChange }: { readonly setup: SetupState; readonly disabled: boolean; onChange(days: number): void }) {
+  const days = Math.round((setup.endsAt - setup.createdAt) / DAY_MS);
+  const now = Date.now();
+  return (
+    <div className="choice">
+      <span>Game lasts</span>
+      <div className="control-toggle lasts" role="radiogroup" aria-label="Game lasts">
+        {LIFETIME_DAYS.map((option) => (
+          <button
+            key={option}
+            type="button"
+            role="radio"
+            aria-checked={days === option}
+            disabled={disabled || setup.createdAt + option * DAY_MS <= now}
+            onClick={() => {
+              if (days !== option) onChange(option);
+            }}
+          >
+            {option === 1 ? '1 day' : `${option} days`}
+          </button>
+        ))}
+      </div>
+    </div>
   );
 }
 

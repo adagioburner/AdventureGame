@@ -75,3 +75,12 @@ export function openingStateOf(setup: SetupState, map: GameMap): GameState {
     startingNode: startingNodeFor(map),
   });
 }
+
+/**
+ * The request id of the computer's move a game waits for (`gm.requestAiMove`,
+ * `gm.aiMove`): its turn number, so an answer to a turn that is over is known
+ * for one and changes nothing.
+ */
+export function computerMoveRequestId(state: GameState): string {
+  return `turn-${state.turn.number}`;
+}

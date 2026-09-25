@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { TERRAINS } from '@adventure/config';
-import type { GameState } from '@adventure/core';
+import type { GameState, PlayerId } from '@adventure/core';
 import type { ArtCatalog } from '../art/catalog.ts';
 import { STAT_LABEL, STAT_ORDER } from './journal.ts';
 import { Portrait, StatIcon } from './Sprites.tsx';
@@ -13,8 +13,10 @@ import { Portrait, StatIcon } from './Sprites.tsx';
  * displayed."
  *
  * Every number is read straight off the engine's `GameState`.
+ *
+ * [Q54, 31 and 33] Online, a player with no connection has "Away" on their card.
  */
-export function Players({ catalog, state }: { catalog: ArtCatalog; state: GameState }) {
+export function Players({ catalog, state, away }: { catalog: ArtCatalog; state: GameState; away?: ReadonlySet<PlayerId> | undefined }) {
   const playing = state.status === 'in_progress';
   const list = useRef<HTMLElement | null>(null);
   // [Andrei, 2026-09-24] Q53: four or five cards scroll in their own column
@@ -43,7 +45,10 @@ export function Players({ catalog, state }: { catalog: ArtCatalog; state: GameSt
               <Portrait catalog={catalog} avatarId={player.avatarId} size={current ? 52 : 40} label={`${player.name}’s avatar`} />
               <div className="who">
                 <h2>{player.name}</h2>
-                <span className="tag">{winner ? 'Winner' : current ? `Turn ${state.turn.number} · playing now` : `Seat ${player.seat}`}</span>
+                <span className="tag">
+                  {winner ? 'Winner' : current ? `Turn ${state.turn.number} · playing now` : `Seat ${player.seat}`}
+                  {away?.has(player.id) === true ? ' · Away' : null}
+                </span>
               </div>
             </header>
             <ul className="stats">

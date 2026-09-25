@@ -15,6 +15,8 @@ export interface Channel {
   readonly status: ChannelStatus;
   /** Sends if the socket is open; `false` if it is not, and nothing was sent. */
   send(message: ClientMessage): boolean;
+  /** Drops the socket and opens a new one, for a page that missed a message and needs the whole game again. */
+  restart(): void;
 }
 
 /** The longest wait between two tries to reconnect. */
@@ -119,6 +121,10 @@ export function useChannel(url: string | null, onMessage: (message: ServerMessag
         if (ws === null || ws.readyState !== WebSocket.OPEN) return false;
         ws.send(encodeMessage(message));
         return true;
+      },
+      restart: () => {
+        // Closing it reconnects, as any close does; the server sends everything again.
+        socket.current?.close();
       },
     }),
     [status],
