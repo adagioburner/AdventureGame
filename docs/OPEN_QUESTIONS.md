@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q55.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q56.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -964,7 +964,8 @@ choices made without asking him. Andrei: *"reloading should not kill the game.
 This one can be postponed, because with multiplayer the game [state] will be
 persisted anyway."* Nothing is built for it now. It is recorded here so the
 multiplayer work picks it up; the plan's phase 7 already expects a game to
-survive a reload on both sides.
+survive a reload on both sides. *[Q56](#q56) 66 keeps a game on one
+device in that browser, so a reload picks it up where it was.*
 
 ### Q38. ~~How does the page show what a POI gave?~~ — **answered 2026-09-24: unguarded floats up from the figure and fades, a guard fight waits for OK**
 
@@ -1181,7 +1182,8 @@ said *"everything as recommended"*.
 17. **The computers' online turns move into phase 7**, so a game with
     computer seats plays to the end as soon as online turns work. Phase 8
     keeps the Web Worker, resigning to the computer and switching a seat
-    between person and computer mid-game.
+    between person and computer mid-game. *Since [Q56](#q56) 57, resigning to the
+    computer is built in phase 7; handing a seat back stays in phase 8.*
 
 *[Q51](#q51) changed 7, 12, 14 and 15 when the two setup screens became one:
 the game master makes each seat Human or Computer, an accepted person takes
@@ -1397,6 +1399,107 @@ which sets a Cloudflare alarm (`setAlarm`) for when its lifetime runs out and
 another for its deletion 7 days after it ends; the alarm wakes it even with
 nobody connected, and it ends the game or deletes its storage and takes its
 row off the lobby's list. Extending moves the alarm. No scheduled job runs.
+
+<a id="q56"></a>
+### Q56. ~~How does a game play online, turn by turn?~~ — **answered 2026-09-25: as recommended, except the map, which gets a Track button**
+
+Andrei started phase 7 (*"we are ready to proceed to phase 7"*). What the
+plan, Q54 and Q55 left open went on a page as details 48 to 71, each with a
+recommendation. He answered: *"recommended choices are largely good,
+establishing that a multiplayer game's ui works the same way as hotseat.
+However, for planning a move we can either be in the "follow the active
+players" mode, or in "plan your move" mode. can we make these modes explicit,
+with a 'track' button that is actually a toggle — it unpresses itself when you
+start panning, zooming and planning, and by pressing it you go back to
+watching other playerd move"*. So every detail is as recommended except 52;
+the Track button's own open details are 72 to 77, not yet answered.
+
+48. **Someone else on turn:** the map and cards as in hot seat, the figure on
+    turn blinking. The line above the buttons reads "Bea is playing. You can
+    plan your next move.", or for a computer "Computer 1 is thinking…" over
+    its filling bar. Plan a move and Find are there; Rest and End turn appear
+    on your turn.
+49. **Planning out of turn** looks as on your own turn: your figure is
+    highlighted and the route is coloured for your next turn, with your
+    speeds' free steps refreshed. When your turn comes the route is drawn and
+    End turn plays it.
+50. **Only your own route is drawn**; everyone's saved route is kept on the
+    server, since Move on (54) plays it.
+51. **Another player's turn plays out as in hot seat**: their route drawn, the
+    walk, the die, an unguarded claim floating up. Their fight card closes
+    itself after 3 seconds as a computer's does (Q42); only your own waits for
+    OK. A route you were planning steps aside while they walk and comes back.
+52. ~~The map glides to whoever is on turn and follows walks, except while you
+    have a route open.~~ **Changed:** an explicit Track toggle. While it is
+    pressed the map follows the players on turn; panning, zooming or planning
+    unpresses it; pressing it goes back to watching. The notice "Your turn" or
+    "Bea's turn" stays. Details 72 to 77 are open.
+53. **Your planned move is the route you have drawn**, saved on the server as
+    you draw it, so it survives a reload and shows on your other devices. End
+    turn plays it and so does Move on; Cancel clears it, and a player moved on
+    with no route rests (§7.3).
+54. **Move on:** on another person's turn the game master has "Move Bea on",
+    away or not, which asks "Play Bea's saved route now? With none saved, Bea
+    rests." and plays exactly as Bea's own End turn or Rest. The turn log
+    marks it "Moved on by the game master".
+55. **Races** (Q49's rule): whichever reaches the server first is played. If
+    Bea was first the game master sees "Bea ended the turn first."; Bea sees
+    "The game master moved you on." whenever it happens, and her End turn then
+    does nothing. The route the server held when Move on arrived is the one
+    played.
+56. **The end time** shows in the top bar for everyone ("Ends Sunday 14:00").
+    For the game master it is a button opening a small panel with "Add a
+    day", until 14 days from creation (Q55 44), and "End the game", which
+    asks first (Q55 40).
+57. **Resigning is built now.** Everyone in the game, the game master
+    included, has "Resign" in the top bar, which asks first. The computer
+    then plays the seat with 10 seconds' thinking, the card reads "Resigned ·
+    the computer plays", and the person can still watch and post. Handing the
+    seat back is the game master's and stays in phase 8 (§7.3). This replaces
+    Q48 17's "resigning to the computer" in phase 8.
+58. **The board** opens from a "Messages" button in the top bar beside Turn
+    log, where the turn log opens; opening one closes the other.
+59. **A post** shows the writer's figure, name and time ("Bea · 14:02", with
+    the day if not today), oldest at the top, with a box and Send at the
+    bottom; up to 500 characters. Everyone holding a seat can post from Start
+    until the game is removed, after it ends too. The computer never posts.
+    Posts cannot be edited or deleted.
+60. **New posts:** while the board is closed its button counts the posts not
+    yet seen on that device ("Messages 2"). No sound, nothing over the map.
+61. **The end card** is hot seat's with "Your games" in place of "New game".
+    A time-out reads "Time ran out. Bea held the most gold, 34 against 20.",
+    or on a tie "Time ran out with Bea and Cal on 34 gold each."; a game the
+    game master ended reads "The game master ended this game.", with the
+    table and no winner.
+62. **A game whose time runs out before it starts** is cancelled: it leaves
+    the lists at once, and anyone opening it in the next 7 days reads "This
+    game ran out of time before it started." Then it is deleted (Q55 37).
+63. **Your games rows:** waiting, "Game master: Andrei · waiting for players,
+    2 of 3 · Ends Sunday 14:00"; started, "Game master: Andrei · started ·
+    Ends Sunday 14:00", with a highlighted "Your turn" at the front on your
+    turn (Q54 34); finished, "Finished · Bea won", "Finished · Bea and Cal
+    share the win" or "Ended by the game master". The end time is highlighted
+    in its last 24 hours (Q55 46).
+64. **Games already on the site** when phase 7 goes live get the 3-day
+    default counted from that moment, so none disappears on the day.
+65. **Online dice are drawn fresh** from Cloudflare's unpredictable random
+    source, with no seed, and the online log's first line names only the map
+    seed. Every roll is still in the log.
+66. **A game on one device survives a reload** (Q37, postponed to here): it
+    is kept in that browser, on the site and on the game page. New game still
+    starts over, and another device does not see it.
+67. **The last hour** counts minutes ("Ends in 40 minutes"); the highlight is
+    bold, in the gold of the winner's card.
+68. **Six days or more ahead** the end time adds the date: "Ends Sunday 4
+    October 14:00".
+69. **"Game lasts"** is a row under the game name like the Players row: "1
+    day", "3 days", "7 days", "14 days", for the game master only; a length
+    the game is already older than is greyed out.
+70. **"Away"** sits on the card's second line after the seat: "Seat 2 ·
+    Away", or "Turn 12 · playing now · Away".
+71. **While the page is reconnecting** the line above the buttons reads
+    "Reconnecting to the server…" and Rest and End turn are greyed out until
+    it is back; a route can still be planned.
 
 ---
 

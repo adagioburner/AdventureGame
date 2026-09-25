@@ -1217,17 +1217,25 @@ switch turned on again.
    is saved for the next turn and can still be changed. This is the *one*
    behaviour §7.2 says hotseat does not have, so it is the flag from phase 4
    turned on, and it is easy to forget precisely because phase 4 built the move
-   UI without it.
+   UI without it. How it looks, and how everyone else's turns show, are
+   [Q56](./OPEN_QUESTIONS.md#q56) 48 to 53: as in hot seat, with the route
+   saved on the server as it is drawn and an explicit Track button for
+   following the players on turn (its details still open).
 5. **Message board (§7.1).** Human players post messages visible to everyone.
    Game state per §12.3, so it rides `GameStore` and the normal broadcast. Its
-   persistence and scope were the §12.3 item, decided as per-game state.
+   persistence and scope were the §12.3 item, decided as per-game state. Its
+   look is [Q56](./OPEN_QUESTIONS.md#q56) 58 to 60: a Messages button beside
+   Turn log, posts of up to 500 characters, and an unread count.
 6. **GM controls (§7.3).** Force a player's currently-planned move, or force a
    rest if none was planned, at the GM's discretion with no fixed time
    threshold. A GM-only request with no game master connected is answered
    `game_master_unavailable` and the game waits (§12.4) — there is no fallback
-   to configure.
-7. **Resignation.** A human may resign at any time. Only the GM can hand control
-   back to a human. The AI takeover half of this needs phase 8.
+   to configure. Move on, its races and the game master's end time panel are
+   [Q56](./OPEN_QUESTIONS.md#q56) 54 to 56.
+7. **Resignation.** A human may resign at any time, and the computer plays the
+   seat from then on ([Q56](./OPEN_QUESTIONS.md#q56) 57, built here since
+   computer seats already play in this phase). Only the GM can hand control
+   back to a human, which stays in phase 8.
 8. **Computer seats' turns** (Q48). Andrei's answer on phase 6 lets the GM start
    with seats empty, played by the computer, so a started game has computer
    turns straight away. They are played here rather than in phase 8: the
@@ -1241,7 +1249,11 @@ switch turned on again.
    runs out the game ends, the most gold winning; a finished game stays in
    Your games for 7 days and is then deleted, as is a cancelled one. The game
    master can end a game in progress. Each game's Durable Object deletes
-   itself on an alarm, so no scheduled job is needed.
+   itself on an alarm, so no scheduled job is needed. The end card, the game
+   list's rows, a game that times out before it starts and the games already
+   on the site are [Q56](./OPEN_QUESTIONS.md#q56) 61 to 64.
+10. **A game on one device survives a reload** ([Q56](./OPEN_QUESTIONS.md#q56)
+   66, from Q37): it is kept in that browser.
 
 **Done when:** a full 2-player online game is playable end to end from two
 browsers, survives a reload on both sides, the GM can force a stalling
@@ -1273,9 +1285,9 @@ player's move, and a game with computer seats plays to the end.
 5. ~~**AI settings**~~ — landed in phase 6 instead (Q48): one thinking time
    for all of a game's computer seats, 1 to 60 seconds, set on the setup
    screen and carried in the setup state.
-6. **Handover** — an AI takes over a resigned seat so play continues, and the GM
-   may switch any player between human and AI control at will. Only the GM hands
-   control back to a human.
+6. **Handover** — the GM may switch any player between human and AI control at
+   will. Only the GM hands control back to a human. (An AI taking over a
+   resigned seat landed in phase 7 instead, [Q56](./OPEN_QUESTIONS.md#q56) 57.)
 
 **Done when:** a mixed human/AI online game plays to a finish, AI turns do not
 freeze the GM's browser, and the GM can flip a seat either way mid-game.
