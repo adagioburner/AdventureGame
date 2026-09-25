@@ -66,6 +66,12 @@ export interface MoveModeController {
   enter(player: PlayerId): EnterRefusal | null;
   /** The planner's own figure was tapped while their route is up: it is picked up. */
   engage(): void;
+  /**
+   * [Q57, 75] Track was pressed: planning closes. A route stays drawn, and
+   * saved, for End turn to play, with the figure put down as a route brought
+   * back at the start of a turn is; a route with no destination yet goes.
+   */
+  putDown(): void;
   /** A node was clicked; `shift` for a shift-click. */
   choose(node: NodeId, shift: boolean): void;
   selectDestination(node: NodeId): void;
@@ -282,6 +288,13 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
     engage() {
       if (state.kind === 'idle' || engaged) return;
       engaged = true;
+      notify();
+    },
+
+    putDown() {
+      armed = false;
+      engaged = false;
+      if (state.kind === 'selecting') return set(IDLE);
       notify();
     },
 

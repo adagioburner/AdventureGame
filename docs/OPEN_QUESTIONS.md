@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q56.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q57.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -1412,7 +1412,7 @@ players" mode, or in "plan your move" mode. can we make these modes explicit,
 with a 'track' button that is actually a toggle — it unpresses itself when you
 start panning, zooming and planning, and by pressing it you go back to
 watching other playerd move"*. So every detail is as recommended except 52;
-the Track button's own open details are 72 to 77, not yet answered.
+the Track button's own details are 72 to 77, answered as [Q57](#q57).
 
 48. **Someone else on turn:** the map and cards as in hot seat, the figure on
     turn blinking. The line above the buttons reads "Bea is playing. You can
@@ -1433,7 +1433,7 @@ the Track button's own open details are 72 to 77, not yet answered.
     have a route open.~~ **Changed:** an explicit Track toggle. While it is
     pressed the map follows the players on turn; panning, zooming or planning
     unpresses it; pressing it goes back to watching. The notice "Your turn" or
-    "Bea's turn" stays. Details 72 to 77 are open.
+    "Bea's turn" stays. Its details are [Q57](#q57).
 53. **Your planned move is the route you have drawn**, saved on the server as
     you draw it, so it survives a reload and shows on your other devices. End
     turn plays it and so does Move on; Cancel clears it, and a player moved on
@@ -1500,6 +1500,41 @@ the Track button's own open details are 72 to 77, not yet answered.
 71. **While the page is reconnecting** the line above the buttons reads
     "Reconnecting to the server…" and Rest and End turn are greyed out until
     it is back; a route can still be planned.
+
+<a id="q57"></a>
+### Q57. ~~How does the Track button work?~~ — **answered 2026-09-25: as recommended**
+
+His answer to Q56 52 asked for the two ways of using the map to be explicit:
+a Track button that is a toggle, unpressed by panning, zooming or planning,
+and pressed to go back to watching the players move. What that left open went
+on the same page as details 72 to 77, each with a recommendation. Andrei:
+*"72 to 77, recommended choices look good"*.
+
+72. **Where and how it looks:** with the map's own buttons at the bottom
+    right, above "+", reading "Track". Pressed, it is filled in the blue of a
+    picked option, as "Waypoint" is while it is on. It shows while the game
+    is in progress.
+73. **What unpresses it:** anything that moves the map or starts planning:
+    dragging the map, the mouse wheel, pinching, "+", "−", "Whole map",
+    "Find", tapping your figure or "Plan a move". A tap on the map that
+    starts nothing leaves it pressed.
+74. **While pressed** the map does what hot seat did: at the start of each
+    turn it glides to the player on turn at the zoom it has (Q46), and it
+    follows a walking figure that nears the edge (Q47). Pressing it glides
+    the map at once to the player on turn, or to the figure that is walking.
+75. **Your route** stays drawn and saved when you press Track (Q56 53):
+    planning closes, and End turn still plays the route. Tapping your figure
+    opens it again for changes, which unpresses Track.
+76. **It presses itself** when you open a game and when you press End turn or
+    Rest. Otherwise only you press it, so when your turn comes while you are
+    planning, the map stays on your route.
+77. **A game on one device has it too.** There it also presses itself at the
+    start of every turn, since a new person is at the screen, which keeps hot
+    seat moving the map as before.
+
+`tracking` in `apps/web/src/page/GameScreen.tsx`; the button and the
+following in `MapView.tsx`; `putDown` in
+`apps/web/src/interaction/moveMode.ts` closes planning.
 
 ---
 

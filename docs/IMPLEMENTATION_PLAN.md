@@ -1220,7 +1220,7 @@ switch turned on again.
    UI without it. How it looks, and how everyone else's turns show, are
    [Q56](./OPEN_QUESTIONS.md#q56) 48 to 53: as in hot seat, with the route
    saved on the server as it is drawn and an explicit Track button for
-   following the players on turn (its details still open).
+   following the players on turn ([Q57](./OPEN_QUESTIONS.md#q57)).
 5. **Message board (§7.1).** Human players post messages visible to everyone.
    Game state per §12.3, so it rides `GameStore` and the normal broadcast. Its
    persistence and scope were the §12.3 item, decided as per-game state. Its
@@ -1262,9 +1262,8 @@ player's move, and a game with computer seats plays to the end.
 ### What actually landed
 
 Built to [Q54](./OPEN_QUESTIONS.md#q54), [Q55](./OPEN_QUESTIONS.md#q55) and
-[Q56](./OPEN_QUESTIONS.md#q56) 48 to 71. The Track button (Q56 52, details 72
-to 77) waits on Andrei's answers; until then the map moves at each turn as in
-hot seat (Q46, Q47). Two browsers played a stored game against the local
+[Q56](./OPEN_QUESTIONS.md#q56) 48 to 71, with Q56 52 replaced by the Track
+button ([Q57](./OPEN_QUESTIONS.md#q57)). Two browsers played a stored game against the local
 Workers runtime: planning out of turn, the other page walking each turn,
 Move on, a post, Add a day, a resignation with the computer taking the seat,
 and End the game. A game against a computer seat was reloaded at turn 40 and
@@ -1288,6 +1287,12 @@ came back with all 39 turns in its log.
   `onlinePlay` sends End turn, Rest, the route being drawn (`turn.plan`),
   Move on and the computer's moves, and reports each change in order.
   Hot seat is unchanged by it.
+- **Track** (Q57) is `tracking` in `GameScreen`: the turn's glide (Q46) and
+  the following of a walk (Q47) happen only while it is pressed. `MapView`
+  draws the button and reports the viewer moving the map; planning unpresses
+  it, and pressing it closes planning with `putDown`, keeping the route. On
+  one device it presses itself at every turn, so hot seat moves the map as
+  before.
 - **Presence** is a ping every 20 seconds that Cloudflare answers without
   waking the game; the game's alarm reads the times while it is watched, and
   a minute's silence is "Away" (Q54 31).

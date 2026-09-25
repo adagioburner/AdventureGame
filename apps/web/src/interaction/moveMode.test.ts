@@ -297,3 +297,51 @@ describe('move mode online (§7.1): planning out of turn (Q56, 49 to 53)', () =>
     expect(controller.planner).toBe(bram.id);
   });
 });
+
+describe('Track closes planning (Q57, 75)', () => {
+  it('keeps the route drawn with the figure put down, and End turn still plays it', () => {
+    const { game, controller, sent } = setup();
+    const player = seat(game.state, 0);
+    controller.enter(player.id);
+    controller.selectDestination(nodeAlong(game.state, 3).target);
+    const route = controller.state.kind === 'previewing' ? controller.state.path : null;
+    controller.armWaypoint(true);
+    controller.putDown();
+    expect(controller.engaged).toBe(false);
+    expect(controller.waypointArmed).toBe(false);
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: route });
+    controller.endTurn();
+    expect(sent).toEqual([{ kind: 'move', player: player.id, path: route, waypoint: null }]);
+  });
+
+  it('drops a route that has no destination yet', () => {
+    const { game, controller } = setup();
+    controller.enter(seat(game.state, 0).id);
+    controller.putDown();
+    expect(controller.state.kind).toBe('idle');
+    expect(controller.engaged).toBe(false);
+  });
+
+  it('online, shows the saved route after it, and the next turn opens on it', () => {
+    const { game, controller } = onlineSetup();
+    const ada = seat(game.state, 0);
+    const bram = seat(game.state, 1);
+    const route = nodeAlong(game.state, 3).route;
+    controller.enter(bram.id);
+    controller.selectDestination(route[route.length - 1] as NodeId);
+    // The page saves the route on the server as it is drawn; the game then carries it.
+    const saved = planned(game.state, bram.id, route);
+    controller.setGame(saved);
+    controller.putDown();
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: route });
+    const noDice = {
+      roll: () => {
+        throw new Error('resting rolls no die');
+      },
+    };
+    controller.setGame(applyAction(saved, { kind: 'rest', player: ada.id }, noDice).state);
+    expect(controller.engaged).toBe(false);
+    expect(controller.planner).toBe(bram.id);
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: route });
+  });
+});

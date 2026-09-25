@@ -98,6 +98,10 @@ export function GameScreen({
   // last turn.
   const [engaged, setEngaged] = useState(false);
   const [planner, setPlanner] = useState<PlayerId | null>(null);
+  // [Andrei, 2026-09-25] Q57: the map either follows the players on turn or
+  // stays where the viewer put it, and the Track button says which. It is
+  // pressed when a game opens (76).
+  const [tracking, setTracking] = useState(true);
   const handle = useRef<MapHandle | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const busy = inFlight !== null;
@@ -151,6 +155,8 @@ export function GameScreen({
       setArmed(controller.waypointArmed);
       setEngaged(controller.engaged);
       setPlanner(controller.planner);
+      // [Q57, 73] Picking a figure up, or changing its route, is planning: Track unpresses.
+      if (controller.engaged) setTracking(false);
       const save = source.savePlan;
       const who = controller.planner;
       if (save === null || who === null) return;
@@ -309,7 +315,9 @@ export function GameScreen({
   // figure at the beginning of each turn, both human and AI" (Q46): the map
   // glides there at the zoom it already has, from the first turn on. After an
   // unguarded claim it waits until the claim's notice has faded, since the
-  // notice rides on the figure that made the claim.
+  // notice rides on the figure that made the claim. [Q57, 74] Only while Track
+  // is pressed; on one device it presses itself at the start of every turn,
+  // since a new person is at the screen (77).
   const centeredTurn = useRef<number | null>(null);
   useEffect(() => {
     if (!mapReady || busy || shown.status !== 'in_progress') return;
@@ -318,8 +326,10 @@ export function GameScreen({
     const player = shown.players[shown.turn.activeSeat - 1];
     if (player === undefined) return;
     centeredTurn.current = shown.turn.number;
+    if (source.mode.allowOutOfTurnPlanning && !tracking) return;
+    setTracking(true);
     handle.current?.glideTo(player.position);
-  }, [mapReady, busy, shown, result]);
+  }, [mapReady, busy, shown, result, source, tracking]);
 
   const refuse = (why: EnterRefusal): void => {
     const active = shown.players[shown.turn.activeSeat - 1];
@@ -373,7 +383,29 @@ export function GameScreen({
     if (window.matchMedia(PHONE).matches) handle.current?.centerOn(planFor.position);
   };
   const findActive = (): void => {
-    if (active !== undefined) handle.current?.centerOn(active.position);
+    if (active === undefined) return;
+    setTracking(false);
+    handle.current?.centerOn(active.position);
+  };
+  /**
+   * [Q57, 74 and 75] Pressing Track closes planning, keeping the route, and
+   * glides the map to the figure walking or else the player on turn; pressing
+   * it again unpresses it.
+   */
+  const pressTrack = (): void => {
+    if (tracking) {
+      setTracking(false);
+      return;
+    }
+    controller.putDown();
+    setTracking(true);
+    handle.current?.track(active?.position ?? null);
+  };
+  /** [Q57, 76] End turn and Rest press Track, without moving the map, so the walk and the turns after it are watched. */
+  const endTurn = (rest: boolean): void => {
+    if (rest) controller.rest();
+    else controller.endTurn();
+    if (!controller.engaged) setTracking(true);
   };
   /** Cancel puts the route down, and online clears the saved one too ([Q56, 53]). */
   const cancel = useRef<() => void>(() => undefined);
@@ -419,12 +451,13 @@ export function GameScreen({
       thinking: () => !busy && shown === source.state && shown.status === 'in_progress' && active !== undefined && source.thinksFor(active),
       move: () => controller.state,
       planner: () => (controller.engaged ? controller.planner : null),
+      tracking: () => tracking,
       screenOf: (node: number): Point | null => handle.current?.screenOf(node as NodeId) ?? null,
       figureOf: (player: string): Point | null => handle.current?.screenOfFigure(player as PlayerId) ?? null,
       setTiming: (next: Partial<typeof timing>) => Object.assign(timing, next),
     };
     (window as unknown as { __adventure?: typeof hooks }).__adventure = hooks;
-  }, [source, controller, shown, busy, active]);
+  }, [source, controller, shown, busy, active, tracking]);
 
   const path = inFlight !== null ? inFlight.path : move.kind === 'previewing' ? move.preview : null;
   const waypoint = inFlight !== null ? inFlight.waypoint : move.kind === 'idle' ? null : move.waypoint;
@@ -456,8 +489,8 @@ export function GameScreen({
         onCancel={() => cancel.current()}
         onArmWaypoint={(on) => controller.armWaypoint(on)}
         onClearWaypoint={() => controller.clearWaypoint()}
-        onEndTurn={() => controller.endTurn()}
-        onRest={() => controller.rest()}
+        onEndTurn={() => endTurn(false)}
+        onRest={() => endTurn(true)}
         onFind={findActive}
       />
       <div className={`log-host${logOpen || board !== null ? ' open' : ''}`}>
@@ -475,6 +508,9 @@ export function GameScreen({
           cue={cue}
           planner={plannerShown}
           onTap={onTap}
+          tracking={tracking}
+          onTrack={shown.status === 'in_progress' ? pressTrack : undefined}
+          onMoved={() => setTracking(false)}
           onReady={(ready) => {
             handle.current = ready;
             setMapReady(ready !== null);
