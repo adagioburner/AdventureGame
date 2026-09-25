@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q57.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q58.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -1535,6 +1535,56 @@ on the same page as details 72 to 77, each with a recommendation. Andrei:
 `tracking` in `apps/web/src/page/GameScreen.tsx`; the button and the
 following in `MapView.tsx`; `putDown` in
 `apps/web/src/interaction/moveMode.ts` closes planning.
+
+<a id="q58"></a>
+### Q58. ~~How does the play screen fit a small screen?~~ — **answered 2026-09-25: as recommended**
+
+Play-testing on his Galaxy Fold (folded about 340 × 690, open about 620 × 590)
+the player cards left the map a strip. His direction: *"one row is definitely
+the way to go on portrait screens, but shouldn't we change to side buttons in
+landscape? We should also look for ways to save space on small screens. The
+log message, for example, can fit to the right of the buttons."* The details
+page put 78 to 85 to him with mock-ups, and 86 and 87, two side effects of the
+fix for a computer's move lost to a dropped connection that had been built
+without asking. Andrei: *"maps335, 321, and the last map for the phone turned
+sideways are the way to go"* (78 and 80 to 85, as recommended and pictured),
+*"for 86 and 87, yes, please proceed as recommended"* and *"yes, the row
+should follow the turn, showing the active players card"* (79).
+
+78. **One row of cards** on phone screens (narrower than 900): the row scrolls
+    sideways, each card a little under half its width and never narrower than
+    180, so two show whole and the edge of the next shows there are more. The
+    cards themselves are unchanged.
+79. **The row follows the turn:** at the start of each turn it slides so the
+    card of the player on turn is in view, as the map glides to their figure
+    (Q46).
+80. **Landscape** is a phone screen at least a third wider than it is tall
+    (4:3). The unfolded Fold, nearly square, keeps the one-row layout.
+81. **In landscape** the cards are a column down the left, 300 wide, scrolling
+    when they do not all fit, with the line and the buttons under them; the
+    map takes the rest, and the top bar fits on one row.
+82. **The line beside the buttons** on screens 560 to 899 wide: to the right
+    of Rest, End turn and the others. Narrower screens keep it above them.
+83. **The game's name and seed** sit on the same row as "Adventure" on
+    phones, cut short with "…" when there is no room.
+84. **One Menu button** on portrait phone screens opens Resign, Your games,
+    Turn log and Messages as a list, and carries the count of unseen messages
+    ("Menu 2"). The end time stays in the bar. In landscape the four buttons
+    stay in the bar.
+85. **The map's buttons in a row** on phone screens in both layouts: Track,
+    "+", "−" and "Whole map" along the bottom right of the map, a little
+    smaller.
+86. **While a computer's move waits for the connection** the line reads
+    "Reconnecting to the server…", as on your own turn (Q56 71), with the
+    computer's route drawn.
+87. **No notice for a computer's move** that could not be sent: "The
+    connection to the server dropped. Try again once it is back." stays out,
+    since there is nothing to try again.
+
+The layout is CSS in `apps/web/index.html` (the play screen) and
+`apps/web/src/online/site.css` (the top bar and Menu); 79 is in
+`apps/web/src/page/Players.tsx`, 84 in `OnlineGameScreen.tsx`, 86 in
+`TurnControls.tsx`, and 87 in `onlinePlay` in `apps/web/src/modes/play.ts`.
 
 ---
 

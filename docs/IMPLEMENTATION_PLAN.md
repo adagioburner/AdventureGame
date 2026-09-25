@@ -1263,7 +1263,8 @@ player's move, and a game with computer seats plays to the end.
 
 Built to [Q54](./OPEN_QUESTIONS.md#q54), [Q55](./OPEN_QUESTIONS.md#q55) and
 [Q56](./OPEN_QUESTIONS.md#q56) 48 to 71, with Q56 52 replaced by the Track
-button ([Q57](./OPEN_QUESTIONS.md#q57)). Two browsers played a stored game against the local
+button ([Q57](./OPEN_QUESTIONS.md#q57)), and the phone layout of
+[Q58](./OPEN_QUESTIONS.md#q58). Two browsers played a stored game against the local
 Workers runtime: planning out of turn, the other page walking each turn,
 Move on, a post, Add a day, a resignation with the computer taking the seat,
 and End the game. A game against a computer seat was reloaded at turn 40 and
@@ -1293,6 +1294,16 @@ came back with all 39 turns in its log.
   it, and pressing it closes planning with `putDown`, keeping the route. On
   one device it presses itself at every turn, so hot seat moves the map as
   before.
+- **A computer's move survives a dropped connection.** `onlinePlay` keeps
+  the move it could not send, and `reconnected()` sends it once the caught-up
+  records show its turn still waiting; meanwhile the line reads
+  "Reconnecting to the server…" (Q58 86 and 87).
+- **Phones** (Q58) are CSS in `apps/web/index.html` and
+  `apps/web/src/online/site.css`: below 900 wide the cards are one row that
+  `Players` slides to the player on turn, a screen at least 4:3 wide puts
+  them in a 300-wide column on the left, the line sits beside the buttons
+  from 560 wide, a portrait phone's top bar folds four buttons into Menu,
+  and the map's buttons are a row.
 - **Presence** is a ping every 20 seconds that Cloudflare answers without
   waking the game; the game's alarm reads the times while it is watched, and
   a minute's silence is "Away" (Q54 31).

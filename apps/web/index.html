@@ -696,6 +696,10 @@
         .bar h1 {
           font-size: 19px;
         }
+        /* [Q58, 83] The game's name and seed share the first row, cut short. */
+        .bar .seed-shown {
+          flex: 1 1 0;
+        }
         .btn {
           padding: 5px 10px;
         }
@@ -711,13 +715,22 @@
         .game > .controls {
           border-right: 0;
         }
+        /* [Q58, 78] Held upright, the cards sit in one row above the map that
+           scrolls sideways. Each is a little under half the width, never under
+           180px, so the edge of the next shows there are more. */
         .players {
-          grid-template-columns: 1fr 1fr;
+          display: flex;
           gap: 6px;
           padding: 6px;
           border-bottom: 1px solid var(--line);
-          /* Phones show every card above the map, as before. */
-          overflow-y: visible;
+          overflow-x: auto;
+          overflow-y: hidden;
+          overscroll-behavior-x: contain;
+          scroll-snap-type: x proximity;
+        }
+        .players > .player {
+          flex: 1 0 max(180px, calc(46% - 3px));
+          scroll-snap-align: start;
         }
         .player {
           gap: 4px;
@@ -790,13 +803,17 @@
         .log .close {
           display: inline-block;
         }
+        /* [Q58, 85] The map's buttons in one row along the bottom right. */
         .zoom {
           right: 10px;
           bottom: 10px;
+          flex-direction: row;
+          gap: 6px;
         }
         .zoom .btn {
-          min-width: 40px;
-          min-height: 36px;
+          min-width: 36px;
+          min-height: 32px;
+          padding: 4px 10px;
         }
         /* Setup stacks the map above the form, so the starting node shows. */
         .setting-up {
@@ -817,12 +834,62 @@
           max-height: none;
           margin: 0 8px 8px;
         }
+        /* Above the row of map buttons, which it would otherwise cover. */
         .notice {
           max-width: calc(100% - 90px);
-          bottom: 12px;
+          bottom: 52px;
         }
         .result {
           top: 8px;
+        }
+      }
+      /* [Q58, 82] Wide enough, the line sits to the right of the buttons. */
+      @media (min-width: 560px) and (max-width: 899px) {
+        .controls {
+          grid-template-columns: max-content minmax(0, 1fr);
+          align-items: center;
+          column-gap: 12px;
+        }
+        .controls > .buttons {
+          grid-column: 1;
+          grid-row: 1;
+        }
+        .controls > .hint,
+        .controls > .thinking {
+          grid-column: 2;
+          grid-row: 1;
+        }
+      }
+      /* [Q58, 80 and 81] A phone turned sideways, a third wider than tall or
+         more: the cards in a column down the left, 300px wide, with the line
+         and the buttons under them, and the map beside them. */
+      @media (max-width: 899px) and (min-aspect-ratio: 4/3) {
+        .game {
+          grid-template-columns: 300px minmax(0, 1fr);
+          grid-template-rows: minmax(0, 1fr) auto;
+          grid-template-areas: 'players stage' 'controls stage';
+        }
+        .game > .players,
+        .game > .controls {
+          border-right: 1px solid var(--line);
+        }
+        .players {
+          display: grid;
+          grid-template-columns: minmax(0, 1fr);
+          align-content: start;
+          overflow-x: hidden;
+          overflow-y: auto;
+          scroll-snap-type: none;
+          border-bottom: 0;
+        }
+        .controls {
+          grid-template-columns: minmax(0, 1fr);
+        }
+        .controls > .buttons,
+        .controls > .hint,
+        .controls > .thinking {
+          grid-column: auto;
+          grid-row: auto;
         }
       }
     </style>

@@ -7,6 +7,8 @@ interface TurnControlsProps {
   readonly waypointArmed: boolean;
   /** An End Turn is playing out: nothing can be pressed until it has. */
   readonly busy: boolean;
+  /** Online, the turn this page committed is not played yet: the server has still to hear of it or answer. */
+  readonly awaiting: boolean;
   /**
    * The computer's thinking time when the seat to move is a computer's, in
    * milliseconds; `null` for a person.
@@ -99,8 +101,11 @@ export function TurnControls(props: TurnControlsProps) {
   // computer thinking over its bar, as in hot seat; your own route can be
   // planned meanwhile ([Q56, 49]), and Rest and End turn wait for your turn.
   if (props.othersTurn) {
+    // [Q58, 86] A computer's move this page thought of waits for the connection.
     const line = busy
-      ? `${player.name} is moving…`
+      ? props.awaiting && props.offline && props.thinkingMs !== null
+        ? 'Reconnecting to the server…'
+        : `${player.name} is moving…`
       : (props.waiting ??
         (planning
           ? hint(move, waypointArmed, player.name, rest, onGuard, true)

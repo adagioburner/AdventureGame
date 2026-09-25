@@ -97,6 +97,55 @@
   display: inline-block;
 }
 
+/* [Q58, 84] On a phone held upright, Resign, Your games, Turn log and
+   Messages share one Menu button, whose list opens under the top bar at its
+   right. Elsewhere they sit in the bar and the Menu button is not shown. */
+.menu-toggle {
+  display: none;
+}
+.bar-menu,
+.bar-actions {
+  display: contents;
+}
+@media (max-width: 899px) {
+  .shell.playing > .bar {
+    position: relative;
+  }
+  .menu-toggle {
+    display: inline-block;
+  }
+  .bar-menu {
+    display: block;
+  }
+  .bar-actions {
+    display: none;
+  }
+  .bar-menu.open .bar-actions {
+    position: absolute;
+    z-index: 6;
+    top: calc(100% + 6px);
+    right: 10px;
+    display: grid;
+    gap: 8px;
+    min-width: 160px;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--panel);
+    box-shadow: var(--shadow);
+  }
+}
+@media (max-width: 899px) and (min-aspect-ratio: 4/3) {
+  .menu-toggle {
+    display: none;
+  }
+  .bar-menu,
+  .bar-actions,
+  .bar-menu.open .bar-actions {
+    display: contents;
+  }
+}
+
 /* [Q56, 59] The message board: oldest post at the top, the box and Send at the bottom. */
 .log.board {
   display: flex;

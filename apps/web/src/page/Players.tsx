@@ -23,17 +23,26 @@ export function Players({ catalog, state, away }: { catalog: ArtCatalog; state: 
   // [Andrei, 2026-09-24] Q53: four or five cards scroll in their own column
   // (Q52), so at the start of each turn the column glides until the current
   // player's card shows. Only the column moves, and only if the card is out of
-  // view; on a phone every card already shows.
+  // view. [Q58, 79] On a phone held upright the cards sit in one row, which
+  // slides the same way, sideways, until the current card starts the row: the
+  // row settles on a card's start (78), and would pull a slide that stopped
+  // anywhere else back to where it was.
   const turn = playing ? `${state.turn.number}:${state.turn.activeSeat}` : null;
   useEffect(() => {
-    const column = list.current;
-    const card = column?.querySelector<HTMLElement>('.player.current') ?? null;
-    if (turn === null || column === null || card === null || column.scrollHeight <= column.clientHeight) return;
-    const view = column.getBoundingClientRect();
+    const cards = list.current;
+    const card = cards?.querySelector<HTMLElement>('.player.current') ?? null;
+    if (turn === null || cards === null || card === null) return;
+    const view = cards.getBoundingClientRect();
     const box = card.getBoundingClientRect();
-    const padding = parseFloat(getComputedStyle(column).paddingTop) || 0;
+    const style = getComputedStyle(cards);
+    if (style.display === 'flex') {
+      if (box.left < view.left || box.right > view.right) cards.scrollBy({ left: box.left - view.left, behavior: 'smooth' });
+      return;
+    }
+    if (cards.scrollHeight <= cards.clientHeight) return;
+    const padding = parseFloat(style.paddingTop) || 0;
     const by = box.top < view.top + padding ? box.top - view.top - padding : box.bottom > view.bottom - padding ? box.bottom - view.bottom + padding : 0;
-    if (by !== 0) column.scrollBy({ top: by, behavior: 'smooth' });
+    if (by !== 0) cards.scrollBy({ top: by, behavior: 'smooth' });
   }, [turn]);
   return (
     <section className="players" aria-label="Players" ref={list}>

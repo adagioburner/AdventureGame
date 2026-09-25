@@ -105,6 +105,8 @@ export function GameScreen({
   const handle = useRef<MapHandle | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const busy = inFlight !== null;
+  // Online, a turn this page committed that the server has not played yet.
+  const [awaiting, setAwaiting] = useState(false);
 
   const say = useCallback((text: string) => setNotice(text), []);
   useEffect(() => {
@@ -192,7 +194,10 @@ export function GameScreen({
     }
     // Online the turn comes back once the server has played it; until then
     // its route stays drawn and nothing else can be committed.
-    if (committed.current !== null) setInFlight(planned);
+    if (committed.current !== null) {
+      setInFlight(planned);
+      setAwaiting(true);
+    }
   };
 
   // Every update `play` reports is shown in turn: a turn plays out before the
@@ -206,6 +211,7 @@ export function GameScreen({
       if (committed.current !== null) {
         committed.current = null;
         setInFlight(null);
+        setAwaiting(false);
       }
       controller.setGame(source.state);
       if (update.reason !== null) say(update.reason);
@@ -220,6 +226,7 @@ export function GameScreen({
       if (turn !== null && mine !== null && mine.turn <= before.turn.number) {
         committed.current = null;
         setInFlight(null);
+        setAwaiting(false);
       }
       setShown(after);
       controller.setGame(after);
@@ -227,7 +234,10 @@ export function GameScreen({
       return;
     }
     const mine = committed.current;
-    if (mine !== null && mine.turn <= before.turn.number) committed.current = null;
+    if (mine !== null && mine.turn <= before.turn.number) {
+      committed.current = null;
+      setAwaiting(false);
+    }
     setResult(null);
     // [Q56, 50] A turn this page did not commit, another player's online, is
     // walked along its own route, drawn as their End turn drew it.
@@ -483,6 +493,7 @@ export function GameScreen({
         move={move}
         waypointArmed={armed}
         busy={busy}
+        awaiting={awaiting}
         thinkingMs={thinkingMsOf(source, active)}
         waiting={waitingOn?.(shown) ?? null}
         othersTurn={othersTurn}
