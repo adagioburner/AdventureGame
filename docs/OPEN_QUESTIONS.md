@@ -14,7 +14,7 @@ Nothing below was resolved by picking something reasonable.
 **Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q59.
 `pending` in the config is empty.
 
-**Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
+**Outstanding: three — [Q27](#q27) and [Q30](#q30), neither of them blocking, and [Q60](#q60), which holds the new art back until it is answered.** Building phase 1 turned up that
 `COMPACTNESS_MAX` never binds on a map of ~240 nodes and 300 edges, so §2.1's
 Smooth step does nothing at the current constants. It is a tuning question
 rather than a blocker: generation works and the code implements §2.1 literally.
@@ -1655,16 +1655,44 @@ His sheets are kept as supplied in `Art/originals/`, and
 `Art/tools/pack_sheets.py` packs them into the game's sheets and atlases and
 makes their shadows dark (89). Clusters are `clusters` on the plains dressing
 in `Art/manifest.json`, laid out in `placeDressing` in
-`apps/web/src/render/dressing.ts`. Four things the page did not spell out were
-settled while building, and reported to him with the result: a picture's
-shadow is found as grey that touches the clear canvas in the lower half of the
-picture, which finds every shadow but the amber slime's, whose glow tints and
-rings it, so it keeps the shadow it was drawn with; the portrait crops take
-half the figure's height instead of a third, since the new figures' heads are
-a third of their height and the old framing showed a face alone; bushes of a
-cluster stand three quarters of the way to edge to edge (`CLUSTER_TOUCH`); and
-96's equal chance is per pick, a bush picked bringing its cluster, so bushes
-make up more of the pieces than one in five.
+`apps/web/src/render/dressing.ts`. Four details the page did not settle were
+built one way before he was asked, which the ask-first rule forbids; they are
+[Q60](#q60), asked on the page as 106 to 109 and still open.
+
+<a id="q60"></a>
+### Q60. Four details of the new art found while building — **asking**
+
+Building [Q59](#q59) turned up four details its answers do not settle. Each
+was built one way, and shown to Andrei on the game page and screenshots, before
+he was asked; that breaks the rule to ask first, so none counts as settled.
+They are on the details page as 106 to 109, each with the built version as the
+recommendation. The pull request carrying the new art stays unfinished until
+he answers.
+
+106. **The amber slime's shadow.** Every other shadow is found as grey that
+    touches the clear canvas in the lower half of the picture, and made dark
+    (89). The slime's is tinted orange and ringed by its own glow, so it is
+    not found, and keeps the shadow it was drawn with, a faint brownish patch.
+    Recommended: keep it as drawn. Or: its shadow is marked out by hand for
+    that one picture in `Art/tools/pack_sheets.py` and made dark like the
+    others.
+107. **How much of a figure a portrait shows.** The crop's side was a third of
+    the figure's height (`SIDE_FRACTION` 0.32 in
+    `Art/tools/make_portrait_crops.py`), set for the first six figures; the
+    new figures' heads are larger and a third shows a face alone.
+    Recommended: half the figure's height (0.5), head and shoulders. Or: a
+    third, as before.
+108. **How close the bushes of a cluster stand.** 95 says close enough to
+    touch, those behind partly hidden. As built, a quarter of a bush's width
+    nearer than edge to edge (`CLUSTER_TOUCH` 0.75 in
+    `apps/web/src/render/dressing.ts`). Recommended: as built. Or: just
+    touching (1.0).
+109. **How common bushes are.** 96 makes every piece of the sheet equally
+    likely to be picked, each bush of a cluster counting as one piece. As
+    built the chance is per pick, and a picked bush brings its whole cluster,
+    so the 5 bushes of 25 pieces are about 4 pieces in 10 on the map (221 of
+    582 over six seeds). Recommended: as built. Or: each piece on the map
+    equally likely to be any of the 25, so bushes are 1 in 5.
 
 ---
 
