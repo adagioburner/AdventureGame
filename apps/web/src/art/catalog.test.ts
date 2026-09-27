@@ -108,6 +108,13 @@ describe('the art catalog built from Art/', () => {
     expect(wrapIndex(4_294_967_295, 7)).toBe(4_294_967_295 % 7);
   });
 
+  it('circles the combat, forest speed and mountain speed icons and fills the wheel, on beige (Q61)', () => {
+    const { backing } = catalog.manifest.icons;
+    expect(Object.keys(backing.circled).sort()).toEqual(['fighting', 'forest_move', 'mountain_move']);
+    expect(backing.filled).toEqual(['plains_move']);
+    expect(backing.fill).toBe('#e6dcd2');
+  });
+
   it('flags generated placeholders and only those', () => {
     const placeholders = [...catalog.atlases.values()].filter((atlas) => atlas.placeholder).map((atlas) => atlas.name);
     expect(placeholders.sort()).toEqual([
@@ -233,6 +240,15 @@ describe('a bad art drop', () => {
       saturation: 1,
       outline: { color: '#1c1812', width: 0.01 },
     });
+  });
+
+  it('rejects an icon backing naming something that is not a reward, or an icon both circled and filled', () => {
+    const manifest = ART_FILES.json.get('manifest.json') as { icons: { backing: object } };
+    const withBacking = (backing: object) => ({ ...manifest, icons: { ...manifest.icons, backing: { ...manifest.icons.backing, ...backing } } });
+    expect(() => parseManifest(withBacking({ circled: { swords: '#b71b1c' } }))).toThrow(/icons\.backing\.circled: swords is not a reward kind/);
+    expect(() => parseManifest(withBacking({ filled: ['fighting'] }))).toThrow(/fighting is both circled and filled/);
+    expect(() => parseManifest(withBacking({ fill: 'beige' }))).toThrow(/icons\.backing\.fill: expected a colour/);
+    expect(() => parseManifest(withBacking({ contour: 0.5 }))).toThrow(/contour: must be under half/);
   });
 
   it('is reported with every problem at once', () => {

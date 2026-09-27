@@ -3,8 +3,10 @@ import {
   adjustColors,
   keyShadows,
   outlinePictures,
+  enclosingCircle,
   solidBands,
   solidBounds,
+  solidCircle,
   SOLID_ALPHA,
   standingAnchor,
   typicalSpan,
@@ -236,5 +238,55 @@ describe('outlinePictures', () => {
     const pixels = image(4, 4, () => [0, 0, 0, 0]);
     outlinePictures(pixels, 4, [{ x: 0, y: 0, width: 4, height: 4 }], 2, [255, 255, 255]);
     expect(pixels.every((value) => value === 0)).toBe(true);
+  });
+});
+
+describe('solidCircle', () => {
+  it('finds the smallest circle round a picture, which for an X reaches its corners', () => {
+    // A 9x9 X, one pixel thick: the circle must hold its four corner pixels
+    // whole, so it is as wide as the square's diagonal, not its side.
+    const x = image(11, 11, (px, py) => (px >= 1 && px <= 9 && (px === py || px === 10 - py) ? [200, 20, 20, 255] : [0, 0, 0, 0]));
+    const circle = solidCircle(x, 11, 11);
+    expect(circle).not.toBeNull();
+    expect(circle?.x).toBeCloseTo(5.5);
+    expect(circle?.y).toBeCloseTo(5.5);
+    expect(circle?.r).toBeCloseTo(Math.hypot(4.5, 4.5));
+  });
+
+  it('fits a round picture by its own width, and ignores what is not solid', () => {
+    const round = image(20, 20, (px, py) =>
+      Math.hypot(px + 0.5 - 10, py + 0.5 - 10) <= 6 ? [0, 0, 0, 255] : py === 0 ? [0, 0, 0, SOLID_ALPHA - 1] : [0, 0, 0, 0],
+    );
+    const circle = solidCircle(round, 20, 20);
+    expect(circle?.x).toBeCloseTo(10, 0);
+    expect(circle?.y).toBeCloseTo(10, 0);
+    expect(circle?.r).toBeGreaterThan(6);
+    expect(circle?.r).toBeLessThan(7);
+  });
+
+  it('is null for a picture with nothing solid', () => {
+    expect(solidCircle(image(3, 3, () => [0, 0, 0, 0]), 3, 3)).toBeNull();
+  });
+});
+
+describe('enclosingCircle', () => {
+  it('holds every point, with the points that fix it on its edge', () => {
+    const points = [
+      { x: 0, y: 0 },
+      { x: 4, y: 0 },
+      { x: 2, y: 1 },
+      { x: 2, y: 3 },
+      { x: 1, y: 1 },
+    ];
+    const circle = enclosingCircle(points);
+    for (const p of points) expect(Math.hypot(p.x - circle.x, p.y - circle.y)).toBeLessThanOrEqual(circle.r + 1e-9);
+    // Through (0,0), (4,0) and (2,3): centre (2, 5/6), radius 13/6.
+    expect(circle.x).toBeCloseTo(2);
+    expect(circle.y).toBeCloseTo(5 / 6);
+    expect(circle.r).toBeCloseTo(13 / 6);
+  });
+
+  it('spans the two furthest points when they alone decide it, and copes with points in a line', () => {
+    expect(enclosingCircle([{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 3, y: 0 }])).toEqual({ x: 1.5, y: 0, r: 1.5 });
   });
 });
