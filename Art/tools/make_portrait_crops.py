@@ -42,6 +42,15 @@ OUT = os.path.join(ART, "player_avatars_portraits.json")
 SIDE_FRACTION = 0.5
 # Headroom above the hair, as a fraction of the portrait side.
 HEADROOM = 0.06
+# Where the face is, cell-relative, for figures whose measured head centre
+# misses it: a backpack or basket beside the head widens what is measured, and
+# the face sits left of centre. Set by eye, between the eyes, for the figures
+# Andrei named (Q60, 107); check them again if the figures change.
+FACE_X = {
+    "player_avatars_02": 124,
+    "player_avatars_03": 103,
+    "player_avatars_05": 123,
+}
 ALPHA_FLOOR = 8
 
 
@@ -169,7 +178,7 @@ def main():
         body_cx = (min_x + max_x) // 2
         top = head_top(px, w, sprite, body_cx, max_x - min_x)
         side = int(SIDE_FRACTION * (max_y - top))
-        cx = head_centre(px, w, sprite, body_cx, top, side)
+        cx = FACE_X.get(sprite["id"]) or head_centre(px, w, sprite, body_cx, top, side)
 
         x = max(0, min(cx - side // 2, sprite["width"] - side))
         y = max(0, min(top - int(HEADROOM * side), sprite["height"] - side))

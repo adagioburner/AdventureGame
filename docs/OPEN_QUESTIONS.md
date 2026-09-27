@@ -11,10 +11,10 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q59.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q60.
 `pending` in the config is empty.
 
-**Outstanding: three — [Q27](#q27) and [Q30](#q30), neither of them blocking, and [Q60](#q60), which holds the new art back until it is answered.** Building phase 1 turned up that
+**Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
 `COMPACTNESS_MAX` never binds on a map of ~240 nodes and 300 edges, so §2.1's
 Smooth step does nothing at the current constants. It is a tuning question
 rather than a blocker: generation works and the code implements §2.1 literally.
@@ -1657,17 +1657,20 @@ makes their shadows dark (89). Clusters are `clusters` on the plains dressing
 in `Art/manifest.json`, laid out in `placeDressing` in
 `apps/web/src/render/dressing.ts`. Four details the page did not settle were
 built one way before he was asked, which the ask-first rule forbids; they are
-[Q60](#q60), asked on the page as 106 to 109 and still open.
+[Q60](#q60), asked on the page as 106 to 109 and since answered.
 
 <a id="q60"></a>
-### Q60. Four details of the new art found while building — **asking**
+### Q60. ~~Four details of the new art found while building~~ — **answered 2026-09-27: as recommended, except 107, where three faces are centred**
 
 Building [Q59](#q59) turned up four details its answers do not settle. Each
 was built one way, and shown to Andrei on the game page and screenshots, before
-he was asked; that breaks the rule to ask first, so none counts as settled.
+he was asked; that breaks the rule to ask first, so none counted as settled
+until he answered.
 They are on the details page as 106 to 109, each with the built version as the
-recommendation. The pull request carrying the new art stays unfinished until
-he answers.
+recommendation. On 27 September at 05:49 he answered: *"everything
+recommended in 106 to 109 looks good, except for the portraits (107). Here
+some of them (specifically the 2nd, 3rd and the 5th, counting from the left)
+need to be shifted to the right so that the face appears in the center"*.
 
 106. **The amber slime's shadow.** Every other shadow is found as grey that
     touches the clear canvas in the lower half of the picture, and made dark
@@ -1681,7 +1684,11 @@ he answers.
     `Art/tools/make_portrait_crops.py`), set for the first six figures; the
     new figures' heads are larger and a third shows a face alone.
     Recommended: half the figure's height (0.5), head and shoulders. Or: a
-    third, as before.
+    third, as before. **Half, and the 2nd, 3rd and 5th figures' crops are
+    centred on the face:** a backpack or basket beside their heads pulled the
+    measured head centre off the face, so `FACE_X` in the tool sets their
+    face centres by eye, between the eyes. The 1st, 4th and 6th are as they
+    were.
 108. **How close the bushes of a cluster stand.** 95 says close enough to
     touch, those behind partly hidden. As built, a quarter of a bush's width
     nearer than edge to edge (`CLUSTER_TOUCH` 0.75 in
