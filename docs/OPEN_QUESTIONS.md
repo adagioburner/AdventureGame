@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q60.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q61.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -1700,6 +1700,57 @@ need to be shifted to the right so that the face appears in the center"*.
     so the 5 bushes of 25 pieces are about 4 pieces in 10 on the map (221 of
     582 over six seeds). Recommended: as built. Or: each piece on the map
     equally likely to be any of the 25, so bushes are 1 in 5.
+
+<a id="q61"></a>
+### Q61. ~~How do the reward icons become more visible?~~ — **answered 2026-09-27: as recommended, except the size and the players' cards, plus a beige fill**
+
+On 27 September at 13:40 Andrei asked: *"we need to make reward icons more
+visible. let us place the combat reward, the forest speed reward and the
+mountains speed rewards on a white circle slightly larger than the icon, with
+red contour for combat, green contour for forest speed, and black contour for
+mountains speed. The plains speed, magic and gold already have round shapes,
+so we can simply grow them slightly to make all icons the same size. Grow the
+stamina icon to match this size as well, but don't add anything to it"*. What
+that left open went on a details page as 110 to 118, each with a
+recommendation, before anything was built. At 15:36 he answered: *"110, I
+actually prefer them at 0.24. 115, let us leave the icons as today, they look
+nicer that way. The rest of the recommendations sound good to me"*, and asked
+for two more things: *"change the white in the circles to slightly beige, eg
+RGB=(230, 220, 210)"* and *"add a beige-filled circles under the wagon wheel
+icon as well, so the gaps between spikes and the center are of that color"*.
+
+110. **Every icon is 0.24** of a road length across its longer side, up from
+    0.18 (his number): a circled icon's disc, the wheel, magic and gold, and
+    the heart, which is a little wider than tall, by its width.
+111. **The picture spans about four fifths of its disc** (0.82), measured by
+    the smallest circle round the picture.
+112. **The crossed swords fit wholly inside their disc,** with the same room
+    as the foot and the mountain, so they come out smaller than those two.
+113. **The contour is 4% of the disc's width,** as thick as the black rims on
+    the wheel, magic and gold.
+114. **Each contour is its picture's own colour:** the swords' red `#b71b1c`,
+    the foot's green `#1d8b28`, and black for the mountain.
+115. **The players' cards and the end-of-game table keep today's icons,** in
+    his words, the wheel included.
+116. **Stacks overlap as today,** each further icon 0.42 of its width along
+    and drawn over the one before.
+117. **The guard's number keeps its size** and sits just after the row of
+    icons, as today, so it moves right as the row gets wider.
+118. **Pictures, trees and bushes keep clear of the bigger icons** by the
+    rules they follow today, so on the same map a few trees and bushes stand
+    elsewhere and now and then a POI picture stands on the other side of its
+    node.
+
+The discs are beige, `#e6dcd2`, his (230, 220, 210), where the page had
+white. The wheel has a disc of the same beige under it, as wide as the wheel
+and stopping inside its black rim, so the gaps between the spokes and the hub
+show beige and nothing shows round the wheel. Nothing is added to magic, gold
+or the heart.
+
+The icon files are unchanged. The discs are drawn as the icons load, from
+`icons.backing` in `Art/manifest.json` (`iconCanvas` in
+`apps/web/src/render/pixi/textures.ts`), which is why the cards, which show
+the files, keep today's icons.
 
 ---
 

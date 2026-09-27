@@ -26,7 +26,11 @@ import { ArtError, array, finite, nonNegative, positive, record, string } from '
 export interface ArtManifest {
   readonly terrain: PerTerrain<TerrainArt>;
   readonly pois: readonly PoiArtRow[];
-  readonly icons: { readonly size: number; readonly files: Readonly<Record<RewardKind, string>> };
+  readonly icons: {
+    readonly size: number;
+    readonly files: Readonly<Record<RewardKind, string>>;
+    readonly backing: IconBacking;
+  };
   readonly guards: {
     readonly colors: Readonly<Record<GuardType, string>>;
     /** The width of the ring in the guard's colour round a guarded POI's node (§3, Q31). */
@@ -42,6 +46,24 @@ export interface ArtManifest {
   readonly shadows: { readonly opacity: number; readonly sheets: ReadonlyMap<string, readonly string[]> };
   /** Edits made to a sheet as it loads, by sheet name; a sheet with no line is drawn as supplied. */
   readonly adjustments: ReadonlyMap<string, SheetAdjustment>;
+}
+
+/**
+ * What the map draws behind some reward icons as they load (Q61), so the PNGs
+ * stay as drawn and the players' cards, which use the files, show them as
+ * they are.
+ */
+export interface IconBacking {
+  /** The disc's colour, for circled and filled icons alike. */
+  readonly fill: string;
+  /** A circled icon's contour width, as a share of its disc's width. */
+  readonly contour: number;
+  /** How much of a circled icon's disc the smallest circle round its picture spans. */
+  readonly picture: number;
+  /** Icons drawn on a disc, each with its contour colour. */
+  readonly circled: Readonly<Partial<Record<RewardKind, string>>>;
+  /** Icons with a disc under the picture, inside its own rim. */
+  readonly filled: readonly RewardKind[];
 }
 
 /**
@@ -165,6 +187,7 @@ export function parseManifest(json: unknown): ArtManifest {
       files: Object.fromEntries(
         REWARD_KINDS.map((kind) => [kind, string(iconFiles[kind], `manifest.json: icons.files.${kind}`)]),
       ) as Record<RewardKind, string>,
+      backing: parseBacking(icons['backing'], 'manifest.json: icons.backing'),
     },
     guards: {
       colors: Object.fromEntries(
@@ -302,6 +325,30 @@ function parseTerrain(json: unknown, where: string): TerrainArt {
     }),
     dressingDensity: nonNegative(entry['dressing_density'], `${where}.dressing_density`),
   };
+}
+
+function parseBacking(json: unknown, where: string): IconBacking {
+  if (json === undefined) return { fill: '#ffffff', contour: 0, picture: 1, circled: {}, filled: [] };
+  const entry = record(json, where);
+  const kind = (value: string, at: string): RewardKind => {
+    if (!(REWARD_KINDS as readonly string[]).includes(value)) throw new ArtError(`${at}: ${value} is not a reward kind`);
+    return value as RewardKind;
+  };
+  const circledEntry = entry['circled'] === undefined ? {} : record(entry['circled'], `${where}.circled`);
+  const circled = Object.fromEntries(
+    Object.entries(circledEntry).map(([name, value]) => [kind(name, `${where}.circled`), color(value, `${where}.circled.${name}`)]),
+  ) as Partial<Record<RewardKind, string>>;
+  const filled = (entry['filled'] === undefined ? [] : array(entry['filled'], `${where}.filled`)).map((value, at) =>
+    kind(string(value, `${where}.filled[${at}]`), `${where}.filled[${at}]`),
+  );
+  for (const name of filled) {
+    if (circled[name] !== undefined) throw new ArtError(`${where}: ${name} is both circled and filled`);
+  }
+  const contour = fraction(entry['contour'], `${where}.contour`);
+  if (contour >= 0.5) throw new ArtError(`${where}.contour: must be under half the disc's width`);
+  const picture = fraction(entry['picture'], `${where}.picture`);
+  if (picture === 0) throw new ArtError(`${where}.picture: must be above 0`);
+  return { fill: color(entry['fill'], `${where}.fill`), contour, picture, circled, filled };
 }
 
 function parseClusters(json: unknown, where: string): DressingClusters {

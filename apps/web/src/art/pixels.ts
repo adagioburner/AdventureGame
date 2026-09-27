@@ -335,6 +335,100 @@ export function standingAnchor(
   return { x: sprite.anchor.x, y: Math.min(sprite.anchor.y, lowest) };
 }
 
+export interface Circle {
+  readonly x: number;
+  readonly y: number;
+  readonly r: number;
+}
+
+/**
+ * The smallest circle holding every solid pixel, whole pixels included, or
+ * `null` if there are none. A circled reward icon's picture is fitted inside
+ * its disc by this circle (Q61): crossed swords reach into the corners of
+ * their square and need a wider circle than a foot the same size does.
+ */
+export function solidCircle(pixels: Uint8ClampedArray, width: number, height: number): Circle | null {
+  // Each row's first and last solid pixel, by their outer corners, hold the
+  // same smallest circle as every solid pixel does.
+  const corners: Point[] = [];
+  for (let y = 0; y < height; y++) {
+    let left = -1;
+    let right = -1;
+    for (let x = 0; x < width; x++) {
+      if ((pixels[(y * width + x) * 4 + 3] as number) >= SOLID_ALPHA) {
+        if (left < 0) left = x;
+        right = x + 1;
+      }
+    }
+    if (left >= 0) corners.push({ x: left, y }, { x: left, y: y + 1 }, { x: right, y }, { x: right, y: y + 1 });
+  }
+  return corners.length === 0 ? null : enclosingCircle(convexHull(corners));
+}
+
+interface Point {
+  readonly x: number;
+  readonly y: number;
+}
+
+/** Welzl's smallest enclosing circle, iteratively. Fed a hull, so the list is short. */
+export function enclosingCircle(points: readonly Point[]): Circle {
+  const first = points[0];
+  if (first === undefined) throw new Error('no points to enclose');
+  let circle: Circle = { x: first.x, y: first.y, r: 0 };
+  points.forEach((p, i) => {
+    if (holds(circle, p)) return;
+    circle = { x: p.x, y: p.y, r: 0 };
+    for (let j = 0; j < i; j++) {
+      const q = points[j] as Point;
+      if (holds(circle, q)) continue;
+      circle = throughTwo(p, q);
+      for (let k = 0; k < j; k++) {
+        const t = points[k] as Point;
+        if (!holds(circle, t)) circle = throughThree(p, q, t);
+      }
+    }
+  });
+  return circle;
+}
+
+function holds(circle: Circle, p: Point): boolean {
+  return Math.hypot(p.x - circle.x, p.y - circle.y) <= circle.r * (1 + 1e-9) + 1e-9;
+}
+
+function throughTwo(p: Point, q: Point): Circle {
+  return { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2, r: Math.hypot(p.x - q.x, p.y - q.y) / 2 };
+}
+
+/** The circle through three points; for three in a line, the one across the two furthest apart. */
+function throughThree(p: Point, q: Point, t: Point): Circle {
+  const d = 2 * (p.x * (q.y - t.y) + q.x * (t.y - p.y) + t.x * (p.y - q.y));
+  if (Math.abs(d) < 1e-12) {
+    return [throughTwo(p, q), throughTwo(p, t), throughTwo(q, t)].reduce((a, b) => (b.r > a.r ? b : a));
+  }
+  const pp = p.x * p.x + p.y * p.y;
+  const qq = q.x * q.x + q.y * q.y;
+  const tt = t.x * t.x + t.y * t.y;
+  const x = (pp * (q.y - t.y) + qq * (t.y - p.y) + tt * (p.y - q.y)) / d;
+  const y = (pp * (t.x - q.x) + qq * (p.x - t.x) + tt * (q.x - p.x)) / d;
+  return { x, y, r: Math.hypot(p.x - x, p.y - y) };
+}
+
+/** Andrew's monotone chain, corners only. */
+function convexHull(points: readonly Point[]): Point[] {
+  const sorted = [...points].sort((a, b) => a.x - b.x || a.y - b.y);
+  const cross = (o: Point, a: Point, b: Point): number => (a.x - o.x) * (b.y - o.y) - (a.y - o.y) * (b.x - o.x);
+  const half = (list: readonly Point[]): Point[] => {
+    const chain: Point[] = [];
+    for (const p of list) {
+      while (chain.length >= 2 && cross(chain[chain.length - 2] as Point, chain[chain.length - 1] as Point, p) <= 0) chain.pop();
+      chain.push(p);
+    }
+    chain.pop();
+    return chain;
+  };
+  return [...half(sorted), ...half([...sorted].reverse())];
+}
+
 export function hexToRgb(color: string): [number, number, number] {
   const value = Number.parseInt(color.slice(1), 16);
   return [(value >> 16) & 255, (value >> 8) & 255, value & 255];

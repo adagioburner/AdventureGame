@@ -125,7 +125,10 @@ there for people and ignored by the game.
   stands its picture on the POI's node, feet across the back of it; every
   other picture stands beside its node, touching it (Q35).
 - `icons`, `guards`, `roads`, `nodes`: reward icons (sized by their picture,
-  so the transparent margin round an icon does not matter), the red and
+  so the transparent margin round an icon does not matter; `backing` says
+  which the map draws on a beige disc with a coloured contour and which get a
+  beige disc filling the gaps in them, Q61, while the players' cards show
+  the files as they are), the red and
   purple guard colours with the width of the ring round a guarded POI's node
   and the size of the guard's number, the road brush and width, and the node
   ovals.

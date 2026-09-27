@@ -1,6 +1,7 @@
 import { REWARD_KINDS, type RewardKind } from '@adventure/config';
 import { CanvasSource, Rectangle, Texture, type TextureSource } from 'pixi.js';
 import { atlasOf, type ArtCatalog, type SpriteRef } from '../../art/catalog.ts';
+import type { IconBacking } from '../../art/manifest.ts';
 import type { Atlas } from '../../art/atlas.ts';
 import {
   adjustColors,
@@ -9,6 +10,7 @@ import {
   outlinePictures,
   solidBands,
   solidBounds,
+  solidCircle,
   standingAnchor,
   typicalSpan,
 } from '../../art/pixels.ts';
@@ -81,8 +83,7 @@ export async function loadArt(catalog: ArtCatalog): Promise<LoadedArt> {
   await Promise.all(
     REWARD_KINDS.map(async (kind) => {
       const image = await loadImage(catalog.iconUrl(kind));
-      const scale = Math.min(1, 128 / Math.max(image.width, image.height));
-      const canvas = drawScaled(image, scale);
+      const canvas = iconCanvas(image, kind, catalog.manifest.icons.backing);
       const pixels = context(canvas).getImageData(0, 0, canvas.width, canvas.height);
       const whole = { x: 0, y: 0, width: canvas.width, height: canvas.height };
       const solid = solidBounds(pixels.data, canvas.width, whole) ?? whole;
@@ -207,6 +208,57 @@ function frameTexture(
     frame,
     defaultAnchor: { x: anchor.x / sprite.width, y: anchor.y / sprite.height },
   });
+}
+
+/** Reward icons are drawn at most this many pixels across. */
+const ICON_PX = 128;
+
+/**
+ * How far inside a filled icon's picture its disc stops, as a share of the
+ * picture's width: half the black rim round the round icons, so the disc's
+ * edge is hidden under the rim and never shows round it.
+ */
+const FILLED_INSET = 0.02;
+
+/**
+ * One reward icon as the map draws it (Q61): on a disc with a contour if the
+ * manifest circles it, over a disc filling its gaps if it fills it, otherwise
+ * as drawn.
+ */
+function iconCanvas(image: HTMLImageElement, kind: RewardKind, backing: IconBacking): HTMLCanvasElement {
+  const contour = backing.circled[kind];
+  if (contour !== undefined) {
+    const full = drawScaled(image, 1);
+    const circle = solidCircle(context(full).getImageData(0, 0, full.width, full.height).data, full.width, full.height);
+    const fit = circle ?? { x: full.width / 2, y: full.height / 2, r: Math.max(full.width, full.height) / 2 };
+    const canvas = makeCanvas(ICON_PX, ICON_PX);
+    const ctx = context(canvas);
+    const middle = ICON_PX / 2;
+    disc(ctx, middle, middle, middle, contour);
+    disc(ctx, middle, middle, middle - backing.contour * ICON_PX, backing.fill);
+    const scale = (backing.picture * ICON_PX) / (2 * fit.r);
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(image, middle - fit.x * scale, middle - fit.y * scale, image.width * scale, image.height * scale);
+    return canvas;
+  }
+  const canvas = drawScaled(image, Math.min(1, ICON_PX / Math.max(image.width, image.height)));
+  if (!backing.filled.includes(kind)) return canvas;
+  const whole = { x: 0, y: 0, width: canvas.width, height: canvas.height };
+  const solid = solidBounds(context(canvas).getImageData(0, 0, canvas.width, canvas.height).data, canvas.width, whole) ?? whole;
+  const filled = makeCanvas(canvas.width, canvas.height);
+  const ctx = context(filled);
+  const across = Math.min(solid.width, solid.height);
+  disc(ctx, solid.x + solid.width / 2, solid.y + solid.height / 2, across / 2 - FILLED_INSET * across, backing.fill);
+  ctx.drawImage(canvas, 0, 0);
+  return filled;
+}
+
+function disc(ctx: CanvasRenderingContext2D, x: number, y: number, radius: number, color: string): void {
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fill();
 }
 
 function mipmapped(canvas: HTMLCanvasElement): Texture {
