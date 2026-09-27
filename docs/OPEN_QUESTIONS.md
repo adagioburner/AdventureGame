@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q58.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q60.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -1592,6 +1592,114 @@ The layout is CSS in `apps/web/index.html` (the play screen) and
 `apps/web/src/online/site.css` (the top bar and Menu); 79 is in
 `apps/web/src/page/Players.tsx`, 84 in `OnlineGameScreen.tsx`, 86 in
 `TurnControls.tsx`, and 87 in `onlinePlay` in `apps/web/src/modes/play.ts`.
+
+<a id="q59"></a>
+### Q59. ~~How does the new art go in?~~ — **answered 2026-09-27: as recommended, except sizes, guard sizes and contours**
+
+On 26 September Andrei sent eleven sheets of new art in the thread "New art
+experiment": six player figures, plains dressing, forest trees, magic guards,
+combat skill POIs (*"POIs that reward Combat skills"*, correcting his first
+label), magic POIs, forest speed POIs, two sheets of combat guards for gold
+(the second *"to add variety"*), plains gold castles, plains speed POIs and
+mountain speed POIs. *"The images for mountains stay the same."* Of the plains
+dressing: *"There will be no separate 'fields', they didn't look good to start
+with. It may make sense to put the bushes in small clusters."* Where each goes
+was settled by his labels; what that left open went on a details page as 88 to
+105, each with a recommendation. He answered 90, 91 and 101 in his own words
+and then *"the rest of the recommendations regarding the new art sound good to
+me"*, 105 included.
+
+88. **Tried on a branch of its own,** with a second game page carrying the new
+    art; today's page stays as it is, and main and the live site keep today's
+    art until he merges.
+89. **Shadows dark and see-through,** as today's: the grey of each shadow
+    becomes black at today's strength, keeping its shape and soft edge, the
+    magic guards' solid shadows included. Sizes and positions are measured on
+    the picture alone.
+90. **Sizes, in his words:** *"let's make the buildings a little larger than
+    shown (0.5 instead of 0.42), and the magic and combat POIs the same 0.5 as
+    well. I may ask you to adjust that, but that would be my first guess."*
+    So plains, forest and mountain speed POIs, magic POIs and combat skill
+    POIs are 0.5; figures stay 0.45, trees 0.55 and castles 0.58.
+91. **Guards:** *"for guards, let's keep all of them at 0.6"*, combat and
+    magic alike.
+92. **Plains dressing 0.2** for a typical piece, each keeping its size
+    relative to the others as drawn.
+93. **The new sheet replaces today's grass and rocks** as well as the fields.
+94. **The bushes that cluster** are the five in the middle row of his sheet.
+95. **A cluster** is 2 to 4 bushes, each picked at random from the bushes so a
+    cluster mixes kinds, close enough to touch, those behind partly hidden by
+    those in front, scattered rather than in a row. Every bush comes in a
+    cluster; a bush that would stand on a road or a node is left out, and a
+    cluster left with one bush is not placed.
+96. **0.9 pieces for every plains node,** as today, each bush of a cluster
+    counting as one, and every piece on the sheet equally likely to be picked.
+97. **All 24 combat guards** stand on mountain and forest gold alike, one per
+    POI, on its node as today (Q35); forest gold still borrows them (Q20).
+98. **Plains gold is its castle alone,** as today; the red ring and number say
+    it is guarded (Q31).
+99. **Stamina POIs borrow the new red-roofed houses,** as they borrowed the
+    cottages (Q20).
+100. **No brightness or colour boost** on the new houses and magic buildings.
+101. **No contours:** *"new art should not need any contours, hopefully it's
+    visible enough on its own"*, guards included.
+102. **The six new characters replace today's six,** in his sheet's order, so
+    each seat's first choice is by position as today.
+103. **Portraits are crops of the new figures,** head and shoulders, cut the
+    same way until his head-and-shoulders set arrives (Q26).
+104. **Replaced pictures are deleted** from `Art/` when the new art goes onto
+    main; the repository's history keeps them.
+105. **Stamina POIs grow to 0.5** with the houses they borrow.
+
+His sheets are kept as supplied in `Art/originals/`, and
+`Art/tools/pack_sheets.py` packs them into the game's sheets and atlases and
+makes their shadows dark (89). Clusters are `clusters` on the plains dressing
+in `Art/manifest.json`, laid out in `placeDressing` in
+`apps/web/src/render/dressing.ts`. Four details the page did not settle were
+built one way before he was asked, which the ask-first rule forbids; they are
+[Q60](#q60), asked on the page as 106 to 109 and since answered.
+
+<a id="q60"></a>
+### Q60. ~~Four details of the new art found while building~~ — **answered 2026-09-27: as recommended, except 107, where three faces are centred**
+
+Building [Q59](#q59) turned up four details its answers do not settle. Each
+was built one way, and shown to Andrei on the game page and screenshots, before
+he was asked; that breaks the rule to ask first, so none counted as settled
+until he answered.
+They are on the details page as 106 to 109, each with the built version as the
+recommendation. On 27 September at 05:49 he answered: *"everything
+recommended in 106 to 109 looks good, except for the portraits (107). Here
+some of them (specifically the 2nd, 3rd and the 5th, counting from the left)
+need to be shifted to the right so that the face appears in the center"*.
+
+106. **The amber slime's shadow.** Every other shadow is found as grey that
+    touches the clear canvas in the lower half of the picture, and made dark
+    (89). The slime's is tinted orange and ringed by its own glow, so it is
+    not found, and keeps the shadow it was drawn with, a faint brownish patch.
+    Recommended: keep it as drawn. Or: its shadow is marked out by hand for
+    that one picture in `Art/tools/pack_sheets.py` and made dark like the
+    others.
+107. **How much of a figure a portrait shows.** The crop's side was a third of
+    the figure's height (`SIDE_FRACTION` 0.32 in
+    `Art/tools/make_portrait_crops.py`), set for the first six figures; the
+    new figures' heads are larger and a third shows a face alone.
+    Recommended: half the figure's height (0.5), head and shoulders. Or: a
+    third, as before. **Half, and the 2nd, 3rd and 5th figures' crops are
+    centred on the face:** a backpack or basket beside their heads pulled the
+    measured head centre off the face, so `FACE_X` in the tool sets their
+    face centres by eye, between the eyes. The 1st, 4th and 6th are as they
+    were.
+108. **How close the bushes of a cluster stand.** 95 says close enough to
+    touch, those behind partly hidden. As built, a quarter of a bush's width
+    nearer than edge to edge (`CLUSTER_TOUCH` 0.75 in
+    `apps/web/src/render/dressing.ts`). Recommended: as built. Or: just
+    touching (1.0).
+109. **How common bushes are.** 96 makes every piece of the sheet equally
+    likely to be picked, each bush of a cluster counting as one piece. As
+    built the chance is per pick, and a picked bush brings its whole cluster,
+    so the 5 bushes of 25 pieces are about 4 pieces in 10 on the map (221 of
+    582 over six seeds). Recommended: as built. Or: each piece on the map
+    equally likely to be any of the 25, so bushes are 1 in 5.
 
 ---
 

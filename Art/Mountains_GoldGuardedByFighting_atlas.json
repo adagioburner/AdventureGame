@@ -1,210 +1,439 @@
 {
-  "sheet": "Mountains_GoldFighting_sheet.png",
-  "cell_width": 396,
-  "cell_height": 603,
+  "sheet": "Mountains_GoldGuardedByFighting_sheet.png",
+  "cell_width": 318,
+  "cell_height": 258,
+  "notes": "Packed by Art/tools/pack_sheets.py from Art/originals/, the artist's sheets as supplied, with each picture's grey drop shadow made black and see-through. Do not edit by hand: replace the original and run the tool again.",
   "sprites": [
     {
-      "id": "Mountains_GoldFighting_01",
+      "id": "Mountains_GoldGuardedByFighting_01",
       "x": 0,
       "y": 0,
-      "width": 396,
-      "height": 603,
+      "width": 318,
+      "height": 258,
       "anchor": {
-        "x": 197,
-        "y": 591
+        "x": 159,
+        "y": 245
       },
+      "original": "Mountains_GoldGuardedByFighting_1.png",
       "source_box_in_original": [
-        951,
-        27,
-        311,
-        564
+        52,
+        178,
+        246,
+        205
       ]
     },
     {
-      "id": "Mountains_GoldFighting_02",
-      "x": 396,
+      "id": "Mountains_GoldGuardedByFighting_02",
+      "x": 318,
       "y": 0,
-      "width": 396,
-      "height": 603,
+      "width": 318,
+      "height": 258,
       "anchor": {
-        "x": 197,
-        "y": 591
+        "x": 159,
+        "y": 237
       },
+      "original": "Mountains_GoldGuardedByFighting_1.png",
       "source_box_in_original": [
-        1387,
-        72,
-        235,
-        531
-      ]
-    },
-    {
-      "id": "Mountains_GoldFighting_03",
-      "x": 792,
-      "y": 0,
-      "width": 396,
-      "height": 603,
-      "anchor": {
-        "x": 198,
-        "y": 591
-      },
-      "source_box_in_original": [
-        171,
-        109,
-        172,
-        438
-      ]
-    },
-    {
-      "id": "Mountains_GoldFighting_04",
-      "x": 1188,
-      "y": 0,
-      "width": 396,
-      "height": 603,
-      "anchor": {
-        "x": 198,
-        "y": 591
-      },
-      "source_box_in_original": [
-        516,
-        89,
-        252,
-        461
-      ]
-    },
-    {
-      "id": "Mountains_GoldFighting_05",
-      "x": 0,
-      "y": 603,
-      "width": 396,
-      "height": 603,
-      "anchor": {
-        "x": 198,
-        "y": 591
-      },
-      "source_box_in_original": [
-        140,
-        578,
-        354,
-        579
-      ]
-    },
-    {
-      "id": "Mountains_GoldFighting_06",
-      "x": 396,
-      "y": 603,
-      "width": 396,
-      "height": 603,
-      "anchor": {
-        "x": 198,
-        "y": 591
-      },
-      "source_box_in_original": [
-        1322,
-        673,
-        332,
-        473
-      ]
-    },
-    {
-      "id": "Mountains_GoldFighting_07",
-      "x": 792,
-      "y": 603,
-      "width": 396,
-      "height": 603,
-      "anchor": {
-        "x": 198,
-        "y": 591
-      },
-      "source_box_in_original": [
-        601,
-        718,
-        258,
-        301
-      ]
-    },
-    {
-      "id": "Mountains_GoldFighting_08",
-      "x": 1188,
-      "y": 603,
-      "width": 396,
-      "height": 603,
-      "anchor": {
-        "x": 197,
-        "y": 591
-      },
-      "source_box_in_original": [
-        953,
-        744,
-        309,
+        360,
+        178,
+        251,
         202
       ]
     },
     {
-      "id": "Mountains_GoldFighting_09",
+      "id": "Mountains_GoldGuardedByFighting_03",
+      "x": 636,
+      "y": 0,
+      "width": 318,
+      "height": 258,
+      "anchor": {
+        "x": 159,
+        "y": 234
+      },
+      "original": "Mountains_GoldGuardedByFighting_1.png",
+      "source_box_in_original": [
+        672,
+        192,
+        252,
+        192
+      ]
+    },
+    {
+      "id": "Mountains_GoldGuardedByFighting_04",
+      "x": 954,
+      "y": 0,
+      "width": 318,
+      "height": 258,
+      "anchor": {
+        "x": 159,
+        "y": 234
+      },
+      "original": "Mountains_GoldGuardedByFighting_1.png",
+      "source_box_in_original": [
+        988,
+        162,
+        229,
+        224
+      ]
+    },
+    {
+      "id": "Mountains_GoldGuardedByFighting_05",
       "x": 0,
-      "y": 1206,
-      "width": 396,
-      "height": 603,
+      "y": 258,
+      "width": 318,
+      "height": 258,
       "anchor": {
-        "x": 197,
-        "y": 591
+        "x": 159,
+        "y": 243
       },
+      "original": "Mountains_GoldGuardedByFighting_1.png",
       "source_box_in_original": [
+        42,
+        550,
+        259,
+        215
+      ]
+    },
+    {
+      "id": "Mountains_GoldGuardedByFighting_06",
+      "x": 318,
+      "y": 258,
+      "width": 318,
+      "height": 258,
+      "anchor": {
+        "x": 159,
+        "y": 240
+      },
+      "original": "Mountains_GoldGuardedByFighting_1.png",
+      "source_box_in_original": [
+        344,
+        550,
+        267,
+        209
+      ]
+    },
+    {
+      "id": "Mountains_GoldGuardedByFighting_07",
+      "x": 636,
+      "y": 258,
+      "width": 318,
+      "height": 258,
+      "anchor": {
+        "x": 159,
+        "y": 241
+      },
+      "original": "Mountains_GoldGuardedByFighting_1.png",
+      "source_box_in_original": [
+        652,
         563,
-        1176,
-        285,
-        462
+        277,
+        194
       ]
     },
     {
-      "id": "Mountains_GoldFighting_10",
-      "x": 396,
-      "y": 1206,
-      "width": 396,
-      "height": 603,
+      "id": "Mountains_GoldGuardedByFighting_08",
+      "x": 954,
+      "y": 258,
+      "width": 318,
+      "height": 258,
       "anchor": {
-        "x": 197,
-        "y": 591
+        "x": 159,
+        "y": 241
       },
+      "original": "Mountains_GoldGuardedByFighting_1.png",
       "source_box_in_original": [
-        972,
-        1184,
-        235,
-        454
+        970,
+        547,
+        253,
+        210
       ]
     },
     {
-      "id": "Mountains_GoldFighting_11",
-      "x": 792,
-      "y": 1206,
-      "width": 396,
-      "height": 603,
+      "id": "Mountains_GoldGuardedByFighting_09",
+      "x": 0,
+      "y": 516,
+      "width": 318,
+      "height": 258,
       "anchor": {
-        "x": 198,
-        "y": 591
+        "x": 159,
+        "y": 245
       },
+      "original": "Mountains_GoldGuardedByFighting_1.png",
       "source_box_in_original": [
-        1316,
-        1189,
-        368,
-        499
+        49,
+        902,
+        252,
+        232
       ]
     },
     {
-      "id": "Mountains_GoldFighting_12",
-      "x": 1188,
-      "y": 1206,
-      "width": 396,
-      "height": 603,
+      "id": "Mountains_GoldGuardedByFighting_10",
+      "x": 318,
+      "y": 516,
+      "width": 318,
+      "height": 258,
       "anchor": {
-        "x": 198,
-        "y": 591
+        "x": 159,
+        "y": 245
       },
+      "original": "Mountains_GoldGuardedByFighting_1.png",
       "source_box_in_original": [
-        106,
-        1300,
+        352,
+        927,
+        259,
+        191
+      ]
+    },
+    {
+      "id": "Mountains_GoldGuardedByFighting_11",
+      "x": 636,
+      "y": 516,
+      "width": 318,
+      "height": 258,
+      "anchor": {
+        "x": 159,
+        "y": 240
+      },
+      "original": "Mountains_GoldGuardedByFighting_1.png",
+      "source_box_in_original": [
+        677,
+        908,
+        246,
+        210
+      ]
+    },
+    {
+      "id": "Mountains_GoldGuardedByFighting_12",
+      "x": 954,
+      "y": 516,
+      "width": 318,
+      "height": 258,
+      "anchor": {
+        "x": 159,
+        "y": 234
+      },
+      "original": "Mountains_GoldGuardedByFighting_1.png",
+      "source_box_in_original": [
+        986,
+        932,
+        247,
+        196
+      ]
+    },
+    {
+      "id": "Mountains_GoldGuardedByFighting_13",
+      "x": 0,
+      "y": 774,
+      "width": 318,
+      "height": 258,
+      "anchor": {
+        "x": 159,
+        "y": 245
+      },
+      "original": "Mountains_GoldGuardedByFighting_2.png",
+      "source_box_in_original": [
+        55,
+        189,
+        237,
+        214
+      ]
+    },
+    {
+      "id": "Mountains_GoldGuardedByFighting_14",
+      "x": 318,
+      "y": 774,
+      "width": 318,
+      "height": 258,
+      "anchor": {
+        "x": 159,
+        "y": 244
+      },
+      "original": "Mountains_GoldGuardedByFighting_2.png",
+      "source_box_in_original": [
         372,
-        237
+        192,
+        228,
+        211
+      ]
+    },
+    {
+      "id": "Mountains_GoldGuardedByFighting_15",
+      "x": 636,
+      "y": 774,
+      "width": 318,
+      "height": 258,
+      "anchor": {
+        "x": 159,
+        "y": 244
+      },
+      "original": "Mountains_GoldGuardedByFighting_2.png",
+      "source_box_in_original": [
+        663,
+        190,
+        242,
+        210
+      ]
+    },
+    {
+      "id": "Mountains_GoldGuardedByFighting_16",
+      "x": 954,
+      "y": 774,
+      "width": 318,
+      "height": 258,
+      "anchor": {
+        "x": 159,
+        "y": 245
+      },
+      "original": "Mountains_GoldGuardedByFighting_2.png",
+      "source_box_in_original": [
+        981,
+        216,
+        231,
+        189
+      ]
+    },
+    {
+      "id": "Mountains_GoldGuardedByFighting_17",
+      "x": 0,
+      "y": 1032,
+      "width": 318,
+      "height": 258,
+      "anchor": {
+        "x": 159,
+        "y": 245
+      },
+      "original": "Mountains_GoldGuardedByFighting_2.png",
+      "source_box_in_original": [
+        56,
+        549,
+        236,
+        203
+      ]
+    },
+    {
+      "id": "Mountains_GoldGuardedByFighting_18",
+      "x": 318,
+      "y": 1032,
+      "width": 318,
+      "height": 258,
+      "anchor": {
+        "x": 159,
+        "y": 242
+      },
+      "original": "Mountains_GoldGuardedByFighting_2.png",
+      "source_box_in_original": [
+        369,
+        532,
+        232,
+        209
+      ]
+    },
+    {
+      "id": "Mountains_GoldGuardedByFighting_19",
+      "x": 636,
+      "y": 1032,
+      "width": 318,
+      "height": 258,
+      "anchor": {
+        "x": 159,
+        "y": 245
+      },
+      "original": "Mountains_GoldGuardedByFighting_2.png",
+      "source_box_in_original": [
+        669,
+        522,
+        239,
+        234
+      ]
+    },
+    {
+      "id": "Mountains_GoldGuardedByFighting_20",
+      "x": 954,
+      "y": 1032,
+      "width": 318,
+      "height": 258,
+      "anchor": {
+        "x": 159,
+        "y": 245
+      },
+      "original": "Mountains_GoldGuardedByFighting_2.png",
+      "source_box_in_original": [
+        978,
+        543,
+        234,
+        201
+      ]
+    },
+    {
+      "id": "Mountains_GoldGuardedByFighting_21",
+      "x": 0,
+      "y": 1290,
+      "width": 318,
+      "height": 258,
+      "anchor": {
+        "x": 159,
+        "y": 245
+      },
+      "original": "Mountains_GoldGuardedByFighting_2.png",
+      "source_box_in_original": [
+        50,
+        879,
+        242,
+        213
+      ]
+    },
+    {
+      "id": "Mountains_GoldGuardedByFighting_22",
+      "x": 318,
+      "y": 1290,
+      "width": 318,
+      "height": 258,
+      "anchor": {
+        "x": 159,
+        "y": 245
+      },
+      "original": "Mountains_GoldGuardedByFighting_2.png",
+      "source_box_in_original": [
+        355,
+        888,
+        250,
+        207
+      ]
+    },
+    {
+      "id": "Mountains_GoldGuardedByFighting_23",
+      "x": 636,
+      "y": 1290,
+      "width": 318,
+      "height": 258,
+      "anchor": {
+        "x": 159,
+        "y": 245
+      },
+      "original": "Mountains_GoldGuardedByFighting_2.png",
+      "source_box_in_original": [
+        658,
+        902,
+        247,
+        200
+      ]
+    },
+    {
+      "id": "Mountains_GoldGuardedByFighting_24",
+      "x": 954,
+      "y": 1290,
+      "width": 318,
+      "height": 258,
+      "anchor": {
+        "x": 159,
+        "y": 245
+      },
+      "original": "Mountains_GoldGuardedByFighting_2.png",
+      "source_box_in_original": [
+        971,
+        870,
+        244,
+        231
       ]
     }
   ]

@@ -1,74 +1,115 @@
 {
-  "sheet": "Plains_Gold_sheet.png",
-  "cell_width": 660,
-  "cell_height": 627,
+  "sheet": "Plains_GoldGuardedByFighting_sheet.png",
+  "cell_width": 372,
+  "cell_height": 327,
+  "notes": "Packed by Art/tools/pack_sheets.py from Art/originals/, the artist's sheets as supplied, with each picture's grey drop shadow made black and see-through. Do not edit by hand: replace the original and run the tool again.",
   "sprites": [
     {
-      "id": "Plains_Gold_01",
+      "id": "Plains_GoldGuardedByFighting_01",
       "x": 0,
       "y": 0,
-      "width": 660,
-      "height": 627,
+      "width": 372,
+      "height": 327,
       "anchor": {
-        "x": 330,
-        "y": 615
+        "x": 186,
+        "y": 311
       },
+      "original": "Plains_GoldGuardedByFighting.png",
       "source_box_in_original": [
-        784,
-        42,
-        628,
-        603
+        67,
+        243,
+        322,
+        288
       ]
     },
     {
-      "id": "Plains_Gold_02",
-      "x": 660,
+      "id": "Plains_GoldGuardedByFighting_02",
+      "x": 372,
       "y": 0,
-      "width": 660,
-      "height": 627,
+      "width": 372,
+      "height": 327,
       "anchor": {
-        "x": 330,
-        "y": 615
+        "x": 186,
+        "y": 311
       },
+      "original": "Plains_GoldGuardedByFighting.png",
       "source_box_in_original": [
-        38,
-        141,
-        636,
-        430
+        495,
+        249,
+        322,
+        298
       ]
     },
     {
-      "id": "Plains_Gold_03",
-      "x": 1320,
+      "id": "Plains_GoldGuardedByFighting_03",
+      "x": 744,
       "y": 0,
-      "width": 660,
-      "height": 627,
+      "width": 372,
+      "height": 327,
       "anchor": {
-        "x": 329,
-        "y": 615
+        "x": 186,
+        "y": 312
       },
+      "original": "Plains_GoldGuardedByFighting.png",
       "source_box_in_original": [
-        779,
-        659,
-        635,
-        555
+        898,
+        257,
+        327,
+        302
       ]
     },
     {
-      "id": "Plains_Gold_04",
-      "x": 1980,
+      "id": "Plains_GoldGuardedByFighting_04",
+      "x": 1116,
       "y": 0,
-      "width": 660,
-      "height": 627,
+      "width": 372,
+      "height": 327,
       "anchor": {
-        "x": 330,
-        "y": 615
+        "x": 186,
+        "y": 311
       },
+      "original": "Plains_GoldGuardedByFighting.png",
       "source_box_in_original": [
-        68,
-        724,
-        592,
-        500
+        67,
+        803,
+        319,
+        300
+      ]
+    },
+    {
+      "id": "Plains_GoldGuardedByFighting_05",
+      "x": 0,
+      "y": 327,
+      "width": 372,
+      "height": 327,
+      "anchor": {
+        "x": 186,
+        "y": 311
+      },
+      "original": "Plains_GoldGuardedByFighting.png",
+      "source_box_in_original": [
+        493,
+        811,
+        322,
+        298
+      ]
+    },
+    {
+      "id": "Plains_GoldGuardedByFighting_06",
+      "x": 372,
+      "y": 327,
+      "width": 372,
+      "height": 327,
+      "anchor": {
+        "x": 186,
+        "y": 311
+      },
+      "original": "Plains_GoldGuardedByFighting.png",
+      "source_box_in_original": [
+        916,
+        806,
+        289,
+        303
       ]
     }
   ]

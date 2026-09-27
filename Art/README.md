@@ -14,6 +14,7 @@ manifest, and never a code change.
 | Road brush | `Roads_Brush_sheet.png` + atlas, one sprite, `"tiles": "horizontal"` | Every road, stretched along it |
 | Reward icon | `Icons/<reward kind>.png` | One icon per reward unit under a POI |
 | Portrait crops | `player_avatars_portraits.json` | Head-and-shoulders boxes on the figurine sheet (temporary, Q26) |
+| Artist's sheets | `originals/<Name>.png` | Nothing directly: `tools/pack_sheets.py` packs each into `<Name>_sheet.png` and its atlas |
 
 A sheet is paired with its atlas by file name, `<Name>_sheet.png` with
 `<Name>_atlas.json`. The atlas's own `"sheet"` field is not read: five of the
@@ -27,6 +28,16 @@ the black mountain is mountain movement.
 
 ## Swapping a picture
 
+0. **A sheet as the artist draws it.** The artist's sheets are a loose grid of
+   pictures on a square canvas, each with its own grey drop shadow, and no
+   atlas. They are kept as supplied in `originals/`, named for the sheet they
+   become, and `python3 Art/tools/pack_sheets.py` packs each into the game's
+   four-to-a-row cells, writes its atlas, and makes its shadows dark and
+   see-through (Q59). A new version of one goes in by replacing its original
+   and running the tool again; a new one by adding a line to the tool's
+   `SHEETS` table, saying which original it comes from and how many pictures
+   are on it. Pictures are numbered row by row, left to right, as drawn. Then
+   carry on from step 1 or 2.
 1. **Same name.** Drop the new `<Name>_sheet.png` and `<Name>_atlas.json` over
    the old ones. Nothing else changes. The sprites can be any size and any
    count: every sheet is scaled on load so its typical sprite (the median of
@@ -44,18 +55,16 @@ the black mountain is mountain movement.
    new atlas. That flag, and the manifest's `borrowed` notes, are the one
    record of which pictures are not final; the game page no longer lists
    them.
-4. **A sheet that draws its own soft shadow.** Most supplied sheets bake their
-   drop shadow in as opaque flat grey (`#bbbbbb`), which the loader turns into
-   translucent black so it darkens the ground it falls on. A replacement whose
-   shadow is already translucent should lose its line under `shadows` in the
-   manifest.
-5. **A sheet the game brightens or outlines.** A few of the supplied sheets
-   are edited as they load rather than in the PNG: the cottages and magic
-   buildings are brightened and their colours enriched, the guards get a
-   faint cream contour so they stand out on the mountains, and the statues
-   get a thin dark one. Each is one line under
-   `adjustments` in the manifest. A replacement that already looks right
-   should lose its line.
+4. **A sheet whose shadow is flat grey.** The first supplied sheets baked
+   their drop shadow in as opaque flat grey (`#bbbbbb`); listing a sheet's
+   shadow colours under `shadows` in the manifest has the loader turn them
+   into translucent black, so they darken the ground they fall on. No sheet in
+   use needs it: those packed from `originals/` have their shadows made dark
+   as they are packed.
+5. **A sheet the game brightens or outlines.** A sheet can be edited as it
+   loads rather than in the PNG: brightened, its colours enriched, or given a
+   contour, each one line under `adjustments` in the manifest. No sheet in use
+   has one: the art is drawn as its artist made it (Q59).
 6. **Run the tests.** `pnpm test` checks that every sheet and icon the
    manifest names exists, that each PNG is at least as large as its atlas
    says, that every POI kind the rules can produce has a picture, and that
@@ -77,16 +86,17 @@ the black mountain is mountain movement.
 
 `x`, `y`, `width` and `height` place the sprite on the sheet. `anchor` is
 where it touches the ground, relative to its own top left: the foot of a
-building or a figure, which the renderer stands on the node. Most supplied
-sheets put it at the bottom of the baked shadow instead; once the shadow is
-keyed, a sprite whose anchor sits below its lowest solid pixel stands on that
-pixel, so its feet and not its shadow touch the node. Sprite ids must
+building or a figure, which the renderer stands on the node. A packed sheet
+puts it under the middle of the picture, at its lowest solid pixel. Should an
+anchor sit below that pixel, as the first supplied sheets' did at the bottom
+of their shadows, the sprite stands on the pixel instead, so its feet and not
+its shadow touch the node. Sprite ids must
 be unique within a sheet. Optional sprite fields: `tiles` (`"both"` for a
 terrain texture, `"horizontal"` for a road stroke), `centerline_y` for where a
 stroke's centre runs, and `role`, `state` and `value` labelling marker and die
 sprites. A generated sheet also carries `"placeholder": true` at the top
-level. Anything else, such as `source_box_in_original`, is there for people
-and ignored by the game.
+level. Anything else, such as `original` and `source_box_in_original`, is
+there for people and ignored by the game.
 
 ## How the manifest is organised
 
@@ -99,13 +109,12 @@ and ignored by the game.
   over their own terrain, which is the middle of a region, and smaller ones,
   down to `min_size`, fill in round them and along the edges. Whatever still
   reaches past is clipped. Raising `size` makes the big peaks bigger. Without it, dressing
-  stands up among the POIs and is kept clear of the nodes and roads. A
-  standing sheet with `"array": 3` (the fields) is laid out in arrays up to
-  three sprites a side, side by side along the ground. `"flat": true` says
-  the sprites lie flat on the ground, so the whole picture, not just its
-  foot, must lie over its own terrain. `"leave_out"` lists sprites of the
-  sheet, by id, that are never drawn: the two dark brown fields, which drew
-  the eye away from the wagon wheel icons. Standing dressing never touches a
+  stands up among the POIs and is kept clear of the nodes and roads, each
+  sprite of the sheet equally likely. `"clusters"` names sprites, by id, that
+  never stand alone (the bushes): picking one brings `min` to `max` of them,
+  the rest picked at random from the list, standing close enough to touch
+  and each counted towards the density. `"leave_out"` lists sprites of the
+  sheet, by id, that are never drawn. Standing dressing never touches a
   POI's picture or reward.
 - `pois`: one row per picture. A row matches a POI on its reward kind; its
   `terrain` is the POI's own or `any`, and a row naming the POI's guard type
@@ -140,4 +149,6 @@ The plains texture's grass is drawn through the inverse of the isometric
 projection so it stands up on the map; anything a replacement texture shows
 standing up off the ground needs the same treatment, or it leans right. It
 writes the same bytes every run, so rerunning it after editing it changes only
-what was edited. `tools/make_portrait_crops.py` rederives the portrait boxes.
+what was edited. `tools/make_portrait_crops.py` rederives the portrait boxes,
+and `tools/pack_sheets.py` repacks the artist's sheets; both do the same
+every run too.

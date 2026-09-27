@@ -133,26 +133,59 @@ describe('a bad art drop', () => {
     expect(() => buildArtCatalog(without('Icons/gold.png'))).toThrow(/Icons\/gold\.png is missing/);
   });
 
-  it('rejects dressing it could not lay out: a backdrop that grows to fit, or an array of part-sprites', () => {
+  it('rejects dressing it could not lay out: a backdrop that grows to fit, or a cluster of one', () => {
     const manifest = ART_FILES.json.get('manifest.json') as { terrain: Record<string, { dressing: object[] }> };
     const withDressing = (dressing: object) => ({
       ...manifest,
       terrain: { ...manifest.terrain, plains: { ...manifest.terrain['plains'], dressing: [dressing] } },
     });
-    const fields = { sheet: 'Plains_Fields', size: 0.45, weight: 1 };
-    expect(parseManifest(withDressing({ ...fields, array: 3 })).terrain.plains.dressing[0]).toMatchObject({ array: 3, layer: 'standing' });
-    expect(() => parseManifest(withDressing({ ...fields, array: 2.5 }))).toThrow(/array: must be a whole number/);
-    expect(() => parseManifest(withDressing({ ...fields, min_size: 0.6 }))).toThrow(/min_size: must not exceed size/);
-    expect(() => parseManifest(withDressing({ ...fields, layer: 'sky' }))).toThrow(/layer: expected standing or backdrop/);
-    expect(() => parseManifest(withDressing({ ...fields, flat: 'yes' }))).toThrow(/flat: expected true or false/);
+    const pieces = { sheet: 'Plains_Dressing', size: 0.2, weight: 1 };
+    const clusters = (min: number, max: number) => ({ ...pieces, clusters: { sprites: ['Plains_Dressing_11'], min, max } });
+    expect(parseManifest(withDressing(clusters(2, 4))).terrain.plains.dressing[0]).toMatchObject({
+      clusters: { sprites: ['Plains_Dressing_11'], min: 2, max: 4 },
+      layer: 'standing',
+    });
+    expect(parseManifest(withDressing(pieces)).terrain.plains.dressing[0]?.clusters).toBeNull();
+    expect(() => parseManifest(withDressing(clusters(1, 4)))).toThrow(/clusters\.min: a cluster has at least 2 sprites/);
+    expect(() => parseManifest(withDressing(clusters(3, 2)))).toThrow(/clusters\.max: must not be below min/);
+    expect(() => parseManifest(withDressing(clusters(2, 3.5)))).toThrow(/min and max must be whole numbers/);
+    expect(() => parseManifest(withDressing({ ...pieces, clusters: { sprites: [], min: 2, max: 4 } }))).toThrow(
+      /clusters\.sprites: expected at least one sprite/,
+    );
+    expect(() => parseManifest(withDressing({ ...pieces, min_size: 0.6 }))).toThrow(/min_size: must not exceed size/);
+    expect(() => parseManifest(withDressing({ ...pieces, layer: 'sky' }))).toThrow(/layer: expected standing or backdrop/);
+  });
+
+  it('clusters the bushes, and says when a clustered sprite is not on the sheet or is left out', () => {
+    // Andrei, 2026-09-26: "It may make sense to put the bushes in small
+    // clusters"; Q59: the five in the middle row of his sheet, 2 to 4 at a time.
+    const catalog = buildArtCatalog(ART_FILES);
+    const [pieces] = catalog.manifest.terrain.plains.dressing;
+    expect(pieces?.clusters).toEqual({
+      sprites: ['Plains_Dressing_11', 'Plains_Dressing_12', 'Plains_Dressing_13', 'Plains_Dressing_14', 'Plains_Dressing_15'],
+      min: 2,
+      max: 4,
+    });
+    const manifest = ART_FILES.json.get('manifest.json') as { terrain: Record<string, { dressing: object[] }> };
+    const dressed = (dressing: object): ArtFiles => ({
+      json: new Map([
+        ...ART_FILES.json,
+        ['manifest.json', { ...manifest, terrain: { ...manifest.terrain, plains: { ...manifest.terrain['plains'], dressing: [dressing] } } }],
+      ]),
+      urls: ART_FILES.urls,
+    });
+    const bushes = (sprites: string[], leave_out: string[] = []) =>
+      dressed({ sheet: 'Plains_Dressing', size: 0.2, weight: 1, leave_out, clusters: { sprites, min: 2, max: 4 } });
+    expect(() => buildArtCatalog(bushes(['Plains_Dressing_99']))).toThrow(
+      /terrain\.plains clusters Plains_Dressing_99, which Plains_Dressing_atlas\.json does not have/,
+    );
+    expect(() => buildArtCatalog(bushes(['Plains_Dressing_11'], ['Plains_Dressing_11']))).toThrow(
+      /terrain\.plains both clusters and leaves out Plains_Dressing_11/,
+    );
   });
 
   it('leaves dressing sprites out by id, and says when an id is not on the sheet', () => {
-    // Andrei, 2026-09-23: the dark brown fields drew the eye away from the wagon wheel icons.
     const catalog = buildArtCatalog(ART_FILES);
-    const [fields] = catalog.manifest.terrain.plains.dressing;
-    expect(fields?.leaveOut).toEqual(['Plains_Fields_02', 'Plains_Fields_07']);
-    expect(fields?.flat).toBe(true);
     const manifest = ART_FILES.json.get('manifest.json') as { terrain: Record<string, { dressing: object[] }> };
     const leaving = (leave_out: string[]): ArtFiles => ({
       json: new Map([
@@ -163,18 +196,21 @@ describe('a bad art drop', () => {
             ...manifest,
             terrain: {
               ...manifest.terrain,
-              plains: { ...manifest.terrain['plains'], dressing: [{ sheet: 'Plains_Fields', size: 0.45, weight: 1, leave_out }] },
+              plains: { ...manifest.terrain['plains'], dressing: [{ sheet: 'Plains_Dressing', size: 0.2, weight: 1, leave_out }] },
             },
           },
         ],
       ]),
       urls: ART_FILES.urls,
     });
-    expect(() => buildArtCatalog(leaving(['Plains_Fields_2']))).toThrow(
-      /terrain\.plains leaves out Plains_Fields_2, which Plains_Fields_atlas\.json does not have/,
+    expect(buildArtCatalog(leaving(['Plains_Dressing_02'])).manifest.terrain.plains.dressing[0]?.leaveOut).toEqual([
+      'Plains_Dressing_02',
+    ]);
+    expect(() => buildArtCatalog(leaving(['Plains_Dressing_2']))).toThrow(
+      /terrain\.plains leaves out Plains_Dressing_2, which Plains_Dressing_atlas\.json does not have/,
     );
-    const all = atlasOf(catalog, 'Plains_Fields').sprites.map((sprite) => sprite.id);
-    expect(() => buildArtCatalog(leaving(all))).toThrow(/leaves out every sprite of Plains_Fields/);
+    const all = atlasOf(catalog, 'Plains_Dressing').sprites.map((sprite) => sprite.id);
+    expect(() => buildArtCatalog(leaving(all))).toThrow(/leaves out every sprite of Plains_Dressing/);
   });
 
   it('rejects an adjustment for a sheet nothing draws, and a malformed one', () => {

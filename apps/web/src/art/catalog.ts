@@ -111,6 +111,14 @@ export function buildArtCatalog(files: ArtFiles): ArtCatalog {
       if (sheet.sprites.every((sprite) => dressing.leaveOut.includes(sprite.id))) {
         problems.push(`manifest.json: terrain.${terrain} leaves out every sprite of ${dressing.sheet}`);
       }
+      // Likewise a clustered sprite that is not there, or is never drawn.
+      for (const id of dressing.clusters?.sprites ?? []) {
+        if (!sheet.sprites.some((sprite) => sprite.id === id)) {
+          problems.push(`manifest.json: terrain.${terrain} clusters ${id}, which ${atlasFile(sheet.name)} does not have`);
+        } else if (dressing.leaveOut.includes(id)) {
+          problems.push(`manifest.json: terrain.${terrain} both clusters and leaves out ${id}`);
+        }
+      }
     }
   }
   const roads = atlas(manifest.roads.sheet);

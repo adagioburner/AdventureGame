@@ -1,261 +1,223 @@
 {
-  "sheet": "trees_sheet.png",
-  "cell_width": 415,
-  "cell_height": 564,
+  "sheet": "Forest_Trees_sheet.png",
+  "cell_width": 274,
+  "cell_height": 271,
+  "notes": "Packed by Art/tools/pack_sheets.py from Art/originals/, the artist's sheets as supplied, with each picture's grey drop shadow made black and see-through. Do not edit by hand: replace the original and run the tool again.",
   "sprites": [
     {
-      "id": "trees_01",
+      "id": "Forest_Trees_01",
       "x": 0,
       "y": 0,
-      "width": 415,
-      "height": 564,
+      "width": 274,
+      "height": 271,
       "anchor": {
-        "x": 207,
-        "y": 552
+        "x": 137,
+        "y": 249
       },
+      "original": "Forest_Trees.png",
       "source_box_in_original": [
-        20,
-        27,
-        239,
-        516
+        69,
+        123,
+        193,
+        232
       ]
     },
     {
-      "id": "trees_02",
-      "x": 415,
+      "id": "Forest_Trees_02",
+      "x": 274,
       "y": 0,
-      "width": 415,
-      "height": 564,
+      "width": 274,
+      "height": 271,
       "anchor": {
-        "x": 207,
-        "y": 552
+        "x": 137,
+        "y": 248
       },
+      "original": "Forest_Trees.png",
       "source_box_in_original": [
-        300,
-        29,
-        391,
-        514
+        377,
+        112,
+        194,
+        242
       ]
     },
     {
-      "id": "trees_03",
-      "x": 830,
+      "id": "Forest_Trees_03",
+      "x": 548,
       "y": 0,
-      "width": 415,
-      "height": 564,
+      "width": 274,
+      "height": 271,
       "anchor": {
-        "x": 207,
-        "y": 552
+        "x": 137,
+        "y": 250
       },
+      "original": "Forest_Trees.png",
       "source_box_in_original": [
-        733,
-        33,
-        335,
-        524
+        673,
+        119,
+        221,
+        236
       ]
     },
     {
-      "id": "trees_04",
-      "x": 1245,
+      "id": "Forest_Trees_04",
+      "x": 822,
       "y": 0,
-      "width": 415,
-      "height": 564,
+      "width": 274,
+      "height": 271,
       "anchor": {
-        "x": 207,
-        "y": 552
+        "x": 137,
+        "y": 249
       },
+      "original": "Forest_Trees.png",
       "source_box_in_original": [
-        1124,
+        990,
+        123,
+        211,
+        231
+      ]
+    },
+    {
+      "id": "Forest_Trees_05",
+      "x": 0,
+      "y": 271,
+      "width": 274,
+      "height": 271,
+      "anchor": {
+        "x": 137,
+        "y": 249
+      },
+      "original": "Forest_Trees.png",
+      "source_box_in_original": [
         56,
-        264,
-        498
-      ]
-    },
-    {
-      "id": "trees_05",
-      "x": 0,
-      "y": 564,
-      "width": 415,
-      "height": 564,
-      "anchor": {
-        "x": 207,
-        "y": 552
-      },
-      "source_box_in_original": [
-        1492,
-        5,
-        242,
-        540
-      ]
-    },
-    {
-      "id": "trees_06",
-      "x": 415,
-      "y": 564,
-      "width": 415,
-      "height": 564,
-      "anchor": {
-        "x": 207,
-        "y": 552
-      },
-      "source_box_in_original": [
-        34,
-        552,
-        235,
-        505
-      ]
-    },
-    {
-      "id": "trees_07",
-      "x": 830,
-      "y": 564,
-      "width": 415,
-      "height": 564,
-      "anchor": {
-        "x": 207,
-        "y": 552
-      },
-      "source_box_in_original": [
-        408,
-        568,
-        228,
-        494
-      ]
-    },
-    {
-      "id": "trees_08",
-      "x": 1245,
-      "y": 564,
-      "width": 415,
-      "height": 564,
-      "anchor": {
-        "x": 207,
-        "y": 552
-      },
-      "source_box_in_original": [
-        747,
-        574,
-        354,
-        540
-      ]
-    },
-    {
-      "id": "trees_09",
-      "x": 0,
-      "y": 1128,
-      "width": 415,
-      "height": 564,
-      "anchor": {
-        "x": 207,
-        "y": 552
-      },
-      "source_box_in_original": [
-        1204,
-        597,
-        191,
-        506
-      ]
-    },
-    {
-      "id": "trees_10",
-      "x": 415,
-      "y": 1128,
-      "width": 415,
-      "height": 564,
-      "anchor": {
-        "x": 207,
-        "y": 552
-      },
-      "source_box_in_original": [
-        1508,
-        582,
-        241,
-        516
-      ]
-    },
-    {
-      "id": "trees_11",
-      "x": 830,
-      "y": 1128,
-      "width": 415,
-      "height": 564,
-      "anchor": {
-        "x": 207,
-        "y": 552
-      },
-      "source_box_in_original": [
-        51,
-        1090,
-        240,
-        506
-      ]
-    },
-    {
-      "id": "trees_12",
-      "x": 1245,
-      "y": 1128,
-      "width": 415,
-      "height": 564,
-      "anchor": {
-        "x": 207,
-        "y": 552
-      },
-      "source_box_in_original": [
-        402,
-        1110,
+        499,
         232,
-        481
+        242
       ]
     },
     {
-      "id": "trees_13",
+      "id": "Forest_Trees_06",
+      "x": 274,
+      "y": 271,
+      "width": 274,
+      "height": 271,
+      "anchor": {
+        "x": 137,
+        "y": 249
+      },
+      "original": "Forest_Trees.png",
+      "source_box_in_original": [
+        362,
+        493,
+        222,
+        247
+      ]
+    },
+    {
+      "id": "Forest_Trees_07",
+      "x": 548,
+      "y": 271,
+      "width": 274,
+      "height": 271,
+      "anchor": {
+        "x": 137,
+        "y": 249
+      },
+      "original": "Forest_Trees.png",
+      "source_box_in_original": [
+        663,
+        501,
+        248,
+        241
+      ]
+    },
+    {
+      "id": "Forest_Trees_08",
+      "x": 822,
+      "y": 271,
+      "width": 274,
+      "height": 271,
+      "anchor": {
+        "x": 137,
+        "y": 248
+      },
+      "original": "Forest_Trees.png",
+      "source_box_in_original": [
+        987,
+        501,
+        225,
+        240
+      ]
+    },
+    {
+      "id": "Forest_Trees_09",
       "x": 0,
-      "y": 1692,
-      "width": 415,
-      "height": 564,
+      "y": 542,
+      "width": 274,
+      "height": 271,
       "anchor": {
-        "x": 207,
-        "y": 552
+        "x": 137,
+        "y": 248
       },
+      "original": "Forest_Trees.png",
       "source_box_in_original": [
-        821,
-        1110,
-        198,
-        527
+        61,
+        883,
+        234,
+        242
       ]
     },
     {
-      "id": "trees_14",
-      "x": 415,
-      "y": 1692,
-      "width": 415,
-      "height": 564,
+      "id": "Forest_Trees_10",
+      "x": 274,
+      "y": 542,
+      "width": 274,
+      "height": 271,
       "anchor": {
-        "x": 207,
-        "y": 552
+        "x": 137,
+        "y": 249
       },
+      "original": "Forest_Trees.png",
       "source_box_in_original": [
-        1192,
-        1124,
-        247,
-        538
+        375,
+        883,
+        210,
+        243
       ]
     },
     {
-      "id": "trees_15",
-      "x": 830,
-      "y": 1692,
-      "width": 415,
-      "height": 564,
+      "id": "Forest_Trees_11",
+      "x": 548,
+      "y": 542,
+      "width": 274,
+      "height": 271,
       "anchor": {
-        "x": 207,
-        "y": 552
+        "x": 137,
+        "y": 248
       },
+      "original": "Forest_Trees.png",
       "source_box_in_original": [
-        1475,
-        1152,
-        347,
-        441
+        665,
+        887,
+        248,
+        239
+      ]
+    },
+    {
+      "id": "Forest_Trees_12",
+      "x": 822,
+      "y": 542,
+      "width": 274,
+      "height": 271,
+      "anchor": {
+        "x": 137,
+        "y": 249
+      },
+      "original": "Forest_Trees.png",
+      "source_box_in_original": [
+        985,
+        887,
+        221,
+        239
       ]
     }
   ]

@@ -1,193 +1,223 @@
 {
-  "sheet": "plains_fighting_sheet.png",
-  "cell_width": 447,
-  "cell_height": 576,
+  "sheet": "Forest_Fighting_sheet.png",
+  "cell_width": 282,
+  "cell_height": 271,
+  "notes": "Packed by Art/tools/pack_sheets.py from Art/originals/, the artist's sheets as supplied, with each picture's grey drop shadow made black and see-through. Do not edit by hand: replace the original and run the tool again.",
   "sprites": [
     {
-      "id": "plains_fighting_01",
+      "id": "Forest_Fighting_01",
       "x": 0,
       "y": 0,
-      "width": 447,
-      "height": 576,
+      "width": 282,
+      "height": 271,
       "anchor": {
-        "x": 223,
-        "y": 564
+        "x": 141,
+        "y": 256
       },
+      "original": "Forest_Fighting.png",
       "source_box_in_original": [
-        72,
-        37,
-        293,
-        479
+        104,
+        181,
+        193,
+        231
       ]
     },
     {
-      "id": "plains_fighting_02",
-      "x": 447,
+      "id": "Forest_Fighting_02",
+      "x": 282,
       "y": 0,
-      "width": 447,
-      "height": 576,
+      "width": 282,
+      "height": 271,
       "anchor": {
-        "x": 223,
-        "y": 564
+        "x": 141,
+        "y": 253
       },
+      "original": "Forest_Fighting.png",
       "source_box_in_original": [
-        450,
-        21,
-        209,
-        539
+        381,
+        212,
+        213,
+        197
       ]
     },
     {
-      "id": "plains_fighting_03",
-      "x": 894,
+      "id": "Forest_Fighting_03",
+      "x": 564,
       "y": 0,
-      "width": 447,
-      "height": 576,
+      "width": 282,
+      "height": 271,
       "anchor": {
-        "x": 223,
-        "y": 564
+        "x": 141,
+        "y": 254
       },
+      "original": "Forest_Fighting.png",
       "source_box_in_original": [
-        1224,
-        35,
-        198,
-        443
+        697,
+        186,
+        180,
+        225
       ]
     },
     {
-      "id": "plains_fighting_04",
-      "x": 1341,
+      "id": "Forest_Fighting_04",
+      "x": 846,
       "y": 0,
-      "width": 447,
-      "height": 576,
+      "width": 282,
+      "height": 271,
       "anchor": {
-        "x": 223,
-        "y": 564
+        "x": 141,
+        "y": 254
       },
+      "original": "Forest_Fighting.png",
       "source_box_in_original": [
-        819,
-        82,
-        273,
-        377
+        993,
+        164,
+        206,
+        247
       ]
     },
     {
-      "id": "plains_fighting_05",
+      "id": "Forest_Fighting_05",
       "x": 0,
-      "y": 576,
-      "width": 447,
-      "height": 576,
+      "y": 271,
+      "width": 282,
+      "height": 271,
       "anchor": {
-        "x": 223,
-        "y": 564
+        "x": 141,
+        "y": 254
       },
+      "original": "Forest_Fighting.png",
       "source_box_in_original": [
-        67,
-        562,
-        270,
-        456
+        103,
+        551,
+        190,
+        226
       ]
     },
     {
-      "id": "plains_fighting_06",
-      "x": 447,
-      "y": 576,
-      "width": 447,
-      "height": 576,
+      "id": "Forest_Fighting_06",
+      "x": 282,
+      "y": 271,
+      "width": 282,
+      "height": 271,
       "anchor": {
-        "x": 223,
-        "y": 564
+        "x": 141,
+        "y": 246
       },
+      "original": "Forest_Fighting.png",
       "source_box_in_original": [
-        431,
-        566,
-        295,
-        497
+        384,
+        569,
+        212,
+        204
       ]
     },
     {
-      "id": "plains_fighting_07",
-      "x": 894,
-      "y": 576,
-      "width": 447,
-      "height": 576,
+      "id": "Forest_Fighting_07",
+      "x": 564,
+      "y": 271,
+      "width": 282,
+      "height": 271,
       "anchor": {
-        "x": 223,
-        "y": 564
+        "x": 141,
+        "y": 254
       },
+      "original": "Forest_Fighting.png",
       "source_box_in_original": [
-        812,
-        553,
-        337,
-        470
+        684,
+        544,
+        211,
+        232
       ]
     },
     {
-      "id": "plains_fighting_08",
-      "x": 1341,
-      "y": 576,
-      "width": 447,
-      "height": 576,
+      "id": "Forest_Fighting_08",
+      "x": 846,
+      "y": 271,
+      "width": 282,
+      "height": 271,
       "anchor": {
-        "x": 223,
-        "y": 564
+        "x": 141,
+        "y": 249
       },
+      "original": "Forest_Fighting.png",
       "source_box_in_original": [
-        1315,
-        531,
-        177,
-        520
+        1013,
+        587,
+        182,
+        183
       ]
     },
     {
-      "id": "plains_fighting_09",
+      "id": "Forest_Fighting_09",
       "x": 0,
-      "y": 1152,
-      "width": 447,
-      "height": 576,
+      "y": 542,
+      "width": 282,
+      "height": 271,
       "anchor": {
-        "x": 223,
-        "y": 564
+        "x": 141,
+        "y": 247
       },
+      "original": "Forest_Fighting.png",
       "source_box_in_original": [
-        165,
-        1112,
-        281,
-        398
+        100,
+        937,
+        196,
+        176
       ]
     },
     {
-      "id": "plains_fighting_10",
-      "x": 447,
-      "y": 1152,
-      "width": 447,
-      "height": 576,
+      "id": "Forest_Fighting_10",
+      "x": 282,
+      "y": 542,
+      "width": 282,
+      "height": 271,
       "anchor": {
-        "x": 223,
-        "y": 564
+        "x": 141,
+        "y": 249
       },
+      "original": "Forest_Fighting.png",
       "source_box_in_original": [
-        664,
-        1090,
-        202,
-        481
+        367,
+        881,
+        241,
+        235
       ]
     },
     {
-      "id": "plains_fighting_11",
-      "x": 894,
-      "y": 1152,
-      "width": 447,
-      "height": 576,
+      "id": "Forest_Fighting_11",
+      "x": 564,
+      "y": 542,
+      "width": 282,
+      "height": 271,
       "anchor": {
-        "x": 223,
-        "y": 564
+        "x": 141,
+        "y": 252
       },
+      "original": "Forest_Fighting.png",
       "source_box_in_original": [
-        1026,
-        1034,
-        423,
-        552
+        687,
+        884,
+        207,
+        233
+      ]
+    },
+    {
+      "id": "Forest_Fighting_12",
+      "x": 846,
+      "y": 542,
+      "width": 282,
+      "height": 271,
+      "anchor": {
+        "x": 141,
+        "y": 249
+      },
+      "original": "Forest_Fighting.png",
+      "source_box_in_original": [
+        1004,
+        884,
+        192,
+        231
       ]
     }
   ]

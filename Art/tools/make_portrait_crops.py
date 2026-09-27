@@ -7,9 +7,9 @@ section 10 asks for character figurines to pick at setup. The figurines exist
 the same six figures stand in, "enlarged and shifted so that only their head
 and shoulders fit into the frame".
 
-A single enlarge-and-shift will not do that. The six heads start between row 24
-and row 155 of a 698-row cell, because the figures differ in height and posture,
-so one uniform transform frames the knight's forehead and the halfling's chest.
+A single enlarge-and-shift will not do that. The six heads start at different
+heights in their cells, because the figures differ in height and posture, so
+one uniform transform frames one figure's forehead and another's chest.
 This writes one box per figure instead, and the renderer scales each into the
 avatar frame.
 
@@ -36,11 +36,21 @@ ATLAS = os.path.join(ART, "player_avatars_atlas.json")
 OUT = os.path.join(ART, "player_avatars_portraits.json")
 
 # Portrait side as a fraction of the figure's height from the top of the head to
-# its feet. 0.32 was picked by eye over all six: it takes the head and both
-# shoulders without reaching the waist on the tall figures.
-SIDE_FRACTION = 0.32
+# its feet, picked by eye over all six: it takes the head and both shoulders
+# without reaching the waist. The first six figures wanted 0.32; the second six
+# (Q59) have heads a third of their height, and at 0.32 showed a face alone.
+SIDE_FRACTION = 0.5
 # Headroom above the hair, as a fraction of the portrait side.
 HEADROOM = 0.06
+# Where the face is, cell-relative, for figures whose measured head centre
+# misses it: a backpack or basket beside the head widens what is measured, and
+# the face sits left of centre. Set by eye, between the eyes, for the figures
+# Andrei named (Q60, 107); check them again if the figures change.
+FACE_X = {
+    "player_avatars_02": 124,
+    "player_avatars_03": 103,
+    "player_avatars_05": 123,
+}
 ALPHA_FLOOR = 8
 
 
@@ -140,8 +150,8 @@ def head_top(px, w, sprite, body_cx, content_w):
 def head_centre(px, w, sprite, body_cx, top, side):
     """Horizontal centre of the head itself, cell-relative.
 
-    Not the figure's bounding-box centre: a held axe or staff drags that sideways
-    by up to 76px here, which is enough to push a face out of frame. Measured a
+    Not the figure's bounding-box centre: a held map, lute or staff drags that
+    sideways, enough to push a face out of frame. Measured a
     little below the crown, where the head is widest and the hair has started.
     """
     x0, cw = sprite["x"], sprite["width"]
@@ -168,7 +178,7 @@ def main():
         body_cx = (min_x + max_x) // 2
         top = head_top(px, w, sprite, body_cx, max_x - min_x)
         side = int(SIDE_FRACTION * (max_y - top))
-        cx = head_centre(px, w, sprite, body_cx, top, side)
+        cx = FACE_X.get(sprite["id"]) or head_centre(px, w, sprite, body_cx, top, side)
 
         x = max(0, min(cx - side // 2, sprite["width"] - side))
         y = max(0, min(top - int(HEADROOM * side), sprite["height"] - side))

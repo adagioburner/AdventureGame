@@ -85,18 +85,22 @@ export interface DressingArt {
   readonly layer: DressingLayer;
   /** Backdrop only: the smallest a sprite may shrink to, to fit its terrain. */
   readonly minSize: number;
-  /**
-   * Standing only: laid out in arrays up to this many sprites a side, side by
-   * side along the ground, instead of one at a time. `1` for no arrays.
-   */
-  readonly array: number;
-  /**
-   * Standing only: lies flat on the ground, as a field does, so all of its
-   * picture is ground and must lie over its own terrain, not just its foot.
-   */
-  readonly flat: boolean;
+  /** Standing only: the sprites that stand in small clusters instead of alone, or `null` for none. */
+  readonly clusters: DressingClusters | null;
   /** Sprites of the sheet never drawn, by id: the sheet stays as supplied. */
   readonly leaveOut: readonly string[];
+}
+
+/**
+ * [Andrei, 2026-09-26] "It may make sense to put the bushes in small
+ * clusters", and Q59: a cluster is `min` to `max` of these sprites, touching,
+ * mixed at random, scattered rather than in a row.
+ */
+export interface DressingClusters {
+  /** By id. A sprite picked from this list comes with a cluster round it. */
+  readonly sprites: readonly string[];
+  readonly min: number;
+  readonly max: number;
 }
 
 export type DressingLayer = 'standing' | 'backdrop';
@@ -280,16 +284,14 @@ function parseTerrain(json: unknown, where: string): TerrainArt {
       const size = positive(dressing['size'], `${where}.dressing[${index}].size`);
       const minSize = dressing['min_size'] === undefined ? size : positive(dressing['min_size'], `${where}.dressing[${index}].min_size`);
       if (minSize > size) throw new ArtError(`${where}.dressing[${index}].min_size: must not exceed size`);
-      const side = dressing['array'] === undefined ? 1 : positive(dressing['array'], `${where}.dressing[${index}].array`);
-      if (!Number.isInteger(side)) throw new ArtError(`${where}.dressing[${index}].array: must be a whole number`);
       return {
         sheet: string(dressing['sheet'], `${where}.dressing[${index}].sheet`),
         size,
         weight: positive(dressing['weight'], `${where}.dressing[${index}].weight`),
         layer,
         minSize,
-        array: side,
-        flat: flag(dressing['flat'], `${where}.dressing[${index}].flat`),
+        clusters:
+          dressing['clusters'] === undefined ? null : parseClusters(dressing['clusters'], `${where}.dressing[${index}].clusters`),
         leaveOut:
           dressing['leave_out'] === undefined
             ? []
@@ -300,6 +302,18 @@ function parseTerrain(json: unknown, where: string): TerrainArt {
     }),
     dressingDensity: nonNegative(entry['dressing_density'], `${where}.dressing_density`),
   };
+}
+
+function parseClusters(json: unknown, where: string): DressingClusters {
+  const entry = record(json, where);
+  const sprites = array(entry['sprites'], `${where}.sprites`).map((id, at) => string(id, `${where}.sprites[${at}]`));
+  if (sprites.length === 0) throw new ArtError(`${where}.sprites: expected at least one sprite`);
+  const min = positive(entry['min'], `${where}.min`);
+  const max = positive(entry['max'], `${where}.max`);
+  if (!Number.isInteger(min) || !Number.isInteger(max)) throw new ArtError(`${where}: min and max must be whole numbers`);
+  if (min < 2) throw new ArtError(`${where}.min: a cluster has at least 2 sprites`);
+  if (max < min) throw new ArtError(`${where}.max: must not be below min`);
+  return { sprites, min, max };
 }
 
 function parsePoiRow(json: unknown, where: string): PoiArtRow {

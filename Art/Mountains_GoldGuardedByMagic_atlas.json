@@ -1,125 +1,223 @@
 {
-  "sheet": "Mountains_GoldMagic_sheet.png",
-  "cell_width": 693,
-  "cell_height": 783,
+  "sheet": "Mountains_GoldGuardedByMagic_sheet.png",
+  "cell_width": 264,
+  "cell_height": 251,
+  "notes": "Packed by Art/tools/pack_sheets.py from Art/originals/, the artist's sheets as supplied, with each picture's grey drop shadow made black and see-through. Do not edit by hand: replace the original and run the tool again.",
   "sprites": [
     {
-      "id": "Mountains_GoldMagic_01",
+      "id": "Mountains_GoldGuardedByMagic_01",
       "x": 0,
       "y": 0,
-      "width": 693,
-      "height": 783,
+      "width": 264,
+      "height": 251,
       "anchor": {
-        "x": 346,
-        "y": 771
+        "x": 132,
+        "y": 225
       },
+      "original": "Mountains_GoldGuardedByMagic.png",
       "source_box_in_original": [
-        566,
-        65,
-        164,
-        431
+        81,
+        149,
+        211,
+        207
       ]
     },
     {
-      "id": "Mountains_GoldMagic_02",
-      "x": 693,
+      "id": "Mountains_GoldGuardedByMagic_02",
+      "x": 264,
       "y": 0,
-      "width": 693,
-      "height": 783,
+      "width": 264,
+      "height": 251,
       "anchor": {
-        "x": 346,
-        "y": 771
+        "x": 132,
+        "y": 228
       },
+      "original": "Mountains_GoldGuardedByMagic.png",
       "source_box_in_original": [
-        871,
-        51,
-        271,
-        521
+        396,
+        131,
+        193,
+        227
       ]
     },
     {
-      "id": "Mountains_GoldMagic_03",
-      "x": 1386,
+      "id": "Mountains_GoldGuardedByMagic_03",
+      "x": 528,
       "y": 0,
-      "width": 693,
-      "height": 783,
+      "width": 264,
+      "height": 251,
       "anchor": {
-        "x": 346,
-        "y": 771
+        "x": 132,
+        "y": 223
       },
+      "original": "Mountains_GoldGuardedByMagic.png",
       "source_box_in_original": [
-        1170,
-        66,
-        669,
-        317
+        695,
+        166,
+        191,
+        190
       ]
     },
     {
-      "id": "Mountains_GoldMagic_04",
-      "x": 2079,
+      "id": "Mountains_GoldGuardedByMagic_04",
+      "x": 792,
       "y": 0,
-      "width": 693,
-      "height": 783,
+      "width": 264,
+      "height": 251,
       "anchor": {
-        "x": 346,
-        "y": 771
+        "x": 132,
+        "y": 227
       },
+      "original": "Mountains_GoldGuardedByMagic.png",
       "source_box_in_original": [
-        208,
-        127,
-        229,
-        313
+        985,
+        145,
+        209,
+        212
       ]
     },
     {
-      "id": "Mountains_GoldMagic_05",
+      "id": "Mountains_GoldGuardedByMagic_05",
       "x": 0,
-      "y": 783,
-      "width": 693,
-      "height": 783,
+      "y": 251,
+      "width": 264,
+      "height": 251,
       "anchor": {
-        "x": 346,
-        "y": 771
+        "x": 132,
+        "y": 227
       },
+      "original": "Mountains_GoldGuardedByMagic.png",
       "source_box_in_original": [
-        76,
-        511,
-        527,
-        759
+        82,
+        582,
+        214,
+        197
       ]
     },
     {
-      "id": "Mountains_GoldMagic_06",
-      "x": 693,
-      "y": 783,
-      "width": 693,
-      "height": 783,
+      "id": "Mountains_GoldGuardedByMagic_06",
+      "x": 264,
+      "y": 251,
+      "width": 264,
+      "height": 251,
       "anchor": {
-        "x": 346,
-        "y": 771
+        "x": 132,
+        "y": 221
       },
+      "original": "Mountains_GoldGuardedByMagic.png",
       "source_box_in_original": [
-        1343,
-        635,
-        472,
-        444
+        389,
+        579,
+        205,
+        199
       ]
     },
     {
-      "id": "Mountains_GoldMagic_07",
-      "x": 1386,
-      "y": 783,
-      "width": 693,
-      "height": 783,
+      "id": "Mountains_GoldGuardedByMagic_07",
+      "x": 528,
+      "y": 251,
+      "width": 264,
+      "height": 251,
       "anchor": {
-        "x": 346,
-        "y": 771
+        "x": 132,
+        "y": 232
       },
+      "original": "Mountains_GoldGuardedByMagic.png",
       "source_box_in_original": [
-        675,
-        713,
-        611,
-        359
+        688,
+        588,
+        209,
+        192
+      ]
+    },
+    {
+      "id": "Mountains_GoldGuardedByMagic_08",
+      "x": 792,
+      "y": 251,
+      "width": 264,
+      "height": 251,
+      "anchor": {
+        "x": 132,
+        "y": 232
+      },
+      "original": "Mountains_GoldGuardedByMagic.png",
+      "source_box_in_original": [
+        992,
+        584,
+        216,
+        196
+      ]
+    },
+    {
+      "id": "Mountains_GoldGuardedByMagic_09",
+      "x": 0,
+      "y": 502,
+      "width": 264,
+      "height": 251,
+      "anchor": {
+        "x": 132,
+        "y": 229
+      },
+      "original": "Mountains_GoldGuardedByMagic.png",
+      "source_box_in_original": [
+        81,
+        929,
+        211,
+        190
+      ]
+    },
+    {
+      "id": "Mountains_GoldGuardedByMagic_10",
+      "x": 264,
+      "y": 502,
+      "width": 264,
+      "height": 251,
+      "anchor": {
+        "x": 132,
+        "y": 232
+      },
+      "original": "Mountains_GoldGuardedByMagic.png",
+      "source_box_in_original": [
+        386,
+        935,
+        210,
+        183
+      ]
+    },
+    {
+      "id": "Mountains_GoldGuardedByMagic_11",
+      "x": 528,
+      "y": 502,
+      "width": 264,
+      "height": 251,
+      "anchor": {
+        "x": 132,
+        "y": 231
+      },
+      "original": "Mountains_GoldGuardedByMagic.png",
+      "source_box_in_original": [
+        678,
+        950,
+        228,
+        169
+      ]
+    },
+    {
+      "id": "Mountains_GoldGuardedByMagic_12",
+      "x": 792,
+      "y": 502,
+      "width": 264,
+      "height": 251,
+      "anchor": {
+        "x": 132,
+        "y": 233
+      },
+      "original": "Mountains_GoldGuardedByMagic.png",
+      "source_box_in_original": [
+        1001,
+        934,
+        207,
+        185
       ]
     }
   ]

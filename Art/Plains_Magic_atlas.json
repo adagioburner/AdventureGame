@@ -1,159 +1,223 @@
 {
   "sheet": "Plains_Magic_sheet.png",
-  "cell_width": 457,
-  "cell_height": 587,
+  "cell_width": 318,
+  "cell_height": 225,
+  "notes": "Packed by Art/tools/pack_sheets.py from Art/originals/, the artist's sheets as supplied, with each picture's grey drop shadow made black and see-through. Do not edit by hand: replace the original and run the tool again.",
   "sprites": [
     {
       "id": "Plains_Magic_01",
       "x": 0,
       "y": 0,
-      "width": 457,
-      "height": 587,
+      "width": 318,
+      "height": 225,
       "anchor": {
-        "x": 228,
-        "y": 575
+        "x": 159,
+        "y": 210
       },
+      "original": "Plains_Magic.png",
       "source_box_in_original": [
-        570,
-        30,
-        394,
-        501
+        62,
+        196,
+        226,
+        187
       ]
     },
     {
       "id": "Plains_Magic_02",
-      "x": 457,
+      "x": 318,
       "y": 0,
-      "width": 457,
-      "height": 587,
+      "width": 318,
+      "height": 225,
       "anchor": {
-        "x": 228,
-        "y": 575
+        "x": 159,
+        "y": 210
       },
+      "original": "Plains_Magic.png",
       "source_box_in_original": [
-        185,
-        138,
-        316,
-        300
+        378,
+        195,
+        245,
+        190
       ]
     },
     {
       "id": "Plains_Magic_03",
-      "x": 914,
+      "x": 636,
       "y": 0,
-      "width": 457,
-      "height": 587,
+      "width": 318,
+      "height": 225,
       "anchor": {
-        "x": 228,
-        "y": 575
+        "x": 159,
+        "y": 210
       },
+      "original": "Plains_Magic.png",
       "source_box_in_original": [
-        1060,
-        92,
-        302,
-        391
+        705,
+        185,
+        209,
+        201
       ]
     },
     {
       "id": "Plains_Magic_04",
-      "x": 1371,
+      "x": 954,
       "y": 0,
-      "width": 457,
-      "height": 587,
+      "width": 318,
+      "height": 225,
       "anchor": {
-        "x": 228,
-        "y": 575
+        "x": 159,
+        "y": 207
       },
+      "original": "Plains_Magic.png",
       "source_box_in_original": [
-        180,
-        508,
-        289,
-        394
+        1014,
+        191,
+        210,
+        194
       ]
     },
     {
       "id": "Plains_Magic_05",
       "x": 0,
-      "y": 587,
-      "width": 457,
-      "height": 587,
+      "y": 225,
+      "width": 318,
+      "height": 225,
       "anchor": {
-        "x": 228,
-        "y": 575
+        "x": 159,
+        "y": 211
       },
+      "original": "Plains_Magic.png",
       "source_box_in_original": [
-        568,
-        563,
-        433,
-        426
+        58,
+        557,
+        240,
+        193
       ]
     },
     {
       "id": "Plains_Magic_06",
-      "x": 457,
-      "y": 587,
-      "width": 457,
-      "height": 587,
+      "x": 318,
+      "y": 225,
+      "width": 318,
+      "height": 225,
       "anchor": {
-        "x": 228,
-        "y": 575
+        "x": 159,
+        "y": 209
       },
+      "original": "Plains_Magic.png",
       "source_box_in_original": [
-        1099,
-        557,
-        308,
-        349
+        387,
+        569,
+        229,
+        179
       ]
     },
     {
       "id": "Plains_Magic_07",
-      "x": 914,
-      "y": 587,
-      "width": 457,
-      "height": 587,
+      "x": 636,
+      "y": 225,
+      "width": 318,
+      "height": 225,
       "anchor": {
-        "x": 228,
-        "y": 575
+        "x": 159,
+        "y": 211
       },
+      "original": "Plains_Magic.png",
       "source_box_in_original": [
-        170,
-        1096,
-        370,
-        406
+        683,
+        560,
+        241,
+        194
       ]
     },
     {
       "id": "Plains_Magic_08",
-      "x": 1371,
-      "y": 587,
-      "width": 457,
-      "height": 587,
+      "x": 954,
+      "y": 225,
+      "width": 318,
+      "height": 225,
       "anchor": {
-        "x": 228,
-        "y": 575
+        "x": 159,
+        "y": 210
       },
+      "original": "Plains_Magic.png",
       "source_box_in_original": [
-        660,
-        1022,
-        259,
-        563
+        1006,
+        569,
+        241,
+        181
       ]
     },
     {
       "id": "Plains_Magic_09",
       "x": 0,
-      "y": 1174,
-      "width": 457,
-      "height": 587,
+      "y": 450,
+      "width": 318,
+      "height": 225,
       "anchor": {
-        "x": 228,
-        "y": 575
+        "x": 159,
+        "y": 207
       },
+      "original": "Plains_Magic.png",
       "source_box_in_original": [
-        1090,
-        1037,
-        370,
-        517
+        66,
+        933,
+        230,
+        185
+      ]
+    },
+    {
+      "id": "Plains_Magic_10",
+      "x": 318,
+      "y": 450,
+      "width": 318,
+      "height": 225,
+      "anchor": {
+        "x": 159,
+        "y": 210
+      },
+      "original": "Plains_Magic.png",
+      "source_box_in_original": [
+        376,
+        935,
+        250,
+        180
+      ]
+    },
+    {
+      "id": "Plains_Magic_11",
+      "x": 636,
+      "y": 450,
+      "width": 318,
+      "height": 225,
+      "anchor": {
+        "x": 159,
+        "y": 211
+      },
+      "original": "Plains_Magic.png",
+      "source_box_in_original": [
+        693,
+        928,
+        217,
+        194
+      ]
+    },
+    {
+      "id": "Plains_Magic_12",
+      "x": 954,
+      "y": 450,
+      "width": 318,
+      "height": 225,
+      "anchor": {
+        "x": 159,
+        "y": 210
+      },
+      "original": "Plains_Magic.png",
+      "source_box_in_original": [
+        1006,
+        926,
+        240,
+        197
       ]
     }
   ]
