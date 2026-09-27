@@ -5,51 +5,51 @@
   "portraits": [
     {
       "id": "player_avatars_01",
-      "x": 271,
-      "y": 72,
-      "width": 189,
-      "height": 189,
-      "head_top": 83
+      "x": 50,
+      "y": 2,
+      "width": 192,
+      "height": 192,
+      "head_top": 13
     },
     {
       "id": "player_avatars_02",
-      "x": 160,
-      "y": 43,
-      "width": 198,
-      "height": 198,
-      "head_top": 54
+      "x": 83,
+      "y": 64,
+      "width": 162,
+      "height": 162,
+      "head_top": 73
     },
     {
       "id": "player_avatars_03",
-      "x": 238,
-      "y": 53,
-      "width": 195,
-      "height": 195,
-      "head_top": 64
+      "x": 72,
+      "y": 33,
+      "width": 177,
+      "height": 177,
+      "head_top": 43
     },
     {
       "id": "player_avatars_04",
-      "x": 280,
-      "y": 12,
-      "width": 208,
-      "height": 208,
-      "head_top": 24
+      "x": 48,
+      "y": 14,
+      "width": 186,
+      "height": 186,
+      "head_top": 25
     },
     {
       "id": "player_avatars_05",
-      "x": 197,
-      "y": 26,
-      "width": 203,
-      "height": 203,
-      "head_top": 38
+      "x": 82,
+      "y": 51,
+      "width": 168,
+      "height": 168,
+      "head_top": 61
     },
     {
       "id": "player_avatars_06",
-      "x": 204,
-      "y": 146,
-      "width": 166,
-      "height": 166,
-      "head_top": 155
+      "x": 64,
+      "y": 35,
+      "width": 176,
+      "height": 176,
+      "head_top": 45
     }
   ]
 }

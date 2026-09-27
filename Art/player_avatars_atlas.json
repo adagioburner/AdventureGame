@@ -1,108 +1,115 @@
 {
   "sheet": "player_avatars_sheet.png",
-  "cell_width": 617,
-  "cell_height": 698,
+  "cell_width": 322,
+  "cell_height": 410,
+  "notes": "Packed by Art/tools/pack_sheets.py from Art/originals/, the artist's sheets as supplied, with each picture's grey drop shadow made black and see-through. Do not edit by hand: replace the original and run the tool again.",
   "sprites": [
     {
       "id": "player_avatars_01",
       "x": 0,
       "y": 0,
-      "width": 617,
-      "height": 698,
+      "width": 322,
+      "height": 410,
       "anchor": {
-        "x": 308,
-        "y": 686
+        "x": 161,
+        "y": 396
       },
+      "original": "player_avatars.png",
       "source_box_in_original": [
-        158,
-        113,
-        593,
-        615
+        72,
+        189,
+        296,
+        386
       ]
     },
     {
       "id": "player_avatars_02",
-      "x": 617,
+      "x": 322,
       "y": 0,
-      "width": 617,
-      "height": 698,
+      "width": 322,
+      "height": 410,
       "anchor": {
-        "x": 308,
-        "y": 686
+        "x": 161,
+        "y": 395
       },
+      "original": "player_avatars.png",
       "source_box_in_original": [
-        1174,
-        93,
-        515,
-        642
+        506,
+        244,
+        279,
+        327
       ]
     },
     {
       "id": "player_avatars_03",
-      "x": 1234,
+      "x": 644,
       "y": 0,
-      "width": 617,
-      "height": 698,
+      "width": 322,
+      "height": 410,
       "anchor": {
-        "x": 308,
-        "y": 686
+        "x": 161,
+        "y": 396
       },
+      "original": "player_avatars.png",
       "source_box_in_original": [
-        2103,
-        93,
-        413,
-        633
+        917,
+        202,
+        275,
+        368
       ]
     },
     {
       "id": "player_avatars_04",
-      "x": 1851,
+      "x": 966,
       "y": 0,
-      "width": 617,
-      "height": 698,
+      "width": 322,
+      "height": 410,
       "anchor": {
-        "x": 308,
-        "y": 686
+        "x": 161,
+        "y": 395
       },
+      "original": "player_avatars.png",
       "source_box_in_original": [
-        170,
-        804,
-        553,
-        674
+        74,
+        797,
+        297,
+        378
       ]
     },
     {
       "id": "player_avatars_05",
       "x": 0,
-      "y": 698,
-      "width": 617,
-      "height": 698,
+      "y": 410,
+      "width": 322,
+      "height": 410,
       "anchor": {
-        "x": 308,
-        "y": 686
+        "x": 161,
+        "y": 394
       },
+      "original": "player_avatars.png",
       "source_box_in_original": [
-        2186,
-        809,
-        356,
-        659
+        515,
+        835,
+        260,
+        338
       ]
     },
     {
       "id": "player_avatars_06",
-      "x": 617,
-      "y": 698,
-      "width": 617,
-      "height": 698,
+      "x": 322,
+      "y": 410,
+      "width": 322,
+      "height": 410,
       "anchor": {
-        "x": 308,
-        "y": 686
+        "x": 161,
+        "y": 396
       },
+      "original": "player_avatars.png",
       "source_box_in_original": [
-        1260,
-        913,
-        361,
-        542
+        902,
+        824,
+        292,
+        353
       ]
     }
   ]

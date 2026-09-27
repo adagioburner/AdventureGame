@@ -1,0 +1,458 @@
+{
+  "sheet": "Plains_Dressing_sheet.png",
+  "cell_width": 246,
+  "cell_height": 156,
+  "notes": "Packed by Art/tools/pack_sheets.py from Art/originals/, the artist's sheets as supplied, with each picture's grey drop shadow made black and see-through. Do not edit by hand: replace the original and run the tool again.",
+  "sprites": [
+    {
+      "id": "Plains_Dressing_01",
+      "x": 0,
+      "y": 0,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 133
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        97,
+        177,
+        130,
+        87
+      ]
+    },
+    {
+      "id": "Plains_Dressing_02",
+      "x": 246,
+      "y": 0,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 136
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        346,
+        176,
+        117,
+        86
+      ]
+    },
+    {
+      "id": "Plains_Dressing_03",
+      "x": 492,
+      "y": 0,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 137
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        569,
+        193,
+        140,
+        70
+      ]
+    },
+    {
+      "id": "Plains_Dressing_04",
+      "x": 738,
+      "y": 0,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 136
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        803,
+        183,
+        127,
+        89
+      ]
+    },
+    {
+      "id": "Plains_Dressing_05",
+      "x": 0,
+      "y": 156,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 135
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        1042,
+        167,
+        151,
+        104
+      ]
+    },
+    {
+      "id": "Plains_Dressing_06",
+      "x": 246,
+      "y": 156,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 136
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        75,
+        372,
+        164,
+        124
+      ]
+    },
+    {
+      "id": "Plains_Dressing_07",
+      "x": 492,
+      "y": 156,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 136
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        331,
+        387,
+        152,
+        110
+      ]
+    },
+    {
+      "id": "Plains_Dressing_08",
+      "x": 738,
+      "y": 156,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 137
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        580,
+        374,
+        111,
+        124
+      ]
+    },
+    {
+      "id": "Plains_Dressing_09",
+      "x": 0,
+      "y": 312,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 136
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        796,
+        388,
+        145,
+        109
+      ]
+    },
+    {
+      "id": "Plains_Dressing_10",
+      "x": 246,
+      "y": 312,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 136
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        1035,
+        380,
+        161,
+        117
+      ]
+    },
+    {
+      "id": "Plains_Dressing_11",
+      "x": 492,
+      "y": 312,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 136
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        69,
+        596,
+        171,
+        123
+      ]
+    },
+    {
+      "id": "Plains_Dressing_12",
+      "x": 738,
+      "y": 312,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 134
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        333,
+        588,
+        147,
+        131
+      ]
+    },
+    {
+      "id": "Plains_Dressing_13",
+      "x": 0,
+      "y": 468,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 135
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        557,
+        612,
+        162,
+        107
+      ]
+    },
+    {
+      "id": "Plains_Dressing_14",
+      "x": 246,
+      "y": 468,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 135
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        790,
+        606,
+        155,
+        113
+      ]
+    },
+    {
+      "id": "Plains_Dressing_15",
+      "x": 492,
+      "y": 468,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 129
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        1024,
+        610,
+        190,
+        112
+      ]
+    },
+    {
+      "id": "Plains_Dressing_16",
+      "x": 738,
+      "y": 468,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 140
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        75,
+        834,
+        158,
+        113
+      ]
+    },
+    {
+      "id": "Plains_Dressing_17",
+      "x": 0,
+      "y": 624,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 132
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        345,
+        808,
+        137,
+        132
+      ]
+    },
+    {
+      "id": "Plains_Dressing_18",
+      "x": 246,
+      "y": 624,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 136
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        570,
+        816,
+        139,
+        124
+      ]
+    },
+    {
+      "id": "Plains_Dressing_19",
+      "x": 492,
+      "y": 624,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 133
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        792,
+        825,
+        161,
+        117
+      ]
+    },
+    {
+      "id": "Plains_Dressing_20",
+      "x": 738,
+      "y": 624,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 136
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        1033,
+        823,
+        166,
+        117
+      ]
+    },
+    {
+      "id": "Plains_Dressing_21",
+      "x": 0,
+      "y": 780,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 138
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        64,
+        1060,
+        162,
+        88
+      ]
+    },
+    {
+      "id": "Plains_Dressing_22",
+      "x": 246,
+      "y": 780,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 137
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        326,
+        1062,
+        144,
+        82
+      ]
+    },
+    {
+      "id": "Plains_Dressing_23",
+      "x": 492,
+      "y": 780,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 133
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        563,
+        1028,
+        150,
+        125
+      ]
+    },
+    {
+      "id": "Plains_Dressing_24",
+      "x": 738,
+      "y": 780,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 135
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        792,
+        1049,
+        152,
+        97
+      ]
+    },
+    {
+      "id": "Plains_Dressing_25",
+      "x": 0,
+      "y": 936,
+      "width": 246,
+      "height": 156,
+      "anchor": {
+        "x": 123,
+        "y": 135
+      },
+      "original": "Plains_Dressing.png",
+      "source_box_in_original": [
+        1049,
+        1039,
+        150,
+        112
+      ]
+    }
+  ]
+}

@@ -5,7 +5,7 @@ import { atlasOf, buildArtCatalog, poiArt } from '../art/catalog.ts';
 import { ART_FILES } from '../art/files.ts';
 import { previewGame, SAMPLE_ALLOWANCE, SAMPLE_STAMINA } from './scene.fixture.ts';
 import { distance, distanceToSegment, polygonArea, position } from './geometry.ts';
-import { BACKDROP_STEP, groundPoints, silhouettePoints, STANDING_MARGIN } from './dressing.ts';
+import { BACKDROP_STEP, CLUSTER_TOUCH, silhouettePoints, STANDING_MARGIN } from './dressing.ts';
 import { boxTouchesOval, grow, lengthInBox, ON_NODE_REACH, overlapArea, pictureBox, ROUGH_SHAPE } from './placement.ts';
 import {
   buildMapScene,
@@ -226,56 +226,45 @@ describe('what the player sees of the map', () => {
     expect(problems).toEqual([]);
   });
 
-  it('keeps fields over the plains, and all standing dressing off the POIs\' pictures and rewards', () => {
-    // Andrei, 2026-09-23: "field images from plains are sometimes invading
-    // other terrains and their content".
-    const graph = game.map.graph;
-    const terrainAt = (screen: { x: number; y: number }) => {
-      const at = scene.projection.toWorld(screen);
-      return graph.nodes.reduce((best, node) => (distance(at, node.position) < distance(at, best.position) ? node : best)).terrain;
-    };
+  it("keeps all standing dressing off the POIs' pictures and rewards", () => {
     const taken = [
       ...pictures.map((picture) => pictureBox(picture.foot, picture.size, ROUGH_SHAPE(picture.sprite))),
       ...scene.labels.map(labelBox),
     ];
-    const art = catalog.manifest.terrain.plains.dressing.find((d) => d.sheet === 'Plains_Fields');
     const problems: string[] = [];
     for (const item of scene.billboards.filter((billboard) => billboard.layer === 'dressing')) {
       const where = `${item.sprite.sheet} at (${item.foot.x.toFixed(1)}, ${item.foot.y.toFixed(1)})`;
       const box = grow(pictureBox(item.foot, item.size, ROUGH_SHAPE(item.sprite)), item.size * STANDING_MARGIN);
       if (taken.some((other) => overlapArea(box, other) > 0)) problems.push(`${where} covers a POI`);
-      if (item.sprite.sheet !== 'Plains_Fields') continue;
-      for (const point of groundPoints(item.foot, item.size, ROUGH_SHAPE(item.sprite))) {
-        const terrain = terrainAt(point);
-        if (terrain !== 'plains') problems.push(`${where} reaches over ${terrain}`);
-      }
-      // Andrei, 2026-09-23: the dark brown fields drew the eye away from the
-      // wagon wheel icons, so they are left out.
-      const id = atlasOf(catalog, item.sprite.sheet).sprites[item.sprite.index]?.id ?? '';
-      if (art?.leaveOut.includes(id)) problems.push(`${where} is ${id}, which is left out`);
     }
     expect(problems).toEqual([]);
   });
 
-  it('lays fields out in arrays, each field side by side with another along the ground', () => {
-    // Andrei, 2026-09-23: fields "look the best when placed in arrays, several at a time".
-    const art = catalog.manifest.terrain.plains.dressing.find((d) => d.sheet === 'Plains_Fields');
-    expect(art?.array).toBeGreaterThan(1);
-    const fields = scene.billboards.filter((item) => item.sprite.sheet === 'Plains_Fields');
-    expect(fields.length).toBeGreaterThan(10);
-    const ground = fields.map((item) => scene.projection.toWorld(item.foot));
-    const step = ((art?.size ?? 0) * SPACING_PX) / (2 * scene.projection.matrix.a);
-    const alone = ground.filter(
-      (at, index) =>
-        !ground.some((other, j) => {
-          if (j === index) return false;
-          const dx = Math.abs(other.x - at.x);
-          const dy = Math.abs(other.y - at.y);
-          // One step along one ground axis and none along the other.
-          return (Math.abs(dx - step) < step * 0.1 && dy < 1e-6) || (Math.abs(dy - step) < step * 0.1 && dx < 1e-6);
-        }),
+  it('stands every bush in a cluster, touching another bush, with kinds mixed', () => {
+    // Andrei, 2026-09-26: "It may make sense to put the bushes in small
+    // clusters." Q59: 2 to 4 bushes picked at random, touching, and every
+    // bush in a cluster.
+    const art = catalog.manifest.terrain.plains.dressing.find((d) => d.sheet === 'Plains_Dressing');
+    const ids = art?.clusters?.sprites ?? [];
+    expect(ids).toHaveLength(5);
+    const sprites = atlasOf(catalog, 'Plains_Dressing').sprites;
+    const bushes = scene.billboards.filter(
+      (item) => item.sprite.sheet === 'Plains_Dressing' && ids.includes(sprites[item.sprite.index]?.id ?? ''),
     );
+    expect(bushes.length).toBeGreaterThan(10);
+    // The scene is built with ROUGH_SHAPE, one typical span across, so each
+    // bush's footprint reaches half its size across the ground.
+    const across = Math.hypot(scene.projection.matrix.a, scene.projection.matrix.c);
+    const ground = bushes.map((item) => ({ at: scene.projection.toWorld(item.foot), reach: item.size / 2 / across, index: item.sprite.index }));
+    const touching = (a: (typeof ground)[number], b: (typeof ground)[number]) =>
+      distance(a.at, b.at) <= (a.reach + b.reach) * CLUSTER_TOUCH * 1.02;
+    const alone = ground.filter((bush) => !ground.some((other) => other !== bush && touching(bush, other)));
     expect(alone).toEqual([]);
+    const mixed = ground.some((bush) => ground.some((other) => other !== bush && touching(bush, other) && other.index !== bush.index));
+    expect(mixed).toBe(true);
+    // Everything else on the sheet stands alone, as often as each bush is picked.
+    const others = scene.billboards.filter((item) => item.sprite.sheet === 'Plains_Dressing').length - bushes.length;
+    expect(others).toBeGreaterThan(bushes.length);
   });
 
   it("fills the mountains with backdrop, large in the middle, each sized to stay over mountain ground", () => {

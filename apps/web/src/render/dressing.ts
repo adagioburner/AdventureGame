@@ -1,5 +1,5 @@
 import { TERRAINS, type Terrain } from '@adventure/config';
-import { createRng, type GameMap, type Point, type Rng } from '@adventure/core';
+import { createRng, type GameMap, type Point } from '@adventure/core';
 import { atlasOf, wrapIndex, type ArtCatalog, type SpriteRef } from '../art/catalog.ts';
 import type { ArtManifest, DressingArt } from '../art/manifest.ts';
 import { distance, distanceToSegment, ObstacleGrid, position } from './geometry.ts';
@@ -11,8 +11,8 @@ import { SPACING_PX, type Billboard } from './sceneModel.ts';
  * [SOURCE §6] "non-interactive dressing (eye candy) are billboard sprites
  * pasted onto the map by the engine."
  *
- * Two kinds, as the manifest marks them. Standing dressing (trees, grass,
- * fields) stands up among the POIs and figures and is kept clear of every
+ * Two kinds, as the manifest marks them. Standing dressing (trees, bushes,
+ * grass, rocks) stands up among the POIs and figures and is kept clear of every
  * node and road. Backdrop dressing (the mountains) is painted onto the ground
  * under the roads and nodes and fills its whole terrain. Both come from
  * streams forked off the map seed, so the same map always carries the same
@@ -30,8 +30,15 @@ export const STANDING_MARGIN = 0.05;
 /** How far apart backdrop spots are sown, as a share of the smallest size a backdrop sprite may take. */
 export const BACKDROP_STEP = 0.6;
 
-/** How far apart two sprites of one array stand, as a share of the gap that would put them edge to edge. */
-const ARRAY_GAP = 1.04;
+/**
+ * How far apart two sprites of one cluster stand, as a share of the gap that
+ * would put their ground footprints edge to edge: below 1, so they touch and
+ * the one in front hides the foot of the one behind.
+ */
+export const CLUSTER_TOUCH = 0.75;
+
+/** How many directions a sprite of a cluster tries before it settles for crowding its neighbours. */
+const CLUSTER_TRIES = 8;
 
 interface Ground {
   readonly map: GameMap;
@@ -63,6 +70,12 @@ function dressingSprite(catalog: ArtCatalog, option: DressingArt, roll: number):
   return { sheet: option.sheet, index: kept[wrapIndex(roll, kept.length)]?.index ?? 0 };
 }
 
+/** The indices of a dressing sheet's clustered sprites, in the manifest's order. */
+function clusteredSprites(catalog: ArtCatalog, option: DressingArt): number[] {
+  const sprites = atlasOf(catalog, option.sheet).sprites;
+  return (option.clusters?.sprites ?? []).map((id) => sprites.findIndex((sprite) => sprite.id === id)).filter((index) => index >= 0);
+}
+
 function pick(options: readonly DressingArt[], roll: number): DressingArt | undefined {
   const total = options.reduce((sum, option) => sum + option.weight, 0);
   let left = roll * total;
@@ -73,16 +86,18 @@ function pick(options: readonly DressingArt[], roll: number): DressingArt | unde
  * Standing dressing, scattered over each terrain at the manifest's density
  * and rejected wherever it would stand on a road, stand on a node, or hide a
  * node or road standing behind it — so it is never in the way of the game.
- * Nor does it touch anything in `taken`, the POIs' pictures and rewards; and
- * a `flat` sheet, a field, lies wholly over its own terrain, since all of its
- * picture is ground. [Andrei, review 2026-09-23] "field images from plains are
- * sometimes invading other terrains and their content".
+ * Nor does it touch anything in `taken`, the POIs' pictures and rewards.
  *
- * A sheet with an `array` is laid out as a small grid of sprites side by
- * side along the ground instead of one at a time: [Andrei, review
- * 2026-09-23] fields "look the best when placed in arrays, several at a
- * time". A cell of an array that breaks a rule is left out, and an array left
- * with fewer than two sprites is not placed at all.
+ * Each pick is any sprite of the sheet, all equally likely (Q59). A pick that
+ * lands on one of the sheet's `clusters` sprites, a bush, brings a small
+ * cluster round it instead of standing alone: [Andrei, 2026-09-26] "It may
+ * make sense to put the bushes in small clusters." Q59 settles what one is:
+ * `min` to `max` of those sprites, each after the first picked at random from
+ * them so kinds mix, each touching one placed before it in a random direction
+ * so they clump rather than line up, and every one counting towards the
+ * terrain's density. A bush of a cluster that breaks a rule is left out, and
+ * so is one no longer touching any other; a cluster left with fewer than two
+ * is not placed at all.
  */
 export function placeDressing(ground: Ground, taken: readonly Box[]): Billboard[] {
   const { map, catalog, projection, spacing, bounds, shapeOf } = ground;
@@ -105,18 +120,14 @@ export function placeDressing(ground: Ground, taken: readonly Box[]): Billboard[
   const wanted = [...quota.values()].reduce((sum, n) => sum + n, 0);
 
   const placed: Billboard[] = [];
-  /** Where each array's sprites stand on the ground, so two arrays never overlap. */
-  const arrays: { at: Point; step: number }[] = [];
   const width = bounds.max.x - bounds.min.x;
   const height = bounds.max.y - bounds.min.y;
-
-  const overTerrain = (screen: Point, terrain: Terrain): boolean => {
-    const at = projection.toWorld(screen);
-    return inside(bounds, at) && nearestNode(map, at)?.terrain === terrain;
-  };
+  // Screen pixels across per unit of ground, so a picture's width on screen
+  // gives the round footprint it stands on.
+  const across = Math.hypot(projection.matrix.a, projection.matrix.c);
 
   /** The billboard for a standing sprite at `at`, or `null` where it would be in the way. */
-  const stand = (at: Point, option: DressingArt, terrain: Terrain, spriteRoll: number): Billboard | null => {
+  const stand = (at: Point, option: DressingArt, terrain: Terrain, sprite: SpriteRef): Billboard | null => {
     if (!inside(bounds, at)) return null;
     const nearest = nearestNode(map, at);
     if (nearest === null || nearest.terrain !== terrain) return null;
@@ -126,15 +137,19 @@ export function placeDressing(ground: Ground, taken: readonly Box[]): Billboard[
     }
     const size = option.size * SPACING_PX;
     const foot = projection.toScreen(at);
-    const sprite = dressingSprite(catalog, option, spriteRoll);
     const shape = shapeOf(sprite);
     // The picture rises above its foot; a node or road inside it would be hidden.
     const box = grow(pictureBox(foot, size, shape), size * STANDING_MARGIN);
     if (obstacles.anyInBox(box.minX, box.minY, box.maxX, box.maxY)) return null;
     const bands = pictureBands(foot, size, shape).map((band) => grow(band, size * STANDING_MARGIN));
     if (taken.some((other) => overlapArea(box, other) > 0 && bands.some((band) => overlapArea(band, other) > 0))) return null;
-    if (option.flat && !groundPoints(foot, size, shape).every((point) => overTerrain(point, terrain))) return null;
     return { layer: 'dressing', sprite, foot, size, node: null, depth: foot.y };
+  };
+
+  /** How far a sprite's footprint reaches on the ground from its foot. */
+  const footprint = (option: DressingArt, sprite: SpriteRef): number => {
+    const shape = shapeOf(sprite);
+    return ((shape.right - shape.left) * option.size * SPACING_PX) / 2 / across;
   };
 
   for (let attempt = 0; attempt < wanted * 40 && placed.length < wanted; attempt++) {
@@ -152,69 +167,50 @@ export function placeDressing(ground: Ground, taken: readonly Box[]): Billboard[
     );
     if (option === undefined) continue;
 
-    if (option.array <= 1) {
-      const item = stand(at, option, nearest.terrain, pickSprite);
+    const sprite = dressingSprite(catalog, option, pickSprite);
+    const bushes = clusteredSprites(catalog, option);
+    if (option.clusters === null || !bushes.includes(sprite.index)) {
+      const item = stand(at, option, nearest.terrain, sprite);
       if (item === null) continue;
       placed.push(item);
       quota.set(nearest.terrain, left - 1);
       continue;
     }
 
-    const cells = arrayCells(rng, option.array);
-    // Side by side along the ground's two axes: a sprite as wide on screen
-    // as its typical span covers a ground square this many units a side.
-    const step = ((option.size * SPACING_PX) / (2 * projection.matrix.a)) * ARRAY_GAP;
-    const kept: { cell: [number, number]; spot: Point; item: Billboard }[] = [];
-    for (const cell of cells) {
-      const spot = { x: at.x + cell[0] * step, y: at.y + cell[1] * step };
-      if (arrays.some((other) => distance(spot, other.at) < Math.max(step, other.step) * 0.95)) continue;
-      const item = stand(spot, option, nearest.terrain, rng.nextUint32());
-      if (item !== null) kept.push({ cell, spot, item });
+    const { min, max } = option.clusters;
+    const count = min + Math.floor(rng.nextFloat() * (max - min + 1));
+    const members: { sprite: SpriteRef; spot: Point; reach: number }[] = [
+      { sprite, spot: at, reach: footprint(option, sprite) },
+    ];
+    while (members.length < count) {
+      const next: SpriteRef = { sheet: option.sheet, index: bushes[wrapIndex(rng.nextUint32(), bushes.length)] ?? sprite.index };
+      const reach = footprint(option, next);
+      let spot = at;
+      for (let tries = 0; tries < CLUSTER_TRIES; tries++) {
+        const beside = members[wrapIndex(rng.nextUint32(), members.length)];
+        if (beside === undefined) break;
+        const angle = rng.nextFloat() * 2 * Math.PI;
+        const gap = (reach + beside.reach) * CLUSTER_TOUCH;
+        spot = { x: beside.spot.x + Math.cos(angle) * gap, y: beside.spot.y + Math.sin(angle) * gap };
+        // Not crowding any other bush more than it touches its neighbour.
+        if (members.every((other) => distance(spot, other.spot) >= (reach + other.reach) * CLUSTER_TOUCH * 0.99)) break;
+      }
+      members.push({ sprite: next, spot, reach });
     }
-    // A sprite whose neighbours were all left out would stand apart from
-    // its array, so it goes too.
-    const joined = kept.filter(({ cell: [i, j] }) =>
-      kept.some(({ cell: [k, l] }) => Math.abs(i - k) + Math.abs(j - l) === 1),
+    const kept = members.flatMap((member) => {
+      const item = stand(member.spot, option, nearest.terrain, member.sprite);
+      return item === null ? [] : [{ ...member, item }];
+    });
+    // A bush whose neighbours were all left out would stand apart from its
+    // cluster, so it goes too.
+    const joined = kept.filter((member) =>
+      kept.some((other) => other !== member && distance(member.spot, other.spot) <= (member.reach + other.reach) * CLUSTER_TOUCH * 1.01),
     );
     if (joined.length < 2) continue;
-    for (const { spot, item } of joined) {
-      placed.push(item);
-      arrays.push({ at: spot, step });
-    }
+    for (const { item } of joined) placed.push(item);
     quota.set(nearest.terrain, left - joined.length);
   }
   return placed;
-}
-
-/** The cells of one array: a random rectangle up to `most` a side, never a single sprite. */
-function arrayCells(rng: Rng, most: number): [number, number][] {
-  let columns = 1 + Math.floor(rng.nextFloat() * most);
-  const rows = 1 + Math.floor(rng.nextFloat() * most);
-  if (columns * rows < 2) columns = 2;
-  const cells: [number, number][] = [];
-  for (let i = 0; i < columns; i++) for (let j = 0; j < rows; j++) cells.push([i, j]);
-  return cells;
-}
-
-/**
- * Screen points round the edge of a flat sprite's picture, all of which are
- * ground: each band's two ends, half way down it, and the picture's top and
- * bottom in the middle.
- */
-export function groundPoints(foot: Point, size: number, shape: SpriteShape): Point[] {
-  const box = pictureBox(foot, size, shape);
-  const middle = (box.minX + box.maxX) / 2;
-  return [
-    ...pictureBands(foot, size, shape).flatMap((band) => {
-      const y = (band.minY + band.maxY) / 2;
-      return [
-        { x: band.minX, y },
-        { x: band.maxX, y },
-      ];
-    }),
-    { x: middle, y: box.minY },
-    { x: middle, y: box.maxY },
-  ];
 }
 
 /**

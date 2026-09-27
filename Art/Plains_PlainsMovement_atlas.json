@@ -1,346 +1,223 @@
 {
   "sheet": "Plains_PlainsMovement_sheet.png",
-  "cell_width": 353,
-  "cell_height": 408,
+  "cell_width": 292,
+  "cell_height": 215,
+  "notes": "Packed by Art/tools/pack_sheets.py from Art/originals/, the artist's sheets as supplied, with each picture's grey drop shadow made black and see-through. Do not edit by hand: replace the original and run the tool again.",
   "sprites": [
     {
       "id": "Plains_PlainsMovement_01",
       "x": 0,
       "y": 0,
-      "width": 353,
-      "height": 408,
+      "width": 292,
+      "height": 215,
       "anchor": {
-        "x": 176,
-        "y": 396
+        "x": 146,
+        "y": 196
       },
+      "original": "Plains_PlainsMovement.png",
       "source_box_in_original": [
-        121,
         56,
-        266,
-        295
+        180,
+        226,
+        191
       ]
     },
     {
       "id": "Plains_PlainsMovement_02",
-      "x": 353,
+      "x": 292,
       "y": 0,
-      "width": 353,
-      "height": 408,
+      "width": 292,
+      "height": 215,
       "anchor": {
-        "x": 176,
-        "y": 396
+        "x": 146,
+        "y": 195
       },
+      "original": "Plains_PlainsMovement.png",
       "source_box_in_original": [
-        430,
-        39,
-        226,
-        288
+        360,
+        191,
+        243,
+        171
       ]
     },
     {
       "id": "Plains_PlainsMovement_03",
-      "x": 706,
+      "x": 584,
       "y": 0,
-      "width": 353,
-      "height": 408,
+      "width": 292,
+      "height": 215,
       "anchor": {
-        "x": 176,
-        "y": 396
+        "x": 146,
+        "y": 198
       },
+      "original": "Plains_PlainsMovement.png",
       "source_box_in_original": [
-        713,
-        22,
-        304,
-        317
+        689,
+        187,
+        213,
+        181
       ]
     },
     {
       "id": "Plains_PlainsMovement_04",
-      "x": 1059,
+      "x": 876,
       "y": 0,
-      "width": 353,
-      "height": 408,
+      "width": 292,
+      "height": 215,
       "anchor": {
-        "x": 176,
-        "y": 396
+        "x": 146,
+        "y": 197
       },
+      "original": "Plains_PlainsMovement.png",
       "source_box_in_original": [
-        1077,
-        78,
-        268,
-        251
+        989,
+        195,
+        234,
+        178
       ]
     },
     {
       "id": "Plains_PlainsMovement_05",
       "x": 0,
-      "y": 408,
-      "width": 353,
-      "height": 408,
+      "y": 215,
+      "width": 292,
+      "height": 215,
       "anchor": {
-        "x": 176,
-        "y": 396
+        "x": 146,
+        "y": 195
       },
+      "original": "Plains_PlainsMovement.png",
       "source_box_in_original": [
-        99,
-        370,
-        271,
-        300
+        53,
+        550,
+        233,
+        188
       ]
     },
     {
       "id": "Plains_PlainsMovement_06",
-      "x": 353,
-      "y": 408,
-      "width": 353,
-      "height": 408,
+      "x": 292,
+      "y": 215,
+      "width": 292,
+      "height": 215,
       "anchor": {
-        "x": 176,
-        "y": 396
+        "x": 146,
+        "y": 196
       },
+      "original": "Plains_PlainsMovement.png",
       "source_box_in_original": [
-        417,
-        343,
-        329,
-        325
+        365,
+        553,
+        244,
+        188
       ]
     },
     {
       "id": "Plains_PlainsMovement_07",
-      "x": 706,
-      "y": 408,
-      "width": 353,
-      "height": 408,
+      "x": 584,
+      "y": 215,
+      "width": 292,
+      "height": 215,
       "anchor": {
-        "x": 176,
-        "y": 396
+        "x": 146,
+        "y": 197
       },
+      "original": "Plains_PlainsMovement.png",
       "source_box_in_original": [
-        821,
-        358,
-        285,
-        291
+        677,
+        561,
+        230,
+        181
       ]
     },
     {
       "id": "Plains_PlainsMovement_08",
-      "x": 1059,
-      "y": 408,
-      "width": 353,
-      "height": 408,
+      "x": 876,
+      "y": 215,
+      "width": 292,
+      "height": 215,
       "anchor": {
-        "x": 176,
-        "y": 396
+        "x": 146,
+        "y": 194
       },
+      "original": "Plains_PlainsMovement.png",
       "source_box_in_original": [
-        1167,
-        399,
-        208,
-        246
+        998,
+        549,
+        212,
+        187
       ]
     },
     {
       "id": "Plains_PlainsMovement_09",
       "x": 0,
-      "y": 816,
-      "width": 353,
-      "height": 408,
+      "y": 430,
+      "width": 292,
+      "height": 215,
       "anchor": {
-        "x": 176,
-        "y": 396
+        "x": 146,
+        "y": 197
       },
+      "original": "Plains_PlainsMovement.png",
       "source_box_in_original": [
-        704,
-        653,
-        293,
-        284
+        53,
+        928,
+        235,
+        187
       ]
     },
     {
       "id": "Plains_PlainsMovement_10",
-      "x": 353,
-      "y": 816,
-      "width": 353,
-      "height": 408,
+      "x": 292,
+      "y": 430,
+      "width": 292,
+      "height": 215,
       "anchor": {
-        "x": 176,
-        "y": 396
+        "x": 146,
+        "y": 196
       },
+      "original": "Plains_PlainsMovement.png",
       "source_box_in_original": [
-        1092,
-        646,
-        173,
-        275
+        361,
+        933,
+        254,
+        179
       ]
     },
     {
       "id": "Plains_PlainsMovement_11",
-      "x": 706,
-      "y": 816,
-      "width": 353,
-      "height": 408,
+      "x": 584,
+      "y": 430,
+      "width": 292,
+      "height": 215,
       "anchor": {
-        "x": 176,
-        "y": 396
+        "x": 146,
+        "y": 196
       },
+      "original": "Plains_PlainsMovement.png",
       "source_box_in_original": [
-        70,
-        682,
-        275,
-        258
+        678,
+        928,
+        231,
+        185
       ]
     },
     {
       "id": "Plains_PlainsMovement_12",
-      "x": 1059,
-      "y": 816,
-      "width": 353,
-      "height": 408,
+      "x": 876,
+      "y": 430,
+      "width": 292,
+      "height": 215,
       "anchor": {
-        "x": 176,
-        "y": 396
+        "x": 146,
+        "y": 196
       },
+      "original": "Plains_PlainsMovement.png",
       "source_box_in_original": [
-        399,
-        679,
-        249,
-        253
-      ]
-    },
-    {
-      "id": "Plains_PlainsMovement_13",
-      "x": 0,
-      "y": 1224,
-      "width": 353,
-      "height": 408,
-      "anchor": {
-        "x": 176,
-        "y": 396
-      },
-      "source_box_in_original": [
-        46,
-        962,
-        285,
-        350
-      ]
-    },
-    {
-      "id": "Plains_PlainsMovement_14",
-      "x": 353,
-      "y": 1224,
-      "width": 353,
-      "height": 408,
-      "anchor": {
-        "x": 176,
-        "y": 396
-      },
-      "source_box_in_original": [
-        1044,
-        948,
-        251,
-        307
-      ]
-    },
-    {
-      "id": "Plains_PlainsMovement_15",
-      "x": 706,
-      "y": 1224,
-      "width": 353,
-      "height": 408,
-      "anchor": {
-        "x": 176,
-        "y": 396
-      },
-      "source_box_in_original": [
-        398,
-        995,
-        251,
-        303
-      ]
-    },
-    {
-      "id": "Plains_PlainsMovement_16",
-      "x": 1059,
-      "y": 1224,
-      "width": 353,
-      "height": 408,
-      "anchor": {
-        "x": 176,
-        "y": 396
-      },
-      "source_box_in_original": [
-        723,
-        983,
-        273,
-        315
-      ]
-    },
-    {
-      "id": "Plains_PlainsMovement_17",
-      "x": 0,
-      "y": 1632,
-      "width": 353,
-      "height": 408,
-      "anchor": {
-        "x": 176,
-        "y": 396
-      },
-      "source_box_in_original": [
-        1115,
-        1249,
-        274,
-        384
-      ]
-    },
-    {
-      "id": "Plains_PlainsMovement_18",
-      "x": 353,
-      "y": 1632,
-      "width": 353,
-      "height": 408,
-      "anchor": {
-        "x": 176,
-        "y": 396
-      },
-      "source_box_in_original": [
-        42,
-        1334,
-        294,
-        273
-      ]
-    },
-    {
-      "id": "Plains_PlainsMovement_19",
-      "x": 706,
-      "y": 1632,
-      "width": 353,
-      "height": 408,
-      "anchor": {
-        "x": 176,
-        "y": 396
-      },
-      "source_box_in_original": [
-        417,
-        1341,
-        298,
-        249
-      ]
-    },
-    {
-      "id": "Plains_PlainsMovement_20",
-      "x": 1059,
-      "y": 1632,
-      "width": 353,
-      "height": 408,
-      "anchor": {
-        "x": 176,
-        "y": 396
-      },
-      "source_box_in_original": [
-        750,
-        1301,
-        303,
-        357
+        982,
+        925,
+        241,
+        191
       ]
     }
   ]

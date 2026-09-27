@@ -1,210 +1,223 @@
 {
   "sheet": "Plains_ForestMovement_sheet.png",
-  "cell_width": 553,
-  "cell_height": 490,
+  "cell_width": 348,
+  "cell_height": 264,
+  "notes": "Packed by Art/tools/pack_sheets.py from Art/originals/, the artist's sheets as supplied, with each picture's grey drop shadow made black and see-through. Do not edit by hand: replace the original and run the tool again.",
   "sprites": [
     {
       "id": "Plains_ForestMovement_01",
       "x": 0,
       "y": 0,
-      "width": 553,
-      "height": 490,
+      "width": 348,
+      "height": 264,
       "anchor": {
-        "x": 276,
-        "y": 478
+        "x": 174,
+        "y": 249
       },
+      "original": "Plains_ForestMovement.png",
       "source_box_in_original": [
-        178,
-        48,
-        529,
-        362
+        27,
+        175,
+        273,
+        238
       ]
     },
     {
       "id": "Plains_ForestMovement_02",
-      "x": 553,
+      "x": 348,
       "y": 0,
-      "width": 553,
-      "height": 490,
+      "width": 348,
+      "height": 264,
       "anchor": {
-        "x": 276,
-        "y": 478
+        "x": 174,
+        "y": 250
       },
+      "original": "Plains_ForestMovement.png",
       "source_box_in_original": [
-        826,
-        48,
-        254,
-        354
+        331,
+        200,
+        299,
+        202
       ]
     },
     {
       "id": "Plains_ForestMovement_03",
-      "x": 1106,
+      "x": 696,
       "y": 0,
-      "width": 553,
-      "height": 490,
+      "width": 348,
+      "height": 264,
       "anchor": {
-        "x": 276,
-        "y": 478
+        "x": 174,
+        "y": 250
       },
+      "original": "Plains_ForestMovement.png",
       "source_box_in_original": [
-        1191,
-        43,
-        368,
-        360
+        662,
+        201,
+        265,
+        215
       ]
     },
     {
       "id": "Plains_ForestMovement_04",
-      "x": 1659,
+      "x": 1044,
       "y": 0,
-      "width": 553,
-      "height": 490,
+      "width": 348,
+      "height": 264,
       "anchor": {
-        "x": 276,
-        "y": 478
+        "x": 174,
+        "y": 251
       },
+      "original": "Plains_ForestMovement.png",
       "source_box_in_original": [
-        213,
-        461,
-        258,
-        328
+        960,
+        210,
+        287,
+        202
       ]
     },
     {
       "id": "Plains_ForestMovement_05",
       "x": 0,
-      "y": 490,
-      "width": 553,
-      "height": 490,
+      "y": 264,
+      "width": 348,
+      "height": 264,
       "anchor": {
-        "x": 276,
-        "y": 478
+        "x": 174,
+        "y": 251
       },
+      "original": "Plains_ForestMovement.png",
       "source_box_in_original": [
-        542,
-        429,
-        519,
-        371
+        20,
+        548,
+        303,
+        240
       ]
     },
     {
       "id": "Plains_ForestMovement_06",
-      "x": 553,
-      "y": 490,
-      "width": 553,
-      "height": 490,
+      "x": 348,
+      "y": 264,
+      "width": 348,
+      "height": 264,
       "anchor": {
-        "x": 276,
-        "y": 478
+        "x": 174,
+        "y": 251
       },
+      "original": "Plains_ForestMovement.png",
       "source_box_in_original": [
-        1148,
-        425,
-        346,
-        354
+        338,
+        563,
+        303,
+        224
       ]
     },
     {
       "id": "Plains_ForestMovement_07",
-      "x": 1106,
-      "y": 490,
-      "width": 553,
-      "height": 490,
+      "x": 696,
+      "y": 264,
+      "width": 348,
+      "height": 264,
       "anchor": {
-        "x": 276,
-        "y": 478
+        "x": 174,
+        "y": 247
       },
+      "original": "Plains_ForestMovement.png",
       "source_box_in_original": [
-        189,
-        836,
-        322,
-        328
+        678,
+        554,
+        218,
+        230
       ]
     },
     {
       "id": "Plains_ForestMovement_08",
-      "x": 1659,
-      "y": 490,
-      "width": 553,
-      "height": 490,
+      "x": 1044,
+      "y": 264,
+      "width": 348,
+      "height": 264,
       "anchor": {
-        "x": 276,
-        "y": 478
+        "x": 174,
+        "y": 247
       },
+      "original": "Plains_ForestMovement.png",
       "source_box_in_original": [
-        586,
-        836,
-        416,
-        399
+        955,
+        557,
+        296,
+        225
       ]
     },
     {
       "id": "Plains_ForestMovement_09",
       "x": 0,
-      "y": 980,
-      "width": 553,
-      "height": 490,
+      "y": 528,
+      "width": 348,
+      "height": 264,
       "anchor": {
-        "x": 276,
-        "y": 478
+        "x": 174,
+        "y": 248
       },
+      "original": "Plains_ForestMovement.png",
       "source_box_in_original": [
-        1091,
-        831,
-        359,
-        363
+        40,
+        958,
+        255,
+        184
       ]
     },
     {
       "id": "Plains_ForestMovement_10",
-      "x": 553,
-      "y": 980,
-      "width": 553,
-      "height": 490,
+      "x": 348,
+      "y": 528,
+      "width": 348,
+      "height": 264,
       "anchor": {
-        "x": 276,
-        "y": 478
+        "x": 174,
+        "y": 248
       },
+      "original": "Plains_ForestMovement.png",
       "source_box_in_original": [
-        209,
-        1229,
-        342,
-        439
+        339,
+        955,
+        284,
+        191
       ]
     },
     {
       "id": "Plains_ForestMovement_11",
-      "x": 1106,
-      "y": 980,
-      "width": 553,
-      "height": 490,
+      "x": 696,
+      "y": 528,
+      "width": 348,
+      "height": 264,
       "anchor": {
-        "x": 276,
-        "y": 478
+        "x": 174,
+        "y": 248
       },
+      "original": "Plains_ForestMovement.png",
       "source_box_in_original": [
-        680,
-        1252,
-        364,
-        428
+        643,
+        933,
+        288,
+        216
       ]
     },
     {
       "id": "Plains_ForestMovement_12",
-      "x": 1659,
-      "y": 980,
-      "width": 553,
-      "height": 490,
+      "x": 1044,
+      "y": 528,
+      "width": 348,
+      "height": 264,
       "anchor": {
-        "x": 276,
-        "y": 478
+        "x": 174,
+        "y": 248
       },
+      "original": "Plains_ForestMovement.png",
       "source_box_in_original": [
-        1136,
-        1223,
-        418,
-        466
+        965,
+        936,
+        287,
+        210
       ]
     }
   ]
