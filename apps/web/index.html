@@ -185,6 +185,35 @@
         background: var(--accent-soft);
         color: var(--accent);
       }
+      /* [Q71, 221] Rules is a link that looks like the bar's buttons. */
+      a.btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        box-sizing: border-box;
+        color: inherit;
+        text-decoration: none;
+      }
+      /* [Q71, 221 and 228 to 230] Before a game starts, "Rules" in the style
+         of the word Adventure, at the right end of the bar. */
+      .rules-title {
+        order: 1;
+        margin-left: auto;
+        font: 400 22px/1 var(--display);
+        letter-spacing: 0.01em;
+        color: inherit;
+        text-decoration: none;
+      }
+      /* [Q58, 84 and Q71, 220] The bar's buttons; on a phone held upright
+         they share one Menu button, whose list opens under the top bar at its
+         right. Elsewhere they sit in the bar and the Menu button is not shown. */
+      .menu-toggle {
+        display: none;
+      }
+      .bar-menu,
+      .bar-actions {
+        display: contents;
+      }
       .stage {
         position: relative;
         min-height: 0;
@@ -701,7 +730,11 @@
           padding: 6px 10px;
           gap: 6px 10px;
         }
-        .bar h1 {
+        .bar {
+          position: relative;
+        }
+        .bar h1,
+        .rules-title {
           font-size: 19px;
         }
         /* [Q58, 83] The game's name and seed share the first row, cut short. */
@@ -713,6 +746,29 @@
         }
         #toggle-log {
           display: inline-block;
+        }
+        .menu-toggle {
+          display: inline-block;
+        }
+        .bar-menu {
+          display: block;
+        }
+        .bar-actions {
+          display: none;
+        }
+        .bar-menu.open .bar-actions {
+          position: absolute;
+          z-index: 6;
+          top: calc(100% + 6px);
+          right: 10px;
+          display: grid;
+          gap: 8px;
+          min-width: 160px;
+          padding: 10px;
+          border: 1px solid var(--line);
+          border-radius: 8px;
+          background: var(--panel);
+          box-shadow: var(--shadow);
         }
         .game {
           grid-template-columns: minmax(0, 1fr);
@@ -851,6 +907,13 @@
           top: 8px;
         }
       }
+      /* [Q71, 228 and 230] Where the bar before a game starts takes more
+         than one row, "Rules" stays on the title's row, at its right end. */
+      @media (max-width: 469px) {
+        .rules-title.beside-title {
+          order: 0;
+        }
+      }
       /* [Q58, 82] Wide enough, the line sits to the right of the buttons. */
       @media (min-width: 560px) and (max-width: 899px) {
         .controls {
@@ -898,6 +961,14 @@
         .controls > .thinking {
           grid-column: auto;
           grid-row: auto;
+        }
+        .menu-toggle {
+          display: none;
+        }
+        .bar-menu,
+        .bar-actions,
+        .bar-menu.open .bar-actions {
+          display: contents;
         }
       }
     </style>

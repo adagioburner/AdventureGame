@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import type { GameId } from '@adventure/core';
 import type { GameSummary } from '@adventure/protocol';
+import { BarMenu } from '../page/BarMenu.tsx';
+import { RulesButton } from '../page/Rules.tsx';
 import { socketUrl, type Login } from './api.ts';
 import { sentence } from '../setup/text.ts';
 import { endsLabel, useMinuteClock } from './ends.ts';
@@ -70,12 +72,15 @@ export function GameListScreen({ login, onOpen, onLogOut, onRefused }: GameListS
         <span className="seed-shown">
           Logged in as <b>{me.displayName}</b>
         </span>
-        <button className="btn" type="button" disabled={creating || channel.status !== 'open'} onClick={create}>
-          New game
-        </button>
-        <button className="btn" type="button" onClick={onLogOut}>
-          Log out
-        </button>
+        <BarMenu>
+          <button className="btn" type="button" disabled={creating || channel.status !== 'open'} onClick={create}>
+            New game
+          </button>
+          <button className="btn" type="button" onClick={onLogOut}>
+            Log out
+          </button>
+          <RulesButton />
+        </BarMenu>
       </header>
       <main className="site-page">
         {problem === null ? null : (
