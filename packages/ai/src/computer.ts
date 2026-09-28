@@ -3,8 +3,8 @@ import type { DiceSource, GameState, PlayerId, Rng, TurnAction } from '@adventur
 import { goldExhaustedTermination, restWhenStuck, turnCapTermination } from '@adventure/sim';
 import { firstTurnOf, searchTree, startSearch, type SearchResult } from './mcts.ts';
 import { simulatedRolloutEvaluator } from './policies/evaluators.ts';
-import { closestPoiRolloutPolicy } from './policies/rollout.ts';
-import { sortedPoiEnumerator, squareRootWidening, uctTreePolicy } from './policies/tree.ts';
+import { attractivePoiRolloutPolicy } from './policies/rollout.ts';
+import { attractivePoiEnumerator, uctTreePolicy } from './policies/tree.ts';
 import type { MctsOptions } from './types.ts';
 
 /** What a computer seat needs besides the position. */
@@ -20,9 +20,9 @@ export interface ComputerSettings {
 
 /**
  * §9's computer player with the v1 setup: UCT with `MCTS_EXPLORATION_CONSTANT`
- * over every unclaimed POI it could take plus rest, opened ⌈√n⌉ at a time in
- * Q62's order (Q64), the §9 rollout policy, and the simulated evaluation (Q18:
- * v1 uses it; estimated and hybrid are there to experiment with). The games it plays in its head
+ * over the `ATTRACTIVE_POIS_PER_KIND` most attractive POIs of each kind plus
+ * rest (Q65), the §9 rollout policy, and the simulated evaluation (Q18: v1
+ * uses it; estimated and hybrid are there to experiment with). The games it plays in its head
  * rest when stuck (Q43) and stop when the gold is gone, the game is won, or
  * `SIMULATION_TURN_CAP` turns have passed since `state` (Q44).
  */
@@ -34,9 +34,8 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
     subject,
     config,
     treePolicy: uctTreePolicy(config.ai.MCTS_EXPLORATION_CONSTANT),
-    actions: sortedPoiEnumerator(config),
-    widening: squareRootWidening(),
-    rollout: closestPoiRolloutPolicy({ config, termination, restRule }),
+    actions: attractivePoiEnumerator(config),
+    rollout: attractivePoiRolloutPolicy({ config, termination, restRule }),
     evaluator: simulatedRolloutEvaluator(),
     termination,
     restRule,

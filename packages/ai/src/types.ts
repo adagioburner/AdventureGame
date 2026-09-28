@@ -5,8 +5,8 @@ import type { PoiCandidate, RestRule, RolloutCursor, RolloutTermination } from '
 /**
  * One branch of the search tree.
  *
- * [SOURCE §9, review] Branches are POI targets, every unclaimed one the
- * player could take, plus resting, which is always a branch (Q62).
+ * [SOURCE §9, review] Branches are POI targets, the most attractive of each
+ * kind, plus resting, which is always a branch (Q65).
  */
 export type MctsBranch =
   | { readonly kind: 'target'; readonly target: PoiCandidate }
@@ -66,54 +66,32 @@ export interface TreePolicy {
 }
 
 /**
- * Which branches the tree has at a node, and which untried one it tries first.
+ * Which branches the tree expands at a node.
  *
- * [SOURCE §9, review] Andrei, 2026-09-28 (Q62), replacing §12.2's pruning to
- * the `CLOSE_CANDIDATE_COUNT` closest: "We will not prune any move choices.
- * Instead, we will rely on MCTS's internal balancing mechanisms between
- * exploration and deep search. We, however, will need to sort the move
- * candidates at each tree node of MCTS to make sure we first explore the most
- * promising ones."
+ * [SOURCE §12.2, chat] "These POIs to explore will be the closest at the time
+ * (among those that have not been claimed at that point of time in the
+ * game)." So a branch is a *POI target*, recomputed at each node against that
+ * node's own game state, and not a fixed list from the root.
  *
- * So `enumerate` lists every branch there is in the position — recomputed at
- * each node against that node's own game state, since the tree is open-loop —
- * and `firstToTry` says which of the ones this node has not tried yet comes
- * first. The search always expands that one, where it used to draw one at
- * random, and `Widening` says when (Q64); everything after expansion is UCT as
- * before.
+ * [SOURCE §9, review] Which POIs, since Q65: the `ATTRACTIVE_POIS_PER_KIND`
+ * most attractive of each kind, plus rest. The same set is what a player in
+ * the rollout picks from, so the tree and the rollout share one kernel,
+ * `attractiveTargets` in `@adventure/sim`; only what they do with it differs —
+ * the tree takes every target as a branch, the rollout picks one uniformly.
+ *
+ * `rng` settles ties for the last place of a kind (157).
  */
 export interface ActionEnumerator {
   readonly name: string;
-  enumerate(state: GameState, subject: PlayerId): readonly MctsBranch[];
-  /** The first of `untried` in the order, ties broken with `rng`. `untried` is never empty. */
-  firstToTry(state: GameState, subject: PlayerId, untried: readonly MctsBranch[], rng: Rng): MctsBranch;
-}
-
-/**
- * How many branches a node may have opened so far: progressive widening.
- *
- * [SOURCE §9, review] Andrei, 2026-09-28 (Q64): with nothing pruned (Q62) a
- * node can have fifty branches or more, and trying each once before any twice
- * left the tree shallow and the order deciding only which came first. So a
- * node opens its branches one at a time in `ActionEnumerator.firstToTry`'s
- * order, as many as `openLimit` allows for the games that have passed through
- * it so far, and UCT shares the games among the open ones. A branch once
- * opened stays open (152), and when none of the open ones can be taken in the
- * position an iteration reached, the next one opens regardless (154).
- */
-export interface Widening {
-  readonly name: string;
-  /** The most branches a node with `visits` games through it may have opened; at least 1. */
-  openLimit(visits: number): number;
+  enumerate(state: GameState, subject: PlayerId, rng: Rng): readonly MctsBranch[];
 }
 
 /**
  * The simulation phase.
  *
- * [SOURCE §5, chat] Specified: "choose a random target among the
- * `CLOSE_CANDIDATE_COUNT` closest POIs, using the same weighted-terrain-cost
- * random-walk code as §5.1." Swappable anyway, since the designer expects to
- * experiment here.
+ * [SOURCE §9, review] Specified (Q65): each player "will choose randomly among
+ * the same set of POI" the tree branches over, worked out for that player.
+ * Swappable anyway, since the designer expects to experiment here.
  */
 export interface RolloutPolicy {
   readonly name: string;
@@ -151,7 +129,6 @@ export interface MctsOptions {
   readonly config: GameConfig;
   readonly treePolicy: TreePolicy;
   readonly actions: ActionEnumerator;
-  readonly widening: Widening;
   readonly rollout: RolloutPolicy;
   readonly evaluator: NodeEvaluator;
   /**

@@ -177,10 +177,28 @@ describe('routeTable', () => {
     }
   });
 
+  it('counts the steps onto each terrain along each route it gives', () => {
+    for (const seed of ['e', 'f']) {
+      const graph = jumble(seed, 60);
+      const table = routeTable(graph, config);
+      for (let from = 0; from < 60; from++) {
+        const steps = table.stepsFrom(n(from));
+        for (let to = 0; to < 60; to++) {
+          const route = table.path(n(from), n(to)) ?? [];
+          for (const terrain of ['plains', 'forest', 'mountain'] as const) {
+            const counted = route.filter((node) => graph.nodes[node]?.terrain === terrain).length;
+            expect(steps[terrain][to]).toBe(counted);
+          }
+        }
+      }
+    }
+  });
+
   it('searches from a node once, and keeps one table per map', () => {
     const graph = jumble('d', 20);
     const table = routeTable(graph, config);
     expect(routeTable(graph, config)).toBe(table);
     expect(table.from(n(3))).toBe(table.from(n(3)));
+    expect(table.stepsFrom(n(3))).toBe(table.stepsFrom(n(3)));
   });
 });

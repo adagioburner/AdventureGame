@@ -15,16 +15,18 @@ import {
   type Rng,
   type TurnAction,
 } from '@adventure/core';
-import { chooseWalkTarget } from './candidates.ts';
+import { atRandom, attractiveTargets } from './targets.ts';
 
 /**
- * [SOURCE §5, chat] §9's rollout policy: "choose a random target among the
+ * [SOURCE §5, chat] §9's rollout policy was "choose a random target among the
  * `CLOSE_CANDIDATE_COUNT` closest POIs, using the same weighted-terrain-cost
  * random-walk code as §5.1."
  *
- * The shared part is `candidates.ts` (rank by weighted cost, pick uniformly
- * among the K closest). What a rollout does differently is advance through the
- * *real* rules: a chosen target is walked toward with `applyAction`,
+ * [SOURCE §9, review] Since Q65 the choice is "randomly among the same set of
+ * POI" the search branches over: the `ATTRACTIVE_POIS_PER_KIND` most
+ * attractive of each kind, worked out for the player choosing, from where it
+ * stands with its own skills (`attractiveTargets`). The rollout advances
+ * through the *real* rules: a chosen target is walked toward with `applyAction`,
  * respecting movement allowance and stamina (§7), triggering automatic POI
  * interaction and guard rolls (§8) on arrival, and taking as many turns as
  * that needs.
@@ -199,10 +201,11 @@ export type MacroAdvanceOutcome =
  * Play the active seat's turn under the rollout policy, and return the cursor
  * after it.
  *
- * A seat with no commitment picks one uniformly among the K closest unclaimed
- * POIs (`chooseWalkTarget`, shared with §5.1). After the turn, a commitment
- * lapses for whoever has arrived at theirs and for anyone whose target someone
- * has just claimed; everyone else keeps theirs.
+ * A seat with no commitment picks one uniformly among its `attractiveTargets`
+ * (Q65). When it has none, because all that is left is stamina or gold it
+ * cannot win, it rests and picks again next turn (164). After the turn, a
+ * commitment lapses for whoever has arrived at theirs and for anyone whose
+ * target someone has just claimed; everyone else keeps theirs.
  */
 export function playRolloutTurn(cursor: RolloutCursor, options: RolloutOptions): RolloutCursor {
   const state = cursor.state;
@@ -211,13 +214,12 @@ export function playRolloutTurn(cursor: RolloutCursor, options: RolloutOptions):
 
   let target = cursor.targets[index] ?? null;
   if (target === null) {
-    const graph = state.map.graph;
-    const routes = routeTable(graph, options.config);
-    const choice = chooseWalkTarget(graph, player.position, unclaimedPoiNodes(state), options.config, options.rng, routes);
-    // No unclaimed POI means no unclaimed gold, which every termination stops
-    // on first; reaching here is a caller bug, not a position.
-    if (choice === null) throw new RangeError('a rollout turn with no unclaimed POI left to head for');
-    target = choice.node;
+    const choices = attractiveTargets(state, player.id, options.config, atRandom(options.rng));
+    if (choices.length === 0) {
+      const rested = applyAction(state, { kind: 'rest', player: player.id }, options.dice).state;
+      return { state: rested, subject: cursor.subject, targets: cursor.targets };
+    }
+    target = options.rng.pick(choices).node;
   }
 
   const action = turnTowards(state, target, options.restRule);

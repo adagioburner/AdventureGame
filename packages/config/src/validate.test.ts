@@ -78,11 +78,20 @@ describe('validateRuleset', () => {
   });
 
   it('rejects a CLOSE_CANDIDATE_COUNT below 1', () => {
-    // Both callers of `closestPoiCandidates` share this K, so a zero here
-    // would silently leave the walk and the rollout with no targets at all.
+    // The remoteness walk's K, so a zero here would silently leave the walk
+    // with no targets at all.
     const ruleset = clone();
     (ruleset.config.balancing as { CLOSE_CANDIDATE_COUNT: number }).CLOSE_CANDIDATE_COUNT = 0;
     expect(() => validateRuleset(ruleset)).toThrow(/CLOSE_CANDIDATE_COUNT must be at least 1/);
+  });
+
+  it('rejects an ATTRACTIVE_POIS_PER_KIND below 1 or fractional', () => {
+    // With none kept the computer's search could only rest.
+    for (const bad of [0, 1.5]) {
+      const ruleset = clone();
+      (ruleset.config.ai as { ATTRACTIVE_POIS_PER_KIND: number }).ATTRACTIVE_POIS_PER_KIND = bad;
+      expect(() => validateRuleset(ruleset)).toThrow(/ATTRACTIVE_POIS_PER_KIND must be an integer of at least 1/);
+    }
   });
 
   it('rejects a negative REMOTENESS_WEIGHT_FOR_DISTRIBUTION', () => {

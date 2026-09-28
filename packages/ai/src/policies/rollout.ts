@@ -3,24 +3,24 @@ import type { DiceSource, Rng } from '@adventure/core';
 import { runRollout, type RestRule, type RolloutCursor, type RolloutTermination } from '@adventure/sim';
 import type { RolloutPolicy } from '../types.ts';
 
-export interface ClosestPoiRolloutSettings {
+export interface AttractivePoiRolloutSettings {
   readonly config: GameConfig;
   readonly termination: RolloutTermination;
   readonly restRule: RestRule;
 }
 
 /**
- * [SOURCE §5, chat] The specified rollout policy: "choose a random target among
- * the `CLOSE_CANDIDATE_COUNT` closest POIs, using the same
- * weighted-terrain-cost random-walk code as §5.1".
+ * [SOURCE §9, review] The specified rollout policy (Q65): each player "will
+ * choose randomly among the same set of POI" the search branches over, the
+ * `ATTRACTIVE_POIS_PER_KIND` most attractive of each kind for that player.
  *
  * The body is a thin wrapper over `@adventure/sim`'s `runRollout`; the target
- * choosing itself is `chooseWalkTarget`, shared verbatim with remoteness
- * scoring. Nothing is reimplemented here.
+ * choosing itself is `attractiveTargets`, shared verbatim with the search
+ * tree. Nothing is reimplemented here.
  */
-export function closestPoiRolloutPolicy(settings: ClosestPoiRolloutSettings): RolloutPolicy {
+export function attractivePoiRolloutPolicy(settings: AttractivePoiRolloutSettings): RolloutPolicy {
   return {
-    name: 'closest-poi-random',
+    name: 'attractive-poi-random',
     run(from: RolloutCursor, rng: Rng, dice: DiceSource): RolloutCursor {
       return runRollout(from, { ...settings, rng, dice });
     },

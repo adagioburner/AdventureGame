@@ -8,7 +8,6 @@ import {
   fixtureMap,
   n,
   player,
-  withPosition,
   withStats,
 } from '../../core/src/rules/scenario.fixture.ts';
 import { search, searchTree, startSearch } from './mcts.ts';
@@ -17,8 +16,8 @@ import {
   hybridGoldAndSkillsEvaluator,
   simulatedRolloutEvaluator,
 } from './policies/evaluators.ts';
-import { closestPoiRolloutPolicy } from './policies/rollout.ts';
-import { journeyTo, noWidening, orderKey, sortedPoiEnumerator, squareRootWidening, uctTreePolicy } from './policies/tree.ts';
+import { attractivePoiRolloutPolicy } from './policies/rollout.ts';
+import { attractivePoiEnumerator, uctTreePolicy } from './policies/tree.ts';
 import type { MctsBranch, MctsOptions } from './types.ts';
 
 const restRule = restWhenStuck();
@@ -65,9 +64,8 @@ function optionsFor(state: GameState, overrides: Partial<MctsOptions> = {}): Mct
     subject: state.players[state.turn.activeSeat - 1]?.id ?? player('one'),
     config,
     treePolicy: uctTreePolicy(config.ai.MCTS_EXPLORATION_CONSTANT),
-    actions: sortedPoiEnumerator(config),
-    widening: squareRootWidening(),
-    rollout: closestPoiRolloutPolicy({ config, termination, restRule }),
+    actions: attractivePoiEnumerator(config),
+    rollout: attractivePoiRolloutPolicy({ config, termination, restRule }),
     evaluator: simulatedRolloutEvaluator(),
     termination,
     restRule,
@@ -97,163 +95,64 @@ const strongGuard = fixtureMap({
   ],
 });
 
-describe('sortedPoiEnumerator', () => {
-  const enumerator = sortedPoiEnumerator(DEFAULT_GAME_CONFIG);
+describe('attractivePoiEnumerator', () => {
   const targetsOf = (branches: readonly MctsBranch[]) =>
-    branches.flatMap((branch) => (branch.kind === 'target' ? [branch.target.node] : []));
-  /** Every branch of `state` in the order `firstToTry` takes them. */
-  const inOrder = (state: GameState, seed = 'order'): MctsBranch[] => {
-    const rng = createRng(seed);
-    let untried = [...enumerator.enumerate(state, player('one'))];
-    const order: MctsBranch[] = [];
-    while (untried.length > 0) {
-      const first = enumerator.firstToTry(state, player('one'), untried, rng);
-      order.push(first);
-      untried = untried.filter((branch) => branch !== first);
-    }
-    return order;
-  };
-  const label = (branch: MctsBranch) => (branch.kind === 'rest' ? 'rest' : branch.target.node);
+    branches.flatMap((branch) => (branch.kind === 'target' ? [branch.target.node] : [])).sort((a, b) => a - b);
+  const enumerate = (state: GameState, config = DEFAULT_GAME_CONFIG, subject = player('one')) =>
+    attractivePoiEnumerator(config).enumerate(state, subject, createRng('enumerate'));
 
-  it('prunes nothing: every unclaimed POI, and rest even when every POI is in reach', () => {
+  it('branches over the most attractive POIs of each kind, never stamina, and rest always (Q65)', () => {
     const rich = withStats(fixtureGame(star, 0), player('one'), { stamina: 30 });
-    const branches = enumerator.enumerate(rich, player('one'));
-    expect(targetsOf(branches).sort((a, b) => a - b)).toEqual([n(1), n(2), n(3), n(4), n(5), n(7)]);
+    const branches = enumerate(rich);
+    expect(targetsOf(branches)).toEqual([n(1), n(2), n(3), n(5), n(7)]);
     expect(branches.filter((branch) => branch.kind === 'rest')).toHaveLength(1);
+
+    // One of a kind: gold 2 on 1 at 6 (3 a gold) beats gold 3 on 7 at 10
+    // won on a 5 or a 6 (10 a gold).
+    const one = { ...DEFAULT_GAME_CONFIG, ai: { ...DEFAULT_GAME_CONFIG.ai, ATTRACTIVE_POIS_PER_KIND: 1 } };
+    expect(targetsOf(enumerate(rich, one))).toEqual([n(1), n(2), n(3), n(5)]);
   });
 
   it('branches only over unclaimed POIs, recomputed at the state given', () => {
     const state = withStats(fixtureGame(star, 0), player('one'), { stamina: 30 });
     const took = applyAction(state, { kind: 'move', player: player('one'), path: [n(1)] }, createDiceSource(createRng('x'), DEFAULT_GAME_CONFIG)).state;
-    const targets = targetsOf(enumerator.enumerate(took, player('two')));
+    const targets = targetsOf(enumerate(took, DEFAULT_GAME_CONFIG, player('two')));
     expect(targets).not.toContain(n(1));
     expect(targets).toContain(n(7));
+  });
+
+  it('settles a tie the same way at every visit to a position, and at random between searches', () => {
+    // Four gold stacks of 1, each one plains step from 0: all tied.
+    const ring = fixtureMap({
+      terrains: ['plains', 'plains', 'plains', 'plains', 'plains'],
+      edges: [
+        [0, 1],
+        [0, 2],
+        [0, 3],
+        [0, 4],
+      ],
+      pois: [1, 2, 3, 4].map((node) => ({ node, kind: 'gold' as const, units: 1, guard: null })),
+    });
+    const state = fixtureGame(ring, 0);
+    const kept = new Set<string>();
+    for (let search = 0; search < 20; search++) {
+      const enumerator = attractivePoiEnumerator(DEFAULT_GAME_CONFIG);
+      const rng = createRng(`search-${search}`);
+      const first = targetsOf(enumerator.enumerate(state, player('one'), rng));
+      expect(first).toHaveLength(2);
+      for (let visit = 0; visit < 10; visit++) expect(targetsOf(enumerator.enumerate(state, player('one'), rng))).toEqual(first);
+      kept.add(first.join());
+    }
+    expect(kept.size).toBeGreaterThan(1);
   });
 
   it('leaves out gold no roll can win, and keeps it once one roll can', () => {
     // Guard 8, fighting 1: a 6 makes 7, not more than 8.
     const hopeless = withStats(fixtureGame(strongGuard, 0), player('one'), { stamina: 30, fighting: 1 });
-    expect(targetsOf(enumerator.enumerate(hopeless, player('one')))).toEqual([n(2)]);
+    expect(targetsOf(enumerate(hopeless))).toEqual([n(2)]);
     // Fighting 3: a 6 makes 9.
     const onASix = withStats(hopeless, player('one'), { fighting: 3 });
-    expect(targetsOf(enumerator.enumerate(onASix, player('one')))).toEqual([n(2), n(7)]);
-  });
-
-  it('puts fewer turns first, then less stamina, then more units, and rest after every POI reached this turn', () => {
-    // No skills, stamina 30: every plains POI is one turn and 1 stamina; the
-    // forest gold is one turn and 5. Among the plains ones the stack of 3
-    // stamina leads, then 2 gold, then the three single units in any order.
-    const state = withStats(fixtureGame(star, 0), player('one'), { stamina: 30 });
-    const order = inOrder(state).map(label);
-    expect(order.slice(0, 2)).toEqual([n(4), n(1)]);
-    expect([...order.slice(2, 5)].sort()).toEqual([n(2), n(3), n(5)].sort());
-    expect(order.slice(5)).toEqual([n(7), 'rest']);
-  });
-
-  it('puts rest between the POIs reached this turn and those that take longer', () => {
-    // Stamina 3: the plains POIs are still one turn; the forest gold needs a
-    // rest on the way, three turns.
-    const state = withStats(fixtureGame(star, 0), player('one'), { stamina: 3 });
-    expect(inOrder(state).map(label).slice(5)).toEqual(['rest', n(7)]);
-  });
-
-  it('counts a guarded reward by the share of rolls that win it', () => {
-    // Guard 4 and fighting 0: a 5 or a 6, two outcomes of six, so 3 gold
-    // counts as 3 × 2 against a single unguarded unit's 1 × 6.
-    const state = withStats(fixtureGame(star, 5), player('one'), { stamina: 30, forest_move: 2 });
-    expect(orderKey(state, player('one'), { kind: 'target', target: { node: n(7), cost: 4 } }, DEFAULT_GAME_CONFIG)).toEqual({
-      turns: 1,
-      stamina: 0,
-      units: 6,
-    });
-    // Node 5 is where it stands: reached this turn, for nothing, all six outcomes.
-    expect(orderKey(state, player('one'), { kind: 'target', target: { node: n(5), cost: 0 } }, DEFAULT_GAME_CONFIG)).toEqual({
-      turns: 1,
-      stamina: 0,
-      units: 6,
-    });
-  });
-
-  it('breaks exact ties at random', () => {
-    const state = withStats(fixtureGame(star, 0), player('one'), { stamina: 30 });
-    const tied = enumerator.enumerate(state, player('one')).filter((branch) => [2, 3, 5].includes(label(branch) as number));
-    const seen = new Set<unknown>();
-    for (let run = 0; run < 40; run++) seen.add(label(enumerator.firstToTry(state, player('one'), tied, createRng(`tie-${run}`))));
-    expect([...seen].sort()).toEqual([n(2), n(3), n(5)].sort());
-  });
-});
-
-describe('journeyTo', () => {
-  it('walks the route as the rules would, resting on a turn it cannot take a step', () => {
-    // Stamina 3 from node 0 to the forest gold: plains 1 and forest 2 on the
-    // first turn, nothing left for the last forest step on the second, so it
-    // rests (+5), and takes it on the third.
-    const state = withStats(fixtureGame(star, 0), player('one'), { stamina: 3 });
-    expect(journeyTo(state, player('one'), [n(5), n(6), n(7)], DEFAULT_GAME_CONFIG)).toEqual({ turns: 3, stamina: 5 });
-  });
-
-  it('spends free steps before stamina, every turn', () => {
-    const state = withStats(fixtureGame(star, 0), player('one'), { stamina: 0, plains_move: 1, forest_move: 1 });
-    // Turn 1: plains free, forest free, then 0 stamina for the second forest
-    // step. Turn 2: the forest allowance again.
-    expect(journeyTo(state, player('one'), [n(5), n(6), n(7)], DEFAULT_GAME_CONFIG)).toEqual({ turns: 2, stamina: 0 });
-  });
-
-  it('counts standing on the POI as reached this turn, for nothing', () => {
-    const state = fixtureGame(star, 7);
-    expect(journeyTo(state, player('one'), [], DEFAULT_GAME_CONFIG)).toEqual({ turns: 1, stamina: 0 });
-  });
-});
-
-describe('the search', () => {
-  const nodeOf = (branch: MctsBranch | null) => (branch?.kind === 'rest' ? 'rest' : branch?.target.node);
-
-  it('tries the branches at a node in the enumerator\'s order', () => {
-    const state = withStats(fixtureGame(star, 0), player('one'), { stamina: 30 });
-    // With every branch open, seven iterations try the root's seven once each, in order.
-    const { root } = searchTree(state, optionsFor(state, { timeBudgetMs: 7, widening: noWidening() }));
-    const tried = root.children.map((child) => nodeOf(child.action));
-    expect(tried.slice(0, 2)).toEqual([n(4), n(1)]);
-    expect(tried.slice(5)).toEqual([n(7), 'rest']);
-  });
-
-  it('opens ⌈√n⌉ branches at a node that has had n games, in order, and keeps them open', () => {
-    const state = withStats(fixtureGame(star, 0), player('one'), { stamina: 30 });
-    let opened: unknown[] = [];
-    for (const iterations of [1, 2, 3, 5, 6, 10, 17, 26, 37, 50]) {
-      const { root } = searchTree(state, optionsFor(state, { timeBudgetMs: iterations }));
-      // The root had iterations - 1 games before the last one, which may open one more.
-      expect(root.children.length).toBe(Math.min(7, Math.max(1, Math.ceil(Math.sqrt(iterations - 1)))));
-      const tried = root.children.map((child) => nodeOf(child.action));
-      expect(tried.slice(0, opened.length)).toEqual(opened);
-      opened = tried;
-    }
-    expect(opened.slice(0, 2)).toEqual([n(4), n(1)]);
-    expect(opened.slice(5)).toEqual([n(7), 'rest']);
-  });
-
-  it('opens the next branch when none of the open ones can be taken in this position (154)', () => {
-    const state = fixtureGame(star, 0);
-    // The first iteration offers only node 1; every later one offers 2 and 3
-    // but no longer 1, as if another seat had claimed it in that sample.
-    let calls = 0;
-    const target = (node: number): MctsBranch => ({ kind: 'target', target: { node: n(node), cost: 1 } });
-    const shifting: MctsOptions['actions'] = {
-      name: 'shifting',
-      enumerate: () => (calls++ === 0 ? [target(1)] : [target(2), target(3)]),
-      firstToTry: (_state, _subject, untried) => untried[0] as MctsBranch,
-    };
-    // After one game the root may have 1 branch open; its only one can't be
-    // taken, so the second iteration opens node 2 anyway.
-    const { root } = searchTree(state, optionsFor(state, { timeBudgetMs: 2, actions: shifting }));
-    expect(root.children.map((child) => nodeOf(child.action))).toEqual([n(1), n(2)]);
-  });
-
-  it('opens nothing more at a node until enough games have passed through it', () => {
-    expect([0, 1, 2, 4, 5, 81, 82, 2401, 2402].map((visits) => squareRootWidening().openLimit(visits))).toEqual([
-      1, 1, 2, 2, 3, 9, 10, 49, 50,
-    ]);
-    expect(noWidening().openLimit(0)).toBe(Number.POSITIVE_INFINITY);
+    expect(targetsOf(enumerate(onASix))).toEqual([n(2), n(7)]);
   });
 });
 

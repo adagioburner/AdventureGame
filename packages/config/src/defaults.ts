@@ -51,6 +51,7 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     // UCB1's textbook constant. See the tuning caveat on the field.
     MCTS_EXPLORATION_CONSTANT: Math.SQRT2,
     SIMULATION_TURN_CAP: 250,
+    ATTRACTIVE_POIS_PER_KIND: 2,
     THINKING_TIME_SECONDS: { min: 1, max: 60 },
   },
 };
