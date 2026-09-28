@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q64.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q65.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -49,7 +49,7 @@ changes what GDD §3 or §7.1 says.
 | # | Decision | What it changed in the code |
 |---|---|---|
 | §12.1 | [SOURCE, chat] "Durable Objects, with flexible architecture to swap it for something else if DO don't fit the bill. Everything else, i.e. map generation and player AI, runs on the game master's machine." | The DO becomes one adapter behind `SessionPorts`; `packages/session` still imports no transport, storage, socket or timer, so the swap stays an adapter. `MapService` and `AiService` keep their interfaces but the DO implements them as **round trips to the GM's client** (`gm.requestMapGeneration`/`gm.mapGenerated`, `gm.requestAiMove`/`gm.aiMove`). See `docs/STACK.md` for what the choice costs. |
-| §12.2 | [SOURCE, chat] Branches are the closest unclaimed POIs at that point in the game; "for everything else please use sensible defaults that are recommended for standard MCTS implementations." The K was `MCTS_NODE_EXPANSION_PRUNING = 10`, **superseded** — see Q19. | `closestUnclaimedPoiEnumerator()` and `uctTreePolicy()` ship as named, swappable defaults. The enumerator calls the same `closestPoiCandidates` as the remoteness walk and the rollout policy — three consumers, one kernel, one K. Sub-questions: Q16, Q17, Q19. *Since [Q62](#q62) the tree prunes nothing: `sortedPoiEnumerator()` branches over every unclaimed POI the player could take, plus rest, and tries them in Andrei's order.* |
+| §12.2 | [SOURCE, chat] Branches are the closest unclaimed POIs at that point in the game; "for everything else please use sensible defaults that are recommended for standard MCTS implementations." The K was `MCTS_NODE_EXPANSION_PRUNING = 10`, **superseded** — see Q19. | `closestUnclaimedPoiEnumerator()` and `uctTreePolicy()` ship as named, swappable defaults. The enumerator calls the same `closestPoiCandidates` as the remoteness walk and the rollout policy — three consumers, one kernel, one K. Sub-questions: Q16, Q17, Q19. *Since [Q65](#q65) the tree and the rollout both choose among the 2 most attractive unclaimed POIs of each kind, the tree plus rest: `attractivePoiEnumerator()`. Q62 and Q64 came between.* |
 | §12.3 | [SOURCE, chat] "The message board should be part of the game state and as such persistent along with the rest of the game. There is no difference between the message board state and other game state." | `BoardPost` moved into `@adventure/core`; `GameState.messageBoard` holds it; posting is a `PostMessageAction` through `applyAction`, the single writer. `MessageBoardStore` and the `board.posts` message are **deleted** — no store, no retention policy, no separate channel. |
 | §12.4 | [SOURCE, chat] "The game cannot proceed for a player that cannot establish connection with the game state server. If the game master disconnects there is no one to force the next turn so the game stalls as well." | `GameMasterAbsencePolicy` **deleted** — there is no fallback to configure. A GM-only request with no GM connected is answered `game_master_unavailable` and the game waits. |
 
@@ -456,9 +456,10 @@ slice is gone with it; the kernel's cap is the only cap.
 The rest branch is untouched: `MIN_REACHABLE_NODES_FOR_REST` = 3 still gates it
 (Q16), since it is a threshold on reachability rather than a second K.
 
-*Superseded by [Q62](#q62): the tree no longer prunes to any K, and resting is
-always a branch, so `MIN_REACHABLE_NODES_FOR_REST` is gone too.
-`CLOSE_CANDIDATE_COUNT` is now the rollout's and the remoteness walk's alone.*
+*Superseded by [Q62](#q62) and then [Q65](#q65): the tree and the rollout keep
+the `ATTRACTIVE_POIS_PER_KIND` most attractive POIs of each kind instead of any
+K closest, and resting is always a branch, so `MIN_REACHABLE_NODES_FOR_REST` is
+gone too. `CLOSE_CANDIDATE_COUNT` is now the remoteness walk's alone.*
 
 **Follow-up: the value moved.** [SOURCE §1.2, chat] With one constant now
 serving all three callers, the designer raised it from 5 to **10** — "we don't
@@ -1757,7 +1758,7 @@ The icon files are unchanged. The discs are drawn as the icons load, from
 the files, keep today's icons.
 
 <a id="q62"></a>
-### Q62. ~~Which POIs does the computer consider?~~ — **answered 2026-09-28: every one, tried in his order**
+### Q62. ~~Which POIs does the computer consider?~~ — **answered 2026-09-28: every one, tried in his order; replaced by [Q65](#q65)**
 
 On 27 September at 17:03 Andrei reported: *"in the endgame the AI player runs
 around aimlessly, grabbing skills they don't need, instead of going for the
@@ -1936,7 +1937,7 @@ browser lets a page make sound only once the person has tapped or typed on
 it, so nothing plays before the first tap.
 
 <a id="q64"></a>
-### Q64. ~~How does the search use the order?~~ — **answered 2026-09-28: it opens the choices a few at a time, in that order**
+### Q64. ~~How does the search use the order?~~ — **answered 2026-09-28: it opens the choices a few at a time, in that order; replaced by [Q65](#q65)**
 
 Q62's computer, measured against main's (the 10 closest choices, routes
 searched afresh), each side in both seats: at 1 second a move it won 5 of 16
@@ -1986,6 +1987,81 @@ gold on average to 17, playing about 1,650 games in its head per move to
 about 260; at 10 seconds it won 6 of 16, with 22 gold each on average, about
 28,900 games to 3,600. From the 36 positions above it went for gold once, as
 Q62's did.
+
+At 04:44 Andrei wondered whether √n was too restrictive. The faster
+alternative from 150, 2√n, measured the same way, won 6 of 16 at 1 second
+(21 gold to 22) and 7 of 16 at 10 seconds (20 to 23), worse than √n, so √n
+stayed. Both were then replaced by [Q65](#q65).
+
+<a id="q65"></a>
+### Q65. ~~How far is a POI, and which does the computer weigh?~~ — **answered 2026-09-28: by effective distance per unit, the 2 most attractive of each kind**
+
+At 06:36 Andrei replaced Q62 and Q64 with a new plan:
+
+> We are going to introduce a new way to measure distance. [...] precompute
+> and cache the number of steps required to reach each POI from each node over
+> each terrain separately. (We will allow ourselves to be sloppy here and
+> simply take the shortest path). Thus, we will have 3 numbers cached for each
+> (node, POI) pair. [...] stamina(1) = max(P - p, 0) + 2*max(F - f, 0) +
+> 3*max(M - m, 0) [...] stamina(2) = max(P- 2p, 0) + 2*max(F-2f, 0) +
+> 3*max(M-2m, 0) [...] We will count each turn as 5 stamina (this is out rest
+> stamina constant) and from that perspective define effective distance = min
+> 5n + stamina(n) [...] To determine how attractive a POI is for us, we take
+> the effective distance to it and divide it by the number of skills it gives.
+> If the POI is guarded, we also multiply this number by the probability to get
+> the reward in 1 turn. For pruning we will take 2 most attractive POI of each
+> kind (that will be up to 10 in total). The simulation will choose randomly
+> among the same set of POI.
+
+At 06:38: *"right, we need to divide the gold in the guarded POI by the
+probability to get it, not multiply. Multiplying doesn't make sense"*; at
+06:40: *"and more attractive means less effective distance divided by the
+number of skills"*. The open details went on a page as 155 to 163, and two
+more came up while building; his answers:
+
+155. **P, F and M are counted along the cheapest route by road cost**, the one
+     the computer walks, as recommended (06:44): *"both the shortest path and
+     the cheapest by road cost may be not optimal, depending on current skill
+     set. Still, we want to simplify here."*
+156. **Divided, not multiplied** (06:38): attractiveness is effective distance
+     ÷ (units × the chance one roll takes the reward), so 3 gold behind a guard
+     beaten a third of the time counts as 1 gold.
+157. **Ties are broken at random** (06:44).
+158. **Six kinds, 2 each, up to 12** (06:45): plains, forest and mountain speed,
+     combat, magic and gold. *"I stay corrected, there will be 12 of them."*
+     Stamina is never a target; gold is one kind whichever guard holds it.
+159. **The 2 is a §11 setting**, `ATTRACTIVE_POIS_PER_KIND` (06:48), *"though
+     it's much more discreet and harder to tune"*.
+160. **Resting is always a choice** in the search (06:49).
+161. **All choices open at once, as before Q64** (06:50): *"let us go back to
+     'all at once' as we had before - it seems to work pretty well, beating the
+     new algorithm we tried to intriduce"*. Read, and told him, as untried
+     choices tried at random, the way it worked before Q62.
+162. **The map generator is unchanged** (06:54): its walks have no skills, so
+     road cost stays their distance, and every seed gives the same map.
+163. **Pull request #23 is not merged as it was** (06:56): *"See if you can
+     save any work from it or it is easier to revert."* It was reworked: the
+     routes kept once per map, rest always a choice and gold no roll can win
+     left out stay; Q62's order and Q64's opening come out.
+164. **An imagined player with nothing to head for rests** and picks again next
+     turn (06:59), for when only stamina or gold it cannot win is left.
+165. **Gold no roll can win is never kept** (07:00), even when fewer than two
+     beatable gold POIs are left. At 06:59 he noted it drops out on its own:
+     *"its attractiveness will be the worst (we are effectively dividing by
+     zero here)"*; 165 settled the case where it would still rank second of its
+     kind.
+
+Built as ruled. `routeTable(...).stepsFrom` in `packages/core/src/path.ts`
+counts the steps onto each terrain along every kept route; `targets.ts` in
+`packages/sim` holds `effectiveDistance`, `attractiveness` and
+`attractiveTargets`; the search branches over those plus rest
+(`attractivePoiEnumerator` in `packages/ai/src/policies/tree.ts`), and each
+imagined player picks one of its own at random (`playRolloutTurn`). Each turn
+counts as `REST_STAMINA_GAIN`, the 1, 2 and 3 are `STAMINA_COST`, and n runs
+from 1, so standing on a POI is 5. So that a position the search comes back to
+keeps the same POIs, the search settles ties by one random order of the map's
+POIs drawn per move; a fresh draw at every visit would let every tied POI into
+the move being chosen by turns.
 
 ---
 

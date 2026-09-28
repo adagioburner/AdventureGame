@@ -1021,13 +1021,15 @@ is already written; the loop is not.
    only the **first turn** of the chosen branch; the session layer commits one
    turn at a time and the rest is re-derived next turn. Reachability is injected
    as `TurnReachability` because it needs `previewPath` from phase 2.
-   *Since Q62 (2026-09-28) the tree prunes nothing: branches are every unclaimed
-   POI the player could take plus rest, always, and untried ones are expanded
-   in Andrei's order (`sortedPoiEnumerator` in
-   `packages/ai/src/policies/tree.ts`). `TurnReachability` and
-   `MIN_REACHABLE_NODES_FOR_REST` are gone with the rest rule they served.
-   Since Q64 a node opens its branches ⌈√n⌉ at a time for n games through it
-   (`squareRootWidening`).*
+   *Since Q65 (2026-09-28) the branches, and the rollout's choices, are the
+   `ATTRACTIVE_POIS_PER_KIND` (2) most attractive unclaimed POIs of each of six
+   kinds for the player choosing, plus rest, always, for the tree
+   (`attractiveTargets` in `packages/sim/src/targets.ts`,
+   `attractivePoiEnumerator` in `packages/ai/src/policies/tree.ts`, and
+   `closestPoiRolloutPolicy` is now `attractivePoiRolloutPolicy`).
+   `TurnReachability` and `MIN_REACHABLE_NODES_FOR_REST` are gone with the rest
+   rule they served. Q62's sorted order and Q64's widening, the two plans
+   before it, were measured and dropped.*
 5. **Evaluators.** All three are written and v1 uses the simulated one, so this
    step is only wiring: `SearchOptions.evaluator` is injected with no default on
    purpose. Every evaluator returns a value in [0, 1], which is what makes

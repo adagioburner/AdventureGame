@@ -132,7 +132,7 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 [SOURCE §1.2] Computed via simulated random walks: start at a random plains position, repeatedly move to one of the `CLOSE_CANDIDATE_COUNT` closest unvisited POIs (chosen at random among them), until every POI has been visited once per walk. Distance for "closest" and for walk-segment lengths uses the same weighted terrain cost as movement: 1 plains / 2 forest / 3 mountain per step [SOURCE §1.2, chat: the one distance metric used throughout the design — also for the UI's shortest-path display, §7, and the AI's own POI targeting, §9]. Run `REMOTENESS_SIMULATION_RUNS` walks, normalize the resulting per-POI scores to **[0, 1]**.
 
-[SOURCE §1.2, chat] `CLOSE_CANDIDATE_COUNT` = **10**, raised from 5 once §9's MCTS tree began pruning to this same constant: "we don't want to risk pruning out good moves early on". Note it now sets the search's branching factor as well as this walk's candidate set, so it is no longer a remoteness-only knob — changing it moves generated maps and AI play together. [SOURCE §9, review] Since Q62 the search itself prunes nothing, so it now sets this walk's candidate set and the rollout's, not the tree's. `REMOTENESS_SIMULATION_RUNS` = **100** (expected to change if 100 proves too imprecise or too slow). This random-walk code is shared with the AI player's MCTS rollout policy (§9).
+[SOURCE §1.2, chat] `CLOSE_CANDIDATE_COUNT` = **10**, raised from 5 once §9's MCTS tree began pruning to this same constant: "we don't want to risk pruning out good moves early on". [SOURCE §9, review] Since Q65 the computer's search and the games it plays in its head choose among the most attractive POIs of each kind instead (§9), so this is a remoteness-only knob again: it sets this walk's candidate set and nothing else. `REMOTENESS_SIMULATION_RUNS` = **100** (expected to change if 100 proves too imprecise or too slow). This random-walk code was shared with the AI player's MCTS rollout policy (§9) until Q65.
 
 ### 5.2 Guard-strength / remoteness formula
 
@@ -228,7 +228,20 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 [SOURCE §5] Implemented via MCTS.
 
-[SOURCE §5, chat] Rollout/simulation policy: choose a random target among the `CLOSE_CANDIDATE_COUNT` closest POIs, using the same weighted-terrain-cost random-walk code as §5.1.
+[SOURCE §5, chat] Rollout/simulation policy: choose a random target among the `CLOSE_CANDIDATE_COUNT` closest POIs, using the same weighted-terrain-cost random-walk code as §5.1. *Superseded by Q65, below: the rollout picks among the same POIs the search weighs.*
+
+[SOURCE §9, review] **Which POIs the computer weighs** (Q65). Andrei, 2026-09-28, for the search and the games it plays in its head alike:
+
+- For every node and every POI, the steps on plains (P), forest (F) and mountains (M) are counted once per map and kept, along the cheapest route by road cost: "We will allow ourselves to be sloppy here and simply take the shortest path."
+- With the player's plains, forest and mountain speeds p, f and m, reaching the POI in n turns costs `stamina(n) = max(P − n·p, 0) + 2·max(F − n·f, 0) + 3·max(M − n·m, 0)`, the 1, 2 and 3 being `STAMINA_COST`.
+- "We will count each turn as 5 stamina (this is our rest stamina constant)": the **effective distance** is the least `5n + stamina(n)` over n = 1, 2, 3 and so on, `REST_STAMINA_GAIN` being the 5. Standing on the POI is 5. The stamina the player has on hand does not enter.
+- **Attractiveness** is the effective distance divided by the units the POI gives, and for a guarded POI also by the chance one roll wins it: "more attractive means less effective distance divided by the number of skills". An unguarded reward's chance is 1. Gold no roll can win is never kept, even when it is the only gold left.
+- "For pruning we will take 2 most attractive POI of each kind": the `ATTRACTIVE_POIS_PER_KIND` (2) most attractive unclaimed POIs of each of six kinds, plains, forest and mountain speed, combat, magic and gold, up to 12. Gold is one kind whichever guard holds it; stamina is never a target. Where fewer are left of a kind, all of them are kept; ties are broken at random.
+- At every decision point of the search these are worked out from that point's position and skills, and resting is always a choice besides them. All the choices are open at once, and an untried one is tried at random, as before Q64.
+- "The simulation will choose randomly among the same set of POI": in the games the computer plays in its head each player works out its own set, from where it stands with its own skills, and heads for a random one of it. With none left, when only stamina or gold it cannot win remains, it rests and picks again next turn.
+- The map generator is unchanged: its remoteness walks still head for one of the `CLOSE_CANDIDATE_COUNT` closest POIs (§5.1), and every seed gives the same map as before.
+
+This replaces Q62 (every POI a choice, tried in a sorted order) and Q64 (choices opened ⌈√n⌉ at a time). The routes worked out once per map stay, from Q62's "precompute and cache distances to make simulations run faster".
 
 [SOURCE §5, review] Backpropagated value: there are **three kinds of node evaluation**, and the tree-node evaluation function must be easily swappable between them.
 
@@ -250,17 +263,6 @@ value = gold/total_gold × progress + skills/total_skills × (1 − progress)
 At the opening almost no gold is claimed, so `progress` ≈ 0 and the skill term carries the value; by the end `progress` ≈ 1 and only gold counts. `skills` is the **sum of the player's skill levels** [SOURCE §5, chat], not a count of the skills they hold.
 
 > This supersedes the earlier form of the experiment, `average(gold after simulation, gold now + (number of skills) × balancing_constant, at the node being evaluated)` [SOURCE §5, chat]. Its two halves became the hybrid and the estimated evaluation respectively, and `balancing_constant` is gone — what it tuned by hand is now `progress`, which the game state supplies.
-
-[SOURCE §9, review] **The search prunes none of the computer's choices, and tries them in order.** Andrei, 2026-09-27: "We will not prune any move choices. Instead, we will rely on MCTS's internal balancing mechanisms between exploration and deep search. We, however, will need to sort the move candidates at each tree node of MCTS to make sure we first explore the most promising ones." At every decision point of the search, every unclaimed POI is a choice except a guarded one no roll can win, and resting is always a choice. Untried choices are tried in this order (Q62):
-
-1. Fewer turns to get there first, counted along the cheapest route as the rules would play it: each turn the free steps first, then stamina, resting a turn whenever it cannot take a single step. Resting comes after every POI reached this turn and before every POI that takes longer.
-2. Among equal turns, less stamina spent on the way first.
-3. Among equal stamina, more units of the reward first. A guarded reward's units are multiplied by the chance one roll of the die beats its guard.
-4. Exact ties at random.
-
-[SOURCE §9, review] **The choices open a few at a time, in that order** (Q64). Trying every choice once before any twice left the search too shallow for the order to matter, so a decision point that has had n imagined games through it has only the first ⌈√n⌉ choices in the order open: the first at its first game, the second at 2 games, the third at 5, the tenth at 82 and the fiftieth at 2,402. This holds at every decision point, the move being chosen included; UCT shares the games among the open choices, a choice once open stays open, and the next to open is the next in the order for the position that imagined game has reached. When the other players have claimed every open choice in that imagined game, the next one opens too.
-
-The games the computer plays in its head are unchanged: every player there heads for a random one of its `CLOSE_CANDIDATE_COUNT` closest POIs, as above. [SOURCE §9, review] Routes are worked out once per map and kept, "to make simulations run faster"; they are the same routes as before.
 
 [SOURCE §5, chat] Time budget per AI move: starting value **10 seconds**.
 
@@ -307,7 +309,7 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `REMOTENESS_WEIGHT` | 4 | tunable (play-test) — guard/remoteness balance, §5.2 |
 | `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` | 2 | tunable (play-test) — reward stacking, §4.3 |
 | `REWARD_SWAP_PASSES` | 5 | tunable (play-test) — reward/remoteness agreement, §4.3 step 4 [SOURCE §4.3, review] |
-| `CLOSE_CANDIDATE_COUNT` | 10 | tunable — one K for §5.1's walk and §9's rollout; §9's tree prunes nothing (Q62) |
+| `CLOSE_CANDIDATE_COUNT` | 10 | tunable — §5.1's walk; §9's tree and rollout use `ATTRACTIVE_POIS_PER_KIND` since Q65 |
 | `REMOTENESS_SIMULATION_RUNS` | 100 | tunable |
 | `STAMINA_COST` (plains/forest/mountain) | 1 / 2 / 3 | fixed |
 | `REST_STAMINA_GAIN` | 5 | tunable |
@@ -317,6 +319,7 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `GUARD_DIE` | d6 | fixed |
 | `MCTS_TIME_BUDGET_PER_MOVE` | 10 seconds | tunable; per computer seat on the setup screen, 1 to 60 seconds [SOURCE §5, review] |
 | `SIMULATION_TURN_CAP` | 250 turns | the most turns one simulated game runs, §9 [SOURCE §5, review] |
+| `ATTRACTIVE_POIS_PER_KIND` | 2 | tunable — the most attractive POIs of each kind the computer weighs, §9 [SOURCE §9, review] |
 | MCTS tree/selection policy, exploration constant | — | **OPEN**, unspecified |
 
 ---

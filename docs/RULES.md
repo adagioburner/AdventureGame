@@ -163,14 +163,29 @@ edge and one rollout leg mean the same thing and node values compose — and the
 tree stays shallow enough to search within the time budget, because a node is a
 real decision point rather than a single step.
 
-**Targets are the `CLOSE_CANDIDATE_COUNT` closest eligible POIs, picked
-uniformly at random.** Ranking is by the weighted terrain cost above, and the
-whole thing — rank, then pick uniformly among the nearest K — is written once in
-`packages/sim/src/candidates.ts` and shared by two callers: the remoteness
-walk (§5.1, over *unvisited* POIs) and the rollout policy (§9, over *unclaimed*
-POIs). They share the one K as well, so tuning `CLOSE_CANDIDATE_COUNT` moves
-both together; what differs is eligibility. The search tree used the same K
-until Q62, and now prunes nothing (below).
+**Targets are the most attractive POIs of each kind, picked uniformly at
+random (Q65).** For each unclaimed POI a player could head for, the steps onto
+plains, forest and mountains along the cheapest route (P, F, M) are counted
+once per map and kept (`routeTable(...).stepsFrom` in
+`packages/core/src/path.ts`). With the player's plains, forest and mountain
+speeds p, f, m, reaching it in n turns costs
+`stamina(n) = max(P − n·p, 0) + 2·max(F − n·f, 0) + 3·max(M − n·m, 0)`, and its
+**effective distance** is the least `5n + stamina(n)` over n ≥ 1, each turn
+counting as `REST_STAMINA_GAIN` (5); standing on it is 5, and the stamina on
+hand does not enter. Its **attractiveness** is the effective distance divided
+by its units, and by the chance one roll takes it when guarded; smaller is more
+attractive. A player keeps the `ATTRACTIVE_POIS_PER_KIND` (2) most attractive
+of each of six kinds — plains, forest and mountain speed, combat, magic, gold,
+so up to 12 — all of a kind when fewer are left, ties at random. Stamina is
+never a target, and gold no roll can win is never kept. A simulated player
+picks one of its own set uniformly; with none, it rests and picks again next
+turn (164). It is written once, in `packages/sim/src/targets.ts`
+(`attractiveTargets`), and the search tree branches over the same set.
+
+The remoteness walk (§5.1) keeps the older rule, the `CLOSE_CANDIDATE_COUNT`
+closest *unvisited* POIs picked uniformly, in `packages/sim/src/candidates.ts`;
+the rollout and the tree used it too until Q65. Its walks have no skills, so
+maps are unchanged.
 
 **A rollout stops when no gold rewards are left on the map.** That is the rule,
 and it is specifically *not* "all POIs claimed": a rollout ends with skill and
@@ -215,23 +230,13 @@ at a time through `applyAction`, and returns the most-visited child of the root
 open-loop: a tree node holds no game state, and every iteration replays the
 branches from the root, so the dice and the other seats' moves are drawn
 afresh each time and a branch is judged on all its outcomes rather than on the
-one its first visit happened to reach.
-
-**Nothing is pruned from the search's choices; they are tried in order (Q62).**
-Branches at a node, *recomputed against that node's state*, are every
-unclaimed POI except a guarded one no roll of the die can win, plus resting,
-which is always a branch. Where a node has untried branches, the one it tries
-next is the first in Andrei's order: fewer turns to get there first; then less
-stamina spent on the way; then more units of the reward, a guarded reward's
-units multiplied by the chance one roll beats its guard; exact ties at random.
-Turns and stamina are counted along the cheapest route as the rules would play
-it — free steps, then stamina, a rest on any turn that cannot take a step — and
-resting sorts after every POI reached this turn and before every POI that takes
-longer. A node does not open all its branches at once (Q64): one that has had
-n games through it has the first ⌈√n⌉ in that order open, the 10th at 82
-games and the 50th at 2,402, and UCT shares the games among the open ones. A
-branch once open stays open, and when none of the open ones can be taken in
-that iteration's position (another seat claimed them), the next opens (154). `search()` returns only the
+one its first visit happened to reach. Branches at a node are that same
+attractive set, *recomputed against that node's state* — the position and skills
+the player has there — plus rest, which is always a branch (Q65, 160). All are
+open at once and an untried one is drawn at random (161). A tie for a kind's
+last place is settled by one random order of the map's POIs drawn per search,
+so a position the search returns to, the root above all, keeps the same set.
+`search()` returns only the
 **first turn** of the chosen branch, since the session layer commits one turn at
 a time; the rest of the macro-action is re-derived next turn
 (`packages/ai/src/mcts.ts`, `packages/ai/src/policies/tree.ts`).
