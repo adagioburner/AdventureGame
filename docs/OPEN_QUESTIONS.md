@@ -1897,6 +1897,8 @@ the sensible option / 221: yes, except maybe the game start screen where the
 only place for it is next to the word "Adventure". It may be the same style as
 "Adventure" but on the right side / 222: no second row, we already ruled that
 out"*, and at 20:03: *"yes, 228-230 [...] the recommended options look good"*.
+At 20:05: *"223: lets try the new tab, I'll experiment with it on a real phone.
+224: sure, let's look at it separately"*.
 
 220. **A Menu on phones:** on a desktop, and on a phone turned sideways, Rules
      is at the right end of the top bar. On a phone held upright each bar's
@@ -1909,7 +1911,7 @@ out"*, and at 20:03: *"yes, 228-230 [...] the recommended options look good"*.
      bar.
 222. **No second row** on a phone.
 223. **A new tab,** in front of the game, which waits where it was in its own
-     tab.
+     tab, to be tried on a real phone.
 228. **The start screens** are those before a game starts: the setup of a game
      on this device, the login page, and an online game's setup for the game
      master and for players.
@@ -1921,7 +1923,7 @@ out"*, and at 20:03: *"yes, 228-230 [...] the recommended options look good"*.
 No bar is taller and no map smaller on any screen or width. The rulebook is
 Andrei's own Claude Docs page: other players can open it once he shares it.
 224, the online game master's bar that already takes two rows on a folded
-phone, is not part of this. The links are in `apps/web/src/page/Rules.tsx`,
+phone, is to be looked at separately. The links are in `apps/web/src/page/Rules.tsx`,
 the Menu in `apps/web/src/page/BarMenu.tsx`.
 
 ---
