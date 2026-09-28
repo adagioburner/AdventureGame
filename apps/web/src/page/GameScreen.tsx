@@ -17,7 +17,7 @@ import type { PlayedChange, PlaySource, PlayUpdate } from '../modes/play.ts';
 import { position } from '../render/geometry.ts';
 import type { LoadedArt } from '../render/pixi/textures.ts';
 import type { FigureCue, MapScene, Walker } from '../render/sceneModel.ts';
-import { endingSound } from '../sound/cues.ts';
+import { endingSound, isRest } from '../sound/cues.ts';
 import { soundTableOf, sounds } from '../sound/player.ts';
 import { ClaimNotice, EndCard, ResultCard } from './Cards.tsx';
 import { isUnguardedClaim, journalEntry, type JournalEntry } from './journal.ts';
@@ -296,6 +296,9 @@ export function GameScreen({
    * caught up or already in the log when the screen opened never come here.
    */
   const playOut = async (turn: PlayedTurn, before: GameState): Promise<void> => {
+    // [Q63, 142] A rest is heard as the turn passes and the resting player's
+    // stamina goes up on their card.
+    if (isRest(turn.events)) sounds.play('rest');
     const moved = find(turn.events, 'moved');
     if (moved !== undefined && moved.resolution.walked.length > 0) {
       const nodes = [moved.resolution.from, ...moved.resolution.walked].map((node) => position(before.map.graph, node));
@@ -543,7 +546,8 @@ export function GameScreen({
           onTap={onTap}
           tracking={tracking}
           onTrack={shown.status === 'in_progress' ? pressTrack : undefined}
-          sound={shown.status === 'in_progress' ? { on: soundOn, onToggle: () => sounds.setOn(!soundOn) } : undefined}
+          // [Q63, 145] Sound stays after the game ends, where Track goes.
+          sound={{ on: soundOn, onToggle: () => sounds.setOn(!soundOn) }}
           onMoved={() => setTracking(false)}
           onReady={(ready) => {
             handle.current = ready;

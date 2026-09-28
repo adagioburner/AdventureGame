@@ -1,4 +1,4 @@
-import type { GameEvent } from '@adventure/core';
+import type { BoardPost, GameEvent, PlayerId } from '@adventure/core';
 import type { SoundName } from '../art/manifest.ts';
 
 /**
@@ -14,4 +14,21 @@ export function endingSound(events: readonly GameEvent[]): Extract<SoundName, 'p
   const { roll, claimed } = interacted.resolution;
   if (roll === null) return claimed ? 'pickup' : null;
   return claimed ? 'battle_won' : 'battle_lost';
+}
+
+/**
+ * [Q63, 142] Whether a played turn was a rest, which is heard as it is shown.
+ * Staying put on a node is a move, not a rest, and makes no rest sound.
+ */
+export function isRest(events: readonly GameEvent[]): boolean {
+  return events.some((event) => event.type === 'rested');
+}
+
+/**
+ * [Q63, 144] Whether posts that just arrived make the message sound: one
+ * sound for any number of them, and none when all of them are `me`'s own.
+ * `known` is how many posts were on the board before they came.
+ */
+export function newPostsHeard(posts: readonly BoardPost[], known: number, me: PlayerId | null): boolean {
+  return posts.slice(known).some((post) => post.author !== me);
 }

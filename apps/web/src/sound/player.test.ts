@@ -49,6 +49,7 @@ function setup(stored: string | null = null) {
   if (stored !== null) kept.set(SOUND_STORAGE_KEY, stored);
   const audio = new FakeAudio();
   let gesture: () => void = () => undefined;
+  let back: () => void = () => undefined;
   const env: SoundEnv = {
     createAudio: () => audio,
     fetchBytes: (url) => Promise.resolve(new TextEncoder().encode(url).buffer as ArrayBuffer),
@@ -56,9 +57,12 @@ function setup(stored: string | null = null) {
     onGesture: (unlock) => {
       gesture = unlock;
     },
+    onReturn: (resume) => {
+      back = resume;
+    },
   };
   const player = createSoundPlayer(env);
-  return { player, audio, kept, tap: () => gesture() };
+  return { player, audio, kept, tap: () => gesture(), comeBack: () => back() };
 }
 
 const TABLE: SoundTable = {
@@ -66,6 +70,8 @@ const TABLE: SoundTable = {
   pickup: { urls: ['pickup'], volume: 0.5 },
   battle_won: { urls: ['won'], volume: 1 },
   battle_lost: { urls: ['lost'], volume: 1 },
+  rest: { urls: ['rest'], volume: 1 },
+  message: { urls: ['message'], volume: 1 },
 };
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
@@ -140,5 +146,17 @@ describe('the sound player (Q63)', () => {
     await settle();
     player.play('battle_won');
     expect(audio.started).toEqual([{ url: 'won', volume: 1, at: 0 }]);
+  });
+
+  it('brings the output back when the page comes back to the front (144)', async () => {
+    const { player, audio, tap, comeBack } = setup();
+    player.load(TABLE);
+    tap();
+    await settle();
+    audio.state = 'interrupted';
+    comeBack();
+    await settle();
+    player.play('message');
+    expect(audio.started).toEqual([{ url: 'message', volume: 1, at: 0 }]);
   });
 });

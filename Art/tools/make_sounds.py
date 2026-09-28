@@ -2,14 +2,18 @@
 """Generate the placeholder sound effects Andrei picked by ear (Q63).
 
 [Andrei, 2026-09-27] "we need at least minimal sound effects, for moving,
-picking up a reward, winning a battle and losing a battle". He chose from
-samples on the sound details page, and these are the recipes he heard:
+picking up a reward, winning a battle and losing a battle", and [2026-09-28]
+"we need the resting sound and the "new message" as well, for a complete
+minimal set". He chose from samples on the sound details page, and these are
+the recipes he heard:
 
 - moving, 127 B: a wooden figure tapping the board, in three slightly
   different takes that the game uses in turn (133);
 - picking up a reward, 128 A: two rising chimes;
 - a battle won, 129 B: four rising chimes;
-- a battle lost, 130 A: two falling horn notes, the second one sagging.
+- a battle lost, 130 A: two falling horn notes, the second one sagging;
+- resting, 142 B: a soft breath out;
+- a new message, 143 B: two knocks on a wooden door.
 
 They are placeholders, marked `"placeholder": true` in `Art/manifest.json`, and
 any of them can be replaced by dropping in a new file (`Art/README.md`).
@@ -228,6 +232,37 @@ def battle_lost() -> list[float]:
     return trim_tail(out)
 
 
+def rest() -> list[float]:
+    """142 B: a soft breath out, noise shaped like a breath, swelling and fading."""
+    rng = random.Random(500)
+    xs = Biquad('bandpass', 1100, 0.9).run(Biquad('bandpass', 700, 0.6).run(noise(1.1, rng)))
+    out = []
+    for i, x in enumerate(xs):
+        t = i / SR
+        env = math.sin(math.pi * min(1.0, t / 0.35) / 2) ** 2 if t < 0.35 else math.exp(-(t - 0.35) / 0.22)
+        out.append(x * env)
+    return trim_tail(fade_edges(out))
+
+
+def knock(k: float, rng: random.Random) -> list[float]:
+    """One knock on a wooden door: deeper and longer ringing than a footstep."""
+    excite = shape(noise(0.005, rng), 0.0004, 0.0016)
+    excite.extend([0.0] * int(0.2 * SR))
+    out = zeros(0.2)
+    for f, q, g in ((140 * k, 8, 0.7), (520 * k, 40, 1.0), (1150 * k, 30, 0.45), (2300 * k, 18, 0.15)):
+        mix(out, Biquad('bandpass', f, q).run(excite), 0.0, g)
+    return Biquad('highpass', 100, 0.7).run(out)
+
+
+def message() -> list[float]:
+    """143 B: two knocks on a door, the second a shade lower and softer."""
+    rng = random.Random(520)
+    out = zeros(0.5)
+    mix(out, knock(1.0, rng), 0.0, 1.0)
+    mix(out, knock(0.97, rng), 0.16, 0.9)
+    return trim_tail(fade_edges(out))
+
+
 # File name under Art/Sounds/ -> (recipe, loudness). The manifest names these files.
 SOUNDS = {
     'step_1.wav': (lambda: step(0), STEP_LEVEL),
@@ -236,6 +271,8 @@ SOUNDS = {
     'pickup.wav': (pickup, EVENT_LEVEL),
     'battle_won.wav': (battle_won, EVENT_LEVEL),
     'battle_lost.wav': (battle_lost, EVENT_LEVEL),
+    'rest.wav': (rest, EVENT_LEVEL),
+    'message.wav': (message, EVENT_LEVEL),
 }
 
 

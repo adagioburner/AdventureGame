@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { asNodeId, asPlayerId, type GameEvent, type InteractionResolution } from '@adventure/core';
-import { endingSound } from './cues.ts';
+import { asGameId, asNodeId, asPlayerId, type BoardPost, type GameEvent, type InteractionResolution } from '@adventure/core';
+import { endingSound, isRest, newPostsHeard } from './cues.ts';
 
 const player = asPlayerId('p1');
 
@@ -32,5 +32,33 @@ describe('the sound a turn ends on (Q63)', () => {
     expect(endingSound(arrival({ reward: null }))).toBeNull();
     expect(endingSound([{ type: 'rested', player, staminaGained: 5 }])).toBeNull();
     expect(endingSound([])).toBeNull();
+  });
+});
+
+describe('the rest sound (Q63, 142)', () => {
+  it('plays for a rest, and not for staying put, which is a move', () => {
+    expect(isRest([{ type: 'rested', player, staminaGained: 5 }])).toBe(true);
+    expect(isRest(arrival({ reward: null }))).toBe(false);
+    expect(isRest([])).toBe(false);
+  });
+});
+
+describe('the message sound (Q63, 144)', () => {
+  const other = asPlayerId('p2');
+  const post = (author: typeof player, n: number): BoardPost => ({ id: `m${n}`, gameId: asGameId('g'), author, body: 'hi', postedAt: n });
+
+  it('plays once for posts someone else made, however many arrive together', () => {
+    const board = [post(player, 1), post(other, 2), post(other, 3), post(player, 4)];
+    expect(newPostsHeard(board, 1, player)).toBe(true);
+  });
+
+  it('is silent for one’s own posts and for posts already known', () => {
+    const board = [post(other, 1), post(player, 2)];
+    expect(newPostsHeard(board, 1, player)).toBe(false);
+    expect(newPostsHeard(board, 2, player)).toBe(false);
+  });
+
+  it('hears every post for someone who holds no seat', () => {
+    expect(newPostsHeard([post(player, 1)], 0, null)).toBe(true);
   });
 });

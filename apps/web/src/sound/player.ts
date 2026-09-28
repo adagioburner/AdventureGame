@@ -70,6 +70,8 @@ export interface SoundEnv {
   readonly storage: Pick<Storage, 'getItem' | 'setItem'> | null;
   /** Calls `unlock` on every tap and key press from now on. */
   onGesture(unlock: () => void): void;
+  /** Calls `resume` each time the page comes back to the front. */
+  onReturn?(resume: () => void): void;
 }
 
 /** The key the on/off choice is kept under on this device. */
@@ -120,6 +122,11 @@ export function createSoundPlayer(env: SoundEnv): SoundPlayer {
     }
     // A phone call or another app can stop the output; the next tap brings it back.
     if (audio.state !== 'running') void audio.resume().catch(() => undefined);
+  });
+  // A phone can stop the output while the page is behind another; coming back
+  // to it tries to start it again, so a message arriving then is heard (144).
+  env.onReturn?.(() => {
+    if (audio !== null && audio.state !== 'running') void audio.resume().catch(() => undefined);
   });
 
   return {
@@ -219,6 +226,11 @@ function browserEnv(page: Window): SoundEnv {
       for (const type of ['pointerup', 'touchend', 'click', 'keydown']) {
         page.document.addEventListener(type, unlock, { capture: true, passive: true });
       }
+    },
+    onReturn(resume) {
+      page.document.addEventListener('visibilitychange', () => {
+        if (page.document.visibilityState === 'visible') resume();
+      });
     },
   };
 }

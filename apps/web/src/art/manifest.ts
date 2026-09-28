@@ -91,9 +91,11 @@ export interface SheetOutline {
  * [Andrei, 2026-09-27] "sound effects, for moving, picking up a reward,
  * winning a battle and losing a battle" (Q63): a footstep each time a walking
  * figure reaches a node, a reward taken from an unguarded POI, and a guard
- * beaten or not once the die has stopped.
+ * beaten or not once the die has stopped. [2026-09-28] "the resting sound and
+ * the "new message" as well, for a complete minimal set": a rest as it is
+ * shown, and, online, a message someone else posts.
  */
-export const SOUND_NAMES = ['step', 'pickup', 'battle_won', 'battle_lost'] as const;
+export const SOUND_NAMES = ['step', 'pickup', 'battle_won', 'battle_lost', 'rest', 'message'] as const;
 export type SoundName = (typeof SOUND_NAMES)[number];
 
 export interface SoundArt {

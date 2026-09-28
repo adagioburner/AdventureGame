@@ -1752,7 +1752,7 @@ The icon files are unchanged. The discs are drawn as the icons load, from
 `apps/web/src/render/pixi/textures.ts`), which is why the cards, which show
 the files, keep today's icons.
 
-### Q63. How do the sound effects work? — **answered 2026-09-28 for moving, rewards and battles; rest and new-message sounds still open**
+### Q63. How do the sound effects work? — **answered 2026-09-28; the Sound button's speaker icon still open**
 
 On 27 September at 17:05 Andrei asked: *"we need at least minimal sound
 effects, for moving, picking up a reward, winning a battle and losing a
@@ -1800,11 +1800,30 @@ wait"*.
     (the end of a game, "Your turn" online, button taps, the die rattle) stay
     silent for now.
 
-Still open, on the same page as 142 to 146: which rest sound (142), which
-new-message sound (143) and when a new message is heard (144), whether the
-Sound button stays once a game has ended (145), and how the button row fits
-a folded Galaxy Fold, 340 pixels wide, where the Sound button runs 12 pixels
-off the left edge (146).
+What those two sounds needed, and two things the build turned up, went on
+the same page as 142 to 146. At 01:29 he answered: *"142 - please use option
+B; 143 - please use B as well. The rest are as recommended. Can the "Sound"
+button use a volume / speaker icon or a webding symbol?"*
+
+142. **A rest: a soft breath out** (B), as the rest is shown: the turn passes
+    and the resting player's stamina goes up on their card. Every rest the
+    map plays out is heard, as by 138. Staying put on a node is a move, not a
+    rest, and makes no rest sound.
+143. **A new message: two knocks on a door** (B; C, two rising plucks, was
+    recommended).
+144. **A message from someone else is heard as it arrives while the game is
+    open,** whether the board is open or closed and whether the page is in
+    front or behind another. Your own messages, and those already on the
+    board when you open the game, make none; several arriving together, as
+    after a dropped connection, make one sound. A phone may pause a page it
+    has put behind another, and a paused page is silent until it is back.
+145. **The Sound button stays after a game ends,** on one device and online,
+    where Track goes.
+146. **The button row on a folded Fold.** Recommended was A, less space round
+    the buttons' words below 360 pixels wide; he asked instead whether the
+    Sound button can show a speaker symbol. With a symbol in place of the
+    word the row fits at 340 pixels. How the symbol looks is open, as the
+    sound details 170 to 173 (the computer-player thread has 147 to 150).
 
 The footsteps are timed by the sound's own clock from the moment the walk
 starts, so they keep the walk's pace however smoothly the map draws
