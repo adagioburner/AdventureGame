@@ -2063,6 +2063,15 @@ keeps the same POIs, the search settles ties by one random order of the map's
 POIs drawn per move; a fresh draw at every visit would let every tied POI into
 the move being chosen by turns.
 
+Measured the same way as Q62 and Q64, each side in both seats on
+`selfplay-0` … `selfplay-7`, 16 games each: against main's computer it won 15
+at 1 second a move (25 gold on average to 16, about 2,200 games in its head
+per move to 310) and 6 at 10 seconds (21 to 22, about 25,300 games to 3,500).
+Against Q64's √n version it won 5 at 1 second (21 to 23) and 7 at 10 seconds
+(20 to 21). From the 36 positions of Q62 it went for gold once, at turn 73 of
+`selfplay-3`; 33 of them are before turn 32, where it mostly took forest or
+mountain speed.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design
