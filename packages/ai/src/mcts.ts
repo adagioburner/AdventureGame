@@ -14,9 +14,10 @@ import type { MctsBranch, MctsNode, MctsOptions } from './types.ts';
  *
  * The four phases, now that §12.2 is decided:
  *
- *   select    — descend via `treePolicy.select` (UCT) while every branch of a
- *               node is expanded.
- *   expand    — take the branch not yet tried in this position that
+ *   select    — descend via `treePolicy.select` (UCT) among the branches a
+ *               node has open, while it may not open another.
+ *   expand    — when `widening` lets a node open one more branch (Q64), take
+ *               the branch not yet tried in this position that
  *               `ActionEnumerator.firstToTry` puts first, and realise it
  *               through `applyAction` in `@adventure/core`, so the tree only
  *               ever contains states the real rules produced. Branches come
@@ -125,8 +126,8 @@ export function createRootNode(_state: GameState, _options: MctsOptions): MctsNo
 
 /**
  * One iteration: descend from the root, replaying each branch on the way,
- * until a branch nobody has tried yet in this position is expanded; then roll
- * out and backpropagate.
+ * until a node may open a branch nobody has tried yet in this position and
+ * expands it; then roll out and backpropagate.
  */
 function iterate(tree: MctsNode, root: GameState, options: MctsOptions): void {
   const rules = rolloutOptions(options);
@@ -144,7 +145,7 @@ function iterate(tree: MctsNode, root: GameState, options: MctsOptions): void {
       else available.push(child);
     }
 
-    if (untried.length > 0) {
+    if (untried.length > 0 && (node.children.length < options.widening.openLimit(node.visits) || available.length === 0)) {
       const branch = options.actions.firstToTry(cursor.state, options.subject, untried, options.rng);
       const child: MctsNode = { action: branch, parent: node, children: [], visits: 0, totalValue: 0 };
       node.children.push(child);

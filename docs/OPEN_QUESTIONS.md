@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q62.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29, Q31–Q62 and Q64.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -1841,8 +1841,43 @@ the die's outcomes that beat its guard. The order is `firstToTry` in
 What it changes, measured from the same positions on a 5-second move: at the
 opening the computer now has about 53 choices instead of 10 and plays about
 3,200 games in its head instead of about 890, and its most-tried line runs 3
-choices deep instead of 4. The head-to-head result against main's computer is
-in the pull request.
+choices deep instead of 4. Against main's computer it played worse, which led
+to [Q64](#q64).
+
+<a id="q64"></a>
+### Q64. ~~How does the search use the order?~~ — **answered 2026-09-28: it opens the choices a few at a time, in that order**
+
+Q62's computer, measured against main's (the 10 closest choices, routes
+searched afresh), each side in both seats: at 1 second a move it won 5 of 16
+games on `selfplay-0` … `selfplay-7`, with 19 gold on average to 23, though it
+played about 1,860 games in its head per move to about 260; at 10 seconds it
+won 3 of 8 on `selfplay-0` … `selfplay-3`, 22 gold each, about 22,300 games to
+3,100. From the 36 positions in main's games on `selfplay-3` and `selfplay-4`
+where gold it had a chance at lay outside its 10 choices, it went for gold
+once. UCT tries every choice at a point once before it tries any a second
+time, so with about 50 choices the order only decided which came first, and
+the games went into trying everything once instead of looking deeper.
+
+Given four options on 28 September, Andrei picked opening the choices a few at
+a time in his order (progressive widening), and at 01:42 took the
+recommendations for its details: *"please proceed with option A and your
+recommendations for 150 through 153."*
+
+150. **A point of the search that has had n games through it has the first
+     ⌈√n⌉ choices in the order open.** The 1st opens at its first game, the
+     2nd at 2, the 3rd at 5, the 10th at 82 and the 50th at 2,402. Faster
+     (2√n) and slower (the fourth root of n) were the alternatives.
+151. **At every point,** the move being chosen included.
+152. **A choice once open stays open.**
+153. **The next to open is the next in the order for the position that
+     imagined game has reached there.** Dice can make the skills at a point
+     differ from one imagined game to the next, so the order is worked out
+     afresh each time, as under Q62.
+
+UCT shares the games among the open choices as before. The rule is
+`squareRootWidening` in `packages/ai/src/policies/tree.ts`, applied in
+`packages/ai/src/mcts.ts`; `noWidening` is Q62's try-everything-once, kept for
+experiments.
 
 ---
 

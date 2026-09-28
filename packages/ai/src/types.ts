@@ -79,13 +79,31 @@ export interface TreePolicy {
  * each node against that node's own game state, since the tree is open-loop —
  * and `firstToTry` says which of the ones this node has not tried yet comes
  * first. The search always expands that one, where it used to draw one at
- * random; everything after expansion is UCT as before.
+ * random, and `Widening` says when (Q64); everything after expansion is UCT as
+ * before.
  */
 export interface ActionEnumerator {
   readonly name: string;
   enumerate(state: GameState, subject: PlayerId): readonly MctsBranch[];
   /** The first of `untried` in the order, ties broken with `rng`. `untried` is never empty. */
   firstToTry(state: GameState, subject: PlayerId, untried: readonly MctsBranch[], rng: Rng): MctsBranch;
+}
+
+/**
+ * How many branches a node may have opened so far: progressive widening.
+ *
+ * [SOURCE §9, review] Andrei, 2026-09-28 (Q64): with nothing pruned (Q62) a
+ * node can have fifty branches or more, and trying each once before any twice
+ * left the tree shallow and the order deciding only which came first. So a
+ * node opens its branches one at a time in `ActionEnumerator.firstToTry`'s
+ * order, as many as `openLimit` allows for the games that have passed through
+ * it so far, and UCT shares the games among the open ones. A branch once
+ * opened stays open (152).
+ */
+export interface Widening {
+  readonly name: string;
+  /** The most branches a node with `visits` games through it may have opened; at least 1. */
+  openLimit(visits: number): number;
 }
 
 /**
@@ -132,6 +150,7 @@ export interface MctsOptions {
   readonly config: GameConfig;
   readonly treePolicy: TreePolicy;
   readonly actions: ActionEnumerator;
+  readonly widening: Widening;
   readonly rollout: RolloutPolicy;
   readonly evaluator: NodeEvaluator;
   /**

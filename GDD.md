@@ -258,6 +258,8 @@ At the opening almost no gold is claimed, so `progress` ≈ 0 and the skill term
 3. Among equal stamina, more units of the reward first. A guarded reward's units are multiplied by the chance one roll of the die beats its guard.
 4. Exact ties at random.
 
+[SOURCE §9, review] **The choices open a few at a time, in that order** (Q64). Trying every choice once before any twice left the search too shallow for the order to matter, so a decision point that has had n imagined games through it has only the first ⌈√n⌉ choices in the order open: the first at its first game, the second at 2 games, the third at 5, the tenth at 82 and the fiftieth at 2,402. This holds at every decision point, the move being chosen included; UCT shares the games among the open choices, a choice once open stays open, and the next to open is the next in the order for the position that imagined game has reached.
+
 The games the computer plays in its head are unchanged: every player there heads for a random one of its `CLOSE_CANDIDATE_COUNT` closest POIs, as above. [SOURCE §9, review] Routes are worked out once per map and kept, "to make simulations run faster"; they are the same routes as before.
 
 [SOURCE §5, chat] Time budget per AI move: starting value **10 seconds**.

@@ -227,8 +227,10 @@ units multiplied by the chance one roll beats its guard; exact ties at random.
 Turns and stamina are counted along the cheapest route as the rules would play
 it — free steps, then stamina, a rest on any turn that cannot take a step — and
 resting sorts after every POI reached this turn and before every POI that takes
-longer. Once every branch has been tried, UCT shares the games among them.
-`search()` returns only the
+longer. A node does not open all its branches at once (Q64): one that has had
+n games through it has the first ⌈√n⌉ in that order open, the 10th at 82
+games and the 50th at 2,402, and UCT shares the games among the open ones. A
+branch once open stays open. `search()` returns only the
 **first turn** of the chosen branch, since the session layer commits one turn at
 a time; the rest of the macro-action is re-derived next turn
 (`packages/ai/src/mcts.ts`, `packages/ai/src/policies/tree.ts`).

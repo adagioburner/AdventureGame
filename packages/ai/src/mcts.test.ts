@@ -18,7 +18,7 @@ import {
   simulatedRolloutEvaluator,
 } from './policies/evaluators.ts';
 import { closestPoiRolloutPolicy } from './policies/rollout.ts';
-import { journeyTo, orderKey, sortedPoiEnumerator, uctTreePolicy } from './policies/tree.ts';
+import { journeyTo, noWidening, orderKey, sortedPoiEnumerator, squareRootWidening, uctTreePolicy } from './policies/tree.ts';
 import type { MctsBranch, MctsOptions } from './types.ts';
 
 const restRule = restWhenStuck();
@@ -66,6 +66,7 @@ function optionsFor(state: GameState, overrides: Partial<MctsOptions> = {}): Mct
     config,
     treePolicy: uctTreePolicy(config.ai.MCTS_EXPLORATION_CONSTANT),
     actions: sortedPoiEnumerator(config),
+    widening: squareRootWidening(),
     rollout: closestPoiRolloutPolicy({ config, termination, restRule }),
     evaluator: simulatedRolloutEvaluator(),
     termination,
@@ -205,13 +206,37 @@ describe('journeyTo', () => {
 });
 
 describe('the search', () => {
+  const nodeOf = (branch: MctsBranch | null) => (branch?.kind === 'rest' ? 'rest' : branch?.target.node);
+
   it('tries the branches at a node in the enumerator\'s order', () => {
     const state = withStats(fixtureGame(star, 0), player('one'), { stamina: 30 });
-    // Seven branches at the root, so seven iterations try each once, in order.
-    const { root } = searchTree(state, optionsFor(state, { timeBudgetMs: 7 }));
-    const tried = root.children.map((child) => (child.action?.kind === 'rest' ? 'rest' : child.action?.target.node));
+    // With every branch open, seven iterations try the root's seven once each, in order.
+    const { root } = searchTree(state, optionsFor(state, { timeBudgetMs: 7, widening: noWidening() }));
+    const tried = root.children.map((child) => nodeOf(child.action));
     expect(tried.slice(0, 2)).toEqual([n(4), n(1)]);
     expect(tried.slice(5)).toEqual([n(7), 'rest']);
+  });
+
+  it('opens ⌈√n⌉ branches at a node that has had n games, in order, and keeps them open', () => {
+    const state = withStats(fixtureGame(star, 0), player('one'), { stamina: 30 });
+    let opened: unknown[] = [];
+    for (const iterations of [1, 2, 3, 5, 6, 10, 17, 26, 37, 50]) {
+      const { root } = searchTree(state, optionsFor(state, { timeBudgetMs: iterations }));
+      // The root had iterations - 1 games before the last one, which may open one more.
+      expect(root.children.length).toBe(Math.min(7, Math.max(1, Math.ceil(Math.sqrt(iterations - 1)))));
+      const tried = root.children.map((child) => nodeOf(child.action));
+      expect(tried.slice(0, opened.length)).toEqual(opened);
+      opened = tried;
+    }
+    expect(opened.slice(0, 2)).toEqual([n(4), n(1)]);
+    expect(opened.slice(5)).toEqual([n(7), 'rest']);
+  });
+
+  it('opens nothing more at a node until enough games have passed through it', () => {
+    expect([0, 1, 2, 4, 5, 81, 82, 2401, 2402].map((visits) => squareRootWidening().openLimit(visits))).toEqual([
+      1, 1, 2, 2, 3, 9, 10, 49, 50,
+    ]);
+    expect(noWidening().openLimit(0)).toBe(Number.POSITIVE_INFINITY);
   });
 });
 

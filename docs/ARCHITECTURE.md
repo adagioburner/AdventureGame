@@ -393,10 +393,12 @@ four are now decided — two by §9 directly, two by §12.2:
 | `NodeEvaluator` | **Specified default** (§9): the simulated rollout, which is what v1 runs. Three ship — simulated, estimated and hybrid; see below. |
 | `TreePolicy` | **Decided** (§12.2): UCT, `MCTS_EXPLORATION_CONSTANT` = √2, most-visited child as the final move. `uctTreePolicy()`. |
 | `ActionEnumerator` | **Decided** (Q62, replacing §12.2's pruning): every unclaimed POI the player could take, recomputed per node, **plus rest, always**, with `firstToTry` naming the untried branch the search expands next: fewer turns, then less stamina, then more (chance-weighted) reward units, ties at random. `sortedPoiEnumerator()`. |
+| `Widening` | **Decided** (Q64): a node with n games through it has opened at most ⌈√n⌉ branches, in `firstToTry`'s order, at every node including the root; an opened branch stays open. `squareRootWidening()`; `noWidening()` opens everything at once, as Q62 first did. |
 
 The enumerator used to call the same `closestPoiCandidates` that the
 remoteness walk and the rollout policy call, with one K for all three (Q19).
-Since Q62 it prunes nothing and orders its branches instead, so
+Since Q62 it prunes nothing and orders its branches instead, and since Q64 a
+node opens them a few at a time in that order, so
 `closestPoiCandidates` and `CLOSE_CANDIDATE_COUNT` = 10 belong to the rollout
 and the remoteness walk alone: the rollout picks among the K uniformly,
 remoteness walks to its pick.

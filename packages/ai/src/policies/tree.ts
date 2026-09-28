@@ -14,7 +14,7 @@ import {
   type Poi,
   type Rng,
 } from '@adventure/core';
-import type { ActionEnumerator, MctsBranch, MctsNode, TreePolicy } from '../types.ts';
+import type { ActionEnumerator, MctsBranch, MctsNode, TreePolicy, Widening } from '../types.ts';
 
 /**
  * [SOURCE §12.2, chat] "For everything else please use sensible defaults that
@@ -97,6 +97,24 @@ function argMaxWithRandomTieBreak<T>(items: readonly T[], score: (item: T) => nu
   const first = best[0];
   if (first === undefined) throw new RangeError('argMax over an empty collection');
   return best.length === 1 ? first : rng.pick(best);
+}
+
+/**
+ * [SOURCE §9, review] Andrei, 2026-09-28 (Q64): a node that has had n games
+ * through it has the first ⌈√n⌉ branches in the order open (150), at every
+ * node including the root (151). So the 1st opens at the first game, the 2nd
+ * at 2 games, the 3rd at 5, the 10th at 82 and the 50th at 2,402.
+ */
+export function squareRootWidening(): Widening {
+  return {
+    name: 'square-root',
+    openLimit: (visits) => Math.max(1, Math.ceil(Math.sqrt(visits))),
+  };
+}
+
+/** Every branch open from the start: each is tried once before any is tried twice. */
+export function noWidening(): Widening {
+  return { name: 'none', openLimit: () => Number.POSITIVE_INFINITY };
 }
 
 /**
