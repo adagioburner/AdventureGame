@@ -1,5 +1,5 @@
 import type { GameConfig } from '@adventure/config';
-import { dijkstra, type MapGraph, type NodeId, type Rng } from '@adventure/core';
+import { dijkstra, type MapGraph, type NodeId, type Rng, type RouteTable } from '@adventure/core';
 
 /**
  * THE shared kernel.
@@ -39,23 +39,35 @@ export interface PoiCandidate {
  * first leg of a remoteness walk, whose random plains start may happen to be an
  * unvisited POI; the alternative — skipping it — would leave a POI the walk can
  * never return to, since §5.1 only ever moves *away* from where it stands.
+ *
+ * `routes`, when given, is `graph`'s `routeTable`, and the list is read off its
+ * whole search from `from` instead of searching again: the same nodes in the
+ * same order, so the same list. The computer's searches pass it, on a game's
+ * map; the remoteness walk runs while the map is being built and does not.
  */
 export function closestPoiCandidates(
   graph: MapGraph,
   from: NodeId,
   eligible: ReadonlySet<NodeId>,
   config: GameConfig,
+  routes?: RouteTable,
 ): readonly PoiCandidate[] {
   const wanted = config.balancing.CLOSE_CANDIDATE_COUNT;
   if (wanted <= 0 || eligible.size === 0) return [];
 
   const found: PoiCandidate[] = [];
-  dijkstra(graph, from, config, {
-    stopWhen: (node, cost) => {
-      if (eligible.has(node)) found.push({ node, cost });
-      return found.length >= wanted;
-    },
-  });
+  const settle = (node: NodeId, cost: number): boolean => {
+    if (eligible.has(node)) found.push({ node, cost });
+    return found.length >= wanted;
+  };
+  if (routes === undefined) {
+    dijkstra(graph, from, config, { stopWhen: settle });
+    return found;
+  }
+  const { settled, costs } = routes.from(from);
+  for (const node of settled) {
+    if (settle(node, costs[node] as number)) break;
+  }
   return found;
 }
 
@@ -71,8 +83,9 @@ export function chooseWalkTarget(
   eligible: ReadonlySet<NodeId>,
   config: GameConfig,
   rng: Rng,
+  routes?: RouteTable,
 ): PoiCandidate | null {
-  const candidates = closestPoiCandidates(graph, from, eligible, config);
+  const candidates = closestPoiCandidates(graph, from, eligible, config, routes);
   if (candidates.length === 0) return null;
   return rng.pick(candidates);
 }
