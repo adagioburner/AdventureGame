@@ -232,6 +232,23 @@ describe('the search', () => {
     expect(opened.slice(5)).toEqual([n(7), 'rest']);
   });
 
+  it('opens the next branch when none of the open ones can be taken in this position (154)', () => {
+    const state = fixtureGame(star, 0);
+    // The first iteration offers only node 1; every later one offers 2 and 3
+    // but no longer 1, as if another seat had claimed it in that sample.
+    let calls = 0;
+    const target = (node: number): MctsBranch => ({ kind: 'target', target: { node: n(node), cost: 1 } });
+    const shifting: MctsOptions['actions'] = {
+      name: 'shifting',
+      enumerate: () => (calls++ === 0 ? [target(1)] : [target(2), target(3)]),
+      firstToTry: (_state, _subject, untried) => untried[0] as MctsBranch,
+    };
+    // After one game the root may have 1 branch open; its only one can't be
+    // taken, so the second iteration opens node 2 anyway.
+    const { root } = searchTree(state, optionsFor(state, { timeBudgetMs: 2, actions: shifting }));
+    expect(root.children.map((child) => nodeOf(child.action))).toEqual([n(1), n(2)]);
+  });
+
   it('opens nothing more at a node until enough games have passed through it', () => {
     expect([0, 1, 2, 4, 5, 81, 82, 2401, 2402].map((visits) => squareRootWidening().openLimit(visits))).toEqual([
       1, 1, 2, 2, 3, 9, 10, 49, 50,

@@ -98,7 +98,8 @@ export interface ActionEnumerator {
  * node opens its branches one at a time in `ActionEnumerator.firstToTry`'s
  * order, as many as `openLimit` allows for the games that have passed through
  * it so far, and UCT shares the games among the open ones. A branch once
- * opened stays open (152).
+ * opened stays open (152), and when none of the open ones can be taken in the
+ * position an iteration reached, the next one opens regardless (154).
  */
 export interface Widening {
   readonly name: string;

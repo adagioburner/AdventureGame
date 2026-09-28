@@ -1860,7 +1860,7 @@ the games went into trying everything once instead of looking deeper.
 
 Given four options on 28 September, Andrei picked opening the choices a few at
 a time in his order (progressive widening), and at 01:42 took the
-recommendations for its details: *"please proceed with option A and your
+recommendations for its details 150 to 153: *"please proceed with option A and your
 recommendations for 150 through 153."*
 
 150. **A point of the search that has had n games through it has the first
@@ -1873,6 +1873,16 @@ recommendations for 150 through 153."*
      imagined game has reached there.** Dice can make the skills at a point
      differ from one imagined game to the next, so the order is worked out
      afresh each time, as under Q62.
+
+One more detail turned up while building: in an imagined game the other
+player can claim every POI a point has open, at about 1 in 1,000 of the points
+the search passes through. Asked as 154, he chose on 28 September at 02:04 to
+open the next one:
+
+154. **When none of a point's open choices can be taken in that imagined
+     game, the next in the order opens,** one beyond ⌈√n⌉, as the search
+     already did in that case. The alternative was playing that game out
+     from there with no new choice opened.
 
 UCT shares the games among the open choices as before. The rule is
 `squareRootWidening` in `packages/ai/src/policies/tree.ts`, applied in

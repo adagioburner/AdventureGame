@@ -230,7 +230,8 @@ resting sorts after every POI reached this turn and before every POI that takes
 longer. A node does not open all its branches at once (Q64): one that has had
 n games through it has the first ⌈√n⌉ in that order open, the 10th at 82
 games and the 50th at 2,402, and UCT shares the games among the open ones. A
-branch once open stays open. `search()` returns only the
+branch once open stays open, and when none of the open ones can be taken in
+that iteration's position (another seat claimed them), the next opens (154). `search()` returns only the
 **first turn** of the chosen branch, since the session layer commits one turn at
 a time; the rest of the macro-action is re-derived next turn
 (`packages/ai/src/mcts.ts`, `packages/ai/src/policies/tree.ts`).
