@@ -1980,6 +1980,13 @@ UCT shares the games among the open choices as before. The rule is
 `packages/ai/src/mcts.ts`; `noWidening` is Q62's try-everything-once, kept for
 experiments.
 
+Measured against main's computer in the same way, each side in both seats on
+`selfplay-0` … `selfplay-7`: at 1 second a move it won 13 of 16 games, with 25
+gold on average to 17, playing about 1,650 games in its head per move to
+about 260; at 10 seconds it won 6 of 16, with 22 gold each on average, about
+28,900 games to 3,600. From the 36 positions above it went for gold once, as
+Q62's did.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design
