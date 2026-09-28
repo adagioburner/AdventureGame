@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_GAME_CONFIG, type Terrain } from '@adventure/config';
 import { asNodeId, type NodeId } from './ids.ts';
 import type { MapGraph } from './graph.ts';
-import { dijkstra, pathCost, routeVia, shortestPath, stepCost, terrainStepCost } from './path.ts';
+import { createRng } from './rng.ts';
+import { dijkstra, pathCost, routeTable, routeVia, shortestPath, stepCost, terrainStepCost } from './path.ts';
 
 const config = DEFAULT_GAME_CONFIG;
 
@@ -143,5 +144,43 @@ describe('routeVia', () => {
   it('is the plain shortest path when there is no waypoint', () => {
     const graph = graphOf(['plains', 'plains'], [[0, 1]]);
     expect(routeVia(graph, n(0), null, n(1), config)).toEqual([n(1)]);
+  });
+});
+
+describe('routeTable', () => {
+  /** A seeded jumble of plains, forest and mountain with plenty of equal-cost routes. */
+  function jumble(seed: string, size: number): MapGraph {
+    const rng = createRng(seed);
+    const terrains: Terrain[] = Array.from({ length: size }, () => rng.pick(['plains', 'forest', 'mountain'] as const));
+    const edges: [number, number][] = [];
+    for (let node = 1; node < size; node++) edges.push([node, rng.nextInt(node)]);
+    for (let extra = 0; extra < size / 2; extra++) {
+      const a = rng.nextInt(size);
+      const b = rng.nextInt(size);
+      if (a !== b) edges.push([a, b]);
+    }
+    return graphOf(terrains, edges);
+  }
+
+  it('gives exactly the routes and search order shortestPath and dijkstra give', () => {
+    for (const seed of ['a', 'b', 'c']) {
+      const graph = jumble(seed, 60);
+      const table = routeTable(graph, config);
+      for (let from = 0; from < 60; from++) {
+        const whole = dijkstra(graph, n(from), config);
+        expect(table.from(n(from)).settled).toEqual(whole.settled);
+        expect(table.from(n(from)).costs).toEqual(whole.costs);
+        for (let to = 0; to < 60; to++) {
+          expect(table.path(n(from), n(to))).toEqual(shortestPath(graph, n(from), n(to), config));
+        }
+      }
+    }
+  });
+
+  it('searches from a node once, and keeps one table per map', () => {
+    const graph = jumble('d', 20);
+    const table = routeTable(graph, config);
+    expect(routeTable(graph, config)).toBe(table);
+    expect(table.from(n(3))).toBe(table.from(n(3)));
   });
 });

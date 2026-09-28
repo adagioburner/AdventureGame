@@ -392,15 +392,22 @@ four are now decided — two by §9 directly, two by §12.2:
 | `RolloutPolicy` | **Specified** (§9). `closestPoiRolloutPolicy()` is a thin wrapper over `@adventure/sim`. |
 | `NodeEvaluator` | **Specified default** (§9): the simulated rollout, which is what v1 runs. Three ship — simulated, estimated and hybrid; see below. |
 | `TreePolicy` | **Decided** (§12.2): UCT, `MCTS_EXPLORATION_CONSTANT` = √2, most-visited child as the final move. `uctTreePolicy()`. |
-| `ActionEnumerator` | **Decided** (§12.2): the `CLOSE_CANDIDATE_COUNT` (10) closest *unclaimed* POIs, recomputed per node, **plus a rest branch** when fewer than `MIN_REACHABLE_NODES_FOR_REST` (3) of them are reachable this turn. `closestUnclaimedPoiEnumerator()`. |
+| `ActionEnumerator` | **Decided** (Q62, replacing §12.2's pruning): every unclaimed POI the player could take, recomputed per node, **plus rest, always**, with `firstToTry` naming the untried branch the search expands next: fewer turns, then less stamina, then more (chance-weighted) reward units, ties at random. `sortedPoiEnumerator()`. |
 
-The enumerator is worth a second look, because it completes the sharing story:
-it calls the same `closestPoiCandidates` that the remoteness walk and the
-rollout policy call. Three consumers, one ranking kernel and — since the
-designer collapsed the tree's own constant into it (Q19) — one K,
-`CLOSE_CANDIDATE_COUNT` = 10. They differ only in what they do with the ranked
-list: the tree makes every candidate a branch, the rollout picks one uniformly,
+The enumerator used to call the same `closestPoiCandidates` that the
+remoteness walk and the rollout policy call, with one K for all three (Q19).
+Since Q62 it prunes nothing and orders its branches instead, so
+`closestPoiCandidates` and `CLOSE_CANDIDATE_COUNT` = 10 belong to the rollout
+and the remoteness walk alone: the rollout picks among the K uniformly,
 remoteness walks to its pick.
+
+**Routes are searched once per map in a game** (Q62): `routeTable` in
+`packages/core/src/path.ts` keeps the whole Dijkstra from each node the first
+time it is asked for, and the rollout, the computer's move and the enumerator's
+order read routes and "K closest" lists from it. The step costs are per terrain
+and never depend on skills, and the table keeps the very search the uncached
+functions run, so every answer is identical. The map generator does not use it:
+its graphs change while it works.
 
 **A branch is a macro-action**, in the tree and in the rollout alike. [SOURCE §9,
 chat] taking a target means "the simulated player keeps moving to the chosen POI

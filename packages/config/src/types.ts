@@ -143,15 +143,15 @@ export interface BalancingConfig {
   readonly REWARD_SWAP_PASSES: number;
   /**
    * §11 `CLOSE_CANDIDATE_COUNT` — tunable.
-   * Used by the shared random walk (§5.1), by the MCTS rollout policy (§9)
-   * and, identically, by MCTS tree expansion.
+   * Used by the shared random walk (§5.1) and by the MCTS rollout policy (§9).
+   * MCTS tree expansion used it too until Q62, and now prunes nothing.
    *
    * [SOURCE §12.2, review] The tree originally had a K of its own,
    * `MCTS_NODE_EXPANSION_PRUNING` = 10. The designer removed it: "We don't
    * really need two different constants here. We will prune the tree by the
    * CLOSE_CANDIDATE_COUNT, plus one branch for resting." So all three callers
-   * of `closestPoiCandidates` now share this one number, and tuning it moves
-   * the rollout and the tree together — which is the point.
+   * of `closestPoiCandidates` shared this one number until Q62 took the tree
+   * off it.
    */
   readonly CLOSE_CANDIDATE_COUNT: number;
   /** §11 `REMOTENESS_SIMULATION_RUNS` — tunable (100). */
@@ -227,24 +227,6 @@ export interface AiConfig {
    * balance.
    */
   readonly MCTS_EXPLORATION_CONSTANT: number;
-  /**
-   * `MIN_REACHABLE_NODES_FOR_REST` — tunable, default 3. Not in §11.
-   *
-   * [SOURCE §12.2, chat] "Rest is a branch as well. Let us prune it if there
-   * are at least MIN_REACHABLE_NODES_FOR_REST = 3 POIs reachable in one turn."
-   *
-   * So the tree gets a rest branch alongside the POI targets, dropped whenever
-   * the player already has three or more targets they can actually reach this
-   * turn — resting is only worth searching when movement is constrained.
-   *
-   * [SOURCE §12.2, review] Untouched by the removal of
-   * `MCTS_NODE_EXPANSION_PRUNING`: that collapsed the two Ks, and this is a
-   * threshold on reachability, not a K.
-   *
-   * Counts reachable POI *targets*, despite the name saying nodes; the name is
-   * the designer's.
-   */
-  readonly MIN_REACHABLE_NODES_FOR_REST: number;
   /**
    * `SIMULATION_TURN_CAP` — 250. Not in §11; the designer's, 2026-09-24 (Q44).
    *

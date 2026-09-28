@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q61.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q62.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -49,7 +49,7 @@ changes what GDD §3 or §7.1 says.
 | # | Decision | What it changed in the code |
 |---|---|---|
 | §12.1 | [SOURCE, chat] "Durable Objects, with flexible architecture to swap it for something else if DO don't fit the bill. Everything else, i.e. map generation and player AI, runs on the game master's machine." | The DO becomes one adapter behind `SessionPorts`; `packages/session` still imports no transport, storage, socket or timer, so the swap stays an adapter. `MapService` and `AiService` keep their interfaces but the DO implements them as **round trips to the GM's client** (`gm.requestMapGeneration`/`gm.mapGenerated`, `gm.requestAiMove`/`gm.aiMove`). See `docs/STACK.md` for what the choice costs. |
-| §12.2 | [SOURCE, chat] Branches are the closest unclaimed POIs at that point in the game; "for everything else please use sensible defaults that are recommended for standard MCTS implementations." The K was `MCTS_NODE_EXPANSION_PRUNING = 10`, **superseded** — see Q19. | `closestUnclaimedPoiEnumerator()` and `uctTreePolicy()` ship as named, swappable defaults. The enumerator calls the same `closestPoiCandidates` as the remoteness walk and the rollout policy — three consumers, one kernel, one K. Sub-questions: Q16, Q17, Q19. |
+| §12.2 | [SOURCE, chat] Branches are the closest unclaimed POIs at that point in the game; "for everything else please use sensible defaults that are recommended for standard MCTS implementations." The K was `MCTS_NODE_EXPANSION_PRUNING = 10`, **superseded** — see Q19. | `closestUnclaimedPoiEnumerator()` and `uctTreePolicy()` ship as named, swappable defaults. The enumerator calls the same `closestPoiCandidates` as the remoteness walk and the rollout policy — three consumers, one kernel, one K. Sub-questions: Q16, Q17, Q19. *Since [Q62](#q62) the tree prunes nothing: `sortedPoiEnumerator()` branches over every unclaimed POI the player could take, plus rest, and tries them in Andrei's order.* |
 | §12.3 | [SOURCE, chat] "The message board should be part of the game state and as such persistent along with the rest of the game. There is no difference between the message board state and other game state." | `BoardPost` moved into `@adventure/core`; `GameState.messageBoard` holds it; posting is a `PostMessageAction` through `applyAction`, the single writer. `MessageBoardStore` and the `board.posts` message are **deleted** — no store, no retention policy, no separate channel. |
 | §12.4 | [SOURCE, chat] "The game cannot proceed for a player that cannot establish connection with the game state server. If the game master disconnects there is no one to force the next turn so the game stalls as well." | `GameMasterAbsencePolicy` **deleted** — there is no fallback to configure. A GM-only request with no GM connected is answered `game_master_unavailable` and the game waits. |
 
@@ -455,6 +455,10 @@ slice is gone with it; the kernel's cap is the only cap.
 
 The rest branch is untouched: `MIN_REACHABLE_NODES_FOR_REST` = 3 still gates it
 (Q16), since it is a threshold on reachability rather than a second K.
+
+*Superseded by [Q62](#q62): the tree no longer prunes to any K, and resting is
+always a branch, so `MIN_REACHABLE_NODES_FOR_REST` is gone too.
+`CLOSE_CANDIDATE_COUNT` is now the rollout's and the remoteness walk's alone.*
 
 **Follow-up: the value moved.** [SOURCE §1.2, chat] With one constant now
 serving all three callers, the designer raised it from 5 to **10** — "we don't
@@ -1751,6 +1755,94 @@ The icon files are unchanged. The discs are drawn as the icons load, from
 `icons.backing` in `Art/manifest.json` (`iconCanvas` in
 `apps/web/src/render/pixi/textures.ts`), which is why the cards, which show
 the files, keep today's icons.
+
+<a id="q62"></a>
+### Q62. ~~Which POIs does the computer consider?~~ — **answered 2026-09-28: every one, tried in his order**
+
+On 27 September at 17:03 Andrei reported: *"in the endgame the AI player runs
+around aimlessly, grabbing skills they don't need, instead of going for the
+last gold rewards remaining. I think we are pruning too much, and if the gold
+is too far it never becomes a goal."* Measured on main before any change, over
+eight computer games (`selfplay-0` … `selfplay-7`, 300 games in its head per
+move): in 72 of 1,343 of the computer's turns there was gold it had a chance
+at and none of it among the 10 closest POIs it chose from, in runs of turns
+where the nearest such gold was the 11th to 22nd closest POI.
+
+His first fix, keeping one or two POIs of each kind among the 10 closest, went
+on a details page as 119 to 125 and was withdrawn before being answered: at
+23:30 he wrote *"I cannot think of a good pruning strategy that is guaranteed
+not to miss that one winning move that may decide the game"*, and at 23:42
+replaced it with a plan:
+
+> 1. We will not prune any move choices. Instead, we will rely on MCTS's
+>    internal balancing mechanisms between exploration and deep search
+> 2. We, however, will need to sort the move candidates at each tree node of
+>    MCTS to make sure we first explore the most promising ones
+> 3. We will sort the POI to go to according to the following criteria:
+>    1. First consider moves that the player can reach in one turn, than in
+>       two turns, etc
+>    2. Out of the POIs one can reach in N turns, first consider those that
+>       require less stamina
+>    3. Out of those that require spending equal stamina to get there, first
+>       consider those that offer more units the reward. For gold, exclude POI
+>       with guards you cannot beat; for others, multiply the number of units
+>       of gold by the probability to get it after one throw of the die, to
+>       get the effective number of units to compare.
+
+What that left open went on the same page as 126 to 131, each with a
+recommendation. On 28 September at 00:11 he answered: *"126 - the cheapest
+route as recommended. 127 - the gold one cannot beat is left out of one's
+choices completely. 128 - random. 129 - resting is always a choice, coming
+between all POI that take 1 turn to reach and those that take more than one
+POI to reach. 130 - choosing randomly out of 10 closest is good for
+simulations. 131 - We can also precompute and cache distances to make
+simulations run faster. It won't work for sorting the moves for exploration
+as this sort order depends on the set of skills you have at that particular
+node"*.
+
+126. **Turns and stamina are counted along the cheapest route,** the one the
+     computer walks, as the rules would play it: each turn its free steps
+     first, then stamina, stopping at the first step it cannot pay for, and
+     resting a turn whenever it cannot take a single step (Q43),
+     which gives back `REST_STAMINA_GAIN`. Stamina is the total spent over
+     all those turns. The first turn has this turn's allowance, every later
+     one the player's skills; rewards picked up on the way are not counted.
+     Standing on the POI already (a guard that held last turn) is reached
+     this turn for nothing.
+127. **Gold no roll can win is not a choice at all** at that point of the
+     search. Further on in the search it comes back once the skill gained on
+     the way gives it a chance. The test is on the guard, not on the reward
+     kind, as everywhere in the engine; in v1 only gold is guarded.
+128. **Exact ties are broken at random,** from the search's own stream.
+129. **Resting is always a choice,** after every POI reached this turn and
+     before every POI that takes longer. `MIN_REACHABLE_NODES_FOR_REST`,
+     which gated the rest branch before, does nothing any more and is gone
+     from the config.
+130. **The games the computer plays in its head are unchanged:** every
+     player there heads for a random one of its `CLOSE_CANDIDATE_COUNT`
+     closest unclaimed POIs (GDD §9).
+131. **Routes are worked out once per map and kept** (`routeTable` in
+     `packages/core/src/path.ts`), for the games in its head, for the
+     computer's own move, and for the order. His point holds for the order's
+     turns and stamina, which depend on the skills at each point and are
+     counted afresh there; the route they are counted along, the cheapest by
+     road cost, does not depend on anyone's skills, so it comes from the
+     table. Every route and every "10 closest" list is exactly what it was:
+     the table keeps the same search `shortestPath` and `closestPoiCandidates`
+     ran. The map generator, whose graph is still being built while it
+     walks, keeps searching afresh, so every map is unchanged.
+
+The search tries the untried choice the order puts first where it used to
+draw one at random; everything else about it is UCT as before. Units compare
+as plain numbers whatever the reward, a guarded one's scaled by the share of
+the die's outcomes that beat its guard. The order is `firstToTry` in
+`packages/ai/src/policies/tree.ts`.
+
+What it changes, measured from the same positions on a 5-second move: at the
+opening the computer now has about 53 choices instead of 10 and plays about
+3,200 games in its head instead of about 890, and its most-tried line runs 3
+choices deep instead of 4. The head-to-head result against main's computer is
+in the pull request.
 
 ---
 

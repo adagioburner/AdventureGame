@@ -132,7 +132,7 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 [SOURCE §1.2] Computed via simulated random walks: start at a random plains position, repeatedly move to one of the `CLOSE_CANDIDATE_COUNT` closest unvisited POIs (chosen at random among them), until every POI has been visited once per walk. Distance for "closest" and for walk-segment lengths uses the same weighted terrain cost as movement: 1 plains / 2 forest / 3 mountain per step [SOURCE §1.2, chat: the one distance metric used throughout the design — also for the UI's shortest-path display, §7, and the AI's own POI targeting, §9]. Run `REMOTENESS_SIMULATION_RUNS` walks, normalize the resulting per-POI scores to **[0, 1]**.
 
-[SOURCE §1.2, chat] `CLOSE_CANDIDATE_COUNT` = **10**, raised from 5 once §9's MCTS tree began pruning to this same constant: "we don't want to risk pruning out good moves early on". Note it now sets the search's branching factor as well as this walk's candidate set, so it is no longer a remoteness-only knob — changing it moves generated maps and AI play together. `REMOTENESS_SIMULATION_RUNS` = **100** (expected to change if 100 proves too imprecise or too slow). This random-walk code is shared with the AI player's MCTS rollout policy (§9).
+[SOURCE §1.2, chat] `CLOSE_CANDIDATE_COUNT` = **10**, raised from 5 once §9's MCTS tree began pruning to this same constant: "we don't want to risk pruning out good moves early on". Note it now sets the search's branching factor as well as this walk's candidate set, so it is no longer a remoteness-only knob — changing it moves generated maps and AI play together. [SOURCE §9, review] Since Q62 the search itself prunes nothing, so it now sets this walk's candidate set and the rollout's, not the tree's. `REMOTENESS_SIMULATION_RUNS` = **100** (expected to change if 100 proves too imprecise or too slow). This random-walk code is shared with the AI player's MCTS rollout policy (§9).
 
 ### 5.2 Guard-strength / remoteness formula
 
@@ -251,6 +251,15 @@ At the opening almost no gold is claimed, so `progress` ≈ 0 and the skill term
 
 > This supersedes the earlier form of the experiment, `average(gold after simulation, gold now + (number of skills) × balancing_constant, at the node being evaluated)` [SOURCE §5, chat]. Its two halves became the hybrid and the estimated evaluation respectively, and `balancing_constant` is gone — what it tuned by hand is now `progress`, which the game state supplies.
 
+[SOURCE §9, review] **The search prunes none of the computer's choices, and tries them in order.** Andrei, 2026-09-27: "We will not prune any move choices. Instead, we will rely on MCTS's internal balancing mechanisms between exploration and deep search. We, however, will need to sort the move candidates at each tree node of MCTS to make sure we first explore the most promising ones." At every decision point of the search, every unclaimed POI is a choice except a guarded one no roll can win, and resting is always a choice. Untried choices are tried in this order (Q62):
+
+1. Fewer turns to get there first, counted along the cheapest route as the rules would play it: each turn the free steps first, then stamina, resting a turn whenever it cannot take a single step. Resting comes after every POI reached this turn and before every POI that takes longer.
+2. Among equal turns, less stamina spent on the way first.
+3. Among equal stamina, more units of the reward first. A guarded reward's units are multiplied by the chance one roll of the die beats its guard.
+4. Exact ties at random.
+
+The games the computer plays in its head are unchanged: every player there heads for a random one of its `CLOSE_CANDIDATE_COUNT` closest POIs, as above. [SOURCE §9, review] Routes are worked out once per map and kept, "to make simulations run faster"; they are the same routes as before.
+
 [SOURCE §5, chat] Time budget per AI move: starting value **10 seconds**.
 
 [SOURCE §5, review] **A simulated player rests when it cannot take a single step** toward its target, then carries on toward it; the computer's real move follows the same rule (Q43).
@@ -296,7 +305,7 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `REMOTENESS_WEIGHT` | 4 | tunable (play-test) — guard/remoteness balance, §5.2 |
 | `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` | 2 | tunable (play-test) — reward stacking, §4.3 |
 | `REWARD_SWAP_PASSES` | 5 | tunable (play-test) — reward/remoteness agreement, §4.3 step 4 [SOURCE §4.3, review] |
-| `CLOSE_CANDIDATE_COUNT` | 10 | tunable — one K for §5.1's walk, §9's rollout and §9's tree |
+| `CLOSE_CANDIDATE_COUNT` | 10 | tunable — one K for §5.1's walk and §9's rollout; §9's tree prunes nothing (Q62) |
 | `REMOTENESS_SIMULATION_RUNS` | 100 | tunable |
 | `STAMINA_COST` (plains/forest/mountain) | 1 / 2 / 3 | fixed |
 | `REST_STAMINA_GAIN` | 5 | tunable |

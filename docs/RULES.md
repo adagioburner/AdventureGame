@@ -166,11 +166,11 @@ real decision point rather than a single step.
 **Targets are the `CLOSE_CANDIDATE_COUNT` closest eligible POIs, picked
 uniformly at random.** Ranking is by the weighted terrain cost above, and the
 whole thing — rank, then pick uniformly among the nearest K — is written once in
-`packages/sim/src/candidates.ts` and shared by three callers: the remoteness
-walk (§5.1, over *unvisited* POIs), the rollout policy (§9, over *unclaimed*
-POIs) and tree expansion (also unclaimed). They share the one K as well, so
-tuning `CLOSE_CANDIDATE_COUNT` moves all three together; what differs is
-eligibility, and what each does with the ranked list.
+`packages/sim/src/candidates.ts` and shared by two callers: the remoteness
+walk (§5.1, over *unvisited* POIs) and the rollout policy (§9, over *unclaimed*
+POIs). They share the one K as well, so tuning `CLOSE_CANDIDATE_COUNT` moves
+both together; what differs is eligibility. The search tree used the same K
+until Q62, and now prunes nothing (below).
 
 **A rollout stops when no gold rewards are left on the map.** That is the rule,
 and it is specifically *not* "all POIs claimed": a rollout ends with skill and
@@ -215,12 +215,20 @@ at a time through `applyAction`, and returns the most-visited child of the root
 open-loop: a tree node holds no game state, and every iteration replays the
 branches from the root, so the dice and the other seats' moves are drawn
 afresh each time and a branch is judged on all its outcomes rather than on the
-one its first visit happened to reach. Branches at a
-node are those same `CLOSE_CANDIDATE_COUNT` closest unclaimed POIs, *recomputed
-against that node's state*,
-plus a rest branch, added only when fewer than `MIN_REACHABLE_NODES_FOR_REST`
-(3) of those targets are reachable this turn — which is exactly when a player is
-stamina-bound and resting is worth searching. `search()` returns only the
+one its first visit happened to reach.
+
+**Nothing is pruned from the search's choices; they are tried in order (Q62).**
+Branches at a node, *recomputed against that node's state*, are every
+unclaimed POI except a guarded one no roll of the die can win, plus resting,
+which is always a branch. Where a node has untried branches, the one it tries
+next is the first in Andrei's order: fewer turns to get there first; then less
+stamina spent on the way; then more units of the reward, a guarded reward's
+units multiplied by the chance one roll beats its guard; exact ties at random.
+Turns and stamina are counted along the cheapest route as the rules would play
+it — free steps, then stamina, a rest on any turn that cannot take a step — and
+resting sorts after every POI reached this turn and before every POI that takes
+longer. Once every branch has been tried, UCT shares the games among them.
+`search()` returns only the
 **first turn** of the chosen branch, since the session layer commits one turn at
 a time; the rest of the macro-action is re-derived next turn
 (`packages/ai/src/mcts.ts`, `packages/ai/src/policies/tree.ts`).

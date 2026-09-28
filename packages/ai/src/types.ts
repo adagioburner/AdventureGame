@@ -5,9 +5,8 @@ import type { PoiCandidate, RestRule, RolloutCursor, RolloutTermination } from '
 /**
  * One branch of the search tree.
  *
- * [SOURCE §12.2, chat] Branches are POI targets, plus a rest branch when the
- * player has fewer than `MIN_REACHABLE_NODES_FOR_REST` targets reachable this
- * turn.
+ * [SOURCE §9, review] Branches are POI targets, every unclaimed one the
+ * player could take, plus resting, which is always a branch (Q62).
  */
 export type MctsBranch =
   | { readonly kind: 'target'; readonly target: PoiCandidate }
@@ -67,45 +66,26 @@ export interface TreePolicy {
 }
 
 /**
- * Which branches the tree expands at a node.
+ * Which branches the tree has at a node, and which untried one it tries first.
  *
- * [SOURCE §12.2, chat] "We will prune the number of next POIs to be used to
- * expand any node [...] These POIs to explore will be the closest at the time
- * (among those that have not been claimed at that point of time in the game)."
+ * [SOURCE §9, review] Andrei, 2026-09-28 (Q62), replacing §12.2's pruning to
+ * the `CLOSE_CANDIDATE_COUNT` closest: "We will not prune any move choices.
+ * Instead, we will rely on MCTS's internal balancing mechanisms between
+ * exploration and deep search. We, however, will need to sort the move
+ * candidates at each tree node of MCTS to make sure we first explore the most
+ * promising ones."
  *
- * So a branch is a *POI target*, recomputed at each node against that node's
- * own game state — "closest at the time", "not been claimed at that point in
- * time" — and not a fixed list from the root.
- *
- * [SOURCE §12.2, review] How many is `CLOSE_CANDIDATE_COUNT`: "We don't really
- * need two different constants here. We will prune the tree by the
- * CLOSE_CANDIDATE_COUNT, plus one branch for resting." The tree's own
- * `MCTS_NODE_EXPANSION_PRUNING` is gone.
- *
- * This reuses `closestPoiCandidates` from `@adventure/sim`, the same ranking
- * the remoteness walk (§5.1) and the rollout policy (§9) use. Three callers,
- * one kernel, one K; only what they do with the result differs — the tree takes
- * every candidate as a branch, the rollout picks one uniformly.
- *
- * [SOURCE §12.2, chat] Rest is a branch too — "let us prune it if there are at
- * least MIN_REACHABLE_NODES_FOR_REST = 3 POIs reachable in one turn" — so the
- * rest branch appears only when the player is movement-constrained enough for
- * recovering stamina to be worth searching.
+ * So `enumerate` lists every branch there is in the position — recomputed at
+ * each node against that node's own game state, since the tree is open-loop —
+ * and `firstToTry` says which of the ones this node has not tried yet comes
+ * first. The search always expands that one, where it used to draw one at
+ * random; everything after expansion is UCT as before.
  */
 export interface ActionEnumerator {
   readonly name: string;
   enumerate(state: GameState, subject: PlayerId): readonly MctsBranch[];
-}
-
-/**
- * "Reachable in one turn" for the rest-pruning rule — can this player actually
- * arrive at that target within this turn's allowance and stamina (§7)?
- *
- * Injected so a test can fix it; `previewReachability()` is the real one,
- * `previewPath` over the cheapest route.
- */
-export interface TurnReachability {
-  isReachableThisTurn(state: GameState, subject: PlayerId, target: PoiCandidate): boolean;
+  /** The first of `untried` in the order, ties broken with `rng`. `untried` is never empty. */
+  firstToTry(state: GameState, subject: PlayerId, untried: readonly MctsBranch[], rng: Rng): MctsBranch;
 }
 
 /**

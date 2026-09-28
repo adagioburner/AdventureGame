@@ -78,8 +78,8 @@ describe('validateRuleset', () => {
   });
 
   it('rejects a CLOSE_CANDIDATE_COUNT below 1', () => {
-    // All three callers of `closestPoiCandidates` share this K, so a zero here
-    // would silently leave the walk and the MCTS tree with no branches at all.
+    // Both callers of `closestPoiCandidates` share this K, so a zero here
+    // would silently leave the walk and the rollout with no targets at all.
     const ruleset = clone();
     (ruleset.config.balancing as { CLOSE_CANDIDATE_COUNT: number }).CLOSE_CANDIDATE_COUNT = 0;
     expect(() => validateRuleset(ruleset)).toThrow(/CLOSE_CANDIDATE_COUNT must be at least 1/);

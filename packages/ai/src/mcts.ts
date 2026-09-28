@@ -16,13 +16,13 @@ import type { MctsBranch, MctsNode, MctsOptions } from './types.ts';
  *
  *   select    — descend via `treePolicy.select` (UCT) while every branch of a
  *               node is expanded.
- *   expand    — take one branch not yet tried in this position and realise it
+ *   expand    — take the branch not yet tried in this position that
+ *               `ActionEnumerator.firstToTry` puts first, and realise it
  *               through `applyAction` in `@adventure/core`, so the tree only
  *               ever contains states the real rules produced. Branches come
- *               from `ActionEnumerator`: the `CLOSE_CANDIDATE_COUNT` closest
- *               *unclaimed* POIs, recomputed at that node's state, plus a rest
- *               branch when fewer than `MIN_REACHABLE_NODES_FOR_REST` of them
- *               are reachable this turn.
+ *               from `ActionEnumerator`: every unclaimed POI the player could
+ *               take, recomputed at that node's state, plus rest — nothing is
+ *               pruned, and the order decides what is tried first (Q62).
  *               A target branch is a macro-action — `macroAdvanceToTarget` —
  *               so one edge can span several turns.
  *   simulate  — `rollout.run`, which is §5.1's random walk driven through the
@@ -135,16 +135,17 @@ function iterate(tree: MctsNode, root: GameState, options: MctsOptions): void {
 
   while (!options.termination.isTerminal(cursor, 0)) {
     const branches = options.actions.enumerate(cursor.state, options.subject);
+    const childOf = new Map(node.children.map((child) => [branchKey(child.action as MctsBranch), child]));
     const available: MctsNode[] = [];
     const untried: MctsBranch[] = [];
     for (const branch of branches) {
-      const child = node.children.find((candidate) => sameBranch(candidate.action, branch));
+      const child = childOf.get(branchKey(branch));
       if (child === undefined) untried.push(branch);
       else available.push(child);
     }
 
     if (untried.length > 0) {
-      const branch = untried[options.rng.nextInt(untried.length)] as MctsBranch;
+      const branch = options.actions.firstToTry(cursor.state, options.subject, untried, options.rng);
       const child: MctsNode = { action: branch, parent: node, children: [], visits: 0, totalValue: 0 };
       node.children.push(child);
       cursor = realise(cursor, branch, options, rules);
@@ -164,11 +165,13 @@ function iterate(tree: MctsNode, root: GameState, options: MctsOptions): void {
   }
 }
 
-/** Branches are the same decision when they head for the same POI, or both rest. */
-function sameBranch(a: MctsBranch | null, b: MctsBranch): boolean {
-  if (a === null) return false;
-  if (a.kind === 'rest' || b.kind === 'rest') return a.kind === b.kind;
-  return a.target.node === b.target.node;
+/**
+ * Branches are the same decision when they head for the same POI, or both
+ * rest: one key per decision. With nothing pruned a node can have a child per
+ * POI on the map, so children are looked up by it rather than searched.
+ */
+function branchKey(branch: MctsBranch): number {
+  return branch.kind === 'rest' ? -1 : branch.target.node;
 }
 
 /**

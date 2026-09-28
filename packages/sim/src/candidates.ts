@@ -1,5 +1,5 @@
 import type { GameConfig } from '@adventure/config';
-import { dijkstra, type MapGraph, type NodeId, type Rng } from '@adventure/core';
+import { dijkstra, type MapGraph, type NodeId, type Rng, type RouteTable } from '@adventure/core';
 
 /**
  * THE shared kernel.
@@ -39,17 +39,33 @@ export interface PoiCandidate {
  * first leg of a remoteness walk, whose random plains start may happen to be an
  * unvisited POI; the alternative — skipping it — would leave a POI the walk can
  * never return to, since §5.1 only ever moves *away* from where it stands.
+ *
+ * Given `routes`, the search is read from that table instead of run again
+ * (Q62). The list is the same either way: the table's search settles nodes in
+ * the same `(cost, node id)` order. A game's rollouts pass one; the map
+ * generator, whose graph is still being built, does not.
  */
 export function closestPoiCandidates(
   graph: MapGraph,
   from: NodeId,
   eligible: ReadonlySet<NodeId>,
   config: GameConfig,
+  routes?: RouteTable,
 ): readonly PoiCandidate[] {
   const wanted = config.balancing.CLOSE_CANDIDATE_COUNT;
   if (wanted <= 0 || eligible.size === 0) return [];
 
   const found: PoiCandidate[] = [];
+  if (routes !== undefined) {
+    const { settled, costs } = routes.from(from);
+    for (const node of settled) {
+      if (!eligible.has(node)) continue;
+      found.push({ node, cost: costs[node] as number });
+      if (found.length >= wanted) break;
+    }
+    return found;
+  }
+
   dijkstra(graph, from, config, {
     stopWhen: (node, cost) => {
       if (eligible.has(node)) found.push({ node, cost });
@@ -71,8 +87,9 @@ export function chooseWalkTarget(
   eligible: ReadonlySet<NodeId>,
   config: GameConfig,
   rng: Rng,
+  routes?: RouteTable,
 ): PoiCandidate | null {
-  const candidates = closestPoiCandidates(graph, from, eligible, config);
+  const candidates = closestPoiCandidates(graph, from, eligible, config, routes);
   if (candidates.length === 0) return null;
   return rng.pick(candidates);
 }
