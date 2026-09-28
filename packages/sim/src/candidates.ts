@@ -4,7 +4,7 @@ import { dijkstra, type MapGraph, type NodeId, type Rng, type RouteTable } from 
 /**
  * THE shared kernel.
  *
- * [SOURCE §1.2] §5.1: "repeatedly move to one of the `CLOSE_CANDIDATE_COUNT`
+ * [SOURCE §1.2] §5.1: "repeatedly move to one of the `REMOTENESS_CANDIDATE_COUNT`
  * closest unvisited POIs (chosen at random among them)".
  * [SOURCE §5, chat] §9: "Rollout/simulation policy: choose a random target
  * among the `CLOSE_CANDIDATE_COUNT` closest POIs, using the same
@@ -14,7 +14,8 @@ import { dijkstra, type MapGraph, type NodeId, type Rng, type RouteTable } from 
  * terrain cost, then pick uniformly among the nearest K — so they are written
  * once, here, and `remoteness.ts` and `rollout.ts` are thin wrappers over this
  * file and `walk.ts`. There is deliberately no second implementation of either
- * step anywhere in the repo.
+ * step anywhere in the repo. Only K differs, so it is passed in: the map's walk
+ * uses `REMOTENESS_CANDIDATE_COUNT`, the computer player `CLOSE_CANDIDATE_COUNT`.
  *
  * What differs between the two callers is only (a) which POIs count as
  * eligible, (b) what "move to the target" means, and (c) when to stop. All
@@ -27,8 +28,8 @@ export interface PoiCandidate {
 }
 
 /**
- * The `CLOSE_CANDIDATE_COUNT` cheapest eligible POIs from `from`, ascending by
- * cost. Fewer than K are returned when fewer remain eligible.
+ * The `count` cheapest eligible POIs from `from`, ascending by cost. Fewer
+ * than `count` are returned when fewer remain eligible.
  *
  * One `dijkstra` from `from`, stopped once K eligible POIs have been settled.
  * Because that search settles in `(cost, node id)` order, the list comes out
@@ -49,16 +50,16 @@ export function closestPoiCandidates(
   graph: MapGraph,
   from: NodeId,
   eligible: ReadonlySet<NodeId>,
+  count: number,
   config: GameConfig,
   routes?: RouteTable,
 ): readonly PoiCandidate[] {
-  const wanted = config.balancing.CLOSE_CANDIDATE_COUNT;
-  if (wanted <= 0 || eligible.size === 0) return [];
+  if (count <= 0 || eligible.size === 0) return [];
 
   const found: PoiCandidate[] = [];
   const settle = (node: NodeId, cost: number): boolean => {
     if (eligible.has(node)) found.push({ node, cost });
-    return found.length >= wanted;
+    return found.length >= count;
   };
   if (routes === undefined) {
     dijkstra(graph, from, config, { stopWhen: settle });
@@ -72,7 +73,7 @@ export function closestPoiCandidates(
 }
 
 /**
- * Pick the walk's next target: uniformly at random among the K closest.
+ * Pick the walk's next target: uniformly at random among the `count` closest.
  * "chosen at random among them" — uniform, with no distance weighting, in both
  * §5.1 and §9. Returns `null` when nothing is eligible, which is how a walk
  * signals it has run out of targets.
@@ -81,11 +82,12 @@ export function chooseWalkTarget(
   graph: MapGraph,
   from: NodeId,
   eligible: ReadonlySet<NodeId>,
+  count: number,
   config: GameConfig,
   rng: Rng,
   routes?: RouteTable,
 ): PoiCandidate | null {
-  const candidates = closestPoiCandidates(graph, from, eligible, config, routes);
+  const candidates = closestPoiCandidates(graph, from, eligible, count, config, routes);
   if (candidates.length === 0) return null;
   return rng.pick(candidates);
 }

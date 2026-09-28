@@ -123,7 +123,14 @@ export function closestUnclaimedPoiEnumerator(
       // `closestPoiCandidates` already returns at most `CLOSE_CANDIDATE_COUNT`,
       // so this *is* the pruned target list; there is no second cap to apply.
       const eligible = unclaimedPoiNodesOf(state);
-      const targets = closestPoiCandidates(state.map.graph, player.position, eligible, config, routeTable(state.map.graph, config));
+      const targets = closestPoiCandidates(
+        state.map.graph,
+        player.position,
+        eligible,
+        config.balancing.CLOSE_CANDIDATE_COUNT,
+        config,
+        routeTable(state.map.graph, config),
+      );
 
       const branches: MctsBranch[] = targets.map((target) => ({ kind: 'target', target }));
 

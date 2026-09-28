@@ -78,11 +78,18 @@ describe('validateRuleset', () => {
   });
 
   it('rejects a CLOSE_CANDIDATE_COUNT below 1', () => {
-    // All three callers of `closestPoiCandidates` share this K, so a zero here
-    // would silently leave the walk and the MCTS tree with no branches at all.
+    // The MCTS rollout and tree share this K, so a zero here would silently
+    // leave the computer player's search with no branches at all.
     const ruleset = clone();
     (ruleset.config.balancing as { CLOSE_CANDIDATE_COUNT: number }).CLOSE_CANDIDATE_COUNT = 0;
     expect(() => validateRuleset(ruleset)).toThrow(/CLOSE_CANDIDATE_COUNT must be at least 1/);
+  });
+
+  it('rejects a REMOTENESS_CANDIDATE_COUNT below 1', () => {
+    // A zero here would end every §5.1 walk before its first leg.
+    const ruleset = clone();
+    (ruleset.config.balancing as { REMOTENESS_CANDIDATE_COUNT: number }).REMOTENESS_CANDIDATE_COUNT = 0;
+    expect(() => validateRuleset(ruleset)).toThrow(/REMOTENESS_CANDIDATE_COUNT must be at least 1/);
   });
 
   it('rejects a negative REMOTENESS_WEIGHT_FOR_DISTRIBUTION', () => {

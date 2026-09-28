@@ -462,7 +462,8 @@ want to risk pruning out good moves early on". The numbers above are what was
 true when the two constants were collapsed, not the current default. Worth
 knowing that this is no longer only an AI knob: §5.1's remoteness walk reads the
 same constant, so the change moves remoteness scores, and through §5.2 the guard
-strengths and reward stacking of every generated map.
+strengths and reward stacking of every generated map. *Since [Q66](#q66) it no
+longer does: the walk has its own `REMOTENESS_CANDIDATE_COUNT`.*
 
 ---
 
@@ -1841,6 +1842,24 @@ starts, so they keep the walk's pace however smoothly the map draws
 (`apps/web/src/sound/player.ts`, `apps/web/src/page/GameScreen.tsx`). A
 browser lets a page make sound only once the person has tapped or typed on
 it, so nothing plays before the first tap.
+
+### Q66. ~~One K for the map and the computer?~~ — **answered 2026-09-28: two settings**
+
+On 28 September Andrei asked for simulations of the computer player looking at
+the 15 closest places instead of 10. `CLOSE_CANDIDATE_COUNT` was still the one
+K of [Q19](#q19), read by §5.1's remoteness walk as well as §9's rollout and
+tree, so changing it would also have moved every generated map. At 14:13 he
+ruled: *"the maps should be kept as is; if we change the setting for the number
+of the closest places, it should affect computer player only. I was in fact
+thinking of lowering this number for map generation, so these two definitely
+need to be separated"*, and at 14:14: *"yes, let's split it in a small
+independent pr"*.
+
+So §5.1's walk reads a new §11 row, `REMOTENESS_CANDIDATE_COUNT`, and
+`CLOSE_CANDIDATE_COUNT` is the computer player's alone, for the rollout and the
+tree together. Both are 10, so no map and no move changed:
+`closestPoiCandidates` and `chooseWalkTarget` now take K from their caller
+rather than reading it from the config.
 
 ---
 

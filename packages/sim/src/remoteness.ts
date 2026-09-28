@@ -5,7 +5,7 @@ import type { PoiCandidate } from './candidates.ts';
 
 /**
  * [SOURCE §1.2] §5.1: "Computed via simulated random walks: start at a random
- * plains position, repeatedly move to one of the `CLOSE_CANDIDATE_COUNT`
+ * plains position, repeatedly move to one of the `REMOTENESS_CANDIDATE_COUNT`
  * closest unvisited POIs (chosen at random among them), until every POI has
  * been visited once per walk. [...] Run `REMOTENESS_SIMULATION_RUNS` walks,
  * normalize the resulting per-POI scores to [0, 1]."
@@ -171,7 +171,15 @@ export function computeRemoteness(
     // necessarily a POI.
     const start: RemotenessCursor = { at: rng.pick(plainsNodes), unvisited: new Set(poiNodes) };
     scorer.beginWalk();
-    runWalk(graph, start, remotenessDriver((visit) => scorer.record(visit)), config, rng, poiNodes.length + 1);
+    runWalk(
+      graph,
+      start,
+      remotenessDriver((visit) => scorer.record(visit)),
+      config.balancing.REMOTENESS_CANDIDATE_COUNT,
+      config,
+      rng,
+      poiNodes.length + 1,
+    );
     scorer.endWalk();
   }
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_GAME_CONFIG, type GameConfig, type Terrain } from '@adventure/config';
+import { DEFAULT_GAME_CONFIG, type Terrain } from '@adventure/config';
 import { asNodeId, createRng, routeTable, type MapGraph, type NodeId } from '@adventure/core';
 import { chooseWalkTarget, closestPoiCandidates } from './candidates.ts';
 
@@ -30,13 +30,9 @@ const line = graphOf(
   ],
 );
 
-function withK(k: number): GameConfig {
-  return { ...DEFAULT_GAME_CONFIG, balancing: { ...DEFAULT_GAME_CONFIG.balancing, CLOSE_CANDIDATE_COUNT: k } };
-}
-
 describe('closestPoiCandidates', () => {
   it('returns the K cheapest eligible POIs, ascending by cost', () => {
-    const found = closestPoiCandidates(line, n(0), new Set([n(2), n(3), n(4)]), withK(2));
+    const found = closestPoiCandidates(line, n(0), new Set([n(2), n(3), n(4)]), 2, DEFAULT_GAME_CONFIG);
     expect(found).toEqual([
       { node: n(2), cost: 2 },
       { node: n(3), cost: 3 },
@@ -44,18 +40,18 @@ describe('closestPoiCandidates', () => {
   });
 
   it('returns fewer than K when fewer remain eligible', () => {
-    expect(closestPoiCandidates(line, n(0), new Set([n(4)]), withK(10))).toEqual([{ node: n(4), cost: 4 }]);
+    expect(closestPoiCandidates(line, n(0), new Set([n(4)]), 10, DEFAULT_GAME_CONFIG)).toEqual([{ node: n(4), cost: 4 }]);
   });
 
   it('is empty when nothing is eligible', () => {
-    expect(closestPoiCandidates(line, n(0), new Set(), withK(10))).toEqual([]);
+    expect(closestPoiCandidates(line, n(0), new Set(), 10, DEFAULT_GAME_CONFIG)).toEqual([]);
   });
 
   it('counts the origin itself, at cost 0, when it is eligible', () => {
     // The first leg of a §5.1 walk starts at a random plains node that may
     // happen to be an unvisited POI; the walk only moves away from where it
     // stands, so skipping it would strand that POI.
-    const found = closestPoiCandidates(line, n(0), new Set([n(0), n(2)]), withK(10));
+    const found = closestPoiCandidates(line, n(0), new Set([n(0), n(2)]), 10, DEFAULT_GAME_CONFIG);
     expect(found[0]).toEqual({ node: n(0), cost: 0 });
   });
 
@@ -71,7 +67,7 @@ describe('closestPoiCandidates', () => {
         [3, 4],
       ],
     );
-    expect(closestPoiCandidates(graph, n(0), new Set([n(2), n(4)]), withK(10))).toEqual([
+    expect(closestPoiCandidates(graph, n(0), new Set([n(2), n(4)]), 10, DEFAULT_GAME_CONFIG)).toEqual([
       { node: n(4), cost: 2 },
       { node: n(2), cost: 4 },
     ]);
@@ -86,7 +82,7 @@ describe('closestPoiCandidates', () => {
         [0, 2],
       ],
     );
-    expect(closestPoiCandidates(graph, n(0), new Set([n(1), n(2)]), withK(10)).map((c) => c.node)).toEqual([
+    expect(closestPoiCandidates(graph, n(0), new Set([n(1), n(2)]), 10, DEFAULT_GAME_CONFIG).map((c) => c.node)).toEqual([
       n(1),
       n(2),
     ]);
@@ -105,10 +101,10 @@ describe('closestPoiCandidates read off a route table', () => {
     const eligible = new Set(Array.from({ length: size }, (_unused, node) => n(node)).filter((node) => node % 3 !== 1));
 
     for (const k of [0, 1, 4, 10, 60]) {
-      const routes = routeTable(graph, withK(k));
+      const routes = routeTable(graph, DEFAULT_GAME_CONFIG);
       for (let from = 0; from < size; from++) {
-        expect(closestPoiCandidates(graph, n(from), eligible, withK(k), routes)).toEqual(
-          closestPoiCandidates(graph, n(from), eligible, withK(k)),
+        expect(closestPoiCandidates(graph, n(from), eligible, k, DEFAULT_GAME_CONFIG, routes)).toEqual(
+          closestPoiCandidates(graph, n(from), eligible, k, DEFAULT_GAME_CONFIG),
         );
       }
     }
@@ -119,7 +115,7 @@ describe('chooseWalkTarget', () => {
   it('picks uniformly among the K closest and nothing outside them', () => {
     const seen = new Set<NodeId>();
     for (let run = 0; run < 50; run++) {
-      const target = chooseWalkTarget(line, n(0), new Set([n(1), n(2), n(3), n(4)]), withK(2), createRng(`r${run}`));
+      const target = chooseWalkTarget(line, n(0), new Set([n(1), n(2), n(3), n(4)]), 2, DEFAULT_GAME_CONFIG, createRng(`r${run}`));
       expect(target).not.toBeNull();
       seen.add((target as { node: NodeId }).node);
     }
@@ -127,6 +123,6 @@ describe('chooseWalkTarget', () => {
   });
 
   it('is null when nothing is eligible', () => {
-    expect(chooseWalkTarget(line, n(0), new Set(), withK(10), createRng('x'))).toBeNull();
+    expect(chooseWalkTarget(line, n(0), new Set(), 10, DEFAULT_GAME_CONFIG, createRng('x'))).toBeNull();
   });
 });

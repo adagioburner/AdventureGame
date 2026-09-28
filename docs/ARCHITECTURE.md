@@ -277,7 +277,7 @@ what actually differs rather than by who calls it:
 
 | File | Role |
 |---|---|
-| `candidates.ts` | **The shared kernel.** Rank eligible POIs by weighted terrain cost; pick uniformly among the `CLOSE_CANDIDATE_COUNT` closest. Both §5.1 and §9 are exactly these two operations. |
+| `candidates.ts` | **The shared kernel.** Rank eligible POIs by weighted terrain cost; pick uniformly among the K closest, K passed in: `REMOTENESS_CANDIDATE_COUNT` for §5.1, `CLOSE_CANDIDATE_COUNT` for §9 (Q66). Both §5.1 and §9 are exactly these two operations. |
 | `walk.ts` | The generic loop, plus `WalkDriver<TCursor>` — the three things that differ: which POIs are *eligible*, what *advancing* to a target means, and when the walk is *done*. [SOURCE §9, review] It did not survive the rollout, as expected: "we may end up sharing code for choosing the next target only". It is remoteness's own loop now. See [Q25](./OPEN_QUESTIONS.md#q25). |
 | `remoteness.ts` | §5.1's driver: eligible = unvisited, advance = move straight there charging path cost, done = all POIs visited. Runs `REMOTENESS_SIMULATION_RUNS` walks from a random plains node, then min-max normalises to [0,1]. |
 | `rollout.ts` | §9's rollout, its own small loop over `macroAdvanceToTarget` (phase 5): eligible = unclaimed POIs of any kind, advance = play real turns through `applyAction` (so allowance, stamina, guard rolls and turn boundaries all apply), each seat keeping its own target and resting when it cannot take a step (Q43), done = no unclaimed gold left or `SIMULATION_TURN_CAP` turns played (Q44). |
@@ -396,11 +396,13 @@ four are now decided — two by §9 directly, two by §12.2:
 
 The enumerator is worth a second look, because it completes the sharing story:
 it calls the same `closestPoiCandidates` that the remoteness walk and the
-rollout policy call. Three consumers, one ranking kernel and — since the
-designer collapsed the tree's own constant into it (Q19) — one K,
-`CLOSE_CANDIDATE_COUNT` = 10. They differ only in what they do with the ranked
-list: the tree makes every candidate a branch, the rollout picks one uniformly,
-remoteness walks to its pick.
+rollout policy call. Three consumers and one ranking kernel. The tree and the
+rollout share one K, `CLOSE_CANDIDATE_COUNT` = 10, since the designer collapsed
+the tree's own constant into it (Q19); the remoteness walk has its own,
+`REMOTENESS_CANDIDATE_COUNT` = 10, since he split the map's from the computer
+player's (Q66). They differ only in what they do with the ranked list: the tree
+makes every candidate a branch, the rollout picks one uniformly, remoteness
+walks to its pick.
 
 **Routes are searched once per map in a game** (Andrei, 2026-09-28):
 `routeTable` in `packages/core/src/path.ts` runs the whole Dijkstra from every

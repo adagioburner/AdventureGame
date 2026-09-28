@@ -50,6 +50,7 @@ export function runWalk<TCursor>(
   graph: MapGraph,
   start: TCursor,
   driver: WalkDriver<TCursor>,
+  candidateCount: number,
   config: GameConfig,
   rng: Rng,
   maxLegs: number,
@@ -59,7 +60,14 @@ export function runWalk<TCursor>(
   let cumulativeCost = 0;
 
   for (let leg = 0; leg < maxLegs && !driver.done(cursor); leg++) {
-    const target = chooseWalkTarget(graph, driver.position(cursor), driver.eligible(cursor), config, rng);
+    const target = chooseWalkTarget(
+      graph,
+      driver.position(cursor),
+      driver.eligible(cursor),
+      candidateCount,
+      config,
+      rng,
+    );
     if (target === null) break;
     const advanced = driver.advance(cursor, target);
     if (advanced === null) break;

@@ -130,9 +130,9 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 ### 5.1 Remoteness
 
-[SOURCE §1.2] Computed via simulated random walks: start at a random plains position, repeatedly move to one of the `CLOSE_CANDIDATE_COUNT` closest unvisited POIs (chosen at random among them), until every POI has been visited once per walk. Distance for "closest" and for walk-segment lengths uses the same weighted terrain cost as movement: 1 plains / 2 forest / 3 mountain per step [SOURCE §1.2, chat: the one distance metric used throughout the design — also for the UI's shortest-path display, §7, and the AI's own POI targeting, §9]. Run `REMOTENESS_SIMULATION_RUNS` walks, normalize the resulting per-POI scores to **[0, 1]**.
+[SOURCE §1.2] Computed via simulated random walks: start at a random plains position, repeatedly move to one of the `REMOTENESS_CANDIDATE_COUNT` closest unvisited POIs (chosen at random among them), until every POI has been visited once per walk. Distance for "closest" and for walk-segment lengths uses the same weighted terrain cost as movement: 1 plains / 2 forest / 3 mountain per step [SOURCE §1.2, chat: the one distance metric used throughout the design — also for the UI's shortest-path display, §7, and the AI's own POI targeting, §9]. Run `REMOTENESS_SIMULATION_RUNS` walks, normalize the resulting per-POI scores to **[0, 1]**.
 
-[SOURCE §1.2, chat] `CLOSE_CANDIDATE_COUNT` = **10**, raised from 5 once §9's MCTS tree began pruning to this same constant: "we don't want to risk pruning out good moves early on". Note it now sets the search's branching factor as well as this walk's candidate set, so it is no longer a remoteness-only knob — changing it moves generated maps and AI play together. `REMOTENESS_SIMULATION_RUNS` = **100** (expected to change if 100 proves too imprecise or too slow). This random-walk code is shared with the AI player's MCTS rollout policy (§9).
+[SOURCE §1.2, chat] `CLOSE_CANDIDATE_COUNT` = **10**, raised from 5 once §9's MCTS tree began pruning to this same constant: "we don't want to risk pruning out good moves early on". [SOURCE §5.1, review] The walk's K is now its own setting, `REMOTENESS_CANDIDATE_COUNT` = **10**, and `CLOSE_CANDIDATE_COUNT` is the computer player's alone (§9's rollout and tree): "if we change the setting for the number of the closest places, it should affect computer player only [...] these two definitely need to be separated" (Q66). `REMOTENESS_SIMULATION_RUNS` = **100** (expected to change if 100 proves too imprecise or too slow). This random-walk code is shared with the AI player's MCTS rollout policy (§9).
 
 ### 5.2 Guard-strength / remoteness formula
 
@@ -296,7 +296,8 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `REMOTENESS_WEIGHT` | 4 | tunable (play-test) — guard/remoteness balance, §5.2 |
 | `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` | 2 | tunable (play-test) — reward stacking, §4.3 |
 | `REWARD_SWAP_PASSES` | 5 | tunable (play-test) — reward/remoteness agreement, §4.3 step 4 [SOURCE §4.3, review] |
-| `CLOSE_CANDIDATE_COUNT` | 10 | tunable — one K for §5.1's walk, §9's rollout and §9's tree |
+| `CLOSE_CANDIDATE_COUNT` | 10 | tunable — the computer player's K, for §9's rollout and §9's tree |
+| `REMOTENESS_CANDIDATE_COUNT` | 10 | tunable — §5.1's walk, while a map is generated (Q66) |
 | `REMOTENESS_SIMULATION_RUNS` | 100 | tunable |
 | `STAMINA_COST` (plains/forest/mountain) | 1 / 2 / 3 | fixed |
 | `REST_STAMINA_GAIN` | 5 | tunable |

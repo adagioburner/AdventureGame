@@ -180,6 +180,18 @@ describe('§5.1 — remoteness', () => {
       expect(Math.max(...scores)).toBe(1);
     }
   }, 30000);
+
+  it("walks with the map's own K, so the computer player's K leaves the map alone", () => {
+    const withBalancing = (balancing: Partial<Ruleset['config']['balancing']>): Ruleset => ({
+      ...DEFAULT_RULESET,
+      config: { ...DEFAULT_RULESET.config, balancing: { ...DEFAULT_RULESET.config.balancing, ...balancing } },
+    });
+    const pois = (map: GameMap) => map.pois.map((poi) => [poi.node, poi.remoteness, poi.reward, poi.guard]);
+
+    const today = pois(mapOf('adventure'));
+    expect(pois(mapOf('adventure', withBalancing({ CLOSE_CANDIDATE_COUNT: 3 })))).toEqual(today);
+    expect(pois(mapOf('adventure', withBalancing({ REMOTENESS_CANDIDATE_COUNT: 3 })))).not.toEqual(today);
+  }, 30000);
 });
 
 describe('§5.2 — guard strengths', () => {

@@ -213,6 +213,7 @@ export function playRolloutTurn(cursor: RolloutCursor, options: RolloutOptions):
       state.map.graph,
       player.position,
       unclaimedPoiNodes(state),
+      options.config.balancing.CLOSE_CANDIDATE_COUNT,
       options.config,
       options.rng,
       routeTable(state.map.graph, options.config),
