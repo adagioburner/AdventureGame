@@ -168,9 +168,11 @@ uniformly at random.** Ranking is by the weighted terrain cost above, and the
 whole thing — rank, then pick uniformly among the nearest K — is written once in
 `packages/sim/src/candidates.ts` and shared by three callers: the remoteness
 walk (§5.1, over *unvisited* POIs), the rollout policy (§9, over *unclaimed*
-POIs) and tree expansion (also unclaimed). They share the one K as well, so
-tuning `CLOSE_CANDIDATE_COUNT` moves all three together; what differs is
-eligibility, and what each does with the ranked list.
+POIs) and tree expansion (also unclaimed). The rollout and the tree share the
+one K, so tuning `CLOSE_CANDIDATE_COUNT` moves both together; the remoteness
+walk has its own, `REMOTENESS_CANDIDATE_COUNT` (Q66), so the computer player
+tunes without moving the maps. What differs is eligibility, and what each does
+with the ranked list.
 
 **A rollout stops when no gold rewards are left on the map.** That is the rule,
 and it is specifically *not* "all POIs claimed": a rollout ends with skill and

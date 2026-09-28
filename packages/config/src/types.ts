@@ -142,18 +142,29 @@ export interface BalancingConfig {
    */
   readonly REWARD_SWAP_PASSES: number;
   /**
-   * §11 `CLOSE_CANDIDATE_COUNT` — tunable.
-   * Used by the shared random walk (§5.1), by the MCTS rollout policy (§9)
-   * and, identically, by MCTS tree expansion.
+   * §11 `CLOSE_CANDIDATE_COUNT` — tunable. The computer player's K: used by
+   * the MCTS rollout policy (§9) and, identically, by MCTS tree expansion.
    *
    * [SOURCE §12.2, review] The tree originally had a K of its own,
    * `MCTS_NODE_EXPANSION_PRUNING` = 10. The designer removed it: "We don't
    * really need two different constants here. We will prune the tree by the
-   * CLOSE_CANDIDATE_COUNT, plus one branch for resting." So all three callers
-   * of `closestPoiCandidates` now share this one number, and tuning it moves
-   * the rollout and the tree together — which is the point.
+   * CLOSE_CANDIDATE_COUNT, plus one branch for resting." So the rollout and the
+   * tree share this one number, and tuning it moves them together — which is
+   * the point.
+   *
+   * [SOURCE §5.1, review] It no longer sets the remoteness walk's K, which is
+   * `REMOTENESS_CANDIDATE_COUNT`: "if we change the setting for the number of
+   * the closest places, it should affect computer player only [...] these two
+   * definitely need to be separated."
    */
   readonly CLOSE_CANDIDATE_COUNT: number;
+  /**
+   * §11 `REMOTENESS_CANDIDATE_COUNT` — tunable (10). The K of §5.1's
+   * remoteness walk, which runs while a map is generated: each leg moves to
+   * one of this many closest unvisited POIs. Split from
+   * `CLOSE_CANDIDATE_COUNT` so the map and the computer player tune apart.
+   */
+  readonly REMOTENESS_CANDIDATE_COUNT: number;
   /** §11 `REMOTENESS_SIMULATION_RUNS` — tunable (100). */
   readonly REMOTENESS_SIMULATION_RUNS: number;
 }

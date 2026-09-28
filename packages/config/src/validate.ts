@@ -93,7 +93,10 @@ export function validateRuleset(ruleset: Ruleset): void {
   assertRange(problems, 'PLAYER_COUNT', config.players.PLAYER_COUNT);
 
   if (config.balancing.CLOSE_CANDIDATE_COUNT < 1) {
-    problems.push('§5.1: CLOSE_CANDIDATE_COUNT must be at least 1.');
+    problems.push('§9: CLOSE_CANDIDATE_COUNT must be at least 1.');
+  }
+  if (config.balancing.REMOTENESS_CANDIDATE_COUNT < 1) {
+    problems.push('§5.1: REMOTENESS_CANDIDATE_COUNT must be at least 1.');
   }
   if (config.balancing.REMOTENESS_SIMULATION_RUNS < 1) {
     problems.push('§5.1: REMOTENESS_SIMULATION_RUNS must be at least 1.');

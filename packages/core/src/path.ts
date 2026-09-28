@@ -53,7 +53,7 @@ export interface DijkstraOptions {
   /**
    * Called for every node as it is settled, in settle order. Returning `true`
    * ends the search after that node — which is how `closestPoiCandidates`
-   * stops once it has seen `CLOSE_CANDIDATE_COUNT` eligible POIs instead of
+   * stops once it has seen its K eligible POIs instead of
    * exploring the whole map.
    */
   readonly stopWhen?: (node: NodeId, cost: number) => boolean;
