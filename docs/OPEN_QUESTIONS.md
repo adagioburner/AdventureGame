@@ -11,7 +11,7 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q61.
+**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q65.
 `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
@@ -49,7 +49,7 @@ changes what GDD §3 or §7.1 says.
 | # | Decision | What it changed in the code |
 |---|---|---|
 | §12.1 | [SOURCE, chat] "Durable Objects, with flexible architecture to swap it for something else if DO don't fit the bill. Everything else, i.e. map generation and player AI, runs on the game master's machine." | The DO becomes one adapter behind `SessionPorts`; `packages/session` still imports no transport, storage, socket or timer, so the swap stays an adapter. `MapService` and `AiService` keep their interfaces but the DO implements them as **round trips to the GM's client** (`gm.requestMapGeneration`/`gm.mapGenerated`, `gm.requestAiMove`/`gm.aiMove`). See `docs/STACK.md` for what the choice costs. |
-| §12.2 | [SOURCE, chat] Branches are the closest unclaimed POIs at that point in the game; "for everything else please use sensible defaults that are recommended for standard MCTS implementations." The K was `MCTS_NODE_EXPANSION_PRUNING = 10`, **superseded** — see Q19. | `closestUnclaimedPoiEnumerator()` and `uctTreePolicy()` ship as named, swappable defaults. The enumerator calls the same `closestPoiCandidates` as the remoteness walk and the rollout policy — three consumers, one kernel, one K. Sub-questions: Q16, Q17, Q19. |
+| §12.2 | [SOURCE, chat] Branches are the closest unclaimed POIs at that point in the game; "for everything else please use sensible defaults that are recommended for standard MCTS implementations." The K was `MCTS_NODE_EXPANSION_PRUNING = 10`, **superseded** — see Q19. | `closestUnclaimedPoiEnumerator()` and `uctTreePolicy()` ship as named, swappable defaults. The enumerator calls the same `closestPoiCandidates` as the remoteness walk and the rollout policy — three consumers, one kernel, one K. Sub-questions: Q16, Q17, Q19. *Since [Q65](#q65) the tree and the rollout both choose among the 2 most attractive unclaimed POIs of each kind, the tree plus rest: `attractivePoiEnumerator()`. Q62 and Q64 came between.* |
 | §12.3 | [SOURCE, chat] "The message board should be part of the game state and as such persistent along with the rest of the game. There is no difference between the message board state and other game state." | `BoardPost` moved into `@adventure/core`; `GameState.messageBoard` holds it; posting is a `PostMessageAction` through `applyAction`, the single writer. `MessageBoardStore` and the `board.posts` message are **deleted** — no store, no retention policy, no separate channel. |
 | §12.4 | [SOURCE, chat] "The game cannot proceed for a player that cannot establish connection with the game state server. If the game master disconnects there is no one to force the next turn so the game stalls as well." | `GameMasterAbsencePolicy` **deleted** — there is no fallback to configure. A GM-only request with no GM connected is answered `game_master_unavailable` and the game waits. |
 
@@ -455,6 +455,11 @@ slice is gone with it; the kernel's cap is the only cap.
 
 The rest branch is untouched: `MIN_REACHABLE_NODES_FOR_REST` = 3 still gates it
 (Q16), since it is a threshold on reachability rather than a second K.
+
+*Superseded by [Q62](#q62) and then [Q65](#q65): the tree and the rollout keep
+the `ATTRACTIVE_POIS_PER_KIND` most attractive POIs of each kind instead of any
+K closest, and resting is always a branch, so `MIN_REACHABLE_NODES_FOR_REST` is
+gone too. `CLOSE_CANDIDATE_COUNT` is now the remoteness walk's alone.*
 
 **Follow-up: the value moved.** [SOURCE §1.2, chat] With one constant now
 serving all three callers, the designer raised it from 5 to **10** — "we don't
@@ -1752,6 +1757,95 @@ The icon files are unchanged. The discs are drawn as the icons load, from
 `apps/web/src/render/pixi/textures.ts`), which is why the cards, which show
 the files, keep today's icons.
 
+<a id="q62"></a>
+### Q62. ~~Which POIs does the computer consider?~~ — **answered 2026-09-28: every one, tried in his order; replaced by [Q65](#q65)**
+
+On 27 September at 17:03 Andrei reported: *"in the endgame the AI player runs
+around aimlessly, grabbing skills they don't need, instead of going for the
+last gold rewards remaining. I think we are pruning too much, and if the gold
+is too far it never becomes a goal."* Measured on main before any change, over
+eight computer games (`selfplay-0` … `selfplay-7`, 300 games in its head per
+move): in 72 of 1,343 of the computer's turns there was gold it had a chance
+at and none of it among the 10 closest POIs it chose from, in runs of turns
+where the nearest such gold was the 11th to 22nd closest POI.
+
+His first fix, keeping one or two POIs of each kind among the 10 closest, went
+on a details page as 119 to 125 and was withdrawn before being answered: at
+23:30 he wrote *"I cannot think of a good pruning strategy that is guaranteed
+not to miss that one winning move that may decide the game"*, and at 23:42
+replaced it with a plan:
+
+> 1. We will not prune any move choices. Instead, we will rely on MCTS's
+>    internal balancing mechanisms between exploration and deep search
+> 2. We, however, will need to sort the move candidates at each tree node of
+>    MCTS to make sure we first explore the most promising ones
+> 3. We will sort the POI to go to according to the following criteria:
+>    1. First consider moves that the player can reach in one turn, than in
+>       two turns, etc
+>    2. Out of the POIs one can reach in N turns, first consider those that
+>       require less stamina
+>    3. Out of those that require spending equal stamina to get there, first
+>       consider those that offer more units the reward. For gold, exclude POI
+>       with guards you cannot beat; for others, multiply the number of units
+>       of gold by the probability to get it after one throw of the die, to
+>       get the effective number of units to compare.
+
+What that left open went on the same page as 126 to 131, each with a
+recommendation. On 28 September at 00:11 he answered: *"126 - the cheapest
+route as recommended. 127 - the gold one cannot beat is left out of one's
+choices completely. 128 - random. 129 - resting is always a choice, coming
+between all POI that take 1 turn to reach and those that take more than one
+POI to reach. 130 - choosing randomly out of 10 closest is good for
+simulations. 131 - We can also precompute and cache distances to make
+simulations run faster. It won't work for sorting the moves for exploration
+as this sort order depends on the set of skills you have at that particular
+node"*.
+
+126. **Turns and stamina are counted along the cheapest route,** the one the
+     computer walks, as the rules would play it: each turn its free steps
+     first, then stamina, stopping at the first step it cannot pay for, and
+     resting a turn whenever it cannot take a single step (Q43),
+     which gives back `REST_STAMINA_GAIN`. Stamina is the total spent over
+     all those turns. The first turn has this turn's allowance, every later
+     one the player's skills; rewards picked up on the way are not counted.
+     Standing on the POI already (a guard that held last turn) is reached
+     this turn for nothing.
+127. **Gold no roll can win is not a choice at all** at that point of the
+     search. Further on in the search it comes back once the skill gained on
+     the way gives it a chance. The test is on the guard, not on the reward
+     kind, as everywhere in the engine; in v1 only gold is guarded.
+128. **Exact ties are broken at random,** from the search's own stream.
+129. **Resting is always a choice,** after every POI reached this turn and
+     before every POI that takes longer. `MIN_REACHABLE_NODES_FOR_REST`,
+     which gated the rest branch before, does nothing any more and is gone
+     from the config.
+130. **The games the computer plays in its head are unchanged:** every
+     player there heads for a random one of its `CLOSE_CANDIDATE_COUNT`
+     closest unclaimed POIs (GDD §9).
+131. **Routes are worked out once per map and kept** (`routeTable` in
+     `packages/core/src/path.ts`), for the games in its head, for the
+     computer's own move, and for the order. His point holds for the order's
+     turns and stamina, which depend on the skills at each point and are
+     counted afresh there; the route they are counted along, the cheapest by
+     road cost, does not depend on anyone's skills, so it comes from the
+     table. Every route and every "10 closest" list is exactly what it was:
+     the table keeps the same search `shortestPath` and `closestPoiCandidates`
+     ran. The map generator, whose graph is still being built while it
+     walks, keeps searching afresh, so every map is unchanged.
+
+The search tries the untried choice the order puts first where it used to
+draw one at random; everything else about it is UCT as before. Units compare
+as plain numbers whatever the reward, a guarded one's scaled by the share of
+the die's outcomes that beat its guard. The order is `firstToTry` in
+`packages/ai/src/policies/tree.ts`.
+
+What it changes, measured from the same positions on a 5-second move: at the
+opening the computer now has about 53 choices instead of 10 and plays about
+3,200 games in its head instead of about 890, and its most-tried line runs 3
+choices deep instead of 4. Against main's computer it played worse, which led
+to [Q64](#q64).
+
+<a id="q63"></a>
 ### Q63. How do the sound effects work? — **answered 2026-09-28**
 
 On 27 September at 17:05 Andrei asked: *"we need at least minimal sound
@@ -1841,6 +1935,142 @@ starts, so they keep the walk's pace however smoothly the map draws
 (`apps/web/src/sound/player.ts`, `apps/web/src/page/GameScreen.tsx`). A
 browser lets a page make sound only once the person has tapped or typed on
 it, so nothing plays before the first tap.
+
+<a id="q64"></a>
+### Q64. ~~How does the search use the order?~~ — **answered 2026-09-28: it opens the choices a few at a time, in that order; replaced by [Q65](#q65)**
+
+Q62's computer, measured against main's (the 10 closest choices, routes
+searched afresh), each side in both seats: at 1 second a move it won 5 of 16
+games on `selfplay-0` … `selfplay-7`, with 19 gold on average to 23, though it
+played about 1,860 games in its head per move to about 260; at 10 seconds it
+won 3 of 8 on `selfplay-0` … `selfplay-3`, 22 gold each, about 22,300 games to
+3,100. From the 36 positions in main's games on `selfplay-3` and `selfplay-4`
+where gold it had a chance at lay outside its 10 choices, it went for gold
+once. UCT tries every choice at a point once before it tries any a second
+time, so with about 50 choices the order only decided which came first, and
+the games went into trying everything once instead of looking deeper.
+
+Given four options on 28 September, Andrei picked opening the choices a few at
+a time in his order (progressive widening), and at 01:42 took the
+recommendations for its details 150 to 153: *"please proceed with option A and your
+recommendations for 150 through 153."*
+
+150. **A point of the search that has had n games through it has the first
+     ⌈√n⌉ choices in the order open.** The 1st opens at its first game, the
+     2nd at 2, the 3rd at 5, the 10th at 82 and the 50th at 2,402. Faster
+     (2√n) and slower (the fourth root of n) were the alternatives.
+151. **At every point,** the move being chosen included.
+152. **A choice once open stays open.**
+153. **The next to open is the next in the order for the position that
+     imagined game has reached there.** Dice can make the skills at a point
+     differ from one imagined game to the next, so the order is worked out
+     afresh each time, as under Q62.
+
+One more detail turned up while building: in an imagined game the other
+player can claim every POI a point has open, at about 1 in 1,000 of the points
+the search passes through. Asked as 154, he chose on 28 September at 02:04 to
+open the next one:
+
+154. **When none of a point's open choices can be taken in that imagined
+     game, the next in the order opens,** one beyond ⌈√n⌉, as the search
+     already did in that case. The alternative was playing that game out
+     from there with no new choice opened.
+
+UCT shares the games among the open choices as before. The rule is
+`squareRootWidening` in `packages/ai/src/policies/tree.ts`, applied in
+`packages/ai/src/mcts.ts`; `noWidening` is Q62's try-everything-once, kept for
+experiments.
+
+Measured against main's computer in the same way, each side in both seats on
+`selfplay-0` … `selfplay-7`: at 1 second a move it won 13 of 16 games, with 25
+gold on average to 17, playing about 1,650 games in its head per move to
+about 260; at 10 seconds it won 6 of 16, with 22 gold each on average, about
+28,900 games to 3,600. From the 36 positions above it went for gold once, as
+Q62's did.
+
+At 04:44 Andrei wondered whether √n was too restrictive. The faster
+alternative from 150, 2√n, measured the same way, won 6 of 16 at 1 second
+(21 gold to 22) and 7 of 16 at 10 seconds (20 to 23), worse than √n, so √n
+stayed. Both were then replaced by [Q65](#q65).
+
+<a id="q65"></a>
+### Q65. ~~How far is a POI, and which does the computer weigh?~~ — **answered 2026-09-28: by effective distance per unit, the 2 most attractive of each kind**
+
+At 06:36 Andrei replaced Q62 and Q64 with a new plan:
+
+> We are going to introduce a new way to measure distance. [...] precompute
+> and cache the number of steps required to reach each POI from each node over
+> each terrain separately. (We will allow ourselves to be sloppy here and
+> simply take the shortest path). Thus, we will have 3 numbers cached for each
+> (node, POI) pair. [...] stamina(1) = max(P - p, 0) + 2*max(F - f, 0) +
+> 3*max(M - m, 0) [...] stamina(2) = max(P- 2p, 0) + 2*max(F-2f, 0) +
+> 3*max(M-2m, 0) [...] We will count each turn as 5 stamina (this is out rest
+> stamina constant) and from that perspective define effective distance = min
+> 5n + stamina(n) [...] To determine how attractive a POI is for us, we take
+> the effective distance to it and divide it by the number of skills it gives.
+> If the POI is guarded, we also multiply this number by the probability to get
+> the reward in 1 turn. For pruning we will take 2 most attractive POI of each
+> kind (that will be up to 10 in total). The simulation will choose randomly
+> among the same set of POI.
+
+At 06:38: *"right, we need to divide the gold in the guarded POI by the
+probability to get it, not multiply. Multiplying doesn't make sense"*; at
+06:40: *"and more attractive means less effective distance divided by the
+number of skills"*. The open details went on a page as 155 to 163, and two
+more came up while building; his answers:
+
+155. **P, F and M are counted along the cheapest route by road cost**, the one
+     the computer walks, as recommended (06:44): *"both the shortest path and
+     the cheapest by road cost may be not optimal, depending on current skill
+     set. Still, we want to simplify here."*
+156. **Divided, not multiplied** (06:38): attractiveness is effective distance
+     ÷ (units × the chance one roll takes the reward), so 3 gold behind a guard
+     beaten a third of the time counts as 1 gold.
+157. **Ties are broken at random** (06:44).
+158. **Six kinds, 2 each, up to 12** (06:45): plains, forest and mountain speed,
+     combat, magic and gold. *"I stay corrected, there will be 12 of them."*
+     Stamina is never a target; gold is one kind whichever guard holds it.
+159. **The 2 is a §11 setting**, `ATTRACTIVE_POIS_PER_KIND` (06:48), *"though
+     it's much more discreet and harder to tune"*.
+160. **Resting is always a choice** in the search (06:49).
+161. **All choices open at once, as before Q64** (06:50): *"let us go back to
+     'all at once' as we had before - it seems to work pretty well, beating the
+     new algorithm we tried to intriduce"*. Read, and told him, as untried
+     choices tried at random, the way it worked before Q62.
+162. **The map generator is unchanged** (06:54): its walks have no skills, so
+     road cost stays their distance, and every seed gives the same map.
+163. **Pull request #23 is not merged as it was** (06:56): *"See if you can
+     save any work from it or it is easier to revert."* It was reworked: the
+     routes kept once per map, rest always a choice and gold no roll can win
+     left out stay; Q62's order and Q64's opening come out.
+164. **An imagined player with nothing to head for rests** and picks again next
+     turn (06:59), for when only stamina or gold it cannot win is left.
+165. **Gold no roll can win is never kept** (07:00), even when fewer than two
+     beatable gold POIs are left. At 06:59 he noted it drops out on its own:
+     *"its attractiveness will be the worst (we are effectively dividing by
+     zero here)"*; 165 settled the case where it would still rank second of its
+     kind.
+
+Built as ruled. `routeTable(...).stepsFrom` in `packages/core/src/path.ts`
+counts the steps onto each terrain along every kept route; `targets.ts` in
+`packages/sim` holds `effectiveDistance`, `attractiveness` and
+`attractiveTargets`; the search branches over those plus rest
+(`attractivePoiEnumerator` in `packages/ai/src/policies/tree.ts`), and each
+imagined player picks one of its own at random (`playRolloutTurn`). Each turn
+counts as `REST_STAMINA_GAIN`, the 1, 2 and 3 are `STAMINA_COST`, and n runs
+from 1, so standing on a POI is 5. So that a position the search comes back to
+keeps the same POIs, the search settles ties by one random order of the map's
+POIs drawn per move; a fresh draw at every visit would let every tied POI into
+the move being chosen by turns.
+
+Measured the same way as Q62 and Q64, each side in both seats on
+`selfplay-0` … `selfplay-7`, 16 games each: against main's computer it won 15
+at 1 second a move (25 gold on average to 16, about 2,200 games in its head
+per move to 310) and 6 at 10 seconds (21 to 22, about 25,300 games to 3,500).
+Against Q64's √n version it won 5 at 1 second (21 to 23) and 7 at 10 seconds
+(20 to 21). From the 36 positions of Q62 it went for gold once, at turn 73 of
+`selfplay-3`; 33 of them are before turn 32, where it mostly took forest or
+mountain speed.
 
 ---
 

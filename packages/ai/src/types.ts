@@ -5,9 +5,8 @@ import type { PoiCandidate, RestRule, RolloutCursor, RolloutTermination } from '
 /**
  * One branch of the search tree.
  *
- * [SOURCE §12.2, chat] Branches are POI targets, plus a rest branch when the
- * player has fewer than `MIN_REACHABLE_NODES_FOR_REST` targets reachable this
- * turn.
+ * [SOURCE §9, review] Branches are POI targets, the most attractive of each
+ * kind, plus resting, which is always a branch (Q65).
  */
 export type MctsBranch =
   | { readonly kind: 'target'; readonly target: PoiCandidate }
@@ -69,52 +68,30 @@ export interface TreePolicy {
 /**
  * Which branches the tree expands at a node.
  *
- * [SOURCE §12.2, chat] "We will prune the number of next POIs to be used to
- * expand any node [...] These POIs to explore will be the closest at the time
- * (among those that have not been claimed at that point of time in the game)."
+ * [SOURCE §12.2, chat] "These POIs to explore will be the closest at the time
+ * (among those that have not been claimed at that point of time in the
+ * game)." So a branch is a *POI target*, recomputed at each node against that
+ * node's own game state, and not a fixed list from the root.
  *
- * So a branch is a *POI target*, recomputed at each node against that node's
- * own game state — "closest at the time", "not been claimed at that point in
- * time" — and not a fixed list from the root.
+ * [SOURCE §9, review] Which POIs, since Q65: the `ATTRACTIVE_POIS_PER_KIND`
+ * most attractive of each kind, plus rest. The same set is what a player in
+ * the rollout picks from, so the tree and the rollout share one kernel,
+ * `attractiveTargets` in `@adventure/sim`; only what they do with it differs —
+ * the tree takes every target as a branch, the rollout picks one uniformly.
  *
- * [SOURCE §12.2, review] How many is `CLOSE_CANDIDATE_COUNT`: "We don't really
- * need two different constants here. We will prune the tree by the
- * CLOSE_CANDIDATE_COUNT, plus one branch for resting." The tree's own
- * `MCTS_NODE_EXPANSION_PRUNING` is gone.
- *
- * This reuses `closestPoiCandidates` from `@adventure/sim`, the same ranking
- * the remoteness walk (§5.1) and the rollout policy (§9) use. Three callers,
- * one kernel, one K; only what they do with the result differs — the tree takes
- * every candidate as a branch, the rollout picks one uniformly.
- *
- * [SOURCE §12.2, chat] Rest is a branch too — "let us prune it if there are at
- * least MIN_REACHABLE_NODES_FOR_REST = 3 POIs reachable in one turn" — so the
- * rest branch appears only when the player is movement-constrained enough for
- * recovering stamina to be worth searching.
+ * `rng` settles ties for the last place of a kind (157).
  */
 export interface ActionEnumerator {
   readonly name: string;
-  enumerate(state: GameState, subject: PlayerId): readonly MctsBranch[];
-}
-
-/**
- * "Reachable in one turn" for the rest-pruning rule — can this player actually
- * arrive at that target within this turn's allowance and stamina (§7)?
- *
- * Injected so a test can fix it; `previewReachability()` is the real one,
- * `previewPath` over the cheapest route.
- */
-export interface TurnReachability {
-  isReachableThisTurn(state: GameState, subject: PlayerId, target: PoiCandidate): boolean;
+  enumerate(state: GameState, subject: PlayerId, rng: Rng): readonly MctsBranch[];
 }
 
 /**
  * The simulation phase.
  *
- * [SOURCE §5, chat] Specified: "choose a random target among the
- * `CLOSE_CANDIDATE_COUNT` closest POIs, using the same weighted-terrain-cost
- * random-walk code as §5.1." Swappable anyway, since the designer expects to
- * experiment here.
+ * [SOURCE §9, review] Specified (Q65): each player "will choose randomly among
+ * the same set of POI" the tree branches over, worked out for that player.
+ * Swappable anyway, since the designer expects to experiment here.
  */
 export interface RolloutPolicy {
   readonly name: string;

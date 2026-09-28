@@ -19,14 +19,14 @@ import type { MctsBranch, MctsNode, MctsOptions } from './types.ts';
  *   expand    — take one branch not yet tried in this position and realise it
  *               through `applyAction` in `@adventure/core`, so the tree only
  *               ever contains states the real rules produced. Branches come
- *               from `ActionEnumerator`: the `CLOSE_CANDIDATE_COUNT` closest
- *               *unclaimed* POIs, recomputed at that node's state, plus a rest
- *               branch when fewer than `MIN_REACHABLE_NODES_FOR_REST` of them
- *               are reachable this turn.
+ *               from `ActionEnumerator`: the most attractive *unclaimed*
+ *               POIs of each kind, recomputed at that node's state, plus rest
+ *               (Q65). The untried one is drawn at random.
  *               A target branch is a macro-action — `macroAdvanceToTarget` —
  *               so one edge can span several turns.
- *   simulate  — `rollout.run`, which is §5.1's random walk driven through the
- *               real rules (see `@adventure/sim`).
+ *   simulate  — `rollout.run`: every player picks at random among its own
+ *               most attractive POIs, driven through the real rules (see
+ *               `@adventure/sim`).
  *   backprop  — add `evaluator.evaluate(...)` to every node on the path.
  *
  * Loop until `now() - start >= timeBudgetMs`, then return the move implied by
@@ -134,7 +134,7 @@ function iterate(tree: MctsNode, root: GameState, options: MctsOptions): void {
   let node = tree;
 
   while (!options.termination.isTerminal(cursor, 0)) {
-    const branches = options.actions.enumerate(cursor.state, options.subject);
+    const branches = options.actions.enumerate(cursor.state, options.subject, options.rng);
     const available: MctsNode[] = [];
     const untried: MctsBranch[] = [];
     for (const branch of branches) {

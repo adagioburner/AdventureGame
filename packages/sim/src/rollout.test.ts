@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_GAME_CONFIG, type GameConfig } from '@adventure/config';
-import { applyAction, createDiceSource, createRng, poiRuntimeAt, unclaimedGoldUnits, type GameState } from '@adventure/core';
+import { applyAction, createDiceSource, createRng, poiRuntimeAt, type GameState } from '@adventure/core';
 import {
   fixtureGame,
   fixtureMap,
@@ -29,13 +29,13 @@ import {
 const restRule = restWhenStuck();
 const neverRest: RestRule = { name: 'test: never rest', restsInstead: () => false };
 
-function withK(k: number): GameConfig {
-  return { ...DEFAULT_GAME_CONFIG, balancing: { ...DEFAULT_GAME_CONFIG.balancing, CLOSE_CANDIDATE_COUNT: k } };
+function perKind(k: number): GameConfig {
+  return { ...DEFAULT_GAME_CONFIG, ai: { ...DEFAULT_GAME_CONFIG.ai, ATTRACTIVE_POIS_PER_KIND: k } };
 }
 
 function options(overrides: Partial<RolloutOptions> = {}): RolloutOptions {
   return {
-    config: withK(1),
+    config: perKind(1),
     termination: goldExhaustedTermination(),
     restRule,
     dice: createDiceSource(createRng('dice'), DEFAULT_GAME_CONFIG),
@@ -117,11 +117,43 @@ describe('playRolloutTurn', () => {
     expect(cursor.state.players[0]?.position).toBe(n(1));
     expect(cursor.targets[0]).toBe(n(5));
 
-    // Seat two, stuck, picks its closest unclaimed POI (K = 1) and rests.
+    // Seat two, stuck, picks one of its attractive POIs and rests.
     cursor = playRolloutTurn(cursor, options());
     expect(cursor.targets[0]).toBe(n(5));
-    expect(cursor.targets[1]).toBe(n(2));
+    expect([n(1), n(6)]).toContain(cursor.targets[1]);
     expect(cursor.state.players[1]?.stats.stamina).toBe(DEFAULT_GAME_CONFIG.movement.REST_STAMINA_GAIN);
+  });
+
+  it('picks only among the player’s most attractive POIs of each kind (Q65)', () => {
+    // From 0 with no skills: fighting on 1 at 6 for 1; gold 1 on 5 at 10, and
+    // gold 3 on 6 at 11 for 3, the more attractive. Stamina is never a target.
+    const seen = new Set<unknown>();
+    for (let run = 0; run < 40; run++) {
+      const cursor = playRolloutTurn(rolloutCursor(stuckGame(), player('one')), options({ rng: createRng(`pick-${run}`) }));
+      seen.add(cursor.targets[0]);
+    }
+    expect([...seen].sort()).toEqual([n(1), n(6)].sort());
+  });
+
+  it('rests and picks again next turn when nothing is worth heading for (164)', () => {
+    // Only stamina and gold behind a guard no roll beats are left.
+    const leftovers = fixtureMap({
+      terrains: ['plains', 'plains', 'plains'],
+      edges: [
+        [0, 1],
+        [1, 2],
+      ],
+      pois: [
+        { node: 1, kind: 'stamina', units: 1, guard: null },
+        { node: 2, kind: 'gold', units: 1, guard: { type: 'fighting', strength: 8 } },
+      ],
+    });
+    const state = withStats(fixtureGame(leftovers, 0), player('one'), { stamina: 10 });
+    const cursor = playRolloutTurn(rolloutCursor(state, player('one')), options());
+    expect(cursor.state.players[0]?.position).toBe(n(0));
+    expect(cursor.state.players[0]?.stats.stamina).toBe(10 + DEFAULT_GAME_CONFIG.movement.REST_STAMINA_GAIN);
+    expect(cursor.targets).toEqual([null, null]);
+    expect(cursor.state.turn.activeSeat).toBe(2);
   });
 
   it('drops a target someone else has just claimed', () => {
@@ -168,10 +200,11 @@ describe('macroAdvanceToTarget', () => {
 
   it('reports target_claimed_by_other when the target is taken from under it', () => {
     // Seat one is four steps from 5 at one step a turn; seat two stands next
-    // to it, heads for it (K = 1) and takes it on its first turn.
+    // to it, is heading for it and takes it on its first turn.
     let state = withStats(stuckGame(), player('one'), { plains_move: 1 });
     state = withStats(withPosition(state, player('two'), 4), player('two'), { stamina: 5 });
-    const { cursor, outcome } = macroAdvanceToTarget(rolloutCursor(state, player('one')), n(5), options());
+    const start = { ...rolloutCursor(state, player('one')), targets: [null, n(5)] };
+    const { cursor, outcome } = macroAdvanceToTarget(start, n(5), options());
     expect(outcome).toBe('target_claimed_by_other');
     expect(cursor.state.players[0]?.position).toBe(n(1));
     expect(poiRuntimeAt(cursor.state, n(5))?.claimedBy).toBe(player('two'));
@@ -195,15 +228,14 @@ describe('playUntilTurnOf', () => {
 });
 
 describe('runRollout', () => {
-  it('stops once no gold is left, with skill and stamina POIs still on the map', () => {
-    // K = 1 sends everyone to the nearest unclaimed POI, so the fighting and
-    // stamina POIs are passed over only because gold ran out first: start
-    // both players at 5, beside the gold and away from the rest.
+  it('stops once no gold is left, with POIs still on the map', () => {
+    // Stamina is never a target (Q65), so the stamina POI is still there when
+    // the gold runs out.
     let state = withPosition(withPosition(fixtureGame(line, 0), player('one'), 5), player('two'), 5);
     state = withStats(state, player('one'), { stamina: 10 });
     const end = runRollout(rolloutCursor(state, player('one')), options());
-    expect(unclaimedGoldUnits(end.state)).toBe(0);
-    expect(poiRuntimeAt(end.state, n(1))?.claimedBy).toBeNull();
+    // Gone, or decided: 3 gold on 6 against 1 left on 5 wins outright (§1).
+    expect(goldExhaustedTermination().isTerminal(end, 0)).toBe(true);
     expect(poiRuntimeAt(end.state, n(2))?.claimedBy).toBeNull();
   });
 
@@ -240,6 +272,7 @@ describe('turnCapTermination', () => {
     let state = withPosition(withPosition(fixtureGame(line, 0), player('one'), 5), player('two'), 5);
     state = withStats(state, player('one'), { stamina: 10 });
     const end = runRollout(rolloutCursor(state, player('one')), options({ termination: turnCapTermination(goldExhaustedTermination(), 1, 250) }));
-    expect(unclaimedGoldUnits(end.state)).toBe(0);
+    expect(goldExhaustedTermination().isTerminal(end, 0)).toBe(true);
+    expect(end.state.turn.number).toBeLessThan(251);
   });
 });

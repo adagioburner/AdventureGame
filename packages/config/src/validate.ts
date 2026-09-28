@@ -95,6 +95,11 @@ export function validateRuleset(ruleset: Ruleset): void {
   if (config.balancing.CLOSE_CANDIDATE_COUNT < 1) {
     problems.push('§5.1: CLOSE_CANDIDATE_COUNT must be at least 1.');
   }
+  // §9: with none kept of any kind, the search could only ever rest.
+  const perKind = config.ai.ATTRACTIVE_POIS_PER_KIND;
+  if (!Number.isInteger(perKind) || perKind < 1) {
+    problems.push('§9: ATTRACTIVE_POIS_PER_KIND must be an integer of at least 1.');
+  }
   if (config.balancing.REMOTENESS_SIMULATION_RUNS < 1) {
     problems.push('§5.1: REMOTENESS_SIMULATION_RUNS must be at least 1.');
   }

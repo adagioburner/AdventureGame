@@ -50,8 +50,8 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     MCTS_TIME_BUDGET_PER_MOVE_MS: 10_000,
     // UCB1's textbook constant. See the tuning caveat on the field.
     MCTS_EXPLORATION_CONSTANT: Math.SQRT2,
-    MIN_REACHABLE_NODES_FOR_REST: 3,
     SIMULATION_TURN_CAP: 250,
+    ATTRACTIVE_POIS_PER_KIND: 2,
     THINKING_TIME_SECONDS: { min: 1, max: 60 },
   },
 };

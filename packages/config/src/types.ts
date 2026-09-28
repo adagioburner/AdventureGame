@@ -143,15 +143,16 @@ export interface BalancingConfig {
   readonly REWARD_SWAP_PASSES: number;
   /**
    * §11 `CLOSE_CANDIDATE_COUNT` — tunable.
-   * Used by the shared random walk (§5.1), by the MCTS rollout policy (§9)
-   * and, identically, by MCTS tree expansion.
+   * Used by the random walk that scores remoteness (§5.1). The MCTS tree and
+   * its rollouts used it too until Q65, and now keep the
+   * `ATTRACTIVE_POIS_PER_KIND` most attractive POIs of each kind instead.
    *
    * [SOURCE §12.2, review] The tree originally had a K of its own,
    * `MCTS_NODE_EXPANSION_PRUNING` = 10. The designer removed it: "We don't
    * really need two different constants here. We will prune the tree by the
    * CLOSE_CANDIDATE_COUNT, plus one branch for resting." So all three callers
-   * of `closestPoiCandidates` now share this one number, and tuning it moves
-   * the rollout and the tree together — which is the point.
+   * of `closestPoiCandidates` shared this one number until Q65 took the tree
+   * and the rollout off it.
    */
   readonly CLOSE_CANDIDATE_COUNT: number;
   /** §11 `REMOTENESS_SIMULATION_RUNS` — tunable (100). */
@@ -228,24 +229,6 @@ export interface AiConfig {
    */
   readonly MCTS_EXPLORATION_CONSTANT: number;
   /**
-   * `MIN_REACHABLE_NODES_FOR_REST` — tunable, default 3. Not in §11.
-   *
-   * [SOURCE §12.2, chat] "Rest is a branch as well. Let us prune it if there
-   * are at least MIN_REACHABLE_NODES_FOR_REST = 3 POIs reachable in one turn."
-   *
-   * So the tree gets a rest branch alongside the POI targets, dropped whenever
-   * the player already has three or more targets they can actually reach this
-   * turn — resting is only worth searching when movement is constrained.
-   *
-   * [SOURCE §12.2, review] Untouched by the removal of
-   * `MCTS_NODE_EXPANSION_PRUNING`: that collapsed the two Ks, and this is a
-   * threshold on reachability, not a K.
-   *
-   * Counts reachable POI *targets*, despite the name saying nodes; the name is
-   * the designer's.
-   */
-  readonly MIN_REACHABLE_NODES_FOR_REST: number;
-  /**
    * `SIMULATION_TURN_CAP` — 250. Not in §11; the designer's, 2026-09-24 (Q44).
    *
    * [SOURCE §9, review] A game the computer plays out in its head stops after
@@ -255,6 +238,18 @@ export interface AiConfig {
    * simulated game would otherwise never stop.
    */
   readonly SIMULATION_TURN_CAP: number;
+  /**
+   * §11 `ATTRACTIVE_POIS_PER_KIND` — tunable, 2. The designer's, 2026-09-28
+   * (Q65, 159).
+   *
+   * [SOURCE §9, review] "For pruning we will take 2 most attractive POI of each
+   * kind [...] The simulation will choose randomly among the same set of POI."
+   * So the computer's search branches over this many POIs of each of the six
+   * kinds a player can head for, plus rest, and every player in the games it
+   * plays in its head picks among its own such set. Asked to be a setting,
+   * "though it's much more discreet and harder to tune".
+   */
+  readonly ATTRACTIVE_POIS_PER_KIND: number;
   /**
    * The thinking time a computer seat can be given on the start game panel, in
    * whole seconds. Not in §11; the designer's, 2026-09-24 (Q41): 1 to 60, the

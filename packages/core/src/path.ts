@@ -1,4 +1,4 @@
-import type { GameConfig, Terrain } from '@adventure/config';
+import { TERRAINS, type GameConfig, type PerTerrain, type Terrain } from '@adventure/config';
 import type { NodeId } from './ids.ts';
 import { neighbours, type MapGraph } from './graph.ts';
 
@@ -125,6 +125,12 @@ export function shortestPath(
 ): readonly NodeId[] | null {
   if (from === to) return [];
   const { previous } = dijkstra(graph, from, config, { stopWhen: (node) => node === to });
+  return pathTo(previous, from, to);
+}
+
+/** The path `dijkstra`'s predecessors give from `from` to `to`, or `null` if it never reached `to`. */
+function pathTo(previous: readonly (NodeId | null)[], from: NodeId, to: NodeId): readonly NodeId[] | null {
+  if (from === to) return [];
   if (previous[to] == null) return null;
 
   const reversed: NodeId[] = [];
@@ -134,6 +140,109 @@ export function shortestPath(
     cursor = previous[cursor] ?? null;
   }
   return reversed.reverse();
+}
+
+/**
+ * Every search from a node over one map, kept once worked out.
+ *
+ * [SOURCE §9, review] Andrei, 2026-09-28 (Q62): "we can also precompute and
+ * cache distances to make simulations run faster". The step costs are fixed per
+ * terrain and nobody's skills enter them, so on a map that never changes — a
+ * game's — the search from a node always comes out the same. `from` runs the
+ * whole `dijkstra` from a node the first time it is asked for and keeps it.
+ *
+ * Nothing it answers differs from the uncached functions: `dijkstra` settles
+ * in `(cost, node id)` order and never revisits a settled node's predecessor,
+ * so a whole search settles the same nodes in the same order as one stopped
+ * early, and `path` is exactly `shortestPath`.
+ *
+ * Only for a graph that is never changed after the first call. The map
+ * generator builds and edits graphs, so it keeps the uncached functions.
+ */
+export interface RouteTable {
+  /** The whole `dijkstra` from `from`. */
+  from(from: NodeId): DijkstraResult;
+  /** `shortestPath(graph, from, to, config)`. */
+  path(from: NodeId, to: NodeId): readonly NodeId[] | null;
+  /**
+   * How many steps of each route from `from` enter each terrain:
+   * `stepsFrom(from).forest[to]` is the number of forest nodes on
+   * `path(from, to)`, counting `to` and not `from`, as a step is charged (§7).
+   * `Infinity` for a node the search never reached.
+   *
+   * [SOURCE §9, review] Andrei, 2026-09-28 (Q65): "precompute and cache the
+   * number of steps required to reach each POI from each node over each
+   * terrain separately. (We will allow ourselves to be sloppy here and simply
+   * take the shortest path)", counted along the cheapest route by road cost,
+   * the one `path` gives (155).
+   */
+  stepsFrom(from: NodeId): TerrainSteps;
+}
+
+/** Steps onto each terrain, indexed by the node a route ends on. */
+export type TerrainSteps = PerTerrain<readonly number[]>;
+
+const routeTables = new WeakMap<MapGraph, WeakMap<GameConfig, RouteTable>>();
+
+/** The one `RouteTable` for `graph` under `config`'s step costs. */
+export function routeTable(graph: MapGraph, config: GameConfig): RouteTable {
+  let byConfig = routeTables.get(graph);
+  if (byConfig === undefined) {
+    byConfig = new WeakMap();
+    routeTables.set(graph, byConfig);
+  }
+  const known = byConfig.get(config);
+  if (known !== undefined) return known;
+
+  const searches: (DijkstraResult | undefined)[] = new Array(graph.nodes.length);
+  const steps: (TerrainSteps | undefined)[] = new Array(graph.nodes.length);
+  const table: RouteTable = {
+    from(from: NodeId): DijkstraResult {
+      let search = searches[from];
+      if (search === undefined) {
+        search = dijkstra(graph, from, config);
+        searches[from] = search;
+      }
+      return search;
+    },
+    path(from: NodeId, to: NodeId): readonly NodeId[] | null {
+      if (from === to) return [];
+      return pathTo(table.from(from).previous, from, to);
+    },
+    stepsFrom(from: NodeId): TerrainSteps {
+      let counts = steps[from];
+      if (counts === undefined) {
+        counts = stepsAlong(graph, from, table.from(from));
+        steps[from] = counts;
+      }
+      return counts;
+    },
+  };
+  byConfig.set(config, table);
+  return table;
+}
+
+/**
+ * Each node's steps per terrain along `search`'s routes from `from`. A node is
+ * settled after its predecessor, so walking the settle order, a node's counts
+ * are its predecessor's plus the one step onto its own terrain.
+ */
+function stepsAlong(graph: MapGraph, from: NodeId, search: DijkstraResult): TerrainSteps {
+  const count = graph.nodes.length;
+  const counts = {} as Record<Terrain, number[]>;
+  for (const terrain of TERRAINS) {
+    counts[terrain] = new Array<number>(count).fill(Number.POSITIVE_INFINITY);
+    counts[terrain][from] = 0;
+  }
+  for (const node of search.settled) {
+    const before = search.previous[node];
+    if (before == null) continue;
+    const entered = graph.nodes[node]?.terrain;
+    for (const terrain of TERRAINS) {
+      counts[terrain][node] = (counts[terrain][before] as number) + (terrain === entered ? 1 : 0);
+    }
+  }
+  return counts;
 }
 
 /* -- A binary min-heap ordered by `(cost, node id)`. Infrastructure only. --- */

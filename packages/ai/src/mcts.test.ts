@@ -8,7 +8,6 @@ import {
   fixtureMap,
   n,
   player,
-  withPosition,
   withStats,
 } from '../../core/src/rules/scenario.fixture.ts';
 import { search, searchTree, startSearch } from './mcts.ts';
@@ -17,9 +16,9 @@ import {
   hybridGoldAndSkillsEvaluator,
   simulatedRolloutEvaluator,
 } from './policies/evaluators.ts';
-import { closestPoiRolloutPolicy } from './policies/rollout.ts';
-import { closestUnclaimedPoiEnumerator, previewReachability, uctTreePolicy } from './policies/tree.ts';
-import type { MctsOptions } from './types.ts';
+import { attractivePoiRolloutPolicy } from './policies/rollout.ts';
+import { attractivePoiEnumerator, uctTreePolicy } from './policies/tree.ts';
+import type { MctsBranch, MctsOptions } from './types.ts';
 
 const restRule = restWhenStuck();
 
@@ -65,8 +64,8 @@ function optionsFor(state: GameState, overrides: Partial<MctsOptions> = {}): Mct
     subject: state.players[state.turn.activeSeat - 1]?.id ?? player('one'),
     config,
     treePolicy: uctTreePolicy(config.ai.MCTS_EXPLORATION_CONSTANT),
-    actions: closestUnclaimedPoiEnumerator(config, previewReachability()),
-    rollout: closestPoiRolloutPolicy({ config, termination, restRule }),
+    actions: attractivePoiEnumerator(config),
+    rollout: attractivePoiRolloutPolicy({ config, termination, restRule }),
     evaluator: simulatedRolloutEvaluator(),
     termination,
     restRule,
@@ -78,43 +77,82 @@ function optionsFor(state: GameState, overrides: Partial<MctsOptions> = {}): Mct
   };
 }
 
-describe('closestUnclaimedPoiEnumerator', () => {
-  const enumerate = (state: GameState) =>
-    closestUnclaimedPoiEnumerator(DEFAULT_GAME_CONFIG, previewReachability()).enumerate(state, player('one'));
+/** The star with its forest gold behind a guard of 8 instead of 4. */
+const strongGuard = fixtureMap({
+  terrains: ['plains', 'plains', 'plains', 'plains', 'plains', 'plains', 'forest', 'forest'],
+  edges: [
+    [0, 1],
+    [0, 2],
+    [0, 3],
+    [0, 4],
+    [0, 5],
+    [5, 6],
+    [6, 7],
+  ],
+  pois: [
+    { node: 2, kind: 'plains_move', units: 1, guard: null },
+    { node: 7, kind: 'gold', units: 3, guard: { type: 'fighting', strength: 8 } },
+  ],
+});
 
-  it('offers rest only when fewer than 3 of its targets can be reached this turn', () => {
+describe('attractivePoiEnumerator', () => {
+  const targetsOf = (branches: readonly MctsBranch[]) =>
+    branches.flatMap((branch) => (branch.kind === 'target' ? [branch.target.node] : [])).sort((a, b) => a - b);
+  const enumerate = (state: GameState, config = DEFAULT_GAME_CONFIG, subject = player('one')) =>
+    attractivePoiEnumerator(config).enumerate(state, subject, createRng('enumerate'));
+
+  it('branches over the most attractive POIs of each kind, never stamina, and rest always (Q65)', () => {
     const rich = withStats(fixtureGame(star, 0), player('one'), { stamina: 30 });
-    expect(enumerate(rich).some((branch) => branch.kind === 'rest')).toBe(false);
+    const branches = enumerate(rich);
+    expect(targetsOf(branches)).toEqual([n(1), n(2), n(3), n(5), n(7)]);
+    expect(branches.filter((branch) => branch.kind === 'rest')).toHaveLength(1);
 
-    const broke = withStats(fixtureGame(star, 0), player('one'), { stamina: 0 });
-    expect(enumerate(broke).some((branch) => branch.kind === 'rest')).toBe(true);
-
-    // Two plains steps free: exactly two of the targets reachable, still < 3.
-    const two = withStats(fixtureGame(star, 1), player('one'), { stamina: 0, plains_move: 2 });
-    const reachable = enumerate(two).filter((branch) => branch.kind === 'target' && branch.target.cost <= 2);
-    expect(reachable.length).toBeGreaterThanOrEqual(3);
-    expect(enumerate(two).some((branch) => branch.kind === 'rest')).toBe(false);
+    // One of a kind: gold 2 on 1 at 6 (3 a gold) beats gold 3 on 7 at 10
+    // won on a 5 or a 6 (10 a gold).
+    const one = { ...DEFAULT_GAME_CONFIG, ai: { ...DEFAULT_GAME_CONFIG.ai, ATTRACTIVE_POIS_PER_KIND: 1 } };
+    expect(targetsOf(enumerate(rich, one))).toEqual([n(1), n(2), n(3), n(5)]);
   });
 
   it('branches only over unclaimed POIs, recomputed at the state given', () => {
     const state = withStats(fixtureGame(star, 0), player('one'), { stamina: 30 });
     const took = applyAction(state, { kind: 'move', player: player('one'), path: [n(1)] }, createDiceSource(createRng('x'), DEFAULT_GAME_CONFIG)).state;
-    const targets = closestUnclaimedPoiEnumerator(DEFAULT_GAME_CONFIG, previewReachability())
-      .enumerate(took, player('two'))
-      .flatMap((branch) => (branch.kind === 'target' ? [branch.target.node] : []));
+    const targets = targetsOf(enumerate(took, DEFAULT_GAME_CONFIG, player('two')));
     expect(targets).not.toContain(n(1));
     expect(targets).toContain(n(7));
   });
-});
 
-describe('previewReachability', () => {
-  it('counts a target reachable when the cheapest route arrives this turn', () => {
-    const state = withStats(withPosition(fixtureGame(star, 0), player('one'), 5), player('one'), { stamina: 3, forest_move: 0 });
-    const reach = previewReachability();
-    expect(reach.isReachableThisTurn(state, player('one'), { node: n(7), cost: 4 })).toBe(false);
-    const richer = withStats(state, player('one'), { stamina: 4 });
-    expect(reach.isReachableThisTurn(richer, player('one'), { node: n(7), cost: 4 })).toBe(true);
-    expect(reach.isReachableThisTurn(state, player('one'), { node: n(5), cost: 0 })).toBe(true);
+  it('settles a tie the same way at every visit to a position, and at random between searches', () => {
+    // Four gold stacks of 1, each one plains step from 0: all tied.
+    const ring = fixtureMap({
+      terrains: ['plains', 'plains', 'plains', 'plains', 'plains'],
+      edges: [
+        [0, 1],
+        [0, 2],
+        [0, 3],
+        [0, 4],
+      ],
+      pois: [1, 2, 3, 4].map((node) => ({ node, kind: 'gold' as const, units: 1, guard: null })),
+    });
+    const state = fixtureGame(ring, 0);
+    const kept = new Set<string>();
+    for (let search = 0; search < 20; search++) {
+      const enumerator = attractivePoiEnumerator(DEFAULT_GAME_CONFIG);
+      const rng = createRng(`search-${search}`);
+      const first = targetsOf(enumerator.enumerate(state, player('one'), rng));
+      expect(first).toHaveLength(2);
+      for (let visit = 0; visit < 10; visit++) expect(targetsOf(enumerator.enumerate(state, player('one'), rng))).toEqual(first);
+      kept.add(first.join());
+    }
+    expect(kept.size).toBeGreaterThan(1);
+  });
+
+  it('leaves out gold no roll can win, and keeps it once one roll can', () => {
+    // Guard 8, fighting 1: a 6 makes 7, not more than 8.
+    const hopeless = withStats(fixtureGame(strongGuard, 0), player('one'), { stamina: 30, fighting: 1 });
+    expect(targetsOf(enumerate(hopeless))).toEqual([n(2)]);
+    // Fighting 3: a 6 makes 9.
+    const onASix = withStats(hopeless, player('one'), { fighting: 3 });
+    expect(targetsOf(enumerate(onASix))).toEqual([n(2), n(7)]);
   });
 });
 

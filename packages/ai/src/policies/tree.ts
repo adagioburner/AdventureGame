@@ -1,7 +1,7 @@
 import type { GameConfig } from '@adventure/config';
-import { playerById, previewPath, shortestPath, type GameState, type NodeId, type PlayerId, type Rng } from '@adventure/core';
-import { closestPoiCandidates, unclaimedPoiNodes, type PoiCandidate } from '@adventure/sim';
-import type { ActionEnumerator, MctsBranch, MctsNode, TreePolicy, TurnReachability } from '../types.ts';
+import type { GameState, NodeId, PlayerId, Rng } from '@adventure/core';
+import { attractiveTargets, type ScoredTarget, type SettleTie } from '@adventure/sim';
+import type { ActionEnumerator, MctsBranch, MctsNode, TreePolicy } from '../types.ts';
 
 /**
  * [SOURCE §12.2, chat] "For everything else please use sensible defaults that
@@ -87,76 +87,46 @@ function argMaxWithRandomTieBreak<T>(items: readonly T[], score: (item: T) => nu
 }
 
 /**
- * [SOURCE §12.2, chat] "These POIs to explore will be the closest at the time
- * (among those that have not been claimed at that point of time in the game)",
- * plus: "rest is a branch as well. Let us prune it if there are at least
- * MIN_REACHABLE_NODES_FOR_REST = 3 POIs reachable in one turn."
+ * [SOURCE §9, review] Andrei, 2026-09-28 (Q65): "For pruning we will take 2
+ * most attractive POI of each kind", replacing §12.2's pruning to the
+ * `CLOSE_CANDIDATE_COUNT` closest and its rest rule.
  *
- * [SOURCE §12.2, review] How many is `CLOSE_CANDIDATE_COUNT`, the same K the
- * rollout policy and the remoteness walk use: "We don't really need two
- * different constants here. We will prune the tree by the CLOSE_CANDIDATE_COUNT,
- * plus one branch for resting." The tree's own `MCTS_NODE_EXPANSION_PRUNING` is
- * gone.
+ * The branches, recomputed at each node against that node's own state, from
+ * where the player stands there and with its skills there:
  *
- * Both halves are here. Targets are recomputed per node against that node's
- * state, so a POI claimed earlier in the searched line is no longer a branch
- * further down it; and the rest branch is added only when fewer than
- * `MIN_REACHABLE_NODES_FOR_REST` of those targets can actually be reached this
- * turn — which is exactly when a player is stamina-bound and resting is worth
- * considering.
+ *  - the `ATTRACTIVE_POIS_PER_KIND` most attractive unclaimed POIs of each of
+ *    the six kinds, `attractiveTargets` in `@adventure/sim`, the same set the
+ *    games played in the search's head pick from;
+ *  - resting, always: "resting is a choice" (160).
  *
- * Note the reachability test runs over the pruned target list, not every POI on
- * the map: a distant reachable POI outside that list is not a branch, so
- * counting it would let rest be pruned on the strength of a target the search
- * cannot take.
+ * All of them are open at once, as before Q64 (161): the search tries a
+ * branch not yet tried at a node, drawn at random, before any twice.
+ *
+ * Ties are settled at random (157), by one random order of the map's POIs
+ * drawn when the search first asks. So a position the search comes back to
+ * keeps the same POIs: the root is the same position at every visit, and a
+ * fresh draw each time would let every tied POI in by turns, more than
+ * `ATTRACTIVE_POIS_PER_KIND` of a kind.
  */
-export function closestUnclaimedPoiEnumerator(
-  config: GameConfig,
-  reachability: TurnReachability,
-): ActionEnumerator {
+export function attractivePoiEnumerator(config: GameConfig): ActionEnumerator {
+  let settleTie: SettleTie | null = null;
   return {
-    name: 'closest-unclaimed-pois+rest',
-    enumerate(state: GameState, subject: PlayerId): readonly MctsBranch[] {
-      const player = state.players.find((candidate) => candidate.id === subject);
-      if (player === undefined) throw new RangeError(`no such player ${subject}`);
-
-      // `closestPoiCandidates` already returns at most `CLOSE_CANDIDATE_COUNT`,
-      // so this *is* the pruned target list; there is no second cap to apply.
-      const eligible = unclaimedPoiNodesOf(state);
-      const targets = closestPoiCandidates(state.map.graph, player.position, eligible, config);
-
-      const branches: MctsBranch[] = targets.map((target) => ({ kind: 'target', target }));
-
-      const reachable = targets.filter((target) =>
-        reachability.isReachableThisTurn(state, subject, target),
-      ).length;
-      if (reachable < config.ai.MIN_REACHABLE_NODES_FOR_REST) {
-        branches.push({ kind: 'rest' });
-      }
+    name: 'attractive-pois-per-kind+rest',
+    enumerate(state: GameState, subject: PlayerId, rng: Rng): readonly MctsBranch[] {
+      settleTie ??= inOneRandomOrder(state, rng);
+      const branches: MctsBranch[] = attractiveTargets(state, subject, config, settleTie).map((target) => ({
+        kind: 'target',
+        target,
+      }));
+      branches.push({ kind: 'rest' });
       return branches;
     },
   };
 }
 
-/** POIs whose reward is still unclaimed (§4.5) — the eligible target set. */
-export function unclaimedPoiNodesOf(state: GameState): ReadonlySet<NodeId> {
-  return unclaimedPoiNodes(state);
-}
-
-/**
- * [SOURCE §12.2, chat] "reachable in one turn": walking the cheapest route to
- * the target (the one metric, §5.1) arrives this turn, on this turn's
- * allowance and the player's stamina (§7). Standing on it already counts.
- */
-export function previewReachability(): TurnReachability {
-  return {
-    isReachableThisTurn(state: GameState, subject: PlayerId, target: PoiCandidate): boolean {
-      const player = playerById(state, subject);
-      const config = state.map.ruleset.config;
-      const route = shortestPath(state.map.graph, player.position, target.node, config);
-      if (route === null) return false;
-      return previewPath(state.map.graph, player.position, route, state.turn.allowance, player.stats.stamina, config)
-        .destinationReachable;
-    },
-  };
+/** Settle every tie by where the POIs fall in one shuffle of the map's POIs. */
+function inOneRandomOrder(state: GameState, rng: Rng): SettleTie {
+  const place = new Map<NodeId, number>(rng.shuffle(state.map.pois.map((poi) => poi.node)).map((node, at) => [node, at]));
+  const placeOf = (target: ScoredTarget) => place.get(target.node) ?? 0;
+  return (tied, wanted) => [...tied].sort((a, b) => placeOf(a) - placeOf(b)).slice(0, wanted);
 }

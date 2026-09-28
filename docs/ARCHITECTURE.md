@@ -277,17 +277,20 @@ what actually differs rather than by who calls it:
 
 | File | Role |
 |---|---|
-| `candidates.ts` | **The shared kernel.** Rank eligible POIs by weighted terrain cost; pick uniformly among the `CLOSE_CANDIDATE_COUNT` closest. Both §5.1 and §9 are exactly these two operations. |
+| `candidates.ts` | **The remoteness walk's target chooser.** Rank eligible POIs by weighted terrain cost; pick uniformly among the `CLOSE_CANDIDATE_COUNT` closest. §9's rollout and tree used it too until Q65. |
+| `targets.ts` | **§9's target chooser since Q65.** Each unclaimed POI's effective distance from the player's steps per terrain and speeds, its attractiveness (distance ÷ units × chance), and the `ATTRACTIVE_POIS_PER_KIND` most attractive of each of six kinds (`attractiveTargets`). The rollout picks one of them uniformly; the search tree in `@adventure/ai` branches over all of them plus rest. |
 | `walk.ts` | The generic loop, plus `WalkDriver<TCursor>` — the three things that differ: which POIs are *eligible*, what *advancing* to a target means, and when the walk is *done*. [SOURCE §9, review] It did not survive the rollout, as expected: "we may end up sharing code for choosing the next target only". It is remoteness's own loop now. See [Q25](./OPEN_QUESTIONS.md#q25). |
 | `remoteness.ts` | §5.1's driver: eligible = unvisited, advance = move straight there charging path cost, done = all POIs visited. Runs `REMOTENESS_SIMULATION_RUNS` walks from a random plains node, then min-max normalises to [0,1]. |
-| `rollout.ts` | §9's rollout, its own small loop over `macroAdvanceToTarget` (phase 5): eligible = unclaimed POIs of any kind, advance = play real turns through `applyAction` (so allowance, stamina, guard rolls and turn boundaries all apply), each seat keeping its own target and resting when it cannot take a step (Q43), done = no unclaimed gold left or `SIMULATION_TURN_CAP` turns played (Q44). |
+| `rollout.ts` | §9's rollout, its own small loop over `macroAdvanceToTarget` (phase 5): eligible = the player's most attractive POIs (`targets.ts`, Q65), resting when it has none, advance = play real turns through `applyAction` (so allowance, stamina, guard rolls and turn boundaries all apply), each seat keeping its own target and resting when it cannot take a step (Q43), done = no unclaimed gold left or `SIMULATION_TURN_CAP` turns played (Q44). |
 
 Neither consumer contains a copy of the other's logic. The generic loop gave
-way ([Q25](./OPEN_QUESTIONS.md#q25)), and `candidates.ts` and the one distance
-metric are what stay shared — which is what §9 asks for. The distinction the
-split makes explicit: §5.1's walk is pure geometry — turn structure, stamina and
-skills play no part — while a rollout leg is a sequence of real turns. What they
-share is the target chooser and the cost metric, which is what §9 asks for.
+way ([Q25](./OPEN_QUESTIONS.md#q25)), and then the shared target chooser too:
+since [Q65](./OPEN_QUESTIONS.md#q65) the rollout chooses by attractiveness,
+which reads the player's skills, while §5.1's walk has no skills and keeps
+choosing by road cost. The distinction the split makes explicit: §5.1's walk is
+pure geometry — turn structure, stamina and skills play no part — while a
+rollout leg is a sequence of real turns. What they still share is the cost
+metric and its routes.
 
 The remoteness *scorer* is still injected — the scoring rule is specified and
 implemented as `segmentSumRemotenessScorer()` (a POI scores its inbound plus its
@@ -389,18 +392,28 @@ four are now decided — two by §9 directly, two by §12.2:
 
 | Seam | Status |
 |---|---|
-| `RolloutPolicy` | **Specified** (§9). `closestPoiRolloutPolicy()` is a thin wrapper over `@adventure/sim`. |
+| `RolloutPolicy` | **Specified** (§9, Q65). `attractivePoiRolloutPolicy()` is a thin wrapper over `@adventure/sim`. |
 | `NodeEvaluator` | **Specified default** (§9): the simulated rollout, which is what v1 runs. Three ship — simulated, estimated and hybrid; see below. |
 | `TreePolicy` | **Decided** (§12.2): UCT, `MCTS_EXPLORATION_CONSTANT` = √2, most-visited child as the final move. `uctTreePolicy()`. |
-| `ActionEnumerator` | **Decided** (§12.2): the `CLOSE_CANDIDATE_COUNT` (10) closest *unclaimed* POIs, recomputed per node, **plus a rest branch** when fewer than `MIN_REACHABLE_NODES_FOR_REST` (3) of them are reachable this turn. `closestUnclaimedPoiEnumerator()`. |
+| `ActionEnumerator` | **Decided** (Q65, replacing §12.2's pruning): the `ATTRACTIVE_POIS_PER_KIND` (2) most attractive *unclaimed* POIs of each of six kinds, recomputed per node from that node's position and skills, **plus rest, always**. All open at once; an untried one is drawn at random. `attractivePoiEnumerator()`. |
 
 The enumerator is worth a second look, because it completes the sharing story:
-it calls the same `closestPoiCandidates` that the remoteness walk and the
-rollout policy call. Three consumers, one ranking kernel and — since the
-designer collapsed the tree's own constant into it (Q19) — one K,
-`CLOSE_CANDIDATE_COUNT` = 10. They differ only in what they do with the ranked
-list: the tree makes every candidate a branch, the rollout picks one uniformly,
-remoteness walks to its pick.
+it calls the same `attractiveTargets` that the rollout policy calls. Two
+consumers, one chooser and one number, `ATTRACTIVE_POIS_PER_KIND`; the tree
+makes every target a branch, the rollout picks one uniformly. A tie for a
+kind's last place is settled at random in both; the tree draws one random order
+of the map's POIs per search for it, so a position it returns to keeps the same
+set. The remoteness walk keeps `closestPoiCandidates` and
+`CLOSE_CANDIDATE_COUNT` = 10 to itself.
+
+**Routes are searched once per map in a game** (Q62, kept by Q65): `routeTable`
+in `packages/core/src/path.ts` keeps the whole Dijkstra from each node the first
+time it is asked for, and with it the steps onto each terrain along every route
+(`stepsFrom`), which the effective distance reads. The rollout, the computer's
+move and the enumerator read routes from it. The step costs are per terrain and
+never depend on skills, and the table keeps the very search the uncached
+functions run, so every route is identical. The map generator does not use it:
+its graphs change while it works.
 
 **A branch is a macro-action**, in the tree and in the rollout alike. [SOURCE §9,
 chat] taking a target means "the simulated player keeps moving to the chosen POI
