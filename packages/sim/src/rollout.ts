@@ -4,7 +4,7 @@ import {
   applyAction,
   poiRuntimeAt,
   previewPath,
-  shortestPath,
+  routeTable,
   unclaimedGoldUnits,
   type DiceSource,
   type GameState,
@@ -172,12 +172,13 @@ export function unclaimedPoiNodes(state: GameState): ReadonlySet<NodeId> {
  * Otherwise `restRule` may turn the turn into a rest.
  *
  * This is also the computer's real move once the search has chosen a target,
- * so the tree and the rollout take a step the same way.
+ * so the tree and the rollout take a step the same way. The route comes from
+ * the map's `routeTable`, the same route `shortestPath` gives.
  */
 export function turnTowards(state: GameState, target: NodeId, restRule: RestRule): TurnAction {
   const player = activePlayer(state);
   const config = state.map.ruleset.config;
-  const route = shortestPath(state.map.graph, player.position, target, config);
+  const route = routeTable(state.map.graph, config).path(player.position, target);
   if (route === null) throw new RangeError(`no route from ${player.position} to ${target}`);
   if (route.length === 0) return { kind: 'move', player: player.id, path: route, waypoint: null };
 
@@ -208,7 +209,14 @@ export function playRolloutTurn(cursor: RolloutCursor, options: RolloutOptions):
 
   let target = cursor.targets[index] ?? null;
   if (target === null) {
-    const choice = chooseWalkTarget(state.map.graph, player.position, unclaimedPoiNodes(state), options.config, options.rng);
+    const choice = chooseWalkTarget(
+      state.map.graph,
+      player.position,
+      unclaimedPoiNodes(state),
+      options.config,
+      options.rng,
+      routeTable(state.map.graph, options.config),
+    );
     // No unclaimed POI means no unclaimed gold, which every termination stops
     // on first; reaching here is a caller bug, not a position.
     if (choice === null) throw new RangeError('a rollout turn with no unclaimed POI left to head for');

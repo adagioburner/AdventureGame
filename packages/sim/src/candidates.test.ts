@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_GAME_CONFIG, type GameConfig, type Terrain } from '@adventure/config';
-import { asNodeId, createRng, type MapGraph, type NodeId } from '@adventure/core';
+import { asNodeId, createRng, routeTable, type MapGraph, type NodeId } from '@adventure/core';
 import { chooseWalkTarget, closestPoiCandidates } from './candidates.ts';
 
 function graphOf(terrains: readonly Terrain[], edges: readonly (readonly [number, number])[]): MapGraph {
@@ -90,6 +90,28 @@ describe('closestPoiCandidates', () => {
       n(1),
       n(2),
     ]);
+  });
+});
+
+describe('closestPoiCandidates read off a route table', () => {
+  it('gives the very list the search gives, from every node, for every K', () => {
+    const rng = createRng('jumble');
+    const size = 50;
+    const terrains: Terrain[] = Array.from({ length: size }, () => rng.pick(['plains', 'forest', 'mountain'] as const));
+    const edges: [number, number][] = [];
+    for (let node = 1; node < size; node++) edges.push([node, rng.nextInt(node)]);
+    for (let extra = 0; extra < size; extra++) edges.push([rng.nextInt(size), rng.nextInt(size)]);
+    const graph = graphOf(terrains, edges.filter(([a, b]) => a !== b));
+    const eligible = new Set(Array.from({ length: size }, (_unused, node) => n(node)).filter((node) => node % 3 !== 1));
+
+    for (const k of [0, 1, 4, 10, 60]) {
+      const routes = routeTable(graph, withK(k));
+      for (let from = 0; from < size; from++) {
+        expect(closestPoiCandidates(graph, n(from), eligible, withK(k), routes)).toEqual(
+          closestPoiCandidates(graph, n(from), eligible, withK(k)),
+        );
+      }
+    }
   });
 });
 

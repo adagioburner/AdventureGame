@@ -1,6 +1,5 @@
 import { startComputerMove, type AiPlayer, type Cancellation } from '@adventure/ai';
-import type { GameConfig } from '@adventure/config';
-import { createDiceSource, createRng, type GameState, type PlayerId, type TurnAction } from '@adventure/core';
+import { createDiceSource, createRng, routeTable, type GameMap, type GameState, type PlayerId, type TurnAction } from '@adventure/core';
 import type { HotseatGame } from './hotseat.ts';
 
 /** How long the computer thinks in each frame before handing the page back to draw it. */
@@ -22,7 +21,7 @@ export const SLICE_MS = 12;
  * the games it plays in its head never use up a real roll.
  */
 export function hotseatComputer(game: HotseatGame): AiPlayer {
-  return pageComputer(game.setup.map.ruleset.config, `computer-${game.setup.diceSeed}`, (state, subject) => {
+  return pageComputer(game.setup.map, `computer-${game.setup.diceSeed}`, (state, subject) => {
     const seat = state.players.find((player) => player.id === subject)?.seat;
     return seat === undefined ? undefined : game.setup.seats[seat - 1]?.thinkingSeconds;
   });
@@ -33,12 +32,18 @@ export function hotseatComputer(game: HotseatGame): AiPlayer {
  * gives the seat: hot seat's computer seats, and online the computer seats of
  * a game this page's player is the game master of (§12.1, plan phase 7 item
  * 8). `seed` seeds the games it plays in its head.
+ *
+ * The cheapest routes from every node of `map` are worked out here, as the game
+ * starts, and every move after reads them (`routeTable`), so no thinking time
+ * goes on searching for a route again.
  */
 export function pageComputer(
-  config: GameConfig,
+  map: GameMap,
   seed: string,
   secondsFor: (state: GameState, subject: PlayerId) => number | undefined,
 ): AiPlayer {
+  const config = map.ruleset.config;
+  routeTable(map.graph, config);
   const rng = createRng(seed);
   const dice = createDiceSource(rng.fork('dice'), config);
 

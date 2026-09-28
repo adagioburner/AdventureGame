@@ -1,5 +1,5 @@
 import type { GameConfig } from '@adventure/config';
-import { playerById, previewPath, shortestPath, type GameState, type NodeId, type PlayerId, type Rng } from '@adventure/core';
+import { playerById, previewPath, routeTable, type GameState, type NodeId, type PlayerId, type Rng } from '@adventure/core';
 import { closestPoiCandidates, unclaimedPoiNodes, type PoiCandidate } from '@adventure/sim';
 import type { ActionEnumerator, MctsBranch, MctsNode, TreePolicy, TurnReachability } from '../types.ts';
 
@@ -123,7 +123,7 @@ export function closestUnclaimedPoiEnumerator(
       // `closestPoiCandidates` already returns at most `CLOSE_CANDIDATE_COUNT`,
       // so this *is* the pruned target list; there is no second cap to apply.
       const eligible = unclaimedPoiNodesOf(state);
-      const targets = closestPoiCandidates(state.map.graph, player.position, eligible, config);
+      const targets = closestPoiCandidates(state.map.graph, player.position, eligible, config, routeTable(state.map.graph, config));
 
       const branches: MctsBranch[] = targets.map((target) => ({ kind: 'target', target }));
 
@@ -153,7 +153,7 @@ export function previewReachability(): TurnReachability {
     isReachableThisTurn(state: GameState, subject: PlayerId, target: PoiCandidate): boolean {
       const player = playerById(state, subject);
       const config = state.map.ruleset.config;
-      const route = shortestPath(state.map.graph, player.position, target.node, config);
+      const route = routeTable(state.map.graph, config).path(player.position, target.node);
       if (route === null) return false;
       return previewPath(state.map.graph, player.position, route, state.turn.allowance, player.stats.stamina, config)
         .destinationReachable;

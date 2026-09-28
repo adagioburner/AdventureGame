@@ -402,6 +402,18 @@ designer collapsed the tree's own constant into it (Q19) — one K,
 list: the tree makes every candidate a branch, the rollout picks one uniformly,
 remoteness walks to its pick.
 
+**Routes are searched once per map in a game** (Andrei, 2026-09-28):
+`routeTable` in `packages/core/src/path.ts` runs the whole Dijkstra from every
+node the first time a map is asked for, and keeps them. The enumerator, the
+rest check, the rollout and the computer's real move read routes and the K
+closest POIs from it instead of searching again; the game page builds it as the
+game starts. The step costs are per terrain and never depend on skills, and the
+table keeps the very search the uncached functions run, so every route and every
+candidate list is identical, and so is every move for the same number of games
+played in the computer's head. The map generator, the remoteness walk and a
+person's route preview do not use it: the generator's graphs change while it
+works.
+
 **A branch is a macro-action**, in the tree and in the rollout alike. [SOURCE §9,
 chat] taking a target means "the simulated player keeps moving to the chosen POI
 without making new decision until it's reached or claimed by a different

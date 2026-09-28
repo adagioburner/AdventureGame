@@ -1,5 +1,5 @@
 import type { GameConfig, Terrain } from '@adventure/config';
-import type { NodeId } from './ids.ts';
+import { asNodeId, type NodeId } from './ids.ts';
 import { neighbours, type MapGraph } from './graph.ts';
 
 /**
@@ -125,6 +125,12 @@ export function shortestPath(
 ): readonly NodeId[] | null {
   if (from === to) return [];
   const { previous } = dijkstra(graph, from, config, { stopWhen: (node) => node === to });
+  return pathTo(previous, from, to);
+}
+
+/** The path `dijkstra`'s predecessors give from `from` to `to`, or `null` if it never reached `to`. */
+function pathTo(previous: readonly (NodeId | null)[], from: NodeId, to: NodeId): readonly NodeId[] | null {
+  if (from === to) return [];
   if (previous[to] == null) return null;
 
   const reversed: NodeId[] = [];
@@ -134,6 +140,59 @@ export function shortestPath(
     cursor = previous[cursor] ?? null;
   }
   return reversed.reverse();
+}
+
+/**
+ * The whole search from every node of one map, worked out once.
+ *
+ * [SOURCE §9, chat] Andrei, 2026-09-28: computer players "spend most of their
+ * time recalculating distances that can be cached at the start of the game".
+ * The step costs are fixed per terrain and nobody's skills enter them, so on a
+ * map that never changes — a game's — the search from a node always comes out
+ * the same. The first call for a map runs the whole `dijkstra` from every one
+ * of its nodes; every later call for that map is a lookup.
+ *
+ * Nothing it answers differs from the uncached functions: `dijkstra` settles
+ * in `(cost, node id)` order and never revisits a settled node's predecessor,
+ * so a whole search settles the same nodes in the same order as one stopped
+ * early, and `path` is exactly `shortestPath`.
+ *
+ * Only for a graph that is never changed after the first call. The map
+ * generator builds and edits graphs, so it keeps the uncached functions.
+ */
+export interface RouteTable {
+  /** The whole `dijkstra` from `from`. */
+  from(from: NodeId): DijkstraResult;
+  /** `shortestPath(graph, from, to, config)`. */
+  path(from: NodeId, to: NodeId): readonly NodeId[] | null;
+}
+
+const routeTables = new WeakMap<MapGraph, WeakMap<GameConfig, RouteTable>>();
+
+/** The one `RouteTable` for `graph` under `config`'s step costs. */
+export function routeTable(graph: MapGraph, config: GameConfig): RouteTable {
+  let byConfig = routeTables.get(graph);
+  if (byConfig === undefined) {
+    byConfig = new WeakMap();
+    routeTables.set(graph, byConfig);
+  }
+  const known = byConfig.get(config);
+  if (known !== undefined) return known;
+
+  const searches = graph.nodes.map((_node, from) => dijkstra(graph, asNodeId(from), config));
+  const table: RouteTable = {
+    from(from: NodeId): DijkstraResult {
+      const search = searches[from];
+      if (search === undefined) throw new RangeError(`unknown node ${from}`);
+      return search;
+    },
+    path(from: NodeId, to: NodeId): readonly NodeId[] | null {
+      if (from === to) return [];
+      return pathTo(table.from(from).previous, from, to);
+    },
+  };
+  byConfig.set(config, table);
+  return table;
 }
 
 /* -- A binary min-heap ordered by `(cost, node id)`. Infrastructure only. --- */
