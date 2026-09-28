@@ -1752,6 +1752,96 @@ The icon files are unchanged. The discs are drawn as the icons load, from
 `apps/web/src/render/pixi/textures.ts`), which is why the cards, which show
 the files, keep today's icons.
 
+### Q63. How do the sound effects work? — **answered 2026-09-28**
+
+On 27 September at 17:05 Andrei asked: *"we need at least minimal sound
+effects, for moving, picking up a reward, winning a battle and losing a
+battle"*. The game made no sound before. What that left open went on a
+details page as the sound details 126 to 141 (not the computer-player
+thread's 126 to 131), each with a recommendation and, for 127 to 130, three
+samples to choose from by ear, before anything was built. On 28 September at
+00:22 he answered: *"My choices of sounds are: 127: B, 128: A, 129: B, 130: A.
+131-140 as recommended. 141 - come to think of it, we need the resting sound
+and the "new message" as well, for a complete minimal set. The others can
+wait"*.
+
+126. **The sounds are made here** by `Art/tools/make_sounds.py`, standard
+    library only, and marked as placeholders. Not answered by number: all
+    four of his picks are samples made that way. Each is a file under
+    `Art/Sounds/` with a line under `sounds` in `Art/manifest.json`, so any
+    of them can be replaced by dropping in a file.
+127. **Moving: a wooden figure tapping the board** (B).
+128. **Picking up a reward: two rising chimes** (A).
+129. **A battle won: four rising chimes** (B).
+130. **A battle lost: two falling horn notes,** the second sagging (A).
+131. **A footstep each time the walking figure reaches the next node,** so a
+    six-node walk is six steps, 0.22 seconds apart.
+132. **One footstep on every terrain.**
+133. **Three slightly different takes of the step, used in turn.**
+134. **One pickup sound for every reward kind,** as the figure lands on an
+    unguarded POI and its floating notice appears.
+135. **A battle won plays only the battle-won sound,** not the pickup too.
+136. **The battle sounds play when the die stops** and the card shows the
+    result. The die tumbles silently.
+137. **Combat and magic guards share the battle sounds.**
+138. **Every turn the map plays out is heard:** your own, the other people's
+    on one device, the computer's, and online the other players' turns as
+    you watch them. Turns shown without a walk stay silent: those caught up
+    after a dropped connection, and those already in the log when a game
+    opens.
+139. **A Sound button in the map's row of buttons, left of Track,** pressed
+    while sound is on, as Track is while it follows. Sound starts on, and
+    each device keeps its own choice.
+140. **One fixed level, no slider.** The four are balanced, measured as a
+    phone's speaker plays them, the footsteps quieter because they repeat.
+    The device's volume sets how loud, and an iPhone's silent switch silences
+    the game too.
+141. **A rest and a new message get sounds too;** the other moments listed
+    (the end of a game, "Your turn" online, button taps, the die rattle) stay
+    silent for now.
+
+What those two sounds needed, and two things the build turned up, went on
+the same page as 142 to 146. At 01:29 he answered: *"142 - please use option
+B; 143 - please use B as well. The rest are as recommended. Can the "Sound"
+button use a volume / speaker icon or a webding symbol?"*
+
+142. **A rest: a soft breath out** (B), as the rest is shown: the turn passes
+    and the resting player's stamina goes up on their card. Every rest the
+    map plays out is heard, as by 138. Staying put on a node is a move, not a
+    rest, and makes no rest sound.
+143. **A new message: two knocks on a door** (B; C, two rising plucks, was
+    recommended).
+144. **A message from someone else is heard as it arrives while the game is
+    open,** whether the board is open or closed and whether the page is in
+    front or behind another. Your own messages, and those already on the
+    board when you open the game, make none; several arriving together, as
+    after a dropped connection, make one sound. A phone may pause a page it
+    has put behind another, and a paused page is silent until it is back.
+145. **The Sound button stays after a game ends,** on one device and online,
+    where Track goes.
+146. **The button row on a folded Fold.** Recommended was A, less space round
+    the buttons' words below 360 pixels wide; he asked instead whether the
+    Sound button can show a speaker symbol. With a symbol in place of the
+    word the row fits at 340 pixels. How it looks went on the page as the
+    sound details 170 to 172 (the computer-player thread has 147 to 150),
+    with pictures, and at 02:53 he answered: *"the recommendations for
+    170-172 look good, please proceed"*.
+
+170. **A speaker drawn into the game,** not a font's or the device's own
+    emoji: Webdings is a Windows font that phones don't have, and each maker
+    draws the emoji differently. It takes the colour of the button's words,
+    dark, and blue while pressed, and looks the same everywhere.
+171. **Sound off shows twice:** the speaker trades its two sound waves for a
+    small cross, and the button is no longer pressed.
+172. **The spacing stays as it was on every screen;** 146 A is not built. With
+    the speaker the row fits a folded Fold with 18 pixels to spare.
+
+The footsteps are timed by the sound's own clock from the moment the walk
+starts, so they keep the walk's pace however smoothly the map draws
+(`apps/web/src/sound/player.ts`, `apps/web/src/page/GameScreen.tsx`). A
+browser lets a page make sound only once the person has tapped or typed on
+it, so nothing plays before the first tap.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design

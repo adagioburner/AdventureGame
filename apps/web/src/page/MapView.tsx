@@ -59,6 +59,8 @@ interface MapViewProps {
   readonly tracking?: boolean;
   /** [Q57, 72] Shows the Track button, above "+", which calls this. */
   readonly onTrack?: (() => void) | undefined;
+  /** [Q63, 139] Shows the Sound button before Track: whether sound is on, and what pressing it does. */
+  readonly sound?: { readonly on: boolean; onToggle(): void } | undefined;
   /** [Q57, 73] The viewer dragged, pinched or zoomed the map, or pressed "+", "−" or "Whole map". */
   readonly onMoved?: () => void;
   readonly onReady?: (handle: MapHandle | null) => void;
@@ -87,6 +89,7 @@ export function MapView({
   onTap,
   tracking = true,
   onTrack,
+  sound,
   onMoved,
   onReady,
 }: MapViewProps) {
@@ -360,6 +363,13 @@ export function MapView({
     <>
       <div ref={host} className="canvas-host" aria-label="The map" role="img" />
       <div className="overlay zoom">
+        {/* [Q63, 139] Pressed while sound is on, as Track is while it follows.
+            [170 and 171] A speaker instead of the word: sound waves while on, a cross while off. */}
+        {sound === undefined ? null : (
+          <button className="btn icon" type="button" aria-label="Sound" aria-pressed={sound.on} onClick={sound.onToggle}>
+            <Speaker on={sound.on} />
+          </button>
+        )}
         {onTrack === undefined ? null : (
           <button className="btn" type="button" aria-pressed={tracking} onClick={onTrack}>
             Track
@@ -376,5 +386,29 @@ export function MapView({
         </button>
       </div>
     </>
+  );
+}
+
+/**
+ * [Andrei, 2026-09-28] "Can the "Sound" button use a volume / speaker icon"
+ * (Q63, 170): a speaker drawn here rather than a font's or the device's
+ * symbol, so it looks the same everywhere, in the colour of the button's words.
+ */
+function Speaker({ on }: { readonly on: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 9.5h3.5L11.5 5v14l-5-4.5H3z" fill="currentColor" />
+      {on ? (
+        <>
+          <path d="M15 9a4.2 4.2 0 0 1 0 6" />
+          <path d="M18 6a8.5 8.5 0 0 1 0 12" />
+        </>
+      ) : (
+        <>
+          <path d="M15.5 9.5l5 5" />
+          <path d="M20.5 9.5l-5 5" />
+        </>
+      )}
+    </svg>
   );
 }

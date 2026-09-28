@@ -17,6 +17,8 @@ import { endsLabel, useMinuteClock } from './ends.ts';
 import { mapForSeed, useArt, useMapFor } from './assets.ts';
 import { MessageBoard } from './MessageBoard.tsx';
 import { useChannel } from './socket.ts';
+import { newPostsHeard } from '../sound/cues.ts';
+import { sounds } from '../sound/player.ts';
 
 interface OnlineGameScreenProps {
   readonly gameId: GameId;
@@ -206,6 +208,19 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
     writeSeen(gameId, posts.length);
   }, [panel, posts.length, seen, gameId]);
   const unread = panel === 'board' ? 0 : posts.slice(seen).filter((post) => post.author !== mySeat?.playerId).length;
+  // [Q63, 144] A message someone else posts is heard as it arrives, whether
+  // the board is open or not. The posts already there when the game opened
+  // make none, and several arriving together, as after a dropped connection,
+  // make one sound.
+  const postsKnown = useRef<number | null>(null);
+  useEffect(() => {
+    if (live === null) return;
+    const known = postsKnown.current;
+    postsKnown.current = live.messageBoard.length;
+    if (known !== null && live.messageBoard.length > known && newPostsHeard(live.messageBoard, known, mySeat?.playerId ?? null)) {
+      sounds.play('message');
+    }
+  }, [live, mySeat?.playerId]);
 
   // [Q56, 56] The game master's panel under the end time.
   const [endsOpen, setEndsOpen] = useState(false);
