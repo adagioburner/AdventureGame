@@ -5,7 +5,7 @@ import { MissedRecords, OnlineGame } from '../modes/online.ts';
 import { onlinePlay, type OnlinePlay } from '../modes/play.ts';
 import { GameScreen, PHONE } from '../page/GameScreen.tsx';
 import { MapView } from '../page/MapView.tsx';
-import { randomSeed } from '../page/seed.ts';
+import { SeedForm } from '../page/SeedForm.tsx';
 import { buildMapScene, type MapScene } from '../render/sceneModel.ts';
 import { DEFAULT_RULESET } from '@adventure/config';
 import { atlasOf, type ArtCatalog } from '../art/catalog.ts';
@@ -441,29 +441,14 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
       <header className="bar">
         <h1>Adventure</h1>
         {choosing ? (
-          <form
-            className="seed"
-            onSubmit={(event) => {
-              event.preventDefault();
-              setSeed(seedDraft);
-            }}
-          >
-            <label htmlFor="seed">Map seed</label>
-            <input
-              id="seed"
-              value={seedDraft}
-              maxLength={64}
-              spellCheck={false}
-              autoComplete="off"
-              onChange={(event) => setSeedDraft(event.target.value)}
-            />
-            <button className="btn" type="submit" disabled={channel.status !== 'open'}>
-              Draw
-            </button>
-            <button className="btn" type="button" disabled={channel.status !== 'open'} onClick={() => setSeed(randomSeed())}>
-              Random
-            </button>
-          </form>
+          <SeedForm
+            draft={seedDraft}
+            current={seed ?? ''}
+            maxLength={64}
+            randomDisabled={channel.status !== 'open'}
+            onDraftChange={setSeedDraft}
+            onDraw={setSeed}
+          />
         ) : setup !== null ? (
           <span className="seed-shown">
             {setup.name} · Seed <code>{setup.mapSeed}</code>
