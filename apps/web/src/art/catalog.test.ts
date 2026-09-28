@@ -4,7 +4,7 @@ import { asNodeId, type Poi } from '@adventure/core';
 import { ArtError, atlasExtent } from './atlas.ts';
 import { atlasOf, buildArtCatalog, poiArt, sheetFile, wrapIndex, type ArtFiles } from './catalog.ts';
 import { ART_FILES } from './files.ts';
-import { parseManifest, poiArtRow, sheetsNamed } from './manifest.ts';
+import { SOUND_NAMES, parseManifest, poiArtRow, sheetsNamed } from './manifest.ts';
 
 /**
  * The real `Art/` folder against the real `Art/manifest.json`. This is the test
@@ -35,6 +35,7 @@ describe('the art catalog built from Art/', () => {
       expect(catalog.sheetUrl(name)).toBeTruthy();
     }
     for (const kind of REWARD_KINDS) expect(catalog.iconUrl(kind)).toBeTruthy();
+    for (const name of SOUND_NAMES) expect(catalog.soundUrls(name).length, name).toBeGreaterThan(0);
   });
 
   it('has every sheet big enough for every sprite its atlas describes', () => {
@@ -257,5 +258,16 @@ describe('a bad art drop', () => {
       urls: new Map([...ART_FILES.urls].filter(([key]) => key !== 'Icons/gold.png')),
     };
     expect(() => buildArtCatalog(files)).toThrow(/Forest_Trees_atlas\.json is missing\n\s+Icons\/gold\.png is missing/);
+  });
+
+  it('names a sound file that is missing, and a sound with no files (Q63)', () => {
+    const files: ArtFiles = {
+      json: ART_FILES.json,
+      urls: new Map([...ART_FILES.urls].filter(([key]) => key !== 'Sounds/step_2.wav')),
+    };
+    expect(() => buildArtCatalog(files)).toThrow(/Sounds\/step_2\.wav is missing/);
+    const manifest = ART_FILES.json.get('manifest.json') as Record<string, Record<string, unknown>>;
+    const silent = { ...manifest, sounds: { ...manifest['sounds'], pickup: { files: [], volume: 1 } } };
+    expect(() => parseManifest(silent)).toThrow(/sounds\.pickup\.files: expected at least one file/);
   });
 });

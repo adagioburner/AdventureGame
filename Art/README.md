@@ -15,6 +15,7 @@ manifest, and never a code change.
 | Reward icon | `Icons/<reward kind>.png` | One icon per reward unit under a POI |
 | Portrait crops | `player_avatars_portraits.json` | Head-and-shoulders boxes on the figurine sheet (temporary, Q26) |
 | Artist's sheets | `originals/<Name>.png` | Nothing directly: `tools/pack_sheets.py` packs each into `<Name>_sheet.png` and its atlas |
+| Sound effect | `Sounds/<name>.wav` | A footstep, a reward picked up, a battle won or lost (Q63) |
 
 A sheet is paired with its atlas by file name, `<Name>_sheet.png` with
 `<Name>_atlas.json`. The atlas's own `"sheet"` field is not read: five of the
@@ -143,6 +144,23 @@ there for people and ignored by the game.
   flag and active-player ring, and their sizes.
 - `figurines`, `portraits`, `dice`: the player figures, their portrait crops
   and the die sheet.
+- `sounds`: the sound effects (Q63), each a list of `files` under `Art/` and
+  a `volume` (1 plays a file as it is, 0.5 at half). `step` is a footstep,
+  played each time a walking figure reaches a node; `pickup` a reward taken
+  from an unguarded POI; `battle_won` and `battle_lost` a guard beaten or
+  not, as the die stops. A sound with several files uses them in turn, so a
+  walk's footsteps are not all alike.
+
+## Swapping a sound
+
+Drop a new file over the old one, or add it under a new name and change its
+line under `sounds` in the manifest. WAV and MP3 play in every browser. Its
+level is the file's own, times `volume`: the placeholders are all set to one
+loudness as a phone's speaker plays it, the footsteps lower, so a replacement
+that sounds louder or quieter than the rest takes a `volume` rather than an
+edited file. A real sound replacing a placeholder loses its
+`"placeholder": true`. `pnpm test` checks that every file the manifest names
+is there.
 
 ## Placeholders
 
@@ -152,6 +170,8 @@ The plains texture's grass is drawn through the inverse of the isometric
 projection so it stands up on the map; anything a replacement texture shows
 standing up off the ground needs the same treatment, or it leans right. It
 writes the same bytes every run, so rerunning it after editing it changes only
-what was edited. `tools/make_portrait_crops.py` rederives the portrait boxes,
+what was edited. `tools/make_sounds.py` makes the six sound files flagged `"placeholder": true`
+under `sounds`, from the samples Andrei picked by ear, the same bytes every
+run. `tools/make_portrait_crops.py` rederives the portrait boxes,
 and `tools/pack_sheets.py` repacks the artist's sheets; both do the same
 every run too.

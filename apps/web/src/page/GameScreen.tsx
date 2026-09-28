@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import {
   previewPath,
   type GameEvent,
@@ -17,6 +17,8 @@ import type { PlayedChange, PlaySource, PlayUpdate } from '../modes/play.ts';
 import { position } from '../render/geometry.ts';
 import type { LoadedArt } from '../render/pixi/textures.ts';
 import type { FigureCue, MapScene, Walker } from '../render/sceneModel.ts';
+import { endingSound } from '../sound/cues.ts';
+import { soundTableOf, sounds } from '../sound/player.ts';
 import { ClaimNotice, EndCard, ResultCard } from './Cards.tsx';
 import { isUnguardedClaim, journalEntry, type JournalEntry } from './journal.ts';
 import { MapView, type MapHandle } from './MapView.tsx';
@@ -107,6 +109,9 @@ export function GameScreen({
   const busy = inFlight !== null;
   // Online, a turn this page committed that the server has not played yet.
   const [awaiting, setAwaiting] = useState(false);
+  // [Q63, 139] Whether sound is on on this device, as the map's Sound button shows it.
+  const soundOn = useSyncExternalStore(sounds.subscribe, () => sounds.on);
+  useEffect(() => sounds.load(soundTableOf(catalog)), [catalog]);
 
   const say = useCallback((text: string) => setNotice(text), []);
   useEffect(() => {
@@ -285,11 +290,19 @@ export function GameScreen({
     };
   }, [source]);
 
-  /** The walk, then the die: what End Turn shows before the result is revealed. */
+  /**
+   * The walk, then the die: what End Turn shows before the result is revealed.
+   * [Q63, 138] Every turn played out here is heard, whoever played it; turns
+   * caught up or already in the log when the screen opened never come here.
+   */
   const playOut = async (turn: PlayedTurn, before: GameState): Promise<void> => {
     const moved = find(turn.events, 'moved');
     if (moved !== undefined && moved.resolution.walked.length > 0) {
       const nodes = [moved.resolution.from, ...moved.resolution.walked].map((node) => position(before.map.graph, node));
+      // [Q63, 131] A footstep each time the figure reaches the next node, timed
+      // by the sound's own clock so the steps keep the walk's pace however
+      // smoothly the map draws.
+      for (let node = 1; node < nodes.length; node++) sounds.play('step', (node * timing.stepMs) / 1000);
       await walk(turn.player, nodes, setWalker);
     }
     const interacted = find(turn.events, 'interacted');
@@ -299,6 +312,10 @@ export function GameScreen({
       await sleep(timing.tumbleMs);
     }
     setResult({ turn, rolling: false });
+    // [Q63, 134 and 136] As an unguarded claim's notice appears, or as the die
+    // stops and the card shows whether the guard was beaten.
+    const ending = endingSound(turn.events);
+    if (ending !== null) sounds.play(ending);
   };
 
   // [Andrei, 2026-09-24] Q42: a computer's turn starts with it thinking for its
@@ -526,6 +543,7 @@ export function GameScreen({
           onTap={onTap}
           tracking={tracking}
           onTrack={shown.status === 'in_progress' ? pressTrack : undefined}
+          sound={shown.status === 'in_progress' ? { on: soundOn, onToggle: () => sounds.setOn(!soundOn) } : undefined}
           onMoved={() => setTracking(false)}
           onReady={(ready) => {
             handle.current = ready;

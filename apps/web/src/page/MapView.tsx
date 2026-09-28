@@ -59,6 +59,8 @@ interface MapViewProps {
   readonly tracking?: boolean;
   /** [Q57, 72] Shows the Track button, above "+", which calls this. */
   readonly onTrack?: (() => void) | undefined;
+  /** [Q63, 139] Shows the Sound button before Track: whether sound is on, and what pressing it does. */
+  readonly sound?: { readonly on: boolean; onToggle(): void } | undefined;
   /** [Q57, 73] The viewer dragged, pinched or zoomed the map, or pressed "+", "−" or "Whole map". */
   readonly onMoved?: () => void;
   readonly onReady?: (handle: MapHandle | null) => void;
@@ -87,6 +89,7 @@ export function MapView({
   onTap,
   tracking = true,
   onTrack,
+  sound,
   onMoved,
   onReady,
 }: MapViewProps) {
@@ -360,6 +363,12 @@ export function MapView({
     <>
       <div ref={host} className="canvas-host" aria-label="The map" role="img" />
       <div className="overlay zoom">
+        {/* [Q63, 139] Pressed while sound is on, as Track is while it follows. */}
+        {sound === undefined ? null : (
+          <button className="btn" type="button" aria-pressed={sound.on} onClick={sound.onToggle}>
+            Sound
+          </button>
+        )}
         {onTrack === undefined ? null : (
           <button className="btn" type="button" aria-pressed={tracking} onClick={onTrack}>
             Track

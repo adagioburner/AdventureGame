@@ -43,6 +43,8 @@ export interface ArtManifest {
   readonly figurines: { readonly sheet: string; readonly size: number };
   readonly portraits: string;
   readonly dice: { readonly sheet: string };
+  /** The sound effects (Q63): each sound's files, played in turn, and its volume. */
+  readonly sounds: Readonly<Record<SoundName, SoundArt>>;
   readonly shadows: { readonly opacity: number; readonly sheets: ReadonlyMap<string, readonly string[]> };
   /** Edits made to a sheet as it loads, by sheet name; a sheet with no line is drawn as supplied. */
   readonly adjustments: ReadonlyMap<string, SheetAdjustment>;
@@ -83,6 +85,22 @@ export interface SheetOutline {
   readonly color: string;
   /** How thick, as a share of the sheet's typical sprite span, so it scales with the picture. */
   readonly width: number;
+}
+
+/**
+ * [Andrei, 2026-09-27] "sound effects, for moving, picking up a reward,
+ * winning a battle and losing a battle" (Q63): a footstep each time a walking
+ * figure reaches a node, a reward taken from an unguarded POI, and a guard
+ * beaten or not once the die has stopped.
+ */
+export const SOUND_NAMES = ['step', 'pickup', 'battle_won', 'battle_lost'] as const;
+export type SoundName = (typeof SOUND_NAMES)[number];
+
+export interface SoundArt {
+  /** Paths under `Art/`. Several are takes of one sound, used in turn (Q63, 133). */
+  readonly files: readonly string[];
+  /** How loud, as a share of the file's own level: `1` plays it as it is. */
+  readonly volume: number;
 }
 
 export interface TerrainArt {
@@ -173,6 +191,7 @@ export function parseManifest(json: unknown): ArtManifest {
   const prospect = record(root['move_prospect'], 'manifest.json: move_prospect');
   const figurines = record(root['figurines'], 'manifest.json: figurines');
   const dice = record(root['dice'], 'manifest.json: dice');
+  const sounds = record(root['sounds'], 'manifest.json: sounds');
   const shadows = record(root['shadows'], 'manifest.json: shadows');
   const shadowSheets = record(shadows['sheets'], 'manifest.json: shadows.sheets');
   const adjustments = root['adjustments'] === undefined ? {} : record(root['adjustments'], 'manifest.json: adjustments');
@@ -226,6 +245,9 @@ export function parseManifest(json: unknown): ArtManifest {
     },
     portraits: string(root['portraits'], 'manifest.json: portraits'),
     dice: { sheet: string(dice['sheet'], 'manifest.json: dice.sheet') },
+    sounds: Object.fromEntries(
+      SOUND_NAMES.map((name) => [name, parseSound(sounds[name], `manifest.json: sounds.${name}`)]),
+    ) as Record<SoundName, SoundArt>,
     shadows: {
       opacity: fraction(shadows['opacity'], 'manifest.json: shadows.opacity'),
       sheets: new Map(
@@ -290,6 +312,13 @@ export function sheetsNamed(manifest: ArtManifest): string[] {
   names.add(manifest.figurines.sheet);
   names.add(manifest.dice.sheet);
   return [...names].sort();
+}
+
+function parseSound(json: unknown, where: string): SoundArt {
+  const sound = record(json, where);
+  const files = array(sound['files'], `${where}.files`).map((file, index) => string(file, `${where}.files[${index}]`));
+  if (files.length === 0) throw new ArtError(`${where}.files: expected at least one file`);
+  return { files, volume: positive(sound['volume'], `${where}.volume`) };
 }
 
 function parseTerrain(json: unknown, where: string): TerrainArt {
