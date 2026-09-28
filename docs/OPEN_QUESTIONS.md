@@ -1800,10 +1800,11 @@ wait"*.
     (the end of a game, "Your turn" online, button taps, the die rattle) stay
     silent for now.
 
-Still open, on the same page as 142 to 147: which rest and new-message
-sounds, when a new message is heard, whether the Sound button stays once a
-game has ended, and how the button row fits a folded Galaxy Fold, 340 pixels
-wide, where the Sound button runs 12 pixels off the left edge.
+Still open, on the same page as 142 to 146: which rest sound (142), which
+new-message sound (143) and when a new message is heard (144), whether the
+Sound button stays once a game has ended (145), and how the button row fits
+a folded Galaxy Fold, 340 pixels wide, where the Sound button runs 12 pixels
+off the left edge (146).
 
 The footsteps are timed by the sound's own clock from the moment the walk
 starts, so they keep the walk's pace however smoothly the map draws
