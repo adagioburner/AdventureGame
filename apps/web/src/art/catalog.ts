@@ -1,7 +1,7 @@
 import { REWARD_KINDS, TERRAINS, type RewardKind } from '@adventure/config';
 import type { Poi } from '@adventure/core';
 import { ArtError, array, nonNegative, parseAtlas, positive, record, spriteIndex, string, type Atlas } from './atlas.ts';
-import { parseManifest, poiArtRow, sheetsNamed, type ArtManifest, type PoiArtRow } from './manifest.ts';
+import { SOUND_NAMES, parseManifest, poiArtRow, sheetsNamed, type ArtManifest, type PoiArtRow, type SoundName } from './manifest.ts';
 
 /**
  * Everything in `Art/` the client needs, read and cross-checked, before a
@@ -15,7 +15,7 @@ import { parseManifest, poiArtRow, sheetsNamed, type ArtManifest, type PoiArtRow
 export interface ArtFiles {
   /** Parsed JSON, keyed by path under `Art/`: `"Plains_Fields_atlas.json"`. */
   readonly json: ReadonlyMap<string, unknown>;
-  /** Where each image can be fetched from, keyed the same way: `"Icons/gold.png"`. */
+  /** Where each image and sound can be fetched from, keyed the same way: `"Icons/gold.png"`, `"Sounds/pickup.wav"`. */
   readonly urls: ReadonlyMap<string, string>;
 }
 
@@ -26,6 +26,8 @@ export interface ArtCatalog {
   readonly portraits: readonly Portrait[];
   sheetUrl(name: string): string;
   iconUrl(kind: RewardKind): string;
+  /** Where each of a sound's files can be fetched from, in the manifest's order. */
+  soundUrls(name: SoundName): readonly string[];
 }
 
 /** A sprite, by sheet and position in that sheet's `sprites` list. */
@@ -74,6 +76,9 @@ export function buildArtCatalog(files: ArtFiles): ArtCatalog {
   }
   for (const kind of REWARD_KINDS) {
     if (!files.urls.has(manifest.icons.files[kind])) problems.push(`${manifest.icons.files[kind]} is missing`);
+  }
+  for (const name of SOUND_NAMES) {
+    for (const file of manifest.sounds[name].files) if (!files.urls.has(file)) problems.push(`${file} is missing`);
   }
 
   const check = (what: () => void): void => {
@@ -169,6 +174,13 @@ export function buildArtCatalog(files: ArtFiles): ArtCatalog {
       const url = files.urls.get(manifest.icons.files[kind]);
       if (url === undefined) throw new ArtError(`${manifest.icons.files[kind]} is missing`);
       return url;
+    },
+    soundUrls(name) {
+      return manifest.sounds[name].files.map((file) => {
+        const url = files.urls.get(file);
+        if (url === undefined) throw new ArtError(`${file} is missing`);
+        return url;
+      });
     },
   };
 }
