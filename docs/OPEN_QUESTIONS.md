@@ -1861,6 +1861,28 @@ tree together. Both are 10, so no map and no move changed:
 `closestPoiCandidates` and `chooseWalkTarget` now take K from their caller
 rather than reading it from the config.
 
+<a id="q70"></a>
+### Q70. ~~Does the map seed need its Draw button?~~ — **answered 2026-09-28: no, as recommended**
+
+On 28 September, in the thread about a Rules button, Andrei asked: *"Can we get
+rid of the "Draw" button? The map is drawn when you press enter in the seed
+field, or when the seed field loses focus"*. Enter already drew the map;
+leaving the field did not. Three details went to him with pictures, and at
+19:35 he answered: *"225-227 the recommendations sound good"*.
+
+225. **Both setup screens lose Draw:** the game on this device, and the game
+     master's setup of an online game. Enter draws the seed typed, and so does
+     leaving the field.
+226. **A field left empty gets the current seed back** when it is left.
+     Before, it stayed empty.
+227. **Random pressed straight after typing draws only its own map,** not the
+     typed seed first.
+
+Random takes Draw's place. On a desktop nothing else moves. On a folded phone
+(340 wide) the seed bar loses a row on both screens and the setup form under
+the map gets the room; the map keeps its 180. Both screens use the one field in
+`apps/web/src/page/SeedForm.tsx`.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design

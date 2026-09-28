@@ -12,7 +12,8 @@ import { newLocalSetup, toHotseatSeats, type LocalLimits, type LocalSetup } from
 import { SetupPanel } from '../setup/SetupPanel.tsx';
 import { GameScreen } from './GameScreen.tsx';
 import { MapView } from './MapView.tsx';
-import { initialSeed, mapFor, randomSeed, writeSeed } from './seed.ts';
+import { initialSeed, mapFor, writeSeed } from './seed.ts';
+import { SeedForm } from './SeedForm.tsx';
 
 export interface AppProps {
   /**
@@ -164,28 +165,7 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
             </button>
           </>
         ) : (
-          <form
-            className="seed"
-            onSubmit={(event) => {
-              event.preventDefault();
-              draw(draft);
-            }}
-          >
-            <label htmlFor="seed">Map seed</label>
-            <input
-              id="seed"
-              value={draft}
-              spellCheck={false}
-              autoComplete="off"
-              onChange={(event) => setDraft(event.target.value)}
-            />
-            <button className="btn" type="submit">
-              Draw
-            </button>
-            <button className="btn" type="button" onClick={() => draw(randomSeed())}>
-              Random
-            </button>
-          </form>
+          <SeedForm draft={draft} current={seed} onDraftChange={setDraft} onDraw={draw} />
         )}
         {barExtra}
       </header>
