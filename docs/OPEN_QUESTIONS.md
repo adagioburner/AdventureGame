@@ -1752,7 +1752,7 @@ The icon files are unchanged. The discs are drawn as the icons load, from
 `apps/web/src/render/pixi/textures.ts`), which is why the cards, which show
 the files, keep today's icons.
 
-### Q63. How do the sound effects work? — **answered 2026-09-28; the Sound button's speaker icon still open**
+### Q63. How do the sound effects work? — **answered 2026-09-28**
 
 On 27 September at 17:05 Andrei asked: *"we need at least minimal sound
 effects, for moving, picking up a reward, winning a battle and losing a
@@ -1822,8 +1822,19 @@ button use a volume / speaker icon or a webding symbol?"*
 146. **The button row on a folded Fold.** Recommended was A, less space round
     the buttons' words below 360 pixels wide; he asked instead whether the
     Sound button can show a speaker symbol. With a symbol in place of the
-    word the row fits at 340 pixels. How the symbol looks is open, as the
-    sound details 170 to 173 (the computer-player thread has 147 to 150).
+    word the row fits at 340 pixels. How it looks went on the page as the
+    sound details 170 to 172 (the computer-player thread has 147 to 150),
+    with pictures, and at 02:53 he answered: *"the recommendations for
+    170-172 look good, please proceed"*.
+
+170. **A speaker drawn into the game,** not a font's or the device's own
+    emoji: Webdings is a Windows font that phones don't have, and each maker
+    draws the emoji differently. It takes the colour of the button's words,
+    dark, and blue while pressed, and looks the same everywhere.
+171. **Sound off shows twice:** the speaker trades its two sound waves for a
+    small cross, and the button is no longer pressed.
+172. **The spacing stays as it was on every screen;** 146 A is not built. With
+    the speaker the row fits a folded Fold with 18 pixels to spare.
 
 The footsteps are timed by the sound's own clock from the moment the walk
 starts, so they keep the walk's pace however smoothly the map draws

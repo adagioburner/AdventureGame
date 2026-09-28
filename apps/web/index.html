@@ -233,6 +233,14 @@
       .zoom .btn[aria-pressed='true'] {
         background: var(--accent-soft);
       }
+      /* [Q63, 170] The Sound button's speaker, centred as the other buttons' words are. */
+      .zoom .btn.icon {
+        display: grid;
+        place-items: center;
+      }
+      .zoom .btn.icon svg {
+        display: block;
+      }
       .crop {
         display: inline-block;
         flex: none;
