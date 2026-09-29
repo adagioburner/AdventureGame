@@ -35,7 +35,7 @@ function Rulebook({ onClose }: { onClose(): void }) {
   const close = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {
     close.current?.focus();
-    // While the rulebook is open the game's own keys do nothing (Escape would
+    // [236] While the rulebook is open the game's own keys do nothing (Escape would
     // put the planned route down): Escape closes the rulebook instead.
     const onKey = (event: KeyboardEvent): void => {
       event.stopPropagation();

@@ -1,7 +1,5 @@
 # Adventure Game — Rulebook
 
-Sep 27, 2026 · @Andrei
-
 ## Object of the game
 
 Win by collecting more gold than the other players.
