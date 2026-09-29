@@ -2257,6 +2257,22 @@ unchanged. Delete goes through the game list's socket (`lobby.deleteGame`):
 the lobby checks its row, and the game removes itself in
 `GameSession.deleteFinished`, the same removal as the 7-day one.
 
+<a id="q100"></a>
+### Q100. ~~What do players read for a site and for a space?~~ — **answered 2026-09-29: site and space, as the rulebook says, never POI or node**
+
+On 29 September at 18:53 Andrei wrote: *"I noticed that POI are still
+mentioned in the turn log – but in user-facing communications we renamed them
+to sites."* The turn log's lines that said POI now say site, and nothing else
+changed with them. No other text players read said POI or "point of
+interest"; the code keeps its names (`poiAt`, `poiRuntime` and so on).
+
+370. **Four lines players read said node where the rulebook says space:** the
+     turn log's *"Heading for a plains node."*, the move hints *"Tap the node
+     to route through."* and *"…routes through a node on the way."*, and the
+     guard fight card's *"…the gold stays on the node."* Recommended: space,
+     only the word swapped. **Answered** at 19:14: *"please change nodes to
+     spaces"*.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design
