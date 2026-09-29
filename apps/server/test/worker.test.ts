@@ -198,8 +198,8 @@ describe('the server, in the local Workers runtime', () => {
     const started = await beaGame.next((m): m is Extract<ServerMessage, { type: 'game.state' }> => m.type === 'game.state');
     expect(started.state.players.map((player) => [player.name, player.control, player.stats.stamina])).toEqual([
       ['Gamemaster', 'human', 30],
-      ['Bea', 'human', 40],
-      ['Computer 1', 'ai', 50],
+      ['Bea', 'human', 35],
+      ['Computer 1', 'ai', 40],
     ]);
     expect(started.state.map.poiByNode).toBeInstanceOf(Map);
     expect(started.state.map.pois.length).toBe(map.pois.length);

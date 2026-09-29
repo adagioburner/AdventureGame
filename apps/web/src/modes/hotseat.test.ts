@@ -31,7 +31,7 @@ describe('hotseat setup (§6, Q51)', () => {
 
   it('takes 2 to 5 players, as an online game does (Q51, 21)', () => {
     const five = new HotseatGame({ map, seats: more(5), diceSeed: 'x' });
-    expect(five.state.players.map((player) => player.stats.stamina)).toEqual([30, 40, 50, 60, 70]);
+    expect(five.state.players.map((player) => player.stats.stamina)).toEqual([30, 35, 40, 45, 50]);
     expect(() => new HotseatGame({ map, seats: more(1), diceSeed: 'x' })).toThrow(/2 to 5 players/);
     expect(() => new HotseatGame({ map, seats: more(6), diceSeed: 'x' })).toThrow(/2 to 5 players/);
   });

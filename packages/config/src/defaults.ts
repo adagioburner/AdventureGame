@@ -42,7 +42,7 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
   players: {
     PLAYER_COUNT: { min: 2, max: 5 },
     STARTING_STAMINA_BASE: 30,
-    STARTING_STAMINA_INCREMENT: 10,
+    STARTING_STAMINA_INCREMENT: 5,
   },
   combat: {
     GUARD_DIE: { count: 1, sides: 6 },

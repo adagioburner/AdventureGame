@@ -150,7 +150,9 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 [SOURCE §2, chat] Player count: **2–5** (config, not a hard limit). Turn order fixed at game start, never changes thereafter (order determined by whatever is most convenient to implement — expected default: order the game master accepts join requests, §6.1).
 
-[SOURCE §2, chat] Starting stamina by seat: `STARTING_STAMINA_BASE` (default 30) + (seat − 1) × `STARTING_STAMINA_INCREMENT` (default 10).
+[SOURCE §2, chat] Starting stamina by seat: `STARTING_STAMINA_BASE` (default 30) + (seat − 1) × `STARTING_STAMINA_INCREMENT` (default 5).
+
+[SOURCE §2, chat] **The increment is 5, not 10** (Andrei, 2026-09-29, after 4-seat computer games at 3 s a move: with 10 the later seats ended with more gold; with 5 the four seats came out even). Registered as Q75.
 
 ### 6.1 Setup flow
 
@@ -302,7 +304,7 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `STAMINA_COST` (plains/forest/mountain) | 1 / 2 / 3 | fixed |
 | `REST_STAMINA_GAIN` | 5 | tunable |
 | `STARTING_STAMINA_BASE` | 30 | tunable |
-| `STARTING_STAMINA_INCREMENT` | 10 | tunable |
+| `STARTING_STAMINA_INCREMENT` | 5 | tunable (Q75; was 10) |
 | `PLAYER_COUNT_MIN` / `MAX` | 2 / 5 | tunable, not a hard limit |
 | `GUARD_DIE` | d6 | fixed |
 | `MCTS_TIME_BUDGET_PER_MOVE` | 10 seconds | tunable; per computer seat on the setup screen, 1 to 60 seconds [SOURCE §5, review] |
