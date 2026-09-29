@@ -133,7 +133,9 @@ describe('the server, in the local Workers runtime', () => {
     expect((await post('/api/logout', {}, again.token)).status).toBe(204);
     const after = await fetch(new URL('/api/me', base), { headers: { Authorization: `Bearer ${again.token}` } });
     expect(after.status).toBe(401);
-  });
+    // The first test wakes the local runtime, and every password takes 100,000
+    // PBKDF2 rounds: on a slow CI runner that has run past the default 5 seconds.
+  }, 60_000);
 
   it('refuses a socket without a login, or with a made-up one', async () => {
     await expect(Client.open('/api/lobby', '')).rejects.toThrow(/could not open/);
