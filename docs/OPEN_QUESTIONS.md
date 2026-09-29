@@ -2123,6 +2123,38 @@ started (a loop in Pixi 8.21.0's shader check never ended), so
 `patches/pixi.js@8.21.0.patch` makes it fail with an error there instead. The
 code is `apps/web/src/page/MapView.tsx` and `mapTrouble.ts` beside it.
 
+<a id="q87"></a>
+### Q87. Where do the Turn log and Messages go on a laptop? — **answered 2026-09-29: over the map's left edge beside the cards, closed until asked for; 335 open**
+
+On 29 September at 12:41 Andrei asked for the squeezed Turn log and Messages
+to be looked at (Q85 299). On a 1366×768 laptop with three to five players the
+cards and turn buttons filled the left column and left them about 1 pixel, so
+Messages seemed to do nothing; on 1920×1080 five players left 49. Hot seat's
+log was squeezed the same way. Three ways to give them room went to him with
+pictures, and at 18:04 he answered: *"Option A looks good on desktop/laptop,
+let's make it so"*. At 18:12 he added *"But then turn log should not be on from
+the start, because it gets in the way"*, which is 309.
+
+308. **On desktop the Turn log and Messages open over the map's left edge,**
+     beside the cards, the full height of the game and 360 pixels wide, with
+     the × to close them, as they do on phones. The cards and buttons stay as
+     they are. **Answered:** A. (B kept them in the column's bottom 280
+     pixels with the cards scrolling above; C drew the cards as on phones.)
+309. **The panel starts closed** when a game opens on desktop, as on phones.
+     Turn log and Messages each open it and close it again, and so does the ×.
+     Hot seat gets its Turn log button on desktop too. **Answered:** yes. This
+     replaces [Q56](#q56) 58's desktop log that was always open, where Messages
+     went back to the log.
+
+Raised by building it:
+
+335. **Which goes on top on a laptop, the open panel or a card over the map?**
+     At 1366 wide the panel covers the left of the end-of-game card (about 130
+     pixels) and of a turn's result (about 50); on 1920 they don't meet.
+     Recommended: the card, whole, over the panel's edge until it fades or is
+     closed. Otherwise the panel covers them, as it covers everything on
+     phones. **Open.**
+
 <a id="q90"></a>
 ### Q90. ~~How does a game master delete a finished game?~~ — **answered 2026-09-29: as recommended, with the posts' trash bin**
 
