@@ -1948,6 +1948,64 @@ second row), is to be looked at separately. The button and the rulebook's
 window are in `apps/web/src/page/Rules.tsx`, the reading of the file in
 `apps/web/src/page/rulebook.ts`, and the Menu in `apps/web/src/page/BarMenu.tsx`.
 
+<a id="q72"></a>
+### Q72. ~~How does the online game's bar keep one row?~~ — **answered 2026-09-29: the Menu on every phone, shorter end times on phones, the name cut short, and Games**
+
+At 19:15 on 28 September, while placing Rules ([Q71](#q71)), Claude reported
+that the online game master's bar already took two rows on a 340 px phone
+because the end time is wide (224), and Andrei answered at 20:05: *"224: sure,
+let's look at it separately"*. Looking at it on 29 September showed that the
+bar's rows depend on the end time's words (*"Ends in 23 hours"*, *"Ends Friday
+05:10"*, *"Ends Wednesday 14:00"*, *"Ends Wednesday 30 September 14:00"*), and
+that for some of them Rules had added a second row on a phone turned sideways
+and on a 1024 px wide desktop, which the check for Q71 had missed. At 18:45
+Andrei answered: *"Yes to 280, 281 and 282. It looks like having the menu is
+the safe choice and should be applied more widely"*.
+
+280. **The Menu on a phone turned sideways too,** in the online game: Resign,
+     Your games, Turn log, Messages and Rules go into Menu there as on a phone
+     held upright.
+281. **Shorter end times on a phone** (below 900 px wide), in the online
+     game's bar: *"Ends Wed 14:00"*, *"Ends 30 Sep"* six days or more ahead
+     (the time appears once it is closer), *"Ends in 45 min"* in the last hour,
+     and *"Ends in 23 hours"* as before. Desktops and the game list keep the
+     full words.
+282. **The game's name and seed are cut short** with "…" in the online game's
+     bar when it is full, as on phones, rather than pushing buttons to a second
+     row (a 1024 px wide desktop).
+
+283. **The Menu on every phone turned sideways:** the game on this device (New
+     game, Turn log, on the site Your games, Rules) and the game list (New
+     game, Log out, Rules) as well as the online game. They fitted on one row
+     there already; this makes every phone work the same way.
+284. **Your games in a Menu before a game starts,** on a phone: the site's
+     "Play on one device" and an online game's setup, for the game master and
+     for players. On a phone held upright the title, the end time and Menu
+     share the first row and the seed field takes the next, so the game
+     master's bar goes from three rows to two and a player's is one row.
+285. **Desktops keep their buttons in the bar,** since every bar there is one
+     row.
+
+Where else the Menu goes (*"applied more widely"*) was asked as 283 to 285, and
+at 19:28 he answered: *"proceed as recommended on 283-285"*. At 19:52 he asked
+*"So the Menu on a phone before start has only one item, Your Games?"*, and at
+19:55: *"Well, "Your games" beings one to the screen that shown both your games
+and open games. So it can be safely called "Games", right?"* Asked as 286 and
+287, at 19:56 he answered: *"Yes to both 286 and 287"*.
+
+286. **"Games"** is the name of every button that opens the game list: in the
+     online game's bar and Menu, before it starts and once it is finished, on
+     the site's "Play on one device", and in the window at the end of an
+     online game. The game list's own heading "Your games" stays, since it
+     names the list of your own games.
+287. **Games is a plain button before a game starts,** not a Menu holding
+     only Games. It is about as narrow as Menu, so the bars keep the rows of
+     284.
+
+The Menu is `apps/web/src/page/BarMenu.tsx`, the words
+`apps/web/src/online/ends.ts`, the online bar's rules
+`apps/web/src/online/site.css`.
+
 <a id="q75"></a>
 ### Q75. ~~How much more stamina for a later seat?~~ — **answered 2026-09-29: 5 instead of 10**
 

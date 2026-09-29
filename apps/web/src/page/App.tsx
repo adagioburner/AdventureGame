@@ -27,7 +27,7 @@ export interface AppProps {
   readonly playOnline?: ((setup: LocalSetup, seed: string) => Promise<void>) | undefined;
   /** A stored game's setup, brought back here when "Play online" was turned off. */
   readonly carried?: LocalSetup | undefined;
-  /** More buttons for the top bar: the site's "Your games". */
+  /** More buttons for the top bar: the site's "Games". */
   readonly barExtra?: ReactNode;
 }
 
@@ -146,7 +146,7 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
 
   return (
     <div className={`shell${playing ? ' playing' : ''}`}>
-      <header className="bar">
+      <header className={`bar${playing || barExtra === undefined || barExtra === null ? '' : ' setup-bar'}`}>
         <h1>Adventure</h1>
         {playing ? (
           <>

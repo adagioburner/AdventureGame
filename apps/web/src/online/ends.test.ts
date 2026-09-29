@@ -8,16 +8,24 @@ const now = new Date(2026, 8, 25, 10, 0).getTime();
 
 describe('endsLabel', () => {
   it('names the day and time, adding the date six days or more ahead', () => {
-    expect(endsLabel(new Date(2026, 8, 27, 14, 0).getTime(), now)).toEqual({ text: 'Ends Sunday 14:00', soon: false });
-    expect(endsLabel(new Date(2026, 9, 4, 9, 5).getTime(), now)).toEqual({ text: 'Ends Sunday 4 October 09:05', soon: false });
+    expect(endsLabel(new Date(2026, 8, 27, 14, 0).getTime(), now)).toEqual({ text: 'Ends Sunday 14:00', short: 'Ends Sun 14:00', soon: false });
+    expect(endsLabel(new Date(2026, 9, 4, 9, 5).getTime(), now)).toEqual({ text: 'Ends Sunday 4 October 09:05', short: 'Ends 4 Oct', soon: false });
   });
 
   it('counts hours in the last day and minutes in the last hour, highlighted', () => {
-    expect(endsLabel(now + 5 * HOUR + 40 * 60 * 1000, now)).toEqual({ text: 'Ends in 5 hours', soon: true });
-    expect(endsLabel(now + 24 * HOUR, now)).toEqual({ text: 'Ends in 24 hours', soon: true });
-    expect(endsLabel(now + HOUR, now)).toEqual({ text: 'Ends in 1 hour', soon: true });
-    expect(endsLabel(now + 40 * 60 * 1000, now)).toEqual({ text: 'Ends in 40 minutes', soon: true });
-    expect(endsLabel(now + 1000, now)).toEqual({ text: 'Ends in 1 minute', soon: true });
+    expect(endsLabel(now + 5 * HOUR + 40 * 60 * 1000, now)).toEqual({ text: 'Ends in 5 hours', short: 'Ends in 5 hours', soon: true });
+    expect(endsLabel(now + 24 * HOUR, now)).toEqual({ text: 'Ends in 24 hours', short: 'Ends in 24 hours', soon: true });
+    expect(endsLabel(now + HOUR, now)).toEqual({ text: 'Ends in 1 hour', short: 'Ends in 1 hour', soon: true });
+    expect(endsLabel(now + 40 * 60 * 1000, now)).toEqual({ text: 'Ends in 40 minutes', short: 'Ends in 40 min', soon: true });
+    expect(endsLabel(now + 1000, now)).toEqual({ text: 'Ends in 1 minute', short: 'Ends in 1 min', soon: true });
+  });
+
+  it('keeps the phone wording short enough for the bar (Q72, 281)', () => {
+    // The longest of each kind: Wednesday, and September with a two-digit day.
+    expect(endsLabel(new Date(2026, 8, 30, 23, 59).getTime(), now).short).toBe('Ends Wed 23:59');
+    expect(endsLabel(new Date(2026, 9, 1, 23, 59).getTime(), new Date(2026, 8, 17, 10, 0).getTime()).short).toBe('Ends 1 Oct');
+    expect(endsLabel(new Date(2026, 8, 30, 23, 59).getTime(), new Date(2026, 8, 17, 10, 0).getTime()).short).toBe('Ends 30 Sep');
+    expect(endsLabel(now + 59 * 60 * 1000, now).short).toBe('Ends in 59 min');
   });
 });
 
