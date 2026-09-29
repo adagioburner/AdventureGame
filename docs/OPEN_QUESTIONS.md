@@ -1970,13 +1970,13 @@ the safe choice and should be applied more widely"*.
      (the time appears once it is closer), *"Ends in 45 min"* in the last hour,
      and *"Ends in 23 hours"* as before. Desktops and the game list keep the
      full words.
-282. **The game's name and seed are cut short** with "…" when the bar is full,
-     as on phones, rather than pushing buttons to a second row (a 1024 px wide
-     desktop).
+282. **The game's name and seed are cut short** with "…" in the online game's
+     bar when it is full, as on phones, rather than pushing buttons to a second
+     row (a 1024 px wide desktop).
 
 Where else the Menu goes (*"applied more widely"*) was asked as 283 onward.
 The Menu is `apps/web/src/page/BarMenu.tsx` (`sideways`), the words
-`apps/web/src/online/ends.ts`.
+`apps/web/src/online/ends.ts`, the rules for both bars `apps/web/src/online/site.css`.
 
 <a id="q75"></a>
 ### Q75. ~~How much more stamina for a later seat?~~ — **answered 2026-09-29: 5 instead of 10**

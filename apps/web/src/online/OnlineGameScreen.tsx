@@ -318,7 +318,7 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
     const longest = setup.createdAt + LONGEST_LIFETIME_DAYS * DAY_MS;
     return (
       <div className="shell playing">
-        <header className="bar">
+        <header className="bar online">
           <h1>Adventure</h1>
           <span className="seed-shown">
             {setup.name} · Seed <code>{setup.mapSeed}</code>
