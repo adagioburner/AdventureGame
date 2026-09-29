@@ -73,6 +73,25 @@
   font-weight: 600;
 }
 
+/* [Q72, 282] In an online game the game's name and seed are cut short when the
+   bar is full, rather than pushing its buttons to a second row. */
+.bar.online .seed-shown {
+  flex: 1 1 0;
+}
+
+/* [Q72, 281] A phone shows the end time in shorter words, so the bar keeps one row. */
+.ends-short {
+  display: none;
+}
+@media (max-width: 899px) {
+  .ends-long {
+    display: none;
+  }
+  .ends-short {
+    display: inline;
+  }
+}
+
 /* [Q56, 56] The game master's end time is a button opening Add a day and End the game. */
 .ends-menu {
   position: relative;

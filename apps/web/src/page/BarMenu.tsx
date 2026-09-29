@@ -7,10 +7,11 @@ interface BarMenuProps {
 }
 
 /**
- * [Q58, 84 and Q71, 220] The top bar's buttons. On a phone held upright they
- * share one Menu button, whose list opens under the bar at its right and
- * closes on a choice or a press elsewhere; on wider screens, and on a phone
- * turned sideways, they sit in the bar and the Menu button is not shown.
+ * [Q58, 84, Q71, 220 and Q72, 280 and 283] The top bar's buttons. On a phone,
+ * held upright or turned sideways, they share one Menu button, whose list
+ * opens under the bar at its right and closes on a choice or a press
+ * elsewhere; on wider screens they sit in the bar and the Menu button is not
+ * shown.
  */
 export function BarMenu({ label = 'Menu', children }: BarMenuProps) {
   const [open, setOpen] = useState(false);

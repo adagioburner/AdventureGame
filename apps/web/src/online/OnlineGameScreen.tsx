@@ -303,16 +303,22 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
               ? `Drawing the map for seed “${seed ?? ''}”…`
               : null));
 
-  // [Q55, 46] When the game ends, until it has.
+  // [Q55, 46] When the game ends, until it has; [Q72, 281] in shorter words on a phone.
   const ends = setup === null || setup.closedAt !== null ? null : endsLabel(setup.endsAt, now);
-  const endsShown = ends === null ? null : <span className={`ends${ends.soon ? ' soon' : ''}`}>{ends.text}</span>;
+  const endsShown =
+    ends === null ? null : (
+      <span className={`ends${ends.soon ? ' soon' : ''}`}>
+        <span className="ends-long">{ends.text}</span>
+        <span className="ends-short">{ends.short}</span>
+      </span>
+    );
 
   if (play !== null && status === null && art !== null && scene !== null && setup !== null) {
     const offline = channel.status !== 'open';
     const longest = setup.createdAt + LONGEST_LIFETIME_DAYS * DAY_MS;
     return (
       <div className="shell playing">
-        <header className="bar">
+        <header className="bar online">
           <h1>Adventure</h1>
           <span className="seed-shown">
             {setup.name} · Seed <code>{setup.mapSeed}</code>
@@ -351,8 +357,8 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
           ) : (
             endsShown
           )}
-          {/* [Q58, 84] On a phone held upright these share one Menu button,
-              which carries the count of unseen messages. */}
+          {/* [Q58, 84] On a phone these share one Menu button, which carries the
+              count of unseen messages; [Q72, 280] turned sideways too. */}
           <BarMenu label={unread > 0 ? `Menu ${unread}` : 'Menu'}>
             {/* [Q56, 57] Anyone whose seat a person still plays can resign it to the computer. */}
             {inProgress && myPlayer !== undefined && myPlayer.control === 'human' ? (
@@ -373,7 +379,7 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
               </button>
             ) : null}
             <button className="btn" type="button" onClick={onBack}>
-              Your games
+              Games
             </button>
             <button
               className="btn side-toggle"
@@ -424,7 +430,7 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
               />
             ) : null
           }
-          newGameLabel="Your games"
+          newGameLabel="Games"
           onCloseLog={() => setPanel(null)}
           onNewGame={onBack}
         />
@@ -432,9 +438,12 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
     );
   }
 
+  // [Q72, 284 and 287] Before the game starts, on a phone held upright, the
+  // seed takes its own row under the title, the end time and Games.
+  const beforeStart = setup !== null && setup.phase === 'setup';
   return (
     <div className="shell">
-      <header className="bar">
+      <header className={`bar${beforeStart ? ' setup-bar' : ''}`}>
         <h1>Adventure</h1>
         {choosing ? (
           <SeedForm
@@ -454,7 +463,7 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
         )}
         {endsShown}
         <button className="btn" type="button" onClick={onBack}>
-          Your games
+          Games
         </button>
       </header>
       {status !== null || art === null || map === null || scene === null || setup === null || shown === null ? (

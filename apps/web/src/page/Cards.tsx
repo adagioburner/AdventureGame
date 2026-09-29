@@ -151,7 +151,7 @@ export function EndCard({
 }: {
   catalog: ArtCatalog;
   state: GameState;
-  /** [Q56, 61] Online the button reads "Your games". */
+  /** [Q56, 61 and Q72, 286] Online the button reads "Games". */
   newGameLabel?: string | undefined;
   onNewGame: () => void;
   onClose: () => void;
