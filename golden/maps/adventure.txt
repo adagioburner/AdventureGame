@@ -1,5 +1,5 @@
 # adventure — generated map summary. See golden/README.md before updating.
-meta attempts=1 nodes=239 edges=321 pois=60
+meta attempts=1 nodes=239 edges=312 pois=60
 terrain plains nodes=107
 terrain forest nodes=72
 terrain mountain nodes=60
@@ -243,7 +243,6 @@ node 236 mountain x=998844 y=688332
 node 237 plains x=906786 y=495308
 node 238 mountain x=790016 y=414470
 edge 0 2
-edge 1 2
 edge 1 6
 edge 1 7
 edge 2 10
@@ -316,7 +315,6 @@ edge 49 75
 edge 50 51
 edge 50 74
 edge 50 89
-edge 51 66
 edge 51 74
 edge 52 55
 edge 52 63
@@ -373,19 +371,17 @@ edge 86 99
 edge 86 124
 edge 88 106
 edge 88 120
-edge 90 94
 edge 90 103
 edge 91 107
 edge 92 103
-edge 93 94
 edge 93 104
+edge 94 110
 edge 94 132
 edge 95 124
 edge 95 131
 edge 96 97
 edge 96 98
 edge 97 145
-edge 98 118
 edge 98 123
 edge 99 117
 edge 99 124
@@ -394,7 +390,6 @@ edge 100 126
 edge 101 106
 edge 101 108
 edge 101 109
-edge 102 114
 edge 102 163
 edge 103 110
 edge 104 107
@@ -406,8 +401,6 @@ edge 107 166
 edge 108 109
 edge 108 128
 edge 108 138
-edge 109 115
-edge 111 115
 edge 111 123
 edge 111 126
 edge 112 155
@@ -462,7 +455,6 @@ edge 145 152
 edge 145 162
 edge 146 159
 edge 147 159
-edge 148 176
 edge 149 171
 edge 150 180
 edge 152 162
@@ -557,69 +549,68 @@ edge 223 226
 edge 224 225
 edge 224 226
 edge 224 233
-edge 226 231
 edge 227 230
 edge 229 230
 edge 229 237
 edge 232 235
 edge 233 235
-poi 0 plains plains_move units=2 group=plains_move/unguarded guard=none remoteness=0.286425
-poi 8 forest gold units=2 group=gold/fighting guard=fighting:4 remoteness=0.572172
-poi 11 forest mountain_move units=3 group=mountain_move/unguarded guard=none remoteness=0.480317
-poi 12 forest fighting units=2 group=fighting/unguarded guard=none remoteness=0.532353
-poi 15 plains forest_move units=2 group=forest_move/unguarded guard=none remoteness=0.109955
-poi 21 forest fighting units=2 group=fighting/unguarded guard=none remoteness=0.733258
-poi 22 forest fighting units=1 group=fighting/unguarded guard=none remoteness=0.418552
-poi 25 forest mountain_move units=3 group=mountain_move/unguarded guard=none remoteness=0.701810
-poi 35 forest mountain_move units=2 group=mountain_move/unguarded guard=none remoteness=0.352262
-poi 39 plains magic units=2 group=magic/unguarded guard=none remoteness=0.152941
-poi 40 forest fighting units=1 group=fighting/unguarded guard=none remoteness=0.234842
-poi 41 forest fighting units=3 group=fighting/unguarded guard=none remoteness=0.836878
-poi 45 forest fighting units=2 group=fighting/unguarded guard=none remoteness=0.687104
-poi 51 forest mountain_move units=1 group=mountain_move/unguarded guard=none remoteness=0.071946
-poi 53 forest mountain_move units=2 group=mountain_move/unguarded guard=none remoteness=0.418778
-poi 54 plains forest_move units=1 group=forest_move/unguarded guard=none remoteness=0.079864
-poi 55 forest mountain_move units=1 group=mountain_move/unguarded guard=none remoteness=0.154525
-poi 57 plains magic units=1 group=magic/unguarded guard=none remoteness=0.048869
-poi 58 forest gold units=1 group=gold/fighting guard=fighting:2 remoteness=0.492534
-poi 59 plains plains_move units=2 group=plains_move/unguarded guard=none remoteness=0.058597
-poi 61 plains plains_move units=1 group=plains_move/unguarded guard=none remoteness=0.023303
-poi 73 plains plains_move units=2 group=plains_move/unguarded guard=none remoteness=0.060181
-poi 75 plains gold units=4 group=gold/fighting guard=fighting:10 remoteness=0.069683
-poi 80 forest fighting units=1 group=fighting/unguarded guard=none remoteness=0.131900
-poi 81 plains plains_move units=2 group=plains_move/unguarded guard=none remoteness=0.105204
-poi 91 forest mountain_move units=1 group=mountain_move/unguarded guard=none remoteness=0.180090
-poi 93 plains forest_move units=3 group=forest_move/unguarded guard=none remoteness=0.227376
-poi 101 plains magic units=1 group=magic/unguarded guard=none remoteness=0.000000
-poi 102 plains forest_move units=1 group=forest_move/unguarded guard=none remoteness=0.047285
-poi 105 forest gold units=1 group=gold/fighting guard=fighting:2 remoteness=0.285520
-poi 110 forest mountain_move units=2 group=mountain_move/unguarded guard=none remoteness=0.462217
-poi 112 forest fighting units=3 group=fighting/unguarded guard=none remoteness=0.870362
-poi 118 mountain gold units=2 group=gold/fighting guard=fighting:6 remoteness=0.114253
-poi 119 plains forest_move units=2 group=forest_move/unguarded guard=none remoteness=0.191403
-poi 130 forest gold units=1 group=gold/fighting guard=fighting:1 remoteness=0.539140
-poi 136 mountain gold units=1 group=gold/fighting guard=fighting:2 remoteness=0.316063
-poi 141 plains magic units=2 group=magic/unguarded guard=none remoteness=0.229186
-poi 142 plains plains_move units=2 group=plains_move/unguarded guard=none remoteness=0.291855
-poi 143 mountain gold units=2 group=gold/magic guard=magic:5 remoteness=0.348416
-poi 147 mountain gold units=1 group=gold/magic guard=magic:3 remoteness=0.177149
-poi 148 plains magic units=2 group=magic/unguarded guard=none remoteness=0.077602
-poi 150 mountain gold units=3 group=gold/fighting guard=fighting:7 remoteness=0.703167
-poi 160 plains plains_move units=3 group=plains_move/unguarded guard=none remoteness=0.475113
-poi 164 plains forest_move units=2 group=forest_move/unguarded guard=none remoteness=0.382127
-poi 168 mountain gold units=3 group=gold/fighting guard=fighting:6 remoteness=0.808597
-poi 174 mountain gold units=2 group=gold/fighting guard=fighting:5 remoteness=0.425113
-poi 182 mountain gold units=1 group=gold/fighting guard=fighting:2 remoteness=0.313575
-poi 186 plains gold units=6 group=gold/fighting guard=fighting:10 remoteness=0.217195
-poi 190 mountain gold units=2 group=gold/magic guard=magic:5 remoteness=0.274208
-poi 193 plains forest_move units=4 group=forest_move/unguarded guard=none remoteness=0.464932
-poi 195 plains plains_move units=1 group=plains_move/unguarded guard=none remoteness=0.045475
-poi 197 mountain gold units=2 group=gold/magic guard=magic:4 remoteness=0.644118
-poi 204 mountain gold units=2 group=gold/fighting guard=fighting:4 remoteness=0.628733
-poi 216 mountain gold units=3 group=gold/magic guard=magic:5 remoteness=1.000000
-poi 218 plains plains_move units=3 group=plains_move/unguarded guard=none remoteness=0.487330
-poi 221 mountain gold units=2 group=gold/fighting guard=fighting:4 remoteness=0.537557
-poi 223 mountain gold units=2 group=gold/fighting guard=fighting:4 remoteness=0.548416
-poi 225 mountain gold units=2 group=gold/fighting guard=fighting:4 remoteness=0.745928
-poi 228 plains magic units=2 group=magic/unguarded guard=none remoteness=0.707466
-poi 231 plains plains_move units=2 group=plains_move/unguarded guard=none remoteness=0.310633
+poi 0 plains plains_move units=3 group=plains_move/unguarded guard=none remoteness=0.430172
+poi 8 forest mountain_move units=3 group=mountain_move/unguarded guard=none remoteness=0.867684
+poi 11 forest mountain_move units=2 group=mountain_move/unguarded guard=none remoteness=0.816110
+poi 12 forest fighting units=2 group=fighting/unguarded guard=none remoteness=0.552830
+poi 15 plains forest_move units=3 group=forest_move/unguarded guard=none remoteness=0.194514
+poi 21 forest gold units=2 group=gold/fighting guard=fighting:3 remoteness=0.955573
+poi 22 forest mountain_move units=1 group=mountain_move/unguarded guard=none remoteness=0.351169
+poi 25 forest fighting units=2 group=fighting/unguarded guard=none remoteness=0.578907
+poi 35 forest fighting units=2 group=fighting/unguarded guard=none remoteness=0.258065
+poi 39 plains magic units=1 group=magic/unguarded guard=none remoteness=0.118988
+poi 40 forest fighting units=1 group=fighting/unguarded guard=none remoteness=0.166119
+poi 41 forest fighting units=5 group=fighting/unguarded guard=none remoteness=0.796794
+poi 45 forest mountain_move units=3 group=mountain_move/unguarded guard=none remoteness=0.982422
+poi 47 plains plains_move units=1 group=plains_move/unguarded guard=none remoteness=0.000000
+poi 51 forest fighting units=1 group=fighting/unguarded guard=none remoteness=0.008692
+poi 53 forest gold units=1 group=gold/fighting guard=fighting:2 remoteness=0.295924
+poi 55 forest fighting units=1 group=fighting/unguarded guard=none remoteness=0.088082
+poi 57 plains plains_move units=1 group=plains_move/unguarded guard=none remoteness=0.034190
+poi 58 forest mountain_move units=2 group=mountain_move/unguarded guard=none remoteness=0.414333
+poi 59 plains forest_move units=2 group=forest_move/unguarded guard=none remoteness=0.093104
+poi 61 plains plains_move units=2 group=plains_move/unguarded guard=none remoteness=0.032451
+poi 62 plains forest_move units=1 group=forest_move/unguarded guard=none remoteness=0.052540
+poi 73 plains plains_move units=2 group=plains_move/unguarded guard=none remoteness=0.073788
+poi 75 plains forest_move units=1 group=forest_move/unguarded guard=none remoteness=0.041530
+poi 80 forest mountain_move units=1 group=mountain_move/unguarded guard=none remoteness=0.010044
+poi 81 plains forest_move units=3 group=forest_move/unguarded guard=none remoteness=0.122465
+poi 91 forest mountain_move units=1 group=mountain_move/unguarded guard=none remoteness=0.115897
+poi 93 plains plains_move units=2 group=plains_move/unguarded guard=none remoteness=0.146224
+poi 102 plains forest_move units=2 group=forest_move/unguarded guard=none remoteness=0.067800
+poi 105 forest fighting units=1 group=fighting/unguarded guard=none remoteness=0.204559
+poi 110 forest gold units=1 group=gold/fighting guard=fighting:2 remoteness=0.319297
+poi 112 forest gold units=1 group=gold/fighting guard=none remoteness=0.782113
+poi 115 mountain gold units=1 group=gold/magic guard=magic:3 remoteness=0.238169
+poi 119 plains gold units=5 group=gold/fighting guard=fighting:10 remoteness=0.150280
+poi 130 forest mountain_move units=2 group=mountain_move/unguarded guard=none remoteness=0.374348
+poi 134 mountain gold units=1 group=gold/fighting guard=fighting:2 remoteness=0.254394
+poi 136 mountain gold units=2 group=gold/fighting guard=fighting:5 remoteness=0.277188
+poi 141 plains plains_move units=2 group=plains_move/unguarded guard=none remoteness=0.253042
+poi 142 plains magic units=2 group=magic/unguarded guard=none remoteness=0.197991
+poi 143 mountain gold units=2 group=gold/magic guard=magic:5 remoteness=0.313695
+poi 145 mountain gold units=1 group=gold/magic guard=magic:3 remoteness=0.109523
+poi 148 plains magic units=1 group=magic/unguarded guard=none remoteness=0.113966
+poi 150 mountain gold units=2 group=gold/fighting guard=fighting:4 remoteness=0.680703
+poi 160 plains gold units=5 group=gold/fighting guard=fighting:10 remoteness=0.385551
+poi 161 mountain gold units=1 group=gold/fighting guard=fighting:3 remoteness=0.050222
+poi 164 plains magic units=1 group=magic/unguarded guard=none remoteness=0.329148
+poi 168 mountain gold units=3 group=gold/fighting guard=fighting:6 remoteness=0.785011
+poi 174 mountain gold units=2 group=gold/fighting guard=fighting:5 remoteness=0.336875
+poi 182 mountain gold units=2 group=gold/fighting guard=fighting:5 remoteness=0.340158
+poi 186 plains plains_move units=2 group=plains_move/unguarded guard=none remoteness=0.188140
+poi 193 plains magic units=2 group=magic/unguarded guard=none remoteness=0.411822
+poi 195 plains plains_move units=2 group=plains_move/unguarded guard=none remoteness=0.066255
+poi 204 mountain gold units=3 group=gold/fighting guard=fighting:6 remoteness=0.767047
+poi 216 mountain gold units=2 group=gold/fighting guard=fighting:2 remoteness=1.000000
+poi 218 plains magic units=3 group=magic/unguarded guard=none remoteness=0.484837
+poi 221 mountain gold units=2 group=gold/fighting guard=fighting:4 remoteness=0.566544
+poi 223 mountain gold units=2 group=gold/magic guard=magic:3 remoteness=0.793510
+poi 225 mountain gold units=4 group=gold/magic guard=magic:9 remoteness=0.949971
+poi 228 plains forest_move units=3 group=forest_move/unguarded guard=none remoteness=0.721653
+poi 231 plains plains_move units=3 group=plains_move/unguarded guard=none remoteness=0.305389

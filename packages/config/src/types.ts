@@ -53,7 +53,7 @@ export interface MapConfig {
    */
   readonly EDGE_PRUNE_JITTER: number;
   /**
-   * `BORDER_ROAD_PLACES` — tunable, default 2. Not in §11's original table.
+   * `BORDER_ROAD_PLACES` — tunable, default 1. Not in §11's original table.
    *
    * [SOURCE §2.1 step 6b, chat] Terrain grows along step 3's near-tree of
    * roads, so two terrains meet exactly where roads are fewest: over 100 maps,
@@ -61,7 +61,9 @@ export interface MapConfig {
    * roads back until every two touching terrain areas meet in at least this
    * many separate places (roads that share a space count as one place).
    * "Let's start with 2, and make it a configurable constant that is easy to
-   * change to 3" (OPEN_QUESTIONS Q105, 391).
+   * change to 3" (OPEN_QUESTIONS Q105, 391); then, after looking at maps with
+   * 2, "let's change it to 1 first and see if that is enough" (398). At 1
+   * only areas that do not meet by road at all get one.
    */
   readonly BORDER_ROAD_PLACES: number;
   /**

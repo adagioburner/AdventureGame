@@ -40,7 +40,7 @@ Status: v1 design, consolidated from `Annotated_Design_Document.md` (the traceab
 
 > [SOURCE §2.1, review] **The area shares in step 4 are a property of the finished map, not of the draft step 4 hands on.** Carve Valleys converts nodes out of forest and mountain into plains, so measuring the shares before it runs lets the finished map drift a long way from 45 / 30 / 25 — over 40 seeds the finished mountain share ran from 6.4% to 31.0%, and one seed finished 65 / 26 / 9. Step 6 therefore ends by growing whatever terrain is now short back into plains, leaving the carved fingers and the plains node each one opens from untouched. The same growth also finishes step 4, whose flood fill cannot reach the shares on its own: a region on a graph this sparse is routinely sealed off, every neighbouring node already claimed, while it is still far short. Because §4.2 fixes the POI count per terrain, a terrain that loses nodes also crowds its POIs — the skew that made this visible had two thirds of every mountain node carrying a POI.
 
-> [SOURCE §2.1, chat] **Why step 6b.** Step 3 leaves a graph that is nearly a tree and step 4 grows terrain along it, so terrains meet exactly where edges are fewest: over 100 maps 12% had no plains–forest edge at all, and only 77% of forest nodes could be reached from plains without entering mountain. Pruning to more edges instead fails the leaf test (at 330 edges most maps regenerate, at 360 none can be made). With step 6b a map carries ~300–325 edges.
+> [SOURCE §2.1, chat] **Why step 6b.** Step 3 leaves a graph that is nearly a tree and step 4 grows terrain along it, so terrains meet exactly where edges are fewest: over 100 maps 12% had no plains–forest edge at all, and only 77% of forest nodes could be reached from plains without entering mountain. Pruning to more edges instead fails the leaf test (at 330 edges most maps regenerate, at 360 none can be made). With step 6b at `BORDER_ROAD_PLACES` = 1 a map carries ~300–315 edges.
 
 > [SOURCE §1.3, chat] Compactness is *not* re-checked at the Validate step: Carve Valleys deliberately reduces compactness along the plains boundary immediately before this step runs, so re-checking it here would fail generation almost every time. Compactness is already enforced inside the Smooth step itself (step 5 loops until it's satisfied).
 
@@ -302,7 +302,7 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `VALLEY_COUNT` | 2–4 | fixed |
 | `VALLEY_WIDTH` | 1 node | fixed |
 | `VALLEY_LENGTH` | 5–12 nodes | fixed |
-| `BORDER_ROAD_PLACES` | 2 | tunable — separate places two touching terrain areas meet, §2.1 step 6b; asked to be easy to change to 3 (Q105) |
+| `BORDER_ROAD_PLACES` | 1 | tunable — separate places two touching terrain areas meet, §2.1 step 6b; started at 2, lowered to 1 after Andrei looked at maps (Q105, 398) |
 | `BORDER_AREA_MIN_SIZE` | 5 nodes | tunable — smallest area step 6b joins (Q105, 395) |
 | `BORDER_ROAD_MAX_LENGTH` | 1.3 × longest kept edge | tunable — step 6b (Q105, 393) |
 | `JOINED_PIECE_ROADS` | 1 | tunable — step 6b, pieces of one terrain (Q105, 394) |

@@ -369,9 +369,23 @@ describe('step 6b — join borders', () => {
     return draft;
   }
 
+  it('adds nothing where two areas already meet in BORDER_ROAD_PLACES places', () => {
+    const draft = twoRows('plains', 'forest', true);
+    joinBordersStep.run(draft, contextOf('j', withMap({ LEAF_COUNT: { min: 0, max: 45 }, BORDER_ROAD_PLACES: 1 })));
+    expect(draft.edges).toHaveLength(11);
+  });
+
+  it('adds a road where two areas do not meet at all, the shortest that joins no dead end', () => {
+    const draft = twoRows('plains', 'forest', false);
+    joinBordersStep.run(draft, contextOf('j', withMap({ LEAF_COUNT: { min: 0, max: 45 }, BORDER_ROAD_PLACES: 1 })));
+    // The verticals tie on length; 0–6 and 5–11 join dead ends, so it is 1–7.
+    expect(draft.edges).toHaveLength(11);
+    expect(draft.edges).toContainEqual({ a: asNodeId(1), b: asNodeId(7) });
+  });
+
   it('adds a second place to cross, as far from the first as it can, and no dead end', () => {
     const draft = twoRows('plains', 'forest', true);
-    joinBordersStep.run(draft, contextOf('j', withMap({ LEAF_COUNT: { min: 0, max: 45 } })));
+    joinBordersStep.run(draft, contextOf('j', withMap({ LEAF_COUNT: { min: 0, max: 45 }, BORDER_ROAD_PLACES: 2 })));
     // 5–11 would be farther from 0–6, but it joins two dead ends; 4–10 joins none.
     expect(draft.edges).toHaveLength(12);
     expect(draft.edges).toContainEqual({ a: asNodeId(4), b: asNodeId(10) });
@@ -396,17 +410,20 @@ describe('step 6b — join borders', () => {
       return draft;
     };
     const keepDeadEnds = outerVerticalsOnly(twoRows('plains', 'forest', true));
-    joinBordersStep.run(keepDeadEnds, contextOf('j', withMap({ LEAF_COUNT: { min: 2, max: 45 } })));
+    joinBordersStep.run(keepDeadEnds, contextOf('j', withMap({ LEAF_COUNT: { min: 2, max: 45 }, BORDER_ROAD_PLACES: 2 })));
     expect(keepDeadEnds.edges).toHaveLength(11);
 
     const spendDeadEnds = outerVerticalsOnly(twoRows('plains', 'forest', true));
-    joinBordersStep.run(spendDeadEnds, contextOf('j', withMap({ LEAF_COUNT: { min: 0, max: 45 } })));
+    joinBordersStep.run(spendDeadEnds, contextOf('j', withMap({ LEAF_COUNT: { min: 0, max: 45 }, BORDER_ROAD_PLACES: 2 })));
     expect(spendDeadEnds.edges).toContainEqual({ a: asNodeId(5), b: asNodeId(11) });
   });
 
   it('leaves areas smaller than BORDER_AREA_MIN_SIZE alone', () => {
     const draft = twoRows('plains', 'forest', true);
-    joinBordersStep.run(draft, contextOf('j', withMap({ LEAF_COUNT: { min: 0, max: 45 }, BORDER_AREA_MIN_SIZE: 7 })));
+    joinBordersStep.run(
+      draft,
+      contextOf('j', withMap({ LEAF_COUNT: { min: 0, max: 45 }, BORDER_ROAD_PLACES: 2, BORDER_AREA_MIN_SIZE: 7 })),
+    );
     expect(draft.edges).toHaveLength(11);
   });
 

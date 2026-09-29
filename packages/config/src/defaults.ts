@@ -19,8 +19,8 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     VALLEY_WIDTH: 1,
     VALLEY_LENGTH: { min: 5, max: 12 },
     EDGE_PRUNE_JITTER: 10,
-    // Andrei asked for this to start at 2 and be easy to change to 3 (Q105, 391).
-    BORDER_ROAD_PLACES: 2,
+    // Started at 2 (Q105, 391); Andrei asked for 1 after looking at maps with 2 (Q105, 398).
+    BORDER_ROAD_PLACES: 1,
     BORDER_AREA_MIN_SIZE: 5,
     BORDER_ROAD_MAX_LENGTH: 1.3,
     JOINED_PIECE_ROADS: 1,
