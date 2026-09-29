@@ -262,7 +262,7 @@ export function describeNode(state: GameState, node: NodeId): string {
   const poi = poiAt(map, node);
   const index = map.poiByNode.get(node);
   const taken = index !== undefined && state.poiRuntime[index]?.claimedBy !== null;
-  if (poi === undefined || taken) return `a ${terrain} node`;
+  if (poi === undefined || taken) return `a ${terrain} space`;
   const what = `${poi.reward.units} ${STAT_LABEL[poi.reward.kind]}`;
   if (poi.guard === null) return `the ${what} site (${terrain})`;
   return `the ${what} site (${terrain}, ${GUARD_LABEL[poi.guard.type]} guard ${poi.guard.strength})`;

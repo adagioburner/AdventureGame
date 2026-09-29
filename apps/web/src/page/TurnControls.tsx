@@ -246,10 +246,10 @@ function hint(move: MoveModeState, armed: boolean, name: string, rest: number, o
       return `${name}: tap your figure (or Plan a move), then where to go. ${stay}. Rest gains ${rest} stamina.`;
     case 'selecting':
       return armed
-        ? 'Tap the node to route through.'
-        : 'Tap where to go. Shift-click, or Waypoint then a tap, routes through a node on the way.';
+        ? 'Tap the space to route through.'
+        : 'Tap where to go. Shift-click, or Waypoint then a tap, routes through a space on the way.';
     case 'previewing': {
-      if (armed) return 'Tap the node to route through.';
+      if (armed) return 'Tap the space to route through.';
       const { preview } = move;
       const steps = preview.steps.length;
       if (steps === 0) return later ? 'No route: you stay where you are.' : `Staying here this turn. ${stay}.`;

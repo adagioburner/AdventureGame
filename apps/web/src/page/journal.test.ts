@@ -148,6 +148,11 @@ describe('the turn log, in words that can be checked by hand', () => {
     expect(none.headline).toBe('Could not afford the first step');
   });
 
+  it('calls a place with no site a space, as the rulebook does (Andrei, 2026-09-29, 370)', () => {
+    const entry = describeTurn(game({ stamina: 20 }), { kind: 'move', path: path(1, 2, 3) });
+    expect(entry.details[0]).toBe('Heading for a plains space.');
+  });
+
   it('writes a rest as the stamina it gained', () => {
     const entry = describeTurn(game({ stamina: 7 }), { kind: 'rest' });
     expect(entry.headline).toBe(`Rested: +${DEFAULT_RULESET.config.movement.REST_STAMINA_GAIN} stamina`);

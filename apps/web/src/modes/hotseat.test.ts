@@ -174,7 +174,7 @@ describe('a whole hotseat game, played through the move-mode controller', () => 
     expect(text).not.toMatch(/fighting|moving skill|movement|plains move|forest move|mountain move|_move/i);
   });
 
-  it('calls the places with rewards sites, as the rulebook does, never POIs (Andrei, 2026-09-29)', () => {
+  it('says sites and spaces, as the rulebook does, never POIs or nodes (Andrei, 2026-09-29)', () => {
     const text = game.turns
       .flatMap((turn) => {
         const entry = journalEntry(turn, befores[turn.number - 1] as GameState);
@@ -182,6 +182,6 @@ describe('a whole hotseat game, played through the move-mode controller', () => 
       })
       .join('\n');
     expect(text).toMatch(/\bsite\b/);
-    expect(text).not.toMatch(/\bPOIs?\b|point of interest/i);
+    expect(text).not.toMatch(/\bPOIs?\b|point of interest|\bnodes?\b/i);
   });
 });
