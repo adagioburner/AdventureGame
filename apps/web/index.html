@@ -1017,6 +1017,17 @@
         }
       }
       /* [Q58, 82] Wide enough, the line sits to the right of the buttons. */
+      /* [Q72, 284] Before a game starts, on a phone held upright, the title,
+         the end time and Menu share the first row and the seed field takes
+         the next. */
+      @media (max-width: 559px) {
+        .setup-bar > h1 {
+          margin-right: auto;
+        }
+        .setup-bar > .seed {
+          order: 1;
+        }
+      }
       @media (min-width: 560px) and (max-width: 899px) {
         .controls {
           grid-template-columns: max-content minmax(0, 1fr);
@@ -1064,27 +1075,7 @@
           grid-column: auto;
           grid-row: auto;
         }
-        .menu-toggle {
-          display: none;
-        }
-        .bar-menu,
-        .bar-actions,
-        .bar-menu.open .bar-actions {
-          display: contents;
-        }
-        /* [Q72, 280] The online game keeps its Menu here too. */
-        .bar-menu.sideways {
-          display: block;
-        }
-        .bar-menu.sideways .menu-toggle {
-          display: inline-block;
-        }
-        .bar-menu.sideways .bar-actions {
-          display: none;
-        }
-        .bar-menu.sideways.open .bar-actions {
-          display: grid;
-        }
+        /* [Q72, 280 and 283] The bars keep their Menu here too, as upright. */
       }
     </style>
   </head>

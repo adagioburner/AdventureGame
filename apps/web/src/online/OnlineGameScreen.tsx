@@ -359,7 +359,7 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
           )}
           {/* [Q58, 84] On a phone these share one Menu button, which carries the
               count of unseen messages; [Q72, 280] turned sideways too. */}
-          <BarMenu label={unread > 0 ? `Menu ${unread}` : 'Menu'} sideways>
+          <BarMenu label={unread > 0 ? `Menu ${unread}` : 'Menu'}>
             {/* [Q56, 57] Anyone whose seat a person still plays can resign it to the computer. */}
             {inProgress && myPlayer !== undefined && myPlayer.control === 'human' ? (
               <button
@@ -438,9 +438,16 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
     );
   }
 
+  // [Q72, 284] Before the game starts, a phone puts Your games in a Menu.
+  const beforeStart = setup !== null && setup.phase === 'setup';
+  const yourGames = (
+    <button className="btn" type="button" onClick={onBack}>
+      Your games
+    </button>
+  );
   return (
     <div className="shell">
-      <header className="bar">
+      <header className={`bar${beforeStart ? ' setup-bar' : ''}`}>
         <h1>Adventure</h1>
         {choosing ? (
           <SeedForm
@@ -459,9 +466,7 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
           <span className="seed-shown" />
         )}
         {endsShown}
-        <button className="btn" type="button" onClick={onBack}>
-          Your games
-        </button>
+        {beforeStart ? <BarMenu>{yourGames}</BarMenu> : yourGames}
       </header>
       {status !== null || art === null || map === null || scene === null || setup === null || shown === null ? (
         <main className="stage">

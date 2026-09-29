@@ -1949,7 +1949,7 @@ window are in `apps/web/src/page/Rules.tsx`, the reading of the file in
 `apps/web/src/page/rulebook.ts`, and the Menu in `apps/web/src/page/BarMenu.tsx`.
 
 <a id="q72"></a>
-### Q72. ~~How does the online game's bar keep one row?~~ — **answered 2026-09-29: the Menu sideways too, shorter end times on phones, and the name cut short**
+### Q72. ~~How does the online game's bar keep one row?~~ — **answered 2026-09-29: the Menu on every phone, shorter end times on phones, and the name cut short**
 
 At 19:15 on 28 September, while placing Rules ([Q71](#q71)), Claude reported
 that the online game master's bar already took two rows on a 340 px phone
@@ -1974,9 +1974,22 @@ the safe choice and should be applied more widely"*.
      bar when it is full, as on phones, rather than pushing buttons to a second
      row (a 1024 px wide desktop).
 
-Where else the Menu goes (*"applied more widely"*) was asked as 283 onward.
-The Menu is `apps/web/src/page/BarMenu.tsx` (`sideways`), the words
-`apps/web/src/online/ends.ts`, the rules for both bars `apps/web/src/online/site.css`.
+283. **The Menu on every phone turned sideways:** the game on this device (New
+     game, Turn log, on the site Your games, Rules) and the game list (New
+     game, Log out, Rules) as well as the online game. They fitted on one row
+     there already; this makes every phone work the same way.
+284. **Your games in a Menu before a game starts,** on a phone: the site's
+     "Play on one device" and an online game's setup, for the game master and
+     for players. On a phone held upright the title, the end time and Menu
+     share the first row and the seed field takes the next, so the game
+     master's bar goes from three rows to two and a player's is one row.
+285. **Desktops keep their buttons in the bar,** since every bar there is one
+     row.
+
+Where else the Menu goes (*"applied more widely"*) was asked as 283 to 285, and
+at 19:28 he answered: *"proceed as recommended on 283-285"*. The Menu is
+`apps/web/src/page/BarMenu.tsx`, the words `apps/web/src/online/ends.ts`, the
+online bar's rules `apps/web/src/online/site.css`.
 
 <a id="q75"></a>
 ### Q75. ~~How much more stamina for a later seat?~~ — **answered 2026-09-29: 5 instead of 10**

@@ -146,7 +146,7 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
 
   return (
     <div className={`shell${playing ? ' playing' : ''}`}>
-      <header className="bar">
+      <header className={`bar${playing || barExtra === undefined || barExtra === null ? '' : ' setup-bar'}`}>
         <h1>Adventure</h1>
         {playing ? (
           <>
@@ -173,7 +173,8 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
         ) : (
           <>
             <SeedForm draft={draft} current={seed} onDraftChange={setDraft} onDraw={draw} />
-            {barExtra}
+            {/* [Q72, 284] On a phone the site's Your games goes in a Menu. */}
+            {barExtra === undefined || barExtra === null ? null : <BarMenu>{barExtra}</BarMenu>}
           </>
         )}
       </header>
