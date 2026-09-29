@@ -2092,7 +2092,7 @@ He also asked for the Turn log and Messages on a 1366×768 laptop to be looked
 at: with three players they get a strip about 17 pixels tall under the buttons.
 
 <a id="q86"></a>
-### Q86. ~~What does the game do when the map cannot be drawn?~~ — **answered 2026-09-29: builds it again by itself, and says so with a Reload button if it still can't**
+### Q86. ~~What does the game do when the map cannot be drawn?~~ — **answered 2026-09-29: builds it again by itself, and says so with a Reload button if it still can't; 332 to 334 as recommended**
 
 On 29 September at 13:26 Andrei started a new game on the preview site on his
 phone and saw no map; it drew in the next game, and at 13:41 he judged it
@@ -2107,11 +2107,19 @@ took away, and a failed start was dropped silently. At 13:48 he answered
      be drawn. Reload the page to try again." with a Reload button.**
      **Answered:** yes.
 
-How it works: a lost surface is given 2 seconds to come back, then the map is
-built on a new one either way, where the viewer had moved it to; a failed
-start is tried again after a second. The third trouble within 30 seconds shows
-331's message. The drawing library froze the whole page when the surface was
-lost as it started (a loop in Pixi 8.21.0's shader check never ended), so
+Raised by building them, and answered at 17:51: *"332-334 the
+recommendations sound good"*:
+
+332. **After a rebuild the map keeps the zoom and position the viewer had
+     set,** rather than going back to the starting view. **Answered:** yes.
+333. **While the message shows, the map buttons stay in their corner** and do
+     nothing until the page is reloaded. **Answered:** yes.
+334. **The timing:** a failed start is tried again after 1 second; a lost
+     surface is rebuilt after 2 seconds, or at once if it comes back; the
+     message shows on the third problem within 30 seconds. **Answered:** yes.
+
+The drawing library froze the whole page when the surface was lost as it
+started (a loop in Pixi 8.21.0's shader check never ended), so
 `patches/pixi.js@8.21.0.patch` makes it fail with an error there instead. The
 code is `apps/web/src/page/MapView.tsx` and `mapTrouble.ts` beside it.
 
