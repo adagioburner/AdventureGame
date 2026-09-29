@@ -38,7 +38,12 @@ export interface ArtManifest {
     readonly numberSize: number;
   };
   readonly roads: { readonly sheet: string; readonly sprite: string; readonly width: number };
-  readonly nodes: { readonly radius: number; readonly outline: string };
+  readonly nodes: {
+    readonly radius: number;
+    readonly outline: string;
+    /** [Q80] The dot in the middle of a site's node until it is claimed: `size` across as a share of the node's width. */
+    readonly siteDot: { readonly size: number; readonly color: string };
+  };
   readonly moveProspect: MoveProspectArt;
   readonly figurines: { readonly sheet: string; readonly size: number };
   readonly portraits: string;
@@ -190,6 +195,7 @@ export function parseManifest(json: unknown): ArtManifest {
   const guards = record(root['guards'], 'manifest.json: guards');
   const roads = record(root['roads'], 'manifest.json: roads');
   const nodes = record(root['nodes'], 'manifest.json: nodes');
+  const siteDot = record(nodes['site_dot'], 'manifest.json: nodes.site_dot');
   const prospect = record(root['move_prospect'], 'manifest.json: move_prospect');
   const figurines = record(root['figurines'], 'manifest.json: figurines');
   const dice = record(root['dice'], 'manifest.json: dice');
@@ -228,6 +234,10 @@ export function parseManifest(json: unknown): ArtManifest {
     nodes: {
       radius: positive(nodes['radius'], 'manifest.json: nodes.radius'),
       outline: color(nodes['outline'], 'manifest.json: nodes.outline'),
+      siteDot: {
+        size: positive(siteDot['size'], 'manifest.json: nodes.site_dot.size'),
+        color: color(siteDot['color'], 'manifest.json: nodes.site_dot.color'),
+      },
     },
     moveProspect: {
       sheet: string(prospect['sheet'], 'manifest.json: move_prospect.sheet'),
