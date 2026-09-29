@@ -234,6 +234,15 @@
         bottom: calc(16px + env(safe-area-inset-bottom, 0px));
         flex-direction: column;
       }
+      /* [Q86, 331] The map could not be drawn: what to do, in the middle of the map's box. */
+      .map-trouble {
+        inset: 0;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 16px;
+        text-align: center;
+      }
       .zoom .btn {
         min-width: 44px;
         min-height: 40px;

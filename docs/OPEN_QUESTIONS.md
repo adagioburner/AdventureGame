@@ -2091,6 +2091,38 @@ master has the Bea ▾ button; everyone else keeps Find Bea as before.
 He also asked for the Turn log and Messages on a 1366×768 laptop to be looked
 at: with three players they get a strip about 17 pixels tall under the buttons.
 
+<a id="q86"></a>
+### Q86. ~~What does the game do when the map cannot be drawn?~~ — **answered 2026-09-29: builds it again by itself, and says so with a Reload button if it still can't; 332 to 334 as recommended**
+
+On 29 September at 13:26 Andrei started a new game on the preview site on his
+phone and saw no map; it drew in the next game, and at 13:41 he judged it
+*"something transient then, like unstable connection, and the code is not
+resilient to that"*. Nothing rebuilt a map whose drawing surface the device
+took away, and a failed start was dropped silently. At 13:48 he answered
+330 and 331: *"330 and 331, yes, that looks good, let's add these checks"*.
+
+330. **When the drawing surface is lost, the game rebuilds the map by itself
+     as soon as it can.** **Answered:** yes.
+331. **If the map still can't be drawn, the map area says "The map could not
+     be drawn. Reload the page to try again." with a Reload button.**
+     **Answered:** yes.
+
+Raised by building them, and answered at 17:51: *"332-334 the
+recommendations sound good"*:
+
+332. **After a rebuild the map keeps the zoom and position the viewer had
+     set,** rather than going back to the starting view. **Answered:** yes.
+333. **While the message shows, the map buttons stay in their corner** and do
+     nothing until the page is reloaded. **Answered:** yes.
+334. **The timing:** a failed start is tried again after 1 second; a lost
+     surface is rebuilt after 2 seconds, or at once if it comes back; the
+     message shows on the third problem within 30 seconds. **Answered:** yes.
+
+The drawing library froze the whole page when the surface was lost as it
+started (a loop in Pixi 8.21.0's shader check never ended), so
+`patches/pixi.js@8.21.0.patch` makes it fail with an error there instead. The
+code is `apps/web/src/page/MapView.tsx` and `mapTrouble.ts` beside it.
+
 <a id="q90"></a>
 ### Q90. ~~How does a game master delete a finished game?~~ — **answered 2026-09-29: as recommended, with the posts' trash bin**
 

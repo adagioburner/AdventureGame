@@ -1,13 +1,14 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Application } from 'pixi.js';
 import type { GameMap, GameState, NodeId, PathPreview, PlayerId, Point } from '@adventure/core';
 import { createCameraController, FOLLOW_MARGIN_OF_VIEW, followInto, glideCenter, GLIDE_MS, type CameraController } from '../interaction/camera.ts';
 import { figureTop, pick, planeToScreen, screenToPlane, type Pick } from '../interaction/picking.ts';
-import { fitToViewport } from '../render/isometric.ts';
+import { fitToViewport, type Camera } from '../render/isometric.ts';
 import { position } from '../render/geometry.ts';
 import { PixiMapRenderer } from '../render/pixi/renderer.ts';
 import type { LoadedArt } from '../render/pixi/textures.ts';
 import { SPACING_PX, type FigureCue, type MapScene, type Walker } from '../render/sceneModel.ts';
+import { MAP_RESTORE_WAIT_MS, MAP_RETRY_MS, noteMapTrouble } from './mapTrouble.ts';
 
 /** What the page can ask of the map once it is up. */
 export interface MapHandle {
@@ -104,15 +105,48 @@ export function MapView({
   // Whether a walk takes the map along. It follows Track, and stops at once
   // when the map is moved, before the page has unpressed Track.
   const following = useRef(tracking);
+  // [Q86, 330 and 331] Counts up to build the map again after it failed to
+  // start or lost its drawing surface; `broken` once that happened too often.
+  const [build, setBuild] = useState(0);
+  const [broken, setBroken] = useState(false);
+  const troubles = useRef<readonly number[]>([]);
+  // The view to come back to when the map is built again, if the viewer had moved it.
+  const kept = useRef<Camera | null>(null);
 
   useEffect(() => {
-    const element = host.current;
-    if (element === null) return;
+    const found = host.current;
+    if (found === null || broken) return;
+    const element: HTMLDivElement = found;
     let disposed = false;
+    let troubled = false;
     const app = new Application();
     const cleanups: (() => void)[] = [];
+    /** Something went wrong: build the map again after `waitMs`, or stop and say so. */
+    const trouble = (waitMs: number): void => {
+      if (disposed || troubled) return;
+      troubled = true;
+      const noted = noteMapTrouble(troubles.current, performance.now());
+      troubles.current = noted.times;
+      if (!noted.rebuild) {
+        setBroken(true);
+        return;
+      }
+      const timer = window.setTimeout(() => setBuild((count) => count + 1), waitMs);
+      cleanups.push(() => window.clearTimeout(timer));
+    };
 
+    // A surface lost as the map starts makes the drawing library fail here
+    // rather than freeze the page (patches/pixi.js@8.21.0.patch).
     void (async () => {
+      try {
+        await start();
+      } catch (error) {
+        console.error('The map could not be drawn.', error);
+        trouble(MAP_RETRY_MS);
+      }
+    })();
+
+    async function start(): Promise<void> {
       await app.init({
         resizeTo: element,
         antialias: true,
@@ -125,6 +159,7 @@ export function MapView({
         app.destroy(true, { children: true });
         return;
       }
+      if (surfaceLost(app)) throw new Error('the drawing surface was lost as the map started');
       element.appendChild(app.canvas);
 
       const map = new PixiMapRenderer(art, gameMap, scene);
@@ -143,11 +178,34 @@ export function MapView({
       const fit = () => fitToViewport(scene.projection, scene.bounds, viewport(), OVERHANG);
       const camera: CameraController = createCameraController(fit(), viewport());
       let touched = false;
+      const was = kept.current;
+      kept.current = null;
+      if (was !== null) {
+        camera.centerOn(was.center, was.zoom);
+        touched = true;
+      }
       const apply = (): void => {
         map.setViewport(viewport());
         map.setCamera(camera.camera);
       };
       apply();
+
+      // [Q86, 330] The device can take the drawing surface away, as a phone
+      // short of memory does: the map is built again on a new one, where the
+      // viewer had moved it to, whether or not the old one comes back.
+      const onLost = (): void => {
+        if (touched) kept.current = camera.camera;
+        trouble(MAP_RESTORE_WAIT_MS);
+      };
+      const onRestored = (): void => {
+        if (!disposed) setBuild((count) => count + 1);
+      };
+      app.canvas.addEventListener('webglcontextlost', onLost);
+      app.canvas.addEventListener('webglcontextrestored', onRestored);
+      cleanups.push(() => {
+        app.canvas.removeEventListener('webglcontextlost', onLost);
+        app.canvas.removeEventListener('webglcontextrestored', onRestored);
+      });
 
       // `chasing` for Track's glide to a walking figure, which the walk's
       // own following waits for; it aims at wherever the figure is by then.
@@ -325,7 +383,7 @@ export function MapView({
           touched = true;
         },
       });
-    })();
+    }
 
     return () => {
       disposed = true;
@@ -333,9 +391,13 @@ export function MapView({
       latest.current.onReady?.(null);
       renderer.current = null;
       zoomButtons.current = null;
-      if (app.renderer !== undefined) app.destroy(true, { children: true });
+      try {
+        if (app.renderer !== undefined) app.destroy(true, { children: true });
+      } catch {
+        // A map that failed half way through starting may not come apart cleanly; a new one is built regardless.
+      }
     };
-  }, [art, gameMap, scene]);
+  }, [art, gameMap, scene, build, broken]);
 
   useEffect(() => {
     renderer.current?.setState(state);
@@ -362,6 +424,15 @@ export function MapView({
   return (
     <>
       <div ref={host} className="canvas-host" aria-label="The map" role="img" />
+      {broken ? (
+        // [Q86, 331] The map could not be built, even after trying again.
+        <div className="overlay map-trouble" role="alert">
+          <p>The map could not be drawn. Reload the page to try again.</p>
+          <button className="btn" type="button" onClick={() => window.location.reload()}>
+            Reload
+          </button>
+        </div>
+      ) : null}
       <div className="overlay zoom">
         {/* [Q63, 139] Pressed while sound is on, as Track is while it follows.
             [170 and 171] A speaker instead of the word: sound waves while on, a cross while off. */}
@@ -387,6 +458,12 @@ export function MapView({
       </div>
     </>
   );
+}
+
+/** Whether the map's WebGL drawing surface is lost; never for a map drawn without WebGL. */
+function surfaceLost(app: Application): boolean {
+  const gl = (app.renderer as unknown as { gl?: WebGLRenderingContext }).gl;
+  return gl !== undefined && gl.isContextLost();
 }
 
 /**
