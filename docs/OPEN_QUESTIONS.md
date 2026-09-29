@@ -1923,7 +1923,9 @@ after pictures: *"looks good, proceed with recommended options"* (236 to 238).
      229 and 230). They are as they were.
 232. **The rulebook is `docs/RULEBOOK.md`,** copied from his page as it stood,
      and from now on changes to the rules go through a PR like everything
-     else. The game no longer opens his page or any other address.
+     else. The game no longer opens his page or any other address. The first
+     such change is [Q75](#q75)'s starting stamina (30, 35, 40, 45, 50), which
+     he asked for on 29 September at 03:32.
 233. **Over the whole game, with a Close button** (replacing 223, the new tab).
      The game stays where it is underneath. The same on the game page and on
      the site.
@@ -1945,6 +1947,21 @@ phone (and on a phone turned sideways, where Rules follows Messages on the
 second row), is to be looked at separately. The button and the rulebook's
 window are in `apps/web/src/page/Rules.tsx`, the reading of the file in
 `apps/web/src/page/rulebook.ts`, and the Menu in `apps/web/src/page/BarMenu.tsx`.
+
+<a id="q75"></a>
+### Q75. ~~How much more stamina for a later seat?~~ — **answered 2026-09-29: 5 instead of 10**
+
+On 28 September Andrei asked for computer-only games with four players at 3 s
+a move, to judge what stamina bonus for not moving first is fair. With §11's
+increment of 10 (30, 40, 50, 60), the later seats ended with more gold: over 39
+games seat 1 averaged 8.9 gold and seat 4 12.7. He then asked for the same
+games with 5 (30, 35, 40, 45): over 100 games the seats won 22, 21, 27 and 20
+outright, with 10 shared wins and average gold 10.6, 10.5, 12.0 and 10.8, a
+spread luck gives about 3 times in 4. On 29 September he ruled: *"great, let's
+make it so: 5 stamina instead of 10 for not going first"*.
+
+So `STARTING_STAMINA_INCREMENT` is 5 in §11, and seats start with 30, 35, 40,
+45 and 50. `STARTING_STAMINA_BASE` stays 30.
 
 ---
 

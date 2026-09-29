@@ -398,7 +398,7 @@ describe('starting', () => {
       [3, 'Computer 2', 'ai'],
     ]);
     // §6: later seats start with more stamina, so the computers have the most.
-    expect(game.players.map((player) => player.stats.stamina)).toEqual([30, 40, 50]);
+    expect(game.players.map((player) => player.stats.stamina)).toEqual([30, 35, 40]);
     expect(new Set(game.players.map((player) => player.position))).toEqual(new Set([startingNodeFor(map)]));
   });
 
