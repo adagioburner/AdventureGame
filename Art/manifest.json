@@ -88,7 +88,15 @@
     "number_size": 0.24
   },
   "roads": { "sheet": "Roads_Brush", "sprite": "Roads_Path", "width": 0.2 },
-  "nodes": { "radius": 0.15, "outline": "#2b2419" },
+  "nodes": {
+    "radius": 0.15,
+    "outline": "#2b2419",
+    "site_dot": {
+      "notes": "The dot in the middle of every site's node until the site is claimed (Q80): `size` across as a share of the node's width, in the brown of the roads.",
+      "size": 0.55,
+      "color": "#966a3e"
+    }
+  },
   "move_prospect": {
     "sheet": "Prospect_Markers",
     "dot": {

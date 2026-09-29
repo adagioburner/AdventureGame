@@ -12,6 +12,7 @@ import {
   buildWaypoint,
   guardRing,
   nodeOutlineWidth,
+  siteDot,
   type Billboard,
   type FigureCue,
   type MapScene,
@@ -260,6 +261,8 @@ export class PixiMapRenderer implements MapRenderer {
       if (ring !== null && node.guard !== null) {
         graphics.circle(node.at.x, node.at.y, ring.radius).stroke({ color: manifest.guards.colors[node.guard], width: ring.width });
       }
+      const dot = siteDot(catalog, node);
+      if (dot !== null) graphics.circle(node.at.x, node.at.y, dot.radius).fill(dot.color);
     }
     this.nodesLayer.addChild(graphics);
   }

@@ -17,6 +17,7 @@ import {
   labelBox,
   nodeOval,
   nodeOutlineWidth,
+  siteDot,
   SPACING_PX,
   type MapScene,
 } from './sceneModel.ts';
@@ -146,6 +147,38 @@ describe('what the player sees of the map', () => {
       const ring = guardRing(catalog, scene.spacing, mark);
       if (guard === null) expect(ring).toBeNull();
       else expect((ring?.radius ?? 0) - (ring?.width ?? 0) / 2).toBeCloseTo(mark.radius + outline / 2);
+    }
+  });
+
+  it("puts a dot in the middle of every POI's node, guarded or not, and of no other node", () => {
+    // Q80 (Andrei, 2026-09-29): the dot, in the roads' brown and 0.55 of the
+    // node's width, marks which node a site's picture and icons belong to.
+    const pois = new Set<number>(game.map.pois.map((poi) => poi.node));
+    expect(game.map.pois.some((poi) => poi.guard === null)).toBe(true);
+    expect(game.map.pois.some((poi) => poi.guard !== null)).toBe(true);
+    const { size, color } = catalog.manifest.nodes.siteDot;
+    const outline = nodeOutlineWidth(catalog) * scene.spacing;
+    for (const mark of scene.nodes) {
+      expect(mark.site).toBe(pois.has(mark.node));
+      const dot = siteDot(catalog, mark);
+      if (!pois.has(mark.node)) {
+        expect(dot).toBeNull();
+        continue;
+      }
+      expect(dot?.color).toBe(color);
+      expect(dot?.radius).toBeCloseTo(mark.radius * size);
+      // Inside the black outline, so the outline and a guard's ring show as before.
+      expect(dot?.radius ?? Infinity).toBeLessThan(mark.radius - outline / 2);
+    }
+  });
+
+  it("leaves every node's oval as it was, so nothing on the map stands elsewhere for the dot", () => {
+    // Q80: "nothing else should change". The oval is what pictures and icons
+    // are placed against; a mark without its dot gives the same one.
+    for (const mark of scene.nodes) {
+      expect(nodeOval(catalog, scene.projection, scene.spacing, { ...mark, site: false })).toEqual(
+        nodeOval(catalog, scene.projection, scene.spacing, mark),
+      );
     }
   });
 
@@ -364,11 +397,30 @@ describe('what changes during play', () => {
     const state = buildStateScene(scene, claimed, catalog);
     expect([...state.claimed]).toEqual([target.node]);
     expect(claimed.poiRuntime.filter(isClaimed)).toHaveLength(1);
-    // §4.5: the claimed POI's node loses its guard's colour; no other node changes.
-    expect(state.nodes[target.node]).toMatchObject({ guard: null, radius: catalog.manifest.nodes.radius * scene.spacing });
+    // §4.5: the claimed POI's node loses its guard's colour and (Q80) its dot; no other node changes.
+    expect(state.nodes[target.node]).toMatchObject({ guard: null, site: false, radius: catalog.manifest.nodes.radius * scene.spacing });
+    expect(siteDot(catalog, state.nodes[target.node] ?? scene.nodes[0]!)).toBeNull();
     expect(guardRing(catalog, scene.spacing, state.nodes[target.node] ?? scene.nodes[0]!)).toBeNull();
     expect(state.nodes.filter((mark, at) => mark !== scene.nodes[at]).map((mark) => mark.node)).toEqual([target.node]);
     expect(buildStateScene(scene, game.state, catalog).nodes).toEqual(scene.nodes);
+  });
+
+  it("drops an unguarded POI's dot once it is claimed, and changes no other node", () => {
+    // Q80 (Andrei, 2026-09-29): "when a site is claimed, the dot needs to disappear".
+    const index = game.map.pois.findIndex((poi) => poi.guard === null);
+    const target = game.map.pois[index];
+    if (target === undefined) throw new Error('the map has no unguarded POI');
+    expect(scene.nodes[target.node]).toMatchObject({ guard: null, site: true });
+    const claimed: GameState = {
+      ...game.state,
+      poiRuntime: game.state.poiRuntime.map((runtime, at) =>
+        at === index ? { claimedBy: game.state.players[0]?.id ?? null, claimedOnTurn: 1 } : runtime,
+      ),
+    };
+    const state = buildStateScene(scene, claimed, catalog);
+    expect(state.nodes[target.node]).toMatchObject({ guard: null, site: false });
+    expect(siteDot(catalog, state.nodes[target.node] ?? scene.nodes[0]!)).toBeNull();
+    expect(state.nodes.filter((mark, at) => mark !== scene.nodes[at]).map((mark) => mark.node)).toEqual([target.node]);
   });
 
   it('draws a walking figure where End Turn has got it to, alone, with its ring', () => {

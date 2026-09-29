@@ -81,6 +81,12 @@ export interface NodeMark {
    * for a claimed POI's.
    */
   readonly guard: GuardType | null;
+  /**
+   * [Q80] A POI's node, guarded or not, has a dot in the middle until the POI
+   * is claimed, so the node a site's picture and icons belong to stands out
+   * from its neighbours. `false` for every other node.
+   */
+  readonly site: boolean;
 }
 
 /**
@@ -148,7 +154,9 @@ export function buildMapScene(map: GameMap, catalog: ArtCatalog, shapeOf: ShapeO
   }));
 
   const guards = new Map(map.pois.map((poi) => [poi.node, poi.guard?.type ?? null]));
-  const nodes: NodeMark[] = graph.nodes.map((node) => nodeMark(catalog, spacing, node, guards.get(node.id) ?? null));
+  const nodes: NodeMark[] = graph.nodes.map((node) =>
+    nodeMark(catalog, spacing, node, guards.get(node.id) ?? null, guards.has(node.id)),
+  );
 
   const ovals = nodes.map((mark) => ({ ...nodeOval(catalog, projection, spacing, mark), node: mark.node, poi: guards.has(mark.node) }));
   const labels = map.pois.map((poi) => {
@@ -184,14 +192,18 @@ export function buildMapScene(map: GameMap, catalog: ArtCatalog, shapeOf: ShapeO
   return { projection, spacing, bounds, terrain, roads, nodes, billboards, labels };
 }
 
-/** How a node is drawn. Every node is the same size; a guarded POI's adds a ring in its guard's colour. */
+/**
+ * How a node is drawn. Every node is the same size; a guarded POI's adds a
+ * ring in its guard's colour, and every POI's a dot in the middle.
+ */
 export function nodeMark(
   catalog: ArtCatalog,
   spacing: number,
   node: { readonly id: NodeId; readonly position: Point; readonly terrain: Terrain },
   guard: GuardType | null,
+  site: boolean,
 ): NodeMark {
-  return { node: node.id, at: node.position, terrain: node.terrain, radius: catalog.manifest.nodes.radius * spacing, guard };
+  return { node: node.id, at: node.position, terrain: node.terrain, radius: catalog.manifest.nodes.radius * spacing, guard, site };
 }
 
 /** The width of a node's black outline, in node spacings. */
@@ -207,6 +219,16 @@ export function guardRing(catalog: ArtCatalog, spacing: number, mark: NodeMark):
   if (mark.guard === null) return null;
   const width = catalog.manifest.guards.ringWidth * spacing;
   return { radius: mark.radius + (nodeOutlineWidth(catalog) * spacing) / 2 + width / 2, width };
+}
+
+/**
+ * [Q80] The dot in the middle of a site's node, in world units, inside the
+ * black outline and any guard's ring; `null` for every other node.
+ */
+export function siteDot(catalog: ArtCatalog, mark: NodeMark): { radius: number; color: string } | null {
+  if (!mark.site) return null;
+  const dot = catalog.manifest.nodes.siteDot;
+  return { radius: mark.radius * dot.size, color: dot.color };
 }
 
 /** A node's oval on screen at zoom 1, outline and guard's ring included. */
@@ -268,7 +290,7 @@ export interface StateScene {
   readonly claimed: ReadonlySet<NodeId>;
   /**
    * Every node as it is drawn now. [SOURCE §4.5] A claimed POI "behaves like
-   * an ordinary node", so its node loses its guard's colour.
+   * an ordinary node", so its node loses its guard's colour and (Q80) its dot.
    */
   readonly nodes: readonly NodeMark[];
   readonly characters: readonly Billboard[];
@@ -313,8 +335,8 @@ export function buildStateScene(
     if (runtime !== undefined && isClaimed(runtime)) claimed.add(poi.node);
   });
   const nodes = scene.nodes.map((mark) =>
-    mark.guard !== null && claimed.has(mark.node)
-      ? nodeMark(catalog, scene.spacing, { id: mark.node, position: mark.at, terrain: mark.terrain }, null)
+    mark.site && claimed.has(mark.node)
+      ? nodeMark(catalog, scene.spacing, { id: mark.node, position: mark.at, terrain: mark.terrain }, null, false)
       : mark,
   );
   return { claimed, nodes, ...buildCharacters(scene, state, catalog, walker, planner) };

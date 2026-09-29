@@ -1963,6 +1963,49 @@ make it so: 5 stamina instead of 10 for not going first"*.
 So `STARTING_STAMINA_INCREMENT` is 5 in §11, and seats start with 30, 35, 40,
 45 and 50. `STARTING_STAMINA_BASE` stays 30.
 
+<a id="q80"></a>
+### Q80. ~~How are sites marked so a player doesn't miss one by a space?~~ — **answered 2026-09-29: a road-brown dot in the middle of every site's node until it is claimed**
+
+On 29 September at 01:39 Andrei asked: *"When I play i often miss a site by one
+space because the map is a bit crowded. We need to mark sites better. THe
+guarded ones are no problem since they have the colored outline. What can we do
+to the other ones? I think even a dot, or a small cross in the middle can help.
+Or change their outlines a little?"* An unguarded site's node was drawn exactly
+like a plain node, with its picture beside it, so on a crowded map the node it
+belongs to was easy to mistake for a neighbour. Five marks went to him in
+pictures (a dot, a cross, a thicker outline, a white ring, a light fill). At
+03:26 he answered: *"i like the dot in the middle. But then, we need to put it
+on guarded sites as well, can you show me how it will look? And when a site is
+claimed, the dot needs to disappear"*, at 03:41: *"i liked the way tapping
+worked, not ready to change it now"*, and at 03:42: *"one more thing to
+experiment with is the color of the dot: brown as the site outline, or the
+color og the reward icon"*. At 05:07 he asked to see *"the dot size 0.55 color
+of the roads (lighter brown)"*, and at 05:42 he ruled: *"The road color and
+size 0.55 work. The dot goes away once the reward is claimed."*
+
+260. **A dot in the middle of the node.**
+261. **The brown of the roads,** the road brush's main colour (`#966a3e`),
+     rather than the darker brown of the outline or the reward icon's colour.
+262. **0.55 of the node's width across,** inside its black outline.
+263. **Every site,** whatever its reward, stamina included.
+264. **It goes when the site is claimed,** with the site's icons.
+265. **Guarded sites get it too,** inside their guard's ring (his change to the
+     recommendation that they stay as they were).
+266. **Whatever covers a node today covers the dot:** figures, a planned
+     route's markers and cross, the waypoint flag and the ring round the player
+     whose turn it is.
+268. **Tapping and clicking are unchanged:** a tap still picks the nearest node,
+     or a site's picture.
+269. **A guarded site's dot is the same road brown,** not its guard's colour.
+
+267 (moving pictures and icons out for a wider outline) and 270 (the colour of
+a stamina site's dot if dots took the reward's colour) fell away with the
+choices above. Nothing else changed: the node, its outline, the guard's ring and
+where each picture and icon stands are as they were. The dot's size and colour
+are `nodes.site_dot` in `Art/manifest.json`; it is drawn with the nodes in
+`apps/web/src/render/pixi/renderer.ts` from `siteDot` in
+`apps/web/src/render/sceneModel.ts`.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design
