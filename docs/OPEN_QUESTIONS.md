@@ -2007,7 +2007,7 @@ are `nodes.site_dot` in `Art/manifest.json`; it is drawn with the nodes in
 `apps/web/src/render/sceneModel.ts`.
 
 <a id="q85"></a>
-### Q85. How does the game master force a turn, resign a player, extend, end the game and delete a post? — **answered 2026-09-29: as recommended, except where Resign goes and a trash bin for Delete; 302 and 303 answered, 304 to 307 asking**
+### Q85. How does the game master force a turn, resign a player, extend, end the game and delete a post? — **answered 2026-09-29: as recommended, except where Resign goes and a trash bin for Delete; 302 to 307 answered**
 
 On 29 September at 07:41 Andrei asked: *"i think it's time to implement GM
 actions: force a player's turn, force a player to resign, extend the game's
@@ -2070,20 +2070,23 @@ good. Then we can fold "find Bea" into under the new "Bea" button as well"*
 303. **The trash bin** is drawn in the sound button's line style, 16 pixels, in
      the game's link blue. **Answered:** yes.
 
-Asking, raised by folding Find Bea into the button:
+Raised by folding Find Bea into the button, and answered at 13:10: *"304 -
+307, yes, looks good. Just to confirm: if I'm not a game master, I don't need
+the Bea button, right? I still get "Find Bea' where it fits"*. Only the game
+master has the Bea ▾ button; everyone else keeps Find Bea as before.
 
 304. **Find Bea comes back on phones for the game master.** Phones have had no
      Find button since hot seat, to keep one row; inside the list it takes no
      room. Other players' phones, and the game master's own turn or a
-     computer's, stay as they are. Recommended: yes.
+     computer's, stay as they are. **Answered:** yes.
 305. **The list reads Move Bea on, Resign Bea, Find Bea,** top to bottom, and
-     Find Bea looks like the other two there. Recommended: yes.
+     Find Bea looks like the other two there. **Answered:** yes.
 306. **Desktop gets the Bea ▾ button too,** so the game master's buttons are the
      same on every screen and stay on one row there with a long name while
-     planning. Recommended: yes. Otherwise desktop keeps the three side by side.
+     planning. **Answered:** yes.
 307. **The list closes** on a choice, a second press of Bea ▾ or a press
      elsewhere, as the Menu list does (Q58 84), and when the turn passes.
-     Recommended: yes.
+     **Answered:** yes.
 
 He also asked for the Turn log and Messages on a 1366×768 laptop to be looked
 at: with three players they get a strip about 17 pixels tall under the buttons.
