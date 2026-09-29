@@ -185,6 +185,16 @@
         background: var(--accent-soft);
         color: var(--accent);
       }
+      /* [Q58, 84 and Q71, 220] The bar's buttons; on a phone held upright
+         they share one Menu button, whose list opens under the top bar at its
+         right. Elsewhere they sit in the bar and the Menu button is not shown. */
+      .menu-toggle {
+        display: none;
+      }
+      .bar-menu,
+      .bar-actions {
+        display: contents;
+      }
       .stage {
         position: relative;
         min-height: 0;
@@ -478,6 +488,85 @@
         display: none;
       }
 
+      /* --- the rulebook (Q71, 233 and 234) ----------------------------------
+         Over the whole game, in the game's own fonts and colours, the headings
+         in the style of the word Adventure; the whole screen on a phone. */
+      .rules-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 20;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background: rgb(0 0 0 / 0.45);
+      }
+      .rules-sheet {
+        display: flex;
+        flex-direction: column;
+        width: min(760px, 100%);
+        height: 100%;
+        box-sizing: border-box;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+      .rules-top {
+        display: flex;
+        justify-content: flex-end;
+        padding: 10px 12px 0;
+      }
+      .rules-text {
+        flex: 1 1 auto;
+        min-height: 0;
+        overflow-y: auto;
+        overscroll-behavior: contain;
+        padding: 0 28px 28px;
+      }
+      .rules-text h1 {
+        font: 400 30px/1.15 var(--display);
+        margin-bottom: 4px;
+      }
+      .rules-text h2 {
+        font: 400 22px/1.2 var(--display);
+        margin: 22px 0 6px;
+      }
+      .rules-text h3 {
+        font: 400 18px/1.2 var(--display);
+        margin: 16px 0 4px;
+      }
+      .rules-text p {
+        margin: 0 0 8px;
+      }
+      .rules-text ul {
+        margin: 0 0 8px;
+        padding-left: 20px;
+      }
+      .rules-text li + li {
+        margin-top: 4px;
+      }
+      .rules-text table {
+        width: 100%;
+        margin: 4px 0 10px;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      .rules-text th,
+      .rules-text td {
+        padding: 5px 8px 5px 0;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        vertical-align: top;
+      }
+      .rules-text th {
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
       /* --- cards over the map --------------------------------------------- */
       .card {
         position: absolute;
@@ -701,8 +790,24 @@
           padding: 6px 10px;
           gap: 6px 10px;
         }
+        .bar {
+          position: relative;
+        }
         .bar h1 {
           font-size: 19px;
+        }
+        .rules-overlay {
+          padding: 0;
+        }
+        .rules-sheet {
+          border: 0;
+          border-radius: 0;
+        }
+        .rules-text {
+          padding: 0 16px calc(20px + env(safe-area-inset-bottom, 0px));
+        }
+        .rules-text h1 {
+          font-size: 26px;
         }
         /* [Q58, 83] The game's name and seed share the first row, cut short. */
         .bar .seed-shown {
@@ -713,6 +818,29 @@
         }
         #toggle-log {
           display: inline-block;
+        }
+        .menu-toggle {
+          display: inline-block;
+        }
+        .bar-menu {
+          display: block;
+        }
+        .bar-actions {
+          display: none;
+        }
+        .bar-menu.open .bar-actions {
+          position: absolute;
+          z-index: 6;
+          top: calc(100% + 6px);
+          right: 10px;
+          display: grid;
+          gap: 8px;
+          min-width: 160px;
+          padding: 10px;
+          border: 1px solid var(--line);
+          border-radius: 8px;
+          background: var(--panel);
+          box-shadow: var(--shadow);
         }
         .game {
           grid-template-columns: minmax(0, 1fr);
@@ -898,6 +1026,14 @@
         .controls > .thinking {
           grid-column: auto;
           grid-row: auto;
+        }
+        .menu-toggle {
+          display: none;
+        }
+        .bar-menu,
+        .bar-actions,
+        .bar-menu.open .bar-actions {
+          display: contents;
         }
       }
     </style>

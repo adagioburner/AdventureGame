@@ -1883,6 +1883,71 @@ Random takes Draw's place. On a desktop nothing else moves. On a folded phone
 the map gets the room; the map keeps its 180. Both screens use the one field in
 `apps/web/src/page/SeedForm.tsx`.
 
+<a id="q71"></a>
+### Q71. ~~Where does a Rules button go?~~ — **answered 2026-09-28/29: a Menu on phones, none before a game starts, and the rulebook from the repo over the game**
+
+On 28 September Andrei asked: *"I have the rules distilled from GDD.md in
+https://claude.ai/code/artifact/9a233211-bc03-4a3d-af5c-ca9ade3eaca0 Is there
+a convenient place in the UI to place a button that opens the rules page?"*
+The first options all gave a phone's top bar a second row, and at 19:05 he
+ruled them out: *"I don't like any of the "second row" options. It's ugly to
+start with. And if it encroaches on the map size the game becomes
+unplayable"*. At 19:50 he answered: *"220: yes, putting Rules in the menu is
+the sensible option / 221: yes, except maybe the game start screen where the
+only place for it is next to the word "Adventure". It may be the same style as
+"Adventure" but on the right side / 222: no second row, we already ruled that
+out"*, at 20:03: *"yes, 228-230 [...] the recommended options look good"*, and
+at 20:05: *"223: lets try the new tab, I'll experiment with it on a real phone.
+224: sure, let's look at it separately"*. The start screens' "Rules" in the
+style of Adventure then turned out to add a row on common phones 390 to 430
+wide (231), and on 29 September at 00:29 he ruled: *"Let us simply remove the
+Rules button from the Start screens. Users don't need to read the rules before
+the game in on."* Rules then opened his Claude Docs page by its address, and at
+01:05 he asked for that to change: *"I don't like having this kind of outside
+dependency. Can we source it from the same repo everything else is in"*. At
+01:38 he answered: *"232-235 your recommendations are good"*, and at 02:35,
+after pictures: *"looks good, proceed with recommended options"* (236 to 238).
+
+220. **A Menu on phones:** on a desktop, and on a phone turned sideways, Rules
+     is at the right end of the top bar. On a phone held upright each bar's
+     buttons share one Menu button, as the online game's already did
+     ([Q58](#q58), 84), with Rules last: the game on this device (New game,
+     Turn log, and on the site Your games), the game list (New game, Log out)
+     and the online game (Resign, Your games, Turn log, Messages).
+221. **"Rules", in the bar buttons' style.**
+222. **No second row** on a phone.
+228. **The start screens** are those before a game starts: the setup of a game
+     on this device, the login page, and an online game's setup for the game
+     master and for players.
+231. **No Rules on the start screens** (replacing 221's title style there, and
+     229 and 230). They are as they were.
+232. **The rulebook is `docs/RULEBOOK.md`,** copied from his page as it stood,
+     and from now on changes to the rules go through a PR like everything
+     else. The game no longer opens his page or any other address. The first
+     such change is [Q75](#q75)'s starting stamina (30, 35, 40, 45, 50), which
+     he asked for on 29 September at 03:32.
+233. **Over the whole game, with a Close button** (replacing 223, the new tab).
+     The game stays where it is underneath. The same on the game page and on
+     the site.
+234. **The game's own fonts and colours,** with headings in the style of the
+     word Adventure.
+235. **The rewards table keeps his words** for each icon ("Brown wagon wheel"),
+     not the game's pictures.
+236. **Closing it:** the Close button, Esc, or on a desktop a click outside it.
+     While it is open the game's own keys do nothing, so Esc does not also put
+     down a planned route.
+237. **No date and byline** under the title: the line "Sep 27, 2026 ·
+     @Andrei" from his page is left out of the file.
+238. **The game doesn't pause** while the rulebook is open: a computer's turn,
+     or another player's turn online, plays out behind it.
+
+No bar is taller and no map smaller on any screen at the common sizes checked.
+224, the online game master's bar that already takes two rows on a folded
+phone (and on a phone turned sideways, where Rules follows Messages on the
+second row), is to be looked at separately. The button and the rulebook's
+window are in `apps/web/src/page/Rules.tsx`, the reading of the file in
+`apps/web/src/page/rulebook.ts`, and the Menu in `apps/web/src/page/BarMenu.tsx`.
+
 <a id="q75"></a>
 ### Q75. ~~How much more stamina for a later seat?~~ — **answered 2026-09-29: 5 instead of 10**
 

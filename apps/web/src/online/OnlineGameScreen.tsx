@@ -5,6 +5,8 @@ import { MissedRecords, OnlineGame } from '../modes/online.ts';
 import { onlinePlay, type OnlinePlay } from '../modes/play.ts';
 import { GameScreen, PHONE } from '../page/GameScreen.tsx';
 import { MapView } from '../page/MapView.tsx';
+import { BarMenu } from '../page/BarMenu.tsx';
+import { RulesButton } from '../page/Rules.tsx';
 import { SeedForm } from '../page/SeedForm.tsx';
 import { buildMapScene, type MapScene } from '../render/sceneModel.ts';
 import { DEFAULT_RULESET } from '@adventure/config';
@@ -234,18 +236,6 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
     return () => document.removeEventListener('pointerdown', close);
   }, [endsOpen]);
 
-  // [Q58, 84] On a phone held upright, the list under the Menu button.
-  const [menuOpen, setMenuOpen] = useState(false);
-  const barMenu = useRef<HTMLDivElement | null>(null);
-  useEffect(() => {
-    if (!menuOpen) return;
-    const close = (event: PointerEvent): void => {
-      if (!(event.target instanceof Node) || barMenu.current?.contains(event.target) !== true) setMenuOpen(false);
-    };
-    document.addEventListener('pointerdown', close);
-    return () => document.removeEventListener('pointerdown', close);
-  }, [menuOpen]);
-
   useEffect(() => {
     if (notice === null) return;
     const timer = window.setTimeout(() => setNotice(null), NOTICE_MS);
@@ -359,53 +349,48 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
           ) : (
             endsShown
           )}
-          {/* [Q58, 84] On a phone held upright these four share one Menu
-              button, which carries the count of unseen messages; elsewhere
-              they sit in the bar and the Menu button is not shown. */}
-          <div className={`bar-menu${menuOpen ? ' open' : ''}`} ref={barMenu}>
-            <button className="btn menu-toggle" type="button" aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}>
-              {unread > 0 ? `Menu ${unread}` : 'Menu'}
+          {/* [Q58, 84] On a phone held upright these share one Menu button,
+              which carries the count of unseen messages. */}
+          <BarMenu label={unread > 0 ? `Menu ${unread}` : 'Menu'}>
+            {/* [Q56, 57] Anyone whose seat a person still plays can resign it to the computer. */}
+            {inProgress && myPlayer !== undefined && myPlayer.control === 'human' ? (
+              <button
+                className="btn"
+                type="button"
+                disabled={offline}
+                onClick={() => {
+                  if (
+                    !window.confirm(`Resign from this game? The computer plays ${myPlayer.name} from now on. You can still watch and post messages.`)
+                  ) {
+                    return;
+                  }
+                  channel.send({ type: 'player.resign', gameId });
+                }}
+              >
+                Resign
+              </button>
+            ) : null}
+            <button className="btn" type="button" onClick={onBack}>
+              Your games
             </button>
-            <div className="bar-actions" onClick={() => setMenuOpen(false)}>
-              {/* [Q56, 57] Anyone whose seat a person still plays can resign it to the computer. */}
-              {inProgress && myPlayer !== undefined && myPlayer.control === 'human' ? (
-                <button
-                  className="btn"
-                  type="button"
-                  disabled={offline}
-                  onClick={() => {
-                    if (
-                      !window.confirm(`Resign from this game? The computer plays ${myPlayer.name} from now on. You can still watch and post messages.`)
-                    ) {
-                      return;
-                    }
-                    channel.send({ type: 'player.resign', gameId });
-                  }}
-                >
-                  Resign
-                </button>
-              ) : null}
-              <button className="btn" type="button" onClick={onBack}>
-                Your games
-              </button>
-              <button
-                className="btn side-toggle"
-                type="button"
-                aria-pressed={panel === 'log'}
-                onClick={() => setPanel(panel === 'log' && phone() ? null : 'log')}
-              >
-                Turn log
-              </button>
-              <button
-                className="btn side-toggle"
-                type="button"
-                aria-pressed={panel === 'board'}
-                onClick={() => setPanel(panel === 'board' ? (phone() ? null : 'log') : 'board')}
-              >
-                {unread > 0 ? `Messages ${unread}` : 'Messages'}
-              </button>
-            </div>
-          </div>
+            <button
+              className="btn side-toggle"
+              type="button"
+              aria-pressed={panel === 'log'}
+              onClick={() => setPanel(panel === 'log' && phone() ? null : 'log')}
+            >
+              Turn log
+            </button>
+            <button
+              className="btn side-toggle"
+              type="button"
+              aria-pressed={panel === 'board'}
+              onClick={() => setPanel(panel === 'board' ? (phone() ? null : 'log') : 'board')}
+            >
+              {unread > 0 ? `Messages ${unread}` : 'Messages'}
+            </button>
+            <RulesButton />
+          </BarMenu>
         </header>
         <GameScreen
           key={setup.gameId}

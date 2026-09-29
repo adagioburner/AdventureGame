@@ -13,6 +13,8 @@ import { SetupPanel } from '../setup/SetupPanel.tsx';
 import { GameScreen } from './GameScreen.tsx';
 import { MapView } from './MapView.tsx';
 import { initialSeed, mapFor, writeSeed } from './seed.ts';
+import { BarMenu } from './BarMenu.tsx';
+import { RulesButton } from './Rules.tsx';
 import { SeedForm } from './SeedForm.tsx';
 
 export interface AppProps {
@@ -151,23 +153,29 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
             <span className="seed-shown">
               Seed <code>{seed}</code>
             </span>
-            <button className="btn" type="button" onClick={newGame}>
-              New game
-            </button>
-            <button
-              id="toggle-log"
-              className="btn"
-              type="button"
-              aria-pressed={logOpen}
-              onClick={() => setLogOpen(!logOpen)}
-            >
-              Turn log
-            </button>
+            <BarMenu>
+              <button className="btn" type="button" onClick={newGame}>
+                New game
+              </button>
+              <button
+                id="toggle-log"
+                className="btn"
+                type="button"
+                aria-pressed={logOpen}
+                onClick={() => setLogOpen(!logOpen)}
+              >
+                Turn log
+              </button>
+              {barExtra}
+              <RulesButton />
+            </BarMenu>
           </>
         ) : (
-          <SeedForm draft={draft} current={seed} onDraftChange={setDraft} onDraw={draw} />
+          <>
+            <SeedForm draft={draft} current={seed} onDraftChange={setDraft} onDraw={draw} />
+            {barExtra}
+          </>
         )}
-        {barExtra}
       </header>
       {status !== null || art === null || map === null || scene === null || setup === null || limits === null || opening === null ? (
         <main className="stage">
