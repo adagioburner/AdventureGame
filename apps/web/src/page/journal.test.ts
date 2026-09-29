@@ -107,7 +107,7 @@ describe('the turn log, in words that can be checked by hand', () => {
     const entry = describeTurn(game(workedExample), { kind: 'move', path: path(1, 2, 3, 4, 5) }, dice(4));
     expect(entry.headline).toBe('Walked 5 steps, beat the guard and took 3 gold');
     expect(entry.details).toEqual([
-      'Heading for the 3 gold POI (forest, combat guard 5).',
+      'Heading for the 3 gold site (forest, combat guard 5).',
       'Steps: plains free ×3 · plains 1 stamina · forest free.',
       'Stamina 14 → 13.',
       'Combat guard 5: rolled 4 + combat 2 = 6, more than 5. Took 3 gold.',
@@ -131,7 +131,7 @@ describe('the turn log, in words that can be checked by hand', () => {
     const entry = describeTurn(game({ stamina: 2 }), { kind: 'move', path: path(1, 2, 3, 4, 5, 6) });
     expect(entry.headline).toBe('Walked 2 of 6 steps');
     expect(entry.details).toEqual([
-      'Heading for the 5 gold POI (mountain).',
+      'Heading for the 5 gold site (mountain).',
       'Steps: plains 1 stamina ×2.',
       'Stamina 2 → 0.',
       'Stopped: the next step, into plains, costs 1 stamina and 0 are left (plains speed is 0). Those 4 steps are saved for next turn.',
@@ -146,6 +146,11 @@ describe('the turn log, in words that can be checked by hand', () => {
     );
     const none = describeTurn(game({ stamina: 0 }), { kind: 'move', path: path(1) });
     expect(none.headline).toBe('Could not afford the first step');
+  });
+
+  it('calls a place with no site a space, as the rulebook does (Andrei, 2026-09-29, 370)', () => {
+    const entry = describeTurn(game({ stamina: 20 }), { kind: 'move', path: path(1, 2, 3) });
+    expect(entry.details[0]).toBe('Heading for a plains space.');
   });
 
   it('writes a rest as the stamina it gained', () => {

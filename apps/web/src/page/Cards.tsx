@@ -42,7 +42,7 @@ export function ResultCard({ catalog, turn, rolling, onClose }: { catalog: ArtCa
         <p className="outcome">
           {claimed
             ? `More than ${guard.strength}: the guard is beaten. +${prize}.`
-            : `Not more than ${guard.strength}: the ${STAT_LABEL[reward.kind]} stays on the node.`}
+            : `Not more than ${guard.strength}: the ${STAT_LABEL[reward.kind]} stays on the space.`}
         </p>
       )}
       {rolling ? null : (

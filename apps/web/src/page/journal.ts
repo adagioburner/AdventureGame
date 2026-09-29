@@ -98,7 +98,7 @@ export function journalEntry(turn: PlayedTurn, before: GameState, movedOn = fals
 
   if (rested !== undefined) {
     headline = `Rested: +${rested.staminaGained} stamina`;
-    details.push(`Stamina ${turn.statsBefore.stamina} → ${mover.stats.stamina}. No move, and no POI is touched while resting.`);
+    details.push(`Stamina ${turn.statsBefore.stamina} → ${mover.stats.stamina}. No move, and no site is touched while resting.`);
   } else if (moved !== undefined) {
     const walk = describeWalk(moved.resolution, turn, before);
     headline = walk.headline;
@@ -212,7 +212,7 @@ function describeInteraction(
   const guard = poiAt(map, resolution.node)?.guard ?? null;
 
   if (resolution.roll === null || resolution.skillUsed === null || guard === null) {
-    return { headline: `, took ${prize}`, detail: `Took ${prize}: the POI was unguarded.` };
+    return { headline: `, took ${prize}`, detail: `Took ${prize}: the site was unguarded.` };
   }
 
   const skill = turn.statsBefore[resolution.skillUsed];
@@ -262,10 +262,10 @@ export function describeNode(state: GameState, node: NodeId): string {
   const poi = poiAt(map, node);
   const index = map.poiByNode.get(node);
   const taken = index !== undefined && state.poiRuntime[index]?.claimedBy !== null;
-  if (poi === undefined || taken) return `a ${terrain} node`;
+  if (poi === undefined || taken) return `a ${terrain} space`;
   const what = `${poi.reward.units} ${STAT_LABEL[poi.reward.kind]}`;
-  if (poi.guard === null) return `the ${what} POI (${terrain})`;
-  return `the ${what} POI (${terrain}, ${GUARD_LABEL[poi.guard.type]} guard ${poi.guard.strength})`;
+  if (poi.guard === null) return `the ${what} site (${terrain})`;
+  return `the ${what} site (${terrain}, ${GUARD_LABEL[poi.guard.type]} guard ${poi.guard.strength})`;
 }
 
 export function statLine(stats: PlayerStats): string {
