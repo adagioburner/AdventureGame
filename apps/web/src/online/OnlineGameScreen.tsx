@@ -3,7 +3,7 @@ import { createGameState, mostGold, startingNodeFor, type GameId, type GameMap, 
 import { DAY_MS, isOpenSeat, LONGEST_LIFETIME_DAYS, type GameRecord, type SetupState } from '@adventure/protocol';
 import { MissedRecords, OnlineGame } from '../modes/online.ts';
 import { onlinePlay, type OnlinePlay } from '../modes/play.ts';
-import { GameScreen, PHONE } from '../page/GameScreen.tsx';
+import { GameScreen } from '../page/GameScreen.tsx';
 import { MapView } from '../page/MapView.tsx';
 import { BarMenu } from '../page/BarMenu.tsx';
 import { RulesButton } from '../page/Rules.tsx';
@@ -60,8 +60,9 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
   const [play, setPlay] = useState<OnlinePlay | null>(null);
   const [away, setAway] = useState<readonly UserId[]>([]);
   // [Q56, 58] The turn log or the message board, in the one place either
-  // opens; on a phone, over the map, and neither while both are closed.
-  const [panel, setPanel] = useState<'log' | 'board' | null>(() => (phone() ? null : 'log'));
+  // opens over the map, and neither while both are closed; [Q87, 309] closed
+  // when the game opens, on desktop too.
+  const [panel, setPanel] = useState<'log' | 'board' | null>(null);
   // The latest setup and started state, for the history that follows them.
   const latest = useRef<{ setup: SetupState | null; started: GameState | null; play: OnlinePlay | null }>({
     setup: null,
@@ -378,7 +379,7 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
               className="btn side-toggle"
               type="button"
               aria-pressed={panel === 'log'}
-              onClick={() => setPanel(panel === 'log' && phone() ? null : 'log')}
+              onClick={() => setPanel(panel === 'log' ? null : 'log')}
             >
               Turn log
             </button>
@@ -386,7 +387,7 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
               className="btn side-toggle"
               type="button"
               aria-pressed={panel === 'board'}
-              onClick={() => setPanel(panel === 'board' ? (phone() ? null : 'log') : 'board')}
+              onClick={() => setPanel(panel === 'board' ? null : 'board')}
             >
               {unread > 0 ? `Messages ${unread}` : 'Messages'}
             </button>
@@ -507,10 +508,6 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
       )}
     </div>
   );
-}
-
-function phone(): boolean {
-  return window.matchMedia(PHONE).matches;
 }
 
 /** [Q56, 60] How many of a game's posts this device has shown; kept in the browser, and 0 where it cannot be. */

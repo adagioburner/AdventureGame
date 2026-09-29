@@ -493,8 +493,36 @@
         color: var(--muted);
         font-size: 11.5px;
       }
-      #toggle-log {
-        display: none;
+      /* [Q87, 308 and 309] On desktop the Turn log and Messages open over the
+         map's left edge, beside the cards, the full height of the game and
+         360 wide, closed until asked for; the column keeps its colour below
+         the buttons. Phones keep theirs, further down. */
+      @media (min-width: 900px) {
+        .game {
+          position: relative;
+          background: linear-gradient(to right, var(--panel) 349px, var(--line) 349px, var(--line) 350px, transparent 350px);
+        }
+        .game > .log-host {
+          display: none;
+        }
+        .game > .log-host.open {
+          display: block;
+          /* Placed against the whole game, not the column's log row. */
+          grid-area: auto;
+          position: absolute;
+          /* [Q87, 335] Under the cards and notices over the map, which show
+             whole over its edge; over the map itself. */
+          z-index: 2;
+          top: 0;
+          bottom: 0;
+          left: 350px;
+          width: 360px;
+          border-top: 0;
+          box-shadow: var(--shadow);
+        }
+        .log .close {
+          display: inline-block;
+        }
       }
 
       /* --- the rulebook (Q71, 233 and 234) ----------------------------------
