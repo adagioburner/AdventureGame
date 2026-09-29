@@ -96,8 +96,12 @@ export class Lobby extends DurableObject<Env> {
       reply({ type: 'error', code: 'invalid_action', message: 'that message could not be read' });
       return;
     }
+    if (message.type === 'lobby.deleteGame') {
+      await this.deleteGame(who.userId, message.gameId, reply);
+      return;
+    }
     if (message.type !== 'lobby.create') {
-      reply({ type: 'error', code: 'invalid_action', message: 'the game list only creates games' });
+      reply({ type: 'error', code: 'invalid_action', message: 'the game list only creates and deletes games' });
       return;
     }
     const gameId = newGameId();
@@ -120,6 +124,37 @@ export class Lobby extends DurableObject<Env> {
 
   override async webSocketClose(ws: WebSocket, code: number, reason: string): Promise<void> {
     closeQuietly(ws, code, reason);
+  }
+
+  /**
+   * [Q90, 310 to 312] Delete in Your games. The row tells who the game master
+   * is and whether the game has finished, so a refusal needs no trip to the
+   * game, which checks again itself; once removed, it takes its row off every
+   * list. A game no longer on the list (pressed twice, or gone on its own)
+   * needs nothing, and the sender is sent their list as it is.
+   */
+  private async deleteGame(userId: UserId, gameId: unknown, reply: (message: ServerMessage) => void): Promise<void> {
+    const listing = this.listings.all().find((row) => row.gameId === gameId);
+    if (listing === undefined) {
+      reply(this.listFor(userId));
+      return;
+    }
+    if (listing.gameMaster !== userId) {
+      reply({ type: 'error', code: 'not_game_master', message: 'only the game master can delete a game' });
+      return;
+    }
+    if (listing.phase !== 'finished') {
+      reply({ type: 'error', code: 'invalid_action', message: 'only a finished game can be deleted' });
+      return;
+    }
+    let deleted: { ok: true } | { ok: false; message: string };
+    try {
+      deleted = await roomOf(this.env, listing.gameId).deleteGame(userId);
+    } catch (error) {
+      console.error(error);
+      deleted = { ok: false, message: 'the game could not be deleted; try again' };
+    }
+    if (!deleted.ok) reply({ type: 'error', code: 'invalid_action', message: deleted.message });
   }
 
   /**

@@ -45,7 +45,8 @@ import { applySetupAction, createSetup, SetupError, startGame, type NewSetup, ty
  *   - driving AI turns by asking the game master's browser for them when the
  *     active seat is AI-controlled (§12.1);
  *   - the game's lifetime ([Q55]): ending it when its time is up, and
- *     deleting it a week after it closed, whenever its host wakes it;
+ *     deleting it a week after it closed, whenever its host wakes it, or
+ *     sooner when its game master deletes it once it has finished ([Q90]);
  *   - persistence and broadcast through the ports.
  *
  * It contains no game rules. Movement, interaction, victory and turn order all
@@ -119,6 +120,9 @@ export class GameSession {
   private async dispatch(from: UserId, message: ClientMessage): Promise<void> {
     if (message.type === 'lobby.create') {
       throw new SetupError('invalid_action', 'games are created from the game list');
+    }
+    if (message.type === 'lobby.deleteGame') {
+      throw new SetupError('invalid_action', 'games are deleted from the game list');
     }
     if (message.gameId !== this.gameId) throw new SetupError('game_not_found', 'that message is for another game');
     const setup = await this.ports.games.loadSetup(this.gameId);
@@ -345,9 +349,7 @@ export class GameSession {
 
     if (setup.closedAt !== null) {
       if (now < setup.closedAt + KEPT_AFTER_END_DAYS * DAY_MS) return;
-      await this.ports.games.remove(this.gameId);
-      await this.ports.directory.update(this.gameId, null);
-      await this.ports.broadcaster.broadcast(this.gameId, removed());
+      await this.remove();
       return;
     }
     if (now < setup.endsAt) return;
@@ -363,6 +365,30 @@ export class GameSession {
     await this.ports.games.saveSetup(expired);
     await this.ports.broadcaster.broadcast(this.gameId, { type: 'setup.state', setup: expired });
     await this.ports.directory.update(this.gameId, listingOf(expired, null));
+  }
+
+  /**
+   * [Q90, 310 and 312] The game master's Delete in Your games: a finished game,
+   * however it ended, is removed for everyone now rather than 7 days after it
+   * ended ([Q55, 37]). Refused to anyone else, and for a game not finished.
+   */
+  async deleteFinished(from: UserId): Promise<void> {
+    const setup = await this.ports.games.loadSetup(this.gameId);
+    if (setup === null) throw new SetupError('game_not_found', `there is no game ${this.gameId}`);
+    if (from !== setup.gameMaster) throw new SetupError('not_game_master', 'only the game master can delete a game');
+    const game = await this.ports.games.load(this.gameId);
+    if (game === null || game.status !== 'finished') throw new SetupError('invalid_action', 'only a finished game can be deleted');
+    await this.remove();
+  }
+
+  /**
+   * [Q55, 37] Deletes everything the game stored, takes its row off every
+   * list, and tells the pages that have it open.
+   */
+  private async remove(): Promise<void> {
+    await this.ports.games.remove(this.gameId);
+    await this.ports.directory.update(this.gameId, null);
+    await this.ports.broadcaster.broadcast(this.gameId, removed());
   }
 
   /**

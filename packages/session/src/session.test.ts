@@ -452,3 +452,42 @@ describe('GameSession lifetime (Q55)', () => {
     expect(await h.session.nextDeadline()).toBe(3 * DAY_MS + 5 + 7 * DAY_MS);
   });
 });
+
+describe('GameSession delete from the game list (Q90)', () => {
+  it('lets only the game master delete, and only once the game has finished', async () => {
+    const h = await started();
+    await expect(h.session.deleteFinished(andrei)).rejects.toThrow('only a finished game can be deleted');
+    await send(h.session, andrei, { type: 'gm.endGame', gameId: G });
+    await expect(h.session.deleteFinished(bea)).rejects.toThrow('only the game master can delete a game');
+    expect(h.rows.get(G)).toMatchObject({ phase: 'finished' });
+    expect(h.game()).not.toBeNull();
+  });
+
+  it('removes a finished game for everyone at once, as 7 days after it ended', async () => {
+    const h = await started();
+    await send(h.session, andrei, { type: 'gm.endGame', gameId: G });
+    h.take();
+    await h.session.deleteFinished(andrei);
+    expect(h.setup()).toBeNull();
+    expect(h.game()).toBeNull();
+    expect(h.records()).toEqual([]);
+    expect(h.rows.has(G)).toBe(false);
+    expect(h.take().map(({ to, message }) => [to, message])).toEqual([
+      ['all', { type: 'error', code: 'game_removed', message: 'this game has ended and been removed' }],
+    ]);
+    expect(await h.session.nextDeadline()).toBeNull();
+    await h.session.connected(bea);
+    expect(h.take()[0]?.message).toMatchObject({ type: 'error', code: 'game_removed' });
+  });
+
+  it('is refused on a game’s own socket, since Delete is in the game list', async () => {
+    const h = await started();
+    await send(h.session, andrei, { type: 'gm.endGame', gameId: G });
+    h.take();
+    await send(h.session, andrei, { type: 'lobby.deleteGame', gameId: G });
+    expect(h.take().map(({ message }) => message)).toEqual([
+      { type: 'error', code: 'invalid_action', message: 'games are deleted from the game list' },
+    ]);
+    expect(h.rows.has(G)).toBe(true);
+  });
+});

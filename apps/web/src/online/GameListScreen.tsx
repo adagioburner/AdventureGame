@@ -7,6 +7,7 @@ import { socketUrl, type Login } from './api.ts';
 import { sentence } from '../setup/text.ts';
 import { endsLabel, useMinuteClock } from './ends.ts';
 import { useChannel } from './socket.ts';
+import { TrashBin } from './TrashBin.tsx';
 
 interface GameListScreenProps {
   readonly login: Login;
@@ -24,6 +25,9 @@ interface GameListScreenProps {
  * online" on: the game is made at once, named "<username>’s game" (the name
  * can be changed there, 27), and turning the switch off makes it a game on
  * this device. It stands where Q50's "Play on one device" stood.
+ *
+ * [Q90, 310 to 314] The game master's finished games have a trash bin left
+ * of Open, which deletes the game for everyone once they confirm.
  */
 export function GameListScreen({ login, onOpen, onLogOut, onRefused }: GameListScreenProps) {
   const me = login.user;
@@ -48,6 +52,14 @@ export function GameListScreen({ login, onOpen, onLogOut, onRefused }: GameListS
     if (creating) return;
     setProblem(null);
     if (channel.send({ type: 'lobby.create', name: `${me.displayName}’s game` })) setCreating(true);
+  };
+
+  // [Q90, 311] Asks first, as End the game and Cancel do. The row leaves the
+  // list when the server sends it again without the game.
+  const remove = (game: GameSummary): void => {
+    if (!window.confirm('Delete this game? It leaves everyone’s game list and cannot be opened again.')) return;
+    setProblem(null);
+    channel.send({ type: 'lobby.deleteGame', gameId: game.gameId });
   };
 
   const mine = games?.filter((game) => game.mine) ?? [];
@@ -119,6 +131,19 @@ export function GameListScreen({ login, onOpen, onLogOut, onRefused }: GameListS
                           )}
                         </p>
                       </div>
+                      {/* [Q90, 312 to 314] Every finished game of the game master's, left of Open. */}
+                      {game.phase === 'finished' && game.gameMaster === me.userId ? (
+                        <button
+                          className="btn delete-game"
+                          type="button"
+                          aria-label={`Delete ${game.name}`}
+                          title="Delete"
+                          disabled={channel.status !== 'open'}
+                          onClick={() => remove(game)}
+                        >
+                          <TrashBin />
+                        </button>
+                      ) : null}
                       <button className="btn" type="button" onClick={() => onOpen(game.gameId)}>
                         Open
                       </button>
