@@ -39,10 +39,10 @@ Later seats start with more stamina to make up for moving later:
 | Seat | Starting stamina |
 | --- | --- |
 | 1 | 30 |
-| 2 | 40 |
-| 3 | 50 |
-| 4 | 60 |
-| 5 | 70 |
+| 2 | 35 |
+| 3 | 40 |
+| 4 | 45 |
+| 5 | 50 |
 
 Every other stat (the three speeds, combat, magic and gold) starts at 0. All figures begin on the same space: a random plains space that is not a site.
 
@@ -138,7 +138,7 @@ Computer players follow the same rules. When setting up, you choose how many sec
 | Rule | Value |
 | --- | --- |
 | Players | 2 to 5 |
-| Starting stamina | 30 for seat 1, then 10 more for each later seat |
+| Starting stamina | 30 for seat 1, then 5 more for each later seat |
 | A turn | Move (then claim or fight where you stop) or rest |
 | Rest | +5 stamina |
 | Stamina per step past your free steps | Plains 1 · forest 2 · mountains 3 |
