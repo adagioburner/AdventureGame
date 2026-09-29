@@ -5,8 +5,8 @@ import type { RemotenessScorer } from '@adventure/sim';
 /**
  * The mutable work-in-progress a generation attempt passes between steps.
  *
- * Mutable on purpose: §2.1 is an eight-stage pipeline over one artefact, and
- * rebuilding an immutable graph eight times per attempt (times up to
+ * Mutable on purpose: §2.1 is a nine-stage pipeline over one artefact, and
+ * rebuilding an immutable graph nine times per attempt (times up to
  * `MAX_GENERATION_ATTEMPTS`) buys nothing. The draft is sealed into an
  * immutable `GameMap` once, at the end.
  */
@@ -56,7 +56,7 @@ export interface PoiAssignment {
   guardStrength: number | null;
 }
 
-/** Everything a step may read. One `Rng`, threaded through all eight steps. */
+/** Everything a step may read. One `Rng`, threaded through all nine steps. */
 export interface GenerationContext {
   readonly ruleset: Ruleset;
   /**

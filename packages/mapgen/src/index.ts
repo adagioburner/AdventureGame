@@ -1,5 +1,5 @@
 /**
- * `@adventure/mapgen` — GDD.md §2.1's eight-step pipeline, §3's POI placement,
+ * `@adventure/mapgen` — GDD.md §2.1's nine-step pipeline, §3's POI placement,
  * §4.3's reward assignment and §5.2's guard strengths.
  *
  * Runs headless and is deterministic in `(seed, ruleset)`, so the balancing

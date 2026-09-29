@@ -2215,6 +2215,64 @@ interest"; the code keeps its names (`poiAt`, `poiRuntime` and so on).
      only the word swapped. **Answered** at 19:14: *"please change nodes to
      spaces"*.
 
+<a id="q105"></a>
+### Q105. How do the terrains get more roads between them? — **answered 2026-09-29: put pruned roads back where two areas meet (A), 2 places to start; 395 to 397 open**
+
+On 29 September at 19:01 Andrei wrote: *"The generated maps often have too
+little connectivity: only one link between plains and forest for example, or no
+way to get from plains to forest at all except through mountains. We need to
+loosen it up"*. Measured over 100 maps: 12% had no road between plains and
+forest, 22% had two or fewer, and only 77% of forest spaces could be reached
+from plains without stepping on a mountain (under 90% on a third of maps). The
+cause is the order of §2.1: step 3 prunes the triangulation to a graph that is
+nearly a tree, and step 4 grows terrain along its roads, so terrains meet
+exactly where roads are fewest. Keeping more roads everywhere does not help: at
+330 roads 61 maps in 100 fall under 30 dead ends and regenerate, and at 360 no
+map can be made.
+
+390. **How to loosen it.** A: after step 6, put back pruned triangulation roads
+     where two terrain areas meet in too few places, terrain unchanged
+     (recommended). B: grow terrain by nearness on the ground instead of along
+     roads, which redraws every map and helps less (forest reachable 90.5%).
+     **Answered** at 19:42: A.
+391. **How many separate places two touching areas meet in** (roads sharing a
+     space count as one): 2, 3 (recommended) or 4. **Answered:** *"let's start
+     with 2, and make it a configurable constant that is easy to change to
+     3"*: `BORDER_ROAD_PLACES` in `packages/config/src/defaults.ts`.
+392. **Dead ends may take a put-back road while at least 30 remain**
+     (`LEAF_COUNT.min`), preferring roads that join none. **Answered:** as
+     recommended.
+393. **A put-back road is at most 1.3 times the longest road the map kept**
+     (`BORDER_ROAD_MAX_LENGTH`). **Answered:** as recommended.
+394. **Two pieces of one terrain that touch on the ground but share no road
+     are joined by one road** (`JOINED_PIECE_ROADS`). **Answered:** as
+     recommended.
+395. **Only areas of 5+ spaces get roads put back** (`BORDER_AREA_MIN_SIZE`),
+     about 10 roads per map; areas of 3+ would put back about 13, every size
+     about 18. Recommended: 5+. **Open.**
+396. **Which pruned road goes back:** with no crossing yet the shortest, then
+     the one farthest from the border's existing crossings, so they spread
+     along the border (recommended); or always the shortest, which often lands
+     beside an existing crossing. **Open.**
+397. **A valley's sides may take a put-back road** (recommended; about 1 in 5
+     put-back roads touches a valley); or valleys keep only their own roads,
+     which leaves 10% of maps with 2 or fewer plains–forest roads instead of
+     8%. **Open.**
+
+With 2 places, over the same 100 maps: every map has at least 2 roads between
+plains and forest, 98.6% of forest is reachable from plains without mountains,
+maps carry 302 to 322 roads (310 on average) and dead ends fall from 39.6 to
+35.8 per map. Terrain, spaces and their positions do not change, but the new
+roads change which spaces are dead ends and how remote each site is, so a seed
+gives a different map from before: on `adventure` 49 of 60 sites stay on the
+same space and the rewards are dealt again over them. Routes get shorter, so
+games end sooner: with the simple test player a 2-player game's median falls
+from 59 rounds to 46 and a 4-player game's from 50 to 36. Online games already
+started keep the map they were stored with; a hot seat game kept in the
+browser is replayed from its seed, so one kept from before cannot resume. The
+rulebook does not describe roads, so it is unchanged; the step is GDD §2.1
+step 6b.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design

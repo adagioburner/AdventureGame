@@ -97,13 +97,14 @@ step 2 needs one guaranteed unit per POI); `TERRAIN_AREA_SHARE` sums to 1; no
 
 ## 3. Map generator (§2, §2.1)
 
-`packages/mapgen`. The pipeline is an ordered array of eight `GenerationStep`s —
+`packages/mapgen`. The pipeline is an ordered array of nine `GenerationStep`s —
 the array *is* §2.1's "exact order", and steps are never reordered or skipped
 conditionally.
 
 ```
 1-sample  →  2-triangulate  →  3-prune  →  4-seed-terrain
-          →  5-smooth  →  6-carve-valleys  →  7-place-pois  →  8-validate
+          →  5-smooth  →  6-carve-valleys  →  6b-join-borders
+          →  7-place-pois  →  8-validate
 ```
 
 Each step mutates one `MapDraft` or throws `GenerationRejected`. `generateMap()`
@@ -133,8 +134,9 @@ Four details from the GDD that are easy to get wrong, and are pinned in code:
   continues. That is a different mechanism from step 8's whole-map rejection.
   The "jitter" is `EDGE_PRUNE_JITTER` = 10: each removal draws uniformly among
   the 10 longest edges still present, rather than taking the single longest.
-- **Planarity is never re-checked.** Guaranteed by Delaunay at step 2, and no
-  later step adds an edge — so there is no planarity predicate in the repo.
+- **Planarity is never re-checked.** Guaranteed by Delaunay at step 2, and the
+  only step that adds edges, 6b, adds back edges step 2 drew (kept in
+  `draft.triangulation`) — so there is no planarity predicate in the repo.
 - **Valley nodes are recorded even though the exemption is vacuous.** §2.1 says
   carved nodes are exempt from Smooth, and with one Smooth pass at step 5 and
   Carve Valleys once at step 6, ordering already guarantees it.
