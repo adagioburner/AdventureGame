@@ -1,3 +1,4 @@
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { isClaimed, poiAt, poiRuntimeAt, type GameState } from '@adventure/core';
 import type { MoveModeState } from '../interaction/moveMode.ts';
 
@@ -30,7 +31,7 @@ interface TurnControlsProps {
   readonly offline: boolean;
   /** [Q56, 54] The game master's Move on for the person on turn; `null` when there is none to offer. */
   readonly onMoveOn: (() => void) | null;
-  /** [Q85, 295] The game master's Resign for the person on turn, beside Move on; `null` when there is none to offer. */
+  /** [Q85, 295 and 302] The game master's Resign for the person on turn, with Move on; `null` when there is none to offer. */
   readonly onResign: (() => void) | null;
   onPlan(): void;
   onCancel(): void;
@@ -128,17 +129,25 @@ export function TurnControls(props: TurnControlsProps) {
         </div>
         <div className="buttons">
           {props.canPlan ? planButtons : null}
-          {props.onMoveOn === null ? null : (
-            <button className="btn" type="button" disabled={busy || props.offline} onClick={props.onMoveOn}>
-              Move {player.name} on
-            </button>
+          {props.onMoveOn === null && props.onResign === null ? (
+            find
+          ) : (
+            <PlayerMenu key={state.turn.number} name={player.name}>
+              {props.onMoveOn === null ? null : (
+                <button className="btn" type="button" disabled={busy || props.offline} onClick={props.onMoveOn}>
+                  Move {player.name} on
+                </button>
+              )}
+              {props.onResign === null ? null : (
+                <button className="btn" type="button" disabled={busy || props.offline} onClick={props.onResign}>
+                  Resign {player.name}
+                </button>
+              )}
+              <button className="btn" type="button" onClick={props.onFind} aria-label={`Show ${player.name} on the map`}>
+                Find {player.name}
+              </button>
+            </PlayerMenu>
           )}
-          {props.onResign === null ? null : (
-            <button className="btn" type="button" disabled={busy || props.offline} onClick={props.onResign}>
-              Resign {player.name}
-            </button>
-          )}
-          {find}
         </div>
       </section>
     );
@@ -181,6 +190,46 @@ export function TurnControls(props: TurnControlsProps) {
         {find}
       </div>
     </section>
+  );
+}
+
+/**
+ * [Q85, 302 and 304-307] The game master's actions on another person's turn
+ * in one "Bea ▾" button, so they never take a second row: its list opens
+ * above it, and closes on a choice, a press elsewhere or when the turn passes
+ * (keyed by the turn), as the Menu list does ([Q58, 84]).
+ */
+function PlayerMenu({ name, children }: { readonly name: string; readonly children: ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const menu = useRef<HTMLDivElement | null>(null);
+  const list = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const close = (event: PointerEvent): void => {
+      if (!(event.target instanceof Node) || menu.current?.contains(event.target) !== true) setOpen(false);
+    };
+    document.addEventListener('pointerdown', close);
+    return () => document.removeEventListener('pointerdown', close);
+  }, [open]);
+  // The list starts at the button's left edge, moved left as far as it needs to stay on the screen.
+  useLayoutEffect(() => {
+    const box = list.current;
+    if (!open || box === null) return;
+    const { left, right } = box.getBoundingClientRect();
+    box.style.left = `${Math.max(Math.min(0, window.innerWidth - 8 - right), 8 - left)}px`;
+  }, [open]);
+
+  return (
+    <div className={`player-menu${open ? ' open' : ''}`} ref={menu}>
+      <button className="btn" type="button" aria-expanded={open} onClick={() => setOpen(!open)}>
+        {name} ▾
+      </button>
+      {open ? (
+        <div className="player-actions" ref={list} onClick={() => setOpen(false)}>
+          {children}
+        </div>
+      ) : null}
+    </div>
   );
 }
 
