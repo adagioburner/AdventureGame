@@ -2119,12 +2119,13 @@ trash bin icon"*.
      name on a 340 px phone pushed the whole list past the right edge of the
      screen, because the list grew to fit the name.
 
-Two details were built before he had ruled on them, and were then put to him:
+Two details were built before he had ruled on them, and were then put to him.
+At 13:49 he answered *"yes to both"*:
 
 316. **The bin's hover label on desktop reads *"Delete"*,** as on posts.
-     *Asked, not yet answered.*
+     **Answered:** yes.
 317. **The bin is greyed out while the list is reconnecting to the server,**
-     as New game is. *Asked, not yet answered.*
+     as New game is. **Answered:** yes.
 
 The rulebook says nothing about how long finished games are kept, so it is
 unchanged. Delete goes through the game list's socket (`lobby.deleteGame`):
