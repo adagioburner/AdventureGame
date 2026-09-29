@@ -1948,6 +1948,36 @@ second row), is to be looked at separately. The button and the rulebook's
 window are in `apps/web/src/page/Rules.tsx`, the reading of the file in
 `apps/web/src/page/rulebook.ts`, and the Menu in `apps/web/src/page/BarMenu.tsx`.
 
+<a id="q72"></a>
+### Q72. ~~How does the online game's bar keep one row?~~ — **answered 2026-09-29: the Menu sideways too, shorter end times on phones, and the name cut short**
+
+At 19:15 on 28 September, while placing Rules ([Q71](#q71)), Claude reported
+that the online game master's bar already took two rows on a 340 px phone
+because the end time is wide (224), and Andrei answered at 20:05: *"224: sure,
+let's look at it separately"*. Looking at it on 29 September showed that the
+bar's rows depend on the end time's words (*"Ends in 23 hours"*, *"Ends Friday
+05:10"*, *"Ends Wednesday 14:00"*, *"Ends Wednesday 30 September 14:00"*), and
+that for some of them Rules had added a second row on a phone turned sideways
+and on a 1024 px wide desktop, which the check for Q71 had missed. At 18:45
+Andrei answered: *"Yes to 280, 281 and 282. It looks like having the menu is
+the safe choice and should be applied more widely"*.
+
+280. **The Menu on a phone turned sideways too,** in the online game: Resign,
+     Your games, Turn log, Messages and Rules go into Menu there as on a phone
+     held upright.
+281. **Shorter end times on a phone** (below 900 px wide), in the online
+     game's bar: *"Ends Wed 14:00"*, *"Ends 30 Sep"* six days or more ahead
+     (the time appears once it is closer), *"Ends in 45 min"* in the last hour,
+     and *"Ends in 23 hours"* as before. Desktops and the game list keep the
+     full words.
+282. **The game's name and seed are cut short** with "…" when the bar is full,
+     as on phones, rather than pushing buttons to a second row (a 1024 px wide
+     desktop).
+
+Where else the Menu goes (*"applied more widely"*) was asked as 283 onward.
+The Menu is `apps/web/src/page/BarMenu.tsx` (`sideways`), the words
+`apps/web/src/online/ends.ts`.
+
 <a id="q75"></a>
 ### Q75. ~~How much more stamina for a later seat?~~ — **answered 2026-09-29: 5 instead of 10**
 

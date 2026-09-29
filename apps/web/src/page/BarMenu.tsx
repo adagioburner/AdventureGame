@@ -3,6 +3,8 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 interface BarMenuProps {
   /** The Menu button's words: the online game's carries the count of unseen messages. */
   readonly label?: string | undefined;
+  /** [Q72, 280] Keep the Menu on a phone turned sideways too (the online game's bar). */
+  readonly sideways?: boolean | undefined;
   readonly children: ReactNode;
 }
 
@@ -10,9 +12,10 @@ interface BarMenuProps {
  * [Q58, 84 and Q71, 220] The top bar's buttons. On a phone held upright they
  * share one Menu button, whose list opens under the bar at its right and
  * closes on a choice or a press elsewhere; on wider screens, and on a phone
- * turned sideways, they sit in the bar and the Menu button is not shown.
+ * turned sideways, they sit in the bar and the Menu button is not shown,
+ * unless `sideways` keeps the Menu there too.
  */
-export function BarMenu({ label = 'Menu', children }: BarMenuProps) {
+export function BarMenu({ label = 'Menu', sideways = false, children }: BarMenuProps) {
   const [open, setOpen] = useState(false);
   const menu = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -25,7 +28,7 @@ export function BarMenu({ label = 'Menu', children }: BarMenuProps) {
   }, [open]);
 
   return (
-    <div className={`bar-menu${open ? ' open' : ''}`} ref={menu}>
+    <div className={`bar-menu${sideways ? ' sideways' : ''}${open ? ' open' : ''}`} ref={menu}>
       <button className="btn menu-toggle" type="button" aria-expanded={open} onClick={() => setOpen(!open)}>
         {label}
       </button>

@@ -118,8 +118,10 @@
         font: 400 22px/1 var(--display);
         letter-spacing: 0.01em;
       }
+      /* [Q72, 282] The game's name and seed are cut short when the bar is
+         full, rather than pushing its buttons to a second row. */
       .seed-shown {
-        flex: 1 1 auto;
+        flex: 1 1 0;
         color: var(--muted);
         font-size: 13px;
         min-width: 0;
@@ -1071,6 +1073,19 @@
         .bar-actions,
         .bar-menu.open .bar-actions {
           display: contents;
+        }
+        /* [Q72, 280] The online game keeps its Menu here too. */
+        .bar-menu.sideways {
+          display: block;
+        }
+        .bar-menu.sideways .menu-toggle {
+          display: inline-block;
+        }
+        .bar-menu.sideways .bar-actions {
+          display: none;
+        }
+        .bar-menu.sideways.open .bar-actions {
+          display: grid;
         }
       }
     </style>

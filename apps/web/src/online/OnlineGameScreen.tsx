@@ -303,9 +303,15 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
               ? `Drawing the map for seed “${seed ?? ''}”…`
               : null));
 
-  // [Q55, 46] When the game ends, until it has.
+  // [Q55, 46] When the game ends, until it has; [Q72, 281] in shorter words on a phone.
   const ends = setup === null || setup.closedAt !== null ? null : endsLabel(setup.endsAt, now);
-  const endsShown = ends === null ? null : <span className={`ends${ends.soon ? ' soon' : ''}`}>{ends.text}</span>;
+  const endsShown =
+    ends === null ? null : (
+      <span className={`ends${ends.soon ? ' soon' : ''}`}>
+        <span className="ends-long">{ends.text}</span>
+        <span className="ends-short">{ends.short}</span>
+      </span>
+    );
 
   if (play !== null && status === null && art !== null && scene !== null && setup !== null) {
     const offline = channel.status !== 'open';
@@ -351,9 +357,9 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
           ) : (
             endsShown
           )}
-          {/* [Q58, 84] On a phone held upright these share one Menu button,
-              which carries the count of unseen messages. */}
-          <BarMenu label={unread > 0 ? `Menu ${unread}` : 'Menu'}>
+          {/* [Q58, 84] On a phone these share one Menu button, which carries the
+              count of unseen messages; [Q72, 280] turned sideways too. */}
+          <BarMenu label={unread > 0 ? `Menu ${unread}` : 'Menu'} sideways>
             {/* [Q56, 57] Anyone whose seat a person still plays can resign it to the computer. */}
             {inProgress && myPlayer !== undefined && myPlayer.control === 'human' ? (
               <button
