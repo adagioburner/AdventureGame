@@ -6,7 +6,7 @@ import { onlinePlay, type OnlinePlay } from '../modes/play.ts';
 import { GameScreen, PHONE } from '../page/GameScreen.tsx';
 import { MapView } from '../page/MapView.tsx';
 import { BarMenu } from '../page/BarMenu.tsx';
-import { RulesButton, RulesTitle } from '../page/Rules.tsx';
+import { RulesButton } from '../page/Rules.tsx';
 import { SeedForm } from '../page/SeedForm.tsx';
 import { buildMapScene, type MapScene } from '../render/sceneModel.ts';
 import { DEFAULT_RULESET } from '@adventure/config';
@@ -425,9 +425,6 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
     <div className="shell">
       <header className="bar">
         <h1>Adventure</h1>
-        {/* [Q71, 230] For the game master choosing the seed, on the title's
-            row; for everyone else, at the right end of the bar's last row. */}
-        {choosing ? <RulesTitle besideTitle /> : null}
         {choosing ? (
           <SeedForm
             draft={seedDraft}
@@ -448,7 +445,6 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
         <button className="btn" type="button" onClick={onBack}>
           Your games
         </button>
-        {choosing ? null : <RulesTitle />}
       </header>
       {status !== null || art === null || map === null || scene === null || setup === null || shown === null ? (
         <main className="stage">

@@ -1884,7 +1884,7 @@ the map gets the room; the map keeps its 180. Both screens use the one field in
 `apps/web/src/page/SeedForm.tsx`.
 
 <a id="q71"></a>
-### Q71. ~~Where does a Rules button go?~~ — **answered 2026-09-28: a Menu on phones, the title's style before a game starts**
+### Q71. ~~Where does a Rules button go?~~ — **answered 2026-09-28/29: a Menu on phones, and none before a game starts**
 
 On 28 September Andrei asked: *"I have the rules distilled from GDD.md in
 https://claude.ai/code/artifact/9a233211-bc03-4a3d-af5c-ca9ade3eaca0 Is there
@@ -1896,9 +1896,13 @@ unplayable"*. At 19:50 he answered: *"220: yes, putting Rules in the menu is
 the sensible option / 221: yes, except maybe the game start screen where the
 only place for it is next to the word "Adventure". It may be the same style as
 "Adventure" but on the right side / 222: no second row, we already ruled that
-out"*, and at 20:03: *"yes, 228-230 [...] the recommended options look good"*.
-At 20:05: *"223: lets try the new tab, I'll experiment with it on a real phone.
-224: sure, let's look at it separately"*.
+out"*, at 20:03: *"yes, 228-230 [...] the recommended options look good"*, and
+at 20:05: *"223: lets try the new tab, I'll experiment with it on a real phone.
+224: sure, let's look at it separately"*. The start screens' "Rules" in the
+style of Adventure then turned out to add a row on common phones 390 to 430
+wide (231), and on 29 September at 00:29 he ruled: *"Let us simply remove the
+Rules button from the Start screens. Users don't need to read the rules before
+the game in on."*
 
 220. **A Menu on phones:** on a desktop, and on a phone turned sideways, Rules
      is at the right end of the top bar. On a phone held upright each bar's
@@ -1906,25 +1910,22 @@ At 20:05: *"223: lets try the new tab, I'll experiment with it on a real phone.
      ([Q58](#q58), 84), with Rules last: the game on this device (New game,
      Turn log, and on the site Your games), the game list (New game, Log out)
      and the online game (Resign, Your games, Turn log, Messages).
-221. **"Rules", in the bar buttons' style,** except on the start screens,
-     where it is in the style of the word Adventure, at the right end of the
-     bar.
+221. **"Rules", in the bar buttons' style.**
 222. **No second row** on a phone.
 223. **A new tab,** in front of the game, which waits where it was in its own
      tab, to be tried on a real phone.
 228. **The start screens** are those before a game starts: the setup of a game
      on this device, the login page, and an online game's setup for the game
      master and for players.
-229. **The same on a desktop:** the title's style at the right end of the bar.
-230. **A player waiting for an online game to start** has "Rules" at the right
-     end of the bar's last row, beside Your games, on a phone; everyone else's
-     start screen has it on the title's row where the bar takes more than one.
+231. **No Rules on the start screens** (replacing 221's title style there, and
+     229 and 230). They are as they were.
 
-No bar is taller and no map smaller on any screen or width. The rulebook is
-Andrei's own Claude Docs page: other players can open it once he shares it.
-224, the online game master's bar that already takes two rows on a folded
-phone, is to be looked at separately. The links are in `apps/web/src/page/Rules.tsx`,
-the Menu in `apps/web/src/page/BarMenu.tsx`.
+No bar is taller and no map smaller on any screen at the common sizes checked.
+The rulebook is Andrei's own Claude Docs page: other players can open it once
+he shares it. 224, the online game master's bar that already takes two rows on
+a folded phone (and on a phone turned sideways, where Rules follows Messages on
+the second row), is to be looked at separately. The link is in
+`apps/web/src/page/Rules.tsx`, the Menu in `apps/web/src/page/BarMenu.tsx`.
 
 ---
 

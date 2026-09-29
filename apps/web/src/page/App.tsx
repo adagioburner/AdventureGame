@@ -14,7 +14,7 @@ import { GameScreen } from './GameScreen.tsx';
 import { MapView } from './MapView.tsx';
 import { initialSeed, mapFor, writeSeed } from './seed.ts';
 import { BarMenu } from './BarMenu.tsx';
-import { RulesButton, RulesTitle } from './Rules.tsx';
+import { RulesButton } from './Rules.tsx';
 import { SeedForm } from './SeedForm.tsx';
 
 export interface AppProps {
@@ -172,7 +172,6 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
           </>
         ) : (
           <>
-            <RulesTitle besideTitle />
             <SeedForm draft={draft} current={seed} onDraftChange={setDraft} onDraw={draw} />
             {barExtra}
           </>

@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { RulesTitle } from '../page/Rules.tsx';
 import { logIn, LoginRefused, register, type Login } from './api.ts';
 
 interface LoginScreenProps {
@@ -42,7 +41,6 @@ export function LoginScreen({ onLogin, onHotseat }: LoginScreenProps) {
     <div className="shell">
       <header className="bar">
         <h1>Adventure</h1>
-        <RulesTitle />
       </header>
       <main className="site-page">
         <form

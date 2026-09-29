@@ -194,16 +194,6 @@
         color: inherit;
         text-decoration: none;
       }
-      /* [Q71, 221 and 228 to 230] Before a game starts, "Rules" in the style
-         of the word Adventure, at the right end of the bar. */
-      .rules-title {
-        order: 1;
-        margin-left: auto;
-        font: 400 22px/1 var(--display);
-        letter-spacing: 0.01em;
-        color: inherit;
-        text-decoration: none;
-      }
       /* [Q58, 84 and Q71, 220] The bar's buttons; on a phone held upright
          they share one Menu button, whose list opens under the top bar at its
          right. Elsewhere they sit in the bar and the Menu button is not shown. */
@@ -733,8 +723,7 @@
         .bar {
           position: relative;
         }
-        .bar h1,
-        .rules-title {
+        .bar h1 {
           font-size: 19px;
         }
         /* [Q58, 83] The game's name and seed share the first row, cut short. */
@@ -905,13 +894,6 @@
         }
         .result {
           top: 8px;
-        }
-      }
-      /* [Q71, 228 and 230] Where the bar before a game starts takes more
-         than one row, "Rules" stays on the title's row, at its right end. */
-      @media (max-width: 469px) {
-        .rules-title.beside-title {
-          order: 0;
         }
       }
       /* [Q58, 82] Wide enough, the line sits to the right of the buttons. */
