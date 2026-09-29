@@ -5,14 +5,21 @@ import type { RemotenessScorer } from '@adventure/sim';
 /**
  * The mutable work-in-progress a generation attempt passes between steps.
  *
- * Mutable on purpose: §2.1 is an eight-stage pipeline over one artefact, and
- * rebuilding an immutable graph eight times per attempt (times up to
+ * Mutable on purpose: §2.1 is a nine-stage pipeline over one artefact, and
+ * rebuilding an immutable graph nine times per attempt (times up to
  * `MAX_GENERATION_ATTEMPTS`) buys nothing. The draft is sealed into an
  * immutable `GameMap` once, at the end.
  */
 export interface MapDraft {
   positions: Point[];
   edges: MapEdge[];
+  /**
+   * Every edge of step 2's Delaunay triangulation, sorted `(a, b)`. Step 3
+   * prunes `edges` down from this list; step 6b puts some of the pruned ones
+   * back where two terrain areas meet too thinly. Anything drawn from it is
+   * planar by construction, which is why step 6b never tests planarity.
+   */
+  triangulation: MapEdge[];
   /** Indexed by node id. Written by step 4, rewritten by steps 5 and 6. */
   terrain: Terrain[];
   /** Indexed by node id; rebuilt whenever `edges` changes. */
@@ -49,7 +56,7 @@ export interface PoiAssignment {
   guardStrength: number | null;
 }
 
-/** Everything a step may read. One `Rng`, threaded through all eight steps. */
+/** Everything a step may read. One `Rng`, threaded through all nine steps. */
 export interface GenerationContext {
   readonly ruleset: Ruleset;
   /**

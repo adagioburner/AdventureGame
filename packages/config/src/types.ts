@@ -52,6 +52,41 @@ export interface MapConfig {
    * 1 would be strict longest-first with no jitter at all.
    */
   readonly EDGE_PRUNE_JITTER: number;
+  /**
+   * `BORDER_ROAD_PLACES` — tunable, default 2. Not in §11's original table.
+   *
+   * [SOURCE §2.1 step 6b, chat] Terrain grows along step 3's near-tree of
+   * roads, so two terrains meet exactly where roads are fewest: over 100 maps,
+   * 12% had no road at all between plains and forest. Step 6b puts pruned
+   * roads back until every two touching terrain areas meet in at least this
+   * many separate places (roads that share a space count as one place).
+   * "Let's start with 2, and make it a configurable constant that is easy to
+   * change to 3" (OPEN_QUESTIONS Q105, 391).
+   */
+  readonly BORDER_ROAD_PLACES: number;
+  /**
+   * `BORDER_AREA_MIN_SIZE` — tunable, default 5. Not in §11.
+   *
+   * Step 6b only joins areas of at least this many spaces, so a stray space of
+   * one terrain inside another is left as it is (OPEN_QUESTIONS Q105, 395).
+   */
+  readonly BORDER_AREA_MIN_SIZE: number;
+  /**
+   * `BORDER_ROAD_MAX_LENGTH` — tunable, default 1.3. Not in §11.
+   *
+   * Step 6b never puts back a road longer than this multiple of the longest
+   * road step 3 kept, so a put-back road looks like any other road on the map
+   * (OPEN_QUESTIONS Q105, 393).
+   */
+  readonly BORDER_ROAD_MAX_LENGTH: number;
+  /**
+   * `JOINED_PIECE_ROADS` — tunable, default 1. Not in §11.
+   *
+   * Two pieces of the same terrain that touch on the ground but have no road
+   * between them get this many roads put back by step 6b; 0 leaves them apart
+   * (OPEN_QUESTIONS Q105, 394).
+   */
+  readonly JOINED_PIECE_ROADS: number;
 }
 
 /** §11 rows covering POI counts and guard strength (§3, §4.4). */

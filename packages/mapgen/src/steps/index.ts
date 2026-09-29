@@ -5,6 +5,7 @@ import { pruneStep } from './3-prune.ts';
 import { seedTerrainStep } from './4-seed-terrain.ts';
 import { smoothStep } from './5-smooth.ts';
 import { carveValleysStep } from './6-carve-valleys.ts';
+import { joinBordersStep } from './6b-join-borders.ts';
 import { placePoisStep } from './7-place-pois.ts';
 import { validateStep } from './8-validate.ts';
 
@@ -19,6 +20,7 @@ export const GENERATION_PIPELINE: readonly GenerationStep[] = [
   seedTerrainStep,
   smoothStep,
   carveValleysStep,
+  joinBordersStep,
   placePoisStep,
   validateStep,
 ];
@@ -30,6 +32,7 @@ export {
   seedTerrainStep,
   smoothStep,
   carveValleysStep,
+  joinBordersStep,
   placePoisStep,
   validateStep,
 };

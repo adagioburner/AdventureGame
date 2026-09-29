@@ -8,7 +8,8 @@ import type { GenerationContext, GenerationStep, MapDraft } from '../types.ts';
  * construction; planarity never needs re-checking)."
  *
  * Because planarity is guaranteed here, no later step and no validation ever
- * tests it — steps 3 and 6 only remove or recolour, never add edges.
+ * tests it — steps 3 and 6 only remove or recolour, and the only edges step 6b
+ * adds are ones this step drew, kept in `draft.triangulation` for it.
  *
  * The triangulation itself comes from `delaunator`, the one runtime dependency
  * in the engine packages: a correct incremental Delaunay is a great deal of
@@ -48,6 +49,7 @@ export const triangulateStep: GenerationStep = {
 
     edges.sort((left, right) => (left.a !== right.a ? left.a - right.a : left.b - right.b));
     draft.edges = edges;
+    draft.triangulation = [...edges];
     rebuildAdjacency(draft);
   },
 };

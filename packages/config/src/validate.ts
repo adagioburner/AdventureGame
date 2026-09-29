@@ -92,6 +92,18 @@ export function validateRuleset(ruleset: Ruleset): void {
   assertRange(problems, 'GUARD_STRENGTH', config.pois.GUARD_STRENGTH);
   assertRange(problems, 'PLAYER_COUNT', config.players.PLAYER_COUNT);
 
+  // §2.1 step 6b: counts of places and roads, so whole numbers; 0 turns that
+  // part of the step off. The length limit is a multiple of a real road.
+  for (const name of ['BORDER_ROAD_PLACES', 'BORDER_AREA_MIN_SIZE', 'JOINED_PIECE_ROADS'] as const) {
+    const value = config.map[name];
+    if (!Number.isInteger(value) || value < 0) {
+      problems.push(`§2.1 step 6b: ${name} must be a non-negative integer.`);
+    }
+  }
+  if (!(config.map.BORDER_ROAD_MAX_LENGTH > 0)) {
+    problems.push('§2.1 step 6b: BORDER_ROAD_MAX_LENGTH must be positive.');
+  }
+
   if (config.balancing.CLOSE_CANDIDATE_COUNT < 1) {
     problems.push('§9: CLOSE_CANDIDATE_COUNT must be at least 1.');
   }
