@@ -1,0 +1,28 @@
+diff --git a/lib/rendering/batcher/gl/utils/checkMaxIfStatementsInShader.js b/lib/rendering/batcher/gl/utils/checkMaxIfStatementsInShader.js
+index 6d539bd83f3c84239bbad1b88ed0cf892d5610e4..7e0243540d3da32aa4ec0701587c58197b4374eb 100644
+--- a/lib/rendering/batcher/gl/utils/checkMaxIfStatementsInShader.js
++++ b/lib/rendering/batcher/gl/utils/checkMaxIfStatementsInShader.js
+@@ -32,6 +32,9 @@ function checkMaxIfStatementsInShader(maxIfs, gl) {
+       gl.shaderSource(shader, fragmentSrc);
+       gl.compileShader(shader);
+       if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
++        if (gl.isContextLost()) {
++          throw new Error("The WebGL context was lost in `checkMaxIfStatementsInShader`");
++        }
+         maxIfs = maxIfs / 2 | 0;
+       } else {
+         break;
+diff --git a/lib/rendering/batcher/gl/utils/checkMaxIfStatementsInShader.mjs b/lib/rendering/batcher/gl/utils/checkMaxIfStatementsInShader.mjs
+index e5bf0aa39f7197961e2e045de406a10f7c13b54e..803ef9b22b90dfd253665d466b5d95f2003b855d 100644
+--- a/lib/rendering/batcher/gl/utils/checkMaxIfStatementsInShader.mjs
++++ b/lib/rendering/batcher/gl/utils/checkMaxIfStatementsInShader.mjs
+@@ -30,6 +30,9 @@ function checkMaxIfStatementsInShader(maxIfs, gl) {
+       gl.shaderSource(shader, fragmentSrc);
+       gl.compileShader(shader);
+       if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
++        if (gl.isContextLost()) {
++          throw new Error("The WebGL context was lost in `checkMaxIfStatementsInShader`");
++        }
+         maxIfs = maxIfs / 2 | 0;
+       } else {
+         break;
