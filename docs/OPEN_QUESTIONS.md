@@ -2216,7 +2216,7 @@ interest"; the code keeps its names (`poiAt`, `poiRuntime` and so on).
      spaces"*.
 
 <a id="q105"></a>
-### Q105. How do the terrains get more roads between them? — **answered 2026-09-29: put pruned roads back where two areas meet (A), 2 places to start; 396 open**
+### Q105. ~~How do the terrains get more roads between them?~~ — **answered 2026-09-29: put pruned roads back where two areas meet (A), 2 places to start, the rest as recommended**
 
 On 29 September at 19:01 Andrei wrote: *"The generated maps often have too
 little connectivity: only one link between plains and forest for example, or no
@@ -2253,13 +2253,15 @@ map can be made.
 396. **Which pruned road goes back:** with no crossing yet the shortest, then
      the one farthest from the border's existing crossings, so they spread
      along the border (recommended); or always the shortest, which often lands
-     beside an existing crossing. **Open.** Andrei asked whether the
+     beside an existing crossing. Andrei asked whether the
      farthest roads would all land near the map's edge. They do not: over 100
      maps 14% of put-back roads lie within one road length of the edge (11%
      with the shortest road first), against 27% of spaces. "Farthest" is
      measured along the one border, from its own crossings, most borders end
      inside the map where a third terrain starts, and near the edge the pruned
-     roads are long thin ones the 1.3 times limit rules out.
+     roads are long thin ones the 1.3 times limit rules out. **Answered** at
+     20:31: *"OK, the 1.3x limit saves the day. I'm OK with the first option
+     (farthest from the border's existing roads)"*.
 397. **A valley's sides may take a put-back road** (recommended; about 1 in 5
      put-back roads touches a valley); or valleys keep only their own roads,
      which leaves 10% of maps with 2 or fewer plains–forest roads instead of
