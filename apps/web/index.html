@@ -510,7 +510,9 @@
           /* Placed against the whole game, not the column's log row. */
           grid-area: auto;
           position: absolute;
-          z-index: 5;
+          /* [Q87, 335] Under the cards and notices over the map, which show
+             whole over its edge; over the map itself. */
+          z-index: 2;
           top: 0;
           bottom: 0;
           left: 350px;

@@ -2124,7 +2124,7 @@ started (a loop in Pixi 8.21.0's shader check never ended), so
 code is `apps/web/src/page/MapView.tsx` and `mapTrouble.ts` beside it.
 
 <a id="q87"></a>
-### Q87. Where do the Turn log and Messages go on a laptop? — **answered 2026-09-29: over the map's left edge beside the cards, closed until asked for; 335 open**
+### Q87. Where do the Turn log and Messages go on a laptop? — **answered 2026-09-29: over the map's left edge beside the cards, closed until asked for, under the cards over the map (335)**
 
 On 29 September at 12:41 Andrei asked for the squeezed Turn log and Messages
 to be looked at (Q85 299). On a 1366×768 laptop with three to five players the
@@ -2153,7 +2153,10 @@ Raised by building it:
      pixels) and of a turn's result (about 50); on 1920 they don't meet.
      Recommended: the card, whole, over the panel's edge until it fades or is
      closed. Otherwise the panel covers them, as it covers everything on
-     phones. **Open.**
+     phones. **Answered** at 18:34: *"Got it, of course the answer for 335 is
+     Card on top"*. The cards, the rising claim notice and the notices at the
+     map's foot show over the panel; the game master's end-time list and the
+     Bea ▾ list stay over both.
 
 <a id="q90"></a>
 ### Q90. ~~How does a game master delete a finished game?~~ — **answered 2026-09-29: as recommended, with the posts' trash bin**
