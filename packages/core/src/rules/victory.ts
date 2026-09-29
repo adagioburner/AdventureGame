@@ -59,7 +59,8 @@ export function checkVictory(state: GameState): readonly PlayerId[] {
 /**
  * [Q55, 45] When a game's lifetime runs out mid-game, "the player holding the
  * most gold wins, a tie shared, as the computer's simulated games do at their
- * turn limit (Q44)". Everyone on the most gold, however much that is.
+ * turn limit (Q44)". [Q85, 291] The same when the game master ends a game.
+ * Everyone on the most gold, however much that is.
  */
 export function mostGold(state: GameState): readonly PlayerId[] {
   const most = Math.max(...state.players.map((player) => player.stats.gold));

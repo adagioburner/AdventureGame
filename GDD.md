@@ -214,6 +214,8 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 [SOURCE §4] A human player may resign at any time; an AI takes over so play continues. The game master may switch any player between human and AI control at will. [SOURCE §4, chat] Only the game master can hand control back to a human after a resignation — not self-service by the player.
 
+[SOURCE chat, review] **The game master can also resign a player, end the game on gold and delete a post.** Andrei, 2026-09-29: "i think it's time to implement GM actions: force a player's turn, force a player to resign, extend the game's lifetime, end the game (with victory determined by current gold.) I thonk we also need the ability to delete messages from the message board (for the case when someone starts posting inappropriate content)". Resigning a player works as the player's own resignation, and the game master's "Resign Bea" sits beside "Move Bea on", for the player on turn. Ending the game gives the win to the most gold, a tie shared, as when time runs out; it replaces the earlier ending with no winner. A deleted post keeps its place, author and time, reads "Deleted by the game master.", and its words are erased from the stored game (Q85).
+
 ---
 
 ## 8. POI Interaction & Combat Resolution

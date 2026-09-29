@@ -2006,6 +2006,70 @@ are `nodes.site_dot` in `Art/manifest.json`; it is drawn with the nodes in
 `apps/web/src/render/pixi/renderer.ts` from `siteDot` in
 `apps/web/src/render/sceneModel.ts`.
 
+<a id="q85"></a>
+### Q85. How does the game master force a turn, resign a player, extend, end the game and delete a post? — **answered 2026-09-29: as recommended, except where Resign goes and a trash bin for Delete; 302 and 303 asking**
+
+On 29 September at 07:41 Andrei asked: *"i think it's time to implement GM
+actions: force a player's turn, force a player to resign, extend the game's
+lifetime, end the game (with victory determined by current gold.) I thonk we
+also need the ability to delete messages from the message board (for the case
+when someone starts posting inappropriate content)"*. Three were already in
+online games: Move on (Q56 54), Add a day (Q55 44) and End the game, which
+ended with no winner (Q55 40). Details 290 to 301 went to him on a page with
+pictures. At 12:40 he answered: *""Resign Bea" should go next to "Move Bea on".
+This way you can only resign the current player, but that's OK."*, *"Please use
+the trash bin icon instead of the word "Delete" for messages"* and *"The rest is
+fine as recommended"*.
+
+290. **Move on and Add a day stay as they are,** the 14-day limit included.
+291. **End the game gives the win to the most gold,** a tie shared, as when
+     time runs out. It replaces Q55 40's ending with no winner; there is one End
+     the game button.
+292. **Its question names the winner:** "End the game now? Bea wins with the
+     most gold, 34." or "End the game now? Bea and Cal share the win on 34 gold
+     each."
+293. **Afterwards** the end card is titled as for any win and reads "The game
+     master ended the game. Bea held the most gold, 34 against 20." or "The game
+     master ended the game with Bea and Cal on 34 gold each."; Your games shows
+     "Ended by the game master · Bea won" or "… · Bea and Cal share the win". A
+     game ended before this, with no winner, still reads as it did.
+294. **Resigning a player works like their own Resign** (Q56 57): the computer
+     plays the seat from then on, thinking 10 seconds a move; figure, stats,
+     gold and place in the turn order stay; the card reads "Resigned · the
+     computer plays". Any seat a person still plays but the game master's own.
+295. ~~In the panel under the end time.~~ **Changed:** "Resign Bea" goes beside
+     "Move Bea on", so only the player on turn can be resigned from the page.
+296. **The game master is asked first,** "Resign Bea? The computer plays Bea
+     from now on.", and Bea is told "The game master resigned you. The computer
+     plays Bea from now on." Everyone else sees it on her card.
+297. **Bea can still watch and post,** as after her own Resign.
+298. **Delete sits at the right end of each post's name line,** for the game
+     master only, on every post including their own, and asks first: "Delete
+     Bea's message? Its words are erased for everyone." **Changed:** a trash bin
+     icon instead of the word Delete.
+299. **A deleted post keeps its place, name and time,** and its words become
+     "Deleted by the game master." in grey. They are erased from the server too,
+     from the record that posted them, so a delete cannot be undone.
+300. **The game master can delete from the start until the game is removed,**
+     after it ends too, as posting works. A deleted post is not counted on the
+     Messages button and makes no sound.
+301. **The rulebook changes with it:** ending early gives the win to the most
+     gold, and the game master's list gains Resign a player and Delete a
+     message.
+
+Asking, raised by the two changes:
+
+302. **On phones there is no room for Resign Bea beside Move Bea on:** it wraps
+     to a second row of buttons on the 340 folded phone and on sideways phones,
+     and on a 390 phone while planning or with a longer name. Recommended: on
+     phones one "Bea ▾" button in place of Move Bea on, opening Move Bea on and
+     Resign Bea above it. Desktop gets both side by side.
+303. **The trash bin** is drawn in the sound button's line style, 16 pixels, in
+     the game's link blue. Recommended: yes.
+
+He also asked for the Turn log and Messages on a 1366×768 laptop to be looked
+at: with three players they get a strip about 17 pixels tall under the buttons.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design

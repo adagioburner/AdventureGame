@@ -30,6 +30,8 @@ interface TurnControlsProps {
   readonly offline: boolean;
   /** [Q56, 54] The game master's Move on for the person on turn; `null` when there is none to offer. */
   readonly onMoveOn: (() => void) | null;
+  /** [Q85, 295] The game master's Resign for the person on turn, beside Move on; `null` when there is none to offer. */
+  readonly onResign: (() => void) | null;
   onPlan(): void;
   onCancel(): void;
   onArmWaypoint(armed: boolean): void;
@@ -129,6 +131,11 @@ export function TurnControls(props: TurnControlsProps) {
           {props.onMoveOn === null ? null : (
             <button className="btn" type="button" disabled={busy || props.offline} onClick={props.onMoveOn}>
               Move {player.name} on
+            </button>
+          )}
+          {props.onResign === null ? null : (
+            <button className="btn" type="button" disabled={busy || props.offline} onClick={props.onResign}>
+              Resign {player.name}
             </button>
           )}
           {find}

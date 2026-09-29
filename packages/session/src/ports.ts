@@ -33,6 +33,12 @@ export interface GameStore {
   /** Every record of the game, in order. */
   loadRecords(gameId: GameId): Promise<readonly GameRecord[]>;
   /**
+   * [Q85, 299] Stores `record` in place of the one with its `seq`, which
+   * must exist. The only change a record ever takes: a deleted post's words
+   * erased from the record that posted it.
+   */
+  replaceRecord(gameId: GameId, record: GameRecord): Promise<void>;
+  /**
    * [Q55, 37] Deletes everything the game stored, keeping only the fact that
    * it was removed, so its old address can say so.
    */

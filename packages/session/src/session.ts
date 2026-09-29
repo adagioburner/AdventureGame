@@ -216,9 +216,24 @@ export class GameSession {
       }
 
       case 'gm.endGame': {
+        // [Q55, 40] and [Q85, 291]: the most gold wins, a tie shared.
         if (from !== setup.gameMaster) throw new SetupError('not_game_master', 'only the game master can end the game');
         const game = await this.gameInProgress();
         await this.play(setup, game, { kind: 'end_game', reason: 'game_master' }, from);
+        return;
+      }
+
+      case 'gm.resignPlayer': {
+        // [Q85, 294] As the player's own Resign, for any seat a person still
+        // plays but the game master's own, who has Resign for that.
+        if (from !== setup.gameMaster) throw new SetupError('not_game_master', 'only the game master can resign a player');
+        const game = await this.gameInProgress();
+        const seat = setup.seats.find((candidate) => candidate.playerId === message.player);
+        const player = game.players.find((candidate) => candidate.id === message.player);
+        if (seat === undefined || seat.userId === null || player === undefined) throw new SetupError('invalid_action', 'nobody plays that seat');
+        if (seat.userId === setup.gameMaster) throw new SetupError('invalid_action', 'resign your own seat with Resign');
+        if (player.control !== 'human') throw new SetupError('invalid_action', `the computer already plays ${player.name}`);
+        await this.resign(setup, game, player.id, from);
         return;
       }
 
@@ -244,14 +259,7 @@ export class GameSession {
         // computer plays it from then on; only the game master can hand it
         // back, which is phase 8.
         const game = await this.gameInProgress();
-        const player = humanPlayerOf(setup, game, from);
-        const resigned: SetupState = {
-          ...setup,
-          seats: setup.seats.map((seat) => (seat.playerId === player ? { ...seat, thinkingSeconds: RESIGNED_THINKING_SECONDS } : seat)),
-        };
-        await this.ports.games.saveSetup(resigned);
-        await this.ports.broadcaster.broadcast(this.gameId, { type: 'setup.state', setup: resigned });
-        await this.play(resigned, game, { kind: 'resign', player }, from);
+        await this.resign(setup, game, humanPlayerOf(setup, game, from), from);
         return;
       }
 
@@ -268,6 +276,24 @@ export class GameSession {
         const postedAt = this.ports.clock.now();
         const id = `post-${game.messageBoard.length + 1}`;
         await this.play(setup, game, { kind: 'post_message', player: seat.playerId, body, id, postedAt }, from);
+        return;
+      }
+
+      case 'gm.deletePost': {
+        // [Q85, 298 to 300] The game master, whenever posting is allowed. The
+        // post stays as deleted, and its words go from the record that posted
+        // it too, so no replay brings them back.
+        if (from !== setup.gameMaster) throw new SetupError('not_game_master', 'only the game master can delete a post');
+        const game = await this.ports.games.load(this.gameId);
+        if (game === null) throw new SetupError('invalid_action', 'the board opens when the game starts');
+        const post = game.messageBoard.find((candidate) => candidate.id === message.postId);
+        if (post === undefined) throw new SetupError('invalid_action', 'there is no such post');
+        if (post.deleted === true) throw new SetupError('invalid_action', 'that post is already deleted');
+        await this.play(setup, game, { kind: 'delete_message', id: post.id }, from);
+        for (const record of await this.ports.games.loadRecords(this.gameId)) {
+          if (record.action.kind !== 'post_message' || record.action.id !== post.id) continue;
+          await this.ports.games.replaceRecord(this.gameId, { ...record, action: { ...record.action, body: '' } });
+        }
         return;
       }
 
@@ -377,6 +403,21 @@ export class GameSession {
     if (JSON.stringify(before) !== JSON.stringify(after)) await this.ports.directory.update(this.gameId, after);
     // A new turn, or a resignation handing the turn on to the computer.
     if (outcome.state.turn.number !== game.turn.number || action.kind === 'resign') await this.requestAiMove(current, outcome.state);
+  }
+
+  /**
+   * [Q56, 57] and [Q85, 294] The computer plays `player`'s seat from then on,
+   * thinking `RESIGNED_THINKING_SECONDS` a move; the seat stays a person's in
+   * the setup, so the opening position replays.
+   */
+  private async resign(setup: SetupState, game: GameState, player: PlayerId, by: UserId): Promise<void> {
+    const resigned: SetupState = {
+      ...setup,
+      seats: setup.seats.map((seat) => (seat.playerId === player ? { ...seat, thinkingSeconds: RESIGNED_THINKING_SECONDS } : seat)),
+    };
+    await this.ports.games.saveSetup(resigned);
+    await this.ports.broadcaster.broadcast(this.gameId, { type: 'setup.state', setup: resigned });
+    await this.play(resigned, game, { kind: 'resign', player }, by);
   }
 
   private async gameInProgress(): Promise<GameState> {

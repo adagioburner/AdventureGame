@@ -105,7 +105,7 @@ Tied leaders share the win, but only once no gold is left on the map.
 
 ### Online time limit
 
-An online game lasts 1, 3, 7 or 14 days, chosen when it is created. When time runs out, the player with the most gold wins, and a tie is shared. The game master can also end the game early, and then nobody wins.
+An online game lasts 1, 3, 7 or 14 days, chosen when it is created. When time runs out, the player with the most gold wins, and a tie is shared. The game master can also end the game early, and then too the player with the most gold wins, and a tie is shared.
 
 ## Playing online or on one device
 
@@ -120,8 +120,10 @@ The rules are the same either way; the Play online switch on the setup screen ch
 The person who creates an online game is its game master and sits in seat 1. They choose the map, the number of players and which seats the computer plays, and accept or decline people who ask to join. Empty seats are played by the computer. During the game, the game master can:
 
 - **Move a player on** at any time: play their saved route now, or make them rest if they have none.
+- **Resign a player**: the computer plays their seat from then on.
 - **Extend** the game a day at a time, up to 14 days from creation.
-- **End the game** with no winner.
+- **End the game**.
+- **Delete a message** from the message board.
 
 If a player loses their connection, the game waits for them on their turn, and the game master can move them on. If the game master is away, the whole game waits.
 
