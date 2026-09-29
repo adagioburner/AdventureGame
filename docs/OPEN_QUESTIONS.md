@@ -2274,7 +2274,7 @@ interest"; the code keeps its names (`poiAt`, `poiRuntime` and so on).
      spaces"*.
 
 <a id="q105"></a>
-### Q105. ~~How do the terrains get more roads between them?~~ — **answered 2026-09-29: put pruned roads back where two areas meet (A), 2 places to start, the rest as recommended**
+### Q105. ~~How do the terrains get more roads between them?~~ — **answered 2026-09-29: put pruned roads back where two areas meet (A), 2 places to start, then 1; the rest as recommended**
 
 On 29 September at 19:01 Andrei wrote: *"The generated maps often have too
 little connectivity: only one link between plains and forest for example, or no
@@ -2338,6 +2338,21 @@ started keep the map they were stored with; a hot seat game kept in the
 browser is replayed from its seed, so one kept from before cannot resume. The
 rulebook does not describe roads, so it is unchanged; the step is GDD §2.1
 step 6b.
+
+398. **One place instead of two.** On 29 September at 20:56, with 2 places
+     merged (PR #38), Andrei wrote: *"i checked a few maps and it looks like 2
+     connections per border may be already too much. We often had zero before;
+     let's chane it to 1 first and see if that is enough"*. `BORDER_ROAD_PLACES`
+     is now 1: only two areas that meet by no road at all get one put back, the
+     shortest that qualifies, so 396's "farthest" no longer comes into play
+     between different terrains. Over the same 100 maps: no map lacks a road
+     between plains and forest (7% have exactly 1, 13% 2 or fewer), forest
+     reachable from plains without mountains stays at 98.6%, maps carry 301 to
+     314 roads (305 on average), dead ends average 37.8, 94% of sites stay on
+     the space they had before step 6b, unguarded gold is 0.48% of gold sites,
+     and the simple test player's median game is 49 rounds with 2 players and
+     40 with 4 (59 and 50 before step 6b). A seed gives a different map again,
+     so a hot seat game kept under 2 places cannot resume either.
 
 ---
 
