@@ -33,7 +33,7 @@ requests, and turn order is frozen when the game starts and never changes
 afterwards (§2, §6.1). Every player starts on the *same* node: a random plains
 node that is not a POI (`chooseStartingNode`, `packages/core/src/gamemap.ts`).
 Stamina is the one stat that does not start at zero — seat *n* starts with
-`STARTING_STAMINA_BASE + (n − 1) × STARTING_STAMINA_INCREMENT`, i.e. 30, 40, 50…
+`STARTING_STAMINA_BASE + (n − 1) × STARTING_STAMINA_INCREMENT`, i.e. 30, 35, 40…
 (`startingStaminaForSeat`, `packages/config/src/index.ts`). `createGameState`
 (`packages/core/src/rules/setup.ts`) builds that opening position, and is the
 only function other than `applyAction` that produces a `GameState`.

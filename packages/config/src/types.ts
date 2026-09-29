@@ -194,7 +194,7 @@ export interface PlayerConfig {
    * needs no new config.
    */
   readonly STARTING_STAMINA_BASE: number;
-  /** §11 `STARTING_STAMINA_INCREMENT` — tunable (10). */
+  /** §11 `STARTING_STAMINA_INCREMENT` — tunable (5; 10 until Q75). */
   readonly STARTING_STAMINA_INCREMENT: number;
 }
 

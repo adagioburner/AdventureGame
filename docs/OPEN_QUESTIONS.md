@@ -1883,6 +1883,21 @@ Random takes Draw's place. On a desktop nothing else moves. On a folded phone
 the map gets the room; the map keeps its 180. Both screens use the one field in
 `apps/web/src/page/SeedForm.tsx`.
 
+<a id="q75"></a>
+### Q75. ~~How much more stamina for a later seat?~~ — **answered 2026-09-29: 5 instead of 10**
+
+On 28 September Andrei asked for computer-only games with four players at 3 s
+a move, to judge what stamina bonus for not moving first is fair. With §11's
+increment of 10 (30, 40, 50, 60), the later seats ended with more gold: over 39
+games seat 1 averaged 8.9 gold and seat 4 12.7. He then asked for the same
+games with 5 (30, 35, 40, 45): over 100 games the seats won 22, 21, 27 and 20
+outright, with 10 shared wins and average gold 10.6, 10.5, 12.0 and 10.8, a
+spread luck gives about 3 times in 4. On 29 September he ruled: *"great, let's
+make it so: 5 stamina instead of 10 for not going first"*.
+
+So `STARTING_STAMINA_INCREMENT` is 5 in §11, and seats start with 30, 35, 40,
+45 and 50. `STARTING_STAMINA_BASE` stays 30.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design
