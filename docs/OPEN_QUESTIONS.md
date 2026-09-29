@@ -2216,7 +2216,7 @@ interest"; the code keeps its names (`poiAt`, `poiRuntime` and so on).
      spaces"*.
 
 <a id="q105"></a>
-### Q105. How do the terrains get more roads between them? — **answered 2026-09-29: put pruned roads back where two areas meet (A), 2 places to start; 395 to 397 open**
+### Q105. How do the terrains get more roads between them? — **answered 2026-09-29: put pruned roads back where two areas meet (A), 2 places to start; 396 open**
 
 On 29 September at 19:01 Andrei wrote: *"The generated maps often have too
 little connectivity: only one link between plains and forest for example, or no
@@ -2249,15 +2249,21 @@ map can be made.
      recommended.
 395. **Only areas of 5+ spaces get roads put back** (`BORDER_AREA_MIN_SIZE`),
      about 10 roads per map; areas of 3+ would put back about 13, every size
-     about 18. Recommended: 5+. **Open.**
+     about 18. Recommended: 5+. **Answered** at 20:26: as recommended.
 396. **Which pruned road goes back:** with no crossing yet the shortest, then
      the one farthest from the border's existing crossings, so they spread
      along the border (recommended); or always the shortest, which often lands
-     beside an existing crossing. **Open.**
+     beside an existing crossing. **Open.** Andrei asked whether the
+     farthest roads would all land near the map's edge. They do not: over 100
+     maps 14% of put-back roads lie within one road length of the edge (11%
+     with the shortest road first), against 27% of spaces. "Farthest" is
+     measured along the one border, from its own crossings, most borders end
+     inside the map where a third terrain starts, and near the edge the pruned
+     roads are long thin ones the 1.3 times limit rules out.
 397. **A valley's sides may take a put-back road** (recommended; about 1 in 5
      put-back roads touches a valley); or valleys keep only their own roads,
      which leaves 10% of maps with 2 or fewer plains–forest roads instead of
-     8%. **Open.**
+     8%. **Answered** at 20:26: as recommended.
 
 With 2 places, over the same 100 maps: every map has at least 2 roads between
 plains and forest, 98.6% of forest is reachable from plains without mountains,
