@@ -23,6 +23,12 @@ export interface BoardPost {
   readonly id: string;
   readonly gameId: GameId;
   readonly author: PlayerId;
+  /** The words; empty once the post is deleted. */
   readonly body: string;
   readonly postedAt: number;
+  /**
+   * [Q85, 299] The game master deleted the post: it keeps its place, author
+   * and time, and its words are gone. Absent on every post that was not.
+   */
+  readonly deleted?: true;
 }

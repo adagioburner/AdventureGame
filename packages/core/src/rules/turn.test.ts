@@ -263,6 +263,25 @@ describe('applyAction — the out-of-turn actions', () => {
     // Posting is not a turn, so it neither ends one nor waits for one.
     expect(state.turn).toEqual(start.turn);
   });
+
+  it('deletes a post, keeping its place, author and time, after the end too (Q85, 299)', () => {
+    let state = fixtureGame(map, 0);
+    for (const [id, body] of [
+      ['post-1', 'good luck'],
+      ['post-2', 'something rude'],
+    ] as const) {
+      state = applyAction(state, { kind: 'post_message', player: two, body, id, postedAt: 7 }, noDice).state;
+    }
+    state = applyAction(state, { kind: 'end_game', reason: 'game_master' }, noDice).state;
+    const { state: after, events } = applyAction(state, { kind: 'delete_message', id: 'post-2' }, noDice);
+    expect(after.messageBoard).toEqual([
+      { id: 'post-1', gameId: state.id, author: two, body: 'good luck', postedAt: 7 },
+      { id: 'post-2', gameId: state.id, author: two, body: '', postedAt: 7, deleted: true },
+    ]);
+    expect(events).toEqual([{ type: 'message_deleted', id: 'post-2' }]);
+    expect(() => applyAction(after, { kind: 'delete_message', id: 'post-2' }, noDice)).toThrow(RuleViolationError);
+    expect(() => applyAction(after, { kind: 'delete_message', id: 'post-3' }, noDice)).toThrow(RuleViolationError);
+  });
 });
 
 describe('applyAction — a saved route (§7.1)', () => {
@@ -304,10 +323,15 @@ describe('applyAction — ending a game early (Q55)', () => {
     expect(applyAction(tied, { kind: 'end_game', reason: 'time_out' }, noDice).state.winners).toEqual([one, two]);
   });
 
-  it('ends without a winner when the game master ends it, and nothing can be played after', () => {
-    const { state } = applyAction(fixtureGame(map, 0), { kind: 'end_game', reason: 'game_master' }, noDice);
-    expect(state).toMatchObject({ status: 'finished', winners: [], ending: 'game_master' });
+  it('gives the win to the most gold when the game master ends it too, and nothing can be played after (Q85, 291)', () => {
+    const rich = withStats(withStats(fixtureGame(map, 0), one, { gold: 2 }), two, { gold: 4 });
+    const { state, events } = applyAction(rich, { kind: 'end_game', reason: 'game_master' }, noDice);
+    expect(state).toMatchObject({ status: 'finished', winners: [two], ending: 'game_master' });
+    expect(events).toEqual([{ type: 'game_ended', reason: 'game_master', winners: [two] }]);
     expect(() => applyAction(state, { kind: 'rest', player: one }, noDice)).toThrow(RuleViolationError);
+
+    const tied = withStats(withStats(fixtureGame(map, 0), one, { gold: 3 }), two, { gold: 3 });
+    expect(applyAction(tied, { kind: 'end_game', reason: 'game_master' }, noDice).state.winners).toEqual([one, two]);
   });
 
   it('records a §1 win as won, and a game in progress as not ended', () => {

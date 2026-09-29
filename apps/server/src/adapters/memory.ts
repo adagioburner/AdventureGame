@@ -31,6 +31,11 @@ export function createMemoryGameStore(): GameStore {
       return stored;
     },
     loadRecords: async (gameId) => records.get(gameId) ?? [],
+    replaceRecord: async (gameId, record) => {
+      const list = records.get(gameId) ?? [];
+      if (list[record.seq - 1] === undefined) throw new RangeError(`${gameId} has no record ${record.seq}`);
+      records.set(gameId, list.map((stored) => (stored.seq === record.seq ? record : stored)));
+    },
     remove: async (gameId) => {
       games.delete(gameId);
       setups.delete(gameId);

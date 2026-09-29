@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { createGameState, startingNodeFor, type GameId, type GameMap, type GameState, type PlayerId, type UserId } from '@adventure/core';
+import { createGameState, mostGold, startingNodeFor, type GameId, type GameMap, type GameState, type PlayerId, type UserId } from '@adventure/core';
 import { DAY_MS, isOpenSeat, LONGEST_LIFETIME_DAYS, type GameRecord, type SetupState } from '@adventure/protocol';
 import { MissedRecords, OnlineGame } from '../modes/online.ts';
 import { onlinePlay, type OnlinePlay } from '../modes/play.ts';
@@ -209,7 +209,8 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
     setSeen(posts.length);
     writeSeen(gameId, posts.length);
   }, [panel, posts.length, seen, gameId]);
-  const unread = panel === 'board' ? 0 : posts.slice(seen).filter((post) => post.author !== mySeat?.playerId).length;
+  // [Q85, 300] A deleted post is not counted.
+  const unread = panel === 'board' ? 0 : posts.slice(seen).filter((post) => post.author !== mySeat?.playerId && post.deleted !== true).length;
   // [Q63, 144] A message someone else posts is heard as it arrives, whether
   // the board is open or not. The posts already there when the game opened
   // make none, and several arriving together, as after a dropped connection,
@@ -337,7 +338,7 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
                     type="button"
                     disabled={offline}
                     onClick={() => {
-                      if (!window.confirm('End the game now? It ends with no winner.')) return;
+                      if (live === null || !window.confirm(`End the game now? ${winnersToBe(live)}`)) return;
                       if (channel.send({ type: 'gm.endGame', gameId })) setEndsOpen(false);
                     }}
                   >
@@ -409,6 +410,15 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
                 players={live.players}
                 now={now}
                 onPost={mySeat === null ? null : (body) => channel.send({ type: 'board.post', gameId, body })}
+                onDelete={
+                  isGameMaster
+                    ? (post) => {
+                        const author = live.players.find((player) => player.id === post.author)?.name ?? 'this player';
+                        if (!window.confirm(`Delete ${author}’s message? Its words are erased for everyone.`)) return;
+                        channel.send({ type: 'gm.deletePost', gameId, postId: post.id });
+                      }
+                    : null
+                }
                 onClose={() => setPanel(null)}
               />
             ) : null
@@ -519,6 +529,19 @@ function writeSeen(gameId: GameId, count: number): void {
   } catch {
     // Without storage the count starts again on the next visit.
   }
+}
+
+/**
+ * [Q85, 292] Who wins if the game master ends the game now: "Bea wins with the
+ * most gold, 34." or "Bea and Cal share the win on 34 gold each."
+ */
+function winnersToBe(state: GameState): string {
+  const ids = new Set(mostGold(state));
+  const winners = state.players.filter((player) => ids.has(player.id));
+  const gold = winners[0]?.stats.gold ?? 0;
+  return winners.length === 1
+    ? `${winners[0]?.name ?? ''} wins with the most gold, ${gold}.`
+    : `${listOf(winners.map((player) => player.name))} share the win on ${gold} gold each.`;
 }
 
 /** "Bea", "Bea and Cal", "Bea, Cal and Dan". */
