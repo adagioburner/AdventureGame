@@ -13,6 +13,8 @@ export interface PlayedChange {
   readonly turn: PlayedTurn | null;
   /** [Q56, 54] The game master moved the player on: their saved route, or a rest. */
   readonly movedOn?: boolean;
+  /** [Q85, 296] The game master resigned the player this page plays for. */
+  readonly resignedYou?: boolean;
 }
 
 /** What the play screen hears from its game, in order: a change, or a turn it committed being refused. */
@@ -60,6 +62,11 @@ export interface PlaySource {
    * route, or a rest. `null` on every page but the game master's online.
    */
   readonly moveOn: ((player: PlayerState) => void) | null;
+  /**
+   * [Q85, 294] The game master resigns a person: the computer plays their seat
+   * from then on. `null` on every page but the game master's online.
+   */
+  readonly resignPlayer: ((player: PlayerState) => void) | null;
   /** A computer seat's thinking time in seconds; `null` for a person's seat. */
   thinkingSecondsOf(player: PlayerState): number | null;
   /**
@@ -93,6 +100,7 @@ export function hotseatPlay(game: HotseatGame): PlaySource {
     computer,
     savePlan: null,
     moveOn: null,
+    resignPlayer: null,
     thinksFor: (player) => player.control === 'ai',
     thinkingSecondsOf: (player) => (player.control === 'ai' ? (game.setup.seats[player.seat - 1]?.thinkingSeconds ?? 0) : null),
     commit(action) {
@@ -189,6 +197,7 @@ export function onlinePlay(options: OnlinePlayOptions): OnlinePlay {
     after,
     turn,
     movedOn: record.action.kind === 'force_turn',
+    resignedYou: record.action.kind === 'resign' && record.by !== me && seatOf(record.action.player)?.userId === me,
   });
 
   return {
@@ -219,6 +228,7 @@ export function onlinePlay(options: OnlinePlayOptions): OnlinePlay {
           movingOn = { player, turn };
         }
       : null,
+    resignPlayer: isGameMaster ? (player) => deliver({ type: 'gm.resignPlayer', gameId, player: player.id }) : null,
     commit(action) {
       const state = game.state;
       const player = state.players.find((candidate) => candidate.id === action.player);

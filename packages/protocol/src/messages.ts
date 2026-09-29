@@ -111,8 +111,15 @@ export type ClientMessage =
   | { readonly type: 'gm.forceTurn'; readonly gameId: GameId; readonly player: PlayerId; readonly turn: number }
   /** [Q55, 44] Adds a day to the game's lifetime, up to 14 days from creation. */
   | { readonly type: 'gm.extendLifetime'; readonly gameId: GameId }
-  /** [Q55, 40] Ends a game in progress without a winner. */
+  /** [Q55, 40] Ends a game in progress; [Q85, 291] the most gold wins, a tie shared. */
   | { readonly type: 'gm.endGame'; readonly gameId: GameId }
+  /**
+   * [Q85, 294] The game master resigns a player, as the player's own
+   * `player.resign` would: the computer plays the seat from then on. Any
+   * seat a person still plays but the game master's own, whose turn it is
+   * or not; the page offers it for the player on turn (295).
+   */
+  | { readonly type: 'gm.resignPlayer'; readonly gameId: GameId; readonly player: PlayerId }
   /** [SOURCE §4] GM switches any player between human and AI control at will. */
   | { readonly type: 'gm.setControl'; readonly gameId: GameId; readonly player: PlayerId; readonly control: ControlMode }
   /**
@@ -128,6 +135,12 @@ export type ClientMessage =
    * removed, up to `BOARD_POST_MAX` characters.
    */
   | { readonly type: 'board.post'; readonly gameId: GameId; readonly body: string }
+  /**
+   * [Q85, 298 and 299] The game master deletes a post: it stays on the board
+   * as deleted, and its words are erased from the stored game too. Allowed
+   * whenever posting is ([Q85, 300]).
+   */
+  | { readonly type: 'gm.deletePost'; readonly gameId: GameId; readonly postId: string }
   /* ---- game-master compute (§12.1) ---- */
   /**
    * [SOURCE §12.1, chat] "Map generation and player AI run on the game master's

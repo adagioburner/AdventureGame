@@ -33,6 +33,9 @@ function harness(rolls: readonly number[] = []) {
       return stored;
     },
     loadRecords: async () => records,
+    replaceRecord: async (_gameId, record) => {
+      records = records.map((stored) => (stored.seq === record.seq ? record : stored));
+    },
     remove: async () => {
       games = null;
       setup = null;
@@ -312,13 +315,60 @@ describe('GameSession in play', () => {
     ]);
   });
 
-  it('lets the game master end the game, which closes it and marks the row finished', async () => {
+  it('lets the game master end the game, the most gold winning, which closes it and marks the row finished (Q85, 291)', async () => {
     const h = await started();
+    const game = h.game() as GameState;
+    h.put({ ...game, players: game.players.map((player) => ({ ...player, stats: { ...player.stats, gold: player.seat === 2 ? 4 : 1 } })) });
     await send(h.session, bea, { type: 'gm.endGame', gameId: G });
     await send(h.session, andrei, { type: 'gm.endGame', gameId: G });
-    expect(h.game()).toMatchObject({ status: 'finished', ending: 'game_master', winners: [] });
+    expect(h.game()).toMatchObject({ status: 'finished', ending: 'game_master', winners: ['seat-2'] });
     expect(h.setup()?.closedAt).toBe(5);
-    expect(h.rows.get(G)).toMatchObject({ phase: 'finished', result: { ending: 'game_master', winners: [] } });
+    expect(h.rows.get(G)).toMatchObject({ phase: 'finished', result: { ending: 'game_master', winners: ['Bea'] } });
+  });
+
+  it('lets the game master resign another person, as their own Resign would (Q85, 294)', async () => {
+    const h = await started();
+    await send(h.session, bea, { type: 'gm.resignPlayer', gameId: G, player: 'seat-2' as never });
+    await send(h.session, andrei, { type: 'gm.resignPlayer', gameId: G, player: 'seat-1' as never });
+    await send(h.session, andrei, { type: 'gm.resignPlayer', gameId: G, player: 'seat-2' as never });
+    expect(h.game()?.players[1]).toMatchObject({ control: 'ai', resigned: true });
+    expect(h.setup()?.seats[1]).toMatchObject({ userId: bea, thinkingSeconds: 10 });
+    expect(h.records().at(-1)).toMatchObject({ action: { kind: 'resign', player: 'seat-2' }, by: andrei });
+    await send(h.session, andrei, { type: 'gm.resignPlayer', gameId: G, player: 'seat-2' as never });
+    expect(h.take().filter(({ message }) => message.type === 'error').map(({ to, message }) => [to, message.type === 'error' && message.message])).toEqual([
+      ['bea', 'only the game master can resign a player'],
+      ['andrei', 'resign your own seat with Resign'],
+      ['andrei', 'the computer already plays Bea'],
+    ]);
+    // On Bea's turn the game master's page is asked for the computer's move at once.
+    await send(h.session, andrei, { type: 'turn.rest', gameId: G, turn: 1 });
+    expect(h.take().find(({ message }) => message.type === 'gm.requestAiMove')).toMatchObject({ to: andrei, message: { player: 'seat-2' } });
+  });
+
+  it('lets the game master delete a post, erasing its words from the stored record too, after the end as well (Q85, 298 to 300)', async () => {
+    const h = await started();
+    await send(h.session, bea, { type: 'board.post', gameId: G, body: 'good luck' });
+    await send(h.session, bea, { type: 'board.post', gameId: G, body: 'something rude' });
+    await send(h.session, andrei, { type: 'gm.endGame', gameId: G });
+    await send(h.session, bea, { type: 'gm.deletePost', gameId: G, postId: 'post-2' });
+    await send(h.session, andrei, { type: 'gm.deletePost', gameId: G, postId: 'post-2' });
+    await send(h.session, andrei, { type: 'gm.deletePost', gameId: G, postId: 'post-2' });
+    await send(h.session, andrei, { type: 'gm.deletePost', gameId: G, postId: 'post-9' });
+    expect(h.game()?.messageBoard.map((post) => [post.id, post.body, post.deleted ?? false])).toEqual([
+      ['post-1', 'good luck', false],
+      ['post-2', '', true],
+    ]);
+    expect(h.records().map((record) => record.action)).toEqual([
+      { kind: 'post_message', player: 'seat-2', body: 'good luck', id: 'post-1', postedAt: 5 },
+      { kind: 'post_message', player: 'seat-2', body: '', id: 'post-2', postedAt: 5 },
+      { kind: 'end_game', reason: 'game_master' },
+      { kind: 'delete_message', id: 'post-2' },
+    ]);
+    expect(h.take().filter(({ message }) => message.type === 'error').map(({ to, message }) => [to, message.type === 'error' && message.message])).toEqual([
+      ['bea', 'only the game master can delete a post'],
+      ['andrei', 'that post is already deleted'],
+      ['andrei', 'there is no such post'],
+    ]);
   });
 });
 

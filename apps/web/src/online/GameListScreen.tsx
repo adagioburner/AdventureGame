@@ -187,12 +187,16 @@ export function GameListScreen({ login, onOpen, onLogOut, onRefused }: GameListS
   );
 }
 
-/** [Q56, 63] "Finished · Bea won", "Finished · Bea and Cal share the win" or "Ended by the game master". */
+/**
+ * [Q56, 63] "Finished · Bea won" or "Finished · Bea and Cal share the win";
+ * [Q85, 293] "Ended by the game master · Bea won" when the game master ended
+ * it, and just "Ended by the game master" for one ended before it had a winner.
+ */
 function resultOf(game: GameSummary): string {
   const result = game.result;
-  if (result?.ending === 'game_master') return 'Ended by the game master';
+  const how = result?.ending === 'game_master' ? 'Ended by the game master' : 'Finished';
   const names = result?.winners ?? [];
-  if (names.length === 0) return 'Finished';
-  if (names.length === 1) return `Finished · ${names[0] ?? ''} won`;
-  return `Finished · ${names.slice(0, -1).join(', ')} and ${names[names.length - 1] ?? ''} share the win`;
+  if (names.length === 0) return how;
+  if (names.length === 1) return `${how} · ${names[0] ?? ''} won`;
+  return `${how} · ${names.slice(0, -1).join(', ')} and ${names[names.length - 1] ?? ''} share the win`;
 }

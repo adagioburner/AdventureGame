@@ -106,6 +106,19 @@ export interface PostMessageAction {
 }
 
 /**
+ * [Q85, 298 and 299] The game master deletes a post, for when someone posts
+ * something inappropriate: it keeps its place, author and time on the board,
+ * and its words are erased. Who may is the session layer's to decide; the
+ * session also erases the words from the post's own stored record, so no
+ * replay brings them back.
+ */
+export interface DeleteMessageAction {
+  readonly kind: 'delete_message';
+  /** The post's `BoardPost.id`. */
+  readonly id: string;
+}
+
+/**
  * [SOURCE §4] "Players may plan their next move out of turn while others play
  * [...] An unfinished path is saved for the next turn and can still be
  * changed."
@@ -129,8 +142,8 @@ export interface PlanAction {
  * How a game can end other than by §1's win.
  *
  * [Q55, 45] "Time running out mid-game: the game ends and the player holding
- * the most gold wins, a tie shared." [Q55, 40] "The game master can end a game
- * in progress [...] It ends without a winner."
+ * the most gold wins, a tie shared." [Q55, 40] The game master can end a game
+ * in progress, and [Q85, 291] then too the most gold wins, a tie shared.
  */
 export type GameEndReason = 'time_out' | 'game_master';
 
@@ -148,6 +161,7 @@ export type GameAction =
   | ResignAction
   | ForceTurnAction
   | PostMessageAction
+  | DeleteMessageAction
   | PlanAction
   | EndGameAction;
 
@@ -198,6 +212,7 @@ export type GameEvent =
   | { readonly type: 'resigned'; readonly player: PlayerId }
   | { readonly type: 'turn_ended'; readonly player: PlayerId; readonly nextSeat: Seat }
   | { readonly type: 'message_posted'; readonly post: BoardPost }
+  | { readonly type: 'message_deleted'; readonly id: string }
   | { readonly type: 'planned'; readonly player: PlayerId; readonly plan: PlannedPath | null }
   | { readonly type: 'game_won'; readonly winners: readonly PlayerId[] }
   | { readonly type: 'game_ended'; readonly reason: GameEndReason; readonly winners: readonly PlayerId[] };

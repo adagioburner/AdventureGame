@@ -1,7 +1,8 @@
 /**
- * [Q90, 314] The trash bin Andrei picked for deleting a post ([Q85, 298 and
- * 303]), for the game master's Delete in Your games: the same line drawing, in
- * the colour of the button it sits in.
+ * [Q85, 298 and 303] The game master's delete: a trash bin in the same line
+ * style as the sound button's speaker and the colour of the words around it,
+ * so it looks the same everywhere. On a post, and ([Q90, 314]) on a finished
+ * game in Your games.
  */
 export function TrashBin() {
   return (

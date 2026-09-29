@@ -146,4 +146,32 @@ describe('onlinePlay', () => {
     expect(play.lastSeq).toBe(2);
     expect(play.state.turn.number).toBe(2);
   });
+
+  it('lets the game master resign a person, and tells that person the game master did (Q85, 294 and 296)', () => {
+    const people: SetupState = {
+      ...setup,
+      seats: [
+        setup.seats[0] as SetupState['seats'][number],
+        { id: 'person:bea', seat: 2, playerId: two, userId: bea, name: 'Bea', avatarId: 'f2', control: 'human', thinkingSeconds: 10 },
+      ],
+    };
+    const opening = openingStateOf(people, map);
+    const [master, player] = [andrei, bea].map((me) => {
+      const sent: ClientMessage[] = [];
+      const heard: PlayUpdate[] = [];
+      const play = onlinePlay({ setup: people, me, ...OnlineGame.open(people, opening, []), send: (message) => sent.push(message) > 0 });
+      play.subscribe((update) => heard.push(update));
+      return { play, sent, heard };
+    }) as [{ play: ReturnType<typeof onlinePlay>; sent: ClientMessage[]; heard: PlayUpdate[] }, { play: ReturnType<typeof onlinePlay>; sent: ClientMessage[]; heard: PlayUpdate[] }];
+    expect(player.play.resignPlayer).toBeNull();
+    master.play.resignPlayer?.(opening.players[1] as GameState['players'][number]);
+    expect(master.sent).toEqual([{ type: 'gm.resignPlayer', gameId: people.gameId, player: two }]);
+
+    const resigned = record(opening, 1, { kind: 'resign', player: two }).record;
+    for (const page of [master, player]) page.play.receive({ ...resigned, by: andrei }, 'played');
+    const told = (heard: PlayUpdate[]) => heard.map((update) => update.kind === 'change' && update.change.resignedYou);
+    expect(told(player.heard)).toEqual([true]);
+    expect(told(master.heard)).toEqual([false]);
+    expect([...player.play.localPlayers]).toEqual([]);
+  });
 });

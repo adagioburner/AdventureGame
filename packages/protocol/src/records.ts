@@ -34,8 +34,9 @@ export interface GameRecord {
   readonly at: number;
   /**
    * Who sent it: the player, or the game master for a forced move (§7.3), a
-   * computer's move and ending the game; `null` for the server itself, when a
-   * game's time runs out ([Q55, 45]).
+   * computer's move, ending the game, resigning a player and deleting a post
+   * ([Q85]); `null` for the server itself, when a game's time runs out
+   * ([Q55, 45]).
    */
   readonly by: UserId | null;
 }

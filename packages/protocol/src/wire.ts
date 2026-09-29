@@ -59,6 +59,8 @@ const CLIENT_MESSAGE_TYPE_RECORD: Record<ClientMessage['type'], true> = {
   'gm.forceTurn': true,
   'gm.extendLifetime': true,
   'gm.endGame': true,
+  'gm.resignPlayer': true,
+  'gm.deletePost': true,
   'gm.setControl': true,
   'player.resign': true,
   'board.post': true,

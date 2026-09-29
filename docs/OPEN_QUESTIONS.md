@@ -2006,6 +2006,91 @@ are `nodes.site_dot` in `Art/manifest.json`; it is drawn with the nodes in
 `apps/web/src/render/pixi/renderer.ts` from `siteDot` in
 `apps/web/src/render/sceneModel.ts`.
 
+<a id="q85"></a>
+### Q85. How does the game master force a turn, resign a player, extend, end the game and delete a post? — **answered 2026-09-29: as recommended, except where Resign goes and a trash bin for Delete; 302 to 307 answered**
+
+On 29 September at 07:41 Andrei asked: *"i think it's time to implement GM
+actions: force a player's turn, force a player to resign, extend the game's
+lifetime, end the game (with victory determined by current gold.) I thonk we
+also need the ability to delete messages from the message board (for the case
+when someone starts posting inappropriate content)"*. Three were already in
+online games: Move on (Q56 54), Add a day (Q55 44) and End the game, which
+ended with no winner (Q55 40). Details 290 to 301 went to him on a page with
+pictures. At 12:40 he answered: *""Resign Bea" should go next to "Move Bea on".
+This way you can only resign the current player, but that's OK."*, *"Please use
+the trash bin icon instead of the word "Delete" for messages"* and *"The rest is
+fine as recommended"*.
+
+290. **Move on and Add a day stay as they are,** the 14-day limit included.
+291. **End the game gives the win to the most gold,** a tie shared, as when
+     time runs out. It replaces Q55 40's ending with no winner; there is one End
+     the game button.
+292. **Its question names the winner:** "End the game now? Bea wins with the
+     most gold, 34." or "End the game now? Bea and Cal share the win on 34 gold
+     each."
+293. **Afterwards** the end card is titled as for any win and reads "The game
+     master ended the game. Bea held the most gold, 34 against 20." or "The game
+     master ended the game with Bea and Cal on 34 gold each."; Your games shows
+     "Ended by the game master · Bea won" or "… · Bea and Cal share the win". A
+     game ended before this, with no winner, still reads as it did.
+294. **Resigning a player works like their own Resign** (Q56 57): the computer
+     plays the seat from then on, thinking 10 seconds a move; figure, stats,
+     gold and place in the turn order stay; the card reads "Resigned · the
+     computer plays". Any seat a person still plays but the game master's own.
+295. ~~In the panel under the end time.~~ **Changed:** "Resign Bea" goes beside
+     "Move Bea on", so only the player on turn can be resigned from the page.
+296. **The game master is asked first,** "Resign Bea? The computer plays Bea
+     from now on.", and Bea is told "The game master resigned you. The computer
+     plays Bea from now on." Everyone else sees it on her card.
+297. **Bea can still watch and post,** as after her own Resign.
+298. **Delete sits at the right end of each post's name line,** for the game
+     master only, on every post including their own, and asks first: "Delete
+     Bea's message? Its words are erased for everyone." **Changed:** a trash bin
+     icon instead of the word Delete.
+299. **A deleted post keeps its place, name and time,** and its words become
+     "Deleted by the game master." in grey. They are erased from the server too,
+     from the record that posted them, so a delete cannot be undone.
+300. **The game master can delete from the start until the game is removed,**
+     after it ends too, as posting works. A deleted post is not counted on the
+     Messages button and makes no sound.
+301. **The rulebook changes with it:** ending early gives the win to the most
+     gold, and the game master's list gains Resign a player and Delete a
+     message.
+
+Raised by the two changes, and answered at 12:58: *"303 and 303, sounds
+good. Then we can fold "find Bea" into under the new "Bea" button as well"*
+(302 and 303):
+
+302. **On phones there is no room for Resign Bea beside Move Bea on:** it wraps
+     to a second row of buttons on the 340 folded phone and on sideways phones,
+     and on a 390 phone while planning or with a longer name. **Answered:** on
+     phones one "Bea ▾" button in place of Move Bea on, opening Move Bea on and
+     Resign Bea above it, and Find Bea too. Desktop was to get them side by
+     side; see 306.
+303. **The trash bin** is drawn in the sound button's line style, 16 pixels, in
+     the game's link blue. **Answered:** yes.
+
+Raised by folding Find Bea into the button, and answered at 13:10: *"304 -
+307, yes, looks good. Just to confirm: if I'm not a game master, I don't need
+the Bea button, right? I still get "Find Bea' where it fits"*. Only the game
+master has the Bea ▾ button; everyone else keeps Find Bea as before.
+
+304. **Find Bea comes back on phones for the game master.** Phones have had no
+     Find button since hot seat, to keep one row; inside the list it takes no
+     room. Other players' phones, and the game master's own turn or a
+     computer's, stay as they are. **Answered:** yes.
+305. **The list reads Move Bea on, Resign Bea, Find Bea,** top to bottom, and
+     Find Bea looks like the other two there. **Answered:** yes.
+306. **Desktop gets the Bea ▾ button too,** so the game master's buttons are the
+     same on every screen and stay on one row there with a long name while
+     planning. **Answered:** yes.
+307. **The list closes** on a choice, a second press of Bea ▾ or a press
+     elsewhere, as the Menu list does (Q58 84), and when the turn passes.
+     **Answered:** yes.
+
+He also asked for the Turn log and Messages on a 1366×768 laptop to be looked
+at: with three players they get a strip about 17 pixels tall under the buttons.
+
 <a id="q90"></a>
 ### Q90. ~~How does a game master delete a finished game?~~ — **answered 2026-09-29: as recommended, with the posts' trash bin**
 
@@ -2034,9 +2119,14 @@ trash bin icon"*.
      name on a 340 px phone pushed the whole list past the right edge of the
      screen, because the list grew to fit the name.
 
-The bin's hover label on desktop reads *"Delete"*, as on posts, and like New
-game it is greyed out while the list is reconnecting to the server. The
-rulebook says nothing about how long finished games are kept, so it is
+Two details were built before he had ruled on them, and were then put to him:
+
+316. **The bin's hover label on desktop reads *"Delete"*,** as on posts.
+     *Asked, not yet answered.*
+317. **The bin is greyed out while the list is reconnecting to the server,**
+     as New game is. *Asked, not yet answered.*
+
+The rulebook says nothing about how long finished games are kept, so it is
 unchanged. Delete goes through the game list's socket (`lobby.deleteGame`):
 the lobby checks its row, and the game removes itself in
 `GameSession.deleteFinished`, the same removal as the 7-day one.

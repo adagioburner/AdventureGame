@@ -222,7 +222,12 @@ export function GameScreen({
       if (update.reason !== null) say(update.reason);
       return;
     }
-    const { before, after, turn, movedOn = false } = update.change;
+    const { before, after, turn, movedOn = false, resignedYou = false } = update.change;
+    // [Q85, 296] Resigned by the game master, whenever it happens.
+    if (resignedYou) {
+      const name = after.players.find((player) => player.resigned && !before.players.find((was) => was.id === player.id)?.resigned)?.name;
+      if (name !== undefined) say(`The game master resigned you. The computer plays ${name} from now on.`);
+    }
     if (turn === null || update.shown === 'caught_up') {
       // [Q54, 32] A turn missed while the connection was down is in the log,
       // and the map shows where it left everyone, with no walk.
@@ -461,6 +466,19 @@ export function GameScreen({
           }
         }
       : null;
+  // [Q85, 294 to 296] The game master's Resign for the person on turn, beside Move on, asked first.
+  const resignPlayer = source.resignPlayer;
+  const onResign =
+    resignPlayer !== null && othersTurn && active !== undefined && active.control === 'human'
+      ? () => {
+          if (!window.confirm(`Resign ${active.name}? The computer plays ${active.name} from now on.`)) return;
+          try {
+            resignPlayer(active);
+          } catch (error) {
+            say(error instanceof Error ? error.message : String(error));
+          }
+        }
+      : null;
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
@@ -520,6 +538,7 @@ export function GameScreen({
         canPlan={canPlan}
         offline={offline}
         onMoveOn={onMoveOn}
+        onResign={onResign}
         onPlan={plan}
         onCancel={() => cancel.current()}
         onArmWaypoint={(on) => controller.armWaypoint(on)}

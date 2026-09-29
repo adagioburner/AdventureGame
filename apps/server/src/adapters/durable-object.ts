@@ -94,6 +94,11 @@ export function createDurableGameStore(gameId: GameId, storage: DurableStorageLi
       return stored;
     },
     loadRecords: async (id) => (id === gameId ? [...(await storage.list<GameRecord>({ prefix: RECORD_PREFIX })).values()] : []),
+    replaceRecord: async (id, record) => {
+      mine(id, 'record');
+      if ((await storage.get<GameRecord>(recordKey(record.seq))) === undefined) throw new RangeError(`${id} has no record ${record.seq}`);
+      await storage.put(recordKey(record.seq), record);
+    },
     remove: async (id) => {
       mine(id, 'removal');
       await storage.deleteAll();

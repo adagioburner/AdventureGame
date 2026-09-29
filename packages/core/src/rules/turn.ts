@@ -42,8 +42,9 @@ export interface ActionOutcome {
  * never changes during play — so a new state copies only the small mutable
  * part, which is what makes cloning cheap enough for MCTS to do in a loop.
  *
- * Every action but `post_message` requires a game in progress; posting is not a
- * game move and stays available once a game has finished.
+ * Every action but `post_message` and `delete_message` requires a game in
+ * progress; the board is not a game move and stays open once a game has
+ * finished.
  */
 export function applyAction(state: GameState, action: GameAction, dice: DiceSource): ActionOutcome {
   switch (action.kind) {
@@ -69,6 +70,8 @@ export function applyAction(state: GameState, action: GameAction, dice: DiceSour
         events: [{ type: 'message_posted', post }],
       };
     }
+    case 'delete_message':
+      return applyDeleteMessage(state, action.id);
     case 'plan':
       return applyPlan(state, action);
     case 'end_game':
@@ -279,15 +282,33 @@ function applyPlan(state: GameState, action: PlanAction): ActionOutcome {
 }
 
 /**
- * [Q55, 40 and 45] Ends a game in progress before anyone has won: on time,
- * the most gold wins and a tie is shared; by the game master, nobody wins.
+ * [Q55, 45] Ends a game in progress before anyone has won: the most gold wins
+ * and a tie is shared, whether time ran out or, [Q85, 291], the game master
+ * ended it.
  */
 function applyEndGame(state: GameState, reason: GameEndReason): ActionOutcome {
   requireInProgress(state);
-  const winners = reason === 'time_out' ? mostGold(state) : [];
+  const winners = mostGold(state);
   return {
     state: { ...state, status: 'finished', winners, ending: reason },
     events: [{ type: 'game_ended', reason, winners }],
+  };
+}
+
+/**
+ * [Q85, 299] A deleted post keeps its place, author and time, and loses its
+ * words. One already deleted, or one that is not on the board, is refused.
+ */
+function applyDeleteMessage(state: GameState, id: string): ActionOutcome {
+  const post = state.messageBoard.find((candidate) => candidate.id === id);
+  if (post === undefined) throw new RuleViolationError(`there is no post ${id}`);
+  if (post.deleted === true) throw new RuleViolationError(`post ${id} is already deleted`);
+  return {
+    state: {
+      ...state,
+      messageBoard: state.messageBoard.map((candidate) => (candidate.id === id ? { ...candidate, body: '', deleted: true } : candidate)),
+    },
+    events: [{ type: 'message_deleted', id }],
   };
 }
 

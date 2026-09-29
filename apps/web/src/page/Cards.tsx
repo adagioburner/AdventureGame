@@ -159,18 +159,23 @@ export function EndCard({
   const winners = state.players.filter((player) => state.winners.includes(player.id));
   const left = unclaimedGoldUnits(state);
   const names = listOf(winners.map((player) => player.name));
-  // [Q56, 61] A game the game master ended has no winner.
-  const title =
-    state.ending === 'game_master'
-      ? 'The game master ended this game.'
-      : winners.length === 1
-        ? `${winners[0]?.name ?? ''} wins!`
-        : `Shared victory: ${winners.map((player) => player.name).join(' and ')}`;
+  // [Q85, 291 and 293] A game the game master ends goes to the most gold, as
+  // one that runs out of time does. [Q56, 61] One the game master ended before
+  // that has no winner.
+  const unwon = state.ending === 'game_master' && winners.length === 0;
+  const title = unwon
+    ? 'The game master ended this game.'
+    : winners.length === 1
+      ? `${winners[0]?.name ?? ''} wins!`
+      : `Shared victory: ${winners.map((player) => player.name).join(' and ')}`;
   const ranked = [...state.players].sort((a, b) => b.stats.gold - a.stats.gold);
   const [first, second] = ranked;
-  const why =
-    state.ending === 'game_master'
-      ? null
+  const why = unwon
+    ? null
+    : state.ending === 'game_master'
+      ? winners.length > 1
+        ? `The game master ended the game with ${names} on ${first?.stats.gold ?? 0} gold each.`
+        : `The game master ended the game. ${names} held the most gold, ${first?.stats.gold ?? 0} against ${second?.stats.gold ?? 0}.`
       : state.ending === 'time_out'
         ? winners.length > 1
           ? `Time ran out with ${names} on ${first?.stats.gold ?? 0} gold each.`

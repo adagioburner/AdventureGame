@@ -359,6 +359,7 @@ describe('the server, in the local Workers runtime', () => {
     expect(away.away).toEqual([bea.user.userId]);
 
     // [Q55, 40] The game master ends it; it stays in the list as finished.
+    // [Q85, 291] The most gold wins: nobody has any yet, so all three share it.
     gmGame.send({ type: 'gm.endGame', gameId });
     const ended = await gmGame.next(played(5));
     expect(ended.record.action).toEqual({ kind: 'end_game', reason: 'game_master' });
@@ -366,7 +367,7 @@ describe('the server, in the local Workers runtime', () => {
       (m): m is Extract<ServerMessage, { type: 'lobby.games' }> =>
         m.type === 'lobby.games' && m.games.some((game) => game.gameId === gameId && game.phase === 'finished'),
     );
-    expect(listed.games.find((game) => game.gameId === gameId)?.result).toEqual({ ending: 'game_master', winners: [] });
+    expect(listed.games.find((game) => game.gameId === gameId)?.result).toEqual({ ending: 'game_master', winners: ['Play_gm', 'Bea', 'Computer 1'] });
 
     for (const client of [gmList, gmGame]) client.close();
   }, 60_000);
