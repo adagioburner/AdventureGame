@@ -13,6 +13,13 @@ import type { RemotenessScorer } from '@adventure/sim';
 export interface MapDraft {
   positions: Point[];
   edges: MapEdge[];
+  /**
+   * Every edge of step 2's Delaunay triangulation, sorted `(a, b)`. Step 3
+   * prunes `edges` down from this list; step 6b puts some of the pruned ones
+   * back where two terrain areas meet too thinly. Anything drawn from it is
+   * planar by construction, which is why step 6b never tests planarity.
+   */
+  triangulation: MapEdge[];
   /** Indexed by node id. Written by step 4, rewritten by steps 5 and 6. */
   terrain: Terrain[];
   /** Indexed by node id; rebuilt whenever `edges` changes. */

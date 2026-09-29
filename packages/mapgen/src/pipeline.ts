@@ -109,6 +109,7 @@ export function emptyDraft(): MapDraft {
   return {
     positions: [],
     edges: [],
+    triangulation: [],
     terrain: [],
     adjacency: [],
     poiNodes: [],

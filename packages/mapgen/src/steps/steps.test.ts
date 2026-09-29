@@ -12,6 +12,7 @@ import { pruneStep } from './3-prune.ts';
 import { seedTerrainStep } from './4-seed-terrain.ts';
 import { meetsCompactness, smoothStep } from './5-smooth.ts';
 import { carveValleysStep } from './6-carve-valleys.ts';
+import { joinBordersStep } from './6b-join-borders.ts';
 import { placePoisStep } from './7-place-pois.ts';
 import { validateStep } from './8-validate.ts';
 
@@ -28,6 +29,7 @@ function draftAfter(last: string, seed: string, ruleset: Ruleset = DEFAULT_RULES
     seedTerrainStep,
     smoothStep,
     carveValleysStep,
+    joinBordersStep,
     placePoisStep,
     validateStep,
   ];
@@ -327,6 +329,114 @@ describe('step 6 — carve valleys', () => {
       expect(carvedNeighbours.length).toBeLessThanOrEqual(2);
     }
   });
+});
+
+describe('step 6b — join borders', () => {
+  /** A ruleset with some map settings changed, for the hand-built cases. */
+  function withMap(map: Partial<Ruleset['config']['map']>): Ruleset {
+    return {
+      ...DEFAULT_RULESET,
+      config: { ...DEFAULT_RULESET.config, map: { ...DEFAULT_RULESET.config.map, ...map } },
+    };
+  }
+
+  /**
+   * Two rows of six spaces, 100 apart: 0–5 along y = 0, 6–11 along y = 100.
+   * Each row is a chain of roads, and the rows meet by one road, 0–6. The
+   * triangulation also has every vertical i–(i+6) and the diagonals i–(i+7),
+   * which at 141 are longer than 1.3 times the longest road (100).
+   */
+  function twoRows(bottom: Terrain, top: Terrain, crossing: boolean): MapDraft {
+    const draft = emptyDraft();
+    draft.positions = [
+      ...[0, 1, 2, 3, 4, 5].map((index) => ({ x: index * 100, y: 0 })),
+      ...[0, 1, 2, 3, 4, 5].map((index) => ({ x: index * 100, y: 100 })),
+    ];
+    draft.terrain = [...Array<Terrain>(6).fill(bottom), ...Array<Terrain>(6).fill(top)];
+    const edge = (a: number, b: number) => ({ a: asNodeId(a), b: asNodeId(b) });
+    const chains = [0, 1, 2, 3, 4].flatMap((index) => [edge(index, index + 1), edge(index + 6, index + 7)]);
+    draft.edges = crossing ? [...chains, edge(0, 6)] : chains;
+    draft.triangulation = [
+      ...chains,
+      ...[0, 1, 2, 3, 4, 5].map((index) => edge(index, index + 6)),
+      ...[0, 1, 2, 3, 4].map((index) => edge(index, index + 7)),
+    ];
+    const byEnds = (left: { a: number; b: number }, right: { a: number; b: number }) =>
+      left.a !== right.a ? left.a - right.a : left.b - right.b;
+    draft.edges.sort(byEnds);
+    draft.triangulation.sort(byEnds);
+    rebuildAdjacency(draft);
+    return draft;
+  }
+
+  it('adds a second place to cross, as far from the first as it can, and no dead end', () => {
+    const draft = twoRows('plains', 'forest', true);
+    joinBordersStep.run(draft, contextOf('j', withMap({ LEAF_COUNT: { min: 0, max: 45 } })));
+    // 5–11 would be farther from 0–6, but it joins two dead ends; 4–10 joins none.
+    expect(draft.edges).toHaveLength(12);
+    expect(draft.edges).toContainEqual({ a: asNodeId(4), b: asNodeId(10) });
+    expect(draft.adjacency[4]).toContain(asNodeId(10));
+  });
+
+  it('takes BORDER_ROAD_PLACES from the ruleset, so 3 adds a third place', () => {
+    const draft = twoRows('plains', 'forest', true);
+    joinBordersStep.run(draft, contextOf('j', withMap({ LEAF_COUNT: { min: 0, max: 45 }, BORDER_ROAD_PLACES: 3 })));
+    expect(draft.edges).toHaveLength(13);
+    expect(draft.edges).toContainEqual({ a: asNodeId(4), b: asNodeId(10) });
+    expect(draft.edges).toContainEqual({ a: asNodeId(2), b: asNodeId(8) });
+  });
+
+  it('joins a dead end only while LEAF_COUNT.min dead ends remain', () => {
+    // Only the outer verticals stay in the triangulation, so the one edge that
+    // could go back, 5–11, joins the map's only two dead ends.
+    const outerVerticalsOnly = (draft: MapDraft) => {
+      draft.triangulation = draft.triangulation.filter(
+        (edge) => edge.b !== edge.a + 6 || edge.a === 0 || edge.a === 5,
+      );
+      return draft;
+    };
+    const keepDeadEnds = outerVerticalsOnly(twoRows('plains', 'forest', true));
+    joinBordersStep.run(keepDeadEnds, contextOf('j', withMap({ LEAF_COUNT: { min: 2, max: 45 } })));
+    expect(keepDeadEnds.edges).toHaveLength(11);
+
+    const spendDeadEnds = outerVerticalsOnly(twoRows('plains', 'forest', true));
+    joinBordersStep.run(spendDeadEnds, contextOf('j', withMap({ LEAF_COUNT: { min: 0, max: 45 } })));
+    expect(spendDeadEnds.edges).toContainEqual({ a: asNodeId(5), b: asNodeId(11) });
+  });
+
+  it('leaves areas smaller than BORDER_AREA_MIN_SIZE alone', () => {
+    const draft = twoRows('plains', 'forest', true);
+    joinBordersStep.run(draft, contextOf('j', withMap({ LEAF_COUNT: { min: 0, max: 45 }, BORDER_AREA_MIN_SIZE: 7 })));
+    expect(draft.edges).toHaveLength(11);
+  });
+
+  it('joins two pieces of one terrain that touch on the ground with JOINED_PIECE_ROADS roads', () => {
+    const draft = twoRows('forest', 'forest', false);
+    joinBordersStep.run(draft, contextOf('j', withMap({ LEAF_COUNT: { min: 0, max: 45 } })));
+    // With no road between them yet, the shortest edge goes back; 0–6 ties on
+    // length but joins two dead ends, so it is 1–7.
+    expect(draft.edges).toHaveLength(11);
+    expect(draft.edges).toContainEqual({ a: asNodeId(1), b: asNodeId(7) });
+
+    const apart = twoRows('forest', 'forest', false);
+    joinBordersStep.run(apart, contextOf('j', withMap({ LEAF_COUNT: { min: 0, max: 45 }, JOINED_PIECE_ROADS: 0 })));
+    expect(apart.edges).toHaveLength(10);
+  });
+
+  it('only adds roads, each an edge of the triangulation, and changes no terrain', () => {
+    for (const seed of ['adventure', 'alpha', 'beta', 'gamma']) {
+      const before = draftAfter('6-carve-valleys', seed);
+      const after = draftAfter('6b-join-borders', seed);
+      const key = (edge: { a: number; b: number }) => `${edge.a}-${edge.b}`;
+      const triangulation = new Set(after.triangulation.map(key));
+      const roads = new Set(after.edges.map(key));
+      for (const edge of before.edges) expect(roads.has(key(edge))).toBe(true);
+      for (const edge of after.edges) expect(triangulation.has(key(edge))).toBe(true);
+      expect(after.edges.length).toBeGreaterThan(before.edges.length);
+      expect(after.terrain).toEqual(before.terrain);
+      expect(leafNodes(draftAsGraph(after)).length).toBeGreaterThanOrEqual(DEFAULT_RULESET.config.map.LEAF_COUNT.min);
+    }
+  }, 20000);
 });
 
 describe('step 7 — place POIs', () => {
