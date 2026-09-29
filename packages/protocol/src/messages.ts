@@ -36,6 +36,11 @@ export type ClientMessage =
    * starts as a new game does on the hot seat screen, two seats both Human.
    */
   | { readonly type: 'lobby.create'; readonly name: string; readonly setup?: NewGameSetup }
+  /**
+   * [Q90, 310 and 312] The game master's Delete in Your games: a finished game
+   * is removed for everyone at once, as it otherwise is 7 days after it ends.
+   */
+  | { readonly type: 'lobby.deleteGame'; readonly gameId: GameId }
   /* ---- a game's socket, before the start (§6.1, Q48) ---- */
   /** Ask to join with the name and figure to play as. Asking twice changes the request. */
   | { readonly type: 'setup.requestJoin'; readonly gameId: GameId; readonly name: string; readonly avatarId: string }

@@ -371,6 +371,60 @@ describe('the server, in the local Workers runtime', () => {
     for (const client of [gmList, gmGame]) client.close();
   }, 60_000);
 
+  it('lets the game master delete a finished game from the game list, for everyone at once (Q90)', async () => {
+    const gm = await register('Delete_gm');
+    const bea = await register('Delete_bea');
+    const gmList = await Client.open('/api/lobby', gm.token);
+    const beaList = await Client.open('/api/lobby', bea.token);
+    gmList.send({ type: 'lobby.create', name: 'Delete me' });
+    const { gameId } = await gmList.next((m): m is Extract<ServerMessage, { type: 'lobby.created' }> => m.type === 'lobby.created');
+    const gmGame = await Client.open(`/api/games/${gameId}`, gm.token);
+    const beaGame = await Client.open(`/api/games/${gameId}`, bea.token);
+    beaGame.send({ type: 'setup.requestJoin', gameId, name: 'Bea', avatarId: 'player_avatars_04' });
+    await gmGame.next(isSetup((setup) => setup.pending.length === 1));
+    gmGame.send({ type: 'setup.respondToJoin', gameId, userId: bea.user.userId, accept: true });
+    await gmGame.next(isSetup((setup) => setup.seats[1]?.userId === bea.user.userId));
+
+    type Games = Extract<ServerMessage, { type: 'lobby.games' }>;
+    type Refusal = Extract<ServerMessage, { type: 'error' }>;
+    const isError = (m: ServerMessage): m is Refusal => m.type === 'error';
+
+    // Not before it has finished.
+    gmList.send({ type: 'lobby.deleteGame', gameId });
+    expect((await gmList.next(isError)).message).toBe('only a finished game can be deleted');
+
+    gmGame.send({ type: 'setup.start', gameId });
+    const request = await gmGame.next((m): m is Extract<ServerMessage, { type: 'gm.requestMapGeneration' }> => m.type === 'gm.requestMapGeneration');
+    const map = generateMap({ seed: request.seed, ruleset: DEFAULT_RULESET, remotenessScorer: defaultRemotenessScorer });
+    gmGame.send({ type: 'gm.mapGenerated', gameId, map });
+    await beaGame.next((m): m is Extract<ServerMessage, { type: 'game.state' }> => m.type === 'game.state');
+    gmGame.send({ type: 'gm.endGame', gameId });
+    await beaList.next((m): m is Games => m.type === 'lobby.games' && m.games.some((game) => game.gameId === gameId && game.phase === 'finished'));
+
+    // Not by anyone but the game master.
+    beaList.send({ type: 'lobby.deleteGame', gameId });
+    expect((await beaList.next(isError)).code).toBe('not_game_master');
+
+    const gmMark = gmList.heard.length;
+    const beaMark = beaList.heard.length;
+    gmList.send({ type: 'lobby.deleteGame', gameId });
+    const gone = (m: ServerMessage): m is Games => m.type === 'lobby.games' && !m.games.some((game) => game.gameId === gameId);
+    await gmList.next(gone, gmMark);
+    await beaList.next(gone, beaMark);
+    const removed = await beaGame.next(isError);
+    expect(removed.code).toBe('game_removed');
+    const reopened = await Client.open(`/api/games/${gameId}`, bea.token);
+    expect((await reopened.next(isError)).code).toBe('game_removed');
+
+    // Pressed twice: nothing more happens, and the list comes back as it is.
+    const again = gmList.heard.length;
+    gmList.send({ type: 'lobby.deleteGame', gameId });
+    await gmList.next(gone, again);
+    expect(gmList.heard.slice(again).some((m) => m.type === 'error')).toBe(false);
+
+    for (const client of [gmList, beaList, gmGame, beaGame, reopened]) client.close();
+  }, 60_000);
+
   it('answers a game that does not exist', async () => {
     const who = await register('Nobody_here');
     const client = await Client.open('/api/games/doesnotexist', who.token);

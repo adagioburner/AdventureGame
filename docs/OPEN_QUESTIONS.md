@@ -2006,6 +2006,41 @@ are `nodes.site_dot` in `Art/manifest.json`; it is drawn with the nodes in
 `apps/web/src/render/pixi/renderer.ts` from `siteDot` in
 `apps/web/src/render/sceneModel.ts`.
 
+<a id="q90"></a>
+### Q90. ~~How does a game master delete a finished game?~~ — **answered 2026-09-29: as recommended, with the posts' trash bin**
+
+On 29 September at 13:20 Andrei asked: *"In Your Games, can we have a Delete
+button next to Open for finished games where you are the GM"*. Until then a
+finished game left everyone's list only by itself, 7 days after it ended
+([Q55](#q55) 37). Six details went to him with pictures, and at 13:39 he
+answered: *"recommendations for 310 to 315 look good. Let's proceed with the
+trash bin icon"*.
+
+310. **Delete removes the game for everyone, straight away:** the removal a
+     finished game otherwise has 7 days after it ends. It leaves every
+     player's Your games, its map, turns and messages are deleted from the
+     server, and its address says *"This game has ended and been removed."*
+311. **It asks first,** with the OK / Cancel box End the game and Cancel use:
+     *"Delete this game? It leaves everyone’s game list and cannot be opened
+     again."*
+312. **Every finished game where you are the game master,** however it ended:
+     the gold ran out, the time ran out, or the game master ended it. Games
+     waiting for players or still being played have none.
+313. **Left of Open,** so every Open stays lined up at the right edge.
+314. **The trash bin of posts ([Q85](#q85) 298 and 303),** in a button like
+     Open (same height and border). The word Delete would have left a 340 px
+     phone about 107 px for the name, too little for *"Andrei’s game"*.
+315. **A name that doesn't fit ends in "…" on every row.** Until now a long
+     name on a 340 px phone pushed the whole list past the right edge of the
+     screen, because the list grew to fit the name.
+
+The bin's hover label on desktop reads *"Delete"*, as on posts, and like New
+game it is greyed out while the list is reconnecting to the server. The
+rulebook says nothing about how long finished games are kept, so it is
+unchanged. Delete goes through the game list's socket (`lobby.deleteGame`):
+the lobby checks its row, and the game removes itself in
+`GameSession.deleteFinished`, the same removal as the 7-day one.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design

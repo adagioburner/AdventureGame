@@ -91,6 +91,26 @@ export class GameRoom extends DurableObject<Env> {
     });
   }
 
+  /**
+   * [Q90, 310 and 312] Called by the lobby when someone presses Delete in Your
+   * games: only the game master can, once the game has finished, and it is
+   * removed for everyone at once. A game already removed needs nothing more.
+   */
+  async deleteGame(userId: UserId): Promise<{ ok: true } | { ok: false; message: string }> {
+    return this.inTurn(async () => {
+      const gameId = await this.gameId();
+      if (gameId === null) return (await wasRemoved(this.ctx.storage)) ? { ok: true } : { ok: false, message: 'there is no such game' };
+      try {
+        await this.session(gameId).deleteFinished(userId);
+      } catch (error) {
+        if (error instanceof SetupError) return { ok: false, message: error.message };
+        throw error;
+      }
+      await this.ctx.storage.deleteAlarm();
+      return { ok: true };
+    });
+  }
+
   /** A socket for this game, from the Worker, which has checked the login. */
   override async fetch(request: Request): Promise<Response> {
     const userId = request.headers.get(USER_HEADER);
