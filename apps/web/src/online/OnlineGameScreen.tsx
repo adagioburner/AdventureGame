@@ -379,7 +379,7 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
               </button>
             ) : null}
             <button className="btn" type="button" onClick={onBack}>
-              Your games
+              Games
             </button>
             <button
               className="btn side-toggle"
@@ -430,7 +430,7 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
               />
             ) : null
           }
-          newGameLabel="Your games"
+          newGameLabel="Games"
           onCloseLog={() => setPanel(null)}
           onNewGame={onBack}
         />
@@ -438,13 +438,9 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
     );
   }
 
-  // [Q72, 284] Before the game starts, a phone puts Your games in a Menu.
+  // [Q72, 284 and 287] Before the game starts, on a phone held upright, the
+  // seed takes its own row under the title, the end time and Games.
   const beforeStart = setup !== null && setup.phase === 'setup';
-  const yourGames = (
-    <button className="btn" type="button" onClick={onBack}>
-      Your games
-    </button>
-  );
   return (
     <div className="shell">
       <header className={`bar${beforeStart ? ' setup-bar' : ''}`}>
@@ -466,7 +462,9 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
           <span className="seed-shown" />
         )}
         {endsShown}
-        {beforeStart ? <BarMenu>{yourGames}</BarMenu> : yourGames}
+        <button className="btn" type="button" onClick={onBack}>
+          Games
+        </button>
       </header>
       {status !== null || art === null || map === null || scene === null || setup === null || shown === null ? (
         <main className="stage">

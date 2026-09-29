@@ -91,7 +91,7 @@ export function Site() {
         barExtra={
           login === null ? null : (
             <button className="btn" type="button" onClick={() => go('/')}>
-              Your games
+              Games
             </button>
           )
         }

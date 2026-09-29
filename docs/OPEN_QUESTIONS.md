@@ -1949,7 +1949,7 @@ window are in `apps/web/src/page/Rules.tsx`, the reading of the file in
 `apps/web/src/page/rulebook.ts`, and the Menu in `apps/web/src/page/BarMenu.tsx`.
 
 <a id="q72"></a>
-### Q72. ~~How does the online game's bar keep one row?~~ — **answered 2026-09-29: the Menu on every phone, shorter end times on phones, and the name cut short**
+### Q72. ~~How does the online game's bar keep one row?~~ — **answered 2026-09-29: the Menu on every phone, shorter end times on phones, the name cut short, and Games**
 
 At 19:15 on 28 September, while placing Rules ([Q71](#q71)), Claude reported
 that the online game master's bar already took two rows on a 340 px phone
@@ -1987,9 +1987,24 @@ the safe choice and should be applied more widely"*.
      row.
 
 Where else the Menu goes (*"applied more widely"*) was asked as 283 to 285, and
-at 19:28 he answered: *"proceed as recommended on 283-285"*. The Menu is
-`apps/web/src/page/BarMenu.tsx`, the words `apps/web/src/online/ends.ts`, the
-online bar's rules `apps/web/src/online/site.css`.
+at 19:28 he answered: *"proceed as recommended on 283-285"*. At 19:52 he asked
+*"So the Menu on a phone before start has only one item, Your Games?"*, and at
+19:55: *"Well, "Your games" beings one to the screen that shown both your games
+and open games. So it can be safely called "Games", right?"* Asked as 286 and
+287, at 19:56 he answered: *"Yes to both 286 and 287"*.
+
+286. **"Games"** is the name of every button that opens the game list: in the
+     online game's bar and Menu, before it starts and once it is finished, on
+     the site's "Play on one device", and in the window at the end of an
+     online game. The game list's own heading "Your games" stays, since it
+     names the list of your own games.
+287. **Games is a plain button before a game starts,** not a Menu holding
+     only Games. It is about as narrow as Menu, so the bars keep the rows of
+     284.
+
+The Menu is `apps/web/src/page/BarMenu.tsx`, the words
+`apps/web/src/online/ends.ts`, the online bar's rules
+`apps/web/src/online/site.css`.
 
 <a id="q75"></a>
 ### Q75. ~~How much more stamina for a later seat?~~ — **answered 2026-09-29: 5 instead of 10**

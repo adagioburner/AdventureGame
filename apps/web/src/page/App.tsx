@@ -27,7 +27,7 @@ export interface AppProps {
   readonly playOnline?: ((setup: LocalSetup, seed: string) => Promise<void>) | undefined;
   /** A stored game's setup, brought back here when "Play online" was turned off. */
   readonly carried?: LocalSetup | undefined;
-  /** More buttons for the top bar: the site's "Your games". */
+  /** More buttons for the top bar: the site's "Games". */
   readonly barExtra?: ReactNode;
 }
 
@@ -173,8 +173,7 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
         ) : (
           <>
             <SeedForm draft={draft} current={seed} onDraftChange={setDraft} onDraw={draw} />
-            {/* [Q72, 284] On a phone the site's Your games goes in a Menu. */}
-            {barExtra === undefined || barExtra === null ? null : <BarMenu>{barExtra}</BarMenu>}
+            {barExtra}
           </>
         )}
       </header>
