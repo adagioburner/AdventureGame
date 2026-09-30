@@ -57,6 +57,8 @@ describe('the art catalog built from Art/', () => {
       for (const row of DEFAULT_RULESET.content.REWARD_TABLE[terrain]) {
         cases.push([terrain, row.kind, row.guard]);
         if (row.guard !== null) cases.push([terrain, row.kind, null]);
+        // Q115: a row whose guards a coin flip can turn to magic.
+        if ((row.magicGuardChance ?? 0) > 0) cases.push([terrain, row.kind, 'magic']);
       }
       cases.push([terrain, 'stamina', null]);
     }
@@ -66,17 +68,21 @@ describe('the art catalog built from Art/', () => {
     }
   });
 
-  it('keeps the two Q20 substitutions in the table, each saying why', () => {
+  it('keeps the two Q20 substitutions and the Q115 one in the table, each saying why', () => {
     const forestGold = poiArtRow(catalog.manifest, 'forest', 'gold', 'fighting');
     expect(forestGold.sheet).toBe('Mountains_GoldGuardedByFighting');
     expect(forestGold.borrowed).toMatch(/Q20/);
+    // 452: a magic-guarded forest gold POI shows a magic guardian, not a monster.
+    const forestMagicGold = poiArtRow(catalog.manifest, 'forest', 'gold', 'magic');
+    expect(forestMagicGold.sheet).toBe('Mountains_GoldGuardedByMagic');
+    expect(forestMagicGold.borrowed).toMatch(/Q115/);
     for (const terrain of TERRAINS) {
       const stamina = poiArtRow(catalog.manifest, terrain, 'stamina', null);
       expect(stamina.sheet).toBe('Plains_PlainsMovement');
       expect(stamina.borrowed).toMatch(/Q20/);
     }
     const borrowed = catalog.manifest.pois.filter((row) => row.borrowed !== null);
-    expect(borrowed).toHaveLength(2);
+    expect(borrowed).toHaveLength(3);
   });
 
   it('prefers a row naming the terrain over one for any terrain, and a matching guard over a fallback', () => {

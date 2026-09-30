@@ -59,6 +59,20 @@ describe('validateRuleset', () => {
     expect(() => validateRuleset(ruleset)).toThrow(/lists the reward group plains_move\/none twice/);
   });
 
+  it('rejects a magicGuardChance outside 0 to 1 (Q115)', () => {
+    const ruleset = clone();
+    const rows = plainsRows(ruleset);
+    const gold = rows.findIndex((row) => row.kind === 'gold');
+    rows[gold] = { ...(rows[gold] as RewardGroupSpec), magicGuardChance: 1.5 };
+    expect(() => validateRuleset(ruleset)).toThrow(/Q115: plains group gold\/fighting has magicGuardChance 1.5/);
+  });
+
+  it('rejects a magicGuardChance on a group that is not fighting-guarded (Q115)', () => {
+    const ruleset = clone();
+    plainsRows(ruleset)[0] = { ...firstPlainsRow(ruleset), magicGuardChance: 0.5 };
+    expect(() => validateRuleset(ruleset)).toThrow(/only a fighting-guarded group can have its guard turned to magic/);
+  });
+
   it('rejects terrain area shares that do not sum to 1', () => {
     const ruleset = clone();
     (ruleset.config.map.TERRAIN_AREA_SHARE as Record<Terrain, number>).plains = 0.5;

@@ -11,6 +11,7 @@ import {
 } from '@adventure/core';
 import type { RemotenessScorer } from '@adventure/sim';
 import { draftAsGraph } from './graphops.ts';
+import { drawGuardTypes } from './rewards/guards.ts';
 import { GENERATION_PIPELINE } from './steps/index.ts';
 import { GenerationRejected, type GenerationContext, type GenerationStep, type MapDraft } from './types.ts';
 
@@ -131,9 +132,14 @@ export function emptyDraft(): MapDraft {
  *    formula returns for it. The POI keeps its §4.2 row in `group`, so the
  *    table still reconciles; what it loses is the `Guard` a player would have
  *    to roll against.
- *  - **`artVariant` is drawn here**, last, from the same stream, so it is a
+ *  - **`artVariant` is drawn here**, from the same stream, so it is a
  *    stable function of `(seed, ruleset)` without displacing any draw that
  *    decides an actual rule.
+ *  - **[Q115] Guard types are drawn after it, last of all.** A row's
+ *    `magicGuardChance` turns some of its POIs' guards to magic; drawing that
+ *    after every other draw of the map means adding the chance changed only
+ *    those guards on every existing seed, and every other POI, road and
+ *    picture stayed where it was.
  *
  * Everything is plain JSON — arrays, objects, numbers, strings — apart from
  * `poiByNode`, which is rebuilt on arrival. Q15 sends this whole object to
@@ -141,14 +147,16 @@ export function emptyDraft(): MapDraft {
  */
 function sealMap(draft: MapDraft, context: GenerationContext, attempts: number): GameMap {
   const graph: MapGraph = draftAsGraph(draft);
-  const pois: Poi[] = draft.assignments.map((assignment) => ({
+  const artVariants = draft.assignments.map(() => context.rng.nextUint32());
+  const guardTypes = drawGuardTypes(draft.assignments, context.ruleset.content.REWARD_TABLE, context.rng);
+  const pois: Poi[] = draft.assignments.map((assignment, index) => ({
     node: assignment.node,
     terrain: assignment.terrain,
     reward: { kind: assignment.kind, units: assignment.units },
-    guard: sealGuard(assignment.guardType, assignment.guardStrength),
+    guard: sealGuard(guardTypes[index] ?? null, assignment.guardStrength),
     remoteness: remotenessOf(draft, assignment.node),
     group: { kind: assignment.kind, guard: assignment.guardType },
-    artVariant: context.rng.nextUint32(),
+    artVariant: artVariants[index] as number,
   }));
 
   const poiByNode = new Map<NodeId, number>();
