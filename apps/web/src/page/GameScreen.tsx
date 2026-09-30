@@ -32,10 +32,11 @@ export const PHONE = '(max-width: 899px)';
 /**
  * How long End Turn's walk takes per step, the die tumbles, a notice stays up,
  * and an unguarded claim's notice takes to fade in, stays up (2 seconds, his
- * pick) and takes to fade out; and how long a computer's die card stays up
- * (3 seconds, Q42).
+ * pick) and takes to fade out; how long a computer's die card stays up
+ * (3 seconds, Q42); and how long a figure found from its card stands on its
+ * ring (2 seconds, [Q120, 471]).
  */
-export const timing = { stepMs: 220, tumbleMs: 1100, noticeMs: 2200, appearMs: 200, claimMs: 2000, fadeMs: 500, computerCardMs: 3000 };
+export const timing = { stepMs: 220, tumbleMs: 1100, noticeMs: 2200, appearMs: 200, claimMs: 2000, fadeMs: 500, computerCardMs: 3000, foundMs: 2000 };
 
 interface GameScreenProps {
   readonly art: LoadedArt;
@@ -104,6 +105,11 @@ export function GameScreen({
   // stays where the viewer put it, and the Track button says which. It is
   // pressed when a game opens (76).
   const [tracking, setTracking] = useState(true);
+  // [Q120, 471] The player whose card was clicked last, while their figure
+  // stands on its ring; `click` counts clicks, so clicking the same card again
+  // starts the ring's time over.
+  const [found, setFound] = useState<{ readonly player: PlayerId; readonly click: number } | null>(null);
+  const clicks = useRef(0);
   const handle = useRef<MapHandle | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const busy = inFlight !== null;
@@ -119,6 +125,12 @@ export function GameScreen({
     const timer = window.setTimeout(() => setNotice(null), timing.noticeMs);
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  useEffect(() => {
+    if (found === null) return;
+    const timer = window.setTimeout(() => setFound(null), timing.foundMs);
+    return () => window.clearTimeout(timer);
+  }, [found]);
 
   // [Andrei, 2026-09-24] "the unguarded poi should produce a card that fades
   // itself. The guarded POI produce a card with a die roll that has an ok
@@ -417,10 +429,17 @@ export function GameScreen({
     // so planning from the button there starts close in on the player.
     if (window.matchMedia(PHONE).matches) handle.current?.centerOn(planFor.position);
   };
-  const findActive = (): void => {
-    if (active === undefined) return;
+  /**
+   * [Andrei, 2026-09-30] Q120: "clicking on a player's card finds this player
+   * on the map". The map jumps to their figure and zooms in as far as the
+   * Find button did (470), which the cards replace (475); Track unpresses
+   * (473), and the figure stands on a ring for a moment (471).
+   */
+  const findPlayer = (player: PlayerId): void => {
     setTracking(false);
-    handle.current?.centerOn(active.position);
+    handle.current?.centerOnFigure(player);
+    clicks.current += 1;
+    setFound({ player, click: clicks.current });
   };
   /**
    * [Q57, 74 and 75] Pressing Track closes planning, keeping the route, and
@@ -525,7 +544,7 @@ export function GameScreen({
 
   return (
     <div className="game">
-      <Players catalog={catalog} state={shown} away={away} />
+      <Players catalog={catalog} state={shown} away={away} onFind={findPlayer} />
       <TurnControls
         state={shown}
         move={move}
@@ -545,7 +564,6 @@ export function GameScreen({
         onClearWaypoint={() => controller.clearWaypoint()}
         onEndTurn={() => endTurn(false)}
         onRest={() => endTurn(true)}
-        onFind={findActive}
       />
       <div className={`log-host${logOpen || board !== null ? ' open' : ''}`}>
         {board ?? <TurnLog entries={entries} map={source.map} diceSeed={source.diceSeed} onClose={onCloseLog} />}
@@ -562,6 +580,7 @@ export function GameScreen({
           walker={walker}
           cue={cue}
           planner={plannerShown}
+          found={found?.player ?? null}
           onTap={onTap}
           tracking={tracking}
           onTrack={shown.status === 'in_progress' ? pressTrack : undefined}

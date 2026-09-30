@@ -2424,6 +2424,38 @@ ten other maps (+2.2); with both ranking sites by their own speeds (Q112), 12
 of 20 at 3 s (+3.3) and 11 of 20 at 10 s (+2.2). All four together 48 of 80,
 +2.9 ± 1.1 gold a game; the 10 s runs alone are within luck.
 
+<a id="q120"></a>
+### Q120. ~~What does clicking a player's card do?~~ — **answered 2026-09-30: finds the player, as the Find button did, which goes; the rest as recommended (470-475)**
+
+[SOURCE chat, review] On 30 September at 20:52 Andrei wrote: *"Please make it
+so that clicking on a player's card finds this player on the map"*. The
+details were put to him with pictures of Bea's card clicked from the whole
+map, on a laptop and a phone. At 22:05 he answered: *"the recommended choices
+look good, except I don't think we need the "find" button any more. It was not
+present on some screens anyway"*.
+
+470. **How the map gets to the player.** A: it jumps there and zooms in to
+     playing distance, as Find did (recommended). B: it glides there over half
+     a second at the zoom it has, as at the start of a turn. C: it glides and
+     zooms in. **Answered:** A. A figure part-way along a walk is found where
+     it has got to.
+471. **Marking the found figure.** A: no mark. B: for 2 seconds it stands on
+     the yellow-edged ring of a figure being planned; the player on turn's
+     figure already blinks and gets nothing more (recommended). **Answered:**
+     B. The 2 seconds are `timing.foundMs` in `GameScreen.tsx`.
+472. **How a card shows it can be clicked, on a laptop.** A: the pointer turns
+     into a hand over it and the card looks the same (recommended). B: nothing
+     changes. **Answered:** A.
+473. **The Track button.** A: it unpresses, as with Find and moving the map
+     yourself, since a pressed Track would pull the map back to a walking
+     figure (recommended). B: it stays as it was. **Answered:** A.
+474. **After the game ends.** A: cards still find players on the final map
+     (recommended). B: only while the game is on. **Answered:** A.
+475. **The Find button goes,** from every screen: under the turn buttons on a
+     laptop (phones never showed it) and from the game master's "Bea ▾" list,
+     which keeps Move Bea on and Resign Bea. A phone's panel stays as tall as
+     it was on a computer's turn.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design
