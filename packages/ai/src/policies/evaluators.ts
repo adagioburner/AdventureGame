@@ -78,6 +78,7 @@ function goldProgress(state: GameState): number {
 export function simulatedRolloutEvaluator(): NodeEvaluator {
   return {
     name: 'simulated-rollout',
+    readsRollout: true,
     evaluate(_atNode: RolloutCursor, rolledOut: RolloutCursor, subject: PlayerId): number {
       const player = playerById(rolledOut.state, subject);
       return normalisedGold(rolledOut.state, player.stats.gold);
@@ -107,6 +108,7 @@ export function simulatedRolloutEvaluator(): NodeEvaluator {
 export function estimatedGoldAndSkillsEvaluator(): NodeEvaluator {
   return {
     name: 'estimated-gold-and-skills',
+    readsRollout: false,
     evaluate(atNode: RolloutCursor, _rolledOut: RolloutCursor, subject: PlayerId): number {
       const progress = goldProgress(atNode.state);
       const gold = normalisedGold(atNode.state, playerById(atNode.state, subject).stats.gold);
@@ -130,6 +132,7 @@ export function hybridGoldAndSkillsEvaluator(): NodeEvaluator {
 
   return {
     name: 'hybrid-gold-and-skills',
+    readsRollout: true,
     evaluate(atNode: RolloutCursor, rolledOut: RolloutCursor, subject: PlayerId): number {
       return (
         (simulated.evaluate(atNode, rolledOut, subject) + estimated.evaluate(atNode, rolledOut, subject)) / 2

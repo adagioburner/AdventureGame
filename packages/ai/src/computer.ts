@@ -5,7 +5,7 @@ import { firstTurnOf, searchTree, startSearch, type SearchResult } from './mcts.
 import { simulatedRolloutEvaluator } from './policies/evaluators.ts';
 import { closestPoiRolloutPolicy } from './policies/rollout.ts';
 import { closestUnclaimedPoiEnumerator, previewReachability, uctTreePolicy } from './policies/tree.ts';
-import type { MctsOptions } from './types.ts';
+import type { MctsOptions, NodeEvaluator } from './types.ts';
 
 /** What a computer seat needs besides the position. */
 export interface ComputerSettings {
@@ -16,6 +16,12 @@ export interface ComputerSettings {
   readonly rng: Rng;
   readonly dice: DiceSource;
   readonly now: () => number;
+  /**
+   * How a searched position is valued. The game leaves it out and gets v1's
+   * simulated evaluation (Q18); the balancing harness passes the estimated or
+   * hybrid one to compare them.
+   */
+  readonly evaluator?: NodeEvaluator;
 }
 
 /**
@@ -36,7 +42,7 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
     treePolicy: uctTreePolicy(config.ai.MCTS_EXPLORATION_CONSTANT),
     actions: closestUnclaimedPoiEnumerator(config, previewReachability()),
     rollout: closestPoiRolloutPolicy({ config, termination, restRule }),
-    evaluator: simulatedRolloutEvaluator(),
+    evaluator: settings.evaluator ?? simulatedRolloutEvaluator(),
     termination,
     restRule,
     dice: settings.dice,

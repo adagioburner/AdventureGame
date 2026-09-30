@@ -187,6 +187,21 @@ describe('search', () => {
     expect(search(state, optionsFor(state))).toEqual(search(state, optionsFor(state)));
   });
 
+  it('plays no rollout for the estimated evaluation, which reads only the node', () => {
+    const state = fixtureGame(star, 0);
+    const neverRun = {
+      name: 'never-run',
+      run(): never {
+        throw new Error('the estimated evaluation should not roll out');
+      },
+    };
+    const result = searchTree(state, optionsFor(state, { rollout: neverRun, evaluator: estimatedGoldAndSkillsEvaluator() }));
+    expect(result.iterations).toBeGreaterThan(1);
+    expect(() => searchTree(state, optionsFor(state, { rollout: neverRun, evaluator: hybridGoldAndSkillsEvaluator() }))).toThrow(
+      'should not roll out',
+    );
+  });
+
   it('refuses to search for a player whose turn it is not', () => {
     const state = fixtureGame(star, 0);
     expect(() => search(state, optionsFor(state, { subject: player('two') }))).toThrow(RangeError);
