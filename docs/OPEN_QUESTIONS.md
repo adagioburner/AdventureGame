@@ -2372,6 +2372,18 @@ it stops at 1, which keeps every value between 0 and 1 as Q14 needs. The
 game's computer players still use the simulated evaluation (Q18), so nothing in
 play changes.
 
+### Q111. ~~What is the estimate's progress?~~ — **answered 2026-09-30: skill and gold units claimed, over all of them**
+
+[SOURCE §9, chat] Andrei, 2026-09-30, after the first comparison: "let's rerun
+this with p defined as (skills and gold claimed) / (total skills and gold) so we
+have continuous progress from the start".
+
+Q18's `progress` was gold claimed over total gold, so it sat at 0 through an
+opening of skill claims. It is now the skill and gold units anyone has claimed
+over the 120 on a v1 map (75 skill, 45 gold). Stamina rewards are not counted;
+a v1 map has none. Only the estimated evaluation reads it (and the hybrid
+through it); the game's computer players still use the simulated one.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design

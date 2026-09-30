@@ -255,10 +255,10 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 ```
 value = gold/total_gold × progress + (skills + stamina/5)/total_skills × (1 − progress)
-        progress = gold claimed by all players / total_gold
+        progress = skill and gold units claimed by all players / (total_skills + total_gold)
 ```
 
-At the opening almost no gold is claimed, so `progress` ≈ 0 and the skill term carries the value; by the end `progress` ≈ 1 and only gold counts. `skills` is the **sum of the player's skill levels** [SOURCE §5, chat], not a count of the skills they hold. [SOURCE §5, chat, 2026-09-30] Stamina counts with them, 5 stamina (`STAMINA_PER_SKILL_POINT`) as one skill point; `total_skills` is the skill units on the map, and the skill term stops at 1 so the value stays between 0 and 1 (Q110).
+At the opening almost no gold is claimed, so `progress` ≈ 0 and the skill term carries the value; by the end `progress` ≈ 1 and only gold counts. `skills` is the **sum of the player's skill levels** [SOURCE §5, chat], not a count of the skills they hold. [SOURCE §5, chat, 2026-09-30] Stamina counts with them, 5 stamina (`STAMINA_PER_SKILL_POINT`) as one skill point; `total_skills` is the skill units on the map, and the skill term stops at 1 so the value stays between 0 and 1 (Q110). [SOURCE §5, chat, 2026-09-30] `progress` counts skill units with the gold, "so we have continuous progress from the start" (Q111); it was gold alone.
 
 > This supersedes the earlier form of the experiment, `average(gold after simulation, gold now + (number of skills) × balancing_constant, at the node being evaluated)` [SOURCE §5, chat]. Its two halves became the hybrid and the estimated evaluation respectively, and `balancing_constant` is gone — what it tuned by hand is now `progress`, which the game state supplies.
 
