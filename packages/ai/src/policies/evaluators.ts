@@ -45,16 +45,24 @@ function normalisedGold(state: GameState, gold: number): number {
 }
 
 /**
- * The subject's summed skill levels over the skill units the map holds.
+ * The subject's summed skill levels, plus its stamina in skill points, over
+ * the skill units the map holds.
  *
- * [SOURCE §9, chat] Q11 decides the numerator: "the sum of all skill levels",
- * so fighting 3 and magic 1 contribute 4, not 2.
+ * [SOURCE §9, chat] Q11 decides the skill numerator: "the sum of all skill
+ * levels", so fighting 3 and magic 1 contribute 4, not 2. Andrei, 2026-09-30,
+ * adds stamina to it: "(total skill points + stamina / 5)", the 5 being
+ * `STAMINA_PER_SKILL_POINT`, and the whole "/ total_skills_in_the_game".
  */
 function normalisedSkills(state: GameState, subject: PlayerId): number {
   const total = totalSkillUnits(state.map);
   if (total === 0) return 0;
   const player = playerById(state, subject);
-  return SKILL_KINDS.reduce((sum, kind) => sum + player.stats[kind], 0) / total;
+  const skills = SKILL_KINDS.reduce((sum, kind) => sum + player.stats[kind], 0);
+  const stamina = player.stats.stamina / state.map.ruleset.config.ai.STAMINA_PER_SKILL_POINT;
+  // "Between 0 and 1" (Andrei, 2026-09-30): stamina can in principle lift the
+  // sum past every skill unit on the map, so the term stops at 1. On a real
+  // map that takes holding nearly all 75 skill points.
+  return Math.min(1, (skills + stamina) / total);
 }
 
 /**
@@ -90,7 +98,8 @@ export function simulatedRolloutEvaluator(): NodeEvaluator {
  * **Estimated.** [SOURCE §9, review] Q18's formula: what the subject
  * holds *right now*, with gold and skills weighted by how far the game has run.
  *
- *   value = gold/total_gold × progress + skills/total_skills × (1 − progress)
+ *   value = gold/total_gold × progress
+ *         + (skills + stamina/STAMINA_PER_SKILL_POINT)/total_skills × (1 − progress)
  *           progress = gold claimed by all players / total_gold
  *
  * "Skills are important at the beginning of the game, and are worthless at the

@@ -304,6 +304,16 @@ export interface AiConfig {
    */
   readonly SIMULATION_TURN_CAP: number;
   /**
+   * `STAMINA_PER_SKILL_POINT` — 5. Not in §11; the designer's, 2026-09-30.
+   *
+   * [SOURCE §9, chat] The estimated evaluation counts stamina with the skills:
+   * "gold * game_progress + (total skill points + stamina / 5) * (1 -
+   * game_progress)", each term over its total. So this many stamina weigh as
+   * much as one skill point. Its own setting rather than `REST_STAMINA_GAIN`,
+   * though both are 5 today.
+   */
+  readonly STAMINA_PER_SKILL_POINT: number;
+  /**
    * The thinking time a computer seat can be given on the start game panel, in
    * whole seconds. Not in §11; the designer's, 2026-09-24 (Q41): 1 to 60, the
    * box starting at `MCTS_TIME_BUDGET_PER_MOVE_MS`.
