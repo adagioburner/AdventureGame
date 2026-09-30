@@ -2354,6 +2354,24 @@ step 6b.
      40 with 4 (59 and 50 before step 6b). A seed gives a different map again,
      so a hot seat game kept under 2 places cannot resume either.
 
+### Q110. ~~Does stamina count in the estimated evaluation?~~ — **answered 2026-09-30: yes, 5 stamina as one skill point**
+
+[SOURCE §9, chat] Andrei, 2026-09-30, while comparing the three evaluations
+(details 410-429): "gold * game_progress + (total skill points + stamina / 5)
+* (1 - game_progress), where game_progress is gold_claimed /
+total_gold_in_the_game", normalised: "gold * game_progress /
+total_gold_in_the_game + (total skill points + stamina / 5) * (1 -
+game_progress) / total_skills_in_the_game".
+
+Until then the estimate had no stamina in it: Q11 had left it out as "a
+resource". `estimatedGoldAndSkillsEvaluator()` now adds stamina divided by
+`STAMINA_PER_SKILL_POINT` (5, its own AI setting rather than
+`REST_STAMINA_GAIN`) to the skill points. `total_skills` stays the skill units
+on the map (Q24), 75 on every map today, so the term could in principle pass 1;
+it stops at 1, which keeps every value between 0 and 1 as Q14 needs. The
+game's computer players still use the simulated evaluation (Q18), so nothing in
+play changes.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design

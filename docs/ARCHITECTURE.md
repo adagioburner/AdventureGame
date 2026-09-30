@@ -465,7 +465,7 @@ skills is not a tuned constant — it moves with the game, because "skills are
 important at the beginning of the game, and are worthless at the end":
 
 ```
-value = gold/total_gold × progress + skills/total_skills × (1 − progress)
+value = gold/total_gold × progress + (skills + stamina/5)/total_skills × (1 − progress)
         progress = gold claimed by all players / total_gold
 ```
 
@@ -474,7 +474,9 @@ carries the value; by the end `progress` ≈ 1 and only gold counts. Every
 quantity is read from the node, which is what makes `progress` meaningful here:
 it moves across the tree, whereas a rollout by definition ends with no
 unclaimed gold left (Q6). [Q11](./OPEN_QUESTIONS.md#q11) still decides the skill
-numerator — the sum of all five skill levels, not a count of skills held.
+numerator — the sum of all five skill levels, not a count of skills held — and
+[Q110](./OPEN_QUESTIONS.md#q110) adds stamina to it, `STAMINA_PER_SKILL_POINT`
+(5) stamina to a skill point, with the term stopping at 1.
 
 Two properties fall out of the shape rather than out of a constant. The estimate
 is in [0, 1], because both its terms are and its two weights sum to 1; the

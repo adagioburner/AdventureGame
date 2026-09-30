@@ -254,11 +254,11 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 [SOURCE §5, review] The estimate's weight between gold and skills is not a tuned constant — it moves with the game, because "skills are important at the beginning of the game, and are worthless at the end":
 
 ```
-value = gold/total_gold × progress + skills/total_skills × (1 − progress)
+value = gold/total_gold × progress + (skills + stamina/5)/total_skills × (1 − progress)
         progress = gold claimed by all players / total_gold
 ```
 
-At the opening almost no gold is claimed, so `progress` ≈ 0 and the skill term carries the value; by the end `progress` ≈ 1 and only gold counts. `skills` is the **sum of the player's skill levels** [SOURCE §5, chat], not a count of the skills they hold.
+At the opening almost no gold is claimed, so `progress` ≈ 0 and the skill term carries the value; by the end `progress` ≈ 1 and only gold counts. `skills` is the **sum of the player's skill levels** [SOURCE §5, chat], not a count of the skills they hold. [SOURCE §5, chat, 2026-09-30] Stamina counts with them, 5 stamina (`STAMINA_PER_SKILL_POINT`) as one skill point; `total_skills` is the skill units on the map, and the skill term stops at 1 so the value stays between 0 and 1 (Q110).
 
 > This supersedes the earlier form of the experiment, `average(gold after simulation, gold now + (number of skills) × balancing_constant, at the node being evaluated)` [SOURCE §5, chat]. Its two halves became the hybrid and the estimated evaluation respectively, and `balancing_constant` is gone — what it tuned by hand is now `progress`, which the game state supplies.
 
@@ -322,6 +322,7 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `GUARD_DIE` | d6 | fixed |
 | `MCTS_TIME_BUDGET_PER_MOVE` | 10 seconds | tunable; per computer seat on the setup screen, 1 to 60 seconds [SOURCE §5, review] |
 | `SIMULATION_TURN_CAP` | 250 turns | the most turns one simulated game runs, §9 [SOURCE §5, review] |
+| `STAMINA_PER_SKILL_POINT` | 5 | tunable — stamina worth one skill point in §9's estimated evaluation (Q110) |
 | MCTS tree/selection policy, exploration constant | — | **OPEN**, unspecified |
 
 ---
