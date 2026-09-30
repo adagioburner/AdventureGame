@@ -125,7 +125,9 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 ### 4.5 Consumption
 
-[SOURCE §2] A POI's reward is consumed once claimed; the node then behaves like an ordinary node of its terrain type.
+[SOURCE §2] A POI's reward is consumed once claimed; the node then behaves like an ordinary node of its terrain type, until the reward comes back (below).
+
+[SOURCE §4.5, chat] **Speeds and skills come back** (Q135). Andrei, 2026-09-30: "Already with 4 players, some necessary skills like combat run out too quickly. They need to respawn. This is especially true for combat and magic that are necessary for fighting guards. Skills need to respawn where there are too few of it left, randomly at POIs that were offering this skill before and are far from all players." At the end of every turn, each of the five skills (the three moving skills, fighting, magic) is counted on its own; while fewer than `RESPAWN_SHORT_BELOW_UNITS` of its units are left on the map, one claimed POI that held it gets its whole reward back, one POI per turn. It is drawn at random from the farther half (`RESPAWN_FAR_SHARE`, rounded up) of those POIs, by the stamina cost of the cheapest route from the nearest figure, never one a figure stands on, and a POI can come back again and again. Gold and stamina never come back. Games started before the rule keep the old one.
 
 [SOURCE §2, review] **A claimed POI's image does not change.** Andrei, 2026-09-23: "The claimed POIs should lose their icons, but the images DO NOT CHANGE." Its reward icons, guard strength and guard ring go; its picture stays exactly as it was. Registered as Q36.
 
@@ -318,6 +320,8 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` | 2 | tunable (play-test) — reward stacking, §4.3 |
 | `REWARD_SWAP_PASSES` | 5 | tunable (play-test) — reward/remoteness agreement, §4.3 step 4 [SOURCE §4.3, review] |
 | `FOREST_MAGIC_GUARD_CHANCE` | 0.5 | tunable — chance each forest gold POI is magic-guarded rather than fighting-guarded, §4.4 (Q115) |
+| `RESPAWN_SHORT_BELOW_UNITS` | 2 | tunable — a skill comes back while fewer than this many of its units are left on the map, §4.5 (Q135; asked as 3, set to 2 by Andrei) |
+| `RESPAWN_FAR_SHARE` | 0.5 | tunable — the farthest share of a skill's empty POIs it comes back to, §4.5 (Q135) |
 | `CLOSE_CANDIDATE_COUNT` | 10 | tunable — the computer player's K, for §9's rollout and §9's tree |
 | `REMOTENESS_CANDIDATE_COUNT` | 10 | tunable — §5.1's walk, while a map is generated (Q66) |
 | `REMOTENESS_SIMULATION_RUNS` | 100 | tunable |
