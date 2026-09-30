@@ -394,7 +394,7 @@ four are now decided — two by §9 directly, two by §12.2:
 | `RolloutPolicy` | **Specified** (§9). `closestPoiRolloutPolicy()` is a thin wrapper over `@adventure/sim`. |
 | `NodeEvaluator` | **Specified default** (§9): the simulated rollout, which is what v1 runs. Three ship — simulated, estimated and hybrid; see below. |
 | `TreePolicy` | **Decided** (§12.2): UCT, `MCTS_EXPLORATION_CONSTANT` = √2, most-visited child as the final move. `uctTreePolicy()`. |
-| `ActionEnumerator` | **Decided** (§12.2): the `CLOSE_CANDIDATE_COUNT` (10) closest *unclaimed* POIs, recomputed per node, **plus a rest branch** when fewer than `MIN_REACHABLE_NODES_FOR_REST` (3) of them are reachable this turn. `closestUnclaimedPoiEnumerator()`. |
+| `ActionEnumerator` | **Decided** (§12.2): the `CLOSE_CANDIDATE_COUNT` (10) closest *unclaimed* POIs, recomputed per node, **plus a rest branch** when fewer than `MIN_REACHABLE_NODES_FOR_REST` (3) of them are reachable this turn. Closest by the player's own speeds (Q112, `closestBySpeeds`). `closestUnclaimedPoiEnumerator()`. |
 
 The enumerator is worth a second look, because it completes the sharing story:
 it calls the same `closestPoiCandidates` that the remoteness walk and the
@@ -406,15 +406,25 @@ player's (Q66). They differ only in what they do with the ranked list: the tree
 makes every candidate a branch, the rollout picks one uniformly, remoteness
 walks to its pick.
 
+**Since Q112 the computer ranks by its own speeds.** The tree and the rollout
+pass `closestBySpeeds` (`packages/sim/src/speeds.ts`) in place of
+`closestPoiCandidates`: every eligible POI's effective distance, the least over
+n turns of 5n plus the stamina still needed after n turns of free steps, from
+the steps per terrain along the cheapest route (`RouteTable.stepsFrom`, counted
+the first time a node is asked for). Only the ranking changes; routes are still
+the cheapest by weighted terrain cost, and the remoteness walk still ranks by
+that cost. `closestByTerrainCost` keeps the earlier ranking for the balancing
+harness's `+fixed` seats.
+
 **Routes are searched once per map in a game** (Andrei, 2026-09-28):
 `routeTable` in `packages/core/src/path.ts` runs the whole Dijkstra from every
 node the first time a map is asked for, and keeps them. The enumerator, the
 rest check, the rollout and the computer's real move read routes and the K
 closest POIs from it instead of searching again; the game page builds it as the
 game starts. The step costs are per terrain and never depend on skills, and the
-table keeps the very search the uncached functions run, so every route and every
-candidate list is identical, and so is every move for the same number of games
-played in the computer's head. The map generator, the remoteness walk and a
+table keeps the very search the uncached functions run, so every route is
+identical. (Until Q112 every candidate list and move was too; the computer now
+ranks by its own speeds, see above.) The map generator, the remoteness walk and a
 person's route preview do not use it: the generator's graphs change while it
 works.
 

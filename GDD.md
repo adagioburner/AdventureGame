@@ -135,7 +135,7 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 ### 5.1 Remoteness
 
-[SOURCE §1.2] Computed via simulated random walks: start at a random plains position, repeatedly move to one of the `REMOTENESS_CANDIDATE_COUNT` closest unvisited POIs (chosen at random among them), until every POI has been visited once per walk. Distance for "closest" and for walk-segment lengths uses the same weighted terrain cost as movement: 1 plains / 2 forest / 3 mountain per step [SOURCE §1.2, chat: the one distance metric used throughout the design — also for the UI's shortest-path display, §7, and the AI's own POI targeting, §9]. Run `REMOTENESS_SIMULATION_RUNS` walks, normalize the resulting per-POI scores to **[0, 1]**.
+[SOURCE §1.2] Computed via simulated random walks: start at a random plains position, repeatedly move to one of the `REMOTENESS_CANDIDATE_COUNT` closest unvisited POIs (chosen at random among them), until every POI has been visited once per walk. Distance for "closest" and for walk-segment lengths uses the same weighted terrain cost as movement: 1 plains / 2 forest / 3 mountain per step [SOURCE §1.2, chat: the one distance metric used throughout the design — also for the UI's shortest-path display, §7, and the AI's own POI targeting, §9]. [2026-09-30, Q112] The AI still walks these cheapest routes, but ranks the sites at their ends by its own speeds (§9). Run `REMOTENESS_SIMULATION_RUNS` walks, normalize the resulting per-POI scores to **[0, 1]**.
 
 [SOURCE §1.2, chat] `CLOSE_CANDIDATE_COUNT` = **10**, raised from 5 once §9's MCTS tree began pruning to this same constant: "we don't want to risk pruning out good moves early on". [SOURCE §5.1, review] The walk's K is now its own setting, `REMOTENESS_CANDIDATE_COUNT` = **10**, and `CLOSE_CANDIDATE_COUNT` is the computer player's alone (§9's rollout and tree): "if we change the setting for the number of the closest places, it should affect computer player only [...] these two definitely need to be separated" (Q66). `REMOTENESS_SIMULATION_RUNS` = **100** (expected to change if 100 proves too imprecise or too slow). This random-walk code is shared with the AI player's MCTS rollout policy (§9).
 
@@ -240,6 +240,8 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 [SOURCE §5] Implemented via MCTS.
 
 [SOURCE §5, chat] Rollout/simulation policy: choose a random target among the `CLOSE_CANDIDATE_COUNT` closest POIs, using the same weighted-terrain-cost random-walk code as §5.1.
+
+[SOURCE §5, chat, 2026-09-30] **Closest by the player's own speeds** (Q112). For the computer's own choices (§12.2) and for every player in the games it imagines, a site's distance is `min over n ≥ 1 turns of 5n + stamina(n)`, where `stamina(n)` is the stamina still needed after n turns of free steps: 1 × (plains steps − n × plains speed) + 2 × (forest steps − n × forest speed) + 3 × (mountain steps − n × mountain speed), each part only when above 0, and 5 is `REST_STAMINA_GAIN`. The steps per terrain are counted along the cheapest route by weighted terrain cost, which is still the route walked. Andrei: "It bothers me that the cached distances always consider mountains inaccessible when in reality by the [end] of the game you can have lots of mountain speed." The remoteness walk (§5.1) and a person's route preview keep weighted terrain cost.
 
 [SOURCE §5, review] Backpropagated value: there are **three kinds of node evaluation**, and the tree-node evaluation function must be easily swappable between them.
 

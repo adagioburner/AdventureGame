@@ -2384,6 +2384,25 @@ over the 120 on a v1 map (75 skill, 45 gold). Stamina rewards are not counted;
 a v1 map has none. Only the estimated evaluation reads it (and the hybrid
 through it); the game's computer players still use the simulated one.
 
+### Q112. ~~How far does the computer count a site?~~ — **answered 2026-09-30: by its own speeds, from the steps per terrain on the cheapest route (422-424 A, 426)**
+
+[SOURCE §9, chat] Andrei, 2026-09-30: "go back to caching three numbers (# of
+steps on each terrain) instead of one number (distance) and recalculating
+distances based on current skills using the cached numbers. It bothers me that
+the cached distances always consider mountains inaccessible when in reality by
+the [end] of the game you can have lots of mountain speed". Then 422 A (count
+the cheapest route's steps only; a second, fewest-steps route postponed), 423 A
+(his 2026-09-28 formula: the least over n turns of 5n + the stamina still
+needed after n turns of free steps), 424 A (for the computer's own choices and
+every player in its imagined games).
+
+Tested against the computer as it was: 19 of 20 wins at 3 s a move (+6.6 gold
+a game), and 13 of 20 at 10 s on ten other maps (+3.5); 426: put it in the
+game. Routes walked are unchanged, still the cheapest by weighted terrain cost;
+only which sites count as the 10 closest changes. The remoteness walk and a
+person's route preview keep weighted terrain cost. Equal distances keep the
+weighted-terrain-cost order.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design

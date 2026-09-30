@@ -7,7 +7,7 @@ import {
   simulatedRolloutEvaluator,
   type NodeEvaluator,
 } from '@adventure/ai';
-import { closestBySpeeds, goldByProgressPicker, winnablePoiNodes } from '@adventure/sim';
+import { closestBySpeeds, closestByTerrainCost, goldByProgressPicker, winnablePoiNodes } from '@adventure/sim';
 import { computerDriver } from './aiPlaythrough.ts';
 import { playGame, type Playthrough, type PlaythroughDriver, type PlaythroughEnd } from './playthrough.ts';
 
@@ -44,9 +44,13 @@ export function isEvaluatorName(name: string): name is EvaluatorName {
  *  - `gold-later`: its imagined players head for gold more often as the
  *    rewards are claimed (idea 1, 421 A).
  *  - `speeds`: closest by its own speeds, Q65's effective distance over the
- *    steps per terrain of the cheapest route (idea 2, 422-424 A).
+ *    steps per terrain of the cheapest route (idea 2, 422-424 A). The game's
+ *    own ranking since Q112, so this changes nothing; kept so earlier runs'
+ *    commands still read the same.
+ *  - `fixed`: closest by weighted terrain cost alone, the computer player's
+ *    ranking before Q112.
  */
-export const SEAT_FLAGS = ['winnable', 'gold-later', 'speeds'] as const;
+export const SEAT_FLAGS = ['winnable', 'gold-later', 'speeds', 'fixed'] as const;
 export type SeatFlag = (typeof SEAT_FLAGS)[number];
 
 /**
@@ -132,6 +136,7 @@ export function playHeadToHead(options: HeadToHeadOptions): { readonly game: Hea
       ...(spec.flags.includes('winnable') ? { targets: winnablePoiNodes } : {}),
       ...(spec.flags.includes('gold-later') ? { pick: goldByProgressPicker() } : {}),
       ...(spec.flags.includes('speeds') ? { closest: closestBySpeeds } : {}),
+      ...(spec.flags.includes('fixed') ? { closest: closestByTerrainCost } : {}),
       onSearch: (iterations) => {
         const counter = counters[index];
         if (counter === undefined) return;
@@ -155,8 +160,9 @@ export function playHeadToHead(options: HeadToHeadOptions): { readonly game: Hea
       '# games (gold whose guard a 6 plus the skill does not beat is left out, unless nothing else is left).',
       '# +gold-later: in its imagined games a player heads for a gold site among its 10 closest with chance',
       '# p = share of the gold and skill units claimed, otherwise for any of the 10 as today.',
-      '# +speeds: its 10 closest, for itself and in its imagined games, are ranked by the least over n turns of',
-      '# 5n + the stamina still needed after n turns of free steps, from the steps per terrain of the cheapest route.',
+      '# Every seat ranks its 10 closest, for itself and in its imagined games, by the least over n turns of',
+      '# 5n + the stamina still needed after n turns of free steps, from the steps per terrain of the cheapest route',
+      '# (Q112; +speeds says so explicitly). +fixed: ranked by weighted terrain cost alone, as before Q112.',
       ...(drivers[0]?.describe ?? []),
     ],
     choose(state, playerId) {

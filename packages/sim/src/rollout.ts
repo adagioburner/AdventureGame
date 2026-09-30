@@ -16,7 +16,8 @@ import {
   type TurnAction,
 } from '@adventure/core';
 import { chooseWalkTarget, closestPoiCandidates, type PoiCandidate } from './candidates.ts';
-import type { ClosestFinder, TargetPicker } from './experiments.ts';
+import type { TargetPicker } from './experiments.ts';
+import type { ClosestFinder } from './speeds.ts';
 
 /**
  * [SOURCE §5, chat] §9's rollout policy: "choose a random target among the
@@ -155,7 +156,7 @@ export interface RolloutOptions {
   readonly rng: Rng;
   /** Which POIs a player may head for; every unclaimed one when absent, as the game plays. */
   readonly targets?: TargetFilter;
-  /** Which of those count as closest; by weighted terrain cost when absent, as the game plays. */
+  /** Which of those count as closest; by weighted terrain cost when absent (the computer player passes `closestBySpeeds`, Q112). */
   readonly closest?: ClosestFinder;
   /** Which of the closest a player heads for; uniformly at random when absent, as the game plays. */
   readonly pick?: TargetPicker;

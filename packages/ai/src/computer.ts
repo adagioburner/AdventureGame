@@ -1,6 +1,7 @@
 import type { GameConfig } from '@adventure/config';
 import type { DiceSource, GameState, PlayerId, Rng, TurnAction } from '@adventure/core';
 import {
+  closestBySpeeds,
   goldExhaustedTermination,
   restWhenStuck,
   turnCapTermination,
@@ -37,7 +38,8 @@ export interface ComputerSettings {
   readonly targets?: TargetFilter;
   /**
    * Which sites count as closest, in the search's choices and in its imagined
-   * games; by weighted terrain cost when absent, as the game plays.
+   * games. The game leaves it out and gets `closestBySpeeds` (Q112); the
+   * balancing harness passes `closestByTerrainCost` to compare with before.
    */
   readonly closest?: ClosestFinder;
   /** Which of the closest a player in an imagined game heads for; uniformly at random when absent. */
@@ -46,8 +48,9 @@ export interface ComputerSettings {
 
 /**
  * §9's computer player with the v1 setup: UCT with `MCTS_EXPLORATION_CONSTANT`
- * over the `CLOSE_CANDIDATE_COUNT` closest unclaimed POIs plus rest, the §9
- * rollout policy, and the simulated evaluation (Q18: v1 uses it; estimated
+ * over the `CLOSE_CANDIDATE_COUNT` closest unclaimed POIs plus rest, closest
+ * by the player's own speeds (Q112), the §9 rollout policy ranking the same
+ * way, and the simulated evaluation (Q18: v1 uses it; estimated
  * and hybrid are there to experiment with). The games it plays in its head
  * rest when stuck (Q43) and stop when the gold is gone, the game is won, or
  * `SIMULATION_TURN_CAP` turns have passed since `state` (Q44).
@@ -56,17 +59,18 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
   const { config } = settings;
   const termination = turnCapTermination(goldExhaustedTermination(), state.turn.number, config.ai.SIMULATION_TURN_CAP);
   const restRule = restWhenStuck();
+  const closest = settings.closest ?? closestBySpeeds;
   return {
     subject,
     config,
     treePolicy: uctTreePolicy(config.ai.MCTS_EXPLORATION_CONSTANT),
-    actions: closestUnclaimedPoiEnumerator(config, previewReachability(), settings.targets, settings.closest),
+    actions: closestUnclaimedPoiEnumerator(config, previewReachability(), settings.targets, closest),
     rollout: closestPoiRolloutPolicy({
       config,
       termination,
       restRule,
+      closest,
       ...(settings.targets === undefined ? {} : { targets: settings.targets }),
-      ...(settings.closest === undefined ? {} : { closest: settings.closest }),
       ...(settings.pick === undefined ? {} : { pick: settings.pick }),
     }),
     evaluator: settings.evaluator ?? simulatedRolloutEvaluator(),

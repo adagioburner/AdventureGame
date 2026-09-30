@@ -3,7 +3,8 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_GAME_CONFIG, type PerTerrain } from '@adventure/config';
 import { createRng, routeTable, type GameState, type PlayerStats } from '@adventure/core';
 import { fixtureGame, fixtureMap, n, player, withStats } from '../../core/src/rules/scenario.fixture.ts';
-import { closestBySpeeds, effectiveDistance, goldByProgressPicker, rewardUnitsClaimedShare } from './experiments.ts';
+import { closestByTerrainCost, goldByProgressPicker, rewardUnitsClaimedShare } from './experiments.ts';
+import { closestBySpeeds, effectiveDistance } from './speeds.ts';
 
 const config = DEFAULT_GAME_CONFIG;
 
@@ -83,7 +84,7 @@ describe('steps per terrain on the cheapest route (422 A)', () => {
   });
 });
 
-describe('closestBySpeeds (424 A)', () => {
+describe('closestBySpeeds (Q112, 424 A)', () => {
   const eligible = new Set([n(2), n(7)]);
   const seatOne = (state: GameState) => state.players[0]!;
 
@@ -100,6 +101,11 @@ describe('closestBySpeeds (424 A)', () => {
     const state = withStats(fixtureGame(fork, 0), player('one'), { mountain_move: 2 });
     expect(closestBySpeeds(state, seatOne(state), eligible, 2).map((candidate) => candidate.node)).toEqual([n(2), n(7)]);
     expect(closestBySpeeds(state, seatOne(state), eligible, 1).map((candidate) => candidate.node)).toEqual([n(2)]);
+  });
+
+  it('ranks by weighted terrain cost alone in the comparison ranking', () => {
+    const state = withStats(fixtureGame(fork, 0), player('one'), { mountain_move: 2 });
+    expect(closestByTerrainCost(state, seatOne(state), eligible, 2).map((candidate) => candidate.node)).toEqual([n(7), n(2)]);
   });
 });
 

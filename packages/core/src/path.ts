@@ -6,9 +6,10 @@ import { neighbours, type MapGraph } from './graph.ts';
  * [SOURCE §1.2, chat] There is exactly **one** distance metric in this design:
  * weighted terrain cost, 1 plains / 2 forest / 3 mountain per step. It is used
  * for remoteness walks (§5.1), for the UI's shortest-path display (§7.1), for
- * the AI's POI targeting (§9), and it is the same table that stamina is
- * charged from (§7). Every component imports it from here; there is no second
- * cost function in the repo.
+ * the AI's routes (§9), and it is the same table that stamina is charged from
+ * (§7). Every component imports it from here; there is no second cost function
+ * in the repo. The AI ranks the sites at the ends of these routes by its own
+ * speeds from `stepsFrom` (Q112), but walks the routes this metric finds.
  *
  * The cost is charged for *entering* a node, so it depends on the destination
  * node's terrain — confirmed by the §8 worked example, where a step onto a
