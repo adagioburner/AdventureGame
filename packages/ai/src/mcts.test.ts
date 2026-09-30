@@ -15,6 +15,7 @@ import { search, searchTree, startSearch } from './mcts.ts';
 import {
   estimatedGoldAndSkillsEvaluator,
   hybridGoldAndSkillsEvaluator,
+  simulatedLeadEvaluator,
   simulatedRolloutEvaluator,
 } from './policies/evaluators.ts';
 import { closestPoiRolloutPolicy } from './policies/rollout.ts';
@@ -158,6 +159,20 @@ describe('estimated evaluation', () => {
     // The larger share instead: 1 of 3 skill units against 0 of 5 gold.
     const larger = estimatedGoldAndSkillsEvaluator('larger-share').evaluate(rolloutCursor(took, player('one')), rolloutCursor(took, player('one')), player('one'));
     expect(larger).toBeCloseTo((1 / 3) * (1 - 1 / 3));
+  });
+});
+
+describe('lead evaluation', () => {
+  it('scores the gold lead over the richest other player (detail 417)', () => {
+    // The star holds 5 gold; player one takes the 2 next door.
+    const state = withStats(fixtureGame(star, 0), player('one'), { stamina: 1 });
+    const took = applyAction(state, { kind: 'move', player: player('one'), path: [n(1)] }, createDiceSource(createRng('x'), DEFAULT_GAME_CONFIG)).state;
+    const at = rolloutCursor(took, player('one'));
+    expect(simulatedLeadEvaluator('margin').evaluate(at, at, player('one'))).toBeCloseTo((2 / 5 + 1) / 2);
+    expect(simulatedLeadEvaluator('margin').evaluate(at, at, player('two'))).toBeCloseTo((-2 / 5 + 1) / 2);
+    expect(simulatedLeadEvaluator('win').evaluate(at, at, player('one'))).toBe(1);
+    expect(simulatedLeadEvaluator('win').evaluate(at, at, player('two'))).toBe(0);
+    expect(simulatedLeadEvaluator('win-and-margin').evaluate(at, at, player('one'))).toBeCloseTo((1 + 0.7) / 2);
   });
 });
 

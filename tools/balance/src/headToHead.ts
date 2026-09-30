@@ -3,6 +3,7 @@ import type { PlayerStats, Seed } from '@adventure/core';
 import {
   estimatedGoldAndSkillsEvaluator,
   hybridGoldAndSkillsEvaluator,
+  simulatedLeadEvaluator,
   simulatedRolloutEvaluator,
   type NodeEvaluator,
 } from '@adventure/ai';
@@ -22,6 +23,10 @@ export const EVALUATORS = {
   // Progress as the larger of the gold and the skill shares claimed.
   'estimated-max': () => estimatedGoldAndSkillsEvaluator('larger-share'),
   'hybrid-max': () => hybridGoldAndSkillsEvaluator('larger-share'),
+  // Today's imagined games, scored by the gold lead over the richest opponent (detail 417).
+  lead: () => simulatedLeadEvaluator('margin'),
+  'lead-win': () => simulatedLeadEvaluator('win'),
+  'lead-win-margin': () => simulatedLeadEvaluator('win-and-margin'),
 } as const satisfies Record<string, () => NodeEvaluator>;
 
 export type EvaluatorName = keyof typeof EVALUATORS;
@@ -116,6 +121,8 @@ export function playHeadToHead(options: HeadToHeadOptions): { readonly game: Hea
       '# estimated = gold and skills it holds at the searched position, weighted by the gold claimed so far, no game played;',
       '# hybrid = the average of the two. -max: the progress weighing them is the larger of the gold',
       '# share and the skill share claimed, instead of all skill and gold units claimed.',
+      '# lead = today\'s imagined games, scored by the gold lead over the richest other player:',
+      '# (lead / total gold + 1) / 2; lead-win: 1 ahead, 0.5 level, 0 behind; lead-win-margin: their average.',
       ...(drivers[0]?.describe ?? []),
     ],
     choose(state, playerId) {

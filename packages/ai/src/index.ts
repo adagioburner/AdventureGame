@@ -23,4 +23,6 @@ export {
   estimatedGoldAndSkillsEvaluator,
   hybridGoldAndSkillsEvaluator,
   type ProgressMeasure,
+  simulatedLeadEvaluator,
+  type LeadScore,
 } from './policies/evaluators.ts';

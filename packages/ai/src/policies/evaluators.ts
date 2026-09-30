@@ -124,6 +124,44 @@ export function simulatedRolloutEvaluator(): NodeEvaluator {
 }
 
 /**
+ * How the gold lead at a rollout's end becomes a score in [0, 1].
+ *
+ *  - `margin`: (lead / total gold + 1) / 2, so level is 0.5 and every gold
+ *    of lead or deficit counts the same.
+ *  - `win`: 1 ahead, 0.5 level, 0 behind, whatever the margin.
+ *  - `win-and-margin`: the average of the two.
+ */
+export type LeadScore = 'margin' | 'win' | 'win-and-margin';
+
+/**
+ * **Simulated, scored by the lead.** Andrei, 2026-09-30 (detail 417): an
+ * imagined game "is scored by the gold lead over the best opponent instead of
+ * the computer's own gold". The lead is the subject's gold minus the richest
+ * other player's, read at the rollout's end like the simulated evaluation.
+ */
+export function simulatedLeadEvaluator(form: LeadScore = 'margin'): NodeEvaluator {
+  return {
+    name: `simulated-lead-${form}`,
+    readsRollout: true,
+    evaluate(_atNode: RolloutCursor, rolledOut: RolloutCursor, subject: PlayerId): number {
+      const state = rolledOut.state;
+      const own = playerById(state, subject).stats.gold;
+      let best = Number.NEGATIVE_INFINITY;
+      for (const player of state.players) {
+        if (player.id !== subject && player.stats.gold > best) best = player.stats.gold;
+      }
+      const lead = best === Number.NEGATIVE_INFINITY ? own : own - best;
+      const total = totalGoldUnits(state.map);
+      const margin = total === 0 ? 0.5 : Math.min(1, Math.max(0, (lead / total + 1) / 2));
+      const win = lead > 0 ? 1 : lead < 0 ? 0 : 0.5;
+      if (form === 'win') return win;
+      if (form === 'win-and-margin') return (win + margin) / 2;
+      return margin;
+    },
+  };
+}
+
+/**
  * **Estimated.** [SOURCE §9, review] Q18's formula: what the subject
  * holds *right now*, with gold and skills weighted by how far the game has run.
  *
