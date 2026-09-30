@@ -1,6 +1,14 @@
 import type { GameConfig } from '@adventure/config';
 import type { DiceSource, Rng } from '@adventure/core';
-import { runRollout, type RestRule, type RolloutCursor, type RolloutTermination, type TargetFilter } from '@adventure/sim';
+import {
+  runRollout,
+  type ClosestFinder,
+  type RestRule,
+  type RolloutCursor,
+  type RolloutTermination,
+  type TargetFilter,
+  type TargetPicker,
+} from '@adventure/sim';
 import type { RolloutPolicy } from '../types.ts';
 
 export interface ClosestPoiRolloutSettings {
@@ -9,6 +17,10 @@ export interface ClosestPoiRolloutSettings {
   readonly restRule: RestRule;
   /** Which POIs a player may head for; every unclaimed one when absent. */
   readonly targets?: TargetFilter;
+  /** Which of those count as closest; by weighted terrain cost when absent. */
+  readonly closest?: ClosestFinder;
+  /** Which of the closest a player heads for; uniformly at random when absent. */
+  readonly pick?: TargetPicker;
 }
 
 /**

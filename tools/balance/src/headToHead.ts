@@ -7,7 +7,7 @@ import {
   simulatedRolloutEvaluator,
   type NodeEvaluator,
 } from '@adventure/ai';
-import { winnablePoiNodes } from '@adventure/sim';
+import { closestBySpeeds, goldByProgressPicker, winnablePoiNodes } from '@adventure/sim';
 import { computerDriver } from './aiPlaythrough.ts';
 import { playGame, type Playthrough, type PlaythroughDriver, type PlaythroughEnd } from './playthrough.ts';
 
@@ -39,30 +39,45 @@ export function isEvaluatorName(name: string): name is EvaluatorName {
 }
 
 /**
- * One seat's way of thinking: an evaluation, optionally only sites it could
- * win now as targets (detail 419), and optionally its own UCT exploration
- * constant in place of §11's `MCTS_EXPLORATION_CONSTANT`. Written `hybrid`,
- * `hybrid+winnable`, `hybrid@0.3` or `hybrid+winnable@0.3`.
+ * What a seat may change about where it goes, each for comparison only:
+ *  - `winnable`: only sites it could win now are choices (detail 419).
+ *  - `gold-later`: its imagined players head for gold more often as the
+ *    rewards are claimed (idea 1, 421 A).
+ *  - `speeds`: closest by its own speeds, Q65's effective distance over the
+ *    steps per terrain of the cheapest route (idea 2, 422-424 A).
+ */
+export const SEAT_FLAGS = ['winnable', 'gold-later', 'speeds'] as const;
+export type SeatFlag = (typeof SEAT_FLAGS)[number];
+
+/**
+ * One seat's way of thinking: an evaluation, any `SEAT_FLAGS`, and optionally
+ * its own UCT exploration constant in place of §11's
+ * `MCTS_EXPLORATION_CONSTANT`. Written `hybrid`, `simulated+speeds`,
+ * `hybrid@0.3` or `simulated+winnable+gold-later@0.3`.
  */
 export interface SeatSpec {
   readonly evaluator: EvaluatorName;
-  readonly winnableOnly: boolean;
+  readonly flags: readonly SeatFlag[];
   readonly exploration: number | null;
+}
+
+function isSeatFlag(text: string): text is SeatFlag {
+  return SEAT_FLAGS.some((flag) => flag === text);
 }
 
 export function parseSeatSpec(text: string): SeatSpec | null {
   const [head, constant] = text.split('@');
-  const [name, flag] = (head ?? '').split('+');
+  const [name, ...rest] = (head ?? '').split('+');
   if (name === undefined || !isEvaluatorName(name)) return null;
-  if (flag !== undefined && flag !== 'winnable') return null;
-  const winnableOnly = flag === 'winnable';
-  if (constant === undefined) return { evaluator: name, winnableOnly, exploration: null };
+  if (!rest.every(isSeatFlag)) return null;
+  const flags = rest.filter(isSeatFlag);
+  if (constant === undefined) return { evaluator: name, flags, exploration: null };
   const exploration = Number(constant);
-  return Number.isFinite(exploration) && exploration >= 0 ? { evaluator: name, winnableOnly, exploration } : null;
+  return Number.isFinite(exploration) && exploration >= 0 ? { evaluator: name, flags, exploration } : null;
 }
 
 export function seatLabel(spec: SeatSpec): string {
-  const name = spec.winnableOnly ? `${spec.evaluator}+winnable` : spec.evaluator;
+  const name = [spec.evaluator, ...spec.flags].join('+');
   return spec.exploration === null ? name : `${name}@${spec.exploration}`;
 }
 
@@ -114,7 +129,9 @@ export function playHeadToHead(options: HeadToHeadOptions): { readonly game: Hea
       seed: `${options.seed}-seat${index + 1}`,
       now: options.now,
       evaluator: EVALUATORS[spec.evaluator](),
-      ...(spec.winnableOnly ? { targets: winnablePoiNodes } : {}),
+      ...(spec.flags.includes('winnable') ? { targets: winnablePoiNodes } : {}),
+      ...(spec.flags.includes('gold-later') ? { pick: goldByProgressPicker() } : {}),
+      ...(spec.flags.includes('speeds') ? { closest: closestBySpeeds } : {}),
       onSearch: (iterations) => {
         const counter = counters[index];
         if (counter === undefined) return;
@@ -136,6 +153,10 @@ export function playHeadToHead(options: HeadToHeadOptions): { readonly game: Hea
       '# lead-soft: (lead / (|lead| + 1) + 1) / 2 with the lead in gold.',
       '# +winnable: only sites it could win now are choices, for itself and for everyone in its imagined',
       '# games (gold whose guard a 6 plus the skill does not beat is left out, unless nothing else is left).',
+      '# +gold-later: in its imagined games a player heads for a gold site among its 10 closest with chance',
+      '# p = share of the gold and skill units claimed, otherwise for any of the 10 as today.',
+      '# +speeds: its 10 closest, for itself and in its imagined games, are ranked by the least over n turns of',
+      '# 5n + the stamina still needed after n turns of free steps, from the steps per terrain of the cheapest route.',
       ...(drivers[0]?.describe ?? []),
     ],
     choose(state, playerId) {

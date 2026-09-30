@@ -1,6 +1,13 @@
 import type { GameConfig } from '@adventure/config';
 import type { DiceSource, GameState, PlayerId, Rng, TurnAction } from '@adventure/core';
-import { goldExhaustedTermination, restWhenStuck, turnCapTermination, type TargetFilter } from '@adventure/sim';
+import {
+  goldExhaustedTermination,
+  restWhenStuck,
+  turnCapTermination,
+  type ClosestFinder,
+  type TargetFilter,
+  type TargetPicker,
+} from '@adventure/sim';
 import { firstTurnOf, searchTree, startSearch, type SearchResult } from './mcts.ts';
 import { simulatedRolloutEvaluator } from './policies/evaluators.ts';
 import { closestPoiRolloutPolicy } from './policies/rollout.ts';
@@ -28,6 +35,13 @@ export interface ComputerSettings {
    * unclaimed site; the balancing harness passes `winnablePoiNodes` to compare.
    */
   readonly targets?: TargetFilter;
+  /**
+   * Which sites count as closest, in the search's choices and in its imagined
+   * games; by weighted terrain cost when absent, as the game plays.
+   */
+  readonly closest?: ClosestFinder;
+  /** Which of the closest a player in an imagined game heads for; uniformly at random when absent. */
+  readonly pick?: TargetPicker;
 }
 
 /**
@@ -46,8 +60,15 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
     subject,
     config,
     treePolicy: uctTreePolicy(config.ai.MCTS_EXPLORATION_CONSTANT),
-    actions: closestUnclaimedPoiEnumerator(config, previewReachability(), settings.targets),
-    rollout: closestPoiRolloutPolicy({ config, termination, restRule, ...(settings.targets === undefined ? {} : { targets: settings.targets }) }),
+    actions: closestUnclaimedPoiEnumerator(config, previewReachability(), settings.targets, settings.closest),
+    rollout: closestPoiRolloutPolicy({
+      config,
+      termination,
+      restRule,
+      ...(settings.targets === undefined ? {} : { targets: settings.targets }),
+      ...(settings.closest === undefined ? {} : { closest: settings.closest }),
+      ...(settings.pick === undefined ? {} : { pick: settings.pick }),
+    }),
     evaluator: settings.evaluator ?? simulatedRolloutEvaluator(),
     termination,
     restRule,

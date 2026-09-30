@@ -15,7 +15,8 @@ import {
   type Rng,
   type TurnAction,
 } from '@adventure/core';
-import { chooseWalkTarget } from './candidates.ts';
+import { chooseWalkTarget, closestPoiCandidates, type PoiCandidate } from './candidates.ts';
+import type { ClosestFinder, TargetPicker } from './experiments.ts';
 
 /**
  * [SOURCE §5, chat] §9's rollout policy: "choose a random target among the
@@ -154,6 +155,10 @@ export interface RolloutOptions {
   readonly rng: Rng;
   /** Which POIs a player may head for; every unclaimed one when absent, as the game plays. */
   readonly targets?: TargetFilter;
+  /** Which of those count as closest; by weighted terrain cost when absent, as the game plays. */
+  readonly closest?: ClosestFinder;
+  /** Which of the closest a player heads for; uniformly at random when absent, as the game plays. */
+  readonly pick?: TargetPicker;
 }
 
 /** Which POIs `player` may head for in `state`. */
@@ -221,6 +226,22 @@ export type MacroAdvanceOutcome =
   | 'target_claimed_by_other'
   | 'terminal';
 
+/** `chooseWalkTarget` with the balancing harness's `closest` and `pick` in place of its two steps. */
+function comparedTarget(
+  state: GameState,
+  player: PlayerState,
+  eligible: ReadonlySet<NodeId>,
+  count: number,
+  options: RolloutOptions,
+): PoiCandidate | null {
+  const candidates =
+    options.closest === undefined
+      ? closestPoiCandidates(state.map.graph, player.position, eligible, count, options.config, routeTable(state.map.graph, options.config))
+      : options.closest(state, player, eligible, count);
+  if (candidates.length === 0) return null;
+  return options.pick === undefined ? options.rng.pick(candidates) : options.pick(state, player, candidates, options.rng);
+}
+
 /**
  * Play the active seat's turn under the rollout policy, and return the cursor
  * after it.
@@ -237,15 +258,20 @@ export function playRolloutTurn(cursor: RolloutCursor, options: RolloutOptions):
 
   let target = cursor.targets[index] ?? null;
   if (target === null) {
-    const choice = chooseWalkTarget(
-      state.map.graph,
-      player.position,
-      options.targets === undefined ? unclaimedPoiNodes(state) : options.targets(state, player),
-      options.config.balancing.CLOSE_CANDIDATE_COUNT,
-      options.config,
-      options.rng,
-      routeTable(state.map.graph, options.config),
-    );
+    const eligible = options.targets === undefined ? unclaimedPoiNodes(state) : options.targets(state, player);
+    const count = options.config.balancing.CLOSE_CANDIDATE_COUNT;
+    const choice =
+      options.closest === undefined && options.pick === undefined
+        ? chooseWalkTarget(
+            state.map.graph,
+            player.position,
+            eligible,
+            count,
+            options.config,
+            options.rng,
+            routeTable(state.map.graph, options.config),
+          )
+        : comparedTarget(state, player, eligible, count, options);
     // No unclaimed POI means no unclaimed gold, which every termination stops
     // on first; reaching here is a caller bug, not a position.
     if (choice === null) throw new RangeError('a rollout turn with no unclaimed POI left to head for');

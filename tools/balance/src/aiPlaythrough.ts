@@ -11,7 +11,7 @@ import {
   type PlayerId,
 } from '@adventure/core';
 import { chooseComputerMove, type MctsNode, type NodeEvaluator } from '@adventure/ai';
-import type { TargetFilter } from '@adventure/sim';
+import type { ClosestFinder, TargetFilter, TargetPicker } from '@adventure/sim';
 import type { PlaythroughDriver, TurnChoice } from './playthrough.ts';
 
 /** How the computer player thinks in a playthrough. */
@@ -31,6 +31,10 @@ export interface ComputerSettings {
   readonly evaluator?: NodeEvaluator;
   /** Which sites a player may head for; every unclaimed one when absent, as the game plays. */
   readonly targets?: TargetFilter;
+  /** Which sites count as closest; by weighted terrain cost when absent, as the game plays. */
+  readonly closest?: ClosestFinder;
+  /** Which of the closest a player in an imagined game heads for; uniformly when absent. */
+  readonly pick?: TargetPicker;
   /** Told after every move how many iterations the search ran in how long. */
   readonly onSearch?: (iterations: number, took: number) => void;
 }
@@ -67,6 +71,8 @@ export function computerDriver(settings: ComputerSettings): PlaythroughDriver {
         now: settings.now,
         ...(settings.evaluator === undefined ? {} : { evaluator: settings.evaluator }),
         ...(settings.targets === undefined ? {} : { targets: settings.targets }),
+        ...(settings.closest === undefined ? {} : { closest: settings.closest }),
+        ...(settings.pick === undefined ? {} : { pick: settings.pick }),
       });
       const took = settings.now() - started;
       settings.onSearch?.(result.iterations, took);

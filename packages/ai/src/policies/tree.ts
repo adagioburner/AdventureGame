@@ -1,6 +1,6 @@
 import type { GameConfig } from '@adventure/config';
 import { playerById, previewPath, routeTable, type GameState, type NodeId, type PlayerId, type Rng } from '@adventure/core';
-import { closestPoiCandidates, unclaimedPoiNodes, type PoiCandidate, type TargetFilter } from '@adventure/sim';
+import { closestPoiCandidates, unclaimedPoiNodes, type ClosestFinder, type PoiCandidate, type TargetFilter } from '@adventure/sim';
 import type { ActionEnumerator, MctsBranch, MctsNode, TreePolicy, TurnReachability } from '../types.ts';
 
 /**
@@ -115,6 +115,8 @@ export function closestUnclaimedPoiEnumerator(
   reachability: TurnReachability,
   /** Which POIs may be targets; every unclaimed one when absent, as the game plays. */
   allowed?: TargetFilter,
+  /** Which of those count as closest; by weighted terrain cost when absent, as the game plays. */
+  closest?: ClosestFinder,
 ): ActionEnumerator {
   return {
     name: 'closest-unclaimed-pois+rest',
@@ -125,14 +127,17 @@ export function closestUnclaimedPoiEnumerator(
       // `closestPoiCandidates` already returns at most `CLOSE_CANDIDATE_COUNT`,
       // so this *is* the pruned target list; there is no second cap to apply.
       const eligible = allowed === undefined ? unclaimedPoiNodesOf(state) : allowed(state, player);
-      const targets = closestPoiCandidates(
-        state.map.graph,
-        player.position,
-        eligible,
-        config.balancing.CLOSE_CANDIDATE_COUNT,
-        config,
-        routeTable(state.map.graph, config),
-      );
+      const targets =
+        closest === undefined
+          ? closestPoiCandidates(
+              state.map.graph,
+              player.position,
+              eligible,
+              config.balancing.CLOSE_CANDIDATE_COUNT,
+              config,
+              routeTable(state.map.graph, config),
+            )
+          : closest(state, player, eligible, config.balancing.CLOSE_CANDIDATE_COUNT);
 
       const branches: MctsBranch[] = targets.map((target) => ({ kind: 'target', target }));
 
