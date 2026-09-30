@@ -2354,6 +2354,55 @@ step 6b.
      40 with 4 (59 and 50 before step 6b). A seed gives a different map again,
      so a hot seat game kept under 2 places cannot resume either.
 
+### Q110. ~~Does stamina count in the estimated evaluation?~~ — **answered 2026-09-30: yes, 5 stamina as one skill point**
+
+[SOURCE §9, chat] Andrei, 2026-09-30, while comparing the three evaluations
+(details 410-429): "gold * game_progress + (total skill points + stamina / 5)
+* (1 - game_progress), where game_progress is gold_claimed /
+total_gold_in_the_game", normalised: "gold * game_progress /
+total_gold_in_the_game + (total skill points + stamina / 5) * (1 -
+game_progress) / total_skills_in_the_game".
+
+Until then the estimate had no stamina in it: Q11 had left it out as "a
+resource". `estimatedGoldAndSkillsEvaluator()` now adds stamina divided by
+`STAMINA_PER_SKILL_POINT` (5, its own AI setting rather than
+`REST_STAMINA_GAIN`) to the skill points. `total_skills` stays the skill units
+on the map (Q24), 75 on every map today, so the term could in principle pass 1;
+it stops at 1, which keeps every value between 0 and 1 as Q14 needs. The
+game's computer players still use the simulated evaluation (Q18), so nothing in
+play changes.
+
+### Q111. ~~What is the estimate's progress?~~ — **answered 2026-09-30: skill and gold units claimed, over all of them**
+
+[SOURCE §9, chat] Andrei, 2026-09-30, after the first comparison: "let's rerun
+this with p defined as (skills and gold claimed) / (total skills and gold) so we
+have continuous progress from the start".
+
+Q18's `progress` was gold claimed over total gold, so it sat at 0 through an
+opening of skill claims. It is now the skill and gold units anyone has claimed
+over the 120 on a v1 map (75 skill, 45 gold). Stamina rewards are not counted;
+a v1 map has none. Only the estimated evaluation reads it (and the hybrid
+through it); the game's computer players still use the simulated one.
+
+### Q112. ~~How far does the computer count a site?~~ — **answered 2026-09-30: by its own speeds, from the steps per terrain on the cheapest route (422-424 A, 426)**
+
+[SOURCE §9, chat] Andrei, 2026-09-30: "go back to caching three numbers (# of
+steps on each terrain) instead of one number (distance) and recalculating
+distances based on current skills using the cached numbers. It bothers me that
+the cached distances always consider mountains inaccessible when in reality by
+the [end] of the game you can have lots of mountain speed". Then 422 A (count
+the cheapest route's steps only; a second, fewest-steps route postponed), 423 A
+(his 2026-09-28 formula: the least over n turns of 5n + the stamina still
+needed after n turns of free steps), 424 A (for the computer's own choices and
+every player in its imagined games).
+
+Tested against the computer as it was: 19 of 20 wins at 3 s a move (+6.6 gold
+a game), and 13 of 20 at 10 s on ten other maps (+3.5); 426: put it in the
+game. Routes walked are unchanged, still the cheapest by weighted terrain cost;
+only which sites count as the 10 closest changes. The remoteness walk and a
+person's route preview keep weighted terrain cost. Equal distances keep the
+weighted-terrain-cost order.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design

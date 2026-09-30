@@ -2,8 +2,8 @@ import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_GAME_CONFIG } from '@adventure/config';
 import { applyAction, createDiceSource, createRng } from '@adventure/core';
-import { rolloutCursor } from '@adventure/sim';
-import { fixtureGame, fixtureMap, player } from '../../core/src/rules/scenario.fixture.ts';
+import { closestByTerrainCost, rolloutCursor } from '@adventure/sim';
+import { fixtureGame, fixtureMap, n, player, withStats } from '../../core/src/rules/scenario.fixture.ts';
 import { chooseComputerMove, computerSearchOptions, startComputerMove, type ComputerSettings } from './computer.ts';
 
 /** 0 ─ 1 ─ 2 ─ 3 ─ 4, all plains, gold on the far end and a skill on the way. */
@@ -58,5 +58,46 @@ describe('the computer player', () => {
     const at = (turns: number) => rolloutCursor({ ...state, turn: { ...state.turn, number: state.turn.number + turns } }, player('one'));
     expect(termination.isTerminal(at(cap - 1), 0)).toBe(false);
     expect(termination.isTerminal(at(cap), 0)).toBe(true);
+  });
+});
+
+/**
+ * From plains node 0: a site 2 mountain steps away (node 2), and gold 5 plains
+ * steps away (node 7). By weighted terrain cost the gold is nearer, 5 against 6.
+ */
+const fork = fixtureMap({
+  terrains: ['plains', 'mountain', 'mountain', 'plains', 'plains', 'plains', 'plains', 'plains'],
+  edges: [
+    [0, 1],
+    [1, 2],
+    [0, 3],
+    [3, 4],
+    [4, 5],
+    [5, 6],
+    [6, 7],
+  ],
+  pois: [
+    { node: 2, kind: 'mountain_move', units: 1, guard: null },
+    { node: 7, kind: 'gold', units: 1, guard: null },
+  ],
+});
+
+describe('which sites the computer counts as closest (Q112)', () => {
+  const targets = (options: ReturnType<typeof computerSearchOptions>, state: ReturnType<typeof fixtureGame>) =>
+    options.actions
+      .enumerate(state, player('one'))
+      .flatMap((branch) => (branch.kind === 'target' ? [branch.target.node] : []));
+
+  it('ranks by its own speeds, so mountain speed brings the mountain site first', () => {
+    const state = withStats(fixtureGame(fork, 0), player('one'), { mountain_move: 2 });
+    const one = { ...settings().config, balancing: { ...settings().config.balancing, CLOSE_CANDIDATE_COUNT: 1 } };
+    expect(targets(computerSearchOptions(state, player('one'), { ...settings(), config: one }), state)).toEqual([n(2)]);
+  });
+
+  it('ranks by weighted terrain cost alone when told to, as before', () => {
+    const state = withStats(fixtureGame(fork, 0), player('one'), { mountain_move: 2 });
+    const one = { ...settings().config, balancing: { ...settings().config.balancing, CLOSE_CANDIDATE_COUNT: 1 } };
+    const options = computerSearchOptions(state, player('one'), { ...settings(), config: one, closest: closestByTerrainCost });
+    expect(targets(options, state)).toEqual([n(7)]);
   });
 });

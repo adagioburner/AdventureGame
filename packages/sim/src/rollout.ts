@@ -15,7 +15,9 @@ import {
   type Rng,
   type TurnAction,
 } from '@adventure/core';
-import { chooseWalkTarget } from './candidates.ts';
+import { chooseWalkTarget, closestPoiCandidates, type PoiCandidate } from './candidates.ts';
+import type { TargetPicker } from './experiments.ts';
+import type { ClosestFinder } from './speeds.ts';
 
 /**
  * [SOURCE §5, chat] §9's rollout policy: "choose a random target among the
@@ -152,7 +154,16 @@ export interface RolloutOptions {
   readonly restRule: RestRule;
   readonly dice: DiceSource;
   readonly rng: Rng;
+  /** Which POIs a player may head for; every unclaimed one when absent, as the game plays. */
+  readonly targets?: TargetFilter;
+  /** Which of those count as closest; by weighted terrain cost when absent (the computer player passes `closestBySpeeds`, Q112). */
+  readonly closest?: ClosestFinder;
+  /** Which of the closest a player heads for; uniformly at random when absent, as the game plays. */
+  readonly pick?: TargetPicker;
 }
+
+/** Which POIs `player` may head for in `state`. */
+export type TargetFilter = (state: GameState, player: PlayerState) => ReadonlySet<NodeId>;
 
 /** Which POIs a rollout may target: those whose reward is still unclaimed (§4.5). */
 export function unclaimedPoiNodes(state: GameState): ReadonlySet<NodeId> {
@@ -163,6 +174,29 @@ export function unclaimedPoiNodes(state: GameState): ReadonlySet<NodeId> {
     if (state.poiRuntime[index]?.claimedBy === null) nodes.add(poi.node);
   }
   return nodes;
+}
+
+/**
+ * Unclaimed POIs `player` could win now: every unguarded one, and guarded gold
+ * whose guard the die's best roll plus the player's skill beats (§8: roll +
+ * skill > strength). When that leaves nothing, every unclaimed POI, so a
+ * player never runs out of somewhere to go while gold is left.
+ *
+ * For comparison only (detail 419, Andrei 2026-09-30: leave gold nobody can win
+ * yet out of the computer's choices, tested on its own). The game's computer
+ * players use `unclaimedPoiNodes`.
+ */
+export function winnablePoiNodes(state: GameState, player: PlayerState): ReadonlySet<NodeId> {
+  const { count, sides } = state.map.ruleset.config.combat.GUARD_DIE;
+  const nodes = new Set<NodeId>();
+  for (let index = 0; index < state.map.pois.length; index++) {
+    const poi = state.map.pois[index];
+    if (poi === undefined || state.poiRuntime[index]?.claimedBy !== null) continue;
+    const guard = poi.guard;
+    const skill = guard === null ? 0 : guard.type === 'fighting' ? player.stats.fighting : player.stats.magic;
+    if (guard === null || count * sides + skill > guard.strength) nodes.add(poi.node);
+  }
+  return nodes.size > 0 ? nodes : unclaimedPoiNodes(state);
 }
 
 /**
@@ -193,6 +227,22 @@ export type MacroAdvanceOutcome =
   | 'target_claimed_by_other'
   | 'terminal';
 
+/** `chooseWalkTarget` with the balancing harness's `closest` and `pick` in place of its two steps. */
+function comparedTarget(
+  state: GameState,
+  player: PlayerState,
+  eligible: ReadonlySet<NodeId>,
+  count: number,
+  options: RolloutOptions,
+): PoiCandidate | null {
+  const candidates =
+    options.closest === undefined
+      ? closestPoiCandidates(state.map.graph, player.position, eligible, count, options.config, routeTable(state.map.graph, options.config))
+      : options.closest(state, player, eligible, count);
+  if (candidates.length === 0) return null;
+  return options.pick === undefined ? options.rng.pick(candidates) : options.pick(state, player, candidates, options.rng);
+}
+
 /**
  * Play the active seat's turn under the rollout policy, and return the cursor
  * after it.
@@ -209,15 +259,20 @@ export function playRolloutTurn(cursor: RolloutCursor, options: RolloutOptions):
 
   let target = cursor.targets[index] ?? null;
   if (target === null) {
-    const choice = chooseWalkTarget(
-      state.map.graph,
-      player.position,
-      unclaimedPoiNodes(state),
-      options.config.balancing.CLOSE_CANDIDATE_COUNT,
-      options.config,
-      options.rng,
-      routeTable(state.map.graph, options.config),
-    );
+    const eligible = options.targets === undefined ? unclaimedPoiNodes(state) : options.targets(state, player);
+    const count = options.config.balancing.CLOSE_CANDIDATE_COUNT;
+    const choice =
+      options.closest === undefined && options.pick === undefined
+        ? chooseWalkTarget(
+            state.map.graph,
+            player.position,
+            eligible,
+            count,
+            options.config,
+            options.rng,
+            routeTable(state.map.graph, options.config),
+          )
+        : comparedTarget(state, player, eligible, count, options);
     // No unclaimed POI means no unclaimed gold, which every termination stops
     // on first; reaching here is a caller bug, not a position.
     if (choice === null) throw new RangeError('a rollout turn with no unclaimed POI left to head for');

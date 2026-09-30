@@ -26,7 +26,8 @@ import type { MctsBranch, MctsNode, MctsOptions } from './types.ts';
  *               A target branch is a macro-action — `macroAdvanceToTarget` —
  *               so one edge can span several turns.
  *   simulate  — `rollout.run`, which is §5.1's random walk driven through the
- *               real rules (see `@adventure/sim`).
+ *               real rules (see `@adventure/sim`); skipped for an evaluator
+ *               that does not read it (the estimated one).
  *   backprop  — add `evaluator.evaluate(...)` to every node on the path.
  *
  * Loop until `now() - start >= timeBudgetMs`, then return the move implied by
@@ -156,7 +157,7 @@ function iterate(tree: MctsNode, root: GameState, options: MctsOptions): void {
     cursor = realise(cursor, node.action as MctsBranch, options, rules);
   }
 
-  const rolledOut = options.rollout.run(cursor, options.rng, options.dice);
+  const rolledOut = options.evaluator.readsRollout ? options.rollout.run(cursor, options.rng, options.dice) : cursor;
   const value = options.evaluator.evaluate(cursor, rolledOut, options.subject);
   for (let at: MctsNode | null = node; at !== null; at = at.parent) {
     at.visits += 1;

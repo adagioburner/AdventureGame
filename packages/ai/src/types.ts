@@ -143,6 +143,13 @@ export interface RolloutPolicy {
  */
 export interface NodeEvaluator {
   readonly name: string;
+  /**
+   * Whether `evaluate` reads `rolledOut`. The estimated evaluation is "no
+   * rollout at all" (§9), so for it the search skips the rollout and passes
+   * the node's own position as `rolledOut`, spending the time on more of the
+   * tree instead.
+   */
+  readonly readsRollout: boolean;
   evaluate(atNode: RolloutCursor, rolledOut: RolloutCursor, subject: PlayerId): number;
 }
 

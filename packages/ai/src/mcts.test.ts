@@ -15,6 +15,7 @@ import { search, searchTree, startSearch } from './mcts.ts';
 import {
   estimatedGoldAndSkillsEvaluator,
   hybridGoldAndSkillsEvaluator,
+  simulatedLeadEvaluator,
   simulatedRolloutEvaluator,
 } from './policies/evaluators.ts';
 import { closestPoiRolloutPolicy } from './policies/rollout.ts';
@@ -142,6 +143,41 @@ describe('evaluators', () => {
   });
 });
 
+describe('estimated evaluation', () => {
+  it('counts skill and gold units claimed as progress, and stamina as skill points (Q110, Q111)', () => {
+    // The star holds 5 gold and 3 skill units; its 3 stamina units are not
+    // counted. Taking the plains_move site is 1 of those 8 units.
+    const state = withStats(fixtureGame(star, 0), player('one'), { stamina: 1 });
+    const took = applyAction(state, { kind: 'move', player: player('one'), path: [n(2)] }, createDiceSource(createRng('x'), DEFAULT_GAME_CONFIG)).state;
+    const value = estimatedGoldAndSkillsEvaluator().evaluate(rolloutCursor(took, player('one')), rolloutCursor(took, player('one')), player('one'));
+    expect(value).toBeCloseTo((1 / 3) * (1 - 1 / 8));
+
+    const rested = withStats(took, player('one'), { stamina: 5 });
+    const withStamina = estimatedGoldAndSkillsEvaluator().evaluate(rolloutCursor(rested, player('one')), rolloutCursor(rested, player('one')), player('one'));
+    expect(withStamina).toBeCloseTo((2 / 3) * (1 - 1 / 8));
+
+    // The larger share instead: 1 of 3 skill units against 0 of 5 gold.
+    const larger = estimatedGoldAndSkillsEvaluator('larger-share').evaluate(rolloutCursor(took, player('one')), rolloutCursor(took, player('one')), player('one'));
+    expect(larger).toBeCloseTo((1 / 3) * (1 - 1 / 3));
+  });
+});
+
+describe('lead evaluation', () => {
+  it('scores the gold lead over the richest other player (detail 417)', () => {
+    // The star holds 5 gold; player one takes the 2 next door.
+    const state = withStats(fixtureGame(star, 0), player('one'), { stamina: 1 });
+    const took = applyAction(state, { kind: 'move', player: player('one'), path: [n(1)] }, createDiceSource(createRng('x'), DEFAULT_GAME_CONFIG)).state;
+    const at = rolloutCursor(took, player('one'));
+    expect(simulatedLeadEvaluator('margin').evaluate(at, at, player('one'))).toBeCloseTo((2 / 5 + 1) / 2);
+    expect(simulatedLeadEvaluator('margin').evaluate(at, at, player('two'))).toBeCloseTo((-2 / 5 + 1) / 2);
+    expect(simulatedLeadEvaluator('win').evaluate(at, at, player('one'))).toBe(1);
+    expect(simulatedLeadEvaluator('win').evaluate(at, at, player('two'))).toBe(0);
+    expect(simulatedLeadEvaluator('win-and-margin').evaluate(at, at, player('one'))).toBeCloseTo((1 + 0.7) / 2);
+    expect(simulatedLeadEvaluator('soft').evaluate(at, at, player('one'))).toBeCloseTo((2 / 3 + 1) / 2);
+    expect(simulatedLeadEvaluator('soft').evaluate(at, at, player('two'))).toBeCloseTo((-2 / 3 + 1) / 2);
+  });
+});
+
 describe('search', () => {
   it('stays inside its time budget and returns one legal turn for the subject', () => {
     const state = fixtureGame(star, 0);
@@ -185,6 +221,21 @@ describe('search', () => {
   it('is reproducible from its seeds and clock', () => {
     const state = fixtureGame(star, 0);
     expect(search(state, optionsFor(state))).toEqual(search(state, optionsFor(state)));
+  });
+
+  it('plays no rollout for the estimated evaluation, which reads only the node', () => {
+    const state = fixtureGame(star, 0);
+    const neverRun = {
+      name: 'never-run',
+      run(): never {
+        throw new Error('the estimated evaluation should not roll out');
+      },
+    };
+    const result = searchTree(state, optionsFor(state, { rollout: neverRun, evaluator: estimatedGoldAndSkillsEvaluator() }));
+    expect(result.iterations).toBeGreaterThan(1);
+    expect(() => searchTree(state, optionsFor(state, { rollout: neverRun, evaluator: hybridGoldAndSkillsEvaluator() }))).toThrow(
+      'should not roll out',
+    );
   });
 
   it('refuses to search for a player whose turn it is not', () => {

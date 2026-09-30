@@ -10,7 +10,8 @@ import {
   type NodeId,
   type PlayerId,
 } from '@adventure/core';
-import { chooseComputerMove, type MctsNode } from '@adventure/ai';
+import { chooseComputerMove, type MctsNode, type NodeEvaluator } from '@adventure/ai';
+import type { ClosestFinder, TargetFilter, TargetPicker } from '@adventure/sim';
 import type { PlaythroughDriver, TurnChoice } from './playthrough.ts';
 
 /** How the computer player thinks in a playthrough. */
@@ -26,6 +27,16 @@ export interface ComputerSettings {
    * golden file needs to come out the same on every machine.
    */
   readonly now: () => number;
+  /** How the search values a position; the game's own (simulated) when absent. */
+  readonly evaluator?: NodeEvaluator;
+  /** Which sites a player may head for; every unclaimed one when absent, as the game plays. */
+  readonly targets?: TargetFilter;
+  /** Which sites count as closest; by weighted terrain cost when absent, as the game plays. */
+  readonly closest?: ClosestFinder;
+  /** Which of the closest a player in an imagined game heads for; uniformly when absent. */
+  readonly pick?: TargetPicker;
+  /** Told after every move how many iterations the search ran in how long. */
+  readonly onSearch?: (iterations: number, took: number) => void;
 }
 
 /**
@@ -58,9 +69,14 @@ export function computerDriver(settings: ComputerSettings): PlaythroughDriver {
         rng,
         dice,
         now: settings.now,
+        ...(settings.evaluator === undefined ? {} : { evaluator: settings.evaluator }),
+        ...(settings.targets === undefined ? {} : { targets: settings.targets }),
+        ...(settings.closest === undefined ? {} : { closest: settings.closest }),
+        ...(settings.pick === undefined ? {} : { pick: settings.pick }),
       });
       const took = settings.now() - started;
-      const why = explain(state, result.root, result.best, result.iterations, took);
+      settings.onSearch?.(result.iterations, took);
+      const why = explain(state, result.root, result.best, result.iterations, took, settings.evaluator);
 
       const branch = result.best.action;
       if (branch === null) throw new Error('the search chose nothing');
@@ -80,14 +96,27 @@ export function computerDriver(settings: ComputerSettings): PlaythroughDriver {
 }
 
 /** The "why" and "others" lines. */
-function explain(state: GameState, root: MctsNode, best: MctsNode, iterations: number, took: number): string[] {
+function explain(
+  state: GameState,
+  root: MctsNode,
+  best: MctsNode,
+  iterations: number,
+  took: number,
+  evaluator: NodeEvaluator | undefined,
+): string[] {
   const gold = totalGoldUnits(state.map);
   const ranked = [...root.children].sort((a, b) => b.visits - a.visits);
   const share = (node: MctsNode): string => (node.visits === 0 ? '—' : `${Math.round((100 * node.totalValue) / node.visits)}%`);
 
+  // Only the simulated evaluation is a share of the gold; the others are a
+  // score out of 100 that the transcript's header explains.
+  const worth =
+    evaluator === undefined || evaluator.name === 'simulated-rollout'
+      ? ` ending with ${share(best)} of the map's ${gold} gold on average`
+      : ` worth ${share(best)} on average by the ${evaluator.name} evaluation`;
   const lines = [
     `  why     ${games(iterations)} played in its head over ${(took / 1000).toFixed(1)} s. This way: ${games(best.visits)},` +
-      ` ending with ${share(best)} of the map's ${gold} gold on average`,
+      worth,
   ];
   const others = ranked.filter((node) => node !== best).slice(0, 3);
   if (others.length > 0) {

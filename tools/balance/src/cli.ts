@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { DEFAULT_RULESET } from '@adventure/config';
 import type { Seed } from '@adventure/core';
 import { computerDriver } from './aiPlaythrough.ts';
+import { parseSeatSpec, playHeadToHead, type SeatSpec } from './headToHead.ts';
 import { generateAndReport, runMapBatch } from './index.ts';
 import { formatPlaythrough, playGame } from './playthrough.ts';
 import { formatBatchReport, formatMapReport } from './report.ts';
@@ -26,6 +27,7 @@ function main(argv: readonly string[]): number {
   if (command === 'batch') return renderBatch(rest);
   if (command === 'game') return playOne(rest);
   if (command === 'selfplay') return selfPlay(rest);
+  if (command === 'h2h') return headToHead(rest);
 
   process.stderr.write(
     [
@@ -37,6 +39,10 @@ function main(argv: readonly string[]): number {
       '                                the same, with the computer playing both seats (10 s a move)',
       '  pnpm selfplay [<n>] [--seconds=<s>]',
       '                                n computer-against-computer games: who won, in how many turns',
+      '  pnpm h2h <seed> --seats=simulated,estimated@0.3 [--seconds=<s>] [--log=<file>]',
+      '                                one computer game with a node evaluation (§9), and optionally',
+      '                                an exploration constant, per seat;',
+      '                                prints the result as one JSON line, the transcript to --log',
       '',
     ].join('\n'),
   );
@@ -116,6 +122,37 @@ function selfPlay(args: readonly string[]): number {
     computer: { thinkingMs: seconds * 1000, now: () => performance.now() },
   });
   process.stdout.write(formatSelfPlayReport(report));
+  return 0;
+}
+
+/**
+ * One game between computer seats that value positions differently (§9's
+ * simulated, estimated and hybrid evaluations), for comparing them on the same
+ * maps. A JSON line on stdout, so a batch of these can be run in parallel and
+ * gathered.
+ */
+function headToHead(args: readonly string[]): number {
+  const seed = args.find((argument) => !argument.startsWith('--'));
+  const seatsOption = args.find((argument) => argument.startsWith('--seats='));
+  const seats = (seatsOption?.slice('--seats='.length).split(',') ?? []).map(parseSeatSpec);
+  if (seed === undefined || seats.length < 2 || seats.some((spec) => spec === null)) {
+    process.stderr.write('h2h needs a seed and --seats= with two or more of simulated, estimated, hybrid, estimated-max, hybrid-max, lead, lead-win, lead-win-margin, lead-soft, each optionally with +winnable, +gold-later, +speeds, +fixed and @<exploration>\n');
+    return 2;
+  }
+  const seconds = secondsOption(args);
+  if (seconds === null) return 2;
+
+  const { game, run } = playHeadToHead({
+    ruleset: DEFAULT_RULESET,
+    seed,
+    seats: seats.filter((spec): spec is SeatSpec => spec !== null),
+    thinkingMs: seconds * 1000,
+    now: () => performance.now(),
+    maxTurns: 2000,
+  });
+  const log = args.find((argument) => argument.startsWith('--log='))?.slice('--log='.length);
+  if (log !== undefined) writeFileSync(log, formatPlaythrough(run), 'utf8');
+  process.stdout.write(`${JSON.stringify(game)}\n`);
   return 0;
 }
 

@@ -1,11 +1,19 @@
 import type { GameConfig } from '@adventure/config';
 import type { DiceSource, GameState, PlayerId, Rng, TurnAction } from '@adventure/core';
-import { goldExhaustedTermination, restWhenStuck, turnCapTermination } from '@adventure/sim';
+import {
+  closestBySpeeds,
+  goldExhaustedTermination,
+  restWhenStuck,
+  turnCapTermination,
+  type ClosestFinder,
+  type TargetFilter,
+  type TargetPicker,
+} from '@adventure/sim';
 import { firstTurnOf, searchTree, startSearch, type SearchResult } from './mcts.ts';
 import { simulatedRolloutEvaluator } from './policies/evaluators.ts';
 import { closestPoiRolloutPolicy } from './policies/rollout.ts';
 import { closestUnclaimedPoiEnumerator, previewReachability, uctTreePolicy } from './policies/tree.ts';
-import type { MctsOptions } from './types.ts';
+import type { MctsOptions, NodeEvaluator } from './types.ts';
 
 /** What a computer seat needs besides the position. */
 export interface ComputerSettings {
@@ -16,12 +24,33 @@ export interface ComputerSettings {
   readonly rng: Rng;
   readonly dice: DiceSource;
   readonly now: () => number;
+  /**
+   * How a searched position is valued. The game leaves it out and gets v1's
+   * simulated evaluation (Q18); the balancing harness passes the estimated or
+   * hybrid one to compare them.
+   */
+  readonly evaluator?: NodeEvaluator;
+  /**
+   * Which sites a player may head for, in the search's choices and in the
+   * games it plays in its head. The game leaves it out and gets every
+   * unclaimed site; the balancing harness passes `winnablePoiNodes` to compare.
+   */
+  readonly targets?: TargetFilter;
+  /**
+   * Which sites count as closest, in the search's choices and in its imagined
+   * games. The game leaves it out and gets `closestBySpeeds` (Q112); the
+   * balancing harness passes `closestByTerrainCost` to compare with before.
+   */
+  readonly closest?: ClosestFinder;
+  /** Which of the closest a player in an imagined game heads for; uniformly at random when absent. */
+  readonly pick?: TargetPicker;
 }
 
 /**
  * §9's computer player with the v1 setup: UCT with `MCTS_EXPLORATION_CONSTANT`
- * over the `CLOSE_CANDIDATE_COUNT` closest unclaimed POIs plus rest, the §9
- * rollout policy, and the simulated evaluation (Q18: v1 uses it; estimated
+ * over the `CLOSE_CANDIDATE_COUNT` closest unclaimed POIs plus rest, closest
+ * by the player's own speeds (Q112), the §9 rollout policy ranking the same
+ * way, and the simulated evaluation (Q18: v1 uses it; estimated
  * and hybrid are there to experiment with). The games it plays in its head
  * rest when stuck (Q43) and stop when the gold is gone, the game is won, or
  * `SIMULATION_TURN_CAP` turns have passed since `state` (Q44).
@@ -30,13 +59,21 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
   const { config } = settings;
   const termination = turnCapTermination(goldExhaustedTermination(), state.turn.number, config.ai.SIMULATION_TURN_CAP);
   const restRule = restWhenStuck();
+  const closest = settings.closest ?? closestBySpeeds;
   return {
     subject,
     config,
     treePolicy: uctTreePolicy(config.ai.MCTS_EXPLORATION_CONSTANT),
-    actions: closestUnclaimedPoiEnumerator(config, previewReachability()),
-    rollout: closestPoiRolloutPolicy({ config, termination, restRule }),
-    evaluator: simulatedRolloutEvaluator(),
+    actions: closestUnclaimedPoiEnumerator(config, previewReachability(), settings.targets, closest),
+    rollout: closestPoiRolloutPolicy({
+      config,
+      termination,
+      restRule,
+      closest,
+      ...(settings.targets === undefined ? {} : { targets: settings.targets }),
+      ...(settings.pick === undefined ? {} : { pick: settings.pick }),
+    }),
+    evaluator: settings.evaluator ?? simulatedRolloutEvaluator(),
     termination,
     restRule,
     dice: settings.dice,

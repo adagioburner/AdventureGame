@@ -1,4 +1,4 @@
-import type { GameConfig, Terrain } from '@adventure/config';
+import { TERRAINS, type GameConfig, type PerTerrain, type Terrain } from '@adventure/config';
 import { asNodeId, type NodeId } from './ids.ts';
 import { neighbours, type MapGraph } from './graph.ts';
 
@@ -6,9 +6,10 @@ import { neighbours, type MapGraph } from './graph.ts';
  * [SOURCE §1.2, chat] There is exactly **one** distance metric in this design:
  * weighted terrain cost, 1 plains / 2 forest / 3 mountain per step. It is used
  * for remoteness walks (§5.1), for the UI's shortest-path display (§7.1), for
- * the AI's POI targeting (§9), and it is the same table that stamina is
- * charged from (§7). Every component imports it from here; there is no second
- * cost function in the repo.
+ * the AI's routes (§9), and it is the same table that stamina is charged from
+ * (§7). Every component imports it from here; there is no second cost function
+ * in the repo. The AI ranks the sites at the ends of these routes by its own
+ * speeds from `stepsFrom` (Q112), but walks the routes this metric finds.
  *
  * The cost is charged for *entering* a node, so it depends on the destination
  * node's terrain — confirmed by the §8 worked example, where a step onto a
@@ -165,7 +166,24 @@ export interface RouteTable {
   from(from: NodeId): DijkstraResult;
   /** `shortestPath(graph, from, to, config)`. */
   path(from: NodeId, to: NodeId): readonly NodeId[] | null;
+  /**
+   * How many steps of each route from `from` enter each terrain:
+   * `stepsFrom(from).forest[to]` is the number of forest nodes on
+   * `path(from, to)`, counting `to` and not `from`, as a step is charged (§7).
+   * `Infinity` for a node the search never reached. Counted the first time
+   * it is asked for, so a caller that never asks pays nothing.
+   *
+   * [SOURCE §9, review] Andrei, 2026-09-28 (Q65): "precompute and cache the
+   * number of steps required to reach each POI from each node over each
+   * terrain separately. (We will allow ourselves to be sloppy here and simply
+   * take the shortest path)"; 2026-09-30 (422): the cheapest route only, a
+   * second route postponed.
+   */
+  stepsFrom(from: NodeId): TerrainSteps;
 }
+
+/** Steps onto each terrain, indexed by the node a route ends on. */
+export type TerrainSteps = PerTerrain<readonly number[]>;
 
 const routeTables = new WeakMap<MapGraph, WeakMap<GameConfig, RouteTable>>();
 
@@ -180,6 +198,7 @@ export function routeTable(graph: MapGraph, config: GameConfig): RouteTable {
   if (known !== undefined) return known;
 
   const searches = graph.nodes.map((_node, from) => dijkstra(graph, asNodeId(from), config));
+  const steps: (TerrainSteps | undefined)[] = new Array(graph.nodes.length);
   const table: RouteTable = {
     from(from: NodeId): DijkstraResult {
       const search = searches[from];
@@ -190,9 +209,40 @@ export function routeTable(graph: MapGraph, config: GameConfig): RouteTable {
       if (from === to) return [];
       return pathTo(table.from(from).previous, from, to);
     },
+    stepsFrom(from: NodeId): TerrainSteps {
+      let counts = steps[from];
+      if (counts === undefined) {
+        counts = stepsAlong(graph, from, table.from(from));
+        steps[from] = counts;
+      }
+      return counts;
+    },
   };
   byConfig.set(config, table);
   return table;
+}
+
+/**
+ * Each node's steps per terrain along `search`'s routes from `from`. A node is
+ * settled after its predecessor, so walking the settle order, a node's counts
+ * are its predecessor's plus the one step onto its own terrain.
+ */
+function stepsAlong(graph: MapGraph, from: NodeId, search: DijkstraResult): TerrainSteps {
+  const count = graph.nodes.length;
+  const counts = {} as Record<Terrain, number[]>;
+  for (const terrain of TERRAINS) {
+    counts[terrain] = new Array<number>(count).fill(Number.POSITIVE_INFINITY);
+    counts[terrain][from] = 0;
+  }
+  for (const node of search.settled) {
+    const before = search.previous[node];
+    if (before == null) continue;
+    const entered = graph.nodes[node]?.terrain;
+    for (const terrain of TERRAINS) {
+      counts[terrain][node] = (counts[terrain][before] as number) + (terrain === entered ? 1 : 0);
+    }
+  }
+  return counts;
 }
 
 /* -- A binary min-heap ordered by `(cost, node id)`. Infrastructure only. --- */
