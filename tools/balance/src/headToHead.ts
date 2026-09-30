@@ -27,6 +27,8 @@ export const EVALUATORS = {
   lead: () => simulatedLeadEvaluator('margin'),
   'lead-win': () => simulatedLeadEvaluator('win'),
   'lead-win-margin': () => simulatedLeadEvaluator('win-and-margin'),
+  // Andrei's form, 2026-09-30 11:43.
+  'lead-soft': () => simulatedLeadEvaluator('soft'),
 } as const satisfies Record<string, () => NodeEvaluator>;
 
 export type EvaluatorName = keyof typeof EVALUATORS;
@@ -122,7 +124,8 @@ export function playHeadToHead(options: HeadToHeadOptions): { readonly game: Hea
       '# hybrid = the average of the two. -max: the progress weighing them is the larger of the gold',
       '# share and the skill share claimed, instead of all skill and gold units claimed.',
       '# lead = today\'s imagined games, scored by the gold lead over the richest other player:',
-      '# (lead / total gold + 1) / 2; lead-win: 1 ahead, 0.5 level, 0 behind; lead-win-margin: their average.',
+      '# (lead / total gold + 1) / 2; lead-win: 1 ahead, 0.5 level, 0 behind; lead-win-margin: their average;',
+      '# lead-soft: (lead / (|lead| + 1) + 1) / 2 with the lead in gold.',
       ...(drivers[0]?.describe ?? []),
     ],
     choose(state, playerId) {

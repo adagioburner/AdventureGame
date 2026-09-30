@@ -130,8 +130,11 @@ export function simulatedRolloutEvaluator(): NodeEvaluator {
  *    of lead or deficit counts the same.
  *  - `win`: 1 ahead, 0.5 level, 0 behind, whatever the margin.
  *  - `win-and-margin`: the average of the two.
+ *  - `soft`: Andrei's form, 2026-09-30 11:43: (lead / (|lead| + 1) + 1) / 2
+ *    with the lead in gold. Level is 0.5, one gold ahead 0.75, two 0.83;
+ *    a smooth win-or-lose that still prefers a bigger lead.
  */
-export type LeadScore = 'margin' | 'win' | 'win-and-margin';
+export type LeadScore = 'margin' | 'win' | 'win-and-margin' | 'soft';
 
 /**
  * **Simulated, scored by the lead.** Andrei, 2026-09-30 (detail 417): an
@@ -154,6 +157,7 @@ export function simulatedLeadEvaluator(form: LeadScore = 'margin'): NodeEvaluato
       const total = totalGoldUnits(state.map);
       const margin = total === 0 ? 0.5 : Math.min(1, Math.max(0, (lead / total + 1) / 2));
       const win = lead > 0 ? 1 : lead < 0 ? 0 : 0.5;
+      if (form === 'soft') return (lead / (Math.abs(lead) + 1) + 1) / 2;
       if (form === 'win') return win;
       if (form === 'win-and-margin') return (win + margin) / 2;
       return margin;

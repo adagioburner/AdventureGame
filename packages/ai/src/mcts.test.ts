@@ -173,6 +173,8 @@ describe('lead evaluation', () => {
     expect(simulatedLeadEvaluator('win').evaluate(at, at, player('one'))).toBe(1);
     expect(simulatedLeadEvaluator('win').evaluate(at, at, player('two'))).toBe(0);
     expect(simulatedLeadEvaluator('win-and-margin').evaluate(at, at, player('one'))).toBeCloseTo((1 + 0.7) / 2);
+    expect(simulatedLeadEvaluator('soft').evaluate(at, at, player('one'))).toBeCloseTo((2 / 3 + 1) / 2);
+    expect(simulatedLeadEvaluator('soft').evaluate(at, at, player('two'))).toBeCloseTo((-2 / 3 + 1) / 2);
   });
 });
 
