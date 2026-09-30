@@ -50,6 +50,15 @@
       "on_node": true,
       "borrowed": "Q20: forest gold has no sheet of its own yet, so it borrows mountain gold's fighting guardians."
     },
+    {
+      "terrain": "forest",
+      "reward": "gold",
+      "guard": "magic",
+      "sheet": "Mountains_GoldGuardedByMagic",
+      "size": 0.6,
+      "on_node": true,
+      "borrowed": "Q115: forest gold's magic guards (a coin flip since 451) have no sheet of their own, so they borrow mountain gold's magic guardians, as its fighting guards borrow the fighting ones (452)."
+    },
     { "terrain": "mountain", "reward": "gold", "guard": "fighting", "sheet": "Mountains_GoldGuardedByFighting", "size": 0.6, "on_node": true },
     { "terrain": "mountain", "reward": "gold", "guard": "magic", "sheet": "Mountains_GoldGuardedByMagic", "size": 0.6, "on_node": true },
     {

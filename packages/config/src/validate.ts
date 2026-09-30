@@ -63,6 +63,21 @@ export function validateRuleset(ruleset: Ruleset): void {
       if (row.poiCount < 0 || row.totalUnits < 0) {
         problems.push(`§4.2: ${terrain} group ${row.kind} has a negative count.`);
       }
+      // Q115: a chance, and only on a row whose guard it can turn to magic.
+      if (row.magicGuardChance !== undefined) {
+        if (!(row.magicGuardChance >= 0 && row.magicGuardChance <= 1)) {
+          problems.push(
+            `Q115: ${terrain} group ${row.kind}/${row.guard ?? 'unguarded'} has magicGuardChance ` +
+              `${row.magicGuardChance}; a chance runs from 0 to 1.`,
+          );
+        }
+        if (row.guard !== 'fighting') {
+          problems.push(
+            `Q115: ${terrain} group ${row.kind}/${row.guard ?? 'unguarded'} has a magicGuardChance, ` +
+              `but only a fighting-guarded group can have its guard turned to magic.`,
+          );
+        }
+      }
     }
     // A (kind, guard) key must appear at most once per terrain: the group *is*
     // the partition unit, so a duplicate key would mean two partitions of the

@@ -2424,8 +2424,31 @@ ten other maps (+2.2); with both ranking sites by their own speeds (Q112), 12
 of 20 at 3 s (+3.3) and 11 of 20 at 10 s (+2.2). All four together 48 of 80,
 +2.9 ± 1.1 gold a game; the 10 s runs alone are within luck.
 
+### Q115. ~~Which guards do forest sites get?~~ — **answered 2026-09-30: each forest gold site fighting or magic by a coin flip, magic drawn as the mountains' magic guardians (450-452 A)**
+
+[SOURCE §4.4, chat] Andrei, 2026-09-30: "Magic doesn't play an important
+enough role. Can you make it so the forest POI are assigned randomly either
+magic or combat guards?" Then 450 A (only forest's 4 gold sites, the ones
+guarded before, get the random guard; the other 16 stay unguarded), 451 A (a
+coin flip for each site on its own, 50% magic, as the named constant
+`FOREST_MAGIC_GUARD_CHANCE`; not exactly 2 of 4 on every map) and 452 A (a
+magic-guarded forest site borrows the mountains' magic guardians, as its
+fighting guards borrow the mountains' fighting ones).
+
+Until then all four forest gold sites were fighting-guarded. A map now carries
+0 to 4 magic-guarded forest gold sites: at 0.5, 2 on 3 maps in 8 and none on 1
+in 16 (100 maps measured: 9 with none, 20 with 1, 34 with 2, 32 with 3, 5 with
+4). Unchanged: guard strength (§5.2 never reads the type; forest guards run 1
+to 6, mostly 2 or 3), forest's 5 gold on 4 sites, magic rewards (10 on 6 plains
+sites), plains and mountain guards, the rulebook (it never says which terrain
+has which guard). The coin flips are the map's last draws, so on every seed
+only some forest gold guards and their pictures differ from before; over 100
+seeds every road, reward, strength and other picture was identical. A hot seat
+game kept on one device that fought at a forest gold site that turned magic may
+not resume as it was; an online game keeps the map it was made with.
+
 <a id="q125"></a>
-### Q125. ~~What does End turn do when there is no guard to fight?~~ — **answered 2026-09-30: it rests, and so does Move on; 490-493 as recommended**
+### Q125. ~~What does End turn do when there is no guard to fight?~~ — **answered 2026-09-30: it rests, and so does Move on; 490-493 as recommended, 494 and 495 open**
 
 Andrei, 2026-09-30 at 20:53: *"Clicking 'Next Turn' with no guard to fight
 makes no sense. Let us make it rest automatically in this case."* Until then
@@ -2446,6 +2469,18 @@ at 21:46: *"The recommended options look good, please proceed"*.
 493. **The turn log:** an automatic rest reads like any rest, *"Rested: +5
      stamina"* (recommended); or it also says End turn made it one.
      **Answered:** as recommended.
+494. **Open.** The line above the buttons with a route whose first step
+     cannot be paid, away from a guard. As built: *"Not even the first of
+     these 4 steps is affordable this turn. End turn rests: +5 stamina, and
+     keeps the route for next turn."* (recommended); or the wording before,
+     *"…Rest gains 5 stamina; End turn walks nothing and keeps the route for
+     next turn."*, which no longer says what End turn does.
+495. **Open.** The line when a player picks their own space as the
+     destination, away from a guard. As built: *"Staying here this turn. End
+     turn with no route rests: +5 stamina."*; *"Staying here this turn. End
+     turn rests: +5 stamina."* (recommended); or the wording before,
+     *"…End turn with no route stays put."*, which no longer says what End
+     turn does.
 
 `endTurnActionFor` (`packages/core/src/rules/turn.ts`) decides it, for the
 page's End turn, the server's `turn.end` and Move on (`moveOnActionFor`), and
