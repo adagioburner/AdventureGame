@@ -116,6 +116,12 @@ export function journalEntry(turn: PlayedTurn, before: GameState, movedOn = fals
     }
   }
 
+  // [Q135, 536 A] A speed or skill that ran short came back to an empty site.
+  for (const event of turn.events) {
+    if (event.type !== 'reward_returned') continue;
+    details.push(`${event.reward.units} ${STAT_LABEL[event.reward.kind]} came back at a ${terrainOf(map, event.node)} site.`);
+  }
+
   if (won !== undefined) {
     tone = 'won';
     details.push(victoryLine(won.winners.length, turn.after));

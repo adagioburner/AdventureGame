@@ -44,6 +44,19 @@ describe('a game on one device kept in the browser (Q56, 66)', () => {
     expect(again?.turns.length).toBe(12);
   });
 
+  it('keeps whether skills come back, and replays a game kept before they did by its old rules (Q135)', () => {
+    const game = new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'kept' });
+    keep('adventure', setup, game);
+    const kept = readKept();
+    expect(kept?.respawn).toBe(true);
+    expect(kept === null ? null : replayKept(kept, map)?.setup.map.ruleset.config.respawn).toEqual(map.ruleset.config.respawn);
+
+    const { respawn: _respawn, ...older } = kept ?? { respawn: undefined };
+    const before = replayKept(older as NonNullable<typeof kept>, map);
+    expect(before?.setup.map.ruleset.config.respawn).toBeUndefined();
+    expect(before?.setup.map.graph).toBe(map.graph);
+  });
+
   it('is forgotten by New game, and a store that cannot be read keeps nothing', () => {
     keep('adventure', setup, new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'kept' }));
     forgetKept();

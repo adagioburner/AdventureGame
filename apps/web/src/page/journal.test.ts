@@ -73,7 +73,7 @@ function game(stats: Partial<PlayerStats>): GameState {
 }
 
 function dice(...values: number[]): DiceSource {
-  return { roll: () => ({ value: values.shift() ?? 1, sides: 6 }) };
+  return { roll: () => ({ value: values.shift() ?? 1, sides: 6 }), pick: () => 0 };
 }
 
 type Plan = { readonly kind: 'move'; readonly path: readonly NodeId[] } | { readonly kind: 'rest' };
@@ -157,6 +157,27 @@ describe('the turn log, in words that can be checked by hand', () => {
     const entry = describeTurn(game({ stamina: 7 }), { kind: 'rest' });
     expect(entry.headline).toBe(`Rested: +${DEFAULT_RULESET.config.movement.REST_STAMINA_GAIN} stamina`);
     expect(entry.details[0]).toContain(`Stamina 7 → ${7 + DEFAULT_RULESET.config.movement.REST_STAMINA_GAIN}.`);
+  });
+
+  it('says where a skill came back, by its site’s terrain (Q135, 536)', () => {
+    // Combat on nodes 2 and 5; Ada takes node 2's, the last left, and node 5,
+    // taken earlier, gets its 3 back.
+    const skills = lineMap(
+      ['plains', 'plains', 'plains', 'plains', 'plains', 'forest', 'mountain'],
+      [
+        { node: 2, kind: 'fighting', units: 1, guard: null },
+        { node: 5, kind: 'fighting', units: 3, guard: null },
+      ],
+    );
+    const fresh = createGameState({
+      id: asGameId('journal'),
+      map: skills,
+      players: ['Ada', 'Bram'].map((name) => ({ id: asPlayerId(name), name, avatarId: name, control: 'human' as const })),
+      startingNode: asNodeId(0),
+    });
+    const before = { ...fresh, poiRuntime: [fresh.poiRuntime[0]!, { claimedBy: asPlayerId('Bram'), claimedOnTurn: 1 }] };
+    const entry = describeTurn(before, { kind: 'move', path: path(1, 2) });
+    expect(entry.details.at(-1)).toBe('3 combat came back at a forest site.');
   });
 
   it('writes the winning claim with the lead and the gold left', () => {

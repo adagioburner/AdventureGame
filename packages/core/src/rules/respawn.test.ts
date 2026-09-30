@@ -1,0 +1,158 @@
+import { describe, expect, it } from 'vitest';
+
+import { DEFAULT_RULESET } from '@adventure/config';
+import type { GameEvent } from '../action.ts';
+import type { GameMap } from '../gamemap.ts';
+import type { GameState } from '../state.ts';
+import { applyAction } from './turn.ts';
+import { fixtureGame, fixtureMap, n, noDice, player, scriptedDice, withPosition, withStats } from './scenario.fixture.ts';
+
+/**
+ * [Q135] Speeds and skills come back: while fewer than 2 units of one are on
+ * the map, one empty POI that held it gets its whole reward back at the end of
+ * a turn, drawn from the farther half of them (rounded up) by stamina cost
+ * from the nearest figure, never one a figure stands on.
+ *
+ *   0(p) ── 1(p) ── 2(p) ── 3(p) ── 4(p) ── 5(p) ── 6(p) ── 7(p)
+ *                   │                        │       │       │
+ *              1 fighting               1 fighting  3 magic  2 fighting
+ *   0 ── 8(f) ── 9(f): 2 plains speed on 9, two forest steps (4 stamina) from 0
+ *   0 ── 10(p) ── 11(p) ── 12(p): 1 plains speed on 12, three plains steps (3 stamina)
+ *   7 ── 13(p): 5 gold, unguarded
+ */
+const map = fixtureMap({
+  terrains: [
+    'plains', 'plains', 'plains', 'plains', 'plains', 'plains', 'plains', 'plains',
+    'forest', 'forest', 'plains', 'plains', 'plains', 'plains',
+  ],
+  edges: [
+    [0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7],
+    [0, 8], [8, 9],
+    [0, 10], [10, 11], [11, 12],
+    [7, 13],
+  ],
+  pois: [
+    { node: 2, kind: 'fighting', units: 1, guard: null },
+    { node: 5, kind: 'fighting', units: 1, guard: null },
+    { node: 6, kind: 'magic', units: 3, guard: null },
+    { node: 7, kind: 'fighting', units: 2, guard: null },
+    { node: 9, kind: 'plains_move', units: 2, guard: null },
+    { node: 12, kind: 'plains_move', units: 1, guard: null },
+    { node: 13, kind: 'gold', units: 5, guard: null },
+  ],
+});
+
+const one = player('one');
+const two = player('two');
+const rest = { kind: 'rest', player: one } as const;
+
+/** Both figures on node 0, seat 1 to move, with the POIs on `nodes` already claimed by seat 2. */
+function game(claimed: readonly number[], on: GameMap = map): GameState {
+  const state = fixtureGame(on, 0);
+  return {
+    ...state,
+    poiRuntime: state.poiRuntime.map((runtime, index) =>
+      claimed.includes(on.pois[index]?.node ?? -1) ? { claimedBy: two, claimedOnTurn: 1 } : runtime,
+    ),
+  };
+}
+
+function returned(events: readonly GameEvent[]): { node: number; kind: string; units: number }[] {
+  return events.flatMap((event) =>
+    event.type === 'reward_returned' ? [{ node: event.node, kind: event.reward.kind, units: event.reward.units }] : [],
+  );
+}
+
+function claimedAt(state: GameState, node: number): boolean {
+  const index = state.map.poiByNode.get(n(node));
+  return index !== undefined && state.poiRuntime[index]?.claimedBy !== null;
+}
+
+describe('speeds and skills coming back (Q135)', () => {
+  it('leaves the map alone while every kind has 2 or more units left, drawing nothing', () => {
+    const { state, events } = applyAction(game([]), rest, noDice);
+    expect(returned(events)).toEqual([]);
+    expect(state.poiRuntime).toEqual(game([]).poiRuntime);
+  });
+
+  it('brings a short kind back to the farthest empty site, with the stack it started with', () => {
+    // Fighting left: node 2's single unit. Empty: 5 (5 away) and 7 (7 away);
+    // the farther half of two is one, node 7, which held 2.
+    const { state, events } = applyAction(game([5, 7]), rest, scriptedDice([], 6, [0]));
+    expect(returned(events)).toEqual([{ node: n(7), kind: 'fighting', units: 2 }]);
+    expect(claimedAt(state, 7)).toBe(false);
+    expect(claimedAt(state, 5)).toBe(true);
+    expect(events.map((event) => event.type)).toEqual(['rested', 'reward_returned', 'turn_ended']);
+  });
+
+  it('picks at random from the farther half, rounded up', () => {
+    // All three fighting sites empty: 7, 5 and 2 away; the farther half of
+    // three is two, so a pick of 1 is the second farthest.
+    const { events } = applyAction(game([2, 5, 7]), rest, scriptedDice([], 6, [1]));
+    expect(returned(events)).toEqual([{ node: n(5), kind: 'fighting', units: 1 }]);
+  });
+
+  it('never brings one back where a figure stands', () => {
+    const on7 = withPosition(game([5, 7]), two, 7);
+    // Node 5 is the only empty site no figure is on; it is 2 from node 7, and
+    // still the pick, since it is all there is.
+    const { events } = applyAction(on7, rest, scriptedDice([], 6, [0]));
+    expect(returned(events)).toEqual([{ node: n(5), kind: 'fighting', units: 1 }]);
+  });
+
+  it('measures far by stamina cost, not by steps', () => {
+    // Plains speed is gone. Node 9 is two forest steps away (4 stamina) and
+    // node 12 three plains steps (3): node 9 is the farther.
+    const { events } = applyAction(game([9, 12]), rest, scriptedDice([], 6, [0]));
+    expect(returned(events)).toEqual([{ node: n(9), kind: 'plains_move', units: 2 }]);
+  });
+
+  it('counts each kind on its own, one site each in the same turn', () => {
+    const { events } = applyAction(game([5, 7, 9, 12]), rest, scriptedDice([], 6, [0, 0]));
+    expect(returned(events)).toEqual([
+      { node: n(9), kind: 'plains_move', units: 2 },
+      { node: n(7), kind: 'fighting', units: 2 },
+    ]);
+  });
+
+  it('brings back one site a turn while the kind stays short', () => {
+    // No fighting left at all: node 7 (2 units) makes it 2, no longer short.
+    const first = applyAction(game([2, 5, 7]), rest, scriptedDice([], 6, [0]));
+    expect(returned(first.events)).toEqual([{ node: n(7), kind: 'fighting', units: 2 }]);
+    const second = applyAction(first.state, { kind: 'rest', player: two }, noDice);
+    expect(returned(second.events)).toEqual([]);
+  });
+
+  it('comes back after a claim in the same turn, and to the same site again later', () => {
+    // Seat 1 takes node 2's last fighting unit; nodes 5 and 7 are empty, so 7 comes back.
+    const walker = withStats(game([5, 7]), one, { stamina: 10 });
+    const took = applyAction(walker, { kind: 'move', player: one, path: [n(1), n(2)] }, scriptedDice([], 6, [0]));
+    expect(returned(took.events)).toEqual([{ node: n(7), kind: 'fighting', units: 2 }]);
+    expect(took.events.map((event) => event.type)).toEqual(['moved', 'interacted', 'reward_returned', 'turn_ended']);
+
+    // Seat 2 takes node 7 again; with the figures on 2 and 7, node 5 is the only one left.
+    const back = withStats(withPosition(took.state, two, 6), two, { stamina: 10 });
+    const again = applyAction(back, { kind: 'move', player: two, path: [n(7)] }, scriptedDice([], 6, [0]));
+    expect(returned(again.events)).toEqual([{ node: n(5), kind: 'fighting', units: 1 }]);
+  });
+
+  it('brings nothing back once the game is won', () => {
+    const rich = withStats(withPosition(game([5, 7]), one, 7), one, { stamina: 10, gold: 0 });
+    const { state, events } = applyAction(rich, { kind: 'move', player: one, path: [n(13)] }, noDice);
+    expect(state.status).toBe('finished');
+    expect(returned(events)).toEqual([]);
+  });
+
+  it('never brings gold back', () => {
+    const noGold = withPosition(game([13, 5, 7]), one, 0);
+    const { events } = applyAction(noGold, rest, scriptedDice([], 6, [0]));
+    expect(returned(events).map((back) => back.kind)).not.toContain('gold');
+  });
+
+  it('leaves a game started before the rule as it was', () => {
+    const { respawn: _respawn, ...config } = DEFAULT_RULESET.config;
+    const before: GameMap = { ...map, ruleset: { ...DEFAULT_RULESET, config } };
+    const { events } = applyAction(game([5, 7], before), rest, noDice);
+    expect(returned(events)).toEqual([]);
+  });
+});

@@ -228,6 +228,9 @@ function planned(state: GameState, player: GameState['players'][number]['id'], p
     roll: () => {
       throw new Error('a saved route rolls no die');
     },
+    pick: () => {
+      throw new Error('a saved route brings no skill back');
+    },
   };
   return applyAction(state, { kind: 'plan', player, path, waypoint: null }, noDice).state;
 }
@@ -337,6 +340,9 @@ describe('Track closes planning (Q57, 75)', () => {
     const noDice = {
       roll: () => {
         throw new Error('resting rolls no die');
+      },
+      pick: () => {
+        throw new Error('no skill is short yet');
       },
     };
     controller.setGame(applyAction(saved, { kind: 'rest', player: ada.id }, noDice).state);

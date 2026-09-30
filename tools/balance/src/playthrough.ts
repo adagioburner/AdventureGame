@@ -340,7 +340,8 @@ export function formatPlaythrough(run: Playthrough): string {
     `meta dice_seed=${run.options.diceSeed} start_node=${run.startingNode} nodes=${run.map.graph.nodes.length} pois=${run.map.pois.length} gold_units=${goldTotal}`,
   );
   lines.push(
-    `meta rest_stamina_gain=${config.movement.REST_STAMINA_GAIN} guard_die=${config.combat.GUARD_DIE.count}d${config.combat.GUARD_DIE.sides}`,
+    `meta rest_stamina_gain=${config.movement.REST_STAMINA_GAIN} guard_die=${config.combat.GUARD_DIE.count}d${config.combat.GUARD_DIE.sides}` +
+      (config.respawn === undefined ? '' : ` respawn_short_below=${config.respawn.SHORT_BELOW_UNITS} respawn_far_share=${config.respawn.FAR_SHARE}`),
   );
   for (const player of run.finalState.players) {
     lines.push(
@@ -378,6 +379,14 @@ function turnLines(turn: PlayedTurn, run: Playthrough): string[] {
       case 'interacted':
         lines.push(...interactionLines(event.resolution, turn, run));
         break;
+      case 'reward_returned': {
+        const below = run.map.ruleset.config.respawn?.SHORT_BELOW_UNITS;
+        lines.push(
+          `  back    ${event.reward.kind} x${event.reward.units} back on node ${event.node} (${terrainOf(run, event.node)}):` +
+            ` fewer than ${below} ${event.reward.kind} left on the map, drawn from the empty ones farthest from every figure (Q135)`,
+        );
+        break;
+      }
       case 'game_won':
         lines.push(`  won     ${event.winners.join(' ')} — lead exceeds the gold still on the map (§1)`);
         break;

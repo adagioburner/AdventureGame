@@ -214,5 +214,7 @@ export type GameEvent =
   | { readonly type: 'message_posted'; readonly post: BoardPost }
   | { readonly type: 'message_deleted'; readonly id: string }
   | { readonly type: 'planned'; readonly player: PlayerId; readonly plan: PlannedPath | null }
+  /** [Q135] A speed or skill ran short and came back to an empty site, far from every figure. */
+  | { readonly type: 'reward_returned'; readonly node: NodeId; readonly reward: Reward }
   | { readonly type: 'game_won'; readonly winners: readonly PlayerId[] }
   | { readonly type: 'game_ended'; readonly reason: GameEndReason; readonly winners: readonly PlayerId[] };

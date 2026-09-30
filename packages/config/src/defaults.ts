@@ -1,4 +1,5 @@
 import type { EngineeringConfig, GameConfig } from './types.ts';
+import { SKILL_KINDS } from './vocabulary.ts';
 
 /**
  * GDD.md §11 "Configuration Parameters", transcribed with no substitutions.
@@ -60,6 +61,13 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     SIMULATION_TURN_CAP: 250,
     STAMINA_PER_SKILL_POINT: 5,
     THINKING_TIME_SECONDS: { min: 1, max: 60 },
+  },
+  // [Q135] Andrei, 2026-09-30, 530 A, 531 C, 533 A; 22:56 "keep at least 2 of each
+  // skill on the map (instead of 3)".
+  respawn: {
+    KINDS: SKILL_KINDS,
+    SHORT_BELOW_UNITS: 2,
+    FAR_SHARE: 0.5,
   },
 };
 

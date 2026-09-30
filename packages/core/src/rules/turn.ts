@@ -8,6 +8,7 @@ import { isClaimed, type PoiRuntimeState } from '../poi.ts';
 import { activePlayer, playerById, playerBySeat, poiRuntimeAt, type GameState } from '../state.ts';
 import { assertWalkable, refreshAllowance, resolveMovement } from './movement.ts';
 import { resolveInteraction } from './interaction.ts';
+import { respawnShortRewards } from './respawn.ts';
 import { checkVictory, mostGold } from './victory.ts';
 
 /**
@@ -18,6 +19,12 @@ import { checkVictory, mostGold } from './victory.ts';
  */
 export interface DiceSource {
   roll(): DieRoll;
+  /**
+   * [Q135] A uniform whole number from 0 to `count - 1`: which of the far
+   * empty sites a short skill comes back to. Drawn from the same stream as the
+   * die, so it is as unpredictable online and replays with it on one device.
+   */
+  pick(count: number): number;
 }
 
 export interface ActionOutcome {
@@ -35,8 +42,9 @@ export interface ActionOutcome {
  *
  * Sequence for a turn action (§7, §8): resolve movement → if the turn ends on
  * an unclaimed POI, interact automatically → if a gold reward was claimed,
- * re-evaluate the win condition (§1) → end the turn and advance to the next
- * seat, refreshing that player's allowance (§7).
+ * re-evaluate the win condition (§1) → bring back any speed or skill that has
+ * run short (Q135) → end the turn and advance to the next seat, refreshing
+ * that player's allowance (§7).
  *
  * The input state is never mutated. `map` is carried across by reference — it
  * never changes during play — so a new state copies only the small mutable
@@ -109,6 +117,8 @@ function applyTurnAction(state: GameState, action: TurnAction, dice: DiceSource)
   // walked over on the way is not interacted with, and resting on one is not
   // either — [SOURCE §7, chat] rest is "no movement/interaction".
   if (action.kind === 'move') next = applyArrival(next, player.id, dice, events);
+  // [Q135] Once the turn's claim is made, and only while the game goes on.
+  if (next.status === 'in_progress') next = respawnShortRewards(next, dice, events);
 
   return { state: endTurn(next, player.id, events), events };
 }

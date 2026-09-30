@@ -27,5 +27,5 @@ export function rollGuardDie(rng: Rng, config: GameConfig): DieRoll {
  * inside the search. What they vary is the `Rng`, never the die.
  */
 export function createDiceSource(rng: Rng, config: GameConfig): DiceSource {
-  return { roll: () => rollGuardDie(rng, config) };
+  return { roll: () => rollGuardDie(rng, config), pick: (count) => rng.nextInt(count) };
 }
