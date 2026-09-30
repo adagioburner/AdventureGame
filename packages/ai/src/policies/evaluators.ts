@@ -3,7 +3,6 @@ import {
   playerById,
   totalGoldUnits,
   totalSkillUnits,
-  unclaimedGoldUnits,
   type GameState,
   type PlayerId,
 } from '@adventure/core';
@@ -66,17 +65,27 @@ function normalisedSkills(state: GameState, subject: PlayerId): number {
 }
 
 /**
- * How far the game has run, as a fraction of the gold on the map: 0 at the
- * opening, 1 once nothing is left to claim.
+ * How far the game has run: the skill and gold units anyone has claimed, over
+ * all the skill and gold units on the map. 0 at the opening, 1 once every one
+ * of them is taken.
  *
- * [SOURCE §9, review] Q18's weight between gold and skills. A map with no
- * gold on it has nothing left to claim by definition, so it reads as 1 — the
- * same answer `unclaimedGoldUnits` of 0 gives everywhere else.
+ * [SOURCE §9, chat] Andrei, 2026-09-30: "p defined as (skills and gold
+ * claimed) / (total skills and gold) so we have continuous progress from the
+ * start". It was gold alone (Q18), which stood at 0 until the first gold was
+ * taken however many skill sites had gone. Stamina rewards are not counted, and
+ * a v1 map has none. A map with none of either reads as 1.
  */
-function goldProgress(state: GameState): number {
-  const total = totalGoldUnits(state.map);
-  if (total === 0) return 1;
-  return (total - unclaimedGoldUnits(state)) / total;
+function claimedProgress(state: GameState): number {
+  let total = 0;
+  let claimed = 0;
+  for (let index = 0; index < state.map.pois.length; index++) {
+    const reward = state.map.pois[index]?.reward;
+    if (reward === undefined) continue;
+    if (reward.kind !== 'gold' && !SKILL_KINDS.some((kind) => kind === reward.kind)) continue;
+    total += reward.units;
+    if (state.poiRuntime[index]?.claimedBy !== null) claimed += reward.units;
+  }
+  return total === 0 ? 1 : claimed / total;
 }
 
 /**
@@ -100,7 +109,8 @@ export function simulatedRolloutEvaluator(): NodeEvaluator {
  *
  *   value = gold/total_gold × progress
  *         + (skills + stamina/STAMINA_PER_SKILL_POINT)/total_skills × (1 − progress)
- *           progress = gold claimed by all players / total_gold
+ *           progress = skill and gold units claimed by all players
+ *                    / (total_skills + total_gold)
  *
  * "Skills are important at the beginning of the game, and are worthless at the
  * end", which is what the weighting does: at the opening `progress` ≈ 0 and the
@@ -109,7 +119,8 @@ export function simulatedRolloutEvaluator(): NodeEvaluator {
  * Every quantity is read from **the node being evaluated** — this is the
  * estimate of a position, so the rollout is not consulted at all. That is also
  * why `progress` is meaningful here: it moves across the tree, whereas at a
- * rollout's end there is by definition no unclaimed gold left (Q6).
+ * rollout's end there is by definition no unclaimed gold left (Q6), and
+ * usually few skills.
  *
  * This is where the `balancingConstant` of the earlier design went: what it
  * tuned by hand is now `progress`, which the state supplies.
@@ -119,7 +130,7 @@ export function estimatedGoldAndSkillsEvaluator(): NodeEvaluator {
     name: 'estimated-gold-and-skills',
     readsRollout: false,
     evaluate(atNode: RolloutCursor, _rolledOut: RolloutCursor, subject: PlayerId): number {
-      const progress = goldProgress(atNode.state);
+      const progress = claimedProgress(atNode.state);
       const gold = normalisedGold(atNode.state, playerById(atNode.state, subject).stats.gold);
       const skills = normalisedSkills(atNode.state, subject);
       return gold * progress + skills * (1 - progress);
