@@ -22,6 +22,7 @@ import {
   turnCapTermination,
   turnTowards,
   unclaimedPoiNodes,
+  winnablePoiNodes,
   type RestRule,
   type RolloutOptions,
 } from './rollout.ts';
@@ -81,6 +82,38 @@ describe('unclaimedPoiNodes', () => {
 
     const claimed = applyAction(state, { kind: 'move', player: player('one'), path: [n(1)] }, scriptedDice([])).state;
     expect([...unclaimedPoiNodes(claimed)].sort((a, b) => a - b)).toEqual([n(2), n(5), n(6)]);
+  });
+});
+
+describe('winnablePoiNodes (detail 419, comparison only)', () => {
+  const guarded = fixtureMap({
+    terrains: ['plains', 'plains', 'plains', 'plains'],
+    edges: [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+    ],
+    pois: [
+      { node: 1, kind: 'fighting', units: 1, guard: null },
+      { node: 2, kind: 'gold', units: 2, guard: { type: 'fighting', strength: 6 } },
+      { node: 3, kind: 'gold', units: 3, guard: { type: 'magic', strength: 7 } },
+    ],
+  });
+  const seatOne = (state: GameState) => state.players[0]!;
+
+  it('leaves out gold whose guard a 6 plus the skill does not beat', () => {
+    const state = fixtureGame(guarded, 0);
+    expect([...winnablePoiNodes(state, seatOne(state))]).toEqual([n(1)]);
+    const fighter = withStats(state, player('one'), { fighting: 1 });
+    expect([...winnablePoiNodes(fighter, seatOne(fighter))]).toEqual([n(1), n(2)]);
+    const mage = withStats(state, player('one'), { magic: 2 });
+    expect([...winnablePoiNodes(mage, seatOne(mage))]).toEqual([n(1), n(3)]);
+  });
+
+  it('falls back to every unclaimed POI when nothing is winnable', () => {
+    const state = fixtureGame(guarded, 0);
+    const claimed = applyAction(state, { kind: 'move', player: player('one'), path: [n(1)] }, scriptedDice([])).state;
+    expect([...winnablePoiNodes(claimed, claimed.players[1]!)]).toEqual([n(2), n(3)]);
   });
 });
 

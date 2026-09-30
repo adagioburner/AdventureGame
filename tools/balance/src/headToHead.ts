@@ -7,6 +7,7 @@ import {
   simulatedRolloutEvaluator,
   type NodeEvaluator,
 } from '@adventure/ai';
+import { winnablePoiNodes } from '@adventure/sim';
 import { computerDriver } from './aiPlaythrough.ts';
 import { playGame, type Playthrough, type PlaythroughDriver, type PlaythroughEnd } from './playthrough.ts';
 
@@ -38,25 +39,31 @@ export function isEvaluatorName(name: string): name is EvaluatorName {
 }
 
 /**
- * One seat's way of thinking: an evaluation, and optionally its own UCT
- * exploration constant in place of §11's `MCTS_EXPLORATION_CONSTANT`. Written
- * `hybrid` or `hybrid@0.3`.
+ * One seat's way of thinking: an evaluation, optionally only sites it could
+ * win now as targets (detail 419), and optionally its own UCT exploration
+ * constant in place of §11's `MCTS_EXPLORATION_CONSTANT`. Written `hybrid`,
+ * `hybrid+winnable`, `hybrid@0.3` or `hybrid+winnable@0.3`.
  */
 export interface SeatSpec {
   readonly evaluator: EvaluatorName;
+  readonly winnableOnly: boolean;
   readonly exploration: number | null;
 }
 
 export function parseSeatSpec(text: string): SeatSpec | null {
-  const [name, constant] = text.split('@');
+  const [head, constant] = text.split('@');
+  const [name, flag] = (head ?? '').split('+');
   if (name === undefined || !isEvaluatorName(name)) return null;
-  if (constant === undefined) return { evaluator: name, exploration: null };
+  if (flag !== undefined && flag !== 'winnable') return null;
+  const winnableOnly = flag === 'winnable';
+  if (constant === undefined) return { evaluator: name, winnableOnly, exploration: null };
   const exploration = Number(constant);
-  return Number.isFinite(exploration) && exploration >= 0 ? { evaluator: name, exploration } : null;
+  return Number.isFinite(exploration) && exploration >= 0 ? { evaluator: name, winnableOnly, exploration } : null;
 }
 
 export function seatLabel(spec: SeatSpec): string {
-  return spec.exploration === null ? spec.evaluator : `${spec.evaluator}@${spec.exploration}`;
+  const name = spec.winnableOnly ? `${spec.evaluator}+winnable` : spec.evaluator;
+  return spec.exploration === null ? name : `${name}@${spec.exploration}`;
 }
 
 function withExploration(ruleset: Ruleset, exploration: number | null): Ruleset {
@@ -107,6 +114,7 @@ export function playHeadToHead(options: HeadToHeadOptions): { readonly game: Hea
       seed: `${options.seed}-seat${index + 1}`,
       now: options.now,
       evaluator: EVALUATORS[spec.evaluator](),
+      ...(spec.winnableOnly ? { targets: winnablePoiNodes } : {}),
       onSearch: (iterations) => {
         const counter = counters[index];
         if (counter === undefined) return;
@@ -126,6 +134,8 @@ export function playHeadToHead(options: HeadToHeadOptions): { readonly game: Hea
       '# lead = today\'s imagined games, scored by the gold lead over the richest other player:',
       '# (lead / total gold + 1) / 2; lead-win: 1 ahead, 0.5 level, 0 behind; lead-win-margin: their average;',
       '# lead-soft: (lead / (|lead| + 1) + 1) / 2 with the lead in gold.',
+      '# +winnable: only sites it could win now are choices, for itself and for everyone in its imagined',
+      '# games (gold whose guard a 6 plus the skill does not beat is left out, unless nothing else is left).',
       ...(drivers[0]?.describe ?? []),
     ],
     choose(state, playerId) {

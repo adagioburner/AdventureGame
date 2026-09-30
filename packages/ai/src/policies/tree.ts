@@ -1,6 +1,6 @@
 import type { GameConfig } from '@adventure/config';
 import { playerById, previewPath, routeTable, type GameState, type NodeId, type PlayerId, type Rng } from '@adventure/core';
-import { closestPoiCandidates, unclaimedPoiNodes, type PoiCandidate } from '@adventure/sim';
+import { closestPoiCandidates, unclaimedPoiNodes, type PoiCandidate, type TargetFilter } from '@adventure/sim';
 import type { ActionEnumerator, MctsBranch, MctsNode, TreePolicy, TurnReachability } from '../types.ts';
 
 /**
@@ -113,6 +113,8 @@ function argMaxWithRandomTieBreak<T>(items: readonly T[], score: (item: T) => nu
 export function closestUnclaimedPoiEnumerator(
   config: GameConfig,
   reachability: TurnReachability,
+  /** Which POIs may be targets; every unclaimed one when absent, as the game plays. */
+  allowed?: TargetFilter,
 ): ActionEnumerator {
   return {
     name: 'closest-unclaimed-pois+rest',
@@ -122,7 +124,7 @@ export function closestUnclaimedPoiEnumerator(
 
       // `closestPoiCandidates` already returns at most `CLOSE_CANDIDATE_COUNT`,
       // so this *is* the pruned target list; there is no second cap to apply.
-      const eligible = unclaimedPoiNodesOf(state);
+      const eligible = allowed === undefined ? unclaimedPoiNodesOf(state) : allowed(state, player);
       const targets = closestPoiCandidates(
         state.map.graph,
         player.position,

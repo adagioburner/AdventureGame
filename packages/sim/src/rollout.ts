@@ -152,7 +152,12 @@ export interface RolloutOptions {
   readonly restRule: RestRule;
   readonly dice: DiceSource;
   readonly rng: Rng;
+  /** Which POIs a player may head for; every unclaimed one when absent, as the game plays. */
+  readonly targets?: TargetFilter;
 }
+
+/** Which POIs `player` may head for in `state`. */
+export type TargetFilter = (state: GameState, player: PlayerState) => ReadonlySet<NodeId>;
 
 /** Which POIs a rollout may target: those whose reward is still unclaimed (§4.5). */
 export function unclaimedPoiNodes(state: GameState): ReadonlySet<NodeId> {
@@ -163,6 +168,29 @@ export function unclaimedPoiNodes(state: GameState): ReadonlySet<NodeId> {
     if (state.poiRuntime[index]?.claimedBy === null) nodes.add(poi.node);
   }
   return nodes;
+}
+
+/**
+ * Unclaimed POIs `player` could win now: every unguarded one, and guarded gold
+ * whose guard the die's best roll plus the player's skill beats (§8: roll +
+ * skill > strength). When that leaves nothing, every unclaimed POI, so a
+ * player never runs out of somewhere to go while gold is left.
+ *
+ * For comparison only (detail 419, Andrei 2026-09-30: leave gold nobody can win
+ * yet out of the computer's choices, tested on its own). The game's computer
+ * players use `unclaimedPoiNodes`.
+ */
+export function winnablePoiNodes(state: GameState, player: PlayerState): ReadonlySet<NodeId> {
+  const { count, sides } = state.map.ruleset.config.combat.GUARD_DIE;
+  const nodes = new Set<NodeId>();
+  for (let index = 0; index < state.map.pois.length; index++) {
+    const poi = state.map.pois[index];
+    if (poi === undefined || state.poiRuntime[index]?.claimedBy !== null) continue;
+    const guard = poi.guard;
+    const skill = guard === null ? 0 : guard.type === 'fighting' ? player.stats.fighting : player.stats.magic;
+    if (guard === null || count * sides + skill > guard.strength) nodes.add(poi.node);
+  }
+  return nodes.size > 0 ? nodes : unclaimedPoiNodes(state);
 }
 
 /**
@@ -212,7 +240,7 @@ export function playRolloutTurn(cursor: RolloutCursor, options: RolloutOptions):
     const choice = chooseWalkTarget(
       state.map.graph,
       player.position,
-      unclaimedPoiNodes(state),
+      options.targets === undefined ? unclaimedPoiNodes(state) : options.targets(state, player),
       options.config.balancing.CLOSE_CANDIDATE_COUNT,
       options.config,
       options.rng,

@@ -1,6 +1,6 @@
 import type { GameConfig } from '@adventure/config';
 import type { DiceSource, GameState, PlayerId, Rng, TurnAction } from '@adventure/core';
-import { goldExhaustedTermination, restWhenStuck, turnCapTermination } from '@adventure/sim';
+import { goldExhaustedTermination, restWhenStuck, turnCapTermination, type TargetFilter } from '@adventure/sim';
 import { firstTurnOf, searchTree, startSearch, type SearchResult } from './mcts.ts';
 import { simulatedRolloutEvaluator } from './policies/evaluators.ts';
 import { closestPoiRolloutPolicy } from './policies/rollout.ts';
@@ -22,6 +22,12 @@ export interface ComputerSettings {
    * hybrid one to compare them.
    */
   readonly evaluator?: NodeEvaluator;
+  /**
+   * Which sites a player may head for, in the search's choices and in the
+   * games it plays in its head. The game leaves it out and gets every
+   * unclaimed site; the balancing harness passes `winnablePoiNodes` to compare.
+   */
+  readonly targets?: TargetFilter;
 }
 
 /**
@@ -40,8 +46,8 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
     subject,
     config,
     treePolicy: uctTreePolicy(config.ai.MCTS_EXPLORATION_CONSTANT),
-    actions: closestUnclaimedPoiEnumerator(config, previewReachability()),
-    rollout: closestPoiRolloutPolicy({ config, termination, restRule }),
+    actions: closestUnclaimedPoiEnumerator(config, previewReachability(), settings.targets),
+    rollout: closestPoiRolloutPolicy({ config, termination, restRule, ...(settings.targets === undefined ? {} : { targets: settings.targets }) }),
     evaluator: settings.evaluator ?? simulatedRolloutEvaluator(),
     termination,
     restRule,

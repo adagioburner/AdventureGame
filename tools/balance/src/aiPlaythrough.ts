@@ -11,6 +11,7 @@ import {
   type PlayerId,
 } from '@adventure/core';
 import { chooseComputerMove, type MctsNode, type NodeEvaluator } from '@adventure/ai';
+import type { TargetFilter } from '@adventure/sim';
 import type { PlaythroughDriver, TurnChoice } from './playthrough.ts';
 
 /** How the computer player thinks in a playthrough. */
@@ -28,6 +29,8 @@ export interface ComputerSettings {
   readonly now: () => number;
   /** How the search values a position; the game's own (simulated) when absent. */
   readonly evaluator?: NodeEvaluator;
+  /** Which sites a player may head for; every unclaimed one when absent, as the game plays. */
+  readonly targets?: TargetFilter;
   /** Told after every move how many iterations the search ran in how long. */
   readonly onSearch?: (iterations: number, took: number) => void;
 }
@@ -63,6 +66,7 @@ export function computerDriver(settings: ComputerSettings): PlaythroughDriver {
         dice,
         now: settings.now,
         ...(settings.evaluator === undefined ? {} : { evaluator: settings.evaluator }),
+        ...(settings.targets === undefined ? {} : { targets: settings.targets }),
       });
       const took = settings.now() - started;
       settings.onSearch?.(result.iterations, took);
