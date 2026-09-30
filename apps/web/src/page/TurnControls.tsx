@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
-import { isClaimed, poiAt, poiRuntimeAt, type GameState } from '@adventure/core';
+import { guardToFightAt, type GameState } from '@adventure/core';
 import type { MoveModeState } from '../interaction/moveMode.ts';
 
 interface TurnControlsProps {
@@ -56,9 +56,7 @@ export function TurnControls(props: TurnControlsProps) {
 
   const planning = move.kind !== 'idle';
   const rest = state.map.ruleset.config.movement.REST_STAMINA_GAIN;
-  const here = poiAt(state.map, player.position);
-  const runtime = poiRuntimeAt(state, player.position);
-  const onGuard = here !== undefined && here.guard !== null && runtime !== undefined && !isClaimed(runtime);
+  const onGuard = guardToFightAt(state, player.position);
   const find = (
     <button className="btn ghost" type="button" onClick={props.onFind} aria-label={`Show ${player.name} on the map`}>
       Find {player.name}
@@ -239,11 +237,14 @@ function PlayerMenu({ name, children }: { readonly name: string; readonly childr
  * next turn and says so.
  */
 function hint(move: MoveModeState, armed: boolean, name: string, rest: number, onGuard: boolean, later: boolean): string {
-  const stay = onGuard ? 'End turn with no route stays here and fights the guard again' : 'End turn with no route stays put';
+  // [490] Away from a guard, End turn that walks nothing rests (`endTurnActionFor`).
+  const stay = onGuard ? 'End turn with no route stays here and fights the guard again' : `End turn with no route rests: +${rest} stamina`;
   const when = later ? 'on your next turn' : 'this turn';
   switch (move.kind) {
     case 'idle':
-      return `${name}: tap your figure (or Plan a move), then where to go. ${stay}. Rest gains ${rest} stamina.`;
+      return onGuard
+        ? `${name}: tap your figure (or Plan a move), then where to go. ${stay}. Rest gains ${rest} stamina.`
+        : `${name}: tap your figure (or Plan a move), then where to go. ${stay}.`;
     case 'selecting':
       return armed
         ? 'Tap the space to route through.'
@@ -255,9 +256,10 @@ function hint(move: MoveModeState, armed: boolean, name: string, rest: number, o
       if (steps === 0) return later ? 'No route: you stay where you are.' : `Staying here this turn. ${stay}.`;
       if (preview.reachableStepCount === 0) {
         const route = steps === 1 ? 'this step' : `the first of these ${steps} steps`;
-        return later
-          ? `Not even ${route} is affordable on your next turn. Rest gains ${rest} stamina.`
-          : `Not even ${route} is affordable this turn. Rest gains ${rest} stamina; End turn walks nothing and keeps the route for next turn.`;
+        if (later) return `Not even ${route} is affordable on your next turn. Rest gains ${rest} stamina.`;
+        return onGuard
+          ? `Not even ${route} is affordable this turn. Rest gains ${rest} stamina; End turn walks nothing and keeps the route for next turn.`
+          : `Not even ${route} is affordable this turn. End turn rests: +${rest} stamina, and keeps the route for next turn.`;
       }
       const cost = preview.totalStaminaCost === 0 ? 'no stamina' : `${preview.totalStaminaCost} stamina`;
       const reach = preview.destinationReachable

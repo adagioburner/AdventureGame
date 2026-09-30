@@ -104,7 +104,8 @@ export type ClientMessage =
   /** [SOURCE §2] Rest instead of moving. `turn` as for `turn.end`. */
   | { readonly type: 'turn.rest'; readonly gameId: GameId; readonly turn: number }
   /**
-   * [SOURCE §4] GM forces a slow player's planned move, or a rest if none.
+   * [SOURCE §4] GM forces a slow player's planned move, or a rest if none;
+   * [491] a rest too when the planned move would walk nothing away from a guard.
    * `turn` is the turn the game master saw, so a Move on that crosses the
    * player's own End Turn is refused rather than played on the next turn.
    */
