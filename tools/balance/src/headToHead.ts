@@ -17,8 +17,11 @@ import { playGame, type Playthrough, type PlaythroughDriver, type PlaythroughEnd
  */
 export const EVALUATORS = {
   simulated: simulatedRolloutEvaluator,
-  estimated: estimatedGoldAndSkillsEvaluator,
-  hybrid: hybridGoldAndSkillsEvaluator,
+  estimated: () => estimatedGoldAndSkillsEvaluator('units-claimed'),
+  hybrid: () => hybridGoldAndSkillsEvaluator('units-claimed'),
+  // Progress as the larger of the gold and the skill shares claimed.
+  'estimated-max': () => estimatedGoldAndSkillsEvaluator('larger-share'),
+  'hybrid-max': () => hybridGoldAndSkillsEvaluator('larger-share'),
 } as const satisfies Record<string, () => NodeEvaluator>;
 
 export type EvaluatorName = keyof typeof EVALUATORS;
@@ -111,7 +114,8 @@ export function playHeadToHead(options: HeadToHeadOptions): { readonly game: Hea
       '# A number after @ is that seat\'s own exploration constant; the others use MCTS_EXPLORATION_CONSTANT.',
       '# simulated = share of the gold it ends with in a random game played to the end;',
       '# estimated = gold and skills it holds at the searched position, weighted by the gold claimed so far, no game played;',
-      '# hybrid = the average of the two.',
+      '# hybrid = the average of the two. -max: the progress weighing them is the larger of the gold',
+      '# share and the skill share claimed, instead of all skill and gold units claimed.',
       ...(drivers[0]?.describe ?? []),
     ],
     choose(state, playerId) {

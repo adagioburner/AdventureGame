@@ -75,18 +75,38 @@ function normalisedSkills(state: GameState, subject: PlayerId): number {
  * taken however many skill sites had gone. Stamina rewards are not counted, and
  * a v1 map has none. A map with none of either reads as 1.
  */
-function claimedProgress(state: GameState): number {
-  let total = 0;
-  let claimed = 0;
+function claimedProgress(state: GameState, measure: ProgressMeasure): number {
+  let gold = 0;
+  let goldClaimed = 0;
+  let skills = 0;
+  let skillsClaimed = 0;
   for (let index = 0; index < state.map.pois.length; index++) {
     const reward = state.map.pois[index]?.reward;
     if (reward === undefined) continue;
-    if (reward.kind !== 'gold' && !SKILL_KINDS.some((kind) => kind === reward.kind)) continue;
-    total += reward.units;
-    if (state.poiRuntime[index]?.claimedBy !== null) claimed += reward.units;
+    const claimed = state.poiRuntime[index]?.claimedBy !== null;
+    if (reward.kind === 'gold') {
+      gold += reward.units;
+      if (claimed) goldClaimed += reward.units;
+    } else if (SKILL_KINDS.some((kind) => kind === reward.kind)) {
+      skills += reward.units;
+      if (claimed) skillsClaimed += reward.units;
+    }
   }
-  return total === 0 ? 1 : claimed / total;
+  if (measure === 'larger-share') {
+    // A kind the map does not hold has nothing left to claim, so reads as 1.
+    return Math.max(gold === 0 ? 1 : goldClaimed / gold, skills === 0 ? 1 : skillsClaimed / skills);
+  }
+  return gold + skills === 0 ? 1 : (goldClaimed + skillsClaimed) / (gold + skills);
 }
+
+/**
+ * Which `progress` the estimate uses.
+ *
+ *  - `units-claimed` (Q111): skill and gold units claimed over all of them.
+ *  - `larger-share`: Andrei, 2026-09-30, to try as well: "p =
+ *    max(gold_claimed/total_gold, skills_claimed/total_skills)".
+ */
+export type ProgressMeasure = 'units-claimed' | 'larger-share';
 
 /**
  * **Simulated.** [SOURCE §5, chat] §9's specified default: "the simulated
@@ -125,12 +145,12 @@ export function simulatedRolloutEvaluator(): NodeEvaluator {
  * This is where the `balancingConstant` of the earlier design went: what it
  * tuned by hand is now `progress`, which the state supplies.
  */
-export function estimatedGoldAndSkillsEvaluator(): NodeEvaluator {
+export function estimatedGoldAndSkillsEvaluator(measure: ProgressMeasure = 'units-claimed'): NodeEvaluator {
   return {
     name: 'estimated-gold-and-skills',
     readsRollout: false,
     evaluate(atNode: RolloutCursor, _rolledOut: RolloutCursor, subject: PlayerId): number {
-      const progress = claimedProgress(atNode.state);
+      const progress = claimedProgress(atNode.state, measure);
       const gold = normalisedGold(atNode.state, playerById(atNode.state, subject).stats.gold);
       const skills = normalisedSkills(atNode.state, subject);
       return gold * progress + skills * (1 - progress);
@@ -146,9 +166,9 @@ export function estimatedGoldAndSkillsEvaluator(): NodeEvaluator {
  * Composed from the other two evaluators rather than reimplementing either, so
  * a change to one cannot leave the hybrid computing something else.
  */
-export function hybridGoldAndSkillsEvaluator(): NodeEvaluator {
+export function hybridGoldAndSkillsEvaluator(measure: ProgressMeasure = 'units-claimed'): NodeEvaluator {
   const simulated = simulatedRolloutEvaluator();
-  const estimated = estimatedGoldAndSkillsEvaluator();
+  const estimated = estimatedGoldAndSkillsEvaluator(measure);
 
   return {
     name: 'hybrid-gold-and-skills',

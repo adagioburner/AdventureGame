@@ -22,4 +22,5 @@ export {
   simulatedRolloutEvaluator,
   estimatedGoldAndSkillsEvaluator,
   hybridGoldAndSkillsEvaluator,
+  type ProgressMeasure,
 } from './policies/evaluators.ts';

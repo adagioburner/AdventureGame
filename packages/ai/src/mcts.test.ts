@@ -154,6 +154,10 @@ describe('estimated evaluation', () => {
     const rested = withStats(took, player('one'), { stamina: 5 });
     const withStamina = estimatedGoldAndSkillsEvaluator().evaluate(rolloutCursor(rested, player('one')), rolloutCursor(rested, player('one')), player('one'));
     expect(withStamina).toBeCloseTo((2 / 3) * (1 - 1 / 8));
+
+    // The larger share instead: 1 of 3 skill units against 0 of 5 gold.
+    const larger = estimatedGoldAndSkillsEvaluator('larger-share').evaluate(rolloutCursor(took, player('one')), rolloutCursor(took, player('one')), player('one'));
+    expect(larger).toBeCloseTo((1 / 3) * (1 - 1 / 3));
   });
 });
 
