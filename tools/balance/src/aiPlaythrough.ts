@@ -10,7 +10,7 @@ import {
   type NodeId,
   type PlayerId,
 } from '@adventure/core';
-import { chooseComputerMove, type MctsNode, type NodeEvaluator } from '@adventure/ai';
+import { chooseComputerMove, computerEvaluator, type MctsNode, type NodeEvaluator } from '@adventure/ai';
 import type { ClosestFinder, TargetFilter, TargetPicker } from '@adventure/sim';
 import type { PlaythroughDriver, TurnChoice } from './playthrough.ts';
 
@@ -27,11 +27,11 @@ export interface ComputerSettings {
    * golden file needs to come out the same on every machine.
    */
   readonly now: () => number;
-  /** How the search values a position; the game's own (simulated) when absent. */
+  /** How the search values a position; the game's own (the lead score, Q113) when absent. */
   readonly evaluator?: NodeEvaluator;
   /** Which sites a player may head for; every unclaimed one when absent, as the game plays. */
   readonly targets?: TargetFilter;
-  /** Which sites count as closest; by weighted terrain cost when absent, as the game plays. */
+  /** Which sites count as closest; by the player's own speeds when absent, as the game plays (Q112). */
   readonly closest?: ClosestFinder;
   /** Which of the closest a player in an imagined game heads for; uniformly when absent. */
   readonly pick?: TargetPicker;
@@ -53,13 +53,13 @@ export function computerDriver(settings: ComputerSettings): PlaythroughDriver {
   const rng = createRng(`search-${settings.seed}`);
   const dice = createDiceSource(rng.fork('dice'), config);
   const seconds = settings.thinkingMs / 1000;
+  const evaluator = settings.evaluator ?? computerEvaluator();
 
   return {
     describe: [
       `# "plan" is the computer player's choice (GDD §9): each turn it searched for ${seconds} s,`,
       '# playing games out in its head from the position on the board, and took the target it tried most.',
-      '# "why" says how many games that was, and what share of the map\'s gold it ended with on',
-      '# average when it went that way; "others" are the runners-up.',
+      ...describeWhy(evaluator),
     ],
     choose(state: GameState, playerId: PlayerId): TurnChoice {
       const started = settings.now();
@@ -76,7 +76,7 @@ export function computerDriver(settings: ComputerSettings): PlaythroughDriver {
       });
       const took = settings.now() - started;
       settings.onSearch?.(result.iterations, took);
-      const why = explain(state, result.root, result.best, result.iterations, took, settings.evaluator);
+      const why = explain(state, result.root, result.best, result.iterations, took, evaluator);
 
       const branch = result.best.action;
       if (branch === null) throw new Error('the search chose nothing');
@@ -95,6 +95,27 @@ export function computerDriver(settings: ComputerSettings): PlaythroughDriver {
   };
 }
 
+/** The header lines that say how to read "why". */
+function describeWhy(evaluator: NodeEvaluator): string[] {
+  if (evaluator.name === 'simulated-rollout') {
+    return [
+      '# "why" says how many games that was, and what share of the map\'s gold it ended with on',
+      '# average when it went that way; "others" are the runners-up.',
+    ];
+  }
+  if (evaluator.name === 'simulated-lead-soft') {
+    return [
+      '# "why" says how many games that was, and how it scored them on average when it went that way:',
+      '# each game by its gold lead over the richest other player at the end (Q113), 50% level,',
+      '# 75% one gold ahead, 25% one behind; "others" are the runners-up.',
+    ];
+  }
+  return [
+    `# "why" says how many games that was, and its score out of 100 by the ${evaluator.name}`,
+    '# evaluation on average when it went that way; "others" are the runners-up.',
+  ];
+}
+
 /** The "why" and "others" lines. */
 function explain(
   state: GameState,
@@ -102,7 +123,7 @@ function explain(
   best: MctsNode,
   iterations: number,
   took: number,
-  evaluator: NodeEvaluator | undefined,
+  evaluator: NodeEvaluator,
 ): string[] {
   const gold = totalGoldUnits(state.map);
   const ranked = [...root.children].sort((a, b) => b.visits - a.visits);
@@ -111,9 +132,11 @@ function explain(
   // Only the simulated evaluation is a share of the gold; the others are a
   // score out of 100 that the transcript's header explains.
   const worth =
-    evaluator === undefined || evaluator.name === 'simulated-rollout'
+    evaluator.name === 'simulated-rollout'
       ? ` ending with ${share(best)} of the map's ${gold} gold on average`
-      : ` worth ${share(best)} on average by the ${evaluator.name} evaluation`;
+      : evaluator.name === 'simulated-lead-soft'
+        ? ` scoring ${share(best)} by its lead on average`
+        : ` worth ${share(best)} on average by the ${evaluator.name} evaluation`;
   const lines = [
     `  why     ${games(iterations)} played in its head over ${(took / 1000).toFixed(1)} s. This way: ${games(best.visits)},` +
       worth,

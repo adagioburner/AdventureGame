@@ -59,6 +59,15 @@ describe('the computer player', () => {
     expect(termination.isTerminal(at(cap - 1), 0)).toBe(false);
     expect(termination.isTerminal(at(cap), 0)).toBe(true);
   });
+
+  it('scores the games it plays in its head by its gold lead over the richest other player (Q113)', () => {
+    const state = withStats(withStats(fixtureGame(line, 0), player('one'), { gold: 3 }), player('two'), { gold: 1 });
+    const { evaluator } = computerSearchOptions(state, player('one'), settings());
+    const at = rolloutCursor(state, player('one'));
+    expect(evaluator.name).toBe('simulated-lead-soft');
+    expect(evaluator.evaluate(at, at, player('one'))).toBeCloseTo((2 / 3 + 1) / 2);
+    expect(evaluator.evaluate(at, at, player('two'))).toBeCloseTo((-2 / 3 + 1) / 2);
+  });
 });
 
 /**
