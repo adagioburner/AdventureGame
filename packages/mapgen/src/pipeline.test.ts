@@ -266,6 +266,57 @@ describe('§5.2 — guard strengths', () => {
   }, 30000);
 });
 
+describe('Q115 — forest gold guarded by fighting or magic', () => {
+  const withoutForestMagic: Ruleset = {
+    ...DEFAULT_RULESET,
+    content: {
+      ...DEFAULT_RULESET.content,
+      REWARD_TABLE: {
+        ...DEFAULT_RULESET.content.REWARD_TABLE,
+        forest: DEFAULT_RULESET.content.REWARD_TABLE.forest.map(({ magicGuardChance: _chance, ...row }) => row),
+      },
+    },
+  };
+  const isForestGold = (poi: GameMap['pois'][number]): boolean => poi.terrain === 'forest' && poi.reward.kind === 'gold';
+
+  it('guards forest gold with both fighting and magic, keeping it in its §4.2 row', () => {
+    const types = new Set<string>();
+    for (const seed of SEEDS) {
+      for (const poi of mapOf(seed).pois.filter(isForestGold)) {
+        expect(poi.group).toEqual({ kind: 'gold', guard: 'fighting' });
+        if (poi.guard !== null) types.add(poi.guard.type);
+      }
+    }
+    expect([...types].sort()).toEqual(['fighting', 'magic']);
+  }, 30000);
+
+  it('leaves plains gold fighting-guarded and mountain gold split by row', () => {
+    for (const seed of SEEDS) {
+      for (const poi of mapOf(seed).pois) {
+        if (poi.guard === null || isForestGold(poi)) continue;
+        expect(poi.guard.type).toBe(poi.group.guard);
+      }
+    }
+  }, 30000);
+
+  // The coin flips are the map's last draws, so turning them on moved nothing
+  // else on any seed: every road, reward, strength and picture is as it was.
+  it('changes nothing on a map but the guard type of some forest gold', () => {
+    for (const seed of SEEDS) {
+      const before = mapOf(seed, withoutForestMagic);
+      const after = mapOf(seed);
+      expect(after.graph).toEqual(before.graph);
+      expect(after.attempts).toBe(before.attempts);
+      expect(after.pois.map(({ guard, ...poi }) => ({ ...poi, strength: guard?.strength ?? 0 }))).toEqual(
+        before.pois.map(({ guard, ...poi }) => ({ ...poi, strength: guard?.strength ?? 0 })),
+      );
+      after.pois.forEach((poi, index) => {
+        if (!isForestGold(poi)) expect(poi.guard).toEqual(before.pois[index]?.guard);
+      });
+    }
+  }, 60000);
+});
+
 describe('§6 — starting position', () => {
   it('always has a non-POI plains node to start the players on', () => {
     for (const seed of SEEDS) {

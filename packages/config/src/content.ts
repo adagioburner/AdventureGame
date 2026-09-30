@@ -22,6 +22,14 @@ import type { GameContent, RewardTable } from './types.ts';
  * `POI_COUNT[terrain]`, so giving stamina POIs means taking them from another
  * kind on that terrain. `validateRuleset` catches it either way.
  */
+/**
+ * [Q115] The chance that a forest gold POI is guarded by magic instead of by
+ * fighting, drawn for each POI on its own (450 A, 451 A): at 0.5 a map has 0
+ * to 4 magic-guarded forest gold POIs, 2 on 3 maps in 8 and none on 1 in 16.
+ * Andrei, 2026-09-30: "Magic doesn't play an important enough role."
+ */
+export const FOREST_MAGIC_GUARD_CHANCE = 0.5;
+
 export const DEFAULT_REWARD_TABLE: RewardTable = {
   plains: [
     { kind: 'plains_move', guard: null, totalUnits: 20, poiCount: 10 },
@@ -33,7 +41,8 @@ export const DEFAULT_REWARD_TABLE: RewardTable = {
   forest: [
     { kind: 'mountain_move', guard: null, totalUnits: 15, poiCount: 8 },
     { kind: 'fighting', guard: null, totalUnits: 15, poiCount: 8 },
-    { kind: 'gold', guard: 'fighting', totalUnits: 5, poiCount: 4 },
+    // [Q115] Each POI's guard is fighting or, by a coin flip, magic.
+    { kind: 'gold', guard: 'fighting', totalUnits: 5, poiCount: 4, magicGuardChance: FOREST_MAGIC_GUARD_CHANCE },
   ],
   mountain: [
     // Mountain gold is split by guard type. Both rows are `kind: 'gold'`:

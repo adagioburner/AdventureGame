@@ -431,7 +431,7 @@ turn  38  p2 (seat 2)  at node 186  allowance plains 6 / forest 2 / mountain 0  
   stats p2  stamina   2  gold  3  plains_move 6  forest_move 2  mountain_move 0  fighting 0  magic 4
 
 turn  39  p1 (seat 1)  at node 130  allowance plains 11 / forest 10 / mountain 4  stamina 6
-  plan    heading for node 110 (gold x1, guarded fighting 2), the nearest POI p1 could take
+  plan    heading for node 110 (gold x1, guarded magic 2), the nearest POI p1 could take
           route 130 -> 125 -> 166 -> 127 -> 132 -> 94 -> 110
   step    130 -> 125  forest   free (forest_move allowance 10 -> 9)
   step    125 -> 166  forest   free (forest_move allowance 9 -> 8)
@@ -439,8 +439,8 @@ turn  39  p1 (seat 1)  at node 130  allowance plains 11 / forest 10 / mountain 4
   step    127 -> 132  forest   free (forest_move allowance 7 -> 6)
   step    132 ->  94  forest   free (forest_move allowance 6 -> 5)
   step     94 -> 110  forest   free (forest_move allowance 5 -> 4)
-  poi     node 110 holds gold x1, guarded fighting 2
-  roll    5 + fighting 1 = 6 vs 2 — taken
+  poi     node 110 holds gold x1, guarded magic 2
+  roll    5 + magic 4 = 9 vs 2 — taken
   stats p1  stamina   6  gold  2  plains_move 11  forest_move 10  mountain_move 4  fighting 1  magic 4
   stats p2  stamina   2  gold  3  plains_move 6  forest_move 2  mountain_move 0  fighting 0  magic 4
 
@@ -474,13 +474,13 @@ turn  42  p2 (seat 2)  at node 199  allowance plains 6 / forest 2 / mountain 0  
   stats p2  stamina   4  gold  5  plains_move 6  forest_move 2  mountain_move 0  fighting 0  magic 4
 
 turn  43  p1 (seat 1)  at node 55  allowance plains 11 / forest 10 / mountain 4  stamina 6
-  plan    heading for node 53 (gold x1, guarded fighting 2), the nearest POI p1 could take
+  plan    heading for node 53 (gold x1, guarded magic 2), the nearest POI p1 could take
           route 55 -> 52 -> 37 -> 53
   step     55 ->  52  forest   free (forest_move allowance 10 -> 9)
   step     52 ->  37  forest   free (forest_move allowance 9 -> 8)
   step     37 ->  53  forest   free (forest_move allowance 8 -> 7)
-  poi     node 53 holds gold x1, guarded fighting 2
-  roll    1 + fighting 2 = 3 vs 2 — taken
+  poi     node 53 holds gold x1, guarded magic 2
+  roll    1 + magic 4 = 5 vs 2 — taken
   stats p1  stamina   6  gold  3  plains_move 11  forest_move 10  mountain_move 4  fighting 2  magic 4
   stats p2  stamina   4  gold  5  plains_move 6  forest_move 2  mountain_move 0  fighting 0  magic 4
 

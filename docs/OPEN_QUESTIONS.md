@@ -2424,6 +2424,29 @@ ten other maps (+2.2); with both ranking sites by their own speeds (Q112), 12
 of 20 at 3 s (+3.3) and 11 of 20 at 10 s (+2.2). All four together 48 of 80,
 +2.9 ± 1.1 gold a game; the 10 s runs alone are within luck.
 
+### Q115. ~~Which guards do forest sites get?~~ — **answered 2026-09-30: each forest gold site fighting or magic by a coin flip, magic drawn as the mountains' magic guardians (450-452 A)**
+
+[SOURCE §4.4, chat] Andrei, 2026-09-30: "Magic doesn't play an important
+enough role. Can you make it so the forest POI are assigned randomly either
+magic or combat guards?" Then 450 A (only forest's 4 gold sites, the ones
+guarded before, get the random guard; the other 16 stay unguarded), 451 A (a
+coin flip for each site on its own, 50% magic, as the named constant
+`FOREST_MAGIC_GUARD_CHANCE`; not exactly 2 of 4 on every map) and 452 A (a
+magic-guarded forest site borrows the mountains' magic guardians, as its
+fighting guards borrow the mountains' fighting ones).
+
+Until then all four forest gold sites were fighting-guarded. A map now carries
+0 to 4 magic-guarded forest gold sites: at 0.5, 2 on 3 maps in 8 and none on 1
+in 16 (100 maps measured: 9 with none, 20 with 1, 34 with 2, 32 with 3, 5 with
+4). Unchanged: guard strength (§5.2 never reads the type; forest guards run 1
+to 6, mostly 2 or 3), forest's 5 gold on 4 sites, magic rewards (10 on 6 plains
+sites), plains and mountain guards, the rulebook (it never says which terrain
+has which guard). The coin flips are the map's last draws, so on every seed
+only some forest gold guards and their pictures differ from before; over 100
+seeds every road, reward, strength and other picture was identical. A hot seat
+game kept on one device that fought at a forest gold site that turned magic may
+not resume as it was; an online game keeps the map it was made with.
+
 <a id="q120"></a>
 ### Q120. ~~What does clicking a player's card do?~~ — **answered 2026-09-30: finds the player, as the Find button did, which goes; the rest as recommended (470-475)**
 

@@ -19,9 +19,10 @@ import { ArtError, array, finite, nonNegative, positive, record, string } from '
  * that size. So a replacement sheet drawn at any resolution, with any amount
  * of padding in its cells, drops in without a second number changing.
  *
- * Two POI rows borrow another row's sheet (Q20): forest gold and stamina. They
- * carry a `borrowed` note saying why, which is what makes them easy to find and
- * a one-line edit to undo.
+ * Three POI rows borrow another row's sheet: forest gold guarded by fighting
+ * and stamina (Q20), and forest gold guarded by magic (Q115). They carry a
+ * `borrowed` note saying why, which is what makes them easy to find and a
+ * one-line edit to undo.
  */
 export interface ArtManifest {
   readonly terrain: PerTerrain<TerrainArt>;
