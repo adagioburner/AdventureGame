@@ -9,7 +9,7 @@
 export * from './vocabulary.ts';
 export * from './types.ts';
 export { DEFAULT_GAME_CONFIG, DEFAULT_ENGINEERING_CONFIG } from './defaults.ts';
-export { DEFAULT_GAME_CONTENT, DEFAULT_REWARD_TABLE } from './content.ts';
+export { DEFAULT_GAME_CONTENT, DEFAULT_REWARD_TABLE, FOREST_MAGIC_GUARD_CHANCE } from './content.ts';
 export { validateRuleset, resolvePending, RulesetError, UnresolvedDesignError } from './validate.ts';
 
 import { DEFAULT_ENGINEERING_CONFIG, DEFAULT_GAME_CONFIG } from './defaults.ts';

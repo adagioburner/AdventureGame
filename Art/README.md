@@ -121,8 +121,8 @@ there for people and ignored by the game.
   `terrain` is the POI's own or `any`, and a row naming the POI's guard type
   beats one that doesn't. The red or purple on a guarded POI's node always
   comes from the POI's actual guard, never from the row. Rows with a
-  `borrowed` note are the Q20 substitutions: forest gold and stamina POIs have
-  no sheet of their own yet. A row with `"on_node": true` (the guardians)
+  `borrowed` note have no sheet of their own yet: forest gold, whichever its
+  guard (Q20, Q115), and stamina POIs (Q20). A row with `"on_node": true` (the guardians)
   stands its picture on the POI's node, feet across the back of it; every
   other picture stands beside its node, touching it (Q35).
 - `icons`, `guards`, `roads`, `nodes`: reward icons (sized by their picture,
