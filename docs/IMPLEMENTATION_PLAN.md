@@ -1070,7 +1070,8 @@ proposals Andrei rules on one at a time (Q40); nothing in §11 changed.
   search a slice at a time.
 - **The computer player** (`packages/ai/src/computer.ts`) is the v1 setup in
   one place: UCT with √2, the closest unclaimed POIs plus rest, §9's rollout,
-  the simulated evaluation, the rest rule and the turn cap.
+  the simulated evaluation (scored by the lead since Q113), the rest rule and
+  the turn cap.
   `chooseComputerMove` thinks in one go; `startComputerMove` in slices.
 - **Hot seat** (`apps/web`): Human and Computer buttons and a thinking time of
   1 to 60 seconds per seat on the start game panel (Q41); on a computer's turn

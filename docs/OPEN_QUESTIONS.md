@@ -2403,6 +2403,27 @@ only which sites count as the 10 closest changes. The remoteness walk and a
 person's route preview keep weighted terrain cost. Equal distances keep the
 weighted-terrain-cost order.
 
+### Q113. ~~How does the computer score a game it imagines?~~ — **answered 2026-09-30: by its gold lead over the richest other player, (lead / (|lead| + 1) + 1) / 2 (417, 418, 429)**
+
+[SOURCE §9, chat] Andrei, 2026-09-30: after picking the lead as the score
+(417), "let us test "score the lead" first on its own", and for its form
+(418), "let us try (lead/(abs(lead) + 1) +1)/2 , if that makes sense". After
+the comparisons (427, 428), on 429: "let's merge #40 as is, and put lead score
+in a separate pr".
+
+Until then the computer scored each game it plays in its head by its own share
+of the map's gold (§9's simulated evaluation, Q18). `computerEvaluator()` now
+returns `simulatedLeadEvaluator('soft')`: the lead is its gold minus the
+richest other player's when the imagined game ends, so level is 0.5, one gold
+ahead 0.75 and two ahead 0.83, and the value stays between 0 and 1 as Q14
+needs. The imagined games themselves are unchanged.
+
+Tested, 20 games a run with the seats swapped: against the computer scoring its
+own gold, 13 of 20 at 3 s a move (+4.1 gold a game) and 12 of 20 at 10 s on
+ten other maps (+2.2); with both ranking sites by their own speeds (Q112), 12
+of 20 at 3 s (+3.3) and 11 of 20 at 10 s (+2.2). All four together 48 of 80,
++2.9 ± 1.1 gold a game; the 10 s runs alone are within luck.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design

@@ -10,7 +10,7 @@ import {
   type TargetPicker,
 } from '@adventure/sim';
 import { firstTurnOf, searchTree, startSearch, type SearchResult } from './mcts.ts';
-import { simulatedRolloutEvaluator } from './policies/evaluators.ts';
+import { simulatedLeadEvaluator } from './policies/evaluators.ts';
 import { closestPoiRolloutPolicy } from './policies/rollout.ts';
 import { closestUnclaimedPoiEnumerator, previewReachability, uctTreePolicy } from './policies/tree.ts';
 import type { MctsOptions, NodeEvaluator } from './types.ts';
@@ -25,9 +25,9 @@ export interface ComputerSettings {
   readonly dice: DiceSource;
   readonly now: () => number;
   /**
-   * How a searched position is valued. The game leaves it out and gets v1's
-   * simulated evaluation (Q18); the balancing harness passes the estimated or
-   * hybrid one to compare them.
+   * How a searched position is valued. The game leaves it out and gets
+   * `computerEvaluator()`, the lead score (Q113); the balancing harness passes
+   * another to compare with it.
    */
   readonly evaluator?: NodeEvaluator;
   /**
@@ -47,13 +47,22 @@ export interface ComputerSettings {
 }
 
 /**
+ * How the game's computer players value a game they imagine (Q113): Andrei's
+ * lead score, (lead / (|lead| + 1) + 1) / 2, where the lead is the player's
+ * gold minus the richest other player's when the imagined game ends. It was
+ * the player's own share of the map's gold (§9's simulated evaluation).
+ */
+export function computerEvaluator(): NodeEvaluator {
+  return simulatedLeadEvaluator('soft');
+}
+
+/**
  * §9's computer player with the v1 setup: UCT with `MCTS_EXPLORATION_CONSTANT`
  * over the `CLOSE_CANDIDATE_COUNT` closest unclaimed POIs plus rest, closest
  * by the player's own speeds (Q112), the §9 rollout policy ranking the same
- * way, and the simulated evaluation (Q18: v1 uses it; estimated
- * and hybrid are there to experiment with). The games it plays in its head
- * rest when stuck (Q43) and stop when the gold is gone, the game is won, or
- * `SIMULATION_TURN_CAP` turns have passed since `state` (Q44).
+ * way, and the lead score (Q113, `computerEvaluator`). The games it plays in
+ * its head rest when stuck (Q43) and stop when the gold is gone, the game is
+ * won, or `SIMULATION_TURN_CAP` turns have passed since `state` (Q44).
  */
 export function computerSearchOptions(state: GameState, subject: PlayerId, settings: ComputerSettings): MctsOptions {
   const { config } = settings;
@@ -73,7 +82,7 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
       ...(settings.targets === undefined ? {} : { targets: settings.targets }),
       ...(settings.pick === undefined ? {} : { pick: settings.pick }),
     }),
-    evaluator: settings.evaluator ?? simulatedRolloutEvaluator(),
+    evaluator: settings.evaluator ?? computerEvaluator(),
     termination,
     restRule,
     dice: settings.dice,

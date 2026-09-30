@@ -26,10 +26,12 @@ import type { NodeEvaluator } from '../types.ts';
  * `MCTS_EXPLORATION_CONSTANT`: the first two by construction, and the average
  * of two such values trivially.
  *
- * [SOURCE §9, review] **v1 uses the simulated one.** It is §9's specified
- * default and the only one the first release is expected to run; the estimated
- * and hybrid evaluators exist to be experimented with afterwards, which is why
- * `SearchOptions.evaluator` is injected rather than defaulted.
+ * [SOURCE §9, review] **v1 used the simulated one.** It is §9's specified
+ * default; the estimated and hybrid evaluators exist to be experimented with,
+ * which is why `SearchOptions.evaluator` is injected rather than defaulted.
+ * [SOURCE §9, chat, 2026-09-30] Since Q113 the game's computer players score
+ * the simulated game by the lead instead, `simulatedLeadEvaluator('soft')`
+ * (`computerEvaluator()` in `../computer.ts`).
  */
 
 /**
@@ -132,7 +134,8 @@ export function simulatedRolloutEvaluator(): NodeEvaluator {
  *  - `win-and-margin`: the average of the two.
  *  - `soft`: Andrei's form, 2026-09-30 11:43: (lead / (|lead| + 1) + 1) / 2
  *    with the lead in gold. Level is 0.5, one gold ahead 0.75, two 0.83;
- *    a smooth win-or-lose that still prefers a bigger lead.
+ *    a smooth win-or-lose that still prefers a bigger lead. The game's
+ *    computer players use it (Q113).
  */
 export type LeadScore = 'margin' | 'win' | 'win-and-margin' | 'soft';
 

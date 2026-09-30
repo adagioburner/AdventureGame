@@ -392,7 +392,7 @@ four are now decided — two by §9 directly, two by §12.2:
 | Seam | Status |
 |---|---|
 | `RolloutPolicy` | **Specified** (§9). `closestPoiRolloutPolicy()` is a thin wrapper over `@adventure/sim`. |
-| `NodeEvaluator` | **Specified default** (§9): the simulated rollout, which is what v1 runs. Three ship — simulated, estimated and hybrid; see below. |
+| `NodeEvaluator` | **Specified default** (§9): the simulated rollout. Three ship — simulated, estimated and hybrid; see below. The game scores the simulated rollout by the lead (Q113, `computerEvaluator()`). |
 | `TreePolicy` | **Decided** (§12.2): UCT, `MCTS_EXPLORATION_CONSTANT` = √2, most-visited child as the final move. `uctTreePolicy()`. |
 | `ActionEnumerator` | **Decided** (§12.2): the `CLOSE_CANDIDATE_COUNT` (10) closest *unclaimed* POIs, recomputed per node, **plus a rest branch** when fewer than `MIN_REACHABLE_NODES_FOR_REST` (3) of them are reachable this turn. Closest by the player's own speeds (Q112, `closestBySpeeds`). `closestUnclaimedPoiEnumerator()`. |
 
@@ -498,6 +498,14 @@ gone, because what it tuned by hand is `progress`.
 [SOURCE §9, review] **v1 runs the simulated one**; the other two are
 there to experiment with once it works, which is why `SearchOptions.evaluator`
 is injected rather than defaulted.
+
+[SOURCE §9, chat, 2026-09-30] **Since [Q113](./OPEN_QUESTIONS.md#q113) the
+simulated rollout is scored by the lead**: `(lead / (|lead| + 1) + 1) / 2`,
+where the lead is the subject's gold minus the richest other player's when the
+rollout ends. Level is 0.5 and the value stays in [0, 1], so √2 still holds.
+`computerEvaluator()` in `packages/ai/src/computer.ts` returns it
+(`simulatedLeadEvaluator('soft')`); the balancing harness's `simulated` seat is
+still the subject's own gold, to compare against.
 
 One thing for whoever writes `search()`'s simulate phase: the estimated
 evaluator never reads `rolledOut`, so a search configured with it would pay for

@@ -187,16 +187,20 @@ what remains.
 position the computer is thinking about (Q44, `turnCapTermination`). That is
 for Q30's position, where the gold that is left is behind guards nobody can
 beat and nothing else would stop a simulated game. A game stopped there is
-scored like any other, by the subject's share of the map's gold, which is
-Andrei's "give the victory to whatever player has more gold". Near the opening
+scored like any other, by the subject's gold lead over the richest other
+player (Q113), which is Andrei's "give the victory to whatever player has more
+gold". Near the opening
 about a sixth of simulated games reach the cap; from turn 50 on, almost none.
 
 **What comes back.** There are three kinds of node evaluation, and they are
 worth keeping apart (`packages/ai/src/policies/evaluators.ts`):
 
 - **simulated** — the subject's gold once the rollout above has run to gold
-  exhaustion. `simulatedRolloutEvaluator()`. This is §9's specified default
-  and the one v1 uses; the other two are there to experiment with.
+  exhaustion. `simulatedRolloutEvaluator()`. This is §9's specified default;
+  the other two are there to experiment with. Since Q113 the game scores the
+  same rollout by the lead instead: `(lead / (|lead| + 1) + 1) / 2`, the lead
+  being the subject's gold minus the richest other player's
+  (`simulatedLeadEvaluator('soft')`, which `computerEvaluator()` returns).
 - **estimated** — no rollout at all: the subject's gold and skills as they stand
   at the node being evaluated, weighted by how far the game has run, so skills
   count for most at the opening and gold for everything at the end.

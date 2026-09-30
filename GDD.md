@@ -253,6 +253,8 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 [SOURCE §5, review] **v1 uses the simulated evaluation**; estimated and hybrid are there to experiment with afterwards.
 
+[SOURCE §5, chat, 2026-09-30] **The simulated game is scored by the lead** (Q113). The computer scores each game it imagines by its gold lead over the richest other player when that game ends, `(lead / (|lead| + 1) + 1) / 2`, instead of by its own gold: level is 0.5, one gold ahead 0.75, two ahead 0.83, and the score stays between 0 and 1. Andrei: "let us try (lead/(abs(lead) + 1) +1)/2 , if that makes sense". The imagined games themselves are unchanged.
+
 [SOURCE §5, review] The estimate's weight between gold and skills is not a tuned constant — it moves with the game, because "skills are important at the beginning of the game, and are worthless at the end":
 
 ```

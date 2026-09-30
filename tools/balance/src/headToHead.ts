@@ -15,7 +15,8 @@ import { playGame, type Playthrough, type PlaythroughDriver, type PlaythroughEnd
  * Computer against computer with a different node evaluation per seat (§9's
  * three: simulated, estimated, hybrid), so they can be compared on the same
  * maps with the seats swapped. Nothing here changes how the game's own
- * computer players think; they keep the simulated evaluation.
+ * computer players think; they use the lead score (Q113), which is the
+ * `lead-soft` seat here, while `simulated` is §9's own-gold evaluation.
  */
 export const EVALUATORS = {
   simulated: simulatedRolloutEvaluator,
@@ -28,7 +29,7 @@ export const EVALUATORS = {
   lead: () => simulatedLeadEvaluator('margin'),
   'lead-win': () => simulatedLeadEvaluator('win'),
   'lead-win-margin': () => simulatedLeadEvaluator('win-and-margin'),
-  // Andrei's form, 2026-09-30 11:43.
+  // Andrei's form, 2026-09-30 11:43; the game's own since Q113.
   'lead-soft': () => simulatedLeadEvaluator('soft'),
 } as const satisfies Record<string, () => NodeEvaluator>;
 
