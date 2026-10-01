@@ -281,7 +281,7 @@ describe('a bad art drop', () => {
     const catalog = buildArtCatalog(ART_FILES);
     expect(catalog.islandUrls.underside).toBeTruthy();
     expect(catalog.islandUrls.sky).toBeTruthy();
-    expect(catalog.manifest.island.sky.shade).toEqual({ light: 0, dark: 0.6 });
+    expect(catalog.manifest.island.sky.shade).toEqual({ light: 0, dark: 0.3 });
     expect(catalog.manifest.island.underside.fade).toBe(24);
     expect(catalog.manifest.island.sky.color).toBe('#809ab4');
     expect(() => buildArtCatalog(without('Island/underside.png'))).toThrow(/Island\/underside\.png is missing/);

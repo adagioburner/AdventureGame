@@ -2746,7 +2746,7 @@ draw uses the server's die stream, so nobody can foresee or redraw it; on one
 device it uses the browser's secure generator, and a game kept in the browser
 keeps the order drawn.
 
-### Q170. ~~How does the map become a floating island?~~ — **answered 2026-10-01: Andrei's brighter rock under the two front edges with a rim of stone tops, his sky behind the map as drawn, darkened at night, still as the map is dragged and growing a little as it is zoomed in; Whole map frames the map as before in games and the whole island on the New game screen (670-678)**
+### Q170. ~~How does the map become a floating island?~~ — **answered 2026-10-01: Andrei's brighter rock under the two front edges with a rim of stone tops, his sky behind the map as drawn, darkened at night, still as the map is dragged and growing a little as it is zoomed in; Whole map frames the map as before in games and the whole island on the New game screen (670-682)**
 
 Andrei, 2026-10-01 at 16:05: *"I don't like the map floating in the void. Can
 we add this extension to the bottom to create a Laputa-style gloating island?
@@ -2772,7 +2772,8 @@ plain grey-blue (`--map-ground`). Answered 16:46 to 16:5x.
      first view frame the rock down to its lowest point.
 673. **A dark-mode screen:** his sky darkened for night (recommended); the
      same sky as on a light screen; or the dark grey as before.
-     **Answered:** darkened for night, to 40% of its brightness.
+     **Answered:** darkened for night, to 40% of its brightness; made lighter
+     in 682.
 674. **The New game screen:** island and sky there too (recommended); or as
      before. **Answered:** there too.
 675. **Which rock:** the first, darker one with glowing cyan cracks; or the
@@ -2828,6 +2829,13 @@ plain grey-blue (`--map-ground`). Answered 16:46 to 16:5x.
      points, so it reaches right up to the corners (about 4% larger), and is
      cut off flush there: nothing of it left of the left corner, right of the
      right one, or above the ground's back edges.
+682. **The night sky's brightness** (19:48: *"I don't see the sky background
+     in the preview, is it supposed to be there?"*; 19:50: *"I think Ihave the
+     dark theme, and the clouds are so dark one cant really see them"*): at
+     40% of its brightness (673) the clouds hardly showed. Offered: 40% as
+     before, 55%, 70% (recommended) or 85%. **Answered** at 19:59: 70% (`shade`
+     `dark` 0.3 in `Art/manifest.json`), also for the sky's blue while it
+     loads.
 
 The rock is his picture as drawn, stretched only so its top edges lie along
 the map's front edges, which it already slopes along; 4 and 5 player maps get

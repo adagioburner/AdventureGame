@@ -4,13 +4,13 @@ import { ART_FILES } from '../art/files.ts';
 import { skyPlacement, skyProperties, skyRoom } from './sky.ts';
 
 describe('the sky behind the map (Q170)', () => {
-  it("puts Andrei's sky behind the map, as drawn on a light screen and darkened for night on a dark one (671, 673)", () => {
+  it("puts Andrei's sky behind the map, as drawn on a light screen and darkened for night on a dark one (671, 673, 682)", () => {
     const catalog = buildArtCatalog(ART_FILES);
     expect(skyProperties(catalog)).toEqual({
       '--map-sky': `url("${catalog.islandUrls.sky}")`,
       '--map-sky-color': '#809ab4',
       '--map-sky-shade-light': '0',
-      '--map-sky-shade-dark': '0.6',
+      '--map-sky-shade-dark': '0.3',
     });
   });
 
