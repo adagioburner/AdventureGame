@@ -2479,6 +2479,48 @@ present on some screens anyway"*.
      which keeps Move Bea on and Resign Bea. A phone's panel stays as tall as
      it was on a computer's turn.
 
+<a id="q125"></a>
+### Q125. ~~What does End turn do when there is no guard to fight?~~ — **answered 2026-09-30: it rests, and so does Move on; 490-493 as recommended, 494 and 495 open**
+
+Andrei, 2026-09-30 at 20:53: *"Clicking 'Next Turn' with no guard to fight
+makes no sense. Let us make it rest automatically in this case."* Until then
+End turn with no route was a move of zero steps: on an unclaimed guarded site
+another fight (§8), anywhere else nothing at all, not even stamina. Answered
+at 21:46: *"The recommended options look good, please proceed"*.
+
+490. **Which End turns rest:** with no route, and also with a route whose
+     first step this turn cannot pay; the route is kept for next turn
+     (recommended); or only with no route. On an unclaimed guarded site End
+     turn still stays and fights again. **Answered:** as recommended.
+491. **The game master's Move on** does what End turn would, so a saved route
+     whose first step cannot be paid rests too (recommended); or Move on
+     unchanged. **Answered:** as recommended.
+492. **The buttons:** Rest and End turn both stay, and the line above them
+     says *"End turn with no route rests: +5 stamina."* (recommended); or Rest
+     hidden while End turn would rest anyway. **Answered:** as recommended.
+493. **The turn log:** an automatic rest reads like any rest, *"Rested: +5
+     stamina"* (recommended); or it also says End turn made it one.
+     **Answered:** as recommended.
+494. **Open.** The line above the buttons with a route whose first step
+     cannot be paid, away from a guard. As built: *"Not even the first of
+     these 4 steps is affordable this turn. End turn rests: +5 stamina, and
+     keeps the route for next turn."* (recommended); or the wording before,
+     *"…Rest gains 5 stamina; End turn walks nothing and keeps the route for
+     next turn."*, which no longer says what End turn does.
+495. **Open.** The line when a player picks their own space as the
+     destination, away from a guard. As built: *"Staying here this turn. End
+     turn with no route rests: +5 stamina."*; *"Staying here this turn. End
+     turn rests: +5 stamina."* (recommended); or the wording before,
+     *"…End turn with no route stays put."*, which no longer says what End
+     turn does.
+
+`endTurnActionFor` (`packages/core/src/rules/turn.ts`) decides it, for the
+page's End turn, the server's `turn.end` and Move on (`moveOnActionFor`), and
+never `applyAction`, so a zero-step move already played replays as it was: a
+game kept on one device, and an online game's records. Computer players do
+not change: they already rest on a turn they cannot take a step (Q43), and
+stand still only on the guarded site they are after.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design

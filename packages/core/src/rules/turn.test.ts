@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest';
+import { DEFAULT_RULESET } from '@adventure/config';
 
 import { RuleViolationError } from '../errors.ts';
 import type { GameAction } from '../action.ts';
 import type { GameState } from '../state.ts';
-import { applyAction, nextSeat } from './turn.ts';
+import { applyAction, endTurnActionFor, moveOnActionFor, nextSeat } from './turn.ts';
 import {
   fixtureGame,
   fixtureMap,
@@ -309,6 +310,91 @@ describe('applyAction — a saved route (§7.1)', () => {
     const start = fixtureGame(map, 0);
     expect(() => applyAction(start, { kind: 'plan', player: one, path: [n(2)], waypoint: null }, noDice)).toThrow(RuleViolationError);
     expect(() => applyAction(start, { kind: 'plan', player: one, path: [n(1)], waypoint: n(2) }, noDice)).toThrow(RuleViolationError);
+  });
+});
+
+describe('End turn that would walk nothing (Andrei, 2026-09-30, 490 and 491)', () => {
+  /** Seat 1 standing on `node` with no stamina and no speeds, so no step can be paid. */
+  function stuckOn(node: number): GameState {
+    return withStats(withPosition(fixtureGame(map, 0), one, node), one, { stamina: 0 });
+  }
+  function withSavedRoute(state: GameState, path: readonly number[]): GameState {
+    return {
+      ...state,
+      players: state.players.map((current) => (current.id === one ? { ...current, plannedPath: { path: path.map(n), waypoint: null } } : current)),
+    };
+  }
+
+  it('rests with no route away from any site', () => {
+    const start = fixtureGame(map, 0);
+    expect(endTurnActionFor(start, one, [], null)).toEqual({ kind: 'rest', player: one });
+  });
+
+  it('stays and fights again with no route on a guard still there', () => {
+    const start = withPosition(fixtureGame(map, 0), one, 5);
+    expect(endTurnActionFor(start, one, [], null)).toEqual({ kind: 'move', player: one, path: [], waypoint: null });
+  });
+
+  it('rests with no route on a site already claimed, whose guard is gone', () => {
+    const start = withPosition(fixtureGame(map, 0), one, 5);
+    const claimed: GameState = { ...start, poiRuntime: start.poiRuntime.map((runtime, index) => (index === 0 ? { claimedBy: two, claimedOnTurn: 1 } : runtime)) };
+    expect(endTurnActionFor(claimed, one, [], null)).toEqual({ kind: 'rest', player: one });
+  });
+
+  it('rests when the first step cannot be paid, keeping the route and its waypoint for next turn', () => {
+    const start = stuckOn(0);
+    const action = endTurnActionFor(start, one, [n(1), n(2)], n(1));
+    expect(action).toEqual({ kind: 'rest', player: one, plan: { path: [n(1), n(2)], waypoint: n(1) } });
+
+    const { state, events } = applyAction(start, action, noDice);
+    expect(events.map((event) => event.type)).toEqual(['rested', 'turn_ended']);
+    expect(state.players[0]?.position).toBe(n(0));
+    expect(state.players[0]?.stats.stamina).toBe(DEFAULT_RULESET.config.movement.REST_STAMINA_GAIN);
+    expect(state.players[0]?.plannedPath).toEqual({ path: [n(1), n(2)], waypoint: n(1) });
+  });
+
+  it('still walks nothing and fights again when the first step cannot be paid on a guard', () => {
+    const start = stuckOn(5);
+    expect(endTurnActionFor(start, one, [n(4)], null)).toEqual({ kind: 'move', player: one, path: [n(4)], waypoint: null });
+  });
+
+  it('walks a route whose first step can be paid, as it always has', () => {
+    const start = fixtureGame(map, 0);
+    expect(endTurnActionFor(start, one, [n(1)], null)).toEqual({ kind: 'move', player: one, path: [n(1)], waypoint: null });
+  });
+
+  it('hands back a route that is no walk, and a turn that is not the player’s, for applyAction to refuse', () => {
+    const start = stuckOn(0);
+    const noWalk = endTurnActionFor(start, one, [n(2)], null);
+    expect(noWalk.kind).toBe('move');
+    expect(() => applyAction(start, noWalk, noDice)).toThrow(RuleViolationError);
+    expect(endTurnActionFor(start, two, [], null).kind).toBe('move');
+  });
+
+  it('a rest that saves a route refuses one that is no walk', () => {
+    expect(() => applyAction(stuckOn(0), { kind: 'rest', player: one, plan: { path: [n(2)], waypoint: null } }, noDice)).toThrow(RuleViolationError);
+  });
+
+  it('Move on rests too when the saved route’s first step cannot be paid away from a guard, keeping the route', () => {
+    const start = withSavedRoute(stuckOn(0), [1, 2]);
+    const action = moveOnActionFor(start, one);
+    expect(action).toEqual({ kind: 'force_turn', player: one, rest: true });
+
+    const { state, events } = applyAction(start, action, noDice);
+    expect(events.map((event) => event.type)).toEqual(['rested', 'turn_ended']);
+    expect(state.players[0]?.plannedPath).toEqual({ path: [n(1), n(2)], waypoint: null });
+  });
+
+  it('Move on walks a route that can be started, and rests with none, as before', () => {
+    expect(moveOnActionFor(withSavedRoute(fixtureGame(map, 0), [1, 2]), one)).toEqual({ kind: 'force_turn', player: one });
+    expect(moveOnActionFor(fixtureGame(map, 0), one)).toEqual({ kind: 'force_turn', player: one });
+  });
+
+  it('a Move on recorded before 490 still replays as the walk of nothing it was', () => {
+    const start = withSavedRoute(stuckOn(0), [1, 2]);
+    const { state, events } = applyAction(start, { kind: 'force_turn', player: one }, noDice);
+    expect(events.map((event) => event.type)).toEqual(['moved', 'turn_ended']);
+    expect(state.players[0]?.stats.stamina).toBe(0);
   });
 });
 

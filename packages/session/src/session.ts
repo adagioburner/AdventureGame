@@ -1,6 +1,8 @@
 import {
   activePlayer,
   applyAction,
+  endTurnActionFor,
+  moveOnActionFor,
   RuleViolationError,
   type ActionOutcome,
   type DieRoll,
@@ -182,10 +184,11 @@ export class GameSession {
         const player = humanPlayerOf(setup, game, from);
         requireTurn(game, message.turn);
         if (activePlayer(game).id !== player) throw new SetupError('not_your_turn', `it is ${activePlayer(game).name}’s turn`);
+        // [490] End turn that would walk nothing away from a guard rests.
         const action: TurnAction =
           message.type === 'turn.rest'
             ? { kind: 'rest', player }
-            : { kind: 'move', player, path: message.path, waypoint: message.path.length === 0 ? null : message.waypoint };
+            : endTurnActionFor(game, player, message.path, message.path.length === 0 ? null : message.waypoint);
         await this.play(setup, game, action, from);
         return;
       }
@@ -198,7 +201,7 @@ export class GameSession {
         const active = activePlayer(game);
         if (active.id !== message.player) throw new SetupError('not_your_turn', `it is ${active.name}’s turn now`);
         if (active.control !== 'human') throw new SetupError('invalid_action', `${active.name} is played by the computer`);
-        await this.play(setup, game, { kind: 'force_turn', player: active.id }, from);
+        await this.play(setup, game, moveOnActionFor(game, active.id), from);
         return;
       }
 

@@ -247,6 +247,30 @@ describe('GameSession in play', () => {
     ]);
   });
 
+  it('records End turn with no route away from a guard as a rest (490)', async () => {
+    const h = await started();
+    await send(h.session, andrei, { type: 'turn.end', gameId: G, turn: 1, path: [], waypoint: null });
+    expect(h.records().map((record) => record.action)).toEqual([{ kind: 'rest', player: 'seat-1' }]);
+  });
+
+  it('rests on End turn and on Move on when the route’s first step cannot be paid, keeping the route (490, 491)', async () => {
+    const h = await started();
+    const game = h.game() as GameState;
+    h.put({ ...game, players: game.players.map((player) => ({ ...player, stats: { ...player.stats, stamina: 0 } })) });
+    await send(h.session, andrei, { type: 'turn.end', gameId: G, turn: 1, path: [n(1), n(2)], waypoint: n(1) });
+    await send(h.session, bea, { type: 'turn.plan', gameId: G, path: [n(1)], waypoint: null });
+    await send(h.session, andrei, { type: 'gm.forceTurn', gameId: G, player: 'seat-2' as never, turn: 2 });
+    expect(h.records().map((record) => record.action)).toEqual([
+      { kind: 'rest', player: 'seat-1', plan: { path: [1, 2], waypoint: 1 } },
+      { kind: 'plan', player: 'seat-2', path: [1], waypoint: null },
+      { kind: 'force_turn', player: 'seat-2', rest: true },
+    ]);
+    expect(h.game()?.players.map((player) => [player.position, player.stats.stamina, player.plannedPath])).toEqual([
+      [0, 5, { path: [1, 2], waypoint: 1 }],
+      [0, 5, { path: [1], waypoint: null }],
+    ]);
+  });
+
   it('records the rolls the server’s dice gave a guard fight', async () => {
     const h = await started([6]);
     await send(h.session, andrei, { type: 'turn.end', gameId: G, turn: 1, path: [n(1), n(2), n(4)], waypoint: null });
