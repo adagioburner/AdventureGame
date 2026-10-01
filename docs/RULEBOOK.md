@@ -57,6 +57,8 @@ Only the space where you stop counts. Walking through a site does not claim it.
 
 You can also move zero steps: stay on a site and fight its guard again.
 
+Pressing 'End turn' when your figure would not move, because you have no route or cannot pay for its first step, rests instead, unless a guard stands on your space. A route you could not start on is kept for next turn.
+
 ### Planning a route
 
 Select your figure, then where you want to go. The game draws the cheapest route; add a waypoint to go another way. Each step is colored for this turn:
@@ -119,7 +121,7 @@ The rules are the same either way; the Play online switch on the setup screen ch
 
 The person who creates an online game is its game master and sits in seat 1. They choose the map, the number of players and which seats the computer plays, and accept or decline people who ask to join. Empty seats are played by the computer. During the game, the game master can:
 
-- **Move a player on** at any time: play their saved route now, or make them rest if they have none.
+- **Move a player on** at any time: play their turn now as their own 'End turn' would, walking their saved route or resting if they have none.
 - **Resign a player**: the computer plays their seat from then on.
 - **Extend** the game a day at a time, up to 14 days from creation.
 - **End the game**.

@@ -87,6 +87,9 @@ describe('onlinePlay', () => {
     expect(sent.at(-1)).toEqual({ type: 'turn.end', gameId: setup.gameId, turn: 1, path: [asNodeId(1)], waypoint: null });
     play.commit({ kind: 'rest', player: one });
     expect(sent.at(-1)).toEqual({ type: 'turn.rest', gameId: setup.gameId, turn: 1 });
+    // [490] End turn's rest that keeps its route goes as that End turn, for the server to rest on.
+    play.commit({ kind: 'rest', player: one, plan: { path: [asNodeId(1)], waypoint: null } });
+    expect(sent.at(-1)).toEqual({ type: 'turn.end', gameId: setup.gameId, turn: 1, path: [asNodeId(1)], waypoint: null });
 
     // Nothing changes until the server's record comes back.
     expect(play.state).toBe(opening);

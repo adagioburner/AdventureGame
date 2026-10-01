@@ -237,6 +237,12 @@ export function onlinePlay(options: OnlinePlayOptions): OnlinePlay {
         send(computerMove);
         return;
       }
+      // [490] End turn's rest that keeps its route goes as the End turn it
+      // was: the server rests on that route the same way (`endTurnActionFor`).
+      if (action.kind === 'rest' && action.plan !== undefined) {
+        deliver({ type: 'turn.end', gameId, turn: state.turn.number, path: action.plan.path, waypoint: action.plan.waypoint });
+        return;
+      }
       if (action.kind === 'rest') {
         deliver({ type: 'turn.rest', gameId, turn: state.turn.number });
         return;
