@@ -55,8 +55,16 @@ export function formatBatchReport(reports: readonly MapGenerationReport[], rules
   lines.push(
     spread('leaves', reports.map((r) => r.leafCount), `${mapConfig.LEAF_COUNT.min}-${mapConfig.LEAF_COUNT.max}`),
   );
-  lines.push(spread('POIs', reports.map((r) => r.poiCount), '60 + surplus'));
-  lines.push(spread('valley nodes', reports.map((r) => r.valleyNodes.length), '2-4 x 5-12'));
+  const quota = TERRAINS.reduce((sum, terrain) => sum + pois.POI_COUNT[terrain], 0);
+  const { VALLEY_COUNT, VALLEY_LENGTH } = mapConfig;
+  lines.push(spread('POIs', reports.map((r) => r.poiCount), `${quota} + surplus`));
+  lines.push(
+    spread(
+      'valley nodes',
+      reports.map((r) => r.valleyNodes.length),
+      `${VALLEY_COUNT.min}-${VALLEY_COUNT.max} x ${VALLEY_LENGTH.min}-${VALLEY_LENGTH.max}`,
+    ),
+  );
   lines.push('');
 
   // The finished map, not the draft before step 6 — the share targets are a

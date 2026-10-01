@@ -1,3 +1,4 @@
+import { mapSizeOfRuleset, type MapSize } from '@adventure/config';
 import type { GameMap, TurnAction } from '@adventure/core';
 import { toHotseatSeats, type LocalSetup } from '../setup/local.ts';
 import { HotseatGame } from './hotseat.ts';
@@ -19,6 +20,12 @@ export interface KeptGame {
    * kept before they did, which replays, and goes on, by the rules it began with.
    */
   readonly respawn?: boolean;
+  /**
+   * [Q160] The size of map the game is played on, larger from 4 players.
+   * Absent on a game kept before maps grew, which goes on on the map it began
+   * on: today's size, whatever its number of players.
+   */
+  readonly mapSize?: MapSize;
 }
 
 const KEY = 'adventure.hotseat';
@@ -46,6 +53,7 @@ export function keep(seed: string, setup: LocalSetup, game: HotseatGame): void {
     diceSeed: game.setup.diceSeed,
     actions: game.turns.map((turn) => turn.action),
     respawn: game.setup.map.ruleset.config.respawn !== undefined,
+    mapSize: mapSizeOfRuleset(game.setup.map.ruleset),
   };
   try {
     window.localStorage.setItem(KEY, JSON.stringify(kept));
@@ -60,6 +68,11 @@ export function forgetKept(): void {
   } catch {
     // Nothing was kept.
   }
+}
+
+/** The size of the map `kept` is played on: see `KeptGame.mapSize`. */
+export function keptMapSize(kept: KeptGame): MapSize {
+  return kept.mapSize === 'larger' ? 'larger' : 'standard';
 }
 
 /** The kept game played again on `map`; `null` if its turns no longer replay. */

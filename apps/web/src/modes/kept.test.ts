@@ -2,9 +2,9 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mapFor } from '../page/seed.ts';
 import { toHotseatSeats, type LocalSetup } from '../setup/local.ts';
 import { HotseatGame } from './hotseat.ts';
-import { forgetKept, keep, readKept, replayKept } from './kept.ts';
+import { forgetKept, keep, keptMapSize, readKept, replayKept } from './kept.ts';
 
-const map = mapFor('adventure');
+const map = mapFor('adventure', 'standard');
 const setup: LocalSetup = {
   seats: [
     { id: 'seat-1', name: 'Ada', avatarId: 'player_avatars_01', control: 'human', thinkingSeconds: 5 },
@@ -55,6 +55,28 @@ describe('a game on one device kept in the browser (Q56, 66)', () => {
     const before = replayKept(older as NonNullable<typeof kept>, map);
     expect(before?.setup.map.ruleset.config.respawn).toBeUndefined();
     expect(before?.setup.map.graph).toBe(map.graph);
+  });
+
+  it('keeps the size of map a game is played on, and puts a game kept before maps grew on the standard map (Q160)', () => {
+    const fourSeats: LocalSetup = {
+      seats: [
+        ...setup.seats,
+        { id: 'seat-3', name: 'Cleo', avatarId: 'player_avatars_03', control: 'human', thinkingSeconds: 5 },
+        { id: 'seat-4', name: 'Dov', avatarId: 'player_avatars_04', control: 'human', thinkingSeconds: 5 },
+      ],
+      nextId: 5,
+    };
+    const larger = mapFor('adventure', 'larger');
+    keep('adventure', fourSeats, new HotseatGame({ map: larger, seats: toHotseatSeats(fourSeats), diceSeed: 'kept' }));
+    const kept = readKept();
+    expect(kept?.mapSize).toBe('larger');
+    expect(kept === null ? null : keptMapSize(kept)).toBe('larger');
+
+    // Before Q160 a four-player game was on the standard map, and nothing was kept about it.
+    const { mapSize: _mapSize, ...older } = kept ?? { mapSize: undefined };
+    expect(keptMapSize(older as NonNullable<typeof kept>)).toBe('standard');
+    keep('adventure', fourSeats, new HotseatGame({ map, seats: toHotseatSeats(fourSeats), diceSeed: 'kept' }));
+    expect(readKept()?.mapSize).toBe('standard');
   });
 
   it('is forgotten by New game, and a store that cannot be read keeps nothing', () => {

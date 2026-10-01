@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_RULESET, REWARD_KINDS, SKILL_KINDS, TERRAINS, type Ruleset, type Terrain } from '@adventure/config';
+import {
+  DEFAULT_RULESET,
+  LARGER_MAP_RULESET,
+  REWARD_KINDS,
+  SKILL_KINDS,
+  TERRAINS,
+  type Ruleset,
+  type Terrain,
+} from '@adventure/config';
 import {
   isLeaf,
   leafNodes,
@@ -432,5 +440,63 @@ describe('regeneration', () => {
     expect(() => generateMap({ seed: 'adventure', ruleset, remotenessScorer: defaultRemotenessScorer })).toThrow(
       /terrain_share_unreachable at 7-place-pois/,
     );
+  }, 30000);
+});
+
+describe('Q160 — the larger map for 4 and 5 players', () => {
+  const LARGER_SEEDS = ['adventure', 'alpha', 'beta'];
+  const larger = new Map<string, GameMap>();
+  const largerOf = (seed: string): GameMap => {
+    const map = larger.get(seed) ?? mapOf(seed, LARGER_MAP_RULESET);
+    larger.set(seed, map);
+    return map;
+  };
+  const each = (check: (map: GameMap) => void): void => {
+    for (const seed of LARGER_SEEDS) check(largerOf(seed));
+  };
+
+  it('lands inside its own targets: 336 spaces, 420 roads, 42 to 63 dead ends', () => {
+    const { MAP_NODE_COUNT, MAP_EDGE_COUNT, LEAF_COUNT } = LARGER_MAP_RULESET.config.map;
+    each((map) => {
+      expect(map.ruleset).toBe(LARGER_MAP_RULESET);
+      expect(map.graph.nodes.length).toBeGreaterThan(MAP_NODE_COUNT * 0.95);
+      expect(map.graph.nodes.length).toBeLessThan(MAP_NODE_COUNT * 1.05);
+      expect(map.graph.edges.length).toBeGreaterThanOrEqual(MAP_EDGE_COUNT);
+      expect(map.graph.edges.length).toBeLessThan(MAP_EDGE_COUNT * 1.1);
+      const leaves = leafNodes(map.graph).length;
+      expect(leaves).toBeGreaterThanOrEqual(LEAF_COUNT.min);
+      expect(leaves).toBeLessThanOrEqual(LEAF_COUNT.max);
+    });
+  }, 30000);
+
+  it('keeps the terrain shares, so each terrain has 1.4 times its spaces', () => {
+    each((map) => {
+      for (const terrain of TERRAINS) {
+        const share = map.graph.nodes.filter((node) => node.terrain === terrain).length / map.graph.nodes.length;
+        expect(Math.abs(share - LARGER_MAP_RULESET.config.map.TERRAIN_AREA_SHARE[terrain])).toBeLessThan(0.05);
+      }
+    });
+  }, 30000);
+
+  it('matches its reward table row for row, with 63 gold and 105 speed and skill units', () => {
+    each((map) => {
+      for (const terrain of TERRAINS) {
+        for (const row of LARGER_MAP_RULESET.content.REWARD_TABLE[terrain]) {
+          const group = map.pois.filter(
+            (poi) =>
+              poi.terrain === terrain &&
+              rewardGroupKeyOf(poi.group) === rewardGroupKeyOf({ kind: row.kind, guard: row.guard }),
+          );
+          expect(group).toHaveLength(row.poiCount);
+          expect(group.reduce((sum, poi) => sum + poi.reward.units, 0)).toBe(row.totalUnits);
+        }
+      }
+      expect(totalGoldUnits(map)).toBe(63);
+      expect(totalSkillUnits(map)).toBe(105);
+    });
+  }, 30000);
+
+  it('is a different map from the standard one for the same seed', () => {
+    expect(largerOf('adventure').graph.nodes.length).not.toBe(mapOf('adventure').graph.nodes.length);
   }, 30000);
 });

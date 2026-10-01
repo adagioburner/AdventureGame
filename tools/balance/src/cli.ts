@@ -1,6 +1,6 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import { DEFAULT_RULESET } from '@adventure/config';
+import { DEFAULT_RULESET, rulesetForPlayers, type Ruleset } from '@adventure/config';
 import type { Seed } from '@adventure/core';
 import { computerDriver } from './aiPlaythrough.ts';
 import { parseSeatSpec, playHeadToHead, type SeatSpec } from './headToHead.ts';
@@ -32,8 +32,11 @@ function main(argv: readonly string[]): number {
   process.stderr.write(
     [
       'usage:',
-      '  pnpm map [<seed>] [--json]    one map: a report, and out/maps/<seed>.svg',
-      '  pnpm map:batch [<n>]          n seeds: the §11 distributions, no files',
+      '  pnpm map [<seed>] [--json] [--players=<n>]',
+      '                                one map: a report, and out/maps/<seed>.svg;',
+      '                                --players=4 or 5 draws the larger map (Q160)',
+      '  pnpm map:batch [<n>] [--players=<n>]',
+      '                                n seeds: the §11 distributions, no files',
       '  pnpm game [<seed>]            play one map to a winner: the turn-by-turn transcript',
       '  pnpm game [<seed>] --computer [--seconds=<s>]',
       '                                the same, with the computer playing both seats (10 s a move)',
@@ -58,8 +61,10 @@ function renderOne(args: readonly string[]): number {
   // if generation goes wrong.
   if (given === undefined) process.stdout.write(`seed ${seed} (generated; pass it back to reproduce this map)\n\n`);
 
-  const { map, report } = generateAndReport(seed, DEFAULT_RULESET);
-  process.stdout.write(`${formatMapReport(report, DEFAULT_RULESET)}\n\n`);
+  const ruleset = playersRuleset(args);
+  if (ruleset === null) return 2;
+  const { map, report } = generateAndReport(seed, ruleset);
+  process.stdout.write(`${formatMapReport(report, ruleset)}\n\n`);
 
   mkdirSync(OUTPUT_DIR, { recursive: true });
   const svgPath = resolve(OUTPUT_DIR, `${fileSafe(seed)}.svg`);
@@ -168,6 +173,19 @@ function secondsOption(args: readonly string[]): number | null {
   return seconds;
 }
 
+/** The map for `--players=<n>`: today's up to 3, the larger one from 4 (Q160); today's without it. */
+function playersRuleset(args: readonly string[]): Ruleset | null {
+  const option = args.find((argument) => argument.startsWith('--players='));
+  if (option === undefined) return DEFAULT_RULESET;
+  const players = Number(option.slice('--players='.length));
+  const { min, max } = DEFAULT_RULESET.config.players.PLAYER_COUNT;
+  if (!Number.isInteger(players) || players < min || players > max) {
+    process.stderr.write(`--players needs ${min} to ${max}, got ${option}\n`);
+    return null;
+  }
+  return rulesetForPlayers(players);
+}
+
 function renderBatch(args: readonly string[]): number {
   const given = args.find((argument) => !argument.startsWith('--'));
   const count = Number.parseInt(given ?? '50', 10);
@@ -176,10 +194,12 @@ function renderBatch(args: readonly string[]): number {
     return 2;
   }
 
+  const ruleset = playersRuleset(args);
+  if (ruleset === null) return 2;
   const seeds: Seed[] = Array.from({ length: count }, (_, index) => `batch-${index}`);
   const started = Date.now();
-  const reports = runMapBatch({ ruleset: DEFAULT_RULESET, seeds });
-  process.stdout.write(`${formatBatchReport(reports, DEFAULT_RULESET)}\n`);
+  const reports = runMapBatch({ ruleset, seeds });
+  process.stdout.write(`${formatBatchReport(reports, ruleset)}\n`);
   process.stdout.write(`\n${count} maps in ${((Date.now() - started) / 1000).toFixed(1)}s\n`);
   return 0;
 }
