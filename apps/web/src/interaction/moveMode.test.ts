@@ -374,6 +374,65 @@ describe('move mode online (§7.1): planning out of turn (Q56, 49 to 53)', () =>
   });
 });
 
+describe('a space chosen on your own turn needs no tap on your figure first (Q145, 570 to 572)', () => {
+  it('picks the figure up and chooses the space, as tapping the figure then the space does', () => {
+    const { game, controller } = setup();
+    const player = seat(game.state, 0);
+    const { target } = nodeAlong(game.state, 6);
+    controller.choose(target, false);
+    expect(controller.engaged).toBe(true);
+    expect(controller.planner).toBe(player.id);
+    const tapped = setup();
+    tapped.controller.enter(player.id);
+    tapped.controller.choose(target, false);
+    expect(controller.state).toEqual(tapped.controller.state);
+  });
+
+  it('makes a shift-clicked space the waypoint', () => {
+    const { game, controller } = setup();
+    const { route } = nodeAlong(game.state, 6);
+    controller.choose(route[2] as NodeId, true);
+    expect(controller.state).toEqual({ kind: 'selecting', waypoint: route[2] });
+    expect(controller.engaged).toBe(true);
+  });
+
+  it('works again after Cancel, and for the next seat on its turn', () => {
+    const { game, controller } = setup();
+    controller.choose(nodeAlong(game.state, 4).target, false);
+    controller.cancel();
+    controller.choose(nodeAlong(game.state, 5).target, false);
+    expect(controller.state.kind).toBe('previewing');
+    controller.rest();
+    const bram = seat(game.state, 1);
+    const near = map.graph.adjacency[bram.position]?.[0] as NodeId;
+    controller.choose(near, false);
+    expect(controller.planner).toBe(bram.id);
+    expect(controller.state).toMatchObject({ kind: 'previewing', destination: near });
+  });
+
+  it('online, plans on this player’s own turn but not while another plays (572)', () => {
+    const { game, controller, play } = onlineSetup();
+    const ada = seat(game.state, 0);
+    const bram = seat(game.state, 1);
+    const near = map.graph.adjacency[bram.position]?.[0] as NodeId;
+    controller.choose(near, false);
+    expect(controller.state.kind).toBe('idle');
+    expect(controller.engaged).toBe(false);
+    play({ kind: 'rest', player: ada.id });
+    controller.choose(near, false);
+    expect(controller.planner).toBe(bram.id);
+    expect(controller.engaged).toBe(true);
+    expect(controller.state).toMatchObject({ kind: 'previewing', destination: near });
+  });
+
+  it('does nothing once the game is over', () => {
+    const { game, controller } = setup();
+    controller.setGame({ ...game.state, status: 'finished' });
+    controller.choose(nodeAlong(game.state, 3).target, false);
+    expect(controller.state.kind).toBe('idle');
+  });
+});
+
 describe('Track closes planning (Q57, 75)', () => {
   it('keeps the route drawn with the figure put down, and End turn still plays it', () => {
     const { game, controller, sent } = setup();

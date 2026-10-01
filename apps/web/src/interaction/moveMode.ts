@@ -74,7 +74,12 @@ export interface MoveModeController {
    * back at the start of a turn is; a route with no destination yet goes.
    */
   putDown(): void;
-  /** A node was clicked; `shift` for a shift-click. */
+  /**
+   * A node was clicked; `shift` for a shift-click. [Q145, 570] On the
+   * planner's own turn their figure needs no tap first: with nothing up, the
+   * click picks it up as tapping it would, then chooses the node. Out of turn
+   * (online) it does nothing until the figure is picked up (572).
+   */
   choose(node: NodeId, shift: boolean): void;
   selectDestination(node: NodeId): void;
   /** Sets the waypoint, or clears it when `node` already is the waypoint. */
@@ -311,7 +316,10 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
     },
 
     choose(node, shift) {
-      if (state.kind === 'idle') return;
+      if (state.kind === 'idle') {
+        if (planner === null || activePlanner() !== planner) return;
+        state = { kind: 'selecting', waypoint: null };
+      }
       engaged = true;
       if (shift || armed) {
         armed = false;

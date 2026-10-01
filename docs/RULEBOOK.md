@@ -61,7 +61,7 @@ Pressing 'End turn' when your figure would not move, because you have no route o
 
 ### Planning a route
 
-Select your figure, then where you want to go. The game draws the cheapest route; add a waypoint to go another way. Each step is colored for this turn:
+Choose where you want to go. The game draws the cheapest route; add a waypoint to go another way. Each step is colored for this turn:
 
 - **Green**: free, paid by your speed.
 - **Yellow**: costs stamina.
