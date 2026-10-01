@@ -5,7 +5,7 @@ import { atlasOf, buildArtCatalog, poiArt } from '../art/catalog.ts';
 import { ART_FILES } from '../art/files.ts';
 import { previewGame, SAMPLE_ALLOWANCE, SAMPLE_STAMINA } from './scene.fixture.ts';
 import { distance, distanceToSegment, polygonArea, position } from './geometry.ts';
-import { BACKDROP_STEP, CLUSTER_TOUCH, silhouettePoints, STANDING_MARGIN } from './dressing.ts';
+import { BACKDROP_STEP, CLUSTER_TOUCH, EDGE_TREES_KEPT, placeDressing, silhouettePoints, STANDING_MARGIN } from './dressing.ts';
 import { boxTouchesOval, grow, lengthInBox, ON_NODE_REACH, overlapArea, pictureBox, ROUGH_SHAPE } from './placement.ts';
 import {
   buildMapScene,
@@ -299,6 +299,61 @@ describe('what the player sees of the map', () => {
     // Everything else on the sheet stands alone, as often as each bush is picked.
     const others = scene.billboards.filter((item) => item.sprite.sheet === 'Plains_Dressing').length - bushes.length;
     expect(others).toBeGreaterThan(bushes.length);
+  });
+
+  it('keeps a third of the trees past the outermost roads, plants the rest in the middle, and moves nothing else (710, 711)', () => {
+    // Andrei, 2026-10-01: "Trees are crowding too at the edge", and "I would
+    // rather ask you to fit more in the middle." 710: a third stay; 711: the
+    // rest are planted in the middle, by the same rules, as many as fit.
+    const graph = game.map.graph;
+    const ground = { map: game.map, catalog, projection: scene.projection, spacing: scene.spacing, bounds: scene.bounds, shapeOf: ROUGH_SHAPE };
+    const untouched = placeDressing(ground, [], 1);
+    const thinned = placeDressing(ground, [], EDGE_TREES_KEPT);
+    const { min, max } = scene.bounds;
+    // Past the outermost roads: walking from the tree straight to the nearest
+    // edge of the ground, in small steps, never comes onto a road's middle line.
+    const step = scene.spacing / 200;
+    const pastTheRoads = (screen: { x: number; y: number }): boolean => {
+      const at = scene.projection.toWorld(screen);
+      const edges = [
+        { x: min.x, y: at.y },
+        { x: max.x, y: at.y },
+        { x: at.x, y: min.y },
+        { x: at.x, y: max.y },
+      ];
+      const edge = edges.reduce((best, point) => (distance(at, point) < distance(at, best) ? point : best));
+      const steps = Math.ceil(distance(at, edge) / step);
+      for (let i = 0; i <= steps; i++) {
+        const point = { x: at.x + ((edge.x - at.x) * i) / steps, y: at.y + ((edge.y - at.y) * i) / steps };
+        if (graph.edges.some((road) => distanceToSegment(point, position(graph, road.a), position(graph, road.b)) < step)) return false;
+      }
+      return true;
+    };
+    type Item = (typeof untouched)[number];
+    const tree = (item: Item) => item.sprite.sheet === 'Forest_Trees';
+    const edge = untouched.filter((item) => tree(item) && pastTheRoads(item.foot));
+    const key = (item: Item) => `${item.sprite.sheet} ${item.sprite.index} at ${item.foot.x},${item.foot.y}`;
+    const before = new Set(untouched.map(key));
+    const after = new Set(thinned.map(key));
+    // Untouched, the strip holds most of the forest's trees.
+    expect(edge.length).toBeGreaterThan(untouched.filter(tree).length / 2);
+    // Every other tree, bush and stone is where it was.
+    expect(untouched.filter((item) => !edge.includes(item) && !after.has(key(item))).map(key)).toEqual([]);
+    // A third of the edge trees stay, give or take the luck of the draw.
+    const stayed = edge.filter((item) => after.has(key(item))).length;
+    expect(stayed / edge.length).toBeGreaterThan(EDGE_TREES_KEPT - 0.1);
+    expect(stayed / edge.length).toBeLessThan(EDGE_TREES_KEPT + 0.1);
+    // What is new is trees in the middle of the forest, no more than were taken off.
+    const planted = thinned.filter((item) => !before.has(key(item)));
+    expect(planted.length).toBeGreaterThan(0);
+    expect(planted.length).toBeLessThanOrEqual(edge.length - stayed);
+    const problems = planted.flatMap((item) => {
+      const at = scene.projection.toWorld(item.foot);
+      const terrain = graph.nodes.reduce((best, node) => (distance(at, node.position) < distance(at, best.position) ? node : best)).terrain;
+      if (!tree(item) || terrain !== 'forest') return [`${key(item)} is not a forest tree`];
+      return pastTheRoads(item.foot) ? [`${key(item)} stands past the outermost roads`] : [];
+    });
+    expect(problems).toEqual([]);
   });
 
   it("fills the mountains with backdrop, large in the middle, each sized to stay over mountain ground", () => {
