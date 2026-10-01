@@ -2524,7 +2524,7 @@ not change: they already rest on a turn they cannot take a step (Q43), and
 stand still only on the guarded site they are after.
 
 <a id="q145"></a>
-### Q145. Does a player have to tap their figure before choosing where to go? — **answered 2026-10-01: no, not on their own turn; 570-573 as recommended; 574-576 open**
+### Q145. Does a player have to tap their figure before choosing where to go? — **answered 2026-10-01: no, not on their own turn; 570-573 and 576 as recommended; 574-575 open**
 
 Andrei, 2026-10-01 at 02:52: *"i don't see why i have to tap my figure at the
 beginning of every move. everything works if it's already tapped"*. Until then,
@@ -2534,7 +2534,7 @@ good to have the figure blink until there's a route planned. as soon as i click
 on a node and the route is being planned blinking can stop. if the route is
 saved from previous planning we can blink for a short while and stop"*. The
 details were put to him with pictures at laptop, 390 and 340 px, and he
-answered 570 to 573 on their cards at 03:49.
+answered 570 to 573 on their cards at 03:49, and 576 at 04:32.
 
 570. **How a turn starts.** A: as before, the figure blinks and Plan a move
      shows; the first tap on a space picks the figure up and chooses that
@@ -2568,7 +2568,7 @@ answered 570 to 573 on their cards at 03:49.
      (recommended). B: like the other players' figures. **Open.**
 576. **Tapping your figure, or Plan a move, before any space is chosen.** A:
      the blink stops, as before (Q34) (recommended). B: it blinks on until a
-     space is chosen. **Open.**
+     space is chosen. **Answered:** A, nothing changes.
 
 `choose` in `apps/web/src/interaction/moveMode.ts` picks the figure up on the
 planner's own turn, `GameScreen`'s `onTap` sends a tap on a space there, and
