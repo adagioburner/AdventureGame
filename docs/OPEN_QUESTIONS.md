@@ -2523,6 +2523,57 @@ game kept on one device, and an online game's records. Computer players do
 not change: they already rest on a turn they cannot take a step (Q43), and
 stand still only on the guarded site they are after.
 
+<a id="q145"></a>
+### Q145. Does a player have to tap their figure before choosing where to go? — **answered 2026-10-01: no, not on their own turn; 570-573 as recommended; 574-576 open**
+
+Andrei, 2026-10-01 at 02:52: *"i don't see why i have to tap my figure at the
+beginning of every move. everything works if it's already tapped"*. Until then,
+on your turn a tap on a space with your figure not picked up only showed *"Tap
+your figure, or Plan a move, before choosing where to go."* At 03:02: *"it's
+good to have the figure blink until there's a route planned. as soon as i click
+on a node and the route is being planned blinking can stop. if the route is
+saved from previous planning we can blink for a short while and stop"*. The
+details were put to him with pictures at laptop, 390 and 340 px, and he
+answered 570 to 573 on their cards at 03:49.
+
+570. **How a turn starts.** A: as before, the figure blinks and Plan a move
+     shows; the first tap on a space picks the figure up and chooses that
+     space (recommended). B: the figure starts picked up, still on its gold
+     ring, with Cancel and Waypoint showing. Either way every tap on your turn
+     does what it does once your figure is picked up, so a tap on another
+     player's figure chooses their space instead of showing hot seat's notice.
+     Track unpresses when a space is chosen, as when a figure is picked up,
+     and End turn presses it again. **Answered:** A, in his 03:02 message and
+     on its card.
+571. **The line above the buttons at turn start.** A: *"Bea: tap where to go.
+     End turn with no route rests: +5 stamina."*, on a guarded site *"…End
+     turn with no route stays here and fights the guard again. Rest gains 5
+     stamina."* (recommended). B: *"Bea: tap where to go (or Plan a move).
+     …"*. C: the line before, *"Bea: tap your figure (or Plan a move), then
+     where to go. …"*. **Answered:** A.
+572. **Online, on someone else's turn.** A: as before, planning your next move
+     starts with your figure or Plan a move, and a tap on a space alone shows
+     the notice, since a stray tap would save a route that the game master's
+     Move on would walk (recommended). B: a tap on a space plans at once.
+     **Answered:** A.
+573. **The rulebook,** under Planning a route. A: *"Choose where you want to
+     go."* (recommended). B: *"Tap or click where you want to go."* It read
+     *"Select your figure, then where you want to go."* **Answered:** A.
+574. **How long the figure blinks on a route saved from the turn before,**
+     counted from the start of the turn. A: 2 seconds, two blinks
+     (recommended). B: 3 seconds. C: 1 second. **Open.**
+575. **How the figure looks once that blink stops.** A: still on its gold
+     ring, as after a tap on a space; only the look changes, so Track stays
+     pressed and the figure counts as picked up only once tapped
+     (recommended). B: like the other players' figures. **Open.**
+576. **Tapping your figure, or Plan a move, before any space is chosen.** A:
+     the blink stops, as before (Q34) (recommended). B: it blinks on until a
+     space is chosen. **Open.**
+
+`choose` in `apps/web/src/interaction/moveMode.ts` picks the figure up on the
+planner's own turn, `GameScreen`'s `onTap` sends a tap on a space there, and
+the line is `hint` in `TurnControls.tsx`.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design

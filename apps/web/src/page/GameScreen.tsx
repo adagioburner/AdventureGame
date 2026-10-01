@@ -391,6 +391,8 @@ export function GameScreen({
   /** Who Plan a move plans for: the player on turn on one device, this page's own player online. */
   const planFor = online ? shown.players.find((player) => source.localPlayers.has(player.id)) : active;
   const canPlan = online ? planFor !== undefined : active?.control !== 'ai';
+  /** The turn is this page's to play: hot seat's player on turn, or online this page's own. */
+  const ownTurn = !othersTurn && active !== undefined && source.localPlayers.has(active.id);
   const onTap = (target: Pick, shift: boolean): void => {
     if (busy || shown.status !== 'in_progress') return;
     if (controller.state.kind === 'idle') {
@@ -399,6 +401,15 @@ export function GameScreen({
       const clicked = online
         ? (target.players.find((player) => source.localPlayers.has(player)) ?? target.players[0])
         : (target.players.find((player) => player === active?.id) ?? target.players[0]);
+      // [Q145, 570] On your own turn your figure needs no tap first: a tap
+      // on a space, or on another player's figure, chooses that space as it
+      // would once your figure is picked up.
+      if (ownTurn && clicked !== active?.id) {
+        if (target.node === null) return;
+        controller.choose(target.node, shift);
+        setResult(null);
+        return;
+      }
       if (clicked === undefined) {
         if (target.node !== null && canPlan) say('Tap your figure, or Plan a move, before choosing where to go.');
         return;
