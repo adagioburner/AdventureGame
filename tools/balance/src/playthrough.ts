@@ -341,7 +341,7 @@ export function formatPlaythrough(run: Playthrough): string {
   );
   lines.push(
     `meta rest_stamina_gain=${config.movement.REST_STAMINA_GAIN} guard_die=${config.combat.GUARD_DIE.count}d${config.combat.GUARD_DIE.sides}` +
-      (config.respawn === undefined ? '' : ` respawn_short_below=${config.respawn.SHORT_BELOW_UNITS} respawn_far_share=${config.respawn.FAR_SHARE}`),
+      (config.respawn === undefined ? '' : ` respawn_short_below_sites=${config.respawn.SHORT_BELOW_SITES} respawn_far_share=${config.respawn.FAR_SHARE}`),
   );
   for (const player of run.finalState.players) {
     lines.push(
@@ -380,10 +380,10 @@ function turnLines(turn: PlayedTurn, run: Playthrough): string[] {
         lines.push(...interactionLines(event.resolution, turn, run));
         break;
       case 'reward_returned': {
-        const below = run.map.ruleset.config.respawn?.SHORT_BELOW_UNITS;
+        const below = run.map.ruleset.config.respawn?.SHORT_BELOW_SITES;
         lines.push(
           `  back    ${event.reward.kind} x${event.reward.units} back on node ${event.node} (${terrainOf(run, event.node)}):` +
-            ` fewer than ${below} ${event.reward.kind} left on the map, drawn from the empty ones farthest from every figure (Q135)`,
+            ` fewer than ${below} sites with ${event.reward.kind} left on the map, drawn from the empty ones farthest from every figure (Q135)`,
         );
         break;
       }

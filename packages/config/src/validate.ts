@@ -142,12 +142,12 @@ export function validateRuleset(ruleset: Ruleset): void {
     problems.push('§4.3: REWARD_SWAP_PASSES must be a non-negative integer.');
   }
 
-  // Q135: whole units, a share of the empty POIs, and only kinds a player can
+  // Q135: a whole number of sites, a share of the empty POIs, and only kinds a player can
   // run short of without the game's end moving: gold decides the winner.
   const respawn = config.respawn;
   if (respawn !== undefined) {
-    if (!Number.isInteger(respawn.SHORT_BELOW_UNITS) || respawn.SHORT_BELOW_UNITS < 1) {
-      problems.push('Q135: respawn.SHORT_BELOW_UNITS must be a positive integer.');
+    if (!Number.isInteger(respawn.SHORT_BELOW_SITES) || respawn.SHORT_BELOW_SITES < 1) {
+      problems.push('Q135: respawn.SHORT_BELOW_SITES must be a positive integer.');
     }
     if (!(respawn.FAR_SHARE > 0 && respawn.FAR_SHARE <= 1)) {
       problems.push('Q135: respawn.FAR_SHARE must be above 0 and at most 1.');

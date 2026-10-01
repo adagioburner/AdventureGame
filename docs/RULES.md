@@ -135,8 +135,8 @@ reward comes back.
 At the end of every turn that did not win the game, after its claim,
 `respawnShortRewards` (`packages/core/src/rules/respawn.ts`) counts each kind in
 `respawn.KINDS` (the five skills: three speeds, fighting, magic) on its own.
-While fewer than `respawn.SHORT_BELOW_UNITS` (2) of a kind's units are on
-unclaimed POIs, one claimed POI that held that kind gets its whole reward back,
+While fewer than `respawn.SHORT_BELOW_SITES` (2) unclaimed POIs offer a kind,
+whatever their units, one claimed POI that held that kind gets its whole reward back,
 one per kind per turn. The POI is drawn with the `DiceSource`'s `pick` from the
 `respawn.FAR_SHARE` (half, rounded up) of the candidates farthest from their
 nearest figure, by the cheapest route's stamina cost from the figure (the

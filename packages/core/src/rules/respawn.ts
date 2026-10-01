@@ -14,8 +14,9 @@ const UNCLAIMED: PoiRuntimeState = { claimedBy: null, claimedOnTurn: null };
  *
  * Run at the end of every turn, after the turn's claim (532 A). Each kind in
  * `respawn.KINDS` is counted on its own (530 A): while fewer than
- * `SHORT_BELOW_UNITS` of its units are on unclaimed POIs (531 C), one claimed
- * POI that held it gets its whole reward back (532 A). That POI is drawn with
+ * `SHORT_BELOW_SITES` unclaimed POIs offer it (531 C; Andrei, 2026-10-01: "We
+ * need two *sites* with the skill at any time, not two units of skill on the
+ * map"), one claimed POI that held it gets its whole reward back (532 A). That POI is drawn with
  * `dice.pick` from the `FAR_SHARE` of the candidates, rounded up, that are
  * farthest from their nearest figure (533 A), by the cheapest route's stamina
  * cost (534 A), never one a figure stands on. A POI that came back can be
@@ -35,13 +36,13 @@ export function respawnShortRewards(state: GameState, dice: DiceSource, events: 
   for (let index = 0; index < pois.length; index++) {
     const poi = pois[index];
     if (poi === undefined || state.poiRuntime[index]?.claimedBy !== null) continue;
-    left.set(poi.reward.kind, (left.get(poi.reward.kind) ?? 0) + poi.reward.units);
+    left.set(poi.reward.kind, (left.get(poi.reward.kind) ?? 0) + 1);
   }
 
   let runtime: PoiRuntimeState[] | null = null;
   const occupied = new Set<NodeId>(state.players.map((player) => player.position));
   for (const kind of respawn.KINDS) {
-    if ((left.get(kind) ?? 0) >= respawn.SHORT_BELOW_UNITS) continue;
+    if ((left.get(kind) ?? 0) >= respawn.SHORT_BELOW_SITES) continue;
 
     const empty: { readonly index: number; readonly node: NodeId }[] = [];
     for (let index = 0; index < pois.length; index++) {

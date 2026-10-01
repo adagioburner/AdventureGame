@@ -8,10 +8,10 @@ import { applyAction } from './turn.ts';
 import { fixtureGame, fixtureMap, n, noDice, player, scriptedDice, withPosition, withStats } from './scenario.fixture.ts';
 
 /**
- * [Q135] Speeds and skills come back: while fewer than 2 units of one are on
- * the map, one empty POI that held it gets its whole reward back at the end of
- * a turn, drawn from the farther half of them (rounded up) by stamina cost
- * from the nearest figure, never one a figure stands on.
+ * [Q135] Speeds and skills come back: while fewer than 2 unclaimed POIs offer
+ * one, one empty POI that held it gets its whole reward back at the end of a
+ * turn, drawn from the farther half of them (rounded up) by stamina cost from
+ * the nearest figure, never one a figure stands on.
  *
  *   0(p) ── 1(p) ── 2(p) ── 3(p) ── 4(p) ── 5(p) ── 6(p) ── 7(p)
  *                   │                        │       │       │
@@ -69,14 +69,16 @@ function claimedAt(state: GameState, node: number): boolean {
 }
 
 describe('speeds and skills coming back (Q135)', () => {
-  it('leaves the map alone while every kind has 2 or more units left, drawing nothing', () => {
+  it('leaves the map alone while every kind has 2 or more sites, or no empty site to come back to, drawing nothing', () => {
+    // Fighting has three sites and plains speed two; magic has only its one
+    // site on node 6 from the start, with nothing empty that could come back.
     const { state, events } = applyAction(game([]), rest, noDice);
     expect(returned(events)).toEqual([]);
     expect(state.poiRuntime).toEqual(game([]).poiRuntime);
   });
 
   it('brings a short kind back to the farthest empty site, with the stack it started with', () => {
-    // Fighting left: node 2's single unit. Empty: 5 (5 away) and 7 (7 away);
+    // Fighting left: node 2's site alone. Empty: 5 (5 away) and 7 (7 away);
     // the farther half of two is one, node 7, which held 2.
     const { state, events } = applyAction(game([5, 7]), rest, scriptedDice([], 6, [0]));
     expect(returned(events)).toEqual([{ node: n(7), kind: 'fighting', units: 2 }]);
@@ -115,16 +117,25 @@ describe('speeds and skills coming back (Q135)', () => {
     ]);
   });
 
-  it('brings back one site a turn while the kind stays short', () => {
-    // No fighting left at all: node 7 (2 units) makes it 2, no longer short.
+  it('counts sites, not units: one site with 2 fighting left is short', () => {
+    // Node 7 still holds 2 fighting, but it is the only site that offers it.
+    // Of the empty 2 and 5, node 5 is the farther.
+    const { events } = applyAction(game([2, 5]), rest, scriptedDice([], 6, [0]));
+    expect(returned(events)).toEqual([{ node: n(5), kind: 'fighting', units: 1 }]);
+  });
+
+  it('brings back one site a turn until 2 sites offer the kind again', () => {
+    // No fighting site left at all: node 7 comes back first, still one site short.
     const first = applyAction(game([2, 5, 7]), rest, scriptedDice([], 6, [0]));
     expect(returned(first.events)).toEqual([{ node: n(7), kind: 'fighting', units: 2 }]);
-    const second = applyAction(first.state, { kind: 'rest', player: two }, noDice);
-    expect(returned(second.events)).toEqual([]);
+    const second = applyAction(first.state, { kind: 'rest', player: two }, scriptedDice([], 6, [0]));
+    expect(returned(second.events)).toEqual([{ node: n(5), kind: 'fighting', units: 1 }]);
+    const third = applyAction(second.state, rest, noDice);
+    expect(returned(third.events)).toEqual([]);
   });
 
   it('comes back after a claim in the same turn, and to the same site again later', () => {
-    // Seat 1 takes node 2's last fighting unit; nodes 5 and 7 are empty, so 7 comes back.
+    // Seat 1 takes node 2, the last fighting site; nodes 5 and 7 are empty, so 7 comes back.
     const walker = withStats(game([5, 7]), one, { stamina: 10 });
     const took = applyAction(walker, { kind: 'move', player: one, path: [n(1), n(2)] }, scriptedDice([], 6, [0]));
     expect(returned(took.events)).toEqual([{ node: n(7), kind: 'fighting', units: 2 }]);

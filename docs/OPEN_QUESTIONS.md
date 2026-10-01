@@ -2523,7 +2523,7 @@ game kept on one device, and an online game's records. Computer players do
 not change: they already rest on a turn they cannot take a step (Q43), and
 stand still only on the guarded site they are after.
 
-### Q135. ~~Do speeds and skills come back?~~ — **answered 2026-09-30: one empty site a turn, from the farther half, while fewer than 2 of a skill are left (530-537, 539-541)**
+### Q135. ~~Do speeds and skills come back?~~ — **answered 2026-09-30 and 10-01: one empty site a turn, from the farther half, while fewer than 2 sites offer a skill (530-541)**
 
 [SOURCE §4.5, chat] Andrei, 2026-09-30: "Already with 4 players, some
 necessary skills like combat run out too quickly. They need to respawn. This is
@@ -2532,13 +2532,15 @@ Skills need to respawn where there are too few of it left, randomly at POIs
 that were offering this skill before and are far from all players." Then 530 A
 (the three speeds, combat and magic, each counted on its own; never gold or
 stamina), 531 C with his "keep at least 2 of each skill on the map (instead of
-3)" (`RESPAWN_SHORT_BELOW_UNITS` 2, whatever the player count), 532 A (one site
+3)" and, on 2026-10-01, "We need two *sites* with the skill at any time, not two
+units of skill on the map" (`RESPAWN_SHORT_BELOW_SITES` 2, whatever the player
+count or the sites' units), 532 A (one site
 a turn, with the whole stack it started with), 533 A (drawn at random from the
 farther half of the empty sites, `RESPAWN_FAR_SHARE` 0.5 rounded up, never one
 a figure stands on), 534 A (far by the stamina cost of the cheapest route from
 the nearest figure), 535 A (a site can come back again and again), 536 A (a
 turn log line, "3 combat came back at a forest site."), 537 A (the computer's
-imagined games include it). Then "There has to be a respawn sound, and if
+imagined games include it), 538 A (the rulebook paragraph). Then "There has to be a respawn sound, and if
 Track is pressed, we should bring the respawn site into view": 539 B (a far
 bell, a placeholder in Art/Sounds/respawn.wav), 540 A (after the turn's walk,
 die and claim notice) and 541 A (the map stays 1.5 s, `timing.respawnStayMs`).
