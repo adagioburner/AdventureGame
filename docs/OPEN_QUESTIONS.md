@@ -2748,6 +2748,103 @@ draw uses the server's die stream, so nobody can foresee or redraw it; on one
 device it uses the browser's secure generator, and a game kept in the browser
 keeps the order drawn.
 
+### Q170. ~~How does the map become a floating island?~~ — **answered 2026-10-01: Andrei's brighter rock under the two front edges with a rim of stone tops, his sky behind the map as drawn, darkened at night, still as the map is dragged and growing a little as it is zoomed in; Whole map frames the map as before in games and the whole island on the New game screen (670-682)**
+
+Andrei, 2026-10-01 at 16:05: *"I don't like the map floating in the void. Can
+we add this extension to the bottom to create a Laputa-style gloating island?
+And we can experiment with a blue background then"*, with a picture of a rock
+wall in a V for the map's two front edges. At 16:21 he sent a brighter
+version, at 16:22 *"For the background, I was thinking of a grey-blue cloudy
+sky, not very bright"*, and at 16:34 a picture of that sky: *"We may need to
+darken it for more contrast (or maybe not)"*. Until then the map stood on a
+plain grey-blue (`--map-ground`). Answered 16:46 to 16:5x.
+
+670. **Where the ground meets the rock:** a thin rim of the rock's stone tops
+     shows below the ground's edge (recommended); or the ground runs straight
+     to the cliff, the tops hidden. **Answered:** the rim. Set any lower, sky
+     showed through gaps between the stones.
+671. **His sky:** as drawn; 15% darker (recommended); or 30% darker.
+     **Answered:** as drawn.
+672. **What Whole map and the game's first view frame:** the whole island, rock
+     included (recommended); or the map as before, the rock running off the
+     bottom of a laptop's screen. **Answered:** the map as before. Nothing
+     about the camera in games changed. At 16:53 he added: *"For the "New
+     game" screen, it would be nice to show the whole island, as in
+     recommended in 672"*, so there (hot seat and online) Whole map and the
+     first view frame the rock down to its lowest point.
+673. **A dark-mode screen:** his sky darkened for night (recommended); the
+     same sky as on a light screen; or the dark grey as before.
+     **Answered:** darkened for night, to 40% of its brightness; made lighter
+     in 682.
+674. **The New game screen:** island and sky there too (recommended); or as
+     before. **Answered:** there too.
+675. **Which rock:** the first, darker one with glowing cyan cracks; or the
+     brighter one (recommended). **Answered:** the brighter one.
+676. **When the map is dragged or zoomed:** the sky stays still behind it
+     (recommended); or it moves a little with the map. **Answered** at 16:52:
+     *"I am afraid that background that does not move at all will create an
+     unnatural feeling. How expensive, peformance-wise, is to move the
+     background a little? If it's not too much, I'd prefer that"*. It is
+     cheap: the sky is one layer the browser slides, and the map is redrawn
+     on every frame of a drag anyway. The amounts below were offered on a
+     page that moves his sky behind the island (Island sky drift).
+677. **How far the sky moves:** as far as the map moves at the whole-map view
+     times still, 1/20, 1/10 (recommended) or 1/5, and less as the map is
+     zoomed in, as a faraway sky would. To have room to move, the sky is
+     drawn larger, so its clouds look about 6%, 12% or 25% bigger; dragged
+     far off, it stops at its edge. **Answered:** 1/10 at 17:07, then at
+     17:08 *"The sky should grow but it should not move up and down like
+     today"* and at 17:09 *"Actually scratch that. Let's make it still, but
+     growing with the zoom"*: still (`SKY_DRIFT` 0), so the sky is drawn at
+     the box's size, as before.
+678. **Zooming:** the sky grows a little as the map is zoomed in, by up to a
+     tenth at 1/10 (recommended); or it keeps its size. **Answered** in the
+     same words: it grows, by about a tenth at the closest zoom, as on the
+     page, and never below its size at the whole-map view
+     (`SKY_ZOOM_GROWTH`).
+679. **Where the ground's front edge meets the rock** (17:11: *"Is there a way
+     to blur the edge of the map so it blends better with the stone rim?"*;
+     17:14: *"Or, another idea, put a stone edge on the map border"*): as
+     before, the ground ending in a straight line above the rim; a soft edge,
+     the rock's stone tops fading into the ground; or a stone border, the
+     same stone tops drawn over the ground's edge (recommended). The back
+     edges stay ground against sky. **Answered** at 18:41: the soft edge. The
+     rock is drawn over the ground and its stone tops fade out over 24 of the
+     picture's pixels above the edge (`fade` in `Art/manifest.json`).
+680. **While the sky's picture loads** (asked at the coordinator's prompt, as
+     the old grey-blue showed until then, on the map's box and the "Drawing
+     the map" screen): the old grey-blue; the sky's own average blue,
+     darkened at night like the sky, so the switch is barely seen
+     (recommended); or the map waiting for the sky, so no switch is seen but
+     the map comes later on a slow connection. **Answered** at 19:10: the
+     sky's own blue, #809ab4 (`color` in `Art/manifest.json`).
+681. **The map's side corners** (19:13, with a picture of the left corner:
+     *"This detail around corners is rather ugly. I thin you need to extend
+     the map less in that direction"*): the ground's corner stuck out past
+     the rock's rounded end as a thin sheet over the sky. Offered: the rock
+     about 4% larger, its left and right points moved 27 and 26 of its pixels
+     in along its top edges so its ends reach past the corners; or the ground
+     cut back at the side corners, the rock as before (recommended).
+     **Answered** at 19:41: *"can we just have the rick and the map align in
+     that direction? I mean the rock should extend in SW and SE directions but
+     be aligned with the map edge in NW and NE"*. The rock keeps the moved
+     points, so it reaches right up to the corners (about 4% larger), and is
+     cut off flush there: nothing of it left of the left corner, right of the
+     right one, or above the ground's back edges.
+682. **The night sky's brightness** (19:48: *"I don't see the sky background
+     in the preview, is it supposed to be there?"*; 19:50: *"I think Ihave the
+     dark theme, and the clouds are so dark one cant really see them"*): at
+     40% of its brightness (673) the clouds hardly showed. Offered: 40% as
+     before, 55%, 70% (recommended) or 85%. **Answered** at 19:59: 70% (`shade`
+     `dark` 0.3 in `Art/manifest.json`), also for the sky's blue while it
+     loads.
+
+The rock is his picture as drawn, stretched only so its top edges lie along
+the map's front edges, which it already slopes along; 4 and 5 player maps get
+the same rock at their size. Rock and sky are both inside the map's box, so a
+phone's map loses no height. Both are in `Art/Island/`, named in
+`Art/manifest.json`'s `island` section.
+
 ### Q185. ~~Which guard does forest gold get now?~~ — **answered 2026-10-01: always magic, by the same chance turned to 100%; kept games keep their coin flips, and the rulebook says each terrain's guard (730, 731 A)**
 
 [SOURCE §4.4, chat] Andrei, 2026-10-01: "After playing some more I think we

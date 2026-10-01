@@ -23,6 +23,7 @@ import { initialSeed, mapFor, writeSeed } from './seed.ts';
 import { BarMenu } from './BarMenu.tsx';
 import { RulesButton } from './Rules.tsx';
 import { SeedForm } from './SeedForm.tsx';
+import { paintSky } from './sky.ts';
 
 export interface AppProps {
   /**
@@ -79,6 +80,7 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
   useEffect(() => {
     if (catalog === null || limits === null) return;
     setSetup(carried ?? kept?.setup ?? newLocalSetup(limits));
+    paintSky(catalog);
     loadArt(catalog).then(setArt, (error: unknown) => setProblem(String(error)));
   }, [catalog, limits]);
 
@@ -250,7 +252,7 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
         />
       ) : (
         <main className="stage setting-up">
-          <MapView art={art} map={map} scene={scene} state={opening} path={null} waypoint={null} walker={null} />
+          <MapView art={art} map={map} scene={scene} state={opening} path={null} waypoint={null} walker={null} frame="island" />
           <SetupPanel
             art={art}
             panel={{

@@ -28,6 +28,8 @@ export interface ArtCatalog {
   iconUrl(kind: RewardKind): string;
   /** Where each of a sound's files can be fetched from, in the manifest's order. */
   soundUrls(name: SoundName): readonly string[];
+  /** [Q170] Where the rock under the map and the sky behind it can be fetched from. */
+  readonly islandUrls: { readonly underside: string; readonly sky: string };
 }
 
 /** A sprite, by sheet and position in that sheet's `sprites` list. */
@@ -79,6 +81,9 @@ export function buildArtCatalog(files: ArtFiles): ArtCatalog {
   }
   for (const name of SOUND_NAMES) {
     for (const file of manifest.sounds[name].files) if (!files.urls.has(file)) problems.push(`${file} is missing`);
+  }
+  for (const file of [manifest.island.underside.file, manifest.island.sky.file]) {
+    if (!files.urls.has(file)) problems.push(`${file} is missing`);
   }
 
   const check = (what: () => void): void => {
@@ -181,6 +186,10 @@ export function buildArtCatalog(files: ArtFiles): ArtCatalog {
         if (url === undefined) throw new ArtError(`${file} is missing`);
         return url;
       });
+    },
+    islandUrls: {
+      underside: files.urls.get(manifest.island.underside.file) as string,
+      sky: files.urls.get(manifest.island.sky.file) as string,
     },
   };
 }

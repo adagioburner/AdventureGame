@@ -13,7 +13,9 @@ import {
   solidCircle,
   standingAnchor,
   typicalSpan,
+  type Rect,
 } from '../../art/pixels.ts';
+import { shapeUnderside } from '../island.ts';
 import { SHAPE_BANDS, type SpriteShape } from '../placement.ts';
 
 /**
@@ -61,6 +63,10 @@ export interface LoadedArt {
   icon(kind: RewardKind): Texture;
   /** A sprite cut out on its own at full resolution, for repeating: terrain textures, the road brush. */
   tile(ref: SpriteRef): Texture;
+  /** [Q170] The rock under the map's front edges, as supplied. */
+  readonly underside: Texture;
+  /** Where the rock itself lies within its picture, in the picture's pixels: what the New game screen frames (674). */
+  readonly undersideSolid: Rect;
 }
 
 export async function loadArt(catalog: ArtCatalog): Promise<LoadedArt> {
@@ -92,6 +98,16 @@ export async function loadArt(catalog: ArtCatalog): Promise<LoadedArt> {
     }),
   );
 
+  const undersideCanvas = drawScaled(await loadImage(catalog.islandUrls.underside), 1);
+  const undersideWhole = { x: 0, y: 0, width: undersideCanvas.width, height: undersideCanvas.height };
+  const undersidePixels = context(undersideCanvas).getImageData(0, 0, undersideCanvas.width, undersideCanvas.height);
+  // [679, 681] Its stone tops fade into the ground's edge, and it ends where the ground does.
+  const { corners, fade } = catalog.manifest.island.underside;
+  shapeUnderside(undersidePixels.data, undersideCanvas.width, corners, fade);
+  context(undersideCanvas).putImageData(undersidePixels, 0, 0);
+  const undersideSolid = solidBounds(undersidePixels.data, undersideCanvas.width, undersideWhole) ?? undersideWhole;
+  const underside = mipmapped(undersideCanvas);
+
   const sheetOf = (name: string): SheetTextures => {
     const sheet = sheets.get(name);
     if (sheet === undefined) throw new Error(`no textures for ${name}`);
@@ -100,6 +116,8 @@ export async function loadArt(catalog: ArtCatalog): Promise<LoadedArt> {
 
   return {
     catalog,
+    underside,
+    undersideSolid,
     sheet: sheetOf,
     frame: (ref) => {
       const frame = sheetOf(ref.sheet).frames[ref.index];
