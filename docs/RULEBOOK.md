@@ -51,7 +51,7 @@ Every other stat (the three speeds, combat, magic and gold) starts at 0. All fig
 On your turn you do exactly one of two things:
 
 - **Move.** Walk a route. If your figure stops on a site at the end of your walk, you claim its reward or fight its guard automatically when your turn ends.
-- **Rest.** Gain 5 stamina. You do not move and do not interact with anything, not even the site you are standing on.
+- **Rest.** Gain 5 stamina. You do not move and do not interact with anything, not even the site you are standing on. Your route is kept for next turn.
 
 Only the space where you stop counts. Walking through a site does not claim it.
 

@@ -40,7 +40,8 @@ export interface RestAction {
    * cannot pay rests instead (`endTurnActionFor`), and the route is saved for
    * next turn as a walk cut short saves its remainder. [Andrei, 2026-10-01]
    * Rest on one device carries the route shown the same way, since nothing
-   * else saves it there. Omitted, the saved route stays as it was.
+   * else saves it there, and an empty one after Cancel (610), which saves
+   * none. Omitted, the saved route stays as it was.
    */
   readonly plan?: PlannedPath;
 }

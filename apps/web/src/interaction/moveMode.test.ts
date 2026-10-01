@@ -223,6 +223,28 @@ describe('move mode (§7.1), idle → selecting → previewing', () => {
     expect(seat(game.state, 0).plannedPath).toEqual({ path: changed, waypoint: null });
   });
 
+  it('keeps no route after Cancel, with Rest or with End turn (610)', () => {
+    for (const press of ['rest', 'endTurn'] as const) {
+      const { game, controller, sent } = setup();
+      const ada = seat(game.state, 0);
+      const route = map.pois
+        .map((poi) => shortestPath(map.graph, ada.position, poi.node, config) ?? [])
+        .sort((p, q) => pathCost(map.graph, q, config) - pathCost(map.graph, p, config))[0] as readonly NodeId[];
+      controller.enter(ada.id);
+      controller.selectDestination(route[route.length - 1] as NodeId);
+      controller.endTurn();
+      controller.rest(); // Bram's turn
+      expect(seat(game.state, 0).plannedPath).not.toBeNull();
+      expect(controller.state.kind).toBe('previewing');
+      controller.cancel();
+      controller[press]();
+      expect(sent.at(-1)).toEqual({ kind: 'rest', player: ada.id, plan: { path: [], waypoint: null } });
+      expect(seat(game.state, 0).plannedPath).toBeNull();
+      controller.rest(); // Bram's turn
+      expect(controller.state.kind).toBe('idle');
+    }
+  });
+
   it('cancels back to idle, and a cancelled route is not committed', () => {
     const { game, controller, sent } = setup();
     const player = seat(game.state, 0);
