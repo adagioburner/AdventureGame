@@ -24,11 +24,18 @@ import type { GameContent, RewardTable } from './types.ts';
  */
 /**
  * [Q115] The chance that a forest gold POI is guarded by magic instead of by
- * fighting, drawn for each POI on its own (450 A, 451 A): at 0.5 a map has 0
- * to 4 magic-guarded forest gold POIs, 2 on 3 maps in 8 and none on 1 in 16.
- * Andrei, 2026-09-30: "Magic doesn't play an important enough role."
+ * fighting, drawn for each POI on its own (450 A, 451 A). It was 0.5, a coin
+ * flip, from 2026-09-30; [Q185] it is 1 since Andrei, 2026-10-01: "make all
+ * gold in the forests guarded by magic. Otherwise magic plays too little
+ * role". Kept as a chance so a coin flip is this one number away.
  */
-export const FOREST_MAGIC_GUARD_CHANCE = 0.5;
+export const FOREST_MAGIC_GUARD_CHANCE = 1;
+
+/**
+ * [Q185, 730 A] The chance games began with from 2026-09-30 until it became
+ * 1: a hot seat game kept from then goes on with the guards it began with.
+ */
+export const COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE = 0.5;
 
 export const DEFAULT_REWARD_TABLE: RewardTable = {
   plains: [
@@ -41,7 +48,7 @@ export const DEFAULT_REWARD_TABLE: RewardTable = {
   forest: [
     { kind: 'mountain_move', guard: null, totalUnits: 15, poiCount: 8 },
     { kind: 'fighting', guard: null, totalUnits: 15, poiCount: 8 },
-    // [Q115] Each POI's guard is fighting or, by a coin flip, magic.
+    // [Q115, Q185] Each POI's guard is magic by FOREST_MAGIC_GUARD_CHANCE (1: always), else fighting.
     { kind: 'gold', guard: 'fighting', totalUnits: 5, poiCount: 4, magicGuardChance: FOREST_MAGIC_GUARD_CHANCE },
   ],
   mountain: [
