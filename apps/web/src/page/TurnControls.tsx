@@ -243,7 +243,11 @@ function hint(move: MoveModeState, armed: boolean, name: string, rest: number, o
       if (armed) return 'Tap the space to route through.';
       const { preview } = move;
       const steps = preview.steps.length;
-      if (steps === 0) return later ? 'No route: you stay where you are.' : `Staying here this turn. ${stay}.`;
+      if (steps === 0) {
+        if (later) return 'No route: you stay where you are.';
+        // [495] Away from a guard: "End turn rests", without "with no route".
+        return onGuard ? `Staying here this turn. ${stay}.` : `Staying here this turn. End turn rests: +${rest} stamina.`;
+      }
       if (preview.reachableStepCount === 0) {
         const route = steps === 1 ? 'this step' : `the first of these ${steps} steps`;
         if (later) return `Not even ${route} is affordable on your next turn. Rest gains ${rest} stamina.`;
