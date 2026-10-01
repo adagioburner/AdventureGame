@@ -6,6 +6,7 @@ import {
   type GameState,
   type NodeId,
   type PathPreview,
+  type PlannedPath,
   type PlayerId,
   type PlayerState,
   type TurnAction,
@@ -97,7 +98,16 @@ export interface MoveModeController {
    * nothing is a rest, keeping the route shown (`endTurnActionFor`).
    */
   endTurn(): void;
-  /** [SOURCE §2] Rest instead: no movement, no interaction. */
+  /**
+   * [SOURCE §2] Rest instead: no movement, no interaction.
+   *
+   * [Andrei, 2026-10-01] "clicking rest cancels the current route, and it
+   * should not": the route shown is kept for next turn. Online it is already
+   * saved as it is drawn ([Q56, 53]), and a rest keeps the saved route; on
+   * one device nothing saves it before the turn ends, so the rest carries it,
+   * as End turn's rest does (490). [610] After Cancel nothing is shown, and on
+   * one device, as online, the route saved before goes too.
+   */
   rest(): void;
   subscribe(listener: () => void): () => void;
 }
@@ -353,19 +363,23 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
       if (who === null || game === null) return;
       const path = state.kind === 'previewing' ? state.path : [];
       const waypoint = state.kind === 'idle' ? null : state.waypoint;
+      const kept = shownPlan(who);
       armed = false;
       engaged = false;
       state = IDLE;
-      options.commit(endTurnActionFor(game, who, path, path.length === 0 ? null : waypoint));
+      const action = endTurnActionFor(game, who, path, path.length === 0 ? null : waypoint);
+      // [610] End turn's rest with nothing shown keeps no route on one device either.
+      options.commit(action.kind === 'rest' && action.plan === undefined && kept !== null ? { ...action, plan: kept } : action);
     },
 
     rest() {
       const who = activePlanner();
       if (who === null) return;
+      const kept = shownPlan(who);
       armed = false;
       engaged = false;
       state = IDLE;
-      options.commit({ kind: 'rest', player: who });
+      options.commit(kept === null ? { kind: 'rest', player: who } : { kind: 'rest', player: who, plan: kept });
     },
 
     subscribe(listener) {
@@ -373,6 +387,21 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
       return () => listeners.delete(listener);
     },
   };
+
+  /**
+   * [Andrei, 2026-10-01] What a rest saves for next turn on one device: the
+   * route shown, and after Cancel (610) none, as online. Nothing saves a route
+   * there as it is drawn, so the rest carries it; `null` where the saved route
+   * already is the one shown: online ([Q56, 53]), or nothing shown and nothing
+   * saved.
+   */
+  function shownPlan(who: PlayerId): PlannedPath | null {
+    if (options.mode.kind !== 'hotseat' || game === null) return null;
+    if (state.kind === 'previewing') {
+      return { path: state.path, waypoint: state.waypoint !== null && state.path.includes(state.waypoint) ? state.waypoint : null };
+    }
+    return playerIn(game, who).plannedPath === null ? null : { path: [], waypoint: null };
+  }
 
   /** Only the player whose turn it is can commit one, in either mode. */
   function activePlanner(): PlayerId | null {

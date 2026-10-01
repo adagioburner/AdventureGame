@@ -2628,6 +2628,25 @@ planner's own turn, `GameScreen`'s `onTap` sends a tap on a space there, and
 the line is `hint` in `TurnControls.tsx`, and `GameScreen`'s `cue` stops a
 saved route's blink.
 
+### Q155. ~~Does Rest keep the route?~~ — **answered 2026-10-01: yes, the route shown, and none after Cancel; the rulebook says so (610, 611 A)**
+
+Andrei, 2026-10-01 at 05:12: *"it looks like clicking rest cancels the current
+route, and it should not"*. On one device nothing saved a route until the turn
+ended, so Rest dropped a route drawn or changed that turn and kept only one
+saved from an earlier turn. Online the route is saved as it is drawn (Q56, 53)
+and a rest already kept it. Rest on one device now carries the route shown, as
+End turn's rest does (490), and it comes back at the player's next turn as any
+saved route does. 610 and 611 answered at 05:24.
+
+610. **Cancel, then Rest or End turn, on one device:** today a route saved from
+     an earlier turn and then cancelled comes back at the next turn; online it
+     is gone. After Cancel, Rest and End turn keep no route, as online
+     (recommended); or the cancelled route comes back, as today.
+     **Answered:** as recommended.
+611. **The rulebook:** the Rest line ends with *"Your route is kept for next
+     turn."* (recommended); or the rulebook stays as it is. **Answered:** as
+     recommended.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design
