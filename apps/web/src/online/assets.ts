@@ -4,6 +4,7 @@ import type { GameMap, Seed } from '@adventure/core';
 import { buildArtCatalog } from '../art/catalog.ts';
 import { ART_FILES } from '../art/files.ts';
 import { mapFor } from '../page/seed.ts';
+import { paintSky } from '../page/sky.ts';
 import { loadArt, type LoadedArt } from '../render/pixi/textures.ts';
 
 /**
@@ -18,7 +19,11 @@ export function useArt(): { readonly art: LoadedArt | null; readonly problem: st
   const [problem, setProblem] = useState<string | null>(null);
   useEffect(() => {
     let live = true;
-    art ??= (async () => loadArt(buildArtCatalog(ART_FILES)))();
+    art ??= (async () => {
+      const catalog = buildArtCatalog(ART_FILES);
+      paintSky(catalog);
+      return loadArt(catalog);
+    })();
     art.then(
       (found) => live && setLoaded(found),
       (error: unknown) => live && setProblem(error instanceof Error ? error.message : String(error)),

@@ -56,6 +56,7 @@
         --accent-ink: #ffffff;
         --accent-soft: #dcebf5;
         --map-ground: #a9b8bf;
+        --map-sky-shade: var(--map-sky-shade-light, 0);
         --free: #3f9a45;
         --stamina: #c99a06;
         --unreachable: #7d8589;
@@ -81,6 +82,7 @@
           --accent-ink: #0d1a22;
           --accent-soft: #1d3342;
           --map-ground: #25333b;
+          --map-sky-shade: var(--map-sky-shade-dark, 0);
           --took: #7cc596;
           --missed: #ef8b78;
           --won: #e5bd5c;
@@ -99,6 +101,7 @@
         --accent-ink: #0d1a22;
         --accent-soft: #1d3342;
         --map-ground: #25333b;
+        --map-sky-shade: var(--map-sky-shade-dark, 0);
         --took: #7cc596;
         --missed: #ef8b78;
         --won: #e5bd5c;
@@ -238,7 +241,27 @@
         position: relative;
         min-height: 0;
         overflow: hidden;
-        background: var(--map-ground);
+        /* [680] The sky's own average colour, darkened as the sky is, until
+           the sky's picture has loaded; --map-ground until that is known. */
+        background: linear-gradient(rgb(0 0 0 / var(--map-sky-shade)), rgb(0 0 0 / var(--map-sky-shade))),
+          var(--map-sky-color, var(--map-ground));
+        /* The sky goes behind everything on the stage, and in front of this. */
+        isolation: isolate;
+      }
+      /* [Q170] Andrei's sky behind the map, named in Art/manifest.json and set
+         on the page's root by src/page/sky.ts. A dark screen darkens it more
+         (673). It stays put as the map
+         is dragged, and MapView grows it a little as the map is zoomed in
+         (676 to 678). */
+      .map-sky {
+        position: absolute;
+        z-index: -1;
+        pointer-events: none;
+        will-change: transform;
+        background-image: linear-gradient(rgb(0 0 0 / var(--map-sky-shade)), rgb(0 0 0 / var(--map-sky-shade))),
+          var(--map-sky, none);
+        background-size: cover;
+        background-position: center;
       }
       .canvas-host {
         position: absolute;

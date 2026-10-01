@@ -13,7 +13,8 @@ import { spriteIndex } from '../art/atlas.ts';
 import { atlasOf, poiArt, wrapIndex, type ArtCatalog, type SpriteRef } from '../art/catalog.ts';
 import { placeBackdrop, placeDressing } from './dressing.ts';
 import { distance, nodeBounds, nodeSpacing, position, voronoiCells } from './geometry.ts';
-import { isometricProjection, type Bounds, type Projection } from './isometric.ts';
+import { undersideMatrix } from './island.ts';
+import { isometricProjection, type Affine, type Bounds, type Projection } from './isometric.ts';
 import { pictureBands, placePoiPictures, ROUGH_SHAPE, type Box, type Oval, type PoiPicture, type ShapeOf } from './placement.ts';
 
 /**
@@ -52,6 +53,8 @@ export interface MapScene {
   /** Dressing and POI images, back to front. */
   readonly billboards: readonly Billboard[];
   readonly labels: readonly PoiLabel[];
+  /** [Q170] Where the rock under the map's front edges goes: its picture's pixels to screen pixels at zoom 1. */
+  readonly underside: Affine;
 }
 
 export interface TerrainPatch {
@@ -189,7 +192,8 @@ export function buildMapScene(map: GameMap, catalog: ArtCatalog, shapeOf: ShapeO
   // Standing dressing keeps off every POI's picture and reward.
   const taken = [...pois.flatMap((poi) => pictureBands(poi.foot, poi.size, shapeOf(poi.sprite))), ...labels.map(labelBox)];
   const billboards = [...placeBackdrop(ground), ...placeDressing(ground, taken), ...pois].sort(backToFront);
-  return { projection, spacing, bounds, terrain, roads, nodes, billboards, labels };
+  const underside = undersideMatrix(projection, bounds, manifest.island.underside.corners);
+  return { projection, spacing, bounds, terrain, roads, nodes, billboards, labels, underside };
 }
 
 /**
