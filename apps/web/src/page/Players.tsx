@@ -67,9 +67,12 @@ export function Players({ catalog, state, away }: { catalog: ArtCatalog; state: 
                 </span>
               </div>
             </header>
+            {/* [Q140] On a laptop STAT_ORDER fills four rows a column at a
+                time: what moves a player on the left, the rest on the right
+                with gold last and red. */}
             <ul className="stats">
               {STAT_ORDER.map((kind) => (
-                <li key={kind} title={STAT_LABEL[kind]}>
+                <li key={kind} className={kind === 'gold' ? 'gold' : undefined} title={STAT_LABEL[kind]}>
                   <StatIcon catalog={catalog} kind={kind} size={18} />
                   <b>{player.stats[kind]}</b>
                   <span className="label">{STAT_LABEL[kind]}</span>

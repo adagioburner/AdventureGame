@@ -27,6 +27,9 @@
         --took: #2f7a4a;
         --missed: #b3412f;
         --won: #9a6a00;
+        /* [Q140, 551] The gold number on a player's card: the deep red of the
+           circle round the combat icon on the map, lighter on a dark screen. */
+        --gold-number: #b71b1c;
         --shadow: 0 10px 30px rgb(0 0 0 / 0.18);
         --display: 'IM Fell English SC', 'Iowan Old Style', Georgia, serif;
         --ui: 'Public Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -47,6 +50,7 @@
           --took: #7cc596;
           --missed: #ef8b78;
           --won: #e5bd5c;
+          --gold-number: #ff7b72;
           --shadow: 0 10px 30px rgb(0 0 0 / 0.45);
         }
       }
@@ -64,6 +68,7 @@
         --took: #7cc596;
         --missed: #ef8b78;
         --won: #e5bd5c;
+        --gold-number: #ff7b72;
         --shadow: 0 10px 30px rgb(0 0 0 / 0.45);
       }
       html,
@@ -357,6 +362,11 @@
         grid-template-columns: max-content max-content;
         justify-content: space-between;
         gap: 3px 12px;
+        /* [Q140, 550] Four rows filled a column at a time, so the left column
+           holds what moves a player (stamina and the three speeds) and the
+           right one the rest, combat, magic and gold, from the top. */
+        grid-template-rows: repeat(4, auto);
+        grid-auto-flow: column;
       }
       .stats li {
         display: grid;
@@ -377,6 +387,11 @@
         text-overflow: ellipsis;
         white-space: nowrap;
         color: var(--muted);
+      }
+      /* [Q140] Gold's number is red, so one glance shows who has how much;
+         its word and coin keep their colours. Only the cards do this (552). */
+      .stats .gold b {
+        color: var(--gold-number);
       }
       .allowance {
         font-size: 12px;
@@ -921,6 +936,8 @@
         }
         .stats {
           grid-template-columns: repeat(7, 1fr);
+          grid-template-rows: none;
+          grid-auto-flow: row;
           gap: 2px;
         }
         .stats li {
