@@ -39,7 +39,6 @@ interface TurnControlsProps {
   onClearWaypoint(): void;
   onEndTurn(): void;
   onRest(): void;
-  onFind(): void;
 }
 
 /**
@@ -57,11 +56,6 @@ export function TurnControls(props: TurnControlsProps) {
   const planning = move.kind !== 'idle';
   const rest = state.map.ruleset.config.movement.REST_STAMINA_GAIN;
   const onGuard = guardToFightAt(state, player.position);
-  const find = (
-    <button className="btn ghost" type="button" onClick={props.onFind} aria-label={`Show ${player.name} on the map`}>
-      Find {player.name}
-    </button>
-  );
   const planButtons = (
     <>
       {planning ? (
@@ -127,9 +121,7 @@ export function TurnControls(props: TurnControlsProps) {
         </div>
         <div className="buttons">
           {props.canPlan ? planButtons : null}
-          {props.onMoveOn === null && props.onResign === null ? (
-            find
-          ) : (
+          {props.onMoveOn === null && props.onResign === null ? null : (
             <PlayerMenu key={state.turn.number} name={player.name}>
               {props.onMoveOn === null ? null : (
                 <button className="btn" type="button" disabled={busy || props.offline} onClick={props.onMoveOn}>
@@ -141,9 +133,6 @@ export function TurnControls(props: TurnControlsProps) {
                   Resign {player.name}
                 </button>
               )}
-              <button className="btn" type="button" onClick={props.onFind} aria-label={`Show ${player.name} on the map`}>
-                Find {player.name}
-              </button>
             </PlayerMenu>
           )}
         </div>
@@ -163,7 +152,8 @@ export function TurnControls(props: TurnControlsProps) {
           </p>
           {bar}
         </div>
-        <div className="buttons">{find}</div>
+        {/* [Q120, 475] Empty since Find went, and kept so the panel is as tall as before on a phone. */}
+        <div className="buttons" />
       </section>
     );
   }
@@ -185,7 +175,6 @@ export function TurnControls(props: TurnControlsProps) {
         <button className="btn primary" type="button" disabled={busy || props.offline} onClick={props.onEndTurn}>
           End turn
         </button>
-        {find}
       </div>
     </section>
   );
@@ -193,6 +182,7 @@ export function TurnControls(props: TurnControlsProps) {
 
 /**
  * [Q85, 302 and 304-307] The game master's actions on another person's turn
+ * (Move on and Resign; Find left the list with the Find button, [Q120, 475])
  * in one "Bea ▾" button, so they never take a second row: its list opens
  * above it, and closes on a choice, a press elsewhere or when the turn passes
  * (keyed by the turn), as the Menu list does ([Q58, 84]).
@@ -253,7 +243,11 @@ function hint(move: MoveModeState, armed: boolean, name: string, rest: number, o
       if (armed) return 'Tap the space to route through.';
       const { preview } = move;
       const steps = preview.steps.length;
-      if (steps === 0) return later ? 'No route: you stay where you are.' : `Staying here this turn. ${stay}.`;
+      if (steps === 0) {
+        if (later) return 'No route: you stay where you are.';
+        // [495] Away from a guard: "End turn rests", without "with no route".
+        return onGuard ? `Staying here this turn. ${stay}.` : `Staying here this turn. End turn rests: +${rest} stamina.`;
+      }
       if (preview.reachableStepCount === 0) {
         const route = steps === 1 ? 'this step' : `the first of these ${steps} steps`;
         if (later) return `Not even ${route} is affordable on your next turn. Rest gains ${rest} stamina.`;

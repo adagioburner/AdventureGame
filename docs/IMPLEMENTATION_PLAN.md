@@ -916,7 +916,8 @@ figurines, then play it out on one screen until the engine declares a winner.
   otherwise:
   - A "Plan a move" button sits beside tapping your figure, and a
     "Waypoint" button arms the next tap as the waypoint, because a touch
-    screen has no shift key. "Find" centres the map on the current player,
+    screen has no shift key. "Find" centred the map on the current player
+    (until 2026-09-30, when player cards took that over, Q120),
     and on a phone "Plan a move" does too, since the whole map there is too
     small to find a figure or tap a node.
   - End Turn with no route drawn means stay put, which is §8's way to fight a

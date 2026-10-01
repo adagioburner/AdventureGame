@@ -16,8 +16,23 @@ import { Portrait, StatIcon } from './Sprites.tsx';
  *
  * [Q54, 31 and 33] Online, a player with no connection has "Away" on their card.
  * [Q56, 57] One who resigned reads "Resigned · the computer plays".
+ *
+ * [Andrei, 2026-09-30] Q120: "clicking on a player's card finds this player
+ * on the map", every card, during the game and after it ends (474), by
+ * `onFind`. On a laptop the pointer turns into a hand over a card, which
+ * otherwise looks as before (472).
  */
-export function Players({ catalog, state, away }: { catalog: ArtCatalog; state: GameState; away?: ReadonlySet<PlayerId> | undefined }) {
+export function Players({
+  catalog,
+  state,
+  away,
+  onFind,
+}: {
+  catalog: ArtCatalog;
+  state: GameState;
+  away?: ReadonlySet<PlayerId> | undefined;
+  onFind?: ((player: PlayerId) => void) | undefined;
+}) {
   const playing = state.status === 'in_progress';
   const list = useRef<HTMLElement | null>(null);
   // [Andrei, 2026-09-24] Q53: four or five cards scroll in their own column
@@ -50,7 +65,12 @@ export function Players({ catalog, state, away }: { catalog: ArtCatalog; state: 
         const current = playing && player.seat === state.turn.activeSeat;
         const winner = state.winners.includes(player.id);
         return (
-          <article key={player.id} className={`player${current ? ' current' : ''}${winner ? ' winner' : ''}`} aria-current={current ? 'true' : undefined}>
+          <article
+            key={player.id}
+            className={`player${current ? ' current' : ''}${winner ? ' winner' : ''}${onFind === undefined ? '' : ' findable'}`}
+            aria-current={current ? 'true' : undefined}
+            onClick={onFind === undefined ? undefined : () => onFind(player.id)}
+          >
             <header>
               <Portrait catalog={catalog} avatarId={player.avatarId} size={current ? 52 : 40} label={`${player.name}’s avatar`} />
               <div className="who">
