@@ -92,7 +92,15 @@ export interface MoveModeController {
    * nothing is a rest, keeping the route shown (`endTurnActionFor`).
    */
   endTurn(): void;
-  /** [SOURCE §2] Rest instead: no movement, no interaction. */
+  /**
+   * [SOURCE §2] Rest instead: no movement, no interaction.
+   *
+   * [Andrei, 2026-10-01] "clicking rest cancels the current route, and it
+   * should not": the route shown is kept for next turn. Online it is already
+   * saved as it is drawn ([Q56, 53]), and a rest keeps the saved route; on
+   * one device nothing saves it before the turn ends, so the rest carries it,
+   * as End turn's rest does (490).
+   */
   rest(): void;
   subscribe(listener: () => void): () => void;
 }
@@ -354,10 +362,14 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
     rest() {
       const who = activePlanner();
       if (who === null) return;
+      const kept =
+        options.mode.kind === 'hotseat' && state.kind === 'previewing'
+          ? { path: state.path, waypoint: state.waypoint !== null && state.path.includes(state.waypoint) ? state.waypoint : null }
+          : null;
       armed = false;
       engaged = false;
       state = IDLE;
-      options.commit({ kind: 'rest', player: who });
+      options.commit(kept === null ? { kind: 'rest', player: who } : { kind: 'rest', player: who, plan: kept });
     },
 
     subscribe(listener) {

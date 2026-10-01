@@ -184,6 +184,45 @@ describe('move mode (§7.1), idle → selecting → previewing', () => {
     });
   });
 
+  it('keeps a route drawn this turn through Rest, and opens the next turn on it (Andrei, 2026-10-01)', () => {
+    const { game, controller, sent } = setup();
+    const ada = seat(game.state, 0);
+    const { target, route } = nodeAlong(game.state, 8);
+    controller.enter(ada.id);
+    controller.choose(route[2] as NodeId, true);
+    controller.choose(target, false);
+    const drawn = controller.state.kind === 'previewing' ? controller.state.path : [];
+    controller.rest();
+    expect(sent).toEqual([{ kind: 'rest', player: ada.id, plan: { path: drawn, waypoint: route[2] } }]);
+    expect(seat(game.state, 0).position).toBe(ada.position);
+    expect(seat(game.state, 0).plannedPath).toEqual({ path: drawn, waypoint: route[2] });
+    controller.rest(); // Bram's turn
+
+    expect(controller.state).toMatchObject({ kind: 'previewing', destination: target, waypoint: route[2], path: drawn });
+    expect(controller.engaged).toBe(false);
+  });
+
+  it('keeps the route as changed this turn through Rest, not the one saved before', () => {
+    const { game, controller } = setup();
+    const ada = seat(game.state, 0);
+    const route = map.pois
+      .map((poi) => shortestPath(map.graph, ada.position, poi.node, config) ?? [])
+      .sort((p, q) => pathCost(map.graph, q, config) - pathCost(map.graph, p, config))[0] as readonly NodeId[];
+    controller.enter(ada.id);
+    controller.selectDestination(route[route.length - 1] as NodeId);
+    controller.endTurn();
+    controller.rest(); // Bram's turn
+    const saved = seat(game.state, 0).plannedPath;
+    const elsewhere = map.graph.adjacency[seat(game.state, 0).position]?.find((node) => !saved?.path.includes(node));
+    if (elsewhere === undefined) throw new Error('no neighbour off the saved route');
+    controller.enter(ada.id);
+    controller.selectDestination(elsewhere);
+    const changed = controller.state.kind === 'previewing' ? controller.state.path : [];
+    expect(changed).not.toEqual(saved?.path);
+    controller.rest();
+    expect(seat(game.state, 0).plannedPath).toEqual({ path: changed, waypoint: null });
+  });
+
   it('cancels back to idle, and a cancelled route is not committed', () => {
     const { game, controller, sent } = setup();
     const player = seat(game.state, 0);
@@ -286,6 +325,17 @@ describe('move mode online (§7.1): planning out of turn (Q56, 49 to 53)', () =>
     const drawn = controller.state.kind === 'previewing' ? controller.state.path : null;
     controller.setGame(planned(game.state, bram.id, route.slice(0, 2)));
     expect(controller.state).toMatchObject({ kind: 'previewing', path: drawn });
+  });
+
+  it('rests with no route of its own: the route drawn is saved as it is drawn, and a rest keeps the saved one', () => {
+    const { game, controller, sent, play } = onlineSetup();
+    const ada = seat(game.state, 0);
+    const bram = seat(game.state, 1);
+    play({ kind: 'rest', player: ada.id });
+    controller.enter(bram.id);
+    controller.selectDestination(nodeAlong(game.state, 4).target);
+    controller.rest();
+    expect(sent).toEqual([{ kind: 'rest', player: bram.id }]);
   });
 
   it('puts the route down when this player’s own turn ends', () => {
