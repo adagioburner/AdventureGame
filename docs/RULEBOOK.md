@@ -1,4 +1,4 @@
-# Adventure Game — Rulebook
+# Skyholm Adventures — Rulebook
 
 ## Object of the game
 

@@ -1,4 +1,4 @@
-# Game Design Document — Multiplayer Turn-Based Adventure Game
+# Game Design Document — Skyholm Adventures
 
 Status: v1 design, consolidated from `Annotated_Design_Document.md` (the traceability record — original text plus every clarification, in full, with typo/naming history preserved). This file is the clean version for implementation: typo corrections, superseded terminology, and clarifications that only confirmed an already-obvious reading have been left out. **Every statement is still tagged with its provenance** — `[SOURCE §x]`, `[SOURCE §x, chat]`, `[SOURCE §x, review]`, `[INFERRED]`, or `[OPEN]` — so nothing here is invented. `[SOURCE §x, review]` is a decision the designer made reviewing a pull request, superseding or extending what §x said; the superseded text is kept alongside it, tagged as it was. `[OPEN]` items are genuinely undecided; do not fill them in. See §12 before writing code that touches those areas.
 
