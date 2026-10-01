@@ -2548,11 +2548,12 @@ die and claim notice) and 541 A (the map stays 1.5 s, `timing.respawnStayMs`).
 The draw comes from the game's dice: online the server's stream, recorded with
 the game as `picks`; on one device the die's seed. Games started before the
 rule keep the old one: an online game holds the rules it was made with, and a
-kept hot seat game says whether it had the rule. In 12 four-player computer
-games at 3 s a move, all ended with a winner, 125 turns on average with the rule
-against 148 without; about 11 sites came back a game, combat, forest speed and
-mountains speed (magic and plains speed never ran short), never two in one
-turn. Claimed sites keep their picture (Q36).
+kept hot seat game says whether it had the rule. In six four-player computer
+games at 3 s a move counting sites, all ended with a winner, 121 turns on
+average against 148 on the same maps without the rule (125 counting units);
+18 sites came back a game, mostly forest speed, combat and mountains speed
+(plains speed 4 times in all, magic once), never two in one turn, the first on
+turns 7 to 23. Claimed sites keep their picture (Q36).
 
 ### Q140. ~~How are a player card's stats arranged, and how does gold stand out?~~ — **answered 2026-10-01: moving down the left, the rest down the right with gold last, gold's number deep red (550-553 A)**
 
