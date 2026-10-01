@@ -68,15 +68,30 @@ export function undersideDepth(projection: Projection, bounds: Bounds, matrix: A
  * blends better with the stone rim?" He picked a soft edge. The rock is drawn
  * over the ground, and this fades the stone tops that rise above the line
  * through `corners` (the ground's front edges) into it: fully drawn on the
- * line and below it, gone `fade` pixels above it. `pixels` is the picture's
+ * line and below it, gone `fade` pixels above it. Only over the ground: the
+ * rock's ends, which reach past the ground's side corners (19:13: "This detail
+ * around corners is rather ugly. I think you need to extend the map less in
+ * that direction"), stay solid against the sky. `pixels` is the picture's
  * RGBA data, `width` pixels across, changed in place.
  */
 export function fadeAboveEdges(pixels: Uint8ClampedArray, width: number, corners: IslandCorners, fade: number): void {
   const height = pixels.length / 4 / width;
+  // Where a pixel lies on the ground, which the picture's corners make a
+  // parallelogram: `bottom` plus shares of the way to `left` and to `right`.
+  const toLeft = sub(corners.left, corners.bottom);
+  const toRight = sub(corners.right, corners.bottom);
+  const det = toLeft.x * toRight.y - toRight.x * toLeft.y;
+  const onGround = (x: number, y: number): boolean => {
+    const p = { x: x - corners.bottom.x, y: y - corners.bottom.y };
+    const alongLeft = (p.x * toRight.y - toRight.x * p.y) / det;
+    const alongRight = (toLeft.x * p.y - p.x * toLeft.y) / det;
+    return alongLeft <= 1 && alongRight <= 1;
+  };
   for (let x = 0; x < width; x++) {
     const [from, to] = x + 0.5 <= corners.bottom.x ? [corners.left, corners.bottom] : [corners.bottom, corners.right];
     const edge = from.y + ((to.y - from.y) * (x + 0.5 - from.x)) / (to.x - from.x);
     for (let y = 0; y < height && y + 0.5 < edge; y++) {
+      if (!onGround(x + 0.5, y + 0.5)) continue;
       const alpha = (y * width + x) * 4 + 3;
       pixels[alpha] = Math.round(pixels[alpha]! * Math.max(0, 1 - (edge - y - 0.5) / fade));
     }

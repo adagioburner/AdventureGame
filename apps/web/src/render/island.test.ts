@@ -74,4 +74,18 @@ describe("the rock under the map's front edges (Q170)", () => {
     // Both slopes alike.
     expect(alpha(0, 1)).toBe(alpha(8, 1));
   });
+
+  it("leaves the rock's ends solid where they reach past the ground's side corners", () => {
+    // Corners at (4, 3), (8.5, 7.5) and (13, 3) in a 17 by 12 picture: its first and last 4 columns lie past the ground.
+    const width = 17;
+    const pixels = new Uint8ClampedArray(width * 12 * 4).fill(200);
+    fadeAboveEdges(pixels, width, { left: { x: 4, y: 3 }, bottom: { x: 8.5, y: 7.5 }, right: { x: 13, y: 3 } }, 4);
+    const alpha = (x: number, y: number) => pixels[(y * width + x) * 4 + 3];
+    // Above the edge's line carried on past the corners, but not over the ground: as drawn.
+    expect(alpha(1, 1)).toBe(200);
+    expect(alpha(15, 1)).toBe(200);
+    // Over the ground, just inside a corner: faded.
+    expect(alpha(5, 2)).toBeLessThan(200);
+    expect(alpha(11, 2)).toBeLessThan(200);
+  });
 });

@@ -8,6 +8,7 @@ describe('the sky behind the map (Q170)', () => {
     const catalog = buildArtCatalog(ART_FILES);
     expect(skyProperties(catalog)).toEqual({
       '--map-sky': `url("${catalog.islandUrls.sky}")`,
+      '--map-sky-color': '#809ab4',
       '--map-sky-shade-light': '0',
       '--map-sky-shade-dark': '0.6',
     });

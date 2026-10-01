@@ -241,13 +241,16 @@
         position: relative;
         min-height: 0;
         overflow: hidden;
-        background: var(--map-ground);
+        /* [680] The sky's own average colour, darkened as the sky is, until
+           the sky's picture has loaded; --map-ground until that is known. */
+        background: linear-gradient(rgb(0 0 0 / var(--map-sky-shade)), rgb(0 0 0 / var(--map-sky-shade))),
+          var(--map-sky-color, var(--map-ground));
         /* The sky goes behind everything on the stage, and in front of this. */
         isolation: isolate;
       }
       /* [Q170] Andrei's sky behind the map, named in Art/manifest.json and set
-         on the page's root by src/page/sky.ts; --map-ground shows until it has
-         loaded. A dark screen darkens it more (673). It stays put as the map
+         on the page's root by src/page/sky.ts. A dark screen darkens it more
+         (673). It stays put as the map
          is dragged, and MapView grows it a little as the map is zoomed in
          (676 to 678). */
       .map-sky {

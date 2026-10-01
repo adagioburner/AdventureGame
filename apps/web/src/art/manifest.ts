@@ -120,6 +120,8 @@ export interface IslandArt {
   readonly sky: {
     /** A picture under `Art/`. */
     readonly file: string;
+    /** [680] Its average colour, shown in its place while the picture loads. */
+    readonly color: string;
     /** How much it is darkened, from 0 (as drawn) to 1 (black), on a light and a dark screen. */
     readonly shade: { readonly light: number; readonly dark: number };
   };
@@ -393,6 +395,7 @@ function parseIsland(island: Readonly<Record<string, unknown>>, where: string): 
     },
     sky: {
       file: string(sky['file'], `${where}.sky.file`),
+      color: color(sky['color'], `${where}.sky.color`),
       shade: { light: fraction(shade['light'], `${where}.sky.shade.light`), dark: fraction(shade['dark'], `${where}.sky.shade.dark`) },
     },
   };

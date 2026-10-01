@@ -2808,6 +2808,20 @@ plain grey-blue (`--map-ground`). Answered 16:46 to 16:5x.
      edges stay ground against sky. **Answered** at 18:41: the soft edge. The
      rock is drawn over the ground and its stone tops fade out over 24 of the
      picture's pixels above the edge (`fade` in `Art/manifest.json`).
+680. **While the sky's picture loads** (asked at the coordinator's prompt, as
+     the old grey-blue showed until then, on the map's box and the "Drawing
+     the map" screen): the old grey-blue; the sky's own average blue,
+     darkened at night like the sky, so the switch is barely seen
+     (recommended); or the map waiting for the sky, so no switch is seen but
+     the map comes later on a slow connection. **Answered** at 19:10: the
+     sky's own blue, #809ab4 (`color` in `Art/manifest.json`).
+681. **The map's side corners** (19:13, with a picture of the left corner:
+     *"This detail around corners is rather ugly. I thin you need to extend
+     the map less in that direction"*): the ground's corner stuck out past
+     the rock's rounded end as a thin sheet over the sky. The rock's left and
+     right points moved 27 and 26 of its pixels in along its top edges, so
+     its ends reach past the ground's side corners and the rock is about 4%
+     larger; the ends stay solid against the sky rather than fading.
 
 The rock is his picture as drawn, stretched only so its top edges lie along
 the map's front edges, which it already slopes along; 4 and 5 player maps get

@@ -7,14 +7,16 @@ import type { Camera } from '../render/isometric.ts';
  * cloudy sky, not very bright" (Q170), and he drew one. It fills the map's
  * box behind the map (`.map-sky` in index.html).
  *
- * `Art/manifest.json` names the picture and how much it is darkened, and the
- * page's stylesheet reads them from these properties of the page's root, a
- * light or a dark screen picking its own shade.
+ * `Art/manifest.json` names the picture, its average colour, shown while it
+ * loads (680), and how much both are darkened, and the page's stylesheet reads
+ * them from these properties of the page's root, a light or a dark screen
+ * picking its own shade.
  */
 export function skyProperties(catalog: ArtCatalog): Readonly<Record<string, string>> {
-  const { shade } = catalog.manifest.island.sky;
+  const { color, shade } = catalog.manifest.island.sky;
   return {
     '--map-sky': `url("${catalog.islandUrls.sky}")`,
+    '--map-sky-color': color,
     '--map-sky-shade-light': String(shade.light),
     '--map-sky-shade-dark': String(shade.dark),
   };
