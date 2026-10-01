@@ -13,6 +13,7 @@ import {
   guardRing,
   nodeOutlineWidth,
   siteDot,
+  withUnits,
   type Billboard,
   type FigureCue,
   type MapScene,
@@ -410,9 +411,12 @@ export class PixiMapRenderer implements MapRenderer {
   private drawUi(): void {
     this.labelsLayer.removeChildren().forEach((child) => child.destroy());
     const claimed = this.stateScene?.claimed ?? new Set<NodeId>();
+    const units = this.stateScene?.units ?? new Map<NodeId, number>();
     const { guards } = this.art.catalog.manifest;
-    for (const poi of this.scene.labels) {
-      if (claimed.has(poi.node)) continue;
+    for (const drawn of this.scene.labels) {
+      if (claimed.has(drawn.node)) continue;
+      const count = units.get(drawn.node);
+      const poi = count === undefined ? drawn : withUnits(drawn, count);
       const texture = this.art.icon(poi.icons.kind);
       for (let i = 0; i < poi.icons.count; i++) {
         const icon = new Sprite(texture);

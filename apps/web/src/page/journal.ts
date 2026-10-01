@@ -1,5 +1,6 @@
 import type { GuardType, RewardKind, Terrain } from '@adventure/config';
 import {
+  offeredReward,
   poiAt,
   previewPath,
   terrainStepCost,
@@ -268,9 +269,11 @@ export function describeNode(state: GameState, node: NodeId): string {
   const terrain = terrainOf(map, node);
   const poi = poiAt(map, node);
   const index = map.poiByNode.get(node);
-  const taken = index !== undefined && state.poiRuntime[index]?.claimedBy !== null;
+  const runtime = index === undefined ? undefined : state.poiRuntime[index];
+  const taken = index !== undefined && runtime?.claimedBy !== null;
   if (poi === undefined || taken) return `a ${terrain} space`;
-  const what = `${poi.reward.units} ${STAT_LABEL[poi.reward.kind]}`;
+  const reward = offeredReward(poi, runtime);
+  const what = `${reward.units} ${STAT_LABEL[reward.kind]}`;
   if (poi.guard === null) return `the ${what} site (${terrain})`;
   return `the ${what} site (${terrain}, ${GUARD_LABEL[poi.guard.type]} guard ${poi.guard.strength})`;
 }

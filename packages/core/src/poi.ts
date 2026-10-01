@@ -43,6 +43,18 @@ export interface PoiRuntimeState {
   readonly claimedBy: PlayerId | null;
   /** Turn number on which it was claimed; `null` while unclaimed. */
   readonly claimedOnTurn: number | null;
+  /**
+   * [Q135] What a POI that came back offers when that is fewer units than its
+   * map reward (`RespawnConfig.MAX_UNITS`). Absent otherwise: it offers
+   * `Poi.reward`.
+   */
+  readonly units?: number;
+}
+
+/** What `poi` offers now: its map reward, or fewer units if it came back capped (Q135). */
+export function offeredReward(poi: Poi, runtime: PoiRuntimeState | undefined): Reward {
+  const units = runtime?.units;
+  return units === undefined ? poi.reward : { kind: poi.reward.kind, units };
 }
 
 export function isClaimed(state: PoiRuntimeState): boolean {

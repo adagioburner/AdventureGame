@@ -4,7 +4,7 @@ import type { DieRoll, InteractionResolution } from '../action.ts';
 import { poiAt } from '../gamemap.ts';
 import type { NodeId } from '../ids.ts';
 import type { PlayerStats } from '../player.ts';
-import { isClaimed } from '../poi.ts';
+import { isClaimed, offeredReward } from '../poi.ts';
 import type { Guard } from '../reward.ts';
 import { poiRuntimeAt, type GameState } from '../state.ts';
 
@@ -75,8 +75,10 @@ export function resolveInteraction(
   // §4.5: a claimed POI's node "behaves like an ordinary node of its terrain".
   if (poi === undefined || runtime === undefined || isClaimed(runtime)) return nothingToTake;
 
+  // [Q135] A POI that came back may offer fewer units than the map gave it.
+  const reward = offeredReward(poi, runtime);
   if (poi.guard === null) {
-    return { node, reward: poi.reward, roll: null, skillUsed: null, claimed: true };
+    return { node, reward, roll: null, skillUsed: null, claimed: true };
   }
 
   if (roll === null) {
@@ -87,7 +89,7 @@ export function resolveInteraction(
   const skillUsed = guardSkillStat(poi.guard);
   return {
     node,
-    reward: poi.reward,
+    reward,
     roll,
     skillUsed,
     // §8: strictly greater than, so a roll that only ties the guard fails.

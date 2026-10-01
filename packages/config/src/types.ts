@@ -328,7 +328,8 @@ export interface AiConfig {
  * left, randomly at POIs that were offering this skill before and are far from
  * all players." At the end of every turn each kind in `KINDS` is counted on its
  * own; while fewer than `SHORT_BELOW_SITES` unclaimed POIs offer it, one
- * claimed POI that held it gets its reward back each turn (532 A), picked
+ * claimed POI that held it gets its reward back each turn (532 A), at most
+ * `MAX_UNITS` of it, picked
  * at random from the `FAR_SHARE` of them farthest from the nearest figure
  * (533 A), by the cheapest route's stamina cost (534 A), never one a figure
  * stands on. A POI can come back any number of times (535 A).
@@ -344,6 +345,14 @@ export interface RespawnConfig {
   readonly SHORT_BELOW_SITES: number;
   /** 533 A: the share of the empty POIs, farthest first and rounded up, the pick is made from. 0.5. */
   readonly FAR_SHARE: number;
+  /**
+   * The most units a POI that comes back offers; one that held fewer gets
+   * those back. 2 (Andrei, 2026-10-01: "let us cap the skills to 2 units when
+   * they respawn. The idea is to provide a player who was late to the party
+   * with something to do, not to create a cornucopia"). Absent on games
+   * started before the cap, which bring back the whole reward (532 A).
+   */
+  readonly MAX_UNITS?: number;
 }
 
 /**
