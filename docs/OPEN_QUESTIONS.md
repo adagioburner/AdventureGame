@@ -2552,6 +2552,24 @@ against 148 without; about 11 sites came back a game, combat, forest speed and
 mountains speed (magic and plains speed never ran short), never two in one
 turn. Claimed sites keep their picture (Q36).
 
+### Q140. ~~How are a player card's stats arranged, and how does gold stand out?~~ — **answered 2026-10-01: moving down the left, the rest down the right with gold last, gold's number deep red (550-553 A)**
+
+[SOURCE §2, chat] Andrei, 2026-09-30: "On a player card, it would be nice to
+arrange everything that has to do with moving (stamina + 3 speeds) in the left
+column, and the rest in the right column, with gold going last. Also, can we
+show the number for gold in red so one glance would be enough to see who has
+how much of it". Then 550 A (the right column fills from the top: combat, magic,
+gold, so its empty fourth place is beside mountains speed), 551 A (deep red
+#b71b1c, the red of the circle round the combat icon on the map, and #ff7b72 on
+a screen set to dark), 552 A (only the player cards; the end-of-game table and
+gold written in sentences stay as they were) and 553 A (phones, upright and
+sideways, keep their one row of seven icons, already in this order; only gold's
+number turns red).
+
+Only laptop and desktop cards, 900 wide and up, have two columns. Unchanged:
+the stats' order, their words and icons, the free steps line and the cards'
+height.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design

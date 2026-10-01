@@ -157,6 +157,8 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 [SOURCE §2, review] **On screen the moving skills are "plains speed", "forest speed" and "mountains speed", and fighting is "combat".** Andrei, trying the hotseat game on 2026-09-23: rename them "consistently throughout the interface". The rules and the code keep their names (`plains_move`, `fighting`, a `fighting` guard); only the words a player reads changed. Registered as Q33.
 
+[SOURCE §2, review] **On a laptop card the moving stats are the left column, and gold's number is red.** Andrei, 2026-09-30: "On a player card, it would be nice to arrange everything that has to do with moving (stamina + 3 speeds) in the left column, and the rest in the right column, with gold going last. Also, can we show the number for gold in red so one glance would be enough to see who has how much of it". From 900 wide the left column is stamina, plains speed, forest speed and mountains speed, and the right one combat, magic and gold from the top. Gold's number is deep red on every card; phones keep their one row of icons, already in this order. The end-of-game table is unchanged (Q140).
+
 [SOURCE §2, chat] Player count: **2–5** (config, not a hard limit). Turn order fixed at game start, never changes thereafter (order determined by whatever is most convenient to implement — expected default: order the game master accepts join requests, §6.1).
 
 [SOURCE §2, chat] Starting stamina by seat: `STARTING_STAMINA_BASE` (default 30) + (seat − 1) × `STARTING_STAMINA_INCREMENT` (default 5).
