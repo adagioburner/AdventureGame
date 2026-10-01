@@ -145,11 +145,17 @@ describe('drawGuardTypes (Q115)', () => {
     expect(drawn).toEqual(['fighting', 'magic', 'fighting', null, null, 'magic', 'magic']);
   });
 
-  it("flips each forest gold POI's guard on its own at the default chance", () => {
-    // 451 A: a coin flip per POI, so over many POIs about half are magic, and
-    // a batch of four can come out any way from none to all.
+  it('guards every forest gold POI by magic in the default table (Q185)', () => {
+    const pois = Array.from({ length: 40 }, (_, node) => forestGold(node));
+    expect(new Set(drawGuardTypes(pois, DEFAULT_REWARD_TABLE, createRng('coin')))).toEqual(new Set(['magic']));
+  });
+
+  it("flips each forest gold POI's guard on its own at a chance of one half", () => {
+    // 451 A, the default from 2026-09-30 until Q185: a coin flip per POI, so
+    // over many POIs about half are magic, and a batch of four can come out
+    // any way from none to all.
     const pois = Array.from({ length: 4000 }, (_, node) => forestGold(node));
-    const drawn = drawGuardTypes(pois, DEFAULT_REWARD_TABLE, createRng('coin'));
+    const drawn = drawGuardTypes(pois, withForestChance(0.5), createRng('coin'));
     const magic = drawn.filter((type) => type === 'magic').length;
     expect(drawn.every((type) => type === 'magic' || type === 'fighting')).toBe(true);
     expect(magic / pois.length).toBeGreaterThan(0.47);

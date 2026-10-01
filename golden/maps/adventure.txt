@@ -559,7 +559,7 @@ poi 8 forest mountain_move units=3 group=mountain_move/unguarded guard=none remo
 poi 11 forest mountain_move units=2 group=mountain_move/unguarded guard=none remoteness=0.816110
 poi 12 forest fighting units=2 group=fighting/unguarded guard=none remoteness=0.552830
 poi 15 plains forest_move units=3 group=forest_move/unguarded guard=none remoteness=0.194514
-poi 21 forest gold units=2 group=gold/fighting guard=fighting:3 remoteness=0.955573
+poi 21 forest gold units=2 group=gold/fighting guard=magic:3 remoteness=0.955573
 poi 22 forest mountain_move units=1 group=mountain_move/unguarded guard=none remoteness=0.351169
 poi 25 forest fighting units=2 group=fighting/unguarded guard=none remoteness=0.578907
 poi 35 forest fighting units=2 group=fighting/unguarded guard=none remoteness=0.258065

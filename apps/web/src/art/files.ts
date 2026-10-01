@@ -1,7 +1,7 @@
 import type { ArtFiles } from './catalog.ts';
 
 /**
- * `Art/` as the bundler sees it: every JSON file parsed, every PNG and sound as a URL.
+ * `Art/` as the bundler sees it: every JSON file parsed, every picture and sound as a URL.
  *
  * This is the only module that knows where `Art/` sits relative to the client,
  * and it names no individual file — `Art/manifest.json` does that. Dropping a
@@ -15,7 +15,7 @@ const json = import.meta.glob<unknown>(['../../../../Art/*.json', '../../../../A
   eager: true,
 });
 const urls = import.meta.glob<string>(
-  ['../../../../Art/*.png', '../../../../Art/Icons/*.png', '../../../../Art/Sounds/*.{wav,mp3}'],
+  ['../../../../Art/*.png', '../../../../Art/Icons/*.png', '../../../../Art/Island/*.{png,jpg}', '../../../../Art/Sounds/*.{wav,mp3}'],
   {
     query: '?url',
     import: 'default',

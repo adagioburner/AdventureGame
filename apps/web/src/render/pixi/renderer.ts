@@ -51,6 +51,8 @@ export class PixiMapRenderer implements MapRenderer {
   /** Add this to the stage; the camera moves it. */
   readonly root = new Container();
 
+  /** [Q170] The rock hanging under the map's front edges, its stone tops fading into the ground's edge (679). */
+  private readonly underside = new Container();
   private readonly terrainLayer = new Container();
   private readonly backdrop = new Container();
   /** The backdrop's own terrain, laid through the projection: the backdrop is clipped to it. */
@@ -100,12 +102,14 @@ export class PixiMapRenderer implements MapRenderer {
       this.terrainLayer,
       this.backdropGround,
       this.backdrop,
+      this.underside,
       this.groundBelow,
       this.standing,
       this.groundAbove,
       this.ui,
     );
     this.clipBackdrop();
+    this.drawUnderside();
     for (const layer of ['terrain', 'edges', 'nodes', 'dressing', 'pois', 'ui'] as const) this.invalidate(layer);
   }
 
@@ -218,6 +222,20 @@ export class PixiMapRenderer implements MapRenderer {
   }
 
   // --- the ground -------------------------------------------------------------
+
+  /**
+   * [Q170] Andrei's rock, stretched so its top edges lie along the map's two
+   * front edges. It is drawn over the ground, under the roads, nodes and
+   * everything standing, and the stone tops that rise above those edges fade
+   * into the ground (679); it ends flush with the ground's back edges at the
+   * side corners (681, `shapeUnderside`).
+   */
+  private drawUnderside(): void {
+    const sprite = new Sprite(this.art.underside);
+    const m = this.scene.underside;
+    sprite.setFromMatrix(new Matrix(m.a, m.b, m.c, m.d, m.tx, m.ty));
+    this.underside.addChild(sprite);
+  }
 
   private drawTerrain(): void {
     this.terrainLayer.removeChildren().forEach((child) => child.destroy());

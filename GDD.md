@@ -100,7 +100,7 @@ Three things per kind, all needed by the assignment algorithm in §4.3: the tota
 | | Gold (informally "cities") | fighting | 10 | 2 |
 | Forest (20 POIs) | Mountain moving skill | none | 15 | 8 |
 | | Fighting skill | none | 15 | 8 |
-| | Gold | fighting, or magic by `FOREST_MAGIC_GUARD_CHANCE` (Q115) | 5 | 4 |
+| | Gold | magic by `FOREST_MAGIC_GUARD_CHANCE` (1: always), else fighting (Q115, Q185) | 5 | 4 |
 | Mountain (15 POIs) | Gold | fighting | 20 | 10 |
 | | Gold | magic | 10 | 5 |
 
@@ -114,7 +114,7 @@ Three things per kind, all needed by the assignment algorithm in §4.3: the tota
 | | Gold | fighting | 14 | 3 |
 | Forest (28 POIs) | Mountain moving skill | none | 21 | 11 |
 | | Fighting skill | none | 21 | 11 |
-| | Gold | fighting, or magic by `FOREST_MAGIC_GUARD_CHANCE` (Q115) | 7 | 6 |
+| | Gold | magic by `FOREST_MAGIC_GUARD_CHANCE` (1: always), else fighting (Q115, Q185) | 7 | 6 |
 | Mountain (21 POIs) | Gold | fighting | 28 | 14 |
 | | Gold | magic | 14 | 7 |
 
@@ -138,6 +138,8 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 [SOURCE §1.1, chat] In v1, only gold rewards are guarded — every gold POI on every terrain is guarded, none are exempt. Guard type by terrain (per §4.2): plains' 2 gold POIs are all fighting-guarded; mountain's 15 gold POIs split 10 fighting-guarded / 5 magic-guarded. The engine should not hard-code "gold only" — guarding should work on any reward kind — this is a v1 content choice, not an engine constraint.
 
 [SOURCE §4.4, chat] Forest's 4 gold POIs are each guarded by magic with chance `FOREST_MAGIC_GUARD_CHANCE` and by fighting otherwise, a coin flip for each POI on its own, so a map carries anywhere from none to all four magic-guarded (Q115). Andrei, 2026-09-30: "Magic doesn't play an important enough role. Can you make it so the forest POI are assigned randomly either magic or combat guards?" The POIs stay one §4.2 row (fighting), so its POI count and units are unchanged, and §5.2's strength never reads the guard type. The flips are the map's last draws, after every POI's picture, so on any seed only these guards differ from the map before the change.
+
+[SOURCE §4.4, chat] Since Q185 the chance is 1: every forest gold POI is magic-guarded. Andrei, 2026-10-01: "After playing some more I think we need to make all gold in the forests guarded by magic. Otherwise magic plays too little role", and "it's a good idea to keep the logic that says forest magic is decided by chance, just turn this chance all the way to 100%". A hot seat game kept from the coin-flip days goes on with the guards it began with (730 A).
 
 ### 4.5 Consumption
 
@@ -343,7 +345,7 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `REMOTENESS_WEIGHT` | 4 | tunable (play-test) — guard/remoteness balance, §5.2 |
 | `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` | 2 | tunable (play-test) — reward stacking, §4.3 |
 | `REWARD_SWAP_PASSES` | 5 | tunable (play-test) — reward/remoteness agreement, §4.3 step 4 [SOURCE §4.3, review] |
-| `FOREST_MAGIC_GUARD_CHANCE` | 0.5 | tunable — chance each forest gold POI is magic-guarded rather than fighting-guarded, §4.4 (Q115) |
+| `FOREST_MAGIC_GUARD_CHANCE` | 1 | tunable — chance each forest gold POI is magic-guarded rather than fighting-guarded, §4.4; 0.5 from Q115, 1 since Q185 |
 | `RESPAWN_SHORT_BELOW_SITES` | 2 | tunable — a skill comes back while fewer than this many unclaimed POIs offer it, §4.5 (Q135; asked as 3 units, set by Andrei to 2 sites) |
 | `RESPAWN_FAR_SHARE` | 0.5 | tunable — the farthest share of a skill's empty POIs it comes back to, §4.5 (Q135) |
 | `RESPAWN_MAX_UNITS` | 1 | tunable — the most units a POI that comes back offers; one that held fewer gets those, §4.5 (Q135, Andrei 2026-10-01: 2, then 1) |
