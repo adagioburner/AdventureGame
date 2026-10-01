@@ -1,4 +1,5 @@
 import {
+  endTurnActionFor,
   previewPath,
   refreshAllowance,
   routeVia,
@@ -87,7 +88,8 @@ export interface MoveModeController {
    *
    * With nothing shown it commits an empty path: the player stays where they
    * are, which on a guarded POI is §8's "remain stationed on the node" and
-   * another roll at the guard.
+   * another roll at the guard. [490] Anywhere else a turn that would walk
+   * nothing is a rest, keeping the route shown (`endTurnActionFor`).
    */
   endTurn(): void;
   /** [SOURCE §2] Rest instead: no movement, no interaction. */
@@ -340,13 +342,13 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
 
     endTurn() {
       const who = activePlanner();
-      if (who === null) return;
+      if (who === null || game === null) return;
       const path = state.kind === 'previewing' ? state.path : [];
       const waypoint = state.kind === 'idle' ? null : state.waypoint;
       armed = false;
       engaged = false;
       state = IDLE;
-      options.commit({ kind: 'move', player: who, path, waypoint: path.length === 0 ? null : waypoint });
+      options.commit(endTurnActionFor(game, who, path, path.length === 0 ? null : waypoint));
     },
 
     rest() {

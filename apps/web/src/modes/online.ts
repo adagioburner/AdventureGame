@@ -1,4 +1,4 @@
-import { plannedTurnActionFor, type GameState, type TurnAction } from '@adventure/core';
+import { forcedTurnAction, type GameState, type TurnAction } from '@adventure/core';
 import { openingStateOf, replayRecord, type GameRecord, type SetupState } from '@adventure/protocol';
 import { playedTurnOf, type PlayedTurn } from './hotseat.ts';
 
@@ -107,7 +107,7 @@ function apply(before: GameState, record: GameRecord): AppliedRecord {
 function turnActionOf(before: GameState, record: GameRecord): TurnAction | null {
   const action = record.action;
   if (action.kind === 'move' || action.kind === 'rest') return action;
-  if (action.kind === 'force_turn') return plannedTurnActionFor(before, action.player);
+  if (action.kind === 'force_turn') return forcedTurnAction(before, action);
   return null;
 }
 

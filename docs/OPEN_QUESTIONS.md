@@ -2447,6 +2447,82 @@ seeds every road, reward, strength and other picture was identical. A hot seat
 game kept on one device that fought at a forest gold site that turned magic may
 not resume as it was; an online game keeps the map it was made with.
 
+<a id="q120"></a>
+### Q120. ~~What does clicking a player's card do?~~ — **answered 2026-09-30: finds the player, as the Find button did, which goes; the rest as recommended (470-475)**
+
+[SOURCE chat, review] On 30 September at 20:52 Andrei wrote: *"Please make it
+so that clicking on a player's card finds this player on the map"*. The
+details were put to him with pictures of Bea's card clicked from the whole
+map, on a laptop and a phone. At 22:05 he answered: *"the recommended choices
+look good, except I don't think we need the "find" button any more. It was not
+present on some screens anyway"*.
+
+470. **How the map gets to the player.** A: it jumps there and zooms in to
+     playing distance, as Find did (recommended). B: it glides there over half
+     a second at the zoom it has, as at the start of a turn. C: it glides and
+     zooms in. **Answered:** A. A figure part-way along a walk is found where
+     it has got to.
+471. **Marking the found figure.** A: no mark. B: for 2 seconds it stands on
+     the yellow-edged ring of a figure being planned; the player on turn's
+     figure already blinks and gets nothing more (recommended). **Answered:**
+     B. The 2 seconds are `timing.foundMs` in `GameScreen.tsx`.
+472. **How a card shows it can be clicked, on a laptop.** A: the pointer turns
+     into a hand over it and the card looks the same (recommended). B: nothing
+     changes. **Answered:** A.
+473. **The Track button.** A: it unpresses, as with Find and moving the map
+     yourself, since a pressed Track would pull the map back to a walking
+     figure (recommended). B: it stays as it was. **Answered:** A.
+474. **After the game ends.** A: cards still find players on the final map
+     (recommended). B: only while the game is on. **Answered:** A.
+475. **The Find button goes,** from every screen: under the turn buttons on a
+     laptop (phones never showed it) and from the game master's "Bea ▾" list,
+     which keeps Move Bea on and Resign Bea. A phone's panel stays as tall as
+     it was on a computer's turn.
+
+<a id="q125"></a>
+### Q125. ~~What does End turn do when there is no guard to fight?~~ — **answered 2026-09-30: it rests, and so does Move on; 490-495 as recommended**
+
+Andrei, 2026-09-30 at 20:53: *"Clicking 'Next Turn' with no guard to fight
+makes no sense. Let us make it rest automatically in this case."* Until then
+End turn with no route was a move of zero steps: on an unclaimed guarded site
+another fight (§8), anywhere else nothing at all, not even stamina. Answered
+at 21:46: *"The recommended options look good, please proceed"*. 494 and
+495 answered 2026-10-01 at 00:59: *"the recommendations are good"*.
+
+490. **Which End turns rest:** with no route, and also with a route whose
+     first step this turn cannot pay; the route is kept for next turn
+     (recommended); or only with no route. On an unclaimed guarded site End
+     turn still stays and fights again. **Answered:** as recommended.
+491. **The game master's Move on** does what End turn would, so a saved route
+     whose first step cannot be paid rests too (recommended); or Move on
+     unchanged. **Answered:** as recommended.
+492. **The buttons:** Rest and End turn both stay, and the line above them
+     says *"End turn with no route rests: +5 stamina."* (recommended); or Rest
+     hidden while End turn would rest anyway. **Answered:** as recommended.
+493. **The turn log:** an automatic rest reads like any rest, *"Rested: +5
+     stamina"* (recommended); or it also says End turn made it one.
+     **Answered:** as recommended.
+494. The line above the buttons with a route whose first step
+     cannot be paid, away from a guard. As built: *"Not even the first of
+     these 4 steps is affordable this turn. End turn rests: +5 stamina, and
+     keeps the route for next turn."* (recommended); or the wording before,
+     *"…Rest gains 5 stamina; End turn walks nothing and keeps the route for
+     next turn."*, which no longer says what End turn does. **Answered:** as
+     recommended (as built).
+495. The line when a player picks their own space as the
+     destination, away from a guard. As built: *"Staying here this turn. End
+     turn with no route rests: +5 stamina."*; *"Staying here this turn. End
+     turn rests: +5 stamina."* (recommended); or the wording before,
+     *"…End turn with no route stays put."*, which no longer says what End
+     turn does. **Answered:** as recommended.
+
+`endTurnActionFor` (`packages/core/src/rules/turn.ts`) decides it, for the
+page's End turn, the server's `turn.end` and Move on (`moveOnActionFor`), and
+never `applyAction`, so a zero-step move already played replays as it was: a
+game kept on one device, and an online game's records. Computer players do
+not change: they already rest on a turn they cannot take a step (Q43), and
+stand still only on the guarded site they are after.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design
