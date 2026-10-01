@@ -173,7 +173,8 @@ Drop a new picture over `Island/underside.png` or `Island/sky.png`. A new
 rock needs its own three `corners`: where its top edges meet at the left, at
 the bottom of the V and at the right, a few pixels lower than its topmost
 stone, the left and right ones a little in from the rock's ends so the rock
-reaches past the map's side corners (681), and a `fade` about as tall as its stone tops rise above them, so they
+reaches right up to the map's side corners, where it is cut off flush with
+the map's back edges (681), and a `fade` about as tall as its stone tops rise above them, so they
 blend into the ground's edge. A rock drawn at another size or slope still
 lines up, because the three points decide how it is stretched. The New game
 screen frames the rock down to its lowest solid pixel, so blank room round

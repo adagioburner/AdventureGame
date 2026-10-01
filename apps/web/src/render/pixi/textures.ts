@@ -15,7 +15,7 @@ import {
   typicalSpan,
   type Rect,
 } from '../../art/pixels.ts';
-import { fadeAboveEdges } from '../island.ts';
+import { shapeUnderside } from '../island.ts';
 import { SHAPE_BANDS, type SpriteShape } from '../placement.ts';
 
 /**
@@ -101,9 +101,9 @@ export async function loadArt(catalog: ArtCatalog): Promise<LoadedArt> {
   const undersideCanvas = drawScaled(await loadImage(catalog.islandUrls.underside), 1);
   const undersideWhole = { x: 0, y: 0, width: undersideCanvas.width, height: undersideCanvas.height };
   const undersidePixels = context(undersideCanvas).getImageData(0, 0, undersideCanvas.width, undersideCanvas.height);
-  // [679] Its stone tops fade into the ground's edge.
+  // [679, 681] Its stone tops fade into the ground's edge, and it ends where the ground does.
   const { corners, fade } = catalog.manifest.island.underside;
-  fadeAboveEdges(undersidePixels.data, undersideCanvas.width, corners, fade);
+  shapeUnderside(undersidePixels.data, undersideCanvas.width, corners, fade);
   context(undersideCanvas).putImageData(undersidePixels, 0, 0);
   const undersideSolid = solidBounds(undersidePixels.data, undersideCanvas.width, undersideWhole) ?? undersideWhole;
   const underside = mipmapped(undersideCanvas);

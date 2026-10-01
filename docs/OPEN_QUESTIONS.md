@@ -2818,10 +2818,16 @@ plain grey-blue (`--map-ground`). Answered 16:46 to 16:5x.
 681. **The map's side corners** (19:13, with a picture of the left corner:
      *"This detail around corners is rather ugly. I thin you need to extend
      the map less in that direction"*): the ground's corner stuck out past
-     the rock's rounded end as a thin sheet over the sky. The rock's left and
-     right points moved 27 and 26 of its pixels in along its top edges, so
-     its ends reach past the ground's side corners and the rock is about 4%
-     larger; the ends stay solid against the sky rather than fading.
+     the rock's rounded end as a thin sheet over the sky. Offered: the rock
+     about 4% larger, its left and right points moved 27 and 26 of its pixels
+     in along its top edges so its ends reach past the corners; or the ground
+     cut back at the side corners, the rock as before (recommended).
+     **Answered** at 19:41: *"can we just have the rick and the map align in
+     that direction? I mean the rock should extend in SW and SE directions but
+     be aligned with the map edge in NW and NE"*. The rock keeps the moved
+     points, so it reaches right up to the corners (about 4% larger), and is
+     cut off flush there: nothing of it left of the left corner, right of the
+     right one, or above the ground's back edges.
 
 The rock is his picture as drawn, stretched only so its top edges lie along
 the map's front edges, which it already slopes along; 4 and 5 player maps get

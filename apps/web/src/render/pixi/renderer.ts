@@ -227,7 +227,8 @@ export class PixiMapRenderer implements MapRenderer {
    * [Q170] Andrei's rock, stretched so its top edges lie along the map's two
    * front edges. It is drawn over the ground, under the roads, nodes and
    * everything standing, and the stone tops that rise above those edges fade
-   * into the ground (679, `fadeAboveEdges`).
+   * into the ground (679); it ends flush with the ground's back edges at the
+   * side corners (681, `shapeUnderside`).
    */
   private drawUnderside(): void {
     const sprite = new Sprite(this.art.underside);

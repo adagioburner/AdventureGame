@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildArtCatalog } from '../art/catalog.ts';
 import { ART_FILES } from '../art/files.ts';
-import { applyAffine, fadeAboveEdges, groundCorners, undersideDepth, undersideMatrix } from './island.ts';
+import { applyAffine, groundCorners, shapeUnderside, undersideDepth, undersideMatrix } from './island.ts';
 import { isometricProjection } from './isometric.ts';
 
 describe("the rock under the map's front edges (Q170)", () => {
@@ -61,7 +61,7 @@ describe("the rock under the map's front edges (Q170)", () => {
     const height = 12;
     const pixels = new Uint8ClampedArray(width * height * 4).fill(200);
     const v = { left: { x: 0, y: 2 }, bottom: { x: 4.5, y: 6.5 }, right: { x: 9, y: 2 } };
-    fadeAboveEdges(pixels, width, v, 4);
+    shapeUnderside(pixels, width, v, 4);
     const alpha = (x: number, y: number) => pixels[(y * width + x) * 4 + 3];
     // The middle column's edge runs through the middle of its row 6: drawn there
     // and below, half gone 2 above, gone 4 above.
@@ -75,17 +75,24 @@ describe("the rock under the map's front edges (Q170)", () => {
     expect(alpha(0, 1)).toBe(alpha(8, 1));
   });
 
-  it("leaves the rock's ends solid where they reach past the ground's side corners", () => {
+  it("ends the rock where the ground ends: at its side corners and its back edges (681)", () => {
     // Corners at (4, 3), (8.5, 7.5) and (13, 3) in a 17 by 12 picture: its first and last 4 columns lie past the ground.
     const width = 17;
     const pixels = new Uint8ClampedArray(width * 12 * 4).fill(200);
-    fadeAboveEdges(pixels, width, { left: { x: 4, y: 3 }, bottom: { x: 8.5, y: 7.5 }, right: { x: 13, y: 3 } }, 4);
+    shapeUnderside(pixels, width, { left: { x: 4, y: 3 }, bottom: { x: 8.5, y: 7.5 }, right: { x: 13, y: 3 } }, 4);
     const alpha = (x: number, y: number) => pixels[(y * width + x) * 4 + 3];
-    // Above the edge's line carried on past the corners, but not over the ground: as drawn.
-    expect(alpha(1, 1)).toBe(200);
-    expect(alpha(15, 1)).toBe(200);
-    // Over the ground, just inside a corner: faded.
-    expect(alpha(5, 2)).toBeLessThan(200);
-    expect(alpha(11, 2)).toBeLessThan(200);
+    // Left of the left corner and right of the right one, all the way down: gone.
+    for (const y of [1, 5, 11]) {
+      expect(alpha(1, y)).toBe(0);
+      expect(alpha(15, y)).toBe(0);
+    }
+    // Over the ground just inside a corner: faded. Past a back edge beside it: gone.
+    expect(alpha(5, 2)).toBe(100);
+    expect(alpha(4, 0)).toBe(0);
+    expect(alpha(12, 0)).toBe(0);
+    // Under the front edges, between the corners: as drawn.
+    expect(alpha(5, 11)).toBe(200);
+    expect(alpha(8, 10)).toBe(200);
+    expect(alpha(12, 11)).toBe(200);
   });
 });
