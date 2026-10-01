@@ -73,6 +73,35 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
 };
 
 /**
+ * [Q160] Andrei, 2026-10-01: "for four and five player games we need larger
+ * maps. let's make them 40% larger [...] the number of [spaces] for each
+ * terrain, number of [sites] and number of skill units and the gold offered
+ * should all scale by 40%." Each number below is 1.4 × today's:
+ *
+ *  - `MAP_NODE_COUNT` 240 → 336; the terrain shares stay 45/30/25, so each
+ *    terrain gets 1.4 × its spaces too (about 151/101/84);
+ *  - `POI_COUNT` 25/20/15 → 35/28/21;
+ *  - 631 A: roads 300 → 420 (300 cannot join 336 spaces at all) and dead ends
+ *    30–45 → 42–63. Valleys stay as they are.
+ *
+ * The rewards are `LARGER_MAP_REWARD_TABLE` in content.ts. Everything else is
+ * today's (633 A).
+ */
+export const LARGER_MAP_GAME_CONFIG: GameConfig = {
+  ...DEFAULT_GAME_CONFIG,
+  map: {
+    ...DEFAULT_GAME_CONFIG.map,
+    MAP_NODE_COUNT: 336,
+    MAP_EDGE_COUNT: 420,
+    LEAF_COUNT: { min: 42, max: 63 },
+  },
+  pois: {
+    ...DEFAULT_GAME_CONFIG.pois,
+    POI_COUNT: { plains: 35, forest: 28, mountain: 21 },
+  },
+};
+
+/**
  * Implementation-only knobs. Nothing here comes from GDD.md, and the `pending`
  * block holds values nobody has decided yet — reading one throws.
  */
@@ -81,4 +110,14 @@ export const DEFAULT_ENGINEERING_CONFIG: EngineeringConfig = {
   POISSON_RADIUS_FACTOR: 0.815,
   // Every design value is decided; see the note on `PendingConfig`.
   pending: {},
+};
+
+/**
+ * The larger map's knobs: today's, but with the sampler's spacing calibrated on
+ * the larger map. 0.815 yields about 330 spaces against 336 there, because a
+ * bigger map has relatively less edge where sampling packs looser.
+ */
+export const LARGER_MAP_ENGINEERING_CONFIG: EngineeringConfig = {
+  ...DEFAULT_ENGINEERING_CONFIG,
+  POISSON_RADIUS_FACTOR: 0.808,
 };

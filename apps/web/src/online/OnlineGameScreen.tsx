@@ -9,7 +9,7 @@ import { BarMenu } from '../page/BarMenu.tsx';
 import { RulesButton } from '../page/Rules.tsx';
 import { SeedForm } from '../page/SeedForm.tsx';
 import { buildMapScene, type MapScene } from '../render/sceneModel.ts';
-import { DEFAULT_RULESET } from '@adventure/config';
+import { DEFAULT_RULESET, mapSizeForPlayers } from '@adventure/config';
 import { atlasOf, type ArtCatalog } from '../art/catalog.ts';
 import { fromOnlineSetup, type LocalLimits, type LocalSetup } from '../setup/local.ts';
 import { SetupPanel } from '../setup/SetupPanel.tsx';
@@ -122,7 +122,9 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
         case 'gm.requestMapGeneration':
           // Let the page paint "Starting" before drawing takes the main thread.
           window.setTimeout(() => {
-            channel.send({ type: 'gm.mapGenerated', gameId, map: mapForSeed(message.seed) });
+            const players = latest.current.setup?.playerCount;
+            if (players === undefined) return;
+            channel.send({ type: 'gm.mapGenerated', gameId, map: mapForSeed(message.seed, mapSizeForPlayers(players)) });
           }, 30);
           return;
         case 'error':
@@ -249,7 +251,8 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
     if (seed !== null) setSeedDraft(seed);
   }, [seed]);
 
-  const drawn = useMapFor(game === null ? seed : null);
+  // [Q160] Larger from 4 players: the game master's change of the number of players draws it again.
+  const drawn = useMapFor(game === null ? seed : null, mapSizeForPlayers(setup?.playerCount ?? 0));
   const map: GameMap | null = game?.map ?? drawn.map;
   const scene = useMemo<MapScene | null>(
     () => (art === null || map === null ? null : buildMapScene(map, art.catalog, art.shape)),

@@ -6,7 +6,7 @@ import { isUnguardedClaim, journalEntry, statLine } from '../page/journal.ts';
 import { mapFor } from '../page/seed.ts';
 import { HotseatGame, HOTSEAT_MODE, hotseatStartingNode, newDiceSeed } from './hotseat.ts';
 
-const map = mapFor('adventure');
+const map = mapFor('adventure', 'standard');
 const seats = [
   { name: 'Ada', avatarId: 'player_avatars_03', control: 'human' as const, thinkingSeconds: 10 },
   { name: 'Bram', avatarId: 'player_avatars_05', control: 'human' as const, thinkingSeconds: 10 },

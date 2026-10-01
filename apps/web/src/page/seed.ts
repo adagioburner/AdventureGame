@@ -1,14 +1,16 @@
-import { DEFAULT_RULESET } from '@adventure/config';
+import { rulesetForMapSize, type MapSize } from '@adventure/config';
 import { friendlySeed, type GameMap, type Seed } from '@adventure/core';
 import { generateMap } from '@adventure/mapgen';
 import { defaultRemotenessScorer } from '@adventure/sim';
 
 /**
- * The map for a seed. Generation is client-side by §12.1, so the page needs no
- * server and no file: the seed is the whole input.
+ * The map for a seed, at the size the number of players asks for (Q160).
+ * Generation is client-side by §12.1, so the page needs no server and no file:
+ * the seed and the size are the whole input. The same seed draws a different
+ * map at each size.
  */
-export function mapFor(seed: Seed): GameMap {
-  return generateMap({ seed, ruleset: DEFAULT_RULESET, remotenessScorer: defaultRemotenessScorer });
+export function mapFor(seed: Seed, size: MapSize): GameMap {
+  return generateMap({ seed, ruleset: rulesetForMapSize(size), remotenessScorer: defaultRemotenessScorer });
 }
 
 /** A shareable random seed, for `?seed=` with no value. */

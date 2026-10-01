@@ -15,7 +15,7 @@ import { ONLINE_MODE } from '../modes/online.ts';
 import { mapFor } from '../page/seed.ts';
 import { createMoveModeController, type MoveModeController } from './moveMode.ts';
 
-const map = mapFor('adventure');
+const map = mapFor('adventure', 'standard');
 const config = map.ruleset.config;
 
 function setup(): { game: HotseatGame; controller: MoveModeController; sent: TurnAction[] } {

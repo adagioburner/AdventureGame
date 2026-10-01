@@ -3,7 +3,7 @@ import { mapFor } from '../page/seed.ts';
 import { hotseatComputer } from './computer.ts';
 import { HotseatGame, type HotseatSeat } from './hotseat.ts';
 
-const map = mapFor('adventure');
+const map = mapFor('adventure', 'standard');
 const seats: readonly HotseatSeat[] = [
   { name: 'Ada', avatarId: 'player_avatars_01', control: 'ai', thinkingSeconds: 1 },
   { name: 'Bram', avatarId: 'player_avatars_02', control: 'ai', thinkingSeconds: 2 },

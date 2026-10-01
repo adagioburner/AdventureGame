@@ -55,3 +55,32 @@ export const DEFAULT_REWARD_TABLE: RewardTable = {
 export const DEFAULT_GAME_CONTENT: GameContent = {
   REWARD_TABLE: DEFAULT_REWARD_TABLE,
 };
+
+/**
+ * [Q160] The 4 and 5 player map's rewards: every row's units are 1.4 × today's
+ * (gold 45 → 63, speeds and skills 75 → 105). Six rows' sites do not multiply
+ * to a whole number; 630 A rounds them to the nearest (9.8 → 10, 8.4 → 8,
+ * 2.8 → 3; 11.2 → 11 twice, 5.6 → 6), and each terrain still totals exactly
+ * 1.4 × today's sites, 35 / 28 / 21.
+ */
+export const LARGER_MAP_REWARD_TABLE: RewardTable = {
+  plains: [
+    { kind: 'plains_move', guard: null, totalUnits: 28, poiCount: 14 },
+    { kind: 'forest_move', guard: null, totalUnits: 21, poiCount: 10 },
+    { kind: 'magic', guard: null, totalUnits: 14, poiCount: 8 },
+    { kind: 'gold', guard: 'fighting', totalUnits: 14, poiCount: 3 },
+  ],
+  forest: [
+    { kind: 'mountain_move', guard: null, totalUnits: 21, poiCount: 11 },
+    { kind: 'fighting', guard: null, totalUnits: 21, poiCount: 11 },
+    { kind: 'gold', guard: 'fighting', totalUnits: 7, poiCount: 6, magicGuardChance: FOREST_MAGIC_GUARD_CHANCE },
+  ],
+  mountain: [
+    { kind: 'gold', guard: 'fighting', totalUnits: 28, poiCount: 14 },
+    { kind: 'gold', guard: 'magic', totalUnits: 14, poiCount: 7 },
+  ],
+};
+
+export const LARGER_MAP_GAME_CONTENT: GameContent = {
+  REWARD_TABLE: LARGER_MAP_REWARD_TABLE,
+};

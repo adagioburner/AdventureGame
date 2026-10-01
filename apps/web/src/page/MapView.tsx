@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Application } from 'pixi.js';
+import { DEFAULT_RULESET } from '@adventure/config';
 import type { GameMap, GameState, NodeId, PathPreview, PlayerId, Point } from '@adventure/core';
 import { createCameraController, FOLLOW_MARGIN_OF_VIEW, followInto, glideCenter, GLIDE_MS, type CameraController } from '../interaction/camera.ts';
 import { figureTop, pick, planeToScreen, screenToPlane, type Pick } from '../interaction/picking.ts';
@@ -83,6 +84,15 @@ const TAP_TRAVEL_PX = 8;
 
 /** Zoom, relative to the whole-map view, that a player's card (Q120) and a phone's Plan a move bring the map to at least. */
 const PLAY_ZOOM_OF_FIT = 2.2;
+
+/**
+ * [Q160, 632 A] On the larger map a card and a phone's Plan a move come as
+ * close as on today's: its whole-map view is smaller by the square root of how
+ * many more spaces it has, so the zoom grows by as much. 1 on today's map.
+ */
+function playZoomScale(map: GameMap): number {
+  return Math.sqrt(map.ruleset.config.map.MAP_NODE_COUNT / DEFAULT_RULESET.config.map.MAP_NODE_COUNT);
+}
 
 export function MapView({
   art,
@@ -359,7 +369,7 @@ export function MapView({
       const planeOf = (node: NodeId): Point => scene.projection.toScreen(position(gameMap.graph, node));
       const centerAt = (plane: Point): void => {
         stopCamera();
-        camera.centerOn(plane, fit().zoom * PLAY_ZOOM_OF_FIT);
+        camera.centerOn(plane, fit().zoom * PLAY_ZOOM_OF_FIT * playZoomScale(gameMap));
         touched = true;
         apply();
       };

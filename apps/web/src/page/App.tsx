@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { DEFAULT_RULESET } from '@adventure/config';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { DEFAULT_RULESET, mapSizeForPlayers, mapSizeOfRuleset, type MapSize } from '@adventure/config';
 import type { GameMap } from '@adventure/core';
 import { atlasOf, buildArtCatalog, type ArtCatalog } from '../art/catalog.ts';
 import { ART_FILES } from '../art/files.ts';
 import { HotseatGame, newDiceSeed } from '../modes/hotseat.ts';
-import { forgetKept, keep, readKept, replayKept } from '../modes/kept.ts';
+import { forgetKept, keep, keptMapSize, readKept, replayKept } from '../modes/kept.ts';
 import { hotseatPlay } from '../modes/play.ts';
 import { loadArt, type LoadedArt } from '../render/pixi/textures.ts';
 import { buildMapScene, type MapScene } from '../render/sceneModel.ts';
@@ -72,29 +72,47 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
     loadArt(catalog).then(setArt, (error: unknown) => setProblem(String(error)));
   }, [catalog, limits]);
 
+  // [Q160] The size of map the screen needs: a game's own; the kept game's
+  // while it is being picked up; otherwise the one the number of players asks
+  // for, so going from 3 players to 4, or back, draws the map again.
+  const [resuming, setResuming] = useState(kept !== null);
+  const size: MapSize | null =
+    game !== null
+      ? mapSizeOfRuleset(game.setup.map.ruleset)
+      : resuming && kept !== null
+        ? keptMapSize(kept)
+        : setup === null
+          ? null
+          : mapSizeForPlayers(setup.seats.length);
+
   useEffect(() => {
-    setMap(null);
+    if (size === null) return;
+    // [Q160, 635 A] A new number of players keeps the map it had on screen,
+    // and the setup panel with it, until the new size is drawn; a new seed
+    // says it is drawing.
+    setMap((shown) => (shown !== null && shown.seed === seed ? shown : null));
     writeSeed(seed);
     // Let "Drawing the map" paint before generation takes the main thread.
     const timer = window.setTimeout(() => {
       try {
-        setMap(mapFor(seed));
+        setMap(mapFor(seed, size));
       } catch (error) {
         setProblem(error instanceof Error ? error.message : String(error));
       }
     }, 30);
     return () => window.clearTimeout(timer);
-  }, [seed]);
+  }, [seed, size]);
 
   // [Q56, 66] Once its map is drawn, the kept game is played again to where it was.
-  const resumed = useRef(false);
   useEffect(() => {
-    if (kept === null || resumed.current || map === null || map.seed !== kept.seed) return;
-    resumed.current = true;
+    if (kept === null || !resuming || map === null || map.seed !== kept.seed || mapSizeOfRuleset(map.ruleset) !== keptMapSize(kept)) {
+      return;
+    }
+    setResuming(false);
     const again = replayKept(kept, map);
     if (again === null) forgetKept();
     else setGame(again);
-  }, [kept, map]);
+  }, [kept, map, resuming]);
   // Every turn is kept as it is played, until New game.
   useEffect(() => {
     if (game === null || play === null || setup === null) return;
@@ -127,7 +145,8 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
   );
 
   const start = (): void => {
-    if (map === null || setup === null) return;
+    // Never on the map of the number of players before, while the new one is drawn.
+    if (map === null || setup === null || mapSizeOfRuleset(map.ruleset) !== mapSizeForPlayers(setup.seats.length)) return;
     setLogOpen(false);
     setGame(new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: newDiceSeed() }));
   };

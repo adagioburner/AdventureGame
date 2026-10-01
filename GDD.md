@@ -102,6 +102,20 @@ Three things per kind, all needed by the assignment algorithm in §4.3: the tota
 | Mountain (15 POIs) | Gold | fighting | 20 | 10 |
 | | Gold | magic | 10 | 5 |
 
+[SOURCE §4.2, Q160] With 4 or 5 players the map is 40% larger (§11's larger map): every row's units are 1.4 × the above, and its POIs 1.4 × rounded to the nearest whole number (630), so each terrain still has exactly 1.4 × its POIs.
+
+| Terrain | Kind | Guard | Total units | POIs of this kind |
+|---|---|---|---|---|
+| Plains (35 POIs) | Plains moving skill | none | 28 | 14 |
+| | Forest moving skill | none | 21 | 10 |
+| | Magic skill | none | 14 | 8 |
+| | Gold | fighting | 14 | 3 |
+| Forest (28 POIs) | Mountain moving skill | none | 21 | 11 |
+| | Fighting skill | none | 21 | 11 |
+| | Gold | fighting, or magic by `FOREST_MAGIC_GUARD_CHANCE` (Q115) | 7 | 6 |
+| Mountain (21 POIs) | Gold | fighting | 28 | 14 |
+| | Gold | magic | 14 | 7 |
+
 ### 4.3 Reward assignment algorithm
 
 [SOURCE §1.3, chat] Run per terrain, per row of the §4.2 table (i.e. per kind, or per kind+guard-type where gold is split by guard type):
@@ -341,6 +355,8 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `SIMULATION_TURN_CAP` | 250 turns | the most turns one simulated game runs, §9 [SOURCE §5, review] |
 | `STAMINA_PER_SKILL_POINT` | 5 | tunable — stamina worth one skill point in §9's estimated evaluation (Q110) |
 | MCTS tree/selection policy, exploration constant | — | **OPEN**, unspecified |
+
+[SOURCE §11, Q160] **The larger map, for 4 and 5 players** (`LARGER_MAP_FROM_PLAYERS` 4): `MAP_NODE_COUNT` ~336, `MAP_EDGE_COUNT` ~420, `LEAF_COUNT_MIN` / `MAX` 42 / 63 and `POI_COUNT` 35 / 28 / 21, each 1.4 × the above (631), with §4.2's larger table. Every other parameter is the same on both maps (633), the valleys included.
 
 ---
 
