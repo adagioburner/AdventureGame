@@ -15,6 +15,7 @@ manifest, and never a code change.
 | Reward icon | `Icons/<reward kind>.png` | One icon per reward unit under a POI |
 | Portrait crops | `player_avatars_portraits.json` | Head-and-shoulders boxes on the figurine sheet (temporary, Q26) |
 | Artist's sheets | `originals/<Name>.png` | Nothing directly: `tools/pack_sheets.py` packs each into `<Name>_sheet.png` and its atlas |
+| Island | `Island/underside.png`, `Island/sky.png` | The rock hanging under the map's two front edges, and the sky behind the map (Q170) |
 | Sound effect | `Sounds/<name>.wav` | A footstep, a reward picked up, a battle won or lost, a rest, a new message (Q63), a speed or skill coming back (Q135) |
 
 A sheet is paired with its atlas by file name, `<Name>_sheet.png` with
@@ -144,6 +145,17 @@ there for people and ignored by the game.
   flag and active-player ring, and their sizes.
 - `figurines`, `portraits`, `dice`: the player figures, their portrait crops
   and the die sheet.
+- `island`: the map as a floating island (Q170). `underside` is the rock
+  under the map's two front edges: a picture, and the three points in its
+  pixels (`left`, `bottom`, `right`) where the map's left, bottom and right
+  corners go. The picture is stretched between those points, under the
+  ground, so its top edges lie along the map's front edges at any map size;
+  the points sit a little below the rock's topmost pixels, so a thin rim of
+  its stone tops shows below the ground (670). `sky` is the picture behind
+  the map. It fills the map's box, cropped to its shape, stays put as the
+  map is dragged and grows a little as the map is zoomed in (676 to 678);
+  `shade` darkens it, from 0 (as drawn) to 1 (black), `light` on a light
+  screen and `dark` on a dark one.
 - `sounds`: the sound effects (Q63), each a list of `files` under `Art/` and
   a `volume` (1 plays a file as it is, 0.5 at half). `step` is a footstep,
   played each time a walking figure reaches a node; `pickup` a reward taken
@@ -152,6 +164,17 @@ there for people and ignored by the game.
   message someone else posts; `respawn` a speed or skill coming back to a
   site (Q135). A sound with several files uses them in turn,
   so a walk's footsteps are not all alike.
+
+## Swapping the island's rock or sky
+
+Drop a new picture over `Island/underside.png` or `Island/sky.png`. A new
+rock needs its own three `corners`: where its top edges meet at the left, at
+the bottom of the V and at the right, a few pixels lower than its topmost
+stone if a rim of stone tops should show. A rock drawn at another size or
+slope still lines up, because the three points decide how it is stretched.
+The New game screen frames the rock down to its lowest solid pixel, so blank
+room round the picture does not matter. A sky of any size fills the map's
+box. `pnpm test` checks that both files are there.
 
 ## Swapping a sound
 

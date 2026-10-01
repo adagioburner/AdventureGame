@@ -2746,6 +2746,66 @@ draw uses the server's die stream, so nobody can foresee or redraw it; on one
 device it uses the browser's secure generator, and a game kept in the browser
 keeps the order drawn.
 
+### Q170. ~~How does the map become a floating island?~~ — **answered 2026-10-01: Andrei's brighter rock under the two front edges with a rim of stone tops, his sky behind the map as drawn, darkened at night, still as the map is dragged and growing a little as it is zoomed in; Whole map frames the map as before in games and the whole island on the New game screen (670-678)**
+
+Andrei, 2026-10-01 at 16:05: *"I don't like the map floating in the void. Can
+we add this extension to the bottom to create a Laputa-style gloating island?
+And we can experiment with a blue background then"*, with a picture of a rock
+wall in a V for the map's two front edges. At 16:21 he sent a brighter
+version, at 16:22 *"For the background, I was thinking of a grey-blue cloudy
+sky, not very bright"*, and at 16:34 a picture of that sky: *"We may need to
+darken it for more contrast (or maybe not)"*. Until then the map stood on a
+plain grey-blue (`--map-ground`). Answered 16:46 to 16:5x.
+
+670. **Where the ground meets the rock:** a thin rim of the rock's stone tops
+     shows below the ground's edge (recommended); or the ground runs straight
+     to the cliff, the tops hidden. **Answered:** the rim. Set any lower, sky
+     showed through gaps between the stones.
+671. **His sky:** as drawn; 15% darker (recommended); or 30% darker.
+     **Answered:** as drawn.
+672. **What Whole map and the game's first view frame:** the whole island, rock
+     included (recommended); or the map as before, the rock running off the
+     bottom of a laptop's screen. **Answered:** the map as before. Nothing
+     about the camera in games changed. At 16:53 he added: *"For the "New
+     game" screen, it would be nice to show the whole island, as in
+     recommended in 672"*, so there (hot seat and online) Whole map and the
+     first view frame the rock down to its lowest point.
+673. **A dark-mode screen:** his sky darkened for night (recommended); the
+     same sky as on a light screen; or the dark grey as before.
+     **Answered:** darkened for night, to 40% of its brightness.
+674. **The New game screen:** island and sky there too (recommended); or as
+     before. **Answered:** there too.
+675. **Which rock:** the first, darker one with glowing cyan cracks; or the
+     brighter one (recommended). **Answered:** the brighter one.
+676. **When the map is dragged or zoomed:** the sky stays still behind it
+     (recommended); or it moves a little with the map. **Answered** at 16:52:
+     *"I am afraid that background that does not move at all will create an
+     unnatural feeling. How expensive, peformance-wise, is to move the
+     background a little? If it's not too much, I'd prefer that"*. It is
+     cheap: the sky is one layer the browser slides, and the map is redrawn
+     on every frame of a drag anyway. The amounts below were offered on a
+     page that moves his sky behind the island (Island sky drift).
+677. **How far the sky moves:** as far as the map moves at the whole-map view
+     times still, 1/20, 1/10 (recommended) or 1/5, and less as the map is
+     zoomed in, as a faraway sky would. To have room to move, the sky is
+     drawn larger, so its clouds look about 6%, 12% or 25% bigger; dragged
+     far off, it stops at its edge. **Answered:** 1/10 at 17:07, then at
+     17:08 *"The sky should grow but it should not move up and down like
+     today"* and at 17:09 *"Actually scratch that. Let's make it still, but
+     growing with the zoom"*: still (`SKY_DRIFT` 0), so the sky is drawn at
+     the box's size, as before.
+678. **Zooming:** the sky grows a little as the map is zoomed in, by up to a
+     tenth at 1/10 (recommended); or it keeps its size. **Answered** in the
+     same words: it grows, by about a tenth at the closest zoom, as on the
+     page, and never below its size at the whole-map view
+     (`SKY_ZOOM_GROWTH`).
+
+The rock is his picture as drawn, stretched only so its top edges lie along
+the map's front edges, which it already slopes along; 4 and 5 player maps get
+the same rock at their size. Rock and sky are both inside the map's box, so a
+phone's map loses no height. Both are in `Art/Island/`, named in
+`Art/manifest.json`'s `island` section.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design

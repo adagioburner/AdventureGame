@@ -7,7 +7,7 @@ import {
   type RewardKind,
   type Terrain,
 } from '@adventure/config';
-import type { PathStepColor } from '@adventure/core';
+import type { PathStepColor, Point } from '@adventure/core';
 import { ArtError, array, finite, nonNegative, positive, record, string } from './atlas.ts';
 
 /**
@@ -49,6 +49,8 @@ export interface ArtManifest {
   readonly figurines: { readonly sheet: string; readonly size: number };
   readonly portraits: string;
   readonly dice: { readonly sheet: string };
+  /** [Q170] The rock under the map's front edges and the sky behind it. */
+  readonly island: IslandArt;
   /** The sound effects (Q63): each sound's files, played in turn, and its volume. */
   readonly sounds: Readonly<Record<SoundName, SoundArt>>;
   readonly shadows: { readonly opacity: number; readonly sheets: ReadonlyMap<string, readonly string[]> };
@@ -91,6 +93,36 @@ export interface SheetOutline {
   readonly color: string;
   /** How thick, as a share of the sheet's typical sprite span, so it scales with the picture. */
   readonly width: number;
+}
+
+/**
+ * [Andrei, 2026-10-01] "I don't like the map floating in the void. Can we add
+ * this extension to the bottom to create a Laputa-style floating island?"
+ * (Q170): his rock under the map's two front edges, and his sky behind it.
+ */
+export interface IslandArt {
+  readonly underside: {
+    /** A picture under `Art/`. */
+    readonly file: string;
+    /**
+     * Where, in the picture's pixels, the map's left, bottom and right corners
+     * go. The picture is stretched between these three points, so its own top
+     * edges lie along the map's two front edges.
+     */
+    readonly corners: IslandCorners;
+  };
+  readonly sky: {
+    /** A picture under `Art/`. */
+    readonly file: string;
+    /** How much it is darkened, from 0 (as drawn) to 1 (black), on a light and a dark screen. */
+    readonly shade: { readonly light: number; readonly dark: number };
+  };
+}
+
+export interface IslandCorners {
+  readonly left: Point;
+  readonly bottom: Point;
+  readonly right: Point;
 }
 
 /**
@@ -200,6 +232,7 @@ export function parseManifest(json: unknown): ArtManifest {
   const prospect = record(root['move_prospect'], 'manifest.json: move_prospect');
   const figurines = record(root['figurines'], 'manifest.json: figurines');
   const dice = record(root['dice'], 'manifest.json: dice');
+  const island = record(root['island'], 'manifest.json: island');
   const sounds = record(root['sounds'], 'manifest.json: sounds');
   const shadows = record(root['shadows'], 'manifest.json: shadows');
   const shadowSheets = record(shadows['sheets'], 'manifest.json: shadows.sheets');
@@ -258,6 +291,7 @@ export function parseManifest(json: unknown): ArtManifest {
     },
     portraits: string(root['portraits'], 'manifest.json: portraits'),
     dice: { sheet: string(dice['sheet'], 'manifest.json: dice.sheet') },
+    island: parseIsland(island, 'manifest.json: island'),
     sounds: Object.fromEntries(
       SOUND_NAMES.map((name) => [name, parseSound(sounds[name], `manifest.json: sounds.${name}`)]),
     ) as Record<SoundName, SoundArt>,
@@ -325,6 +359,33 @@ export function sheetsNamed(manifest: ArtManifest): string[] {
   names.add(manifest.figurines.sheet);
   names.add(manifest.dice.sheet);
   return [...names].sort();
+}
+
+function parseIsland(island: Readonly<Record<string, unknown>>, where: string): IslandArt {
+  const underside = record(island['underside'], `${where}.underside`);
+  const corners = record(underside['corners'], `${where}.underside.corners`);
+  const point = (json: unknown, at: string): Point => {
+    const pair = array(json, at);
+    if (pair.length !== 2) throw new ArtError(`${at}: expected [x, y]`);
+    return { x: nonNegative(pair[0], `${at}[0]`), y: nonNegative(pair[1], `${at}[1]`) };
+  };
+  const left = point(corners['left'], `${where}.underside.corners.left`);
+  const bottom = point(corners['bottom'], `${where}.underside.corners.bottom`);
+  const right = point(corners['right'], `${where}.underside.corners.right`);
+  // The map's bottom corner is below the other two and between them; any
+  // other order would turn the picture over or inside out.
+  if (!(left.x < bottom.x && bottom.x < right.x && bottom.y > left.y && bottom.y > right.y)) {
+    throw new ArtError(`${where}.underside.corners: bottom must lie between left and right, and below both`);
+  }
+  const sky = record(island['sky'], `${where}.sky`);
+  const shade = record(sky['shade'], `${where}.sky.shade`);
+  return {
+    underside: { file: string(underside['file'], `${where}.underside.file`), corners: { left, bottom, right } },
+    sky: {
+      file: string(sky['file'], `${where}.sky.file`),
+      shade: { light: fraction(shade['light'], `${where}.sky.shade.light`), dark: fraction(shade['dark'], `${where}.sky.shade.dark`) },
+    },
+  };
 }
 
 function parseSound(json: unknown, where: string): SoundArt {

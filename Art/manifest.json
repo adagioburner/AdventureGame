@@ -129,6 +129,11 @@
   "figurines": { "sheet": "player_avatars", "size": 0.45 },
   "portraits": "player_avatars_portraits.json",
   "dice": { "sheet": "Dice_d6" },
+  "island": {
+    "notes": "[Q170] The map is an island floating in the sky. `underside` is the rock hanging under its two front edges: a picture under Art/, and the three points in its pixels where the map's left, bottom and right corners go. The picture is stretched between those points, so a replacement drawn at any size only needs its own three. `sky` is the picture behind the map. It fills the map's box, stays put as the map is dragged and grows a little as the map is zoomed in (676-678; SKY_ZOOM_GROWTH in apps/web/src/page/sky.ts). `shade` darkens it, from 0 (as drawn) to 1 (black): `light` on a light screen, `dark` on a dark one.",
+    "underside": { "file": "Island/underside.png", "corners": { "left": [18, 85.5], "bottom": [772.3, 467.7], "right": [1516, 89.3] } },
+    "sky": { "file": "Island/sky.png", "shade": { "light": 0, "dark": 0.6 } }
+  },
   "sounds": {
     "notes": "The sound effects (Q63), each a list of files under Art/ and a volume (1 plays a file as it is). A sound with several files uses them in turn, so a walk's footsteps are not all alike. All nine are placeholders made by Art/tools/make_sounds.py from the samples Andrei picked by ear; a replacement drops in over the file, or goes in under a new name changed here, and loses its placeholder flag. WAV or MP3 plays in every browser.",
     "step": { "files": ["Sounds/step_1.wav", "Sounds/step_2.wav", "Sounds/step_3.wav"], "volume": 1, "placeholder": true },

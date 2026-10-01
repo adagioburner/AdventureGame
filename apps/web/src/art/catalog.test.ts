@@ -276,4 +276,28 @@ describe('a bad art drop', () => {
     const silent = { ...manifest, sounds: { ...manifest['sounds'], pickup: { files: [], volume: 1 } } };
     expect(() => parseManifest(silent)).toThrow(/sounds\.pickup\.files: expected at least one file/);
   });
+
+  it("finds Andrei's rock and sky (Q170), and names either when it is missing", () => {
+    const catalog = buildArtCatalog(ART_FILES);
+    expect(catalog.islandUrls.underside).toBeTruthy();
+    expect(catalog.islandUrls.sky).toBeTruthy();
+    expect(catalog.manifest.island.sky.shade).toEqual({ light: 0, dark: 0.6 });
+    expect(() => buildArtCatalog(without('Island/underside.png'))).toThrow(/Island\/underside\.png is missing/);
+    expect(() => buildArtCatalog(without('Island/sky.png'))).toThrow(/Island\/sky\.png is missing/);
+  });
+
+  it("rejects underside corners that would turn the rock over, and a shade outside 0 to 1", () => {
+    const manifest = ART_FILES.json.get('manifest.json') as Record<string, Record<string, Record<string, unknown>>>;
+    const island = manifest['island'] as Record<string, Record<string, unknown>>;
+    const withCorners = (corners: object) => ({
+      ...manifest,
+      island: { ...island, underside: { ...island['underside'], corners } },
+    });
+    expect(() => parseManifest(withCorners({ left: [18, 85], bottom: [772, 40], right: [1516, 89] }))).toThrow(
+      /bottom must lie between left and right, and below both/,
+    );
+    expect(() => parseManifest(withCorners({ left: [18, 85], bottom: [772], right: [1516, 89] }))).toThrow(/expected \[x, y\]/);
+    const withShade = { ...manifest, island: { ...island, sky: { ...island['sky'], shade: { light: 0, dark: 1.5 } } } };
+    expect(() => parseManifest(withShade)).toThrow(/island\.sky\.shade\.dark: must be between 0 and 1/);
+  });
 });

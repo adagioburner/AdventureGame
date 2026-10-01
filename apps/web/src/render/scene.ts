@@ -13,6 +13,8 @@ import type { FigureCue } from './sceneModel.ts';
  * dressing, POI images and characters share one depth-sorted plane. What the
  * renderer actually stacks, bottom to top, is
  *
+ *   0. the rock hanging under the map's front edges (Q170), drawn once with
+ *      the `terrain`; the sky behind it is the page's, not the map's;
  *   1. the `terrain`, laid through the projection;
  *   2. the backdrop part of `dressing` (the mountains), painted on the ground
  *      so the roads and nodes can cross it;
