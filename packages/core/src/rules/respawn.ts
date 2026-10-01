@@ -18,8 +18,9 @@ const UNCLAIMED: PoiRuntimeState = { claimedBy: null, claimedOnTurn: null };
  * need two *sites* with the skill at any time, not two units of skill on the
  * map"), one claimed POI that held it gets its reward back (532 A), but no
  * more than `MAX_UNITS` units of it (Andrei, 2026-10-01: "let us cap the
- * skills to 2 units when they respawn"; a game started before the cap has no
- * `MAX_UNITS` and gets the whole reward). That POI is drawn with `dice.pick`
+ * skills to 2 units when they respawn", then "Let's change that cap to one";
+ * a game started before the cap has no `MAX_UNITS` and gets the whole
+ * reward). That POI is drawn with `dice.pick`
  * from the `FAR_SHARE` of the candidates, rounded up, that are farthest from
  * their nearest figure (533 A), by the cheapest route's stamina cost (534 A),
  * never one a figure stands on. A POI that came back can be claimed and come

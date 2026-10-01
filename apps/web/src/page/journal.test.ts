@@ -161,7 +161,7 @@ describe('the turn log, in words that can be checked by hand', () => {
 
   it('says where a skill came back, by its site’s terrain (Q135, 536)', () => {
     // Combat on nodes 2 and 5; Ada takes node 2's, the last left, and node 5,
-    // taken earlier, comes back: with 2 of its 3, the most a site comes back with.
+    // taken earlier, comes back: with 1 of its 3, all a site comes back with.
     const skills = lineMap(
       ['plains', 'plains', 'plains', 'plains', 'plains', 'forest', 'mountain'],
       [
@@ -177,7 +177,7 @@ describe('the turn log, in words that can be checked by hand', () => {
     });
     const before = { ...fresh, poiRuntime: [fresh.poiRuntime[0]!, { claimedBy: asPlayerId('Bram'), claimedOnTurn: 1 }] };
     const entry = describeTurn(before, { kind: 'move', path: path(1, 2) });
-    expect(entry.details.at(-1)).toBe('2 combat came back at a forest site.');
+    expect(entry.details.at(-1)).toBe('1 combat came back at a forest site.');
   });
 
   it('writes the winning claim with the lead and the gold left', () => {

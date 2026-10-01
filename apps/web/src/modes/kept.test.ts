@@ -60,8 +60,11 @@ describe('a game on one device kept in the browser (Q56, 66)', () => {
   it('keeps the most units a site comes back with, and replays a game kept before the cap with whole stacks (Q135)', () => {
     keep('adventure', setup, null, new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'kept' }));
     const kept = readKept();
-    expect(kept?.respawnMaxUnits).toBe(2);
-    expect(kept === null ? null : replayKept(kept, map)?.setup.map.ruleset.config.respawn?.MAX_UNITS).toBe(2);
+    expect(kept?.respawnMaxUnits).toBe(1);
+    expect(kept === null ? null : replayKept(kept, map)?.setup.map.ruleset.config.respawn?.MAX_UNITS).toBe(1);
+    // A game kept while the cap was 2 goes on with 2.
+    const underTwo = kept === null ? null : replayKept({ ...kept, respawnMaxUnits: 2 }, map);
+    expect(underTwo?.setup.map.ruleset.config.respawn?.MAX_UNITS).toBe(2);
 
     const { respawnMaxUnits: _max, ...older } = kept ?? { respawnMaxUnits: undefined };
     const before = replayKept(older as NonNullable<typeof kept>, map)?.setup.map.ruleset.config.respawn;
