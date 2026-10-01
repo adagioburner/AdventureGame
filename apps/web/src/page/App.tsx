@@ -8,7 +8,7 @@ import { forgetKept, keep, keptMapSize, readKept, replayKept } from '../modes/ke
 import { hotseatPlay } from '../modes/play.ts';
 import { loadArt, type LoadedArt } from '../render/pixi/textures.ts';
 import { buildMapScene, type MapScene } from '../render/sceneModel.ts';
-import { newLocalSetup, toHotseatSeats, type LocalLimits, type LocalSetup } from '../setup/local.ts';
+import { inOrder, newLocalSetup, startingOrder, toHotseatSeats, type LocalLimits, type LocalSetup } from '../setup/local.ts';
 import { SetupPanel } from '../setup/SetupPanel.tsx';
 import { GameScreen } from './GameScreen.tsx';
 import { MapView } from './MapView.tsx';
@@ -48,6 +48,9 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
   const [map, setMap] = useState<GameMap | null>(null);
   const [problem, setProblem] = useState<string | null>(null);
   const [setup, setSetup] = useState<LocalSetup | null>(null);
+  // [Q165, 650] The order Shuffle seats drew for the game being played;
+  // `null` while the seats go as set. The panel keeps showing them as set.
+  const [order, setOrder] = useState<readonly string[] | null>(() => kept?.order ?? null);
   const [game, setGame] = useState<HotseatGame | null>(null);
   const play = useMemo(() => (game === null ? null : hotseatPlay(game)), [game]);
   const [goingOnline, setGoingOnline] = useState<{ readonly busy: boolean; readonly problem: string | null }>({
@@ -116,10 +119,10 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
   // Every turn is kept as it is played, until New game.
   useEffect(() => {
     if (game === null || play === null || setup === null) return;
-    const save = (): void => keep(game.setup.map.seed, setup, game);
+    const save = (): void => keep(game.setup.map.seed, setup, order, game);
     save();
     return play.subscribe(save);
-  }, [game, play, setup]);
+  }, [game, play, setup, order]);
   const newGame = (): void => {
     forgetKept();
     setGame(null);
@@ -148,7 +151,10 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
     // Never on the map of the number of players before, while the new one is drawn.
     if (map === null || setup === null || mapSizeOfRuleset(map.ruleset) !== mapSizeForPlayers(setup.seats.length)) return;
     setLogOpen(false);
-    setGame(new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: newDiceSeed() }));
+    // [Q165, 650] With Shuffle seats on, the seats are drawn now.
+    const drawn = setup.shuffleSeats === true ? startingOrder(setup) : null;
+    setOrder(drawn);
+    setGame(new HotseatGame({ map, seats: toHotseatSeats(inOrder(setup, drawn)), diceSeed: newDiceSeed() }));
   };
 
   const turnOnline = (): void => {

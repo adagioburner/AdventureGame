@@ -34,7 +34,7 @@ Each site holds exactly one kind of reward, often a stack of several units, show
 
 A game takes 2 to 5 players, and any seat can be played by a person or by the computer. Each player picks a name and one of six figures; no two players share a figure.
 
-Turn order is fixed at the start and never changes. Seat 1 moves first; in an online game, seat 1 is always the game master.
+Turn order is fixed at the start and never changes. Seat 1 moves first. With Shuffle seats on, the seats are drawn at random when the game starts, and each player starts with the stamina of the seat they draw. Otherwise seats go in the order set up, and online the game master is in seat 1.
 
 Later seats start with more stamina to make up for moving later:
 
@@ -125,7 +125,7 @@ The rules are the same either way; the Play online switch on the setup screen ch
 
 ### The game master
 
-The person who creates an online game is its game master and sits in seat 1. They choose the map, the number of players and which seats the computer plays, and accept or decline people who ask to join. Empty seats are played by the computer. During the game, the game master can:
+The person who creates an online game is its game master and sits in seat 1 unless the seats are shuffled. They choose the map, the number of players and which seats the computer plays, and accept or decline people who ask to join. Empty seats are played by the computer. During the game, the game master can:
 
 - **Move a player on** at any time: play their turn now as their own 'End turn' would, walking their saved route or resting if they have none.
 - **Resign a player**: the computer plays their seat from then on.

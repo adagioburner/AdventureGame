@@ -4,7 +4,7 @@ import { DEFAULT_RULESET } from '@adventure/config';
 import { asGameId, asUserId, startingNodeFor, type UserId } from '@adventure/core';
 import type { SetupState } from '@adventure/protocol';
 import { fixtureMap } from '../../core/src/rules/scenario.fixture.ts';
-import { applySetupAction, createSetup, SetupError, setupLimitsFor, startGame, type SetupAction } from './setup.ts';
+import { applySetupAction, createSetup, drawSeats, SetupError, setupLimitsFor, startGame, type SetupAction } from './setup.ts';
 
 const FIGURES = ['fig_01', 'fig_02', 'fig_03', 'fig_04', 'fig_05', 'fig_06'];
 const limits = setupLimitsFor(DEFAULT_RULESET, FIGURES);
@@ -37,6 +37,7 @@ const act = {
   leave: (): SetupAction => ({ type: 'setup.leave', gameId: G }),
   withdraw: (): SetupAction => ({ type: 'setup.withdraw', gameId: G }),
   start: (): SetupAction => ({ type: 'setup.start', gameId: G }),
+  shuffle: (on: boolean): SetupAction => ({ type: 'setup.setShuffleSeats', gameId: G, on }),
 };
 
 function refused(state: SetupState, by: UserId, action: SetupAction): SetupError {
@@ -408,5 +409,67 @@ describe('starting', () => {
     expect(() => startGame(starting, { ...map, seed: 'another' })).toThrow(/another seed/);
     expect(() => startGame(fresh(), map)).toThrow(/not starting/);
     expect(refused(starting, andrei, act.count(3)).code).toBe('invalid_action');
+  });
+});
+
+describe('Shuffle seats (Q165)', () => {
+  const map = fixtureMap({ terrains: ['plains', 'plains'], edges: [[0, 1]] });
+  /** Picks in turn, as the server's die stream would give them. */
+  const picks = (...values: number[]) => {
+    let next = 0;
+    return (count: number): number => {
+      const value = values[next++];
+      if (value === undefined || value >= count) throw new Error(`no pick below ${count}`);
+      return value;
+    };
+  };
+
+  it('is off in a new game, on as the page had it, and the game master’s to switch', () => {
+    expect(fresh().shuffleSeats).toBe(false);
+    const made = createSetup(
+      { gameId: G, name: 'g', gameMaster: { userId: andrei, displayName: 'Andrei' }, createdAt: 1, mapSeed: 'fixture', shuffleSeats: true },
+      limits,
+    );
+    expect(made.shuffleSeats).toBe(true);
+    expect(play(fresh(), [andrei, act.shuffle(true)]).shuffleSeats).toBe(true);
+    expect(play(made, [andrei, act.shuffle(false)]).shuffleSeats).toBe(false);
+    expect(refused(fresh(), bea, act.shuffle(true)).code).toBe('not_game_master');
+    expect(refused(fresh(), andrei, { type: 'setup.setShuffleSeats', gameId: G, on: 'yes' as unknown as boolean }).code).toBe('invalid_action');
+  });
+
+  it('draws every seat at the start, the game master’s too, and each player starts with their seat’s stamina (650)', () => {
+    const starting = play(
+      fresh(),
+      [andrei, act.count(3)],
+      [bea, act.ask('Bea', 'fig_04')],
+      [andrei, act.accept(bea)],
+      [andrei, act.shuffle(true)],
+      [andrei, act.start()],
+    );
+    expect(idsOf(starting)).toEqual(['person:andrei', 'person:bea', 'computer:3']);
+    // Fisher–Yates from the last seat: 2 swaps with 0, then 1 with 0.
+    const drawn = drawSeats(starting, picks(0, 0));
+    expect(drawn.seats.map((seat) => [seat.seat, seat.playerId, seat.name])).toEqual([
+      [1, 'seat-1', 'Bea'],
+      [2, 'seat-2', 'Computer 1'],
+      [3, 'seat-3', 'Andrei'],
+    ]);
+    expect(drawn.gameMaster).toBe(andrei);
+    const { game } = startGame(drawn, map);
+    expect(game.players.map((player) => [player.seat, player.name, player.stats.stamina])).toEqual([
+      [1, 'Bea', 30],
+      [2, 'Computer 1', 35],
+      [3, 'Andrei', 40],
+    ]);
+  });
+
+  it('leaves the seats as set with the switch off, and before the start', () => {
+    const off = play(fresh(), [andrei, act.count(3)], [andrei, act.start()]);
+    expect(drawSeats(off, picks())).toBe(off);
+    const notYet = play(fresh(), [andrei, act.shuffle(true)]);
+    expect(drawSeats(notYet, picks())).toBe(notYet);
+    // A game set up before the switch has no setting, and keeps its order.
+    const { shuffleSeats: _shuffle, ...older } = play(fresh(), [andrei, act.start()]);
+    expect(drawSeats(older, picks())).toBe(older);
   });
 });

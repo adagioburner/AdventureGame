@@ -65,9 +65,10 @@ export interface OnlinePanel {
  * a card for each seat with Human and Computer, a name, a figure and, for a
  * computer, its thinking time, and Start. Online it also has what only a
  * stored game has: the game's name, join requests, Cancel, and for anyone
- * else who opens it the join form (Q48). Seat 1 of a stored game is always
- * the game master's, and another Human seat is kept for someone who asks to
- * join (Q51, 22 and 23).
+ * else who opens it the join form (Q48). Seat 1 of a stored game is the game
+ * master's until the start, and another Human seat is kept for someone who
+ * asks to join (Q51, 22 and 23). "Shuffle seats", for either kind of game,
+ * draws the seats at random as the game starts (Q165).
  */
 export function SetupPanel({ art, panel }: { readonly art: LoadedArt; readonly panel: LocalPanel | OnlinePanel }) {
   return panel.kind === 'local' ? <LocalSetupPanel art={art} panel={panel} /> : <OnlineSetupPanel art={art} panel={panel} />;
@@ -105,6 +106,7 @@ function LocalSetupPanel({ art, panel }: { readonly art: LoadedArt; readonly pan
         </>
       )}
       <PlayerCount count={setup.seats.length} lowest={RANGES.players.min} disabled={false} onChange={(count) => onChange(withCount(setup, count, limits))} />
+      <ShuffleSeatsSwitch on={setup.shuffleSeats === true} disabled={false} onChange={(on) => onChange({ ...setup, shuffleSeats: on })} />
       {setup.seats.map((seat, index) => (
         <SeatCard key={seat.id} seat={index + 1}>
           <ControlToggle
@@ -174,7 +176,7 @@ function OnlineSetupPanel({ art, panel }: { readonly art: LoadedArt; readonly pa
           ? 'Starting the game…'
           : isGameMaster
             ? 'You are the game master.'
-            : `Game master: ${setup.gameMasterName}. The computer plays any Human seat nobody has taken at the start.`}
+            : `Game master: ${setup.gameMasterName}.${setup.shuffleSeats === true ? ' Seats are shuffled when the game starts.' : ''} The computer plays any Human seat nobody has taken at the start.`}
       </p>
       {panel.connected ? null : (
         <p className="problem" role="status">
@@ -252,6 +254,13 @@ function OnlineSetupPanel({ art, panel }: { readonly art: LoadedArt; readonly pa
           lowest={people.length}
           disabled={idle}
           onChange={(count) => send({ type: 'setup.setPlayerCount', gameId, count })}
+        />
+      ) : null}
+      {isGameMaster ? (
+        <ShuffleSeatsSwitch
+          on={setup.shuffleSeats === true}
+          disabled={idle}
+          onChange={(on) => send({ type: 'setup.setShuffleSeats', gameId, on })}
         />
       ) : null}
 
@@ -375,6 +384,32 @@ function PlayOnlineSwitch({ on, disabled, onChange }: { readonly on: boolean; re
       <div>
         <b id="play-online-label">Play online</b>
         <small>Others can ask to join, and it stays in your games.</small>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * [Q165, 650 to 652] "Shuffle seats", a switch like Play online's under
+ * Players, on this device and online alike: the seats are drawn when the game
+ * starts.
+ */
+function ShuffleSeatsSwitch({ on, disabled, onChange }: { readonly on: boolean; readonly disabled: boolean; onChange(on: boolean): void }) {
+  return (
+    <div className="play-online shuffle-seats">
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-labelledby="shuffle-seats-label"
+        disabled={disabled}
+        onClick={() => onChange(!on)}
+      >
+        <span className="knob" />
+      </button>
+      <div>
+        <b id="shuffle-seats-label">Shuffle seats</b>
+        <small>Seats are drawn at random when the game starts.</small>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { asGameId, asPlayerId, asUserId } from '@adventure/core';
 import type { SetupState } from '@adventure/protocol';
-import { fromOnlineSetup, newLocalSetup, toHotseatSeats, toNewGameSetup, withCount, withSeat, type LocalLimits } from './local.ts';
+import { fromOnlineSetup, inOrder, newLocalSetup, startingOrder, toHotseatSeats, toNewGameSetup, withCount, withSeat, type LocalLimits } from './local.ts';
 
 const limits: LocalLimits = {
   playerCount: { min: 2, max: 5 },
@@ -105,5 +105,48 @@ describe('turning "Play online" on and off (Q51, 25)', () => {
       ['Bea', 'fig_04', 'human'],
     ]);
     expect(local.seats[2]?.thinkingSeconds).toBe(30);
+  });
+});
+
+describe('Shuffle seats on this device (Q165)', () => {
+  const three = withCount(newLocalSetup(limits), 3, limits);
+
+  it('keeps the seats as set while off, and draws them while on', () => {
+    expect(startingOrder(three, () => 0)).toEqual(['local:1', 'local:2', 'local:3']);
+    // Fisher–Yates from the last seat: 2 swaps with 0, then 1 with 0.
+    const drawn = startingOrder({ ...three, shuffleSeats: true }, () => 0);
+    expect(drawn).toEqual(['local:2', 'local:3', 'local:1']);
+    expect(toHotseatSeats(inOrder(three, drawn)).map((seat) => seat.name)).toEqual(['Player 2', 'Player 3', 'Player 1']);
+  });
+
+  it('puts seats an order does not name after it, and none for an order of null', () => {
+    expect(inOrder(three, null)).toBe(three);
+    expect(inOrder(three, ['local:3', 'local:9']).seats.map((seat) => seat.id)).toEqual(['local:3', 'local:1', 'local:2']);
+  });
+
+  it('goes along when "Play online" is turned on, and comes back when it is turned off (655)', () => {
+    expect(toNewGameSetup({ ...three, shuffleSeats: true }, 'seed').shuffleSeats).toBe(true);
+    expect(toNewGameSetup(three, 'seed').shuffleSeats).toBeUndefined();
+    const online: SetupState = {
+      gameId: asGameId('g'),
+      name: 'g',
+      gameMaster: asUserId('andrei'),
+      gameMasterName: 'Andrei',
+      createdAt: 1,
+      phase: 'cancelled',
+      playerCount: 2,
+      seats: [
+        { id: 'person:andrei', seat: 1, playerId: asPlayerId('seat-1'), userId: asUserId('andrei'), name: 'Andrei', avatarId: 'fig_01', control: 'human', thinkingSeconds: 10 },
+        { id: 'open:1', seat: 2, playerId: asPlayerId('seat-2'), userId: null, name: '', avatarId: '', control: 'human', thinkingSeconds: 10 },
+      ],
+      nextSeatId: 2,
+      pending: [],
+      mapSeed: 'seed',
+      shuffleSeats: true,
+      endsAt: 2,
+      closedAt: 2,
+    };
+    expect(fromOnlineSetup(online, limits).shuffleSeats).toBe(true);
+    expect(fromOnlineSetup({ ...online, shuffleSeats: false }, limits).shuffleSeats).toBeUndefined();
   });
 });

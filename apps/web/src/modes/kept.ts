@@ -1,6 +1,6 @@
 import { mapSizeOfRuleset, type MapSize } from '@adventure/config';
 import type { GameMap, TurnAction } from '@adventure/core';
-import { toHotseatSeats, type LocalSetup } from '../setup/local.ts';
+import { inOrder, toHotseatSeats, type LocalSetup } from '../setup/local.ts';
 import { HotseatGame } from './hotseat.ts';
 
 /**
@@ -12,7 +12,13 @@ import { HotseatGame } from './hotseat.ts';
  */
 export interface KeptGame {
   readonly seed: string;
+  /** The seats as set on the New game panel, which shows them so again after New game. */
   readonly setup: LocalSetup;
+  /**
+   * [Q165, 650] The seats' ids in the order the game started with, drawn by
+   * Shuffle seats. Absent when the seats went as set.
+   */
+  readonly order?: readonly string[];
   readonly diceSeed: string;
   readonly actions: readonly TurnAction[];
   /**
@@ -45,18 +51,26 @@ export function readKept(): KeptGame | null {
     if (typeof kept.seed !== 'string' || typeof kept.diceSeed !== 'string' || !Array.isArray(kept.actions) || !Array.isArray(kept.setup?.seats)) {
       return null;
     }
+    if (kept.order !== undefined && !(Array.isArray(kept.order) && kept.order.every((id) => typeof id === 'string'))) {
+      const { order: _order, ...rest } = kept;
+      return rest as KeptGame;
+    }
     return kept as KeptGame;
   } catch {
     return null;
   }
 }
 
-/** Keeps `game`, as set up with `setup` on the map for `seed`; without storage, nothing is kept. */
-export function keep(seed: string, setup: LocalSetup, game: HotseatGame): void {
+/**
+ * Keeps `game`, as set up with `setup` on the map for `seed`, its seats in
+ * `order` (`null`: as set); without storage, nothing is kept.
+ */
+export function keep(seed: string, setup: LocalSetup, order: readonly string[] | null, game: HotseatGame): void {
   const respawn = game.setup.map.ruleset.config.respawn;
   const kept: KeptGame = {
     seed,
     setup,
+    ...(order === null ? {} : { order }),
     diceSeed: game.setup.diceSeed,
     actions: game.turns.map((turn) => turn.action),
     respawn: respawn !== undefined,
@@ -87,7 +101,7 @@ export function keptMapSize(kept: KeptGame): MapSize {
 export function replayKept(kept: KeptGame, map: GameMap): HotseatGame | null {
   try {
     const rules = kept.respawn === true ? withRespawnCap(map, kept.respawnMaxUnits) : withoutRespawn(map);
-    const game = new HotseatGame({ map: rules, seats: toHotseatSeats(kept.setup), diceSeed: kept.diceSeed });
+    const game = new HotseatGame({ map: rules, seats: toHotseatSeats(inOrder(kept.setup, kept.order ?? null)), diceSeed: kept.diceSeed });
     for (const action of kept.actions) game.play(action);
     return game;
   } catch {
