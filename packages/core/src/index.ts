@@ -25,6 +25,7 @@ export * from './rules/interaction.ts';
 export * from './rules/turn.ts';
 export * from './rules/dice.ts';
 export * from './rules/victory.ts';
+export * from './rules/respawn.ts';
 
 // Re-exported so domain code can import the shared vocabulary from one place.
 export type { Terrain, RewardKind, GuardType, PerTerrain } from '@adventure/config';

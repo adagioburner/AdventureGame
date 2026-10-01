@@ -142,6 +142,19 @@ export function validateRuleset(ruleset: Ruleset): void {
     problems.push('§4.3: REWARD_SWAP_PASSES must be a non-negative integer.');
   }
 
+  // Q135: a whole number of sites, a share of the empty POIs, and only kinds a player can
+  // run short of without the game's end moving: gold decides the winner.
+  const respawn = config.respawn;
+  if (respawn !== undefined) {
+    if (!Number.isInteger(respawn.SHORT_BELOW_SITES) || respawn.SHORT_BELOW_SITES < 1) {
+      problems.push('Q135: respawn.SHORT_BELOW_SITES must be a positive integer.');
+    }
+    if (!(respawn.FAR_SHARE > 0 && respawn.FAR_SHARE <= 1)) {
+      problems.push('Q135: respawn.FAR_SHARE must be above 0 and at most 1.');
+    }
+    if (respawn.KINDS.includes('gold')) problems.push('Q135: gold never comes back.');
+  }
+
   if (problems.length > 0) {
     throw new RulesetError(`Invalid ruleset:\n  - ${problems.join('\n  - ')}`);
   }

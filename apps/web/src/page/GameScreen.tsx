@@ -6,10 +6,12 @@ import {
   type NodeId,
   type PathPreview,
   type PlayerId,
+  type PoiRuntimeState,
   type PlayerState,
   type Point,
   type TurnAction,
 } from '@adventure/core';
+import { GLIDE_MS } from '../interaction/camera.ts';
 import { createMoveModeController, type EnterRefusal, type MoveModeState } from '../interaction/moveMode.ts';
 import type { Pick } from '../interaction/picking.ts';
 import type { PlayedTurn } from '../modes/hotseat.ts';
@@ -17,7 +19,7 @@ import type { PlayedChange, PlaySource, PlayUpdate } from '../modes/play.ts';
 import { position } from '../render/geometry.ts';
 import type { LoadedArt } from '../render/pixi/textures.ts';
 import type { FigureCue, MapScene, Walker } from '../render/sceneModel.ts';
-import { endingSound, isRest } from '../sound/cues.ts';
+import { endingSound, isRest, returnedSites } from '../sound/cues.ts';
 import { soundTableOf, sounds } from '../sound/player.ts';
 import { ClaimNotice, EndCard, ResultCard } from './Cards.tsx';
 import { isUnguardedClaim, journalEntry, type JournalEntry } from './journal.ts';
@@ -34,8 +36,10 @@ export const PHONE = '(max-width: 899px)';
  * and an unguarded claim's notice takes to fade in, stays up (2 seconds, his
  * pick) and takes to fade out; how long a computer's die card stays up
  * (3 seconds, Q42); how long a figure found from its card stands on its
- * ring (2 seconds, [Q120, 471]); and how long the figure on turn blinks over a
- * route saved from the turn before (2 seconds, [Q145, 574]).
+ * ring (2 seconds, [Q120, 471]); how long, with Track pressed, the map
+ * stays on a site a speed or skill came back to (1.5 seconds, Q135, 541); and
+ * how long the figure on turn blinks over a route saved from the turn before
+ * (2 seconds, [Q145, 574]).
  */
 export const timing = {
   stepMs: 220,
@@ -46,6 +50,7 @@ export const timing = {
   fadeMs: 500,
   computerCardMs: 3000,
   foundMs: 2000,
+  respawnStayMs: 1500,
   savedRouteBlinkMs: 2000,
 };
 
@@ -116,6 +121,14 @@ export function GameScreen({
   // stays where the viewer put it, and the Track button says which. It is
   // pressed when a game opens (76).
   const [tracking, setTracking] = useState(true);
+  // Track as it is now, for a turn's play-out that is still going when it changes.
+  const trackingNow = useRef(tracking);
+  trackingNow.current = tracking;
+  // [Q135, 540] While the sites a turn brought a speed or skill back to are
+  // shown, after its claim: the ones still drawn empty, as before the turn,
+  // until each is revealed. The next player's turn-start glide waits for it.
+  const [returning, setReturning] = useState<ReadonlyMap<NodeId, PoiRuntimeState> | null>(null);
+  const drawn = useMemo(() => (returning === null ? shown : withHeld(shown, returning)), [shown, returning]);
   // [Q120, 471] The player whose card was clicked last, while their figure
   // stands on its ring; `click` counts clicks, so clicking the same card again
   // starts the ring's time over.
@@ -138,9 +151,12 @@ export function GameScreen({
   }, [notice]);
 
   // [Q145, 574] The turn shown whose opening blink is over: from then on a
-  // route saved from the turn before shows as planned (575).
+  // route saved from the turn before shows as planned (575). The blink is
+  // timed from when the map can glide to the player on turn (Q46): after an
+  // unguarded claim's notice and a site coming back (Q135).
   const [settledTurn, setSettledTurn] = useState<number | null>(null);
-  const turnShown = shown.status === 'in_progress' && !busy ? shown.turn.number : null;
+  const turnShown =
+    shown.status === 'in_progress' && !busy && returning === null && !(result !== null && isUnguardedClaim(result.turn)) ? shown.turn.number : null;
   useEffect(() => {
     if (turnShown === null) return;
     const timer = window.setTimeout(() => setSettledTurn(turnShown), timing.savedRouteBlinkMs);
@@ -292,6 +308,8 @@ export function GameScreen({
     // Whatever happens while it plays out, the turn has been played: the
     // page must end up showing it, never stuck part-way.
     await playOut(turn, before).catch(() => undefined);
+    const back = returnedSites(turn.events);
+    if (back.length > 0 && turn.after.status === 'in_progress') setReturning(runtimesAt(before, back));
     setWalker(null);
     setShown(turn.after);
     setEntries((current) => [journalEntry(turn, before, movedOn), ...current]);
@@ -301,6 +319,11 @@ export function GameScreen({
       setEndOpen(true);
       return;
     }
+    announce(turn, movedOn);
+    await bringBack(turn, back).catch(() => undefined);
+    setReturning(null);
+  };
+  const announce = (turn: PlayedTurn, movedOn: boolean): void => {
     // [Q56, 55] A player the game master moved on is told so, whenever it happens.
     if (movedOn && source.localPlayers.has(turn.player) && source.mode.allowOutOfTurnPlanning) {
       say('The game master moved you on.');
@@ -310,6 +333,34 @@ export function GameScreen({
     const next = turn.after.players[turn.after.turn.activeSeat - 1];
     if (next === undefined) return;
     say(source.mode.allowOutOfTurnPlanning && source.localPlayers.has(next.id) ? 'Your turn' : `${next.name}’s turn`);
+  };
+  /**
+   * [Andrei, 2026-09-30] "we cannot just bring the skill back silently. There
+   * has to be a respawn sound, and if Track is pressed, we should bring the
+   * respawn site into view" (Q135). Once the turn's walk, die and claim notice
+   * are done (540), a site that came back gets its icons back with the far
+   * bell (539); with Track pressed the map first glides there as at the start
+   * of a turn (Q46) and stays `timing.respawnStayMs` (541) before gliding on
+   * to the next player. Without Track the view stays where it is. Turns caught
+   * up or already in the log when the screen opened never come here.
+   */
+  const bringBack = async (turn: PlayedTurn, back: readonly NodeId[]): Promise<void> => {
+    if (back.length === 0) return;
+    // The claim notice rides on the figure that made the claim: it is seen out first.
+    if (isUnguardedClaim(turn)) await sleep(timing.claimMs + timing.fadeMs);
+    for (const node of back) {
+      if (!trackingNow.current) {
+        // Nothing to look at as it happens: whatever is left comes back at once, heard once.
+        setReturning(new Map());
+        sounds.play('respawn');
+        return;
+      }
+      handle.current?.glideTo(node);
+      await sleep(GLIDE_MS);
+      setReturning((held) => new Map([...(held ?? [])].filter(([site]) => site !== node)));
+      sounds.play('respawn');
+      await sleep(timing.respawnStayMs);
+    }
   };
   useEffect(() => {
     const drain = async (): Promise<void> => {
@@ -390,6 +441,7 @@ export function GameScreen({
   useEffect(() => {
     if (!mapReady || busy || shown.status !== 'in_progress') return;
     if (result !== null && isUnguardedClaim(result.turn)) return;
+    if (returning !== null) return;
     if (centeredTurn.current === shown.turn.number) return;
     const player = shown.players[shown.turn.activeSeat - 1];
     if (player === undefined) return;
@@ -397,7 +449,7 @@ export function GameScreen({
     if (source.mode.allowOutOfTurnPlanning && !tracking) return;
     setTracking(true);
     handle.current?.glideTo(player.position);
-  }, [mapReady, busy, shown, result, source, tracking]);
+  }, [mapReady, busy, shown, result, returning, source, tracking]);
 
   const refuse = (why: EnterRefusal): void => {
     const active = shown.players[shown.turn.activeSeat - 1];
@@ -551,12 +603,13 @@ export function GameScreen({
       move: () => controller.state,
       planner: () => (controller.engaged ? controller.planner : null),
       tracking: () => tracking,
+      returning: () => returning !== null,
       screenOf: (node: number): Point | null => handle.current?.screenOf(node as NodeId) ?? null,
       figureOf: (player: string): Point | null => handle.current?.screenOfFigure(player as PlayerId) ?? null,
       setTiming: (next: Partial<typeof timing>) => Object.assign(timing, next),
     };
     (window as unknown as { __adventure?: typeof hooks }).__adventure = hooks;
-  }, [source, controller, shown, busy, active, tracking]);
+  }, [source, controller, shown, busy, active, tracking, returning]);
 
   const path = inFlight !== null ? inFlight.path : move.kind === 'previewing' ? move.preview : null;
   // A committed or walking route is the player on turn's; a route being
@@ -611,7 +664,7 @@ export function GameScreen({
           art={art}
           map={source.map}
           scene={scene}
-          state={shown}
+          state={drawn}
           path={path}
           pathFrom={pathFrom ?? null}
           waypoint={waypoint}
@@ -709,6 +762,29 @@ function routeOf(state: GameState, action: TurnAction): PathPreview | null {
   const player = state.players[state.turn.activeSeat - 1];
   if (action.kind !== 'move' || action.path.length === 0 || player === undefined) return null;
   return previewPath(state.map.graph, player.position, action.path, state.turn.allowance, player.stats.stamina, state.map.ruleset.config);
+}
+
+/** `state` with the POIs on `held`'s nodes as they were before they came back: still taken, so drawn empty. */
+function withHeld(state: GameState, held: ReadonlyMap<NodeId, PoiRuntimeState>): GameState {
+  if (held.size === 0) return state;
+  return {
+    ...state,
+    poiRuntime: state.poiRuntime.map((runtime, index) => {
+      const node = state.map.pois[index]?.node;
+      return (node === undefined ? undefined : held.get(node)) ?? runtime;
+    }),
+  };
+}
+
+/** What a POI's runtime was in `state`, for each of `nodes` that has one. */
+function runtimesAt(state: GameState, nodes: readonly NodeId[]): Map<NodeId, PoiRuntimeState> {
+  return new Map(
+    nodes.flatMap((node) => {
+      const index = state.map.poiByNode.get(node);
+      const runtime = index === undefined ? undefined : state.poiRuntime[index];
+      return runtime === undefined ? [] : [[node, runtime] as const];
+    }),
+  );
 }
 
 function sleep(ms: number): Promise<void> {

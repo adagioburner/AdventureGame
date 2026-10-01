@@ -14,6 +14,11 @@ export interface KeptGame {
   readonly setup: LocalSetup;
   readonly diceSeed: string;
   readonly actions: readonly TurnAction[];
+  /**
+   * [Q135] Whether speeds and skills come back in this game. Absent on a game
+   * kept before they did, which replays, and goes on, by the rules it began with.
+   */
+  readonly respawn?: boolean;
 }
 
 const KEY = 'adventure.hotseat';
@@ -35,7 +40,13 @@ export function readKept(): KeptGame | null {
 
 /** Keeps `game`, as set up with `setup` on the map for `seed`; without storage, nothing is kept. */
 export function keep(seed: string, setup: LocalSetup, game: HotseatGame): void {
-  const kept: KeptGame = { seed, setup, diceSeed: game.setup.diceSeed, actions: game.turns.map((turn) => turn.action) };
+  const kept: KeptGame = {
+    seed,
+    setup,
+    diceSeed: game.setup.diceSeed,
+    actions: game.turns.map((turn) => turn.action),
+    respawn: game.setup.map.ruleset.config.respawn !== undefined,
+  };
   try {
     window.localStorage.setItem(KEY, JSON.stringify(kept));
   } catch {
@@ -54,10 +65,17 @@ export function forgetKept(): void {
 /** The kept game played again on `map`; `null` if its turns no longer replay. */
 export function replayKept(kept: KeptGame, map: GameMap): HotseatGame | null {
   try {
-    const game = new HotseatGame({ map, seats: toHotseatSeats(kept.setup), diceSeed: kept.diceSeed });
+    const rules = kept.respawn === true ? map : withoutRespawn(map);
+    const game = new HotseatGame({ map: rules, seats: toHotseatSeats(kept.setup), diceSeed: kept.diceSeed });
     for (const action of kept.actions) game.play(action);
     return game;
   } catch {
     return null;
   }
+}
+
+/** `map` under the rules from before speeds and skills came back (Q135). */
+function withoutRespawn(map: GameMap): GameMap {
+  const { respawn: _respawn, ...config } = map.ruleset.config;
+  return { ...map, ruleset: { ...map.ruleset, config } };
 }
