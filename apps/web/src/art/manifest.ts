@@ -101,7 +101,7 @@ export interface SheetOutline {
  * the "new message" as well, for a complete minimal set": a rest as it is
  * shown, and, online, a message someone else posts.
  */
-export const SOUND_NAMES = ['step', 'pickup', 'battle_won', 'battle_lost', 'rest', 'message'] as const;
+export const SOUND_NAMES = ['step', 'pickup', 'battle_won', 'battle_lost', 'rest', 'message', 'respawn'] as const;
 export type SoundName = (typeof SOUND_NAMES)[number];
 
 export interface SoundArt {

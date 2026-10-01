@@ -2523,6 +2523,38 @@ game kept on one device, and an online game's records. Computer players do
 not change: they already rest on a turn they cannot take a step (Q43), and
 stand still only on the guarded site they are after.
 
+### Q135. ~~Do speeds and skills come back?~~ — **answered 2026-09-30 and 10-01: one empty site a turn, from the farther half, while fewer than 2 sites offer a skill (530-541)**
+
+[SOURCE §4.5, chat] Andrei, 2026-09-30: "Already with 4 players, some
+necessary skills like combat run out too quickly. They need to respawn. This is
+especially true for combat and magic that are necessary for fighting guards.
+Skills need to respawn where there are too few of it left, randomly at POIs
+that were offering this skill before and are far from all players." Then 530 A
+(the three speeds, combat and magic, each counted on its own; never gold or
+stamina), 531 C with his "keep at least 2 of each skill on the map (instead of
+3)" and, on 2026-10-01, "We need two *sites* with the skill at any time, not two
+units of skill on the map" (`RESPAWN_SHORT_BELOW_SITES` 2, whatever the player
+count or the sites' units), 532 A (one site
+a turn, with the whole stack it started with), 533 A (drawn at random from the
+farther half of the empty sites, `RESPAWN_FAR_SHARE` 0.5 rounded up, never one
+a figure stands on), 534 A (far by the stamina cost of the cheapest route from
+the nearest figure), 535 A (a site can come back again and again), 536 A (a
+turn log line, "3 combat came back at a forest site."), 537 A (the computer's
+imagined games include it), 538 A (the rulebook paragraph). Then "There has to be a respawn sound, and if
+Track is pressed, we should bring the respawn site into view": 539 B (a far
+bell, a placeholder in Art/Sounds/respawn.wav), 540 A (after the turn's walk,
+die and claim notice) and 541 A (the map stays 1.5 s, `timing.respawnStayMs`).
+
+The draw comes from the game's dice: online the server's stream, recorded with
+the game as `picks`; on one device the die's seed. Games started before the
+rule keep the old one: an online game holds the rules it was made with, and a
+kept hot seat game says whether it had the rule. In six four-player computer
+games at 3 s a move counting sites, all ended with a winner, 121 turns on
+average against 148 on the same maps without the rule (125 counting units);
+18 sites came back a game, mostly forest speed, combat and mountains speed
+(plains speed 4 times in all, magic once), never two in one turn, the first on
+turns 7 to 23. Claimed sites keep their picture (Q36).
+
 ### Q140. ~~How are a player card's stats arranged, and how does gold stand out?~~ — **answered 2026-10-01: moving down the left, the rest down the right with gold last, gold's number deep red (550-553 A)**
 
 [SOURCE §2, chat] Andrei, 2026-09-30: "On a player card, it would be nice to

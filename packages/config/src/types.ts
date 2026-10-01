@@ -322,6 +322,31 @@ export interface AiConfig {
 }
 
 /**
+ * [Q135] Speeds and skills coming back to empty sites once they run short.
+ *
+ * Andrei, 2026-09-30: "Skills need to respawn where there are too few of it
+ * left, randomly at POIs that were offering this skill before and are far from
+ * all players." At the end of every turn each kind in `KINDS` is counted on its
+ * own; while fewer than `SHORT_BELOW_SITES` unclaimed POIs offer it, one
+ * claimed POI that held it gets its reward back each turn (532 A), picked
+ * at random from the `FAR_SHARE` of them farthest from the nearest figure
+ * (533 A), by the cheapest route's stamina cost (534 A), never one a figure
+ * stands on. A POI can come back any number of times (535 A).
+ */
+export interface RespawnConfig {
+  /** 530 A: the five skills, the three speeds with combat and magic. Never gold or stamina. */
+  readonly KINDS: readonly RewardKind[];
+  /**
+   * 531 C: a kind is short while fewer than this many unclaimed POIs offer it,
+   * whatever the player count or their units. 2 (Andrei, 2026-10-01: "We need
+   * two *sites* with the skill at any time, not two units of skill on the map").
+   */
+  readonly SHORT_BELOW_SITES: number;
+  /** 533 A: the share of the empty POIs, farthest first and rounded up, the pick is made from. 0.5. */
+  readonly FAR_SHARE: number;
+}
+
+/**
  * GDD.md §11's table, plus constants the *designer* has added to it in review
  * (currently `GOLD_WEIGHT`). Nothing the implementation invented on its own —
  * that lives in `EngineeringConfig`.
@@ -334,6 +359,12 @@ export interface GameConfig {
   readonly players: PlayerConfig;
   readonly combat: CombatConfig;
   readonly ai: AiConfig;
+  /**
+   * [Q135] Absent on the maps of games started before speeds and skills came
+   * back: an online game carries the config its map was made with, and those
+   * games keep the rules they started with to the end.
+   */
+  readonly respawn?: RespawnConfig;
 }
 
 /* -------------------------------------------------------------------------- */

@@ -1,4 +1,4 @@
-import type { BoardPost, GameEvent, PlayerId } from '@adventure/core';
+import type { BoardPost, GameEvent, NodeId, PlayerId } from '@adventure/core';
 import type { SoundName } from '../art/manifest.ts';
 
 /**
@@ -14,6 +14,15 @@ export function endingSound(events: readonly GameEvent[]): Extract<SoundName, 'p
   const { roll, claimed } = interacted.resolution;
   if (roll === null) return claimed ? 'pickup' : null;
   return claimed ? 'battle_won' : 'battle_lost';
+}
+
+/**
+ * [Q135, 539 and 540] The sites a played turn brought a speed or skill back
+ * to, in the order the engine drew them. Each is heard with the respawn sound
+ * as its icons come back.
+ */
+export function returnedSites(events: readonly GameEvent[]): NodeId[] {
+  return events.flatMap((event) => (event.type === 'reward_returned' ? [event.node] : []));
 }
 
 /**

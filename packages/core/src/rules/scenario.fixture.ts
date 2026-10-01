@@ -129,13 +129,24 @@ export function withPosition(state: GameState, id: PlayerId, node: number): Game
  * that care about a roll say which roll it is; a test that draws an unexpected
  * die fails loudly rather than quietly consuming a value.
  */
-export function scriptedDice(values: readonly number[], sides = DEFAULT_RULESET.config.combat.GUARD_DIE.sides): DiceSource {
+export function scriptedDice(
+  values: readonly number[],
+  sides = DEFAULT_RULESET.config.combat.GUARD_DIE.sides,
+  picks: readonly number[] = [],
+): DiceSource {
   let index = 0;
+  let picked = 0;
   return {
     roll(): DieRoll {
       const value = values[index++];
       if (value === undefined) throw new Error(`scripted dice exhausted after ${values.length} rolls`);
       return { value, sides };
+    },
+    pick(count: number): number {
+      const value = picks[picked++];
+      if (value === undefined) throw new Error(`scripted picks exhausted after ${picks.length}`);
+      if (value >= count) throw new Error(`scripted pick ${value} is not below ${count}`);
+      return value;
     },
   };
 }
