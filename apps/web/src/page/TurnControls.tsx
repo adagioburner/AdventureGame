@@ -231,10 +231,9 @@ function hint(move: MoveModeState, armed: boolean, name: string, rest: number, o
   const stay = onGuard ? 'End turn with no route stays here and fights the guard again' : `End turn with no route rests: +${rest} stamina`;
   const when = later ? 'on your next turn' : 'this turn';
   switch (move.kind) {
+    // [Q145, 571] On your own turn a tap on a space plans at once.
     case 'idle':
-      return onGuard
-        ? `${name}: tap your figure (or Plan a move), then where to go. ${stay}. Rest gains ${rest} stamina.`
-        : `${name}: tap your figure (or Plan a move), then where to go. ${stay}.`;
+      return onGuard ? `${name}: tap where to go. ${stay}. Rest gains ${rest} stamina.` : `${name}: tap where to go. ${stay}.`;
     case 'selecting':
       return armed
         ? 'Tap the space to route through.'
