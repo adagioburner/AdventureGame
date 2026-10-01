@@ -2560,7 +2560,8 @@ idea is to provide a player who was late to the party with something to do,
 not to create a cornucopia." A site that comes back offers at most
 `RESPAWN_MAX_UNITS` (2), and one that held fewer gets those; the map's icons,
 the turn log and the claim card show what it offers. Games started before the
-cap bring whole stacks back. 543: the rulebook wording.
+cap bring whole stacks back. 543 A: the rulebook adds "but never more than 2"
+to the sentence, and "at most 2 units" to the quick reference row.
 
 ### Q140. ~~How are a player card's stats arranged, and how does gold stand out?~~ — **answered 2026-10-01: moving down the left, the rest down the right with gold last, gold's number deep red (550-553 A)**
 
