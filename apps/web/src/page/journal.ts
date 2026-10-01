@@ -79,7 +79,8 @@ const TERRAIN_SKILL: Readonly<Record<Terrain, RewardKind>> = {
 
 /**
  * One turn in words. `movedOn` marks a turn the game master played for its
- * player ([Q56, 54]): their saved route, or a rest if they had none.
+ * player ([Q56, 54]): their saved route, or a rest if they had none or
+ * [491] could not take its first step away from a guard.
  */
 export function journalEntry(turn: PlayedTurn, before: GameState, movedOn = false): JournalEntry {
   const map = before.map;

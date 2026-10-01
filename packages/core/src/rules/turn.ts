@@ -1,5 +1,15 @@
 import { assertNever, RuleViolationError } from '../errors.ts';
-import type { DieRoll, GameAction, GameEndReason, GameEvent, PlanAction, TurnAction } from '../action.ts';
+import type {
+  DieRoll,
+  ForceTurnAction,
+  GameAction,
+  GameEndReason,
+  GameEvent,
+  MoveAction,
+  PlanAction,
+  RestAction,
+  TurnAction,
+} from '../action.ts';
 import { poiAt } from '../gamemap.ts';
 import type { NodeId, PlayerId, Seat } from '../ids.ts';
 import type { BoardPost } from '../messageboard.ts';
@@ -60,7 +70,7 @@ export function applyAction(state: GameState, action: GameAction, dice: DiceSour
     case 'rest':
       return applyTurnAction(state, action, dice);
     case 'force_turn':
-      return applyTurnAction(state, plannedTurnActionFor(state, action.player), dice);
+      return applyTurnAction(state, forcedTurnAction(state, action), dice);
     case 'set_control':
       return applySetControl(state, action.player, action.control);
     case 'resign':
@@ -111,7 +121,7 @@ function applyTurnAction(state: GameState, action: TurnAction, dice: DiceSource)
   let next =
     action.kind === 'move'
       ? applyMove(state, player, action.path, action.waypoint, events)
-      : applyRest(state, player, events);
+      : applyRest(state, player, action, events);
 
   // §7/§8: the interaction is a property of where the *turn* ends, so a POI
   // walked over on the way is not interacted with, and resting on one is not
@@ -162,12 +172,15 @@ function applyMove(
   }));
 }
 
-function applyRest(state: GameState, player: PlayerState, events: GameEvent[]): GameState {
+function applyRest(state: GameState, player: PlayerState, action: RestAction, events: GameEvent[]): GameState {
   const gain = state.map.ruleset.config.movement.REST_STAMINA_GAIN;
+  // [490] End turn's rest saves the route it could not start on.
+  const plan = action.plan === undefined ? player.plannedPath : checkedPlan(state, player, action.plan.path, action.plan.waypoint);
   events.push({ type: 'rested', player: player.id, staminaGained: gain });
   return withPlayer(state, player.id, (current) => ({
     ...current,
     stats: { ...current.stats, stamina: current.stats.stamina + gain },
+    plannedPath: plan,
   }));
 }
 
@@ -243,6 +256,73 @@ export function plannedTurnActionFor(state: GameState, playerId: PlayerId): Turn
   return { kind: 'move', player: playerId, path: planned.path };
 }
 
+/** The turn a Move on plays: a rest when [491] it carries `rest`, else `plannedTurnActionFor`'s. */
+export function forcedTurnAction(state: GameState, action: ForceTurnAction): TurnAction {
+  return action.rest === true ? { kind: 'rest', player: action.player } : plannedTurnActionFor(state, action.player);
+}
+
+/**
+ * [Andrei, 2026-09-30, 491] The game master's Move on plays what the player's
+ * own End turn would with their saved route (`endTurnActionFor`), so a route
+ * whose first step cannot be paid, away from a guard, rests.
+ */
+export function moveOnActionFor(state: GameState, playerId: PlayerId): ForceTurnAction {
+  const planned = plannedTurnActionFor(state, playerId);
+  const rests = planned.kind === 'move' && endTurnActionFor(state, playerId, planned.path).kind === 'rest';
+  return rests ? { kind: 'force_turn', player: playerId, rest: true } : { kind: 'force_turn', player: playerId };
+}
+
+/**
+ * [SOURCE §8] Whether an unclaimed site with a guard stands on `node`: a turn
+ * ending there fights it.
+ */
+export function guardToFightAt(state: GameState, node: NodeId): boolean {
+  const poi = poiAt(state.map, node);
+  const runtime = poiRuntimeAt(state, node);
+  return poi !== undefined && poi.guard !== null && runtime !== undefined && !isClaimed(runtime);
+}
+
+/**
+ * What End turn plays for `playerId` with the route `path` drawn through
+ * `waypoint`: the route, walked as far as this turn affords (§7).
+ *
+ * [Andrei, 2026-09-30, 490] "Clicking End turn with no guard to fight makes no
+ * sense. Let us make it rest automatically in this case." A turn that would
+ * walk nothing, with no route or with a route whose first step cannot be paid,
+ * is a rest unless a guard stands on the player's space; the route is saved
+ * for next turn. On a guard it stays the empty walk, and §8 fights it again.
+ *
+ * Decided here, before `applyAction`, and never inside it: a `move` stays what
+ * it always was, so games kept on one device and the records of games online,
+ * which are replayed, replay as they were played. The page's End turn, the
+ * server's `turn.end` and the game master's Move on (`moveOnActionFor`) all
+ * ask this. A route that is no walk from the player's space, or a player not
+ * on turn, is handed back as the move, for `applyAction` to refuse.
+ */
+export function endTurnActionFor(
+  state: GameState,
+  playerId: PlayerId,
+  path: readonly NodeId[],
+  waypoint?: NodeId | null,
+): TurnAction {
+  const move: MoveAction = waypoint === undefined ? { kind: 'move', player: playerId, path } : { kind: 'move', player: playerId, path, waypoint };
+  if (state.status !== 'in_progress' || activePlayer(state).id !== playerId) return move;
+  const player = playerById(state, playerId);
+  if (guardToFightAt(state, player.position)) return move;
+
+  let walked: number;
+  try {
+    walked = resolveMovement(state.map.graph, player.position, path, state.turn.allowance, player.stats.stamina, state.map.ruleset.config).walked.length;
+  } catch (error) {
+    if (error instanceof RuleViolationError) return move;
+    throw error;
+  }
+  if (walked > 0) return move;
+  if (path.length === 0) return { kind: 'rest', player: playerId };
+  const kept = waypoint !== undefined && waypoint !== null && path.includes(waypoint) ? waypoint : null;
+  return { kind: 'rest', player: playerId, plan: { path, waypoint: kept } };
+}
+
 /* -------------------------------------------------------------------------- */
 /*  Out-of-turn actions                                                        */
 /* -------------------------------------------------------------------------- */
@@ -280,15 +360,20 @@ function applyResignation(state: GameState, playerId: PlayerId): ActionOutcome {
 function applyPlan(state: GameState, action: PlanAction): ActionOutcome {
   requireInProgress(state);
   const player = playerById(state, action.player);
-  assertWalkable(state.map.graph, player.position, action.path);
-  if (action.waypoint !== null && !action.path.includes(action.waypoint)) {
-    throw new RuleViolationError(`waypoint ${action.waypoint} is not on the route`);
-  }
-  const plan: PlannedPath | null = action.path.length === 0 ? null : { path: action.path, waypoint: action.waypoint };
+  const plan = checkedPlan(state, player, action.path, action.waypoint);
   return {
     state: withPlayer(state, player.id, (current) => ({ ...current, plannedPath: plan })),
     events: [{ type: 'planned', player: player.id, plan }],
   };
+}
+
+/** A route to save for `player`, checked as `applyPlan` checks one; an empty route is none. */
+function checkedPlan(state: GameState, player: PlayerState, path: readonly NodeId[], waypoint: NodeId | null): PlannedPath | null {
+  assertWalkable(state.map.graph, player.position, path);
+  if (waypoint !== null && !path.includes(waypoint)) {
+    throw new RuleViolationError(`waypoint ${waypoint} is not on the route`);
+  }
+  return path.length === 0 ? null : { path, waypoint };
 }
 
 /**

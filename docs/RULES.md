@@ -73,6 +73,14 @@ and you get another roll at the guard; resting explicitly involves no
 interaction. A player camped on a guarded POI therefore chooses each turn
 between another attempt and recovering stamina, never both.
 
+**End turn that would walk nothing rests, unless there is a guard to fight**
+(Andrei, 2026-09-30, detail 490). With no route, or with a route whose first
+step this turn cannot pay, End turn is a rest when no unclaimed guarded POI is
+on the player's node, and the route is saved for next turn (`RestAction.plan`).
+The game master's Move on plays what End turn would (491, `moveOnActionFor`).
+`endTurnActionFor` decides this before `applyAction`, never inside it, so a
+recorded zero-length `move` still replays as one.
+
 ### Movement
 
 A moving skill of level N lets a player step onto N nodes of that terrain per

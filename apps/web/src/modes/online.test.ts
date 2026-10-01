@@ -81,6 +81,17 @@ describe('OnlineGame', () => {
     expect(applied[3]?.after.players[0]?.stats.gold).toBe(state.players[0]?.stats.gold);
   });
 
+  it('shows a Move on that rested (491) as the rest it played', () => {
+    const rested: GameAction[] = [
+      { kind: 'plan', player: one, path: [n(1)], waypoint: null },
+      { kind: 'force_turn', player: one, rest: true },
+    ];
+    const { state, records } = serverPlays(rested, []);
+    const { applied } = OnlineGame.open(setup, state, records);
+    expect(applied[1]?.turn?.action).toEqual({ kind: 'rest', player: one });
+    expect(applied[1]?.after.players[0]?.plannedPath).toEqual({ path: [n(1)], waypoint: null });
+  });
+
   it('follows the next record, and refuses one that skips or repeats', () => {
     const { state, records } = serverPlays(actions, [6]);
     const { game } = OnlineGame.open(setup, serverPlays(actions.slice(0, 2), []).state, records.slice(0, 2));

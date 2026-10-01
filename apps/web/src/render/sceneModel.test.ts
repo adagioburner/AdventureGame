@@ -449,6 +449,20 @@ describe('what changes during play', () => {
   it('shows no active ring once the game is over', () => {
     expect(buildStateScene(scene, { ...game.state, status: 'finished' }, catalog).active).toBeNull();
   });
+
+  it('rings a player found from their card, the player on turn aside, during the game and after it (Q120)', () => {
+    const [onTurn, other] = game.state.players;
+    if (onTurn === undefined || other === undefined) throw new Error('two players needed');
+    const found = buildStateScene(scene, game.state, catalog, null, null, other.id);
+    const figure = found.characters.find((item) => item.player === other.id);
+    expect(found.found?.at.x).toBeCloseTo(scene.projection.toWorld(figure?.foot ?? { x: 0, y: 0 }).x, 9);
+    expect(found.found?.size).toBe(found.active?.size);
+    // The figure on turn keeps its own cue and gets nothing more.
+    expect(buildStateScene(scene, game.state, catalog, null, null, onTurn.id).found).toBeNull();
+    expect(buildStateScene(scene, game.state, catalog).found).toBeNull();
+    const over = buildStateScene(scene, { ...game.state, status: 'finished' }, catalog, null, null, onTurn.id);
+    expect(over.found).not.toBeNull();
+  });
 });
 
 describe('a prospective move', () => {

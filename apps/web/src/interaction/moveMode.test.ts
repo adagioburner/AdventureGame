@@ -130,12 +130,13 @@ describe('move mode (§7.1), idle → selecting → previewing', () => {
     expect(sent).toEqual([{ kind: 'move', player: player.id, path: shown, waypoint: route[2] }]);
   });
 
-  it('stays put when End Turn is pressed with no route: an empty path, §8’s way to fight a guard again', () => {
+  it('rests when End Turn is pressed with no route away from a guard (490)', () => {
     const { game, controller, sent } = setup();
     const player = seat(game.state, 0);
     controller.endTurn();
-    expect(sent).toEqual([{ kind: 'move', player: player.id, path: [], waypoint: null }]);
+    expect(sent).toEqual([{ kind: 'rest', player: player.id }]);
     expect(seat(game.state, 0).position).toBe(player.position);
+    expect(seat(game.state, 0).stats.stamina).toBe(player.stats.stamina + config.movement.REST_STAMINA_GAIN);
   });
 
   it('rests instead, from any state', () => {
@@ -191,7 +192,7 @@ describe('move mode (§7.1), idle → selecting → previewing', () => {
     controller.cancel();
     expect(controller.state.kind).toBe('idle');
     controller.endTurn();
-    expect(sent).toEqual([{ kind: 'move', player: player.id, path: [], waypoint: null }]);
+    expect(sent).toEqual([{ kind: 'rest', player: player.id }]);
   });
 });
 

@@ -301,6 +301,12 @@ export interface StateScene {
    * as their own would be on their turn; `null` when nobody is.
    */
   readonly planning: { readonly at: Point; readonly size: number; readonly sprite: SpriteRef } | null;
+  /**
+   * [Andrei, 2026-09-30] Q120, 471: the figure of a player whose card was
+   * just clicked, on the same ring as `planning`; `null` when there is none,
+   * and for the player on turn, whose figure has its own cue.
+   */
+  readonly found: { readonly at: Point; readonly size: number; readonly sprite: SpriteRef } | null;
 }
 
 /**
@@ -328,6 +334,7 @@ export function buildStateScene(
   catalog: ArtCatalog,
   walker: Walker | null = null,
   planner: PlayerId | null = null,
+  found: PlayerId | null = null,
 ): StateScene {
   const claimed = new Set<NodeId>();
   state.map.pois.forEach((poi, index) => {
@@ -339,12 +346,13 @@ export function buildStateScene(
       ? nodeMark(catalog, scene.spacing, { id: mark.node, position: mark.at, terrain: mark.terrain }, null, false)
       : mark,
   );
-  return { claimed, nodes, ...buildCharacters(scene, state, catalog, walker, planner) };
+  return { claimed, nodes, ...buildCharacters(scene, state, catalog, walker, planner, found) };
 }
 
 /**
- * The figures, and the highlight under the current player's (§7.2). Split out
- * so a walking figure redraws only these.
+ * The figures, and the highlight under the current player's (§7.2), a player
+ * planning out of turn's and a player just found's. Split out so a walking
+ * figure redraws only these.
  */
 export function buildCharacters(
   scene: MapScene,
@@ -352,7 +360,8 @@ export function buildCharacters(
   catalog: ArtCatalog,
   walker: Walker | null = null,
   planner: PlayerId | null = null,
-): Pick<StateScene, 'characters' | 'active' | 'planning'> {
+  found: PlayerId | null = null,
+): Pick<StateScene, 'characters' | 'active' | 'planning' | 'found'> {
   const { manifest } = catalog;
   const figurines = atlasOf(catalog, manifest.figurines.sheet);
   const size = manifest.figurines.size * SPACING_PX;
@@ -366,6 +375,7 @@ export function buildCharacters(
   const characters: Billboard[] = [];
   let active: StateScene['active'] = null;
   let planning: StateScene['planning'] = null;
+  let spotted: StateScene['found'] = null;
   const ring = { sheet: manifest.moveProspect.sheet, index: spriteIndex(atlasOf(catalog, manifest.moveProspect.sheet), manifest.moveProspect.active) };
   state.players.forEach((player, index) => {
     const walking = player.id === walker?.player;
@@ -375,8 +385,8 @@ export function buildCharacters(
     // A little in front of the node, so a figure is never behind the POI it
     // stands on.
     const foot = { x: base.x + (slot - (together.length - 1) / 2) * size * 0.45, y: base.y + SPACING_PX * 0.12 };
-    const found = figurines.sprites.findIndex((sprite) => sprite.id === player.avatarId);
-    const sprite = { sheet: figurines.name, index: found >= 0 ? found : wrapIndex(player.seat - 1, figurines.sprites.length) };
+    const figurine = figurines.sprites.findIndex((sprite) => sprite.id === player.avatarId);
+    const sprite = { sheet: figurines.name, index: figurine >= 0 ? figurine : wrapIndex(player.seat - 1, figurines.sprites.length) };
     characters.push({
       layer: 'characters',
       sprite,
@@ -386,13 +396,17 @@ export function buildCharacters(
       depth: foot.y + 0.5,
       player: player.id,
     });
+    const under = { at: scene.projection.toWorld(foot), size: manifest.moveProspect.activeSize * scene.spacing, sprite: ring };
     if (player.seat === state.turn.activeSeat && state.status !== 'finished') {
-      active = { at: scene.projection.toWorld(foot), size: manifest.moveProspect.activeSize * scene.spacing, sprite: ring };
+      active = under;
     } else if (player.id === planner && state.status !== 'finished') {
-      planning = { at: scene.projection.toWorld(foot), size: manifest.moveProspect.activeSize * scene.spacing, sprite: ring };
+      planning = under;
+    } else if (player.id === found) {
+      // [Q120, 474] Cards find players on the final map too.
+      spotted = under;
     }
   });
-  return { characters, active, planning };
+  return { characters, active, planning, found: spotted };
 }
 
 // --- a prospective move ------------------------------------------------------

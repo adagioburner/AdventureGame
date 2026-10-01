@@ -35,6 +35,13 @@ export interface MoveAction {
 export interface RestAction {
   readonly kind: 'rest';
   readonly player: PlayerId;
+  /**
+   * [Andrei, 2026-09-30, 490] End turn with a route whose first step this turn
+   * cannot pay rests instead (`endTurnActionFor`), and the route is saved for
+   * next turn as a walk cut short saves its remainder. Omitted, the saved
+   * route stays as it was, which is what Rest has always done.
+   */
+  readonly plan?: PlannedPath;
 }
 
 /**
@@ -83,6 +90,15 @@ export interface ResignAction {
 export interface ForceTurnAction {
   readonly kind: 'force_turn';
   readonly player: PlayerId;
+  /**
+   * [Andrei, 2026-09-30, 491] Set when Move on rests because the saved route's
+   * first step cannot be paid this turn and no guard stands on the player's
+   * space: Move on plays what End turn would (`moveOnActionFor`). It is
+   * carried on the action rather than worked out again from the state so
+   * that games played before, whose Move on walked nothing there, still
+   * replay as they were played.
+   */
+  readonly rest?: true;
 }
 
 /**
