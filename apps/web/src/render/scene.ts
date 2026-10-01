@@ -18,7 +18,7 @@ import type { FigureCue } from './sceneModel.ts';
  *   2. the backdrop part of `dressing` (the mountains), painted on the ground
  *      so the roads and nodes can cross it, then the rock hanging under the
  *      map's front edges (Q170), drawn once with the `terrain`, its stone tops
- *      over the ground's edge (679);
+ *      fading into the ground's edge (679);
  *   3. the rest of the ground — `edges`, `nodes` — laid through the projection;
  *   4. everything standing — the rest of `dressing`, `pois`, `characters` —
  *      sorted by depth;

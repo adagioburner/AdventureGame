@@ -282,11 +282,12 @@ describe('a bad art drop', () => {
     expect(catalog.islandUrls.underside).toBeTruthy();
     expect(catalog.islandUrls.sky).toBeTruthy();
     expect(catalog.manifest.island.sky.shade).toEqual({ light: 0, dark: 0.6 });
+    expect(catalog.manifest.island.underside.fade).toBe(24);
     expect(() => buildArtCatalog(without('Island/underside.png'))).toThrow(/Island\/underside\.png is missing/);
     expect(() => buildArtCatalog(without('Island/sky.png'))).toThrow(/Island\/sky\.png is missing/);
   });
 
-  it("rejects underside corners that would turn the rock over, and a shade outside 0 to 1", () => {
+  it('rejects underside corners that would turn the rock over, a fade of nothing, and a shade outside 0 to 1', () => {
     const manifest = ART_FILES.json.get('manifest.json') as Record<string, Record<string, Record<string, unknown>>>;
     const island = manifest['island'] as Record<string, Record<string, unknown>>;
     const withCorners = (corners: object) => ({
@@ -297,6 +298,8 @@ describe('a bad art drop', () => {
       /bottom must lie between left and right, and below both/,
     );
     expect(() => parseManifest(withCorners({ left: [18, 85], bottom: [772], right: [1516, 89] }))).toThrow(/expected \[x, y\]/);
+    const withFade = { ...manifest, island: { ...island, underside: { ...island['underside'], fade: 0 } } };
+    expect(() => parseManifest(withFade)).toThrow(/island\.underside\.fade/);
     const withShade = { ...manifest, island: { ...island, sky: { ...island['sky'], shade: { light: 0, dark: 1.5 } } } };
     expect(() => parseManifest(withShade)).toThrow(/island\.sky\.shade\.dark: must be between 0 and 1/);
   });

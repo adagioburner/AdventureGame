@@ -51,7 +51,7 @@ export class PixiMapRenderer implements MapRenderer {
   /** Add this to the stage; the camera moves it. */
   readonly root = new Container();
 
-  /** [Q170] The rock hanging under the map's front edges, its stone tops over the ground's edge (679). */
+  /** [Q170] The rock hanging under the map's front edges, its stone tops fading into the ground's edge (679). */
   private readonly underside = new Container();
   private readonly terrainLayer = new Container();
   private readonly backdrop = new Container();
@@ -225,9 +225,9 @@ export class PixiMapRenderer implements MapRenderer {
 
   /**
    * [Q170] Andrei's rock, stretched so its top edges lie along the map's two
-   * front edges. It is drawn over the ground, so the stone tops that rise
-   * above those points lie over the ground's edge as a stone border (679),
-   * under the roads, nodes and everything standing.
+   * front edges. It is drawn over the ground, under the roads, nodes and
+   * everything standing, and the stone tops that rise above those edges fade
+   * into the ground (679, `fadeAboveEdges`).
    */
   private drawUnderside(): void {
     const sprite = new Sprite(this.art.underside);

@@ -2805,7 +2805,9 @@ plain grey-blue (`--map-ground`). Answered 16:46 to 16:5x.
      before, the ground ending in a straight line above the rim; a soft edge,
      the rock's stone tops fading into the ground; or a stone border, the
      same stone tops drawn over the ground's edge (recommended). The back
-     edges stay ground against sky. **Answered:** PENDING.
+     edges stay ground against sky. **Answered** at 18:41: the soft edge. The
+     rock is drawn over the ground and its stone tops fade out over 24 of the
+     picture's pixels above the edge (`fade` in `Art/manifest.json`).
 
 The rock is his picture as drawn, stretched only so its top edges lie along
 the map's front edges, which it already slopes along; 4 and 5 player maps get

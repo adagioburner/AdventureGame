@@ -63,6 +63,26 @@ export function undersideDepth(projection: Projection, bounds: Bounds, matrix: A
   return Math.max(0, lowest - ground);
 }
 
+/**
+ * [Andrei, 2026-10-01] 679: "Is there a way to blur the edge of the map so it
+ * blends better with the stone rim?" He picked a soft edge. The rock is drawn
+ * over the ground, and this fades the stone tops that rise above the line
+ * through `corners` (the ground's front edges) into it: fully drawn on the
+ * line and below it, gone `fade` pixels above it. `pixels` is the picture's
+ * RGBA data, `width` pixels across, changed in place.
+ */
+export function fadeAboveEdges(pixels: Uint8ClampedArray, width: number, corners: IslandCorners, fade: number): void {
+  const height = pixels.length / 4 / width;
+  for (let x = 0; x < width; x++) {
+    const [from, to] = x + 0.5 <= corners.bottom.x ? [corners.left, corners.bottom] : [corners.bottom, corners.right];
+    const edge = from.y + ((to.y - from.y) * (x + 0.5 - from.x)) / (to.x - from.x);
+    for (let y = 0; y < height && y + 0.5 < edge; y++) {
+      const alpha = (y * width + x) * 4 + 3;
+      pixels[alpha] = Math.round(pixels[alpha]! * Math.max(0, 1 - (edge - y - 0.5) / fade));
+    }
+  }
+}
+
 /** `matrix` applied to a point. */
 export function applyAffine(matrix: Affine, point: Point): Point {
   return { x: matrix.a * point.x + matrix.c * point.y + matrix.tx, y: matrix.b * point.x + matrix.d * point.y + matrix.ty };

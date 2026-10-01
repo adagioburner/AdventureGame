@@ -110,6 +110,12 @@ export interface IslandArt {
      * edges lie along the map's two front edges.
      */
     readonly corners: IslandCorners;
+    /**
+     * [679] How far above the line through `corners`, in the picture's pixels,
+     * the rock fades out: it is drawn over the ground, and its stone tops
+     * fade into it rather than ending in a straight cut.
+     */
+    readonly fade: number;
   };
   readonly sky: {
     /** A picture under `Art/`. */
@@ -380,7 +386,11 @@ function parseIsland(island: Readonly<Record<string, unknown>>, where: string): 
   const sky = record(island['sky'], `${where}.sky`);
   const shade = record(sky['shade'], `${where}.sky.shade`);
   return {
-    underside: { file: string(underside['file'], `${where}.underside.file`), corners: { left, bottom, right } },
+    underside: {
+      file: string(underside['file'], `${where}.underside.file`),
+      corners: { left, bottom, right },
+      fade: positive(underside['fade'], `${where}.underside.fade`),
+    },
     sky: {
       file: string(sky['file'], `${where}.sky.file`),
       shade: { light: fraction(shade['light'], `${where}.sky.shade.light`), dark: fraction(shade['dark'], `${where}.sky.shade.dark`) },
