@@ -2799,6 +2799,13 @@ plain grey-blue (`--map-ground`). Answered 16:46 to 16:5x.
      same words: it grows, by about a tenth at the closest zoom, as on the
      page, and never below its size at the whole-map view
      (`SKY_ZOOM_GROWTH`).
+679. **Where the ground's front edge meets the rock** (17:11: *"Is there a way
+     to blur the edge of the map so it blends better with the stone rim?"*;
+     17:14: *"Or, another idea, put a stone edge on the map border"*): as
+     before, the ground ending in a straight line above the rim; a soft edge,
+     the rock's stone tops fading into the ground; or a stone border, the
+     same stone tops drawn over the ground's edge (recommended). The back
+     edges stay ground against sky. **Answered:** PENDING.
 
 The rock is his picture as drawn, stretched only so its top edges lie along
 the map's front edges, which it already slopes along; 4 and 5 player maps get

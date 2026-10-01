@@ -150,8 +150,9 @@ there for people and ignored by the game.
   pixels (`left`, `bottom`, `right`) where the map's left, bottom and right
   corners go. The picture is stretched between those points, under the
   ground, so its top edges lie along the map's front edges at any map size;
-  the points sit a little below the rock's topmost pixels, so a thin rim of
-  its stone tops shows below the ground (670). `sky` is the picture behind
+  the points sit a little below the rock's topmost pixels, and the rock is
+  drawn over the ground, so its stone tops lie over the ground's edge as a
+  stone border (670, 679). `sky` is the picture behind
   the map. It fills the map's box, cropped to its shape, stays put as the
   map is dragged and grows a little as the map is zoomed in (676 to 678);
   `shade` darkens it, from 0 (as drawn) to 1 (black), `light` on a light
@@ -170,8 +171,9 @@ there for people and ignored by the game.
 Drop a new picture over `Island/underside.png` or `Island/sky.png`. A new
 rock needs its own three `corners`: where its top edges meet at the left, at
 the bottom of the V and at the right, a few pixels lower than its topmost
-stone if a rim of stone tops should show. A rock drawn at another size or
-slope still lines up, because the three points decide how it is stretched.
+stone, so its stone tops make a border over the ground's edge. A rock drawn
+at another size or slope still lines up, because the three points decide how
+it is stretched.
 The New game screen frames the rock down to its lowest solid pixel, so blank
 room round the picture does not matter. A sky of any size fills the map's
 box. `pnpm test` checks that both files are there.
