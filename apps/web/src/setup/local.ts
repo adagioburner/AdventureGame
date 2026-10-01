@@ -17,6 +17,8 @@ export interface LocalSetup {
   readonly seats: readonly LocalSeat[];
   /** The `n` of the next seat's id, never reused, so a seat keeps its id as others come and go. */
   readonly nextId: number;
+  /** [Q165, 650] "Shuffle seats": the seats are drawn at random when the game starts. Absent: off. */
+  readonly shuffleSeats?: boolean;
 }
 
 export interface LocalSeat {
@@ -63,6 +65,37 @@ export function withSeat(setup: LocalSetup, id: string, change: Partial<Omit<Loc
   return { ...setup, seats: setup.seats.map((seat) => (seat.id === id ? { ...seat, ...change } : seat)) };
 }
 
+/**
+ * [Q165, 650] The order of the seats, by id, as a game starts: drawn at
+ * random with Shuffle seats on, otherwise as set. `pick(count)` is a uniform
+ * whole number from 0 to `count - 1`.
+ */
+export function startingOrder(setup: LocalSetup, pick: (count: number) => number = randomPick): string[] {
+  const order = setup.seats.map((seat) => seat.id);
+  if (setup.shuffleSeats !== true) return order;
+  for (let at = order.length - 1; at > 0; at--) {
+    const other = pick(at + 1);
+    [order[at], order[other]] = [order[other]!, order[at]!];
+  }
+  return order;
+}
+
+/**
+ * `setup` with its seats in `order`, the ids `startingOrder` gave; seats the
+ * order does not name keep their place after it. `null` leaves them as set.
+ */
+export function inOrder(setup: LocalSetup, order: readonly string[] | null): LocalSetup {
+  if (order === null) return setup;
+  const named = order.flatMap((id) => setup.seats.filter((seat) => seat.id === id));
+  return { ...setup, seats: [...named, ...setup.seats.filter((seat) => !order.includes(seat.id))] };
+}
+
+/** A uniform whole number from 0 to `count - 1`, from the browser's secure generator. */
+function randomPick(count: number): number {
+  const [value = 0] = globalThis.crypto.getRandomValues(new Uint32Array(1));
+  return Math.floor((value / 2 ** 32) * count);
+}
+
 /** The seats a hot seat game starts with. A name left empty is "Player N", as before. */
 export function toHotseatSeats(setup: LocalSetup): HotseatSeat[] {
   return setup.seats.map((seat, index) => ({
@@ -75,13 +108,16 @@ export function toHotseatSeats(setup: LocalSetup): HotseatSeat[] {
 
 /**
  * [Q51, 25] What turning "Play online" on sends. Seat 1 becomes the game
- * master's, keeping its figure; another Human seat is kept for someone who
- * asks to join (23); a computer keeps its name, figure and thinking time.
+ * master's, keeping its figure, until Shuffle seats draws the seats at the
+ * start (Q165); another Human seat is kept for someone who asks to join (23);
+ * a computer keeps its name, figure and thinking time.
  */
 export function toNewGameSetup(setup: LocalSetup, mapSeed: string): NewGameSetup {
   const named = toHotseatSeats(setup);
   return {
     mapSeed,
+    // [Q165, 655] The switch goes along.
+    ...(setup.shuffleSeats === true ? { shuffleSeats: true } : {}),
     seats: named.map((seat, index) =>
       index === 0
         ? { control: 'human', avatarId: seat.avatarId }
@@ -115,5 +151,6 @@ export function fromOnlineSetup(online: SetupState, limits: LocalLimits): LocalS
     held.add(free);
     return { ...seat, avatarId: free };
   });
-  return { seats: figured, nextId: seats.length + 1 };
+  // [Q165, 655] The switch comes back with the seats.
+  return { seats: figured, nextId: seats.length + 1, ...(online.shuffleSeats === true ? { shuffleSeats: true } : {}) };
 }

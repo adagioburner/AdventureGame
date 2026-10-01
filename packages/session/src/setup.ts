@@ -26,8 +26,8 @@ import {
  * each player picks a name and figure, and the GM starts. `GameSession` runs
  * these one message at a time and does the storing and sending.
  *
- * [Q48] Andrei's answers settle the details: the GM plays, always in seat 1,
- * and may start with seats empty, alone if they like; a computer plays each
+ * [Q48] Andrei's answers settle the details: the GM plays, in seat 1 unless
+ * Shuffle seats draws the seats at the start ([Q165]), and may start with seats empty, alone if they like; a computer plays each
  * empty seat. Computer seats are "Computer 1", "Computer 2" and so on, each
  * with a free figure, and the GM may rename them and change their figures
  * before the start.
@@ -104,6 +104,8 @@ export interface NewSetup {
    * both Human, as a new hot seat game does.
    */
   readonly seats?: readonly NewGameSeat[];
+  /** [Q165, 655] "Shuffle seats" as the page had it; absent is off. */
+  readonly shuffleSeats?: boolean;
 }
 
 /** [Q48, 6] A new game, its creator in seat 1. */
@@ -154,6 +156,7 @@ export function createSetup(game: NewSetup, limits: SetupLimits): SetupState {
     nextSeatId,
     pending: [],
     mapSeed: seed,
+    shuffleSeats: game.shuffleSeats === true,
     // [Q55, 42 and 43] Counted from creation, 3 days until the game master chooses.
     endsAt: game.createdAt + DEFAULT_LIFETIME_DAYS * DAY_MS,
     closedAt: null,
@@ -178,7 +181,8 @@ export type SetupAction = Extract<
       | 'setup.setThinkingTime'
       | 'setup.cancel'
       | 'setup.start'
-      | 'setup.setLifetime';
+      | 'setup.setLifetime'
+      | 'setup.setShuffleSeats';
   }
 >;
 
@@ -369,6 +373,13 @@ export function applySetupAction(
       return { state: { ...state, endsAt } };
     }
 
+    case 'setup.setShuffleSeats': {
+      // [Q165, 650] The seats are drawn when the game starts (`drawSeats`).
+      gameMasterOnly();
+      if (typeof action.on !== 'boolean') throw new SetupError('invalid_action', 'Shuffle seats is on or off');
+      return { state: { ...state, shuffleSeats: action.on } };
+    }
+
     case 'setup.start': {
       gameMasterOnly();
       // [Q48, 12 and 16] No seat has to be filled by a person: the computer
@@ -382,6 +393,23 @@ export function applySetupAction(
       return { state: { ...state, phase: 'starting', seats: numbered(seats), nextSeatId } };
     }
   }
+}
+
+/**
+ * [Q165, 650] With Shuffle seats on, the seats of a game that is starting are
+ * drawn at random, the game master's with the rest, and numbered again, so
+ * each player starts with the stamina of the seat they draw. `pick(count)` is
+ * a uniform whole number from 0 to `count - 1`, from the server's die stream.
+ * Otherwise the seats stay as they are.
+ */
+export function drawSeats(state: SetupState, pick: (count: number) => number): SetupState {
+  if (state.phase !== 'starting' || state.shuffleSeats !== true) return state;
+  const seats = [...state.seats];
+  for (let at = seats.length - 1; at > 0; at--) {
+    const other = pick(at + 1);
+    [seats[at], seats[other]] = [seats[other]!, seats[at]!];
+  }
+  return { ...state, seats: numbered(seats) };
 }
 
 /**

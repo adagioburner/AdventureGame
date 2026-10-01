@@ -113,6 +113,8 @@ export class Lobby extends DurableObject<Env> {
         // [Q51, 25] "Play online" sends the setup the page already has.
         mapSeed: message.setup?.mapSeed ?? friendlySeed(cryptoRandom),
         ...(message.setup === undefined ? {} : { seats: message.setup.seats }),
+        // [Q165, 655] And its Shuffle seats switch.
+        ...(message.setup?.shuffleSeats === true ? { shuffleSeats: true } : {}),
       });
     } catch (error) {
       // The page waits for an answer, so a failure gets one too.

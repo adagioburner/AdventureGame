@@ -2696,6 +2696,49 @@ their map: an online game holds the map it started with, and a game kept on one
 device says which size it is on, one kept before maps grew being on today's.
 The larger map takes about 0.5 s to draw against 0.3 s.
 
+### Q165. ~~Can the seats be shuffled before the game starts?~~ — **answered 2026-10-01: yes, a Shuffle seats switch that draws every seat at Start; 650-656 as recommended**
+
+Andrei, 2026-10-01 at 09:38: *"I'd like to be able to shuffle player seats
+before the game starts. The game master does not necessarily need to be on
+seat 1. It could be a toggle on the game start screen"*, and at 09:39: *"the
+spec says the seats are assigned in the order requests are accepted but one
+should be able to reshuffle them before the start."* Online the game master
+always sat in seat 1 and the others in the order they were accepted; on one
+device the seats went in the order set. In play nothing looks for the game
+master by seat, so only the setup changes. Answered 10:58 to 11:00.
+
+650. **How the seats are shuffled:** a Shuffle seats switch; with it on, the
+     seats are drawn at random when Start is pressed, so nobody sees the order
+     until the game begins (recommended); or a button that reorders the seat
+     cards at once and can be pressed again. **Answered:** the switch.
+651. **Its look:** under Players, like Play online's switch, "Shuffle seats"
+     with *"Seats are drawn at random when the game starts."* under it
+     (recommended); or a row "Seat order" with As listed and Shuffled.
+     **Answered:** like Play online.
+652. **Which games:** on one device and online alike (recommended); or online
+     only. **Answered:** both.
+653. **Seat cards while it is on:** "Seat 1 · starts with 30 stamina" and so
+     on as today (recommended); or "Player 1 · seat drawn at the start".
+     **Answered:** as today.
+654. **Players who joined online:** the game master's line gains *"Seats are
+     shuffled when the game starts."* (recommended); or nothing.
+     **Answered:** the sentence.
+655. **The next game:** the switch stays as set for the next New game and goes
+     along when Play online is turned on or off; a freshly opened page starts
+     with it off (recommended); or off at every New game. Either way New game
+     lists the seats as set, not as drawn. **Answered:** stays as set.
+656. **The rulebook:** Setting up reads *"Seat 1 moves first. With Shuffle
+     seats on, the seats are drawn at random when the game starts, and each
+     player starts with the stamina of the seat they draw. Otherwise seats go
+     in the order set up, and online the game master is in seat 1."*, and The
+     game master says the creator *"sits in seat 1 unless the seats are
+     shuffled"* (recommended); or Setting up only. **Answered:** both places.
+
+Each player starts with the stamina of the seat they draw (Q75). Online the
+draw uses the server's die stream, so nobody can foresee or redraw it; on one
+device it uses the browser's secure generator, and a game kept in the browser
+keeps the order drawn.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design

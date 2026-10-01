@@ -12,7 +12,7 @@ const G = asGameId('g1');
 const andrei = asUserId('andrei');
 const bea = asUserId('bea');
 
-function harness(rolls: readonly number[] = []) {
+function harness(rolls: readonly number[] = [], picks: readonly number[] = []) {
   let games: GameState | null = null;
   let setup: SetupState | null = null;
   let records: GameRecord[] = [];
@@ -44,7 +44,7 @@ function harness(rolls: readonly number[] = []) {
     },
     isRemoved: async () => removed,
   };
-  const dice = scriptedDice(rolls);
+  const dice = scriptedDice(rolls, undefined, picks);
   const sent: { to: string; message: ServerMessage }[] = [];
   const rows = new Map<GameId, GameListing>();
   const session = new GameSession(
@@ -164,6 +164,35 @@ describe('GameSession in setup', () => {
     // Opening a started game sends the game and what has been played.
     await session.connected(bea);
     expect(take().map(({ message }) => message.type)).toEqual(['setup.state', 'game.state', 'game.history']);
+  });
+
+  it('draws the seats at Start with Shuffle seats on, from the server’s die stream (Q165, 650)', async () => {
+    const { session, take, setup, game } = harness([], [0]);
+    await session.create({ name: 'g', gameMaster: { userId: andrei, displayName: 'Andrei' }, mapSeed: 'fixture' });
+    await send(session, andrei, { type: 'setup.setShuffleSeats', gameId: G, on: true });
+    expect(setup()?.shuffleSeats).toBe(true);
+    await send(session, andrei, { type: 'setup.start', gameId: G });
+    expect(take().map(({ to, message }) => [to, message.type])).toEqual([
+      ['all', 'setup.state'],
+      ['all', 'setup.state'],
+      ['andrei', 'gm.requestMapGeneration'],
+    ]);
+    // The pick swapped the two seats: the computer moves first, the game master second.
+    expect(setup()?.seats.map((seat) => [seat.seat, seat.name])).toEqual([
+      [1, 'Computer 1'],
+      [2, 'Andrei'],
+    ]);
+
+    // A reload while starting asks for the map again, and draws nothing more.
+    await session.connected(andrei);
+    expect(take().map(({ message }) => message.type)).toEqual(['setup.state', 'gm.requestMapGeneration']);
+
+    await send(session, andrei, { type: 'gm.mapGenerated', gameId: G, map: fixtureMap({ terrains: ['plains', 'plains'], edges: [[0, 1]] }) });
+    expect(game()?.players.map((player) => [player.seat, player.name, player.stats.stamina])).toEqual([
+      [1, 'Computer 1', 30],
+      [2, 'Andrei', 35],
+    ]);
+    expect(setup()?.gameMaster).toBe(andrei);
   });
 });
 

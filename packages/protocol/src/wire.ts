@@ -53,6 +53,7 @@ const CLIENT_MESSAGE_TYPE_RECORD: Record<ClientMessage['type'], true> = {
   'setup.cancel': true,
   'setup.start': true,
   'setup.setLifetime': true,
+  'setup.setShuffleSeats': true,
   'turn.plan': true,
   'turn.end': true,
   'turn.rest': true,

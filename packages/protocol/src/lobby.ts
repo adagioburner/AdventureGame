@@ -53,7 +53,8 @@ export interface JoinRequest {
 }
 
 /**
- * A seat on the setup screen ([Q51, 22]). The game master holds seat 1. Every
+ * A seat on the setup screen ([Q51, 22]). The game master holds seat 1 until
+ * the start, when Shuffle seats may draw the seats again ([Q165]). Every
  * other seat is Human or Computer, as the game master sets it: a Human seat is
  * kept for someone who asks to join, and accepting someone puts them in the
  * first Human seat nobody holds; a Human seat still empty at Start is played
@@ -144,4 +145,10 @@ export interface SetupState {
   readonly pending: readonly JoinRequest[];
   /** [SOURCE §1.3] The map seed, so the whole map is reproducible from it. */
   readonly mapSeed: string;
+  /**
+   * [Q165, 650] "Shuffle seats": the seats, the game master's too, are drawn
+   * at random when the game starts. Absent on a game set up before the
+   * switch, which keeps its seats in order.
+   */
+  readonly shuffleSeats?: boolean;
 }

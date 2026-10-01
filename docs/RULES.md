@@ -30,7 +30,11 @@ kind K with N units simply adds N to stat K — the stat block is typed as
 
 **Setup.** Seats are allocated in the order the game master accepts join
 requests, and turn order is frozen when the game starts and never changes
-afterwards (§2, §6.1). Every player starts on the *same* node: a random plains
+afterwards (§2, §6.1). With Shuffle seats on (Q165), the seats are drawn at
+random as the game starts instead, the game master's with the rest, from the
+server's die stream online (`drawSeats`, `packages/session/src/setup.ts`) and
+the browser's generator on one device (`startingOrder`,
+`apps/web/src/setup/local.ts`). Every player starts on the *same* node: a random plains
 node that is not a POI (`chooseStartingNode`, `packages/core/src/gamemap.ts`).
 Stamina is the one stat that does not start at zero — seat *n* starts with
 `STARTING_STAMINA_BASE + (n − 1) × STARTING_STAMINA_INCREMENT`, i.e. 30, 35, 40…

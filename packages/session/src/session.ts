@@ -29,7 +29,7 @@ import {
   type SetupState,
 } from '@adventure/protocol';
 import { GAME_MASTER_ABSENCE_BEHAVIOUR, type GameListing, type SessionPorts } from './ports.ts';
-import { applySetupAction, createSetup, SetupError, startGame, type NewSetup, type SetupLimits } from './setup.ts';
+import { applySetupAction, createSetup, drawSeats, SetupError, startGame, type NewSetup, type SetupLimits } from './setup.ts';
 
 /**
  * One live game. Single-writer by construction: every message for a game is
@@ -144,8 +144,14 @@ export class GameSession {
       case 'setup.setThinkingTime':
       case 'setup.cancel':
       case 'setup.start':
-      case 'setup.setLifetime': {
-        const outcome = applySetupAction(setup, from, message, this.limits, this.ports.clock.now());
+      case 'setup.setLifetime':
+      case 'setup.setShuffleSeats': {
+        const applied = applySetupAction(setup, from, message, this.limits, this.ports.clock.now());
+        // [Q165, 650] Start draws the seats once, with Shuffle seats on.
+        const outcome =
+          message.type === 'setup.start' && applied.state.shuffleSeats === true
+            ? { ...applied, state: drawSeats(applied.state, await this.picker()) }
+            : applied;
         await this.ports.games.saveSetup(outcome.state);
         await this.ports.broadcaster.broadcast(this.gameId, { type: 'setup.state', setup: outcome.state });
         if (outcome.declined !== undefined) {
@@ -392,6 +398,12 @@ export class GameSession {
     await this.ports.games.remove(this.gameId);
     await this.ports.directory.update(this.gameId, null);
     await this.ports.broadcaster.broadcast(this.gameId, removed());
+  }
+
+  /** [Q165, 650] Uniform picks from the server's die stream, for drawing the seats. */
+  private async picker(): Promise<(count: number) => number> {
+    const dice = await this.ports.dice.forGame(this.gameId);
+    return (count) => dice.pick(count);
   }
 
   /**

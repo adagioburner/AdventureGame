@@ -74,6 +74,8 @@ export type ClientMessage =
    * creation (`LIFETIME_DAYS`), changeable until Start.
    */
   | { readonly type: 'setup.setLifetime'; readonly gameId: GameId; readonly days: number }
+  /** [Q165, 650] "Shuffle seats" on the new game screen: seats drawn at random at Start. */
+  | { readonly type: 'setup.setShuffleSeats'; readonly gameId: GameId; readonly on: boolean }
   /**
    * [SOURCE §4] Out-of-turn planning: a player may plan while others play, and
    * an unfinished path is saved and may still be changed. Sent whenever the
@@ -173,6 +175,8 @@ export type ClientMessage =
 export interface NewGameSetup {
   readonly mapSeed: string;
   readonly seats: readonly NewGameSeat[];
+  /** [Q165, 655] "Shuffle seats" as the page had it; absent is off. */
+  readonly shuffleSeats?: boolean;
 }
 
 export type NewGameSeat =
