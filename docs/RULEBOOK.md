@@ -8,6 +8,8 @@ Win by collecting more gold than the other players.
 
 Every game has a new map: a network of spaces joined by roads. Every space is plains (light brown), forest (green) or mountains (grey).
 
+With 4 or 5 players the map is 40% larger, with 40% more spaces, sites, rewards and gold.
+
 Nothing is hidden: every player sees the whole map, every site and every reward from the first turn.
 
 ## Sites
@@ -152,7 +154,7 @@ Computer players follow the same rules. When setting up, you choose how many sec
 | Stamina per step past your free steps | Plains 1 · forest 2 · mountains 3 |
 | Fight | 1 die + your skill; beat the guard's strength to win |
 | Speeds and skills come back | When fewer than 2 sites offer one: one far empty site a turn |
-| Gold on the map | 45 |
+| Gold on the map | 45, or 63 with 4 or 5 players |
 | Win | Lead by more than the gold left on the map |
 | Online time limit | 1, 3, 7 or 14 days |
 

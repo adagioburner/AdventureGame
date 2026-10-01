@@ -44,9 +44,10 @@ export function mapForSeed(seed: Seed, size: MapSize): GameMap {
 }
 
 /**
- * The map for `seed`, or null while it is being drawn. The drawing waits a
- * moment first so the page can say it is drawing before generation takes the
- * main thread, as on the hot seat page.
+ * The map for `seed` at `size`, or null while it is being drawn. The drawing
+ * waits a moment first so the page can say it is drawing before generation
+ * takes the main thread, as on the hot seat page. While a new size is drawn
+ * for the same seed, the map before it stays (635 A).
  */
 export function useMapFor(seed: Seed | null, size: MapSize): { readonly map: GameMap | null; readonly problem: string | null } {
   const [map, setMap] = useState<GameMap | null>(null);
@@ -57,7 +58,8 @@ export function useMapFor(seed: Seed | null, size: MapSize): { readonly map: Gam
       setMap(lastMap);
       return;
     }
-    setMap(null);
+    // [Q160, 635 A] A new number of players keeps the map on screen until the new size is drawn.
+    setMap((shown) => (shown !== null && shown.seed === seed ? shown : null));
     const timer = window.setTimeout(() => {
       try {
         setMap(mapForSeed(seed, size));
@@ -67,5 +69,5 @@ export function useMapFor(seed: Seed | null, size: MapSize): { readonly map: Gam
     }, 30);
     return () => window.clearTimeout(timer);
   }, [seed, size]);
-  return { map: seed !== null && isMapFor(map, seed, size) ? map : null, problem };
+  return { map: map !== null && map.seed === seed ? map : null, problem };
 }

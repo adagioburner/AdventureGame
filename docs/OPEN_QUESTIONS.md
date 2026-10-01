@@ -2647,6 +2647,47 @@ saved route does. 610 and 611 answered at 05:24.
      turn."* (recommended); or the rulebook stays as it is. **Answered:** as
      recommended.
 
+### Q160. ~~How do maps grow for 4 and 5 players?~~ — **answered 2026-10-01: 40% larger, everything on them 1.4 ×, sites rounded to the nearest; the rest as recommended (630-635)**
+
+Andrei, 2026-10-01 at 05:48: *"for four and five player games we need larger
+maps. let's make them 40% larger. all numbers are currently divisible by 5 so
+that should work out without any rounding. the number of [spaces] for each
+terrain, number of [sites] and number of skill units and the gold offered
+should all scale by 40%. I hope none of the current numbers like total 45 units
+of gold are currently hard coded anywhere in the code. when a game is started
+the map should redraw when one changes the number of players to 4 [or] 5 or
+back to three or less."* Nothing in the game hard-codes a total: the win check,
+the computer and everything else count gold and skills on the map. The rulebook's
+quick reference said "Gold on the map: 45". Every unit total divides (gold 45
+→ 63, speeds and skills 75 → 105, sites per terrain 35 / 28 / 21); six
+per-reward site counts did not. Answered 06:57 to 07:01.
+
+630. **Sites per reward:** plains 9.8, 8.4 and 2.8, forest 11.2, 11.2 and 5.6
+     rounded to the nearest (10, 8, 3; 11, 11, 6), which keeps each terrain's
+     total (recommended); or other numbers. **Answered:** nearest.
+631. **Roads, dead ends and valleys:** 300 roads cannot join 336 spaces, so
+     roads 420 and dead ends 42-63, valleys as today (recommended); or valleys
+     3-6 of 7-17 spaces too. **Answered:** valleys as today.
+632. **Zoom after a card tap and a phone's Plan a move:** as close as on today's
+     map (recommended); or 2.2 × the whole-map view, about 15% farther out on
+     the larger map. **Answered:** as close as today.
+633. **Everything else** (stamina, rest, guards, skills coming back, the 10
+     closest sites, border roads, terrain shares, thinking time) stays as today
+     (recommended); or some change. **Answered:** keep all.
+634. **The rulebook:** the Gold row reads "45, or 63 with 4 or 5 players" and
+     The map gains *"With 4 or 5 players the map is 40% larger, with 40% more
+     spaces, sites, rewards and gold."* (recommended); or only the Gold row.
+     **Answered:** row and sentence.
+635. **Setting up:** when the number of players crosses 3 and 4 the New game
+     panel stays and the map behind it changes once drawn (recommended); or the
+     drawing message shows first, as after a new seed. **Answered:** panel
+     stays.
+
+The same seed draws a different map at each size. Games already under way keep
+their map: an online game holds the map it started with, and a game kept on one
+device says which size it is on, one kept before maps grew being on today's.
+The larger map takes about 0.5 s to draw against 0.3 s.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design
@@ -2663,6 +2704,7 @@ Listed so you can veto any that read as design to you.
 | sfc32 PRNG, string seeds | §1.3 requires reproducibility, not a specific algorithm. |
 | `Poi.artVariant` as an opaque stable index | §3 says a POI has an image and leaves which one to the art. Since phase 3 it picks sprite `artVariant mod count` from the sheet `Art/manifest.json` names for the POI, so no sheet's sprite count is baked into the generator. |
 | `POISSON_RADIUS_FACTOR` recalibrated 0.85 → 0.815 | An `EngineeringConfig` knob, documented as existing purely "for making step 1 hit its node budget". 0.85 was a guess made before there was a sampler; measured, it yields ~220 nodes against §11's `MAP_NODE_COUNT` of 240. 0.815 centres the yield on 240. No §11 value changed. |
+| `POISSON_RADIUS_FACTOR` 0.808 on the larger map (Q160) | The same knob, calibrated the same way: 0.815 yields about 333 spaces against the larger map's 336, 0.808 averages 336 over 400 seeds. |
 | Farthest-point seed placement in §2.1 step 4, on nodes of degree ≥ 3 | §2.1 fixes the seed *count* (1 or 2 per terrain) and says nothing about placement. On a near-tree graph a seed down a branch is walled in after a few nodes and its terrain never reaches its share; measured, this choice cuts the share error from ~9 points per terrain to ~3. |
 | Surplus leaves drawn by shuffle | §3 forces every leaf to be a POI and §4.2 fixes how many POIs a terrain's table rows get; nothing says *which* leaves fall inside the quota when a terrain has more leaves than it. Drawn from the map's own stream. |
 | Growing terrain by *trading* when a region is walled in (Q28) | §2.1 asks for the shares and says nothing about how to reach them. A region enclosed by a terrain already at its share cannot take a node without pushing that terrain under; the two-step trade keeps both at their targets and still reduces the total deviation, so the pass terminates. |

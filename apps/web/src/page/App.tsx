@@ -87,7 +87,10 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
 
   useEffect(() => {
     if (size === null) return;
-    setMap(null);
+    // [Q160, 635 A] A new number of players keeps the map it had on screen,
+    // and the setup panel with it, until the new size is drawn; a new seed
+    // says it is drawing.
+    setMap((shown) => (shown !== null && shown.seed === seed ? shown : null));
     writeSeed(seed);
     // Let "Drawing the map" paint before generation takes the main thread.
     const timer = window.setTimeout(() => {
