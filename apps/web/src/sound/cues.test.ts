@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { asGameId, asNodeId, asPlayerId, type BoardPost, type GameEvent, type InteractionResolution } from '@adventure/core';
-import { endingSound, isRest, newPostsHeard } from './cues.ts';
+import { endingSound, isRest, newPostsHeard, returnedSites } from './cues.ts';
 
 const player = asPlayerId('p1');
 
@@ -40,6 +40,22 @@ describe('the rest sound (Q63, 142)', () => {
     expect(isRest([{ type: 'rested', player, staminaGained: 5 }])).toBe(true);
     expect(isRest(arrival({ reward: null }))).toBe(false);
     expect(isRest([])).toBe(false);
+  });
+});
+
+describe('the respawn sound (Q135, 539 and 540)', () => {
+  it('is heard at each site a speed or skill came back to, in the order they were drawn', () => {
+    const events: GameEvent[] = [
+      ...arrival({ reward: { kind: 'fighting', units: 1 } }),
+      { type: 'reward_returned', node: asNodeId(9), reward: { kind: 'plains_move', units: 2 } },
+      { type: 'reward_returned', node: asNodeId(7), reward: { kind: 'fighting', units: 2 } },
+    ];
+    expect(returnedSites(events)).toEqual([asNodeId(9), asNodeId(7)]);
+  });
+
+  it('is silent on a turn that brought nothing back', () => {
+    expect(returnedSites(arrival({}))).toEqual([]);
+    expect(returnedSites([{ type: 'rested', player, staminaGained: 5 }])).toEqual([]);
   });
 });
 

@@ -15,6 +15,12 @@ the recipes he heard:
 - resting, 142 B: a soft breath out;
 - a new message, 143 B: two knocks on a wooden door.
 
+[Andrei, 2026-09-30] "we cannot just bring the skill back silently. There has
+to be a respawn sound" (Q135), and from three samples he picked:
+
+- a speed or skill coming back to a site, 539 B: one bell struck once, low
+  and ringing long, as if far off.
+
 They are placeholders, marked `"placeholder": true` in `Art/manifest.json`, and
 any of them can be replaced by dropping in a new file (`Art/README.md`).
 
@@ -263,6 +269,14 @@ def message() -> list[float]:
     return trim_tail(fade_edges(out))
 
 
+def respawn() -> list[float]:
+    """539 B: one bell struck once, C5 with a quiet G5 over it, ringing long as if far off."""
+    out = zeros(2.2)
+    mix(out, bell(523.25, 2.0, 0.7, partials=((1.0, 1.0), (2.0, 0.45), (2.76, 0.25), (4.07, 0.12), (5.4, 0.06))), 0.0, 1.0)
+    mix(out, bell(784.0, 2.0, 0.5, partials=((1.0, 1.0), (2.0, 0.3), (3.0, 0.08))), 0.0, 0.25)
+    return trim_tail(out)
+
+
 # File name under Art/Sounds/ -> (recipe, loudness). The manifest names these files.
 SOUNDS = {
     'step_1.wav': (lambda: step(0), STEP_LEVEL),
@@ -273,6 +287,7 @@ SOUNDS = {
     'battle_lost.wav': (battle_lost, EVENT_LEVEL),
     'rest.wav': (rest, EVENT_LEVEL),
     'message.wav': (message, EVENT_LEVEL),
+    'respawn.wav': (respawn, EVENT_LEVEL),
 }
 
 
