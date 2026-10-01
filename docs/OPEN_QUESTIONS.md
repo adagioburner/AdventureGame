@@ -2448,13 +2448,14 @@ game kept on one device that fought at a forest gold site that turned magic may
 not resume as it was; an online game keeps the map it was made with.
 
 <a id="q125"></a>
-### Q125. ~~What does End turn do when there is no guard to fight?~~ — **answered 2026-09-30: it rests, and so does Move on; 490-493 as recommended, 494 and 495 open**
+### Q125. ~~What does End turn do when there is no guard to fight?~~ — **answered 2026-09-30: it rests, and so does Move on; 490-495 as recommended**
 
 Andrei, 2026-09-30 at 20:53: *"Clicking 'Next Turn' with no guard to fight
 makes no sense. Let us make it rest automatically in this case."* Until then
 End turn with no route was a move of zero steps: on an unclaimed guarded site
 another fight (§8), anywhere else nothing at all, not even stamina. Answered
-at 21:46: *"The recommended options look good, please proceed"*.
+at 21:46: *"The recommended options look good, please proceed"*. 494 and
+495 answered 2026-10-01 at 00:59: *"the recommendations are good"*.
 
 490. **Which End turns rest:** with no route, and also with a route whose
      first step this turn cannot pay; the route is kept for next turn
@@ -2469,18 +2470,19 @@ at 21:46: *"The recommended options look good, please proceed"*.
 493. **The turn log:** an automatic rest reads like any rest, *"Rested: +5
      stamina"* (recommended); or it also says End turn made it one.
      **Answered:** as recommended.
-494. **Open.** The line above the buttons with a route whose first step
+494. The line above the buttons with a route whose first step
      cannot be paid, away from a guard. As built: *"Not even the first of
      these 4 steps is affordable this turn. End turn rests: +5 stamina, and
      keeps the route for next turn."* (recommended); or the wording before,
      *"…Rest gains 5 stamina; End turn walks nothing and keeps the route for
-     next turn."*, which no longer says what End turn does.
-495. **Open.** The line when a player picks their own space as the
+     next turn."*, which no longer says what End turn does. **Answered:** as
+     recommended (as built).
+495. The line when a player picks their own space as the
      destination, away from a guard. As built: *"Staying here this turn. End
      turn with no route rests: +5 stamina."*; *"Staying here this turn. End
      turn rests: +5 stamina."* (recommended); or the wording before,
      *"…End turn with no route stays put."*, which no longer says what End
-     turn does.
+     turn does. **Answered:** as recommended.
 
 `endTurnActionFor` (`packages/core/src/rules/turn.ts`) decides it, for the
 page's End turn, the server's `turn.end` and Move on (`moveOnActionFor`), and
