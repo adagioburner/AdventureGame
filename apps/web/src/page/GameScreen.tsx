@@ -33,10 +33,21 @@ export const PHONE = '(max-width: 899px)';
  * How long End Turn's walk takes per step, the die tumbles, a notice stays up,
  * and an unguarded claim's notice takes to fade in, stays up (2 seconds, his
  * pick) and takes to fade out; how long a computer's die card stays up
- * (3 seconds, Q42); and how long a figure found from its card stands on its
- * ring (2 seconds, [Q120, 471]).
+ * (3 seconds, Q42); how long a figure found from its card stands on its
+ * ring (2 seconds, [Q120, 471]); and how long the figure on turn blinks over a
+ * route saved from the turn before (2 seconds, [Q145, 574]).
  */
-export const timing = { stepMs: 220, tumbleMs: 1100, noticeMs: 2200, appearMs: 200, claimMs: 2000, fadeMs: 500, computerCardMs: 3000, foundMs: 2000 };
+export const timing = {
+  stepMs: 220,
+  tumbleMs: 1100,
+  noticeMs: 2200,
+  appearMs: 200,
+  claimMs: 2000,
+  fadeMs: 500,
+  computerCardMs: 3000,
+  foundMs: 2000,
+  savedRouteBlinkMs: 2000,
+};
 
 interface GameScreenProps {
   readonly art: LoadedArt;
@@ -125,6 +136,16 @@ export function GameScreen({
     const timer = window.setTimeout(() => setNotice(null), timing.noticeMs);
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  // [Q145, 574] The turn shown whose opening blink is over: from then on a
+  // route saved from the turn before shows as planned (575).
+  const [settledTurn, setSettledTurn] = useState<number | null>(null);
+  const turnShown = shown.status === 'in_progress' && !busy ? shown.turn.number : null;
+  useEffect(() => {
+    if (turnShown === null) return;
+    const timer = window.setTimeout(() => setSettledTurn(turnShown), timing.savedRouteBlinkMs);
+    return () => window.clearTimeout(timer);
+  }, [turnShown]);
 
   useEffect(() => {
     if (found === null) return;
@@ -543,10 +564,16 @@ export function GameScreen({
   // ([Q56, 49]), so it starts at their figure.
   const pathFrom = inFlight !== null || planner === null ? active?.position : shown.players.find((player) => player.id === planner)?.position;
   const waypoint = inFlight !== null ? inFlight.waypoint : move.kind === 'idle' ? null : move.waypoint;
+  // [Andrei, 2026-10-01] Q145: "blink until there's a route planned [...] if
+  // the route is saved from previous planning we can blink for a short while
+  // and stop". A route brought back blinks for its first 2 seconds (574), then
+  // stands on the ring of a route planned (575) without being picked up, so
+  // Track stays as it was; tapping the figure stops the blink as before (576).
+  const routePlanned = engaged || (move.kind === 'previewing' && settledTurn === shown.turn.number);
   const cue: FigureCue =
     shown.status !== 'in_progress' || busy
       ? 'none'
-      : move.kind !== 'idle' && engaged && planner === active?.id
+      : move.kind !== 'idle' && routePlanned && planner === active?.id
         ? 'selected'
         : 'blink';
   // [Q56, 49] Online, a figure picked up out of turn is highlighted as on its own turn.

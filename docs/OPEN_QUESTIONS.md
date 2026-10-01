@@ -2524,7 +2524,7 @@ not change: they already rest on a turn they cannot take a step (Q43), and
 stand still only on the guarded site they are after.
 
 <a id="q145"></a>
-### Q145. Does a player have to tap their figure before choosing where to go? — **answered 2026-10-01: no, not on their own turn; 570-573 and 576 as recommended; 574-575 open**
+### Q145. Does a player have to tap their figure before choosing where to go? — **answered 2026-10-01: no, not on their own turn; 570-576 as recommended**
 
 Andrei, 2026-10-01 at 02:52: *"i don't see why i have to tap my figure at the
 beginning of every move. everything works if it's already tapped"*. Until then,
@@ -2534,7 +2534,7 @@ good to have the figure blink until there's a route planned. as soon as i click
 on a node and the route is being planned blinking can stop. if the route is
 saved from previous planning we can blink for a short while and stop"*. The
 details were put to him with pictures at laptop, 390 and 340 px, and he
-answered 570 to 573 on their cards at 03:49, and 576 at 04:32.
+answered 570 to 573 on their cards at 03:49 and 574 to 576 at 04:32.
 
 570. **How a turn starts.** A: as before, the figure blinks and Plan a move
      shows; the first tap on a space picks the figure up and chooses that
@@ -2561,18 +2561,20 @@ answered 570 to 573 on their cards at 03:49, and 576 at 04:32.
      *"Select your figure, then where you want to go."* **Answered:** A.
 574. **How long the figure blinks on a route saved from the turn before,**
      counted from the start of the turn. A: 2 seconds, two blinks
-     (recommended). B: 3 seconds. C: 1 second. **Open.**
+     (recommended). B: 3 seconds. C: 1 second. **Answered:** A, as
+     `timing.savedRouteBlinkMs` in `GameScreen.tsx`.
 575. **How the figure looks once that blink stops.** A: still on its gold
      ring, as after a tap on a space; only the look changes, so Track stays
      pressed and the figure counts as picked up only once tapped
-     (recommended). B: like the other players' figures. **Open.**
+     (recommended). B: like the other players' figures. **Answered:** A.
 576. **Tapping your figure, or Plan a move, before any space is chosen.** A:
      the blink stops, as before (Q34) (recommended). B: it blinks on until a
      space is chosen. **Answered:** A, nothing changes.
 
 `choose` in `apps/web/src/interaction/moveMode.ts` picks the figure up on the
 planner's own turn, `GameScreen`'s `onTap` sends a tap on a space there, and
-the line is `hint` in `TurnControls.tsx`.
+the line is `hint` in `TurnControls.tsx`, and `GameScreen`'s `cue` stops a
+saved route's blink.
 
 ---
 
