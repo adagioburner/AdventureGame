@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE,
   DEFAULT_RULESET,
   LARGER_MAP_RULESET,
   REWARD_KINDS,
   SKILL_KINDS,
   TERRAINS,
+  withMagicGuardChance,
   type Ruleset,
   type Terrain,
 } from '@adventure/config';
@@ -274,7 +276,7 @@ describe('§5.2 — guard strengths', () => {
   }, 30000);
 });
 
-describe('Q115 — forest gold guarded by fighting or magic', () => {
+describe('Q115, Q185 — forest gold guarded by magic by chance, today always', () => {
   const withoutForestMagic: Ruleset = {
     ...DEFAULT_RULESET,
     content: {
@@ -287,13 +289,24 @@ describe('Q115 — forest gold guarded by fighting or magic', () => {
   };
   const isForestGold = (poi: GameMap['pois'][number]): boolean => poi.terrain === 'forest' && poi.reward.kind === 'gold';
 
-  it('guards forest gold with both fighting and magic, keeping it in its §4.2 row', () => {
-    const types = new Set<string>();
+  it('guards every forest gold POI by magic, keeping it in its §4.2 row (Q185)', () => {
+    let guarded = 0;
     for (const seed of SEEDS) {
       for (const poi of mapOf(seed).pois.filter(isForestGold)) {
         expect(poi.group).toEqual({ kind: 'gold', guard: 'fighting' });
-        if (poi.guard !== null) types.add(poi.guard.type);
+        if (poi.guard === null) continue;
+        expect(poi.guard.type).toBe('magic');
+        guarded += 1;
       }
+    }
+    expect(guarded).toBeGreaterThan(0);
+  }, 30000);
+
+  it('guards forest gold with both fighting and magic at the coin flip a kept game may have begun with (Q115, 730)', () => {
+    const coinFlip = withMagicGuardChance(DEFAULT_RULESET, COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE);
+    const types = new Set<string>();
+    for (const seed of SEEDS) {
+      for (const poi of mapOf(seed, coinFlip).pois.filter(isForestGold)) if (poi.guard !== null) types.add(poi.guard.type);
     }
     expect([...types].sort()).toEqual(['fighting', 'magic']);
   }, 30000);

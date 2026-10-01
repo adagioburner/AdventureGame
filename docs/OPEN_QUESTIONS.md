@@ -2426,6 +2426,8 @@ of 20 at 3 s (+3.3) and 11 of 20 at 10 s (+2.2). All four together 48 of 80,
 
 ### Q115. ~~Which guards do forest sites get?~~ — **answered 2026-09-30: each forest gold site fighting or magic by a coin flip, magic drawn as the mountains' magic guardians (450-452 A)**
 
+*Since [Q185](#q185) (2026-10-01) the chance is 100%: every forest gold site is magic-guarded.*
+
 [SOURCE §4.4, chat] Andrei, 2026-09-30: "Magic doesn't play an important
 enough role. Can you make it so the forest POI are assigned randomly either
 magic or combat guards?" Then 450 A (only forest's 4 gold sites, the ones
@@ -2842,6 +2844,29 @@ the map's front edges, which it already slopes along; 4 and 5 player maps get
 the same rock at their size. Rock and sky are both inside the map's box, so a
 phone's map loses no height. Both are in `Art/Island/`, named in
 `Art/manifest.json`'s `island` section.
+
+### Q185. ~~Which guard does forest gold get now?~~ — **answered 2026-10-01: always magic, by the same chance turned to 100%; kept games keep their coin flips, and the rulebook says each terrain's guard (730, 731 A)**
+
+[SOURCE §4.4, chat] Andrei, 2026-10-01: "After playing some more I think we
+need to make all gold in the forests guarded by magic. Otherwise magic plays
+too little role", then "it's a good idea to keep the logic that says forest
+magic is decided by chance, just turn this chance all the way to 100%".
+
+`FOREST_MAGIC_GUARD_CHANCE` (Q115) goes from 0.5 to 1, on the standard and the
+larger map alike, so every guarded forest gold site is a magic guard drawn as
+the mountains' magic guardians (452). Since the draws stay the map's last, on
+every seed only forest gold guards change; strengths, rewards and every other
+site are as before.
+
+730. **A hot seat game kept before the change:** goes on with the coin-flip
+     guards it began with, as games kept before the skill cap kept their rules
+     (recommended); or its forest gold turns magic. **Answered:** keeps its
+     guards. A kept game now records its chance; one without it is drawn at
+     0.5. Online games keep the map they were made with either way.
+731. **The rulebook:** after "Bigger gold stacks have stronger guards, up to
+     10", *"Gold on plains is guarded by combat, in forests by magic, and in
+     the mountains by either."* (recommended); or forests only; or no change.
+     **Answered:** all three terrains.
 
 ---
 

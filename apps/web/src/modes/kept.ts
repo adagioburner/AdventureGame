@@ -1,4 +1,4 @@
-import { mapSizeOfRuleset, type MapSize } from '@adventure/config';
+import { COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE, magicGuardChanceOf, mapSizeOfRuleset, type MapSize } from '@adventure/config';
 import type { GameMap, TurnAction } from '@adventure/core';
 import { inOrder, toHotseatSeats, type LocalSetup } from '../setup/local.ts';
 import { HotseatGame } from './hotseat.ts';
@@ -38,6 +38,12 @@ export interface KeptGame {
    * on: today's size, whatever its number of players.
    */
   readonly mapSize?: MapSize;
+  /**
+   * [Q185, 730 A] The chance its forest gold sites were magic-guarded when the
+   * game began. Absent on a game kept before every forest gold site was magic,
+   * which goes on with the coin-flip guards it began with.
+   */
+  readonly magicGuardChance?: number;
 }
 
 const KEY = 'adventure.hotseat';
@@ -76,6 +82,7 @@ export function keep(seed: string, setup: LocalSetup, order: readonly string[] |
     respawn: respawn !== undefined,
     ...(respawn?.MAX_UNITS === undefined ? {} : { respawnMaxUnits: respawn.MAX_UNITS }),
     mapSize: mapSizeOfRuleset(game.setup.map.ruleset),
+    magicGuardChance: magicGuardChanceOf(game.setup.map.ruleset),
   };
   try {
     window.localStorage.setItem(KEY, JSON.stringify(kept));
@@ -95,6 +102,11 @@ export function forgetKept(): void {
 /** The size of the map `kept` is played on: see `KeptGame.mapSize`. */
 export function keptMapSize(kept: KeptGame): MapSize {
   return kept.mapSize === 'larger' ? 'larger' : 'standard';
+}
+
+/** The chance `kept`'s forest gold sites are magic-guarded at: see `KeptGame.magicGuardChance`. */
+export function keptMagicGuardChance(kept: KeptGame): number {
+  return typeof kept.magicGuardChance === 'number' ? kept.magicGuardChance : COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE;
 }
 
 /** The kept game played again on `map`; `null` if its turns no longer replay. */

@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { mapFor } from '../page/seed.ts';
 import { inOrder, toHotseatSeats, type LocalSetup } from '../setup/local.ts';
 import { HotseatGame } from './hotseat.ts';
-import { forgetKept, keep, keptMapSize, readKept, replayKept } from './kept.ts';
+import { forgetKept, keep, keptMagicGuardChance, keptMapSize, readKept, replayKept } from './kept.ts';
 
 const map = mapFor('adventure', 'standard');
 const setup: LocalSetup = {
@@ -93,6 +93,25 @@ describe('a game on one device kept in the browser (Q56, 66)', () => {
     expect(keptMapSize(older as NonNullable<typeof kept>)).toBe('standard');
     keep('adventure', fourSeats, null, new HotseatGame({ map, seats: toHotseatSeats(fourSeats), diceSeed: 'kept' }));
     expect(readKept()?.mapSize).toBe('standard');
+  });
+
+  it('keeps the chance forest gold is magic-guarded at, and resumes a game kept before it was always magic on its coin flips (Q185, 730)', () => {
+    const forestGuards = (on: typeof map): string[] =>
+      on.pois.flatMap((poi) => (poi.terrain === 'forest' && poi.guard !== null ? [poi.guard.type] : []));
+    keep('adventure', setup, null, new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'kept' }));
+    const kept = readKept();
+    expect(kept?.magicGuardChance).toBe(1);
+    expect(kept === null ? null : keptMagicGuardChance(kept)).toBe(1);
+    expect(new Set(forestGuards(map))).toEqual(new Set(['magic']));
+
+    // A game kept from 2026-09-30 began with each forest gold guard a coin flip.
+    const { magicGuardChance: _chance, ...older } = kept ?? { magicGuardChance: undefined };
+    const before = older as NonNullable<typeof kept>;
+    expect(keptMagicGuardChance(before)).toBe(0.5);
+    const coinFlips = mapFor('adventure', 'standard', keptMagicGuardChance(before));
+    expect(new Set(forestGuards(coinFlips))).toEqual(new Set(['fighting', 'magic']));
+    expect(coinFlips.graph).toEqual(map.graph);
+    expect(replayKept(before, coinFlips)?.setup.map).toBe(coinFlips);
   });
 
   it('keeps the order Shuffle seats drew, and the seats as set for the next New game (Q165)', () => {

@@ -1,10 +1,17 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { DEFAULT_RULESET, mapSizeForPlayers, mapSizeOfRuleset, type MapSize } from '@adventure/config';
+import {
+  DEFAULT_RULESET,
+  FOREST_MAGIC_GUARD_CHANCE,
+  magicGuardChanceOf,
+  mapSizeForPlayers,
+  mapSizeOfRuleset,
+  type MapSize,
+} from '@adventure/config';
 import type { GameMap } from '@adventure/core';
 import { atlasOf, buildArtCatalog, type ArtCatalog } from '../art/catalog.ts';
 import { ART_FILES } from '../art/files.ts';
 import { HotseatGame, newDiceSeed } from '../modes/hotseat.ts';
-import { forgetKept, keep, keptMapSize, readKept, replayKept } from '../modes/kept.ts';
+import { forgetKept, keep, keptMagicGuardChance, keptMapSize, readKept, replayKept } from '../modes/kept.ts';
 import { hotseatPlay } from '../modes/play.ts';
 import { loadArt, type LoadedArt } from '../render/pixi/textures.ts';
 import { buildMapScene, type MapScene } from '../render/sceneModel.ts';
@@ -89,6 +96,14 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
         : setup === null
           ? null
           : mapSizeForPlayers(setup.seats.length);
+  // [Q185, 730 A] Likewise the chance its forest gold is magic-guarded at: a
+  // kept game's own, which may be the coin flip it began with; otherwise today's.
+  const magicChance =
+    game !== null
+      ? magicGuardChanceOf(game.setup.map.ruleset)
+      : resuming && kept !== null
+        ? keptMagicGuardChance(kept)
+        : FOREST_MAGIC_GUARD_CHANCE;
 
   useEffect(() => {
     if (size === null) return;
@@ -100,17 +115,24 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
     // Let "Drawing the map" paint before generation takes the main thread.
     const timer = window.setTimeout(() => {
       try {
-        setMap(mapFor(seed, size));
+        setMap(mapFor(seed, size, magicChance));
       } catch (error) {
         setProblem(error instanceof Error ? error.message : String(error));
       }
     }, 30);
     return () => window.clearTimeout(timer);
-  }, [seed, size]);
+  }, [seed, size, magicChance]);
 
   // [Q56, 66] Once its map is drawn, the kept game is played again to where it was.
   useEffect(() => {
-    if (kept === null || !resuming || map === null || map.seed !== kept.seed || mapSizeOfRuleset(map.ruleset) !== keptMapSize(kept)) {
+    if (
+      kept === null ||
+      !resuming ||
+      map === null ||
+      map.seed !== kept.seed ||
+      mapSizeOfRuleset(map.ruleset) !== keptMapSize(kept) ||
+      magicGuardChanceOf(map.ruleset) !== keptMagicGuardChance(kept)
+    ) {
       return;
     }
     setResuming(false);
@@ -151,7 +173,15 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
 
   const start = (): void => {
     // Never on the map of the number of players before, while the new one is drawn.
-    if (map === null || setup === null || mapSizeOfRuleset(map.ruleset) !== mapSizeForPlayers(setup.seats.length)) return;
+    // Nor on a kept game's map with its forest guards from before (Q185).
+    if (
+      map === null ||
+      setup === null ||
+      mapSizeOfRuleset(map.ruleset) !== mapSizeForPlayers(setup.seats.length) ||
+      magicGuardChanceOf(map.ruleset) !== FOREST_MAGIC_GUARD_CHANCE
+    ) {
+      return;
+    }
     setLogOpen(false);
     // [Q165, 650] With Shuffle seats on, the seats are drawn now.
     const drawn = setup.shuffleSeats === true ? startingOrder(setup) : null;
