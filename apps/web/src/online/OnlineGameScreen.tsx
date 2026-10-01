@@ -477,7 +477,16 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
         </main>
       ) : (
         <main className={`stage${game === null ? ' setting-up' : ''}`}>
-          <MapView art={art} map={map} scene={scene} state={shown} path={null} waypoint={null} walker={null} />
+          <MapView
+            art={art}
+            map={map}
+            scene={scene}
+            state={shown}
+            path={null}
+            waypoint={null}
+            walker={null}
+            frame={game === null ? 'island' : 'map'}
+          />
           {game !== null ? null : (
             <SetupPanel
               art={art}

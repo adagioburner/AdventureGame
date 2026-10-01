@@ -6,10 +6,12 @@ import { createCameraController, FOLLOW_MARGIN_OF_VIEW, followInto, glideCenter,
 import { figureTop, pick, planeToScreen, screenToPlane, type Pick } from '../interaction/picking.ts';
 import { fitToViewport, type Camera } from '../render/isometric.ts';
 import { position } from '../render/geometry.ts';
+import { undersideDepth } from '../render/island.ts';
 import { PixiMapRenderer } from '../render/pixi/renderer.ts';
 import type { LoadedArt } from '../render/pixi/textures.ts';
 import { SPACING_PX, type FigureCue, type MapScene, type Walker } from '../render/sceneModel.ts';
 import { MAP_RESTORE_WAIT_MS, MAP_RETRY_MS, noteMapTrouble } from './mapTrouble.ts';
+import { skyPlacement, skyRoom } from './sky.ts';
 
 /** What the page can ask of the map once it is up. */
 export interface MapHandle {
@@ -74,10 +76,19 @@ interface MapViewProps {
   /** [Q57, 73] The viewer dragged, pinched or zoomed the map, or pressed "+", "−" or "Whole map". */
   readonly onMoved?: () => void;
   readonly onReady?: (handle: MapHandle | null) => void;
+  /**
+   * What Whole map and the first view frame: `map`, the ground and what stands
+   * on it, as games do (672 B); or `island`, the rock under it too, as the New
+   * game screen does (674; Andrei, 2026-10-01 16:53). `map` if omitted.
+   */
+  readonly frame?: 'map' | 'island';
 }
 
 /** Room above, beside and below the ground that pictures on the edge nodes stand in. */
 const OVERHANG = { top: SPACING_PX * 1.2, side: SPACING_PX * 0.5, bottom: SPACING_PX * 0.5 };
+
+/** Sky left under the rock's lowest point when the whole island is framed. */
+const ISLAND_SKY_BELOW = SPACING_PX * 0.2;
 
 /** A press that travels less than this, in CSS pixels, is a click rather than a drag. */
 const TAP_TRAVEL_PX = 8;
@@ -112,8 +123,10 @@ export function MapView({
   sound,
   onMoved,
   onReady,
+  frame = 'map',
 }: MapViewProps) {
   const host = useRef<HTMLDivElement>(null);
+  const sky = useRef<HTMLDivElement>(null);
   const renderer = useRef<PixiMapRenderer | null>(null);
   const zoomButtons = useRef<((action: 'in' | 'out' | 'fit') => void) | null>(null);
   // Read when the renderer comes up, and by the pointer handlers, which are
@@ -131,6 +144,10 @@ export function MapView({
   const troubles = useRef<readonly number[]>([]);
   // The view to come back to when the map is built again, if the viewer had moved it.
   const kept = useRef<Camera | null>(null);
+  // What the view frames, read by the map once it is up; `refit` frames it again.
+  const framing = useRef(frame);
+  framing.current = frame;
+  const refit = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const found = host.current;
@@ -195,7 +212,11 @@ export function MapView({
       renderer.current = map;
 
       const viewport = (): Point => ({ x: element.clientWidth, y: element.clientHeight });
-      const fit = () => fitToViewport(scene.projection, scene.bounds, viewport(), OVERHANG);
+      const islandOverhang = {
+        ...OVERHANG,
+        bottom: Math.max(OVERHANG.bottom, undersideDepth(scene.projection, scene.bounds, scene.underside, art.undersideSolid) + ISLAND_SKY_BELOW),
+      };
+      const fit = () => fitToViewport(scene.projection, scene.bounds, viewport(), framing.current === 'island' ? islandOverhang : OVERHANG);
       const camera: CameraController = createCameraController(fit(), viewport());
       let touched = false;
       const was = kept.current;
@@ -204,9 +225,20 @@ export function MapView({
         camera.centerOn(was.center, was.zoom);
         touched = true;
       }
+      // [676 to 678] The sky behind the map stays put as it is dragged and
+      // grows a little as it is zoomed in. It fills the map's whole stage,
+      // which on a phone's New game screen runs on under the form.
+      const placeSky = (): void => {
+        const layer = sky.current;
+        const stage = layer?.parentElement;
+        if (layer === null || stage === null || stage === undefined) return;
+        const placed = skyPlacement({ x: stage.clientWidth, y: stage.clientHeight }, fit(), camera.camera);
+        layer.style.transform = `translate(${placed.x}px, ${placed.y}px) scale(${placed.scale})`;
+      };
       const apply = (): void => {
         map.setViewport(viewport());
         map.setCamera(camera.camera);
+        placeSky();
       };
       apply();
 
@@ -264,14 +296,21 @@ export function MapView({
 
       // Pixi's `resizeTo` follows the window only, and on a phone the map's
       // box also changes as the panels round it do, so resize the canvas here.
-      const observer = new ResizeObserver(() => {
-        app.resize();
+      const reframe = (): void => {
         camera.setFit(fit(), viewport());
         if (!touched) camera.resetToFit();
         apply();
+      };
+      const observer = new ResizeObserver(() => {
+        app.resize();
+        reframe();
       });
       observer.observe(element);
-      cleanups.push(() => observer.disconnect());
+      refit.current = reframe;
+      cleanups.push(() => {
+        observer.disconnect();
+        refit.current = null;
+      });
 
       // Pointer drags pan; two pointers pinch; the wheel and +/- zoom; a press
       // that hardly moves is a click on whatever is under it.
@@ -450,9 +489,13 @@ export function MapView({
   useEffect(() => {
     following.current = tracking;
   }, [tracking]);
+  useEffect(() => {
+    refit.current?.();
+  }, [frame]);
 
   return (
     <>
+      <div ref={sky} className="map-sky" style={{ inset: `${(-(skyRoom() - 1) / 2) * 100}%` }} />
       <div ref={host} className="canvas-host" aria-label="The map" role="img" />
       {broken ? (
         // [Q86, 331] The map could not be built, even after trying again.

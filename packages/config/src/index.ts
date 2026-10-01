@@ -17,6 +17,7 @@ export {
 export {
   DEFAULT_GAME_CONTENT,
   DEFAULT_REWARD_TABLE,
+  COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE,
   FOREST_MAGIC_GUARD_CHANCE,
   LARGER_MAP_GAME_CONTENT,
   LARGER_MAP_REWARD_TABLE,
@@ -73,6 +74,31 @@ export function rulesetForPlayers(players: number): Ruleset {
  */
 export function mapSizeOfRuleset(ruleset: Ruleset): MapSize {
   return ruleset.config.map.MAP_NODE_COUNT === LARGER_MAP_GAME_CONFIG.map.MAP_NODE_COUNT ? 'larger' : 'standard';
+}
+
+/**
+ * [Q185] The chance a forest gold site is magic-guarded under `ruleset`: the
+ * `magicGuardChance` of its forest gold row, 0 when it has none.
+ */
+export function magicGuardChanceOf(ruleset: Ruleset): number {
+  const row = ruleset.content.REWARD_TABLE.forest.find((candidate) => candidate.kind === 'gold');
+  return row?.magicGuardChance ?? 0;
+}
+
+/**
+ * [Q185, 730 A] `ruleset` with its forest gold sites magic-guarded at `chance`,
+ * for a hot seat game kept from before the chance changed, so its map comes
+ * back with the guards it began with. `ruleset` itself when that is its chance.
+ */
+export function withMagicGuardChance(ruleset: Ruleset, chance: number): Ruleset {
+  if (magicGuardChanceOf(ruleset) === chance) return ruleset;
+  const forest = ruleset.content.REWARD_TABLE.forest.map((row) =>
+    row.kind === 'gold' ? { ...row, magicGuardChance: chance } : row,
+  );
+  return {
+    ...ruleset,
+    content: { ...ruleset.content, REWARD_TABLE: { ...ruleset.content.REWARD_TABLE, forest } },
+  };
 }
 
 /**

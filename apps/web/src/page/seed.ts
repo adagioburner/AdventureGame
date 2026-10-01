@@ -1,4 +1,4 @@
-import { rulesetForMapSize, type MapSize } from '@adventure/config';
+import { rulesetForMapSize, withMagicGuardChance, type MapSize } from '@adventure/config';
 import { friendlySeed, type GameMap, type Seed } from '@adventure/core';
 import { generateMap } from '@adventure/mapgen';
 import { defaultRemotenessScorer } from '@adventure/sim';
@@ -8,9 +8,14 @@ import { defaultRemotenessScorer } from '@adventure/sim';
  * Generation is client-side by §12.1, so the page needs no server and no file:
  * the seed and the size are the whole input. The same seed draws a different
  * map at each size.
+ *
+ * [Q185, 730 A] `magicGuardChance` draws it with forest gold magic-guarded at
+ * that chance instead of today's, for a kept game that began before it changed.
  */
-export function mapFor(seed: Seed, size: MapSize): GameMap {
-  return generateMap({ seed, ruleset: rulesetForMapSize(size), remotenessScorer: defaultRemotenessScorer });
+export function mapFor(seed: Seed, size: MapSize, magicGuardChance?: number): GameMap {
+  const today = rulesetForMapSize(size);
+  const ruleset = magicGuardChance === undefined ? today : withMagicGuardChance(today, magicGuardChance);
+  return generateMap({ seed, ruleset, remotenessScorer: defaultRemotenessScorer });
 }
 
 /** A shareable random seed, for `?seed=` with no value. */
