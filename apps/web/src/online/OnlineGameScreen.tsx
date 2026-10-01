@@ -6,6 +6,7 @@ import { onlinePlay, type OnlinePlay } from '../modes/play.ts';
 import { GameScreen } from '../page/GameScreen.tsx';
 import { MapView } from '../page/MapView.tsx';
 import { BarMenu } from '../page/BarMenu.tsx';
+import { GAME_NAME, GameTitle } from '../page/GameTitle.tsx';
 import { RulesButton } from '../page/Rules.tsx';
 import { SeedForm } from '../page/SeedForm.tsx';
 import { buildMapScene, type MapScene } from '../render/sceneModel.ts';
@@ -163,14 +164,14 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
     setLive(play.state);
     return play.subscribe(() => setLive(play.state));
   }, [play]);
-  // [Q54, 34] The tab reads "Your turn · Adventure" while it is this player's turn.
+  // [Q54, 34] The tab reads "Your turn · Skyholm Adventures" (Q175, 691) while it is this player's turn.
   const liveActive = live === null ? undefined : live.players[live.turn.activeSeat - 1];
   const yourTurn = live !== null && live.status === 'in_progress' && liveActive !== undefined && play !== null && play.localPlayers.has(liveActive.id);
   useEffect(() => {
     if (!yourTurn) return;
-    document.title = 'Your turn · Adventure';
+    document.title = `Your turn · ${GAME_NAME}`;
     return () => {
-      document.title = 'Adventure';
+      document.title = GAME_NAME;
     };
   }, [yourTurn]);
 
@@ -322,7 +323,7 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
     return (
       <div className="shell playing">
         <header className="bar online">
-          <h1>Adventure</h1>
+          <GameTitle />
           <span className="seed-shown">
             {setup.name} · Seed <code>{setup.mapSeed}</code>
           </span>
@@ -447,7 +448,7 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
   return (
     <div className="shell">
       <header className={`bar${beforeStart ? ' setup-bar' : ''}`}>
-        <h1>Adventure</h1>
+        <GameTitle />
         {choosing ? (
           <SeedForm
             draft={seedDraft}

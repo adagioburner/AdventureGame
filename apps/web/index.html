@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>Adventure Hot Seat</title>
+    <title>Skyholm Adventures Hot Seat</title>
     <style>
       /*
         The game's own fonts, from fonts/ beside this page rather than a font
@@ -156,6 +156,14 @@
       .bar h1 {
         font: 400 22px/1 var(--display);
         letter-spacing: 0.01em;
+      }
+      /* [Q175, 690] Skyholm where Skyholm Adventures would add a row to the bar. */
+      .game-title .name-short,
+      .game-title.short .name-full {
+        display: none;
+      }
+      .game-title.short .name-short {
+        display: inline;
       }
       .seed-shown {
         flex: 1 1 auto;
@@ -580,7 +588,7 @@
 
       /* --- the rulebook (Q71, 233 and 234) ----------------------------------
          Over the whole game, in the game's own fonts and colours, the headings
-         in the style of the word Adventure; the whole screen on a phone. */
+         in the style of the game's name in the top bar; the whole screen on a phone. */
       .rules-overlay {
         position: fixed;
         inset: 0;

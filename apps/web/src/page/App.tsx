@@ -14,6 +14,7 @@ import { GameScreen } from './GameScreen.tsx';
 import { MapView } from './MapView.tsx';
 import { initialSeed, mapFor, writeSeed } from './seed.ts';
 import { BarMenu } from './BarMenu.tsx';
+import { GameTitle } from './GameTitle.tsx';
 import { RulesButton } from './Rules.tsx';
 import { SeedForm } from './SeedForm.tsx';
 
@@ -172,7 +173,7 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
   return (
     <div className={`shell${playing ? ' playing' : ''}`}>
       <header className={`bar${playing || barExtra === undefined || barExtra === null ? '' : ' setup-bar'}`}>
-        <h1>Adventure</h1>
+        <GameTitle />
         {playing ? (
           <>
             <span className="seed-shown">

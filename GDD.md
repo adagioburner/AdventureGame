@@ -8,6 +8,8 @@ Status: v1 design, consolidated from `Annotated_Design_Document.md` (the traceab
 
 [SOURCE §intro] A multiplayer turn-based adventure game, supporting AI players alongside humans, playable online or via a hotseat mode (§7.2).
 
+[SOURCE chat, review] **The game is called Skyholm Adventures.** Andrei, 2026-10-01: "Since we are going with the floating island theme, let's change the game's name to Skyholm Adventures. We need to change it to that everywhere it fits, and just to Skyholm where it doesn't. The site address can stay adventure.aburago.workers.dev for now". The top bar's title reads Skyholm Adventures, or Skyholm where the full name would push the bar onto another row; browser tabs carry the full name. Names no player sees (code packages, browser storage keys, the Workers behind the address, the repository) keep the old one. Registered as Q175.
+
 [SOURCE §2] There is no hidden information: the entire map, all POIs, and all rewards are visible to every player at all times.
 
 [SOURCE §2] The goal of the game is to collect gold. A player wins once their gold lead over every other player exceeds the amount of gold still unclaimed on the map [SOURCE §2, chat: evaluated each time a POI with gold is claimed]; a tie for the win results in shared victory.
