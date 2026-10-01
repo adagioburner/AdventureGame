@@ -21,6 +21,12 @@ export interface KeptGame {
    */
   readonly respawn?: boolean;
   /**
+   * [Q135] The most units a site that comes back offers in this game. Absent
+   * on a game kept before the cap, whose sites come back with everything
+   * they started with.
+   */
+  readonly respawnMaxUnits?: number;
+  /**
    * [Q160] The size of map the game is played on, larger from 4 players.
    * Absent on a game kept before maps grew, which goes on on the map it began
    * on: today's size, whatever its number of players.
@@ -47,12 +53,14 @@ export function readKept(): KeptGame | null {
 
 /** Keeps `game`, as set up with `setup` on the map for `seed`; without storage, nothing is kept. */
 export function keep(seed: string, setup: LocalSetup, game: HotseatGame): void {
+  const respawn = game.setup.map.ruleset.config.respawn;
   const kept: KeptGame = {
     seed,
     setup,
     diceSeed: game.setup.diceSeed,
     actions: game.turns.map((turn) => turn.action),
-    respawn: game.setup.map.ruleset.config.respawn !== undefined,
+    respawn: respawn !== undefined,
+    ...(respawn?.MAX_UNITS === undefined ? {} : { respawnMaxUnits: respawn.MAX_UNITS }),
     mapSize: mapSizeOfRuleset(game.setup.map.ruleset),
   };
   try {
@@ -78,7 +86,7 @@ export function keptMapSize(kept: KeptGame): MapSize {
 /** The kept game played again on `map`; `null` if its turns no longer replay. */
 export function replayKept(kept: KeptGame, map: GameMap): HotseatGame | null {
   try {
-    const rules = kept.respawn === true ? map : withoutRespawn(map);
+    const rules = kept.respawn === true ? withRespawnCap(map, kept.respawnMaxUnits) : withoutRespawn(map);
     const game = new HotseatGame({ map: rules, seats: toHotseatSeats(kept.setup), diceSeed: kept.diceSeed });
     for (const action of kept.actions) game.play(action);
     return game;
@@ -91,4 +99,13 @@ export function replayKept(kept: KeptGame, map: GameMap): HotseatGame | null {
 function withoutRespawn(map: GameMap): GameMap {
   const { respawn: _respawn, ...config } = map.ruleset.config;
   return { ...map, ruleset: { ...map.ruleset, config } };
+}
+
+/** `map` with sites coming back at most `max` units, or with everything they started with when `max` is absent (Q135). */
+function withRespawnCap(map: GameMap, max: number | undefined): GameMap {
+  const respawn = map.ruleset.config.respawn;
+  if (respawn === undefined || respawn.MAX_UNITS === max) return map;
+  const { MAX_UNITS: _max, ...uncapped } = respawn;
+  const capped = max === undefined ? uncapped : { ...uncapped, MAX_UNITS: max };
+  return { ...map, ruleset: { ...map.ruleset, config: { ...map.ruleset.config, respawn: capped } } };
 }

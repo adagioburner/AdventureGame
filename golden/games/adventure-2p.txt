@@ -10,7 +10,7 @@
 # A guarded POI says roll + skill vs guard strength; §8 needs strictly greater.
 #
 meta dice_seed=dice-adventure start_node=177 nodes=239 pois=60 gold_units=45
-meta rest_stamina_gain=5 guard_die=1d6 respawn_short_below_sites=2 respawn_far_share=0.5
+meta rest_stamina_gain=5 guard_die=1d6 respawn_short_below_sites=2 respawn_far_share=0.5 respawn_max_units=2
 player p1 seat=1 starting_stamina=30 starting_node=177
 player p2 seat=2 starting_stamina=35 starting_node=177
 
@@ -316,7 +316,7 @@ turn  27  p1 (seat 1)  at node 80  allowance plains 9 / forest 7 / mountain 1  s
   step     96 ->  98  plains   free (plains_move allowance 5 -> 4)
   step     98 ->  81  plains   free (plains_move allowance 4 -> 3)
   poi     node 81 holds forest_move x3, unguarded — taken (§8)
-  back    forest_move x3 back on node 15 (plains): fewer than 2 sites with forest_move left on the map, drawn from the empty ones farthest from every figure (Q135)
+  back    forest_move x2 back on node 15 (plains): fewer than 2 sites with forest_move left on the map, drawn from the empty ones farthest from every figure (Q135)
   stats p1  stamina   9  gold  0  plains_move 9  forest_move 10  mountain_move 1  fighting 1  magic 2
   stats p2  stamina   7  gold  2  plains_move 4  forest_move 2  mountain_move 0  fighting 0  magic 4
 
@@ -401,7 +401,7 @@ turn  35  p1 (seat 1)  at node 91  allowance plains 9 / forest 10 / mountain 2  
   step    107 -> 104  plains   free (plains_move allowance 8 -> 7)
   step    104 ->  93  plains   free (plains_move allowance 7 -> 6)
   poi     node 93 holds plains_move x2, unguarded — taken (§8)
-  back    plains_move x3 back on node 0 (plains): fewer than 2 sites with plains_move left on the map, drawn from the empty ones farthest from every figure (Q135)
+  back    plains_move x2 back on node 0 (plains): fewer than 2 sites with plains_move left on the map, drawn from the empty ones farthest from every figure (Q135)
   stats p1  stamina   6  gold  1  plains_move 11  forest_move 10  mountain_move 2  fighting 1  magic 4
   stats p2  stamina   0  gold  3  plains_move 6  forest_move 2  mountain_move 0  fighting 0  magic 4
 
@@ -723,7 +723,7 @@ turn  65  p1 (seat 1)  at node 40  allowance plains 11 / forest 10 / mountain 13
   step     87 ->  62  plains   free (plains_move allowance 9 -> 8)
   step     62 ->  80  forest   free (forest_move allowance 7 -> 6)
   poi     node 80 holds mountain_move x1, unguarded — taken (§8)
-  back    mountain_move x3 back on node 45 (forest): fewer than 2 sites with mountain_move left on the map, drawn from the empty ones farthest from every figure (Q135)
+  back    mountain_move x2 back on node 45 (forest): fewer than 2 sites with mountain_move left on the map, drawn from the empty ones farthest from every figure (Q135)
   stats p1  stamina   2  gold  5  plains_move 11  forest_move 10  mountain_move 14  fighting 14  magic 4
   stats p2  stamina   2  gold  7  plains_move 6  forest_move 2  mountain_move 0  fighting 0  magic 6
 
@@ -862,12 +862,12 @@ turn  77  p1 (seat 1)  at node 182  allowance plains 14 / forest 10 / mountain 1
   step    161 -> 163  plains   free (plains_move allowance 8 -> 7)
   step    163 -> 102  plains   free (plains_move allowance 7 -> 6)
   poi     node 102 holds forest_move x2, unguarded — taken (§8)
-  back    forest_move x3 back on node 228 (plains): fewer than 2 sites with forest_move left on the map, drawn from the empty ones farthest from every figure (Q135)
+  back    forest_move x2 back on node 228 (plains): fewer than 2 sites with forest_move left on the map, drawn from the empty ones farthest from every figure (Q135)
   stats p1  stamina   2  gold 14  plains_move 14  forest_move 12  mountain_move 14  fighting 14  magic 6
   stats p2  stamina   5  gold  7  plains_move 6  forest_move 5  mountain_move 0  fighting 0  magic 6
 
 turn  78  p2 (seat 2)  at node 187  allowance plains 6 / forest 5 / mountain 0  stamina 5
-  plan    heading for node 228 (forest_move x3, unguarded), the nearest POI p2 could take
+  plan    heading for node 228 (forest_move x2, unguarded), the nearest POI p2 could take
           route 187 -> 220 -> 210 -> 230 -> 229 -> 221 -> 228
   step    187 -> 220  mountain 3 stamina (mountain_move 0, no free steps), 2 left
   step    220 -> 210  plains   free (plains_move allowance 6 -> 5)
@@ -892,7 +892,7 @@ turn  79  p1 (seat 1)  at node 102  allowance plains 14 / forest 12 / mountain 1
   stats p2  stamina   2  gold  7  plains_move 6  forest_move 5  mountain_move 0  fighting 0  magic 6
 
 turn  80  p2 (seat 2)  at node 230  allowance plains 6 / forest 5 / mountain 0  stamina 2
-  plan    heading for node 228 (forest_move x3, unguarded), the nearest POI p2 could take
+  plan    heading for node 228 (forest_move x2, unguarded), the nearest POI p2 could take
           route 230 -> 229 -> 221 -> 228
           can't pay the first step, 230 -> 229 mountain needs 3 stamina (mountain_move 0), 2 left, so rests
   rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
@@ -911,15 +911,15 @@ turn  81  p1 (seat 1)  at node 148  allowance plains 14 / forest 12 / mountain 1
   stats p2  stamina   7  gold  7  plains_move 6  forest_move 5  mountain_move 0  fighting 0  magic 6
 
 turn  82  p2 (seat 2)  at node 230  allowance plains 6 / forest 5 / mountain 0  stamina 7
-  plan    heading for node 228 (forest_move x3, unguarded), the nearest POI p2 could take
+  plan    heading for node 228 (forest_move x2, unguarded), the nearest POI p2 could take
           route 230 -> 229 -> 221 -> 228
   step    230 -> 229  mountain 3 stamina (mountain_move 0, no free steps), 4 left
   step    229 -> 221  mountain 3 stamina (mountain_move 0, no free steps), 1 left
   step    221 -> 228  plains   free (plains_move allowance 6 -> 5)
-  poi     node 228 holds forest_move x3, unguarded — taken (§8)
+  poi     node 228 holds forest_move x2, unguarded — taken (§8)
   back    forest_move x1 back on node 75 (plains): fewer than 2 sites with forest_move left on the map, drawn from the empty ones farthest from every figure (Q135)
   stats p1  stamina   2  gold 16  plains_move 14  forest_move 12  mountain_move 14  fighting 14  magic 7
-  stats p2  stamina   1  gold  7  plains_move 6  forest_move 8  mountain_move 0  fighting 0  magic 6
+  stats p2  stamina   1  gold  7  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 6
 
 turn  83  p1 (seat 1)  at node 174  allowance plains 14 / forest 12 / mountain 14  stamina 2
   plan    heading for node 119 (gold x5, guarded fighting 10), the nearest POI p1 could take
@@ -936,15 +936,15 @@ turn  83  p1 (seat 1)  at node 174  allowance plains 14 / forest 12 / mountain 1
   poi     node 119 holds gold x5, guarded fighting 10
   roll    2 + fighting 14 = 16 vs 10 — taken
   stats p1  stamina   2  gold 21  plains_move 14  forest_move 12  mountain_move 14  fighting 14  magic 7
-  stats p2  stamina   1  gold  7  plains_move 6  forest_move 8  mountain_move 0  fighting 0  magic 6
+  stats p2  stamina   1  gold  7  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 6
 
-turn  84  p2 (seat 2)  at node 228  allowance plains 6 / forest 8 / mountain 0  stamina 1
+turn  84  p2 (seat 2)  at node 228  allowance plains 6 / forest 7 / mountain 0  stamina 1
   plan    heading for node 75 (forest_move x1, unguarded), the nearest POI p2 could take
           route 228 -> 221 -> 229 -> 230 -> 210 -> 220 -> 238 -> 137 -> 195 -> 135 -> 151 -> 138 -> 108 -> 101 -> 106 -> 88 -> 120 -> 75
           can't pay the first step, 228 -> 221 mountain needs 3 stamina (mountain_move 0), 1 left, so rests
   rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
   stats p1  stamina   2  gold 21  plains_move 14  forest_move 12  mountain_move 14  fighting 14  magic 7
-  stats p2  stamina   6  gold  7  plains_move 6  forest_move 8  mountain_move 0  fighting 0  magic 6
+  stats p2  stamina   6  gold  7  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 6
 
 turn  85  p1 (seat 1)  at node 119  allowance plains 14 / forest 12 / mountain 14  stamina 2
   plan    heading for node 39 (magic x1, unguarded), the nearest POI p1 could take
@@ -959,11 +959,11 @@ turn  85  p1 (seat 1)  at node 119  allowance plains 14 / forest 12 / mountain 1
   step     60 ->  29  plains   free (plains_move allowance 7 -> 6)
   step     29 ->  39  plains   free (plains_move allowance 6 -> 5)
   poi     node 39 holds magic x1, unguarded — taken (§8)
-  back    magic x3 back on node 218 (plains): fewer than 2 sites with magic left on the map, drawn from the empty ones farthest from every figure (Q135)
+  back    magic x2 back on node 218 (plains): fewer than 2 sites with magic left on the map, drawn from the empty ones farthest from every figure (Q135)
   stats p1  stamina   2  gold 21  plains_move 14  forest_move 12  mountain_move 14  fighting 14  magic 8
-  stats p2  stamina   6  gold  7  plains_move 6  forest_move 8  mountain_move 0  fighting 0  magic 6
+  stats p2  stamina   6  gold  7  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 6
 
-turn  86  p2 (seat 2)  at node 228  allowance plains 6 / forest 8 / mountain 0  stamina 6
+turn  86  p2 (seat 2)  at node 228  allowance plains 6 / forest 7 / mountain 0  stamina 6
   plan    heading for node 75 (forest_move x1, unguarded), the nearest POI p2 could take
           route 228 -> 221 -> 229 -> 230 -> 210 -> 220 -> 238 -> 137 -> 195 -> 135 -> 151 -> 138 -> 108 -> 101 -> 106 -> 88 -> 120 -> 75
   step    228 -> 221  mountain 3 stamina (mountain_move 0, no free steps), 3 left
@@ -973,93 +973,93 @@ turn  86  p2 (seat 2)  at node 228  allowance plains 6 / forest 8 / mountain 0  
   move    stopped at node 210: next step 210 -> 220 mountain needs 3 stamina (mountain_move 0), 0 left
           13 steps saved as next turn's planned path
   stats p1  stamina   2  gold 21  plains_move 14  forest_move 12  mountain_move 14  fighting 14  magic 8
-  stats p2  stamina   0  gold  7  plains_move 6  forest_move 8  mountain_move 0  fighting 0  magic 6
+  stats p2  stamina   0  gold  7  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 6
 
 turn  87  p1 (seat 1)  at node 39  allowance plains 14 / forest 12 / mountain 14  stamina 2
-  plan    heading for node 15 (forest_move x3, unguarded), the nearest POI p1 could take
+  plan    heading for node 15 (forest_move x2, unguarded), the nearest POI p1 could take
           route 39 -> 29 -> 60 -> 30 -> 19 -> 15
   step     39 ->  29  plains   free (plains_move allowance 14 -> 13)
   step     29 ->  60  plains   free (plains_move allowance 13 -> 12)
   step     60 ->  30  plains   free (plains_move allowance 12 -> 11)
   step     30 ->  19  plains   free (plains_move allowance 11 -> 10)
   step     19 ->  15  plains   free (plains_move allowance 10 -> 9)
-  poi     node 15 holds forest_move x3, unguarded — taken (§8)
+  poi     node 15 holds forest_move x2, unguarded — taken (§8)
   back    forest_move x1 back on node 62 (plains): fewer than 2 sites with forest_move left on the map, drawn from the empty ones farthest from every figure (Q135)
-  stats p1  stamina   2  gold 21  plains_move 14  forest_move 15  mountain_move 14  fighting 14  magic 8
-  stats p2  stamina   0  gold  7  plains_move 6  forest_move 8  mountain_move 0  fighting 0  magic 6
+  stats p1  stamina   2  gold 21  plains_move 14  forest_move 14  mountain_move 14  fighting 14  magic 8
+  stats p2  stamina   0  gold  7  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 6
 
-turn  88  p2 (seat 2)  at node 210  allowance plains 6 / forest 8 / mountain 0  stamina 0
+turn  88  p2 (seat 2)  at node 210  allowance plains 6 / forest 7 / mountain 0  stamina 0
   plan    heading for node 75 (forest_move x1, unguarded), the nearest POI p2 could take
           route 210 -> 220 -> 238 -> 137 -> 195 -> 135 -> 151 -> 138 -> 108 -> 101 -> 106 -> 88 -> 120 -> 75
           can't pay the first step, 210 -> 220 mountain needs 3 stamina (mountain_move 0), 0 left, so rests
   rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
-  stats p1  stamina   2  gold 21  plains_move 14  forest_move 15  mountain_move 14  fighting 14  magic 8
-  stats p2  stamina   5  gold  7  plains_move 6  forest_move 8  mountain_move 0  fighting 0  magic 6
+  stats p1  stamina   2  gold 21  plains_move 14  forest_move 14  mountain_move 14  fighting 14  magic 8
+  stats p2  stamina   5  gold  7  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 6
 
-turn  89  p1 (seat 1)  at node 15  allowance plains 14 / forest 15 / mountain 14  stamina 2
-  plan    heading for node 0 (plains_move x3, unguarded), the nearest POI p1 could take
+turn  89  p1 (seat 1)  at node 15  allowance plains 14 / forest 14 / mountain 14  stamina 2
+  plan    heading for node 0 (plains_move x2, unguarded), the nearest POI p1 could take
           route 15 -> 26 -> 10 -> 2 -> 0
   step     15 ->  26  plains   free (plains_move allowance 14 -> 13)
   step     26 ->  10  plains   free (plains_move allowance 13 -> 12)
   step     10 ->   2  plains   free (plains_move allowance 12 -> 11)
   step      2 ->   0  plains   free (plains_move allowance 11 -> 10)
-  poi     node 0 holds plains_move x3, unguarded — taken (§8)
+  poi     node 0 holds plains_move x2, unguarded — taken (§8)
   back    plains_move x1 back on node 47 (plains): fewer than 2 sites with plains_move left on the map, drawn from the empty ones farthest from every figure (Q135)
-  stats p1  stamina   2  gold 21  plains_move 17  forest_move 15  mountain_move 14  fighting 14  magic 8
-  stats p2  stamina   5  gold  7  plains_move 6  forest_move 8  mountain_move 0  fighting 0  magic 6
+  stats p1  stamina   2  gold 21  plains_move 16  forest_move 14  mountain_move 14  fighting 14  magic 8
+  stats p2  stamina   5  gold  7  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 6
 
-turn  90  p2 (seat 2)  at node 210  allowance plains 6 / forest 8 / mountain 0  stamina 5
+turn  90  p2 (seat 2)  at node 210  allowance plains 6 / forest 7 / mountain 0  stamina 5
   plan    heading for node 75 (forest_move x1, unguarded), the nearest POI p2 could take
           route 210 -> 220 -> 238 -> 137 -> 195 -> 135 -> 151 -> 138 -> 108 -> 101 -> 106 -> 88 -> 120 -> 75
   step    210 -> 220  mountain 3 stamina (mountain_move 0, no free steps), 2 left
   move    stopped at node 220: next step 220 -> 238 mountain needs 3 stamina (mountain_move 0), 2 left
           12 steps saved as next turn's planned path
-  stats p1  stamina   2  gold 21  plains_move 17  forest_move 15  mountain_move 14  fighting 14  magic 8
-  stats p2  stamina   2  gold  7  plains_move 6  forest_move 8  mountain_move 0  fighting 0  magic 6
+  stats p1  stamina   2  gold 21  plains_move 16  forest_move 14  mountain_move 14  fighting 14  magic 8
+  stats p2  stamina   2  gold  7  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 6
 
-turn  91  p1 (seat 1)  at node 0  allowance plains 17 / forest 15 / mountain 14  stamina 2
+turn  91  p1 (seat 1)  at node 0  allowance plains 16 / forest 14 / mountain 14  stamina 2
   plan    heading for node 75 (forest_move x1, unguarded), the nearest POI p1 could take
           route 0 -> 2 -> 10 -> 26 -> 15 -> 19 -> 30 -> 60 -> 64 -> 76 -> 65 -> 68 -> 69 -> 49 -> 75
-  step      0 ->   2  plains   free (plains_move allowance 17 -> 16)
-  step      2 ->  10  plains   free (plains_move allowance 16 -> 15)
-  step     10 ->  26  plains   free (plains_move allowance 15 -> 14)
-  step     26 ->  15  plains   free (plains_move allowance 14 -> 13)
-  step     15 ->  19  plains   free (plains_move allowance 13 -> 12)
-  step     19 ->  30  plains   free (plains_move allowance 12 -> 11)
-  step     30 ->  60  plains   free (plains_move allowance 11 -> 10)
-  step     60 ->  64  plains   free (plains_move allowance 10 -> 9)
-  step     64 ->  76  plains   free (plains_move allowance 9 -> 8)
-  step     76 ->  65  plains   free (plains_move allowance 8 -> 7)
-  step     65 ->  68  plains   free (plains_move allowance 7 -> 6)
-  step     68 ->  69  plains   free (plains_move allowance 6 -> 5)
-  step     69 ->  49  plains   free (plains_move allowance 5 -> 4)
-  step     49 ->  75  plains   free (plains_move allowance 4 -> 3)
+  step      0 ->   2  plains   free (plains_move allowance 16 -> 15)
+  step      2 ->  10  plains   free (plains_move allowance 15 -> 14)
+  step     10 ->  26  plains   free (plains_move allowance 14 -> 13)
+  step     26 ->  15  plains   free (plains_move allowance 13 -> 12)
+  step     15 ->  19  plains   free (plains_move allowance 12 -> 11)
+  step     19 ->  30  plains   free (plains_move allowance 11 -> 10)
+  step     30 ->  60  plains   free (plains_move allowance 10 -> 9)
+  step     60 ->  64  plains   free (plains_move allowance 9 -> 8)
+  step     64 ->  76  plains   free (plains_move allowance 8 -> 7)
+  step     76 ->  65  plains   free (plains_move allowance 7 -> 6)
+  step     65 ->  68  plains   free (plains_move allowance 6 -> 5)
+  step     68 ->  69  plains   free (plains_move allowance 5 -> 4)
+  step     69 ->  49  plains   free (plains_move allowance 4 -> 3)
+  step     49 ->  75  plains   free (plains_move allowance 3 -> 2)
   poi     node 75 holds forest_move x1, unguarded — taken (§8)
-  back    forest_move x3 back on node 81 (plains): fewer than 2 sites with forest_move left on the map, drawn from the empty ones farthest from every figure (Q135)
-  stats p1  stamina   2  gold 21  plains_move 17  forest_move 16  mountain_move 14  fighting 14  magic 8
-  stats p2  stamina   2  gold  7  plains_move 6  forest_move 8  mountain_move 0  fighting 0  magic 6
+  back    forest_move x2 back on node 81 (plains): fewer than 2 sites with forest_move left on the map, drawn from the empty ones farthest from every figure (Q135)
+  stats p1  stamina   2  gold 21  plains_move 16  forest_move 15  mountain_move 14  fighting 14  magic 8
+  stats p2  stamina   2  gold  7  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 6
 
-turn  92  p2 (seat 2)  at node 220  allowance plains 6 / forest 8 / mountain 0  stamina 2
+turn  92  p2 (seat 2)  at node 220  allowance plains 6 / forest 7 / mountain 0  stamina 2
   plan    heading for node 105 (fighting x1, unguarded), the nearest POI p2 could take
           route 220 -> 238 -> 137 -> 195 -> 135 -> 151 -> 138 -> 108 -> 101 -> 106 -> 88 -> 120 -> 100 -> 126 -> 105
           can't pay the first step, 220 -> 238 mountain needs 3 stamina (mountain_move 0), 2 left, so rests
   rest    +5 stamina (REST_STAMINA_GAIN), no move and no interaction
-  stats p1  stamina   2  gold 21  plains_move 17  forest_move 16  mountain_move 14  fighting 14  magic 8
-  stats p2  stamina   7  gold  7  plains_move 6  forest_move 8  mountain_move 0  fighting 0  magic 6
+  stats p1  stamina   2  gold 21  plains_move 16  forest_move 15  mountain_move 14  fighting 14  magic 8
+  stats p2  stamina   7  gold  7  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 6
 
-turn  93  p1 (seat 1)  at node 75  allowance plains 17 / forest 16 / mountain 14  stamina 2
+turn  93  p1 (seat 1)  at node 75  allowance plains 16 / forest 15 / mountain 14  stamina 2
   plan    heading for node 105 (fighting x1, unguarded), the nearest POI p1 could take
           route 75 -> 120 -> 100 -> 126 -> 105
-  step     75 -> 120  plains   free (plains_move allowance 17 -> 16)
-  step    120 -> 100  forest   free (forest_move allowance 16 -> 15)
-  step    100 -> 126  forest   free (forest_move allowance 15 -> 14)
-  step    126 -> 105  forest   free (forest_move allowance 14 -> 13)
+  step     75 -> 120  plains   free (plains_move allowance 16 -> 15)
+  step    120 -> 100  forest   free (forest_move allowance 15 -> 14)
+  step    100 -> 126  forest   free (forest_move allowance 14 -> 13)
+  step    126 -> 105  forest   free (forest_move allowance 13 -> 12)
   poi     node 105 holds fighting x1, unguarded — taken (§8)
-  back    fighting x5 back on node 41 (forest): fewer than 2 sites with fighting left on the map, drawn from the empty ones farthest from every figure (Q135)
-  stats p1  stamina   2  gold 21  plains_move 17  forest_move 16  mountain_move 14  fighting 15  magic 8
-  stats p2  stamina   7  gold  7  plains_move 6  forest_move 8  mountain_move 0  fighting 0  magic 6
+  back    fighting x2 back on node 41 (forest): fewer than 2 sites with fighting left on the map, drawn from the empty ones farthest from every figure (Q135)
+  stats p1  stamina   2  gold 21  plains_move 16  forest_move 15  mountain_move 14  fighting 15  magic 8
+  stats p2  stamina   7  gold  7  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 6
 
-turn  94  p2 (seat 2)  at node 220  allowance plains 6 / forest 8 / mountain 0  stamina 7
+turn  94  p2 (seat 2)  at node 220  allowance plains 6 / forest 7 / mountain 0  stamina 7
   plan    heading for node 47 (plains_move x1, unguarded), the nearest POI p2 could take
           route 220 -> 238 -> 137 -> 195 -> 135 -> 151 -> 138 -> 108 -> 101 -> 106 -> 88 -> 120 -> 100 -> 74 -> 51 -> 47
   step    220 -> 238  mountain 3 stamina (mountain_move 0, no free steps), 4 left
@@ -1073,50 +1073,50 @@ turn  94  p2 (seat 2)  at node 220  allowance plains 6 / forest 8 / mountain 0  
   step    101 -> 106  plains   1 stamina (plains_move 6, allowance already spent), 2 left
   step    106 ->  88  plains   1 stamina (plains_move 6, allowance already spent), 1 left
   step     88 -> 120  plains   1 stamina (plains_move 6, allowance already spent), 0 left
-  step    120 -> 100  forest   free (forest_move allowance 8 -> 7)
-  step    100 ->  74  forest   free (forest_move allowance 7 -> 6)
-  step     74 ->  51  forest   free (forest_move allowance 6 -> 5)
+  step    120 -> 100  forest   free (forest_move allowance 7 -> 6)
+  step    100 ->  74  forest   free (forest_move allowance 6 -> 5)
+  step     74 ->  51  forest   free (forest_move allowance 5 -> 4)
   move    stopped at node 51: next step 51 -> 47 plains needs 1 stamina (plains_move 6, all 6 free steps spent), 0 left
           1 step saved as next turn's planned path
-  stats p1  stamina   2  gold 21  plains_move 17  forest_move 16  mountain_move 14  fighting 15  magic 8
-  stats p2  stamina   0  gold  7  plains_move 6  forest_move 8  mountain_move 0  fighting 0  magic 6
+  stats p1  stamina   2  gold 21  plains_move 16  forest_move 15  mountain_move 14  fighting 15  magic 8
+  stats p2  stamina   0  gold  7  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 6
 
-turn  95  p1 (seat 1)  at node 105  allowance plains 17 / forest 16 / mountain 14  stamina 2
-  plan    heading for node 81 (forest_move x3, unguarded), the nearest POI p1 could take
+turn  95  p1 (seat 1)  at node 105  allowance plains 16 / forest 15 / mountain 14  stamina 2
+  plan    heading for node 81 (forest_move x2, unguarded), the nearest POI p1 could take
           route 105 -> 126 -> 111 -> 123 -> 98 -> 81
-  step    105 -> 126  forest   free (forest_move allowance 16 -> 15)
-  step    126 -> 111  forest   free (forest_move allowance 15 -> 14)
-  step    111 -> 123  forest   free (forest_move allowance 14 -> 13)
-  step    123 ->  98  plains   free (plains_move allowance 17 -> 16)
-  step     98 ->  81  plains   free (plains_move allowance 16 -> 15)
-  poi     node 81 holds forest_move x3, unguarded — taken (§8)
-  back    forest_move x3 back on node 15 (plains): fewer than 2 sites with forest_move left on the map, drawn from the empty ones farthest from every figure (Q135)
-  stats p1  stamina   2  gold 21  plains_move 17  forest_move 19  mountain_move 14  fighting 15  magic 8
-  stats p2  stamina   0  gold  7  plains_move 6  forest_move 8  mountain_move 0  fighting 0  magic 6
+  step    105 -> 126  forest   free (forest_move allowance 15 -> 14)
+  step    126 -> 111  forest   free (forest_move allowance 14 -> 13)
+  step    111 -> 123  forest   free (forest_move allowance 13 -> 12)
+  step    123 ->  98  plains   free (plains_move allowance 16 -> 15)
+  step     98 ->  81  plains   free (plains_move allowance 15 -> 14)
+  poi     node 81 holds forest_move x2, unguarded — taken (§8)
+  back    forest_move x2 back on node 15 (plains): fewer than 2 sites with forest_move left on the map, drawn from the empty ones farthest from every figure (Q135)
+  stats p1  stamina   2  gold 21  plains_move 16  forest_move 17  mountain_move 14  fighting 15  magic 8
+  stats p2  stamina   0  gold  7  plains_move 6  forest_move 7  mountain_move 0  fighting 0  magic 6
 
-turn  96  p2 (seat 2)  at node 51  allowance plains 6 / forest 8 / mountain 0  stamina 0
+turn  96  p2 (seat 2)  at node 51  allowance plains 6 / forest 7 / mountain 0  stamina 0
   plan    heading for node 47 (plains_move x1, unguarded), the nearest POI p2 could take
           route 51 -> 47
   step     51 ->  47  plains   free (plains_move allowance 6 -> 5)
   poi     node 47 holds plains_move x1, unguarded — taken (§8)
-  back    plains_move x3 back on node 231 (plains): fewer than 2 sites with plains_move left on the map, drawn from the empty ones farthest from every figure (Q135)
-  stats p1  stamina   2  gold 21  plains_move 17  forest_move 19  mountain_move 14  fighting 15  magic 8
-  stats p2  stamina   0  gold  7  plains_move 7  forest_move 8  mountain_move 0  fighting 0  magic 6
+  back    plains_move x2 back on node 231 (plains): fewer than 2 sites with plains_move left on the map, drawn from the empty ones farthest from every figure (Q135)
+  stats p1  stamina   2  gold 21  plains_move 16  forest_move 17  mountain_move 14  fighting 15  magic 8
+  stats p2  stamina   0  gold  7  plains_move 7  forest_move 7  mountain_move 0  fighting 0  magic 6
 
-turn  97  p1 (seat 1)  at node 81  allowance plains 17 / forest 19 / mountain 14  stamina 2
+turn  97  p1 (seat 1)  at node 81  allowance plains 16 / forest 17 / mountain 14  stamina 2
   plan    heading for node 62 (forest_move x1, unguarded), the nearest POI p1 could take
           route 81 -> 98 -> 96 -> 97 -> 84 -> 62
-  step     81 ->  98  plains   free (plains_move allowance 17 -> 16)
-  step     98 ->  96  plains   free (plains_move allowance 16 -> 15)
-  step     96 ->  97  plains   free (plains_move allowance 15 -> 14)
-  step     97 ->  84  plains   free (plains_move allowance 14 -> 13)
-  step     84 ->  62  plains   free (plains_move allowance 13 -> 12)
+  step     81 ->  98  plains   free (plains_move allowance 16 -> 15)
+  step     98 ->  96  plains   free (plains_move allowance 15 -> 14)
+  step     96 ->  97  plains   free (plains_move allowance 14 -> 13)
+  step     97 ->  84  plains   free (plains_move allowance 13 -> 12)
+  step     84 ->  62  plains   free (plains_move allowance 12 -> 11)
   poi     node 62 holds forest_move x1, unguarded — taken (§8)
   back    forest_move x2 back on node 59 (plains): fewer than 2 sites with forest_move left on the map, drawn from the empty ones farthest from every figure (Q135)
-  stats p1  stamina   2  gold 21  plains_move 17  forest_move 20  mountain_move 14  fighting 15  magic 8
-  stats p2  stamina   0  gold  7  plains_move 7  forest_move 8  mountain_move 0  fighting 0  magic 6
+  stats p1  stamina   2  gold 21  plains_move 16  forest_move 18  mountain_move 14  fighting 15  magic 8
+  stats p2  stamina   0  gold  7  plains_move 7  forest_move 7  mountain_move 0  fighting 0  magic 6
 
-turn  98  p2 (seat 2)  at node 47  allowance plains 7 / forest 8 / mountain 0  stamina 0
+turn  98  p2 (seat 2)  at node 47  allowance plains 7 / forest 7 / mountain 0  stamina 0
   plan    heading for node 93 (plains_move x2, unguarded), the nearest POI p2 could take
           route 47 -> 56 -> 54 -> 87 -> 62 -> 84 -> 83 -> 107 -> 104 -> 93
   step     47 ->  56  plains   free (plains_move allowance 7 -> 6)
@@ -1128,23 +1128,23 @@ turn  98  p2 (seat 2)  at node 47  allowance plains 7 / forest 8 / mountain 0  s
   step     83 -> 107  plains   free (plains_move allowance 1 -> 0)
   move    stopped at node 107: next step 107 -> 104 plains needs 1 stamina (plains_move 7, all 7 free steps spent), 0 left
           2 steps saved as next turn's planned path
-  stats p1  stamina   2  gold 21  plains_move 17  forest_move 20  mountain_move 14  fighting 15  magic 8
-  stats p2  stamina   0  gold  7  plains_move 7  forest_move 8  mountain_move 0  fighting 0  magic 6
+  stats p1  stamina   2  gold 21  plains_move 16  forest_move 18  mountain_move 14  fighting 15  magic 8
+  stats p2  stamina   0  gold  7  plains_move 7  forest_move 7  mountain_move 0  fighting 0  magic 6
 
-turn  99  p1 (seat 1)  at node 62  allowance plains 17 / forest 20 / mountain 14  stamina 2
+turn  99  p1 (seat 1)  at node 62  allowance plains 16 / forest 18 / mountain 14  stamina 2
   plan    heading for node 93 (plains_move x2, unguarded), the nearest POI p1 could take
           route 62 -> 84 -> 83 -> 107 -> 104 -> 93
-  step     62 ->  84  plains   free (plains_move allowance 17 -> 16)
-  step     84 ->  83  plains   free (plains_move allowance 16 -> 15)
-  step     83 -> 107  plains   free (plains_move allowance 15 -> 14)
-  step    107 -> 104  plains   free (plains_move allowance 14 -> 13)
-  step    104 ->  93  plains   free (plains_move allowance 13 -> 12)
+  step     62 ->  84  plains   free (plains_move allowance 16 -> 15)
+  step     84 ->  83  plains   free (plains_move allowance 15 -> 14)
+  step     83 -> 107  plains   free (plains_move allowance 14 -> 13)
+  step    107 -> 104  plains   free (plains_move allowance 13 -> 12)
+  step    104 ->  93  plains   free (plains_move allowance 12 -> 11)
   poi     node 93 holds plains_move x2, unguarded — taken (§8)
   back    plains_move x2 back on node 141 (plains): fewer than 2 sites with plains_move left on the map, drawn from the empty ones farthest from every figure (Q135)
-  stats p1  stamina   2  gold 21  plains_move 19  forest_move 20  mountain_move 14  fighting 15  magic 8
-  stats p2  stamina   0  gold  7  plains_move 7  forest_move 8  mountain_move 0  fighting 0  magic 6
+  stats p1  stamina   2  gold 21  plains_move 18  forest_move 18  mountain_move 14  fighting 15  magic 8
+  stats p2  stamina   0  gold  7  plains_move 7  forest_move 7  mountain_move 0  fighting 0  magic 6
 
-turn 100  p2 (seat 2)  at node 107  allowance plains 7 / forest 8 / mountain 0  stamina 0
+turn 100  p2 (seat 2)  at node 107  allowance plains 7 / forest 7 / mountain 0  stamina 0
   plan    heading for node 142 (magic x2, unguarded), the nearest POI p2 could take
           route 107 -> 83 -> 84 -> 97 -> 145 -> 152 -> 142
   step    107 ->  83  plains   free (plains_move allowance 7 -> 6)
@@ -1152,75 +1152,75 @@ turn 100  p2 (seat 2)  at node 107  allowance plains 7 / forest 8 / mountain 0  
   step     84 ->  97  plains   free (plains_move allowance 5 -> 4)
   move    stopped at node 97: next step 97 -> 145 mountain needs 3 stamina (mountain_move 0), 0 left
           3 steps saved as next turn's planned path
-  stats p1  stamina   2  gold 21  plains_move 19  forest_move 20  mountain_move 14  fighting 15  magic 8
-  stats p2  stamina   0  gold  7  plains_move 7  forest_move 8  mountain_move 0  fighting 0  magic 6
+  stats p1  stamina   2  gold 21  plains_move 18  forest_move 18  mountain_move 14  fighting 15  magic 8
+  stats p2  stamina   0  gold  7  plains_move 7  forest_move 7  mountain_move 0  fighting 0  magic 6
 
-turn 101  p1 (seat 1)  at node 93  allowance plains 19 / forest 20 / mountain 14  stamina 2
+turn 101  p1 (seat 1)  at node 93  allowance plains 18 / forest 18 / mountain 14  stamina 2
   plan    heading for node 142 (magic x2, unguarded), the nearest POI p1 could take
           route 93 -> 104 -> 107 -> 83 -> 84 -> 97 -> 145 -> 152 -> 142
-  step     93 -> 104  plains   free (plains_move allowance 19 -> 18)
-  step    104 -> 107  plains   free (plains_move allowance 18 -> 17)
-  step    107 ->  83  plains   free (plains_move allowance 17 -> 16)
-  step     83 ->  84  plains   free (plains_move allowance 16 -> 15)
-  step     84 ->  97  plains   free (plains_move allowance 15 -> 14)
+  step     93 -> 104  plains   free (plains_move allowance 18 -> 17)
+  step    104 -> 107  plains   free (plains_move allowance 17 -> 16)
+  step    107 ->  83  plains   free (plains_move allowance 16 -> 15)
+  step     83 ->  84  plains   free (plains_move allowance 15 -> 14)
+  step     84 ->  97  plains   free (plains_move allowance 14 -> 13)
   step     97 -> 145  mountain free (mountain_move allowance 14 -> 13)
   step    145 -> 152  mountain free (mountain_move allowance 13 -> 12)
-  step    152 -> 142  plains   free (plains_move allowance 14 -> 13)
+  step    152 -> 142  plains   free (plains_move allowance 13 -> 12)
   poi     node 142 holds magic x2, unguarded — taken (§8)
   back    magic x2 back on node 193 (plains): fewer than 2 sites with magic left on the map, drawn from the empty ones farthest from every figure (Q135)
-  stats p1  stamina   2  gold 21  plains_move 19  forest_move 20  mountain_move 14  fighting 15  magic 10
-  stats p2  stamina   0  gold  7  plains_move 7  forest_move 8  mountain_move 0  fighting 0  magic 6
+  stats p1  stamina   2  gold 21  plains_move 18  forest_move 18  mountain_move 14  fighting 15  magic 10
+  stats p2  stamina   0  gold  7  plains_move 7  forest_move 7  mountain_move 0  fighting 0  magic 6
 
-turn 102  p2 (seat 2)  at node 97  allowance plains 7 / forest 8 / mountain 0  stamina 0
+turn 102  p2 (seat 2)  at node 97  allowance plains 7 / forest 7 / mountain 0  stamina 0
   plan    heading for node 58 (mountain_move x2, unguarded), the nearest POI p2 could take
           route 97 -> 84 -> 62 -> 87 -> 78 -> 70 -> 67 -> 113 -> 58
   step     97 ->  84  plains   free (plains_move allowance 7 -> 6)
   step     84 ->  62  plains   free (plains_move allowance 6 -> 5)
   step     62 ->  87  plains   free (plains_move allowance 5 -> 4)
-  step     87 ->  78  forest   free (forest_move allowance 8 -> 7)
-  step     78 ->  70  forest   free (forest_move allowance 7 -> 6)
-  step     70 ->  67  forest   free (forest_move allowance 6 -> 5)
-  step     67 -> 113  forest   free (forest_move allowance 5 -> 4)
-  step    113 ->  58  forest   free (forest_move allowance 4 -> 3)
+  step     87 ->  78  forest   free (forest_move allowance 7 -> 6)
+  step     78 ->  70  forest   free (forest_move allowance 6 -> 5)
+  step     70 ->  67  forest   free (forest_move allowance 5 -> 4)
+  step     67 -> 113  forest   free (forest_move allowance 4 -> 3)
+  step    113 ->  58  forest   free (forest_move allowance 3 -> 2)
   poi     node 58 holds mountain_move x2, unguarded — taken (§8)
-  back    mountain_move x3 back on node 8 (forest): fewer than 2 sites with mountain_move left on the map, drawn from the empty ones farthest from every figure (Q135)
-  stats p1  stamina   2  gold 21  plains_move 19  forest_move 20  mountain_move 14  fighting 15  magic 10
-  stats p2  stamina   0  gold  7  plains_move 7  forest_move 8  mountain_move 2  fighting 0  magic 6
+  back    mountain_move x2 back on node 8 (forest): fewer than 2 sites with mountain_move left on the map, drawn from the empty ones farthest from every figure (Q135)
+  stats p1  stamina   2  gold 21  plains_move 18  forest_move 18  mountain_move 14  fighting 15  magic 10
+  stats p2  stamina   0  gold  7  plains_move 7  forest_move 7  mountain_move 2  fighting 0  magic 6
 
-turn 103  p1 (seat 1)  at node 142  allowance plains 19 / forest 20 / mountain 14  stamina 2
-  plan    heading for node 231 (plains_move x3, unguarded), the nearest POI p1 could take
+turn 103  p1 (seat 1)  at node 142  allowance plains 18 / forest 18 / mountain 14  stamina 2
+  plan    heading for node 231 (plains_move x2, unguarded), the nearest POI p1 could take
           route 142 -> 152 -> 162 -> 156 -> 143 -> 165 -> 194 -> 185 -> 215 -> 231
   step    142 -> 152  mountain free (mountain_move allowance 14 -> 13)
   step    152 -> 162  mountain free (mountain_move allowance 13 -> 12)
   step    162 -> 156  mountain free (mountain_move allowance 12 -> 11)
   step    156 -> 143  mountain free (mountain_move allowance 11 -> 10)
   step    143 -> 165  mountain free (mountain_move allowance 10 -> 9)
-  step    165 -> 194  plains   free (plains_move allowance 19 -> 18)
-  step    194 -> 185  plains   free (plains_move allowance 18 -> 17)
-  step    185 -> 215  plains   free (plains_move allowance 17 -> 16)
-  step    215 -> 231  plains   free (plains_move allowance 16 -> 15)
-  poi     node 231 holds plains_move x3, unguarded — taken (§8)
-  back    plains_move x3 back on node 0 (plains): fewer than 2 sites with plains_move left on the map, drawn from the empty ones farthest from every figure (Q135)
-  stats p1  stamina   2  gold 21  plains_move 22  forest_move 20  mountain_move 14  fighting 15  magic 10
-  stats p2  stamina   0  gold  7  plains_move 7  forest_move 8  mountain_move 2  fighting 0  magic 6
+  step    165 -> 194  plains   free (plains_move allowance 18 -> 17)
+  step    194 -> 185  plains   free (plains_move allowance 17 -> 16)
+  step    185 -> 215  plains   free (plains_move allowance 16 -> 15)
+  step    215 -> 231  plains   free (plains_move allowance 15 -> 14)
+  poi     node 231 holds plains_move x2, unguarded — taken (§8)
+  back    plains_move x2 back on node 0 (plains): fewer than 2 sites with plains_move left on the map, drawn from the empty ones farthest from every figure (Q135)
+  stats p1  stamina   2  gold 21  plains_move 20  forest_move 18  mountain_move 14  fighting 15  magic 10
+  stats p2  stamina   0  gold  7  plains_move 7  forest_move 7  mountain_move 2  fighting 0  magic 6
 
-turn 104  p2 (seat 2)  at node 58  allowance plains 7 / forest 8 / mountain 2  stamina 0
+turn 104  p2 (seat 2)  at node 58  allowance plains 7 / forest 7 / mountain 2  stamina 0
   plan    heading for node 112 (gold x1, unguarded), the nearest POI p2 could take
           route 58 -> 113 -> 77 -> 122 -> 140 -> 155 -> 112
-  step     58 -> 113  forest   free (forest_move allowance 8 -> 7)
-  step    113 ->  77  forest   free (forest_move allowance 7 -> 6)
-  step     77 -> 122  forest   free (forest_move allowance 6 -> 5)
-  step    122 -> 140  forest   free (forest_move allowance 5 -> 4)
-  step    140 -> 155  forest   free (forest_move allowance 4 -> 3)
-  step    155 -> 112  forest   free (forest_move allowance 3 -> 2)
+  step     58 -> 113  forest   free (forest_move allowance 7 -> 6)
+  step    113 ->  77  forest   free (forest_move allowance 6 -> 5)
+  step     77 -> 122  forest   free (forest_move allowance 5 -> 4)
+  step    122 -> 140  forest   free (forest_move allowance 4 -> 3)
+  step    140 -> 155  forest   free (forest_move allowance 3 -> 2)
+  step    155 -> 112  forest   free (forest_move allowance 2 -> 1)
   poi     node 112 holds gold x1, unguarded — taken (§8)
-  stats p1  stamina   2  gold 21  plains_move 22  forest_move 20  mountain_move 14  fighting 15  magic 10
-  stats p2  stamina   0  gold  8  plains_move 7  forest_move 8  mountain_move 2  fighting 0  magic 6
+  stats p1  stamina   2  gold 21  plains_move 20  forest_move 18  mountain_move 14  fighting 15  magic 10
+  stats p2  stamina   0  gold  8  plains_move 7  forest_move 7  mountain_move 2  fighting 0  magic 6
 
-turn 105  p1 (seat 1)  at node 231  allowance plains 22 / forest 20 / mountain 14  stamina 2
+turn 105  p1 (seat 1)  at node 231  allowance plains 20 / forest 18 / mountain 14  stamina 2
   plan    heading for node 168 (gold x3, guarded fighting 6), the nearest POI p1 could take
           route 231 -> 215 -> 203 -> 188 -> 170 -> 168
-  step    231 -> 215  plains   free (plains_move allowance 22 -> 21)
+  step    231 -> 215  plains   free (plains_move allowance 20 -> 19)
   step    215 -> 203  mountain free (mountain_move allowance 14 -> 13)
   step    203 -> 188  mountain free (mountain_move allowance 13 -> 12)
   step    188 -> 170  mountain free (mountain_move allowance 12 -> 11)
@@ -1228,10 +1228,10 @@ turn 105  p1 (seat 1)  at node 231  allowance plains 22 / forest 20 / mountain 1
   poi     node 168 holds gold x3, guarded fighting 6
   roll    4 + fighting 15 = 19 vs 6 — taken
   won     p1 — lead exceeds the gold still on the map (§1)
-  stats p1  stamina   2  gold 24  plains_move 22  forest_move 20  mountain_move 14  fighting 15  magic 10
-  stats p2  stamina   0  gold  8  plains_move 7  forest_move 8  mountain_move 2  fighting 0  magic 6
+  stats p1  stamina   2  gold 24  plains_move 20  forest_move 18  mountain_move 14  fighting 15  magic 10
+  stats p2  stamina   0  gold  8  plains_move 7  forest_move 7  mountain_move 2  fighting 0  magic 6
 
 ended victory after 105 turns
-final stats p1  stamina   2  gold 24  plains_move 22  forest_move 20  mountain_move 14  fighting 15  magic 10
-final stats p2  stamina   0  gold  8  plains_move 7  forest_move 8  mountain_move 2  fighting 0  magic 6
+final stats p1  stamina   2  gold 24  plains_move 20  forest_move 18  mountain_move 14  fighting 15  magic 10
+final stats p2  stamina   0  gold  8  plains_move 7  forest_move 7  mountain_move 2  fighting 0  magic 6
 winners p1

@@ -152,6 +152,9 @@ export function validateRuleset(ruleset: Ruleset): void {
     if (!(respawn.FAR_SHARE > 0 && respawn.FAR_SHARE <= 1)) {
       problems.push('Q135: respawn.FAR_SHARE must be above 0 and at most 1.');
     }
+    if (respawn.MAX_UNITS !== undefined && (!Number.isInteger(respawn.MAX_UNITS) || respawn.MAX_UNITS < 1)) {
+      problems.push('Q135: respawn.MAX_UNITS must be a positive integer.');
+    }
     if (respawn.KINDS.includes('gold')) problems.push('Q135: gold never comes back.');
   }
 

@@ -103,7 +103,7 @@ A claimed site is empty until its speed or skill comes back: its icons disappear
 
 ### Speeds and skills come back
 
-At the end of every turn, each speed, combat and magic is counted on its own. If fewer than 2 sites still offer it, one empty site that held it at the start gets back the units it had then. That site is picked at random from the farther half of those empty sites (rounding up, never one a figure stands on), measured by what the cheapest route from the nearest figure would cost in stamina. A site can come back more than once. Gold and stamina never come back.
+At the end of every turn, each speed, combat and magic is counted on its own. If fewer than 2 sites still offer it, one empty site that held it at the start gets back the units it had then, but never more than 2. That site is picked at random from the farther half of those empty sites (rounding up, never one a figure stands on), measured by what the cheapest route from the nearest figure would cost in stamina. A site can come back more than once. Gold and stamina never come back.
 
 ## Winning and ending the game
 
@@ -153,7 +153,7 @@ Computer players follow the same rules. When setting up, you choose how many sec
 | Rest | +5 stamina |
 | Stamina per step past your free steps | Plains 1 · forest 2 · mountains 3 |
 | Fight | 1 die + your skill; beat the guard's strength to win |
-| Speeds and skills come back | When fewer than 2 sites offer one: one far empty site a turn |
+| Speeds and skills come back | When fewer than 2 sites offer one: one far empty site a turn, at most 2 units |
 | Gold on the map | 45, or 63 with 4 or 5 players |
 | Win | Lead by more than the gold left on the map |
 | Online time limit | 1, 3, 7 or 14 days |

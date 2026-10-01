@@ -16,11 +16,14 @@ const UNCLAIMED: PoiRuntimeState = { claimedBy: null, claimedOnTurn: null };
  * `respawn.KINDS` is counted on its own (530 A): while fewer than
  * `SHORT_BELOW_SITES` unclaimed POIs offer it (531 C; Andrei, 2026-10-01: "We
  * need two *sites* with the skill at any time, not two units of skill on the
- * map"), one claimed POI that held it gets its whole reward back (532 A). That POI is drawn with
- * `dice.pick` from the `FAR_SHARE` of the candidates, rounded up, that are
- * farthest from their nearest figure (533 A), by the cheapest route's stamina
- * cost (534 A), never one a figure stands on. A POI that came back can be
- * claimed and come back again (535 A).
+ * map"), one claimed POI that held it gets its reward back (532 A), but no
+ * more than `MAX_UNITS` units of it (Andrei, 2026-10-01: "let us cap the
+ * skills to 2 units when they respawn"; a game started before the cap has no
+ * `MAX_UNITS` and gets the whole reward). That POI is drawn with `dice.pick`
+ * from the `FAR_SHARE` of the candidates, rounded up, that are farthest from
+ * their nearest figure (533 A), by the cheapest route's stamina cost (534 A),
+ * never one a figure stands on. A POI that came back can be claimed and come
+ * back again (535 A).
  *
  * A map without `respawn` config (a game started before this rule) is left as
  * it is. Nothing is drawn unless a kind is short and has a POI to come back
@@ -65,10 +68,12 @@ export function respawnShortRewards(state: GameState, dice: DiceSource, events: 
     const chosen = far[dice.pick(far.length)];
     if (chosen === undefined) continue;
 
+    const original = pois[chosen.index]?.reward;
+    if (original === undefined) continue;
+    const units = respawn.MAX_UNITS === undefined ? original.units : Math.min(original.units, respawn.MAX_UNITS);
     runtime ??= state.poiRuntime.slice();
-    runtime[chosen.index] = UNCLAIMED;
-    const reward = pois[chosen.index]?.reward;
-    if (reward !== undefined) events.push({ type: 'reward_returned', node: chosen.node, reward });
+    runtime[chosen.index] = units < original.units ? { ...UNCLAIMED, units } : UNCLAIMED;
+    events.push({ type: 'reward_returned', node: chosen.node, reward: { kind: original.kind, units } });
   }
 
   return runtime === null ? state : { ...state, poiRuntime: runtime };

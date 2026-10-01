@@ -3,15 +3,15 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_RULESET } from '@adventure/config';
 import type { GameEvent } from '../action.ts';
 import type { GameMap } from '../gamemap.ts';
-import type { GameState } from '../state.ts';
+import { playerById, type GameState } from '../state.ts';
 import { applyAction } from './turn.ts';
 import { fixtureGame, fixtureMap, n, noDice, player, scriptedDice, withPosition, withStats } from './scenario.fixture.ts';
 
 /**
  * [Q135] Speeds and skills come back: while fewer than 2 unclaimed POIs offer
- * one, one empty POI that held it gets its whole reward back at the end of a
- * turn, drawn from the farther half of them (rounded up) by stamina cost from
- * the nearest figure, never one a figure stands on.
+ * one, one empty POI that held it gets its reward back, at most 2 units of it,
+ * at the end of a turn, drawn from the farther half of them (rounded up) by
+ * stamina cost from the nearest figure, never one a figure stands on.
  *
  *   0(p) ── 1(p) ── 2(p) ── 3(p) ── 4(p) ── 5(p) ── 6(p) ── 7(p)
  *                   │                        │       │       │
@@ -158,6 +158,32 @@ describe('speeds and skills coming back (Q135)', () => {
     const noGold = withPosition(game([13, 5, 7]), one, 0);
     const { events } = applyAction(noGold, rest, scriptedDice([], 6, [0]));
     expect(returned(events).map((back) => back.kind)).not.toContain('gold');
+  });
+
+  it('brings a site back with at most 2 units, and that is what it gives', () => {
+    // Magic's one site, node 6, held 3.
+    const first = applyAction(game([6]), rest, scriptedDice([], 6, [0]));
+    expect(returned(first.events)).toEqual([{ node: n(6), kind: 'magic', units: 2 }]);
+
+    // Seat 2 steps onto it from node 5 and takes 2 magic, not 3.
+    const walker = withStats(withPosition(first.state, two, 5), two, { stamina: 10, magic: 0 });
+    const took = applyAction(walker, { kind: 'move', player: two, path: [n(6)] }, noDice);
+    expect(playerById(took.state, two).stats.magic).toBe(2);
+    expect(claimedAt(took.state, 6)).toBe(true);
+
+    // Taken again, it comes back with 2 again once nobody stands on it.
+    const away = withPosition(took.state, two, 0);
+    const again = applyAction(away, rest, scriptedDice([], 6, [0]));
+    expect(returned(again.events)).toEqual([{ node: n(6), kind: 'magic', units: 2 }]);
+  });
+
+  it('brings the whole stack back in a game started before the cap', () => {
+    const respawn = DEFAULT_RULESET.config.respawn;
+    if (respawn === undefined) throw new Error('the default rules bring speeds and skills back');
+    const { MAX_UNITS: _max, ...uncapped } = respawn;
+    const before: GameMap = { ...map, ruleset: { ...DEFAULT_RULESET, config: { ...DEFAULT_RULESET.config, respawn: uncapped } } };
+    const { events } = applyAction(game([6], before), rest, scriptedDice([], 6, [0]));
+    expect(returned(events)).toEqual([{ node: n(6), kind: 'magic', units: 3 }]);
   });
 
   it('leaves a game started before the rule as it was', () => {

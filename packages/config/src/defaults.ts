@@ -64,11 +64,13 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
   },
   // [Q135] Andrei, 2026-09-30, 530 A, 531 C, 533 A; 22:56 "keep at least 2 of each
   // skill on the map (instead of 3)", and 2026-10-01 "We need two *sites* with
-  // the skill at any time, not two units of skill on the map".
+  // the skill at any time, not two units of skill on the map". MAX_UNITS:
+  // 2026-10-01 "let us cap the skills to 2 units when they respawn".
   respawn: {
     KINDS: SKILL_KINDS,
     SHORT_BELOW_SITES: 2,
     FAR_SHARE: 0.5,
+    MAX_UNITS: 2,
   },
 };
 

@@ -57,6 +57,19 @@ describe('a game on one device kept in the browser (Q56, 66)', () => {
     expect(before?.setup.map.graph).toBe(map.graph);
   });
 
+  it('keeps the most units a site comes back with, and replays a game kept before the cap with whole stacks (Q135)', () => {
+    keep('adventure', setup, new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'kept' }));
+    const kept = readKept();
+    expect(kept?.respawnMaxUnits).toBe(2);
+    expect(kept === null ? null : replayKept(kept, map)?.setup.map.ruleset.config.respawn?.MAX_UNITS).toBe(2);
+
+    const { respawnMaxUnits: _max, ...older } = kept ?? { respawnMaxUnits: undefined };
+    const before = replayKept(older as NonNullable<typeof kept>, map)?.setup.map.ruleset.config.respawn;
+    expect(before).toBeDefined();
+    expect(before?.MAX_UNITS).toBeUndefined();
+    expect(before?.SHORT_BELOW_SITES).toBe(map.ruleset.config.respawn?.SHORT_BELOW_SITES);
+  });
+
   it('keeps the size of map a game is played on, and puts a game kept before maps grew on the standard map (Q160)', () => {
     const fourSeats: LocalSetup = {
       seats: [
