@@ -347,9 +347,13 @@ export interface RespawnConfig {
   readonly FAR_SHARE: number;
   /**
    * The most units a POI that comes back offers; one that held fewer gets
-   * those back. 2 (Andrei, 2026-10-01: "let us cap the skills to 2 units when
+   * those back. 1 (Andrei, 2026-10-01: "let us cap the skills to 2 units when
    * they respawn. The idea is to provide a player who was late to the party
-   * with something to do, not to create a cornucopia"). Absent on games
+   * with something to do, not to create a cornucopia"; then, having played,
+   * "even capping regrown skills by 2 is too much. It's not supposed to be
+   * easy when skills run out. Starving your opponents of some skill should be
+   * one of the strategies. Let's change that cap to one."). Games keep the cap
+   * they started with: 2 for those started under it, and absent on games
    * started before the cap, which bring back the whole reward (532 A).
    */
   readonly MAX_UNITS?: number;

@@ -2563,6 +2563,13 @@ the turn log and the claim card show what it offers. Games started before the
 cap bring whole stacks back. 543 A: the rulebook adds "but never more than 2"
 to the sentence, and "at most 2 units" to the quick reference row.
 
+Then, the same day, having played: "even capping regrown skills by 2 is too
+much. It's not supposed to be easy when skills run out. Starving your
+opponents of some skill should be one of the strategies. Let's change that cap
+to one." `RESPAWN_MAX_UNITS` is 1, so every site that comes back offers 1 unit;
+games started under the cap of 2 keep 2. 544 A: the rulebook says the site
+"gets back 1 unit of it", and the quick reference row "with 1 unit".
+
 ### Q140. ~~How are a player card's stats arranged, and how does gold stand out?~~ — **answered 2026-10-01: moving down the left, the rest down the right with gold last, gold's number deep red (550-553 A)**
 
 [SOURCE §2, chat] Andrei, 2026-09-30: "On a player card, it would be nice to

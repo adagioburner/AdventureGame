@@ -141,7 +141,7 @@ At the end of every turn that did not win the game, after its claim,
 `respawn.KINDS` (the five skills: three speeds, fighting, magic) on its own.
 While fewer than `respawn.SHORT_BELOW_SITES` (2) unclaimed POIs offer a kind,
 whatever their units, one claimed POI that held that kind gets its reward back,
-one per kind per turn, but no more than `respawn.MAX_UNITS` (2) units of it: the
+one per kind per turn, but no more than `respawn.MAX_UNITS` (1) units of it: the
 POI's runtime then carries `units`, which `offeredReward` reads wherever what it
 offers is shown or claimed. The POI is drawn with the `DiceSource`'s `pick` from the
 `respawn.FAR_SHARE` (half, rounded up) of the candidates farthest from their
@@ -151,7 +151,8 @@ break by node id so every replay orders them alike. A POI can come back any
 number of times. Gold and stamina never come back, so the win condition is
 untouched. A map whose config has no `respawn` (a game started before this
 rule, online or kept on a device) plays as before, and one whose `respawn` has
-no `MAX_UNITS` (started before the cap) brings whole rewards back. The event is
+no `MAX_UNITS` (started before the cap) brings whole rewards back; one started
+while the cap was 2 keeps 2. The event is
 `reward_returned`.
 
 Three things the engine deliberately does *not* track: any player may attempt a

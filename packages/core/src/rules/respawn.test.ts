@@ -9,8 +9,8 @@ import { fixtureGame, fixtureMap, n, noDice, player, scriptedDice, withPosition,
 
 /**
  * [Q135] Speeds and skills come back: while fewer than 2 unclaimed POIs offer
- * one, one empty POI that held it gets its reward back, at most 2 units of it,
- * at the end of a turn, drawn from the farther half of them (rounded up) by
+ * one, one empty POI that held it gets 1 unit of its reward back at the end
+ * of a turn, drawn from the farther half of them (rounded up) by
  * stamina cost from the nearest figure, never one a figure stands on.
  *
  *   0(p) ── 1(p) ── 2(p) ── 3(p) ── 4(p) ── 5(p) ── 6(p) ── 7(p)
@@ -77,11 +77,11 @@ describe('speeds and skills coming back (Q135)', () => {
     expect(state.poiRuntime).toEqual(game([]).poiRuntime);
   });
 
-  it('brings a short kind back to the farthest empty site, with the stack it started with', () => {
+  it('brings a short kind back to the farthest empty site, with 1 unit', () => {
     // Fighting left: node 2's site alone. Empty: 5 (5 away) and 7 (7 away);
     // the farther half of two is one, node 7, which held 2.
     const { state, events } = applyAction(game([5, 7]), rest, scriptedDice([], 6, [0]));
-    expect(returned(events)).toEqual([{ node: n(7), kind: 'fighting', units: 2 }]);
+    expect(returned(events)).toEqual([{ node: n(7), kind: 'fighting', units: 1 }]);
     expect(claimedAt(state, 7)).toBe(false);
     expect(claimedAt(state, 5)).toBe(true);
     expect(events.map((event) => event.type)).toEqual(['rested', 'reward_returned', 'turn_ended']);
@@ -106,14 +106,14 @@ describe('speeds and skills coming back (Q135)', () => {
     // Plains speed is gone. Node 9 is two forest steps away (4 stamina) and
     // node 12 three plains steps (3): node 9 is the farther.
     const { events } = applyAction(game([9, 12]), rest, scriptedDice([], 6, [0]));
-    expect(returned(events)).toEqual([{ node: n(9), kind: 'plains_move', units: 2 }]);
+    expect(returned(events)).toEqual([{ node: n(9), kind: 'plains_move', units: 1 }]);
   });
 
   it('counts each kind on its own, one site each in the same turn', () => {
     const { events } = applyAction(game([5, 7, 9, 12]), rest, scriptedDice([], 6, [0, 0]));
     expect(returned(events)).toEqual([
-      { node: n(9), kind: 'plains_move', units: 2 },
-      { node: n(7), kind: 'fighting', units: 2 },
+      { node: n(9), kind: 'plains_move', units: 1 },
+      { node: n(7), kind: 'fighting', units: 1 },
     ]);
   });
 
@@ -127,7 +127,7 @@ describe('speeds and skills coming back (Q135)', () => {
   it('brings back one site a turn until 2 sites offer the kind again', () => {
     // No fighting site left at all: node 7 comes back first, still one site short.
     const first = applyAction(game([2, 5, 7]), rest, scriptedDice([], 6, [0]));
-    expect(returned(first.events)).toEqual([{ node: n(7), kind: 'fighting', units: 2 }]);
+    expect(returned(first.events)).toEqual([{ node: n(7), kind: 'fighting', units: 1 }]);
     const second = applyAction(first.state, { kind: 'rest', player: two }, scriptedDice([], 6, [0]));
     expect(returned(second.events)).toEqual([{ node: n(5), kind: 'fighting', units: 1 }]);
     const third = applyAction(second.state, rest, noDice);
@@ -138,7 +138,7 @@ describe('speeds and skills coming back (Q135)', () => {
     // Seat 1 takes node 2, the last fighting site; nodes 5 and 7 are empty, so 7 comes back.
     const walker = withStats(game([5, 7]), one, { stamina: 10 });
     const took = applyAction(walker, { kind: 'move', player: one, path: [n(1), n(2)] }, scriptedDice([], 6, [0]));
-    expect(returned(took.events)).toEqual([{ node: n(7), kind: 'fighting', units: 2 }]);
+    expect(returned(took.events)).toEqual([{ node: n(7), kind: 'fighting', units: 1 }]);
     expect(took.events.map((event) => event.type)).toEqual(['moved', 'interacted', 'reward_returned', 'turn_ended']);
 
     // Seat 2 takes node 7 again; with the figures on 2 and 7, node 5 is the only one left.
@@ -160,21 +160,29 @@ describe('speeds and skills coming back (Q135)', () => {
     expect(returned(events).map((back) => back.kind)).not.toContain('gold');
   });
 
-  it('brings a site back with at most 2 units, and that is what it gives', () => {
+  it('brings a site back with 1 unit, and that is what it gives', () => {
     // Magic's one site, node 6, held 3.
     const first = applyAction(game([6]), rest, scriptedDice([], 6, [0]));
-    expect(returned(first.events)).toEqual([{ node: n(6), kind: 'magic', units: 2 }]);
+    expect(returned(first.events)).toEqual([{ node: n(6), kind: 'magic', units: 1 }]);
 
-    // Seat 2 steps onto it from node 5 and takes 2 magic, not 3.
+    // Seat 2 steps onto it from node 5 and takes 1 magic, not 3.
     const walker = withStats(withPosition(first.state, two, 5), two, { stamina: 10, magic: 0 });
     const took = applyAction(walker, { kind: 'move', player: two, path: [n(6)] }, noDice);
-    expect(playerById(took.state, two).stats.magic).toBe(2);
+    expect(playerById(took.state, two).stats.magic).toBe(1);
     expect(claimedAt(took.state, 6)).toBe(true);
 
-    // Taken again, it comes back with 2 again once nobody stands on it.
+    // Taken again, it comes back with 1 again once nobody stands on it.
     const away = withPosition(took.state, two, 0);
     const again = applyAction(away, rest, scriptedDice([], 6, [0]));
-    expect(returned(again.events)).toEqual([{ node: n(6), kind: 'magic', units: 2 }]);
+    expect(returned(again.events)).toEqual([{ node: n(6), kind: 'magic', units: 1 }]);
+  });
+
+  it('brings 2 units back in a game started while the cap was 2', () => {
+    const respawn = DEFAULT_RULESET.config.respawn;
+    if (respawn === undefined) throw new Error('the default rules bring speeds and skills back');
+    const before: GameMap = { ...map, ruleset: { ...DEFAULT_RULESET, config: { ...DEFAULT_RULESET.config, respawn: { ...respawn, MAX_UNITS: 2 } } } };
+    const { events } = applyAction(game([6], before), rest, scriptedDice([], 6, [0]));
+    expect(returned(events)).toEqual([{ node: n(6), kind: 'magic', units: 2 }]);
   });
 
   it('brings the whole stack back in a game started before the cap', () => {
