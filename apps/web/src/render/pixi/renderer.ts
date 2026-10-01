@@ -69,6 +69,7 @@ export class PixiMapRenderer implements MapRenderer {
   private waypointSprite: Sprite | null = null;
   private cue: FigureCue = 'none';
   private planner: PlayerId | null = null;
+  private found: PlayerId | null = null;
   /** What the blink animates: the current player's figure, its ring and the ripple. */
   private cued: { figure: Sprite | null; ring: Sprite | null; ripple: Graphics; at: Point } | null = null;
 
@@ -122,7 +123,7 @@ export class PixiMapRenderer implements MapRenderer {
   setState(state: GameState): void {
     if (state.map !== this.map) throw new Error('this renderer draws one map; make a new one for another');
     this.state = state;
-    this.stateScene = buildStateScene(this.scene, state, this.art.catalog, this.walker, this.planner);
+    this.stateScene = buildStateScene(this.scene, state, this.art.catalog, this.walker, this.planner, this.found);
     for (const layer of ['nodes', 'pois', 'characters', 'ui', 'path-overlay'] as const) this.invalidate(layer);
   }
 
@@ -130,7 +131,7 @@ export class PixiMapRenderer implements MapRenderer {
   setWalker(walker: Walker | null): void {
     this.walker = walker;
     if (this.state === null || this.stateScene === null) return;
-    this.stateScene = { ...this.stateScene, ...buildCharacters(this.scene, this.state, this.art.catalog, walker, this.planner) };
+    this.stateScene = { ...this.stateScene, ...buildCharacters(this.scene, this.state, this.art.catalog, walker, this.planner, this.found) };
     this.invalidate('characters');
   }
 
@@ -139,7 +140,16 @@ export class PixiMapRenderer implements MapRenderer {
     if (planner === this.planner) return;
     this.planner = planner;
     if (this.state === null || this.stateScene === null) return;
-    this.stateScene = { ...this.stateScene, ...buildCharacters(this.scene, this.state, this.art.catalog, this.walker, planner) };
+    this.stateScene = { ...this.stateScene, ...buildCharacters(this.scene, this.state, this.art.catalog, this.walker, planner, this.found) };
+    this.invalidate('characters');
+  }
+
+  /** [Q120, 471] The player whose card was just clicked, whose figure stands on a ring; `null` for none. */
+  setFound(found: PlayerId | null): void {
+    if (found === this.found) return;
+    this.found = found;
+    if (this.state === null || this.stateScene === null) return;
+    this.stateScene = { ...this.stateScene, ...buildCharacters(this.scene, this.state, this.art.catalog, this.walker, this.planner, found) };
     this.invalidate('characters');
   }
 
@@ -330,6 +340,9 @@ export class PixiMapRenderer implements MapRenderer {
     // [Q56, 49] A player planning out of turn has their figure highlighted as
     // on their own turn, while the figure on turn keeps its own cue.
     if (planning !== null) this.drawRing(planning, true);
+    // [Q120, 471] So does a player whose card was just clicked, for a moment.
+    const found = this.stateScene?.found ?? null;
+    if (found !== null) this.drawRing(found, true);
     if (active !== null) {
       const ring = this.drawRing(active, this.cue === 'selected');
       if (this.cue === 'blink') {

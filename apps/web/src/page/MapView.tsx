@@ -19,6 +19,12 @@ export interface MapHandle {
   /** Bring a node to the middle, zoomed in enough to play at. */
   centerOn(node: NodeId): void;
   /**
+   * [Andrei, 2026-09-30] Q120, 470: a player's card was clicked. Bring their
+   * figure to the middle, wherever it has got to on a walk, zoomed in as
+   * `centerOn` does.
+   */
+  centerOnFigure(player: PlayerId): void;
+  /**
    * Slide a node to the middle over `GLIDE_MS`, at the zoom the view already
    * has. Panning, zooming or `centerOn` while it slides stops it where it is,
    * and so does a walk that has to take the map along (Q47).
@@ -51,6 +57,8 @@ interface MapViewProps {
   readonly cue?: FigureCue;
   /** [Q56, 49] Online, the player planning out of turn, whose figure is highlighted. */
   readonly planner?: PlayerId | null;
+  /** [Q120, 471] The player whose card was just clicked, whose figure is highlighted for a moment. */
+  readonly found?: PlayerId | null;
   /** A click or tap, as opposed to a drag; `shift` for a shift-click. */
   readonly onTap?: (target: Pick, shift: boolean) => void;
   /**
@@ -73,7 +81,7 @@ const OVERHANG = { top: SPACING_PX * 1.2, side: SPACING_PX * 0.5, bottom: SPACIN
 /** A press that travels less than this, in CSS pixels, is a click rather than a drag. */
 const TAP_TRAVEL_PX = 8;
 
-/** Zoom, relative to the whole-map view, that "find" brings the map to at least. */
+/** Zoom, relative to the whole-map view, that a player's card (Q120) and a phone's Plan a move bring the map to at least. */
 const PLAY_ZOOM_OF_FIT = 2.2;
 
 export function MapView({
@@ -87,6 +95,7 @@ export function MapView({
   walker,
   cue = 'none',
   planner = null,
+  found = null,
   onTap,
   tracking = true,
   onTrack,
@@ -100,8 +109,8 @@ export function MapView({
   // Read when the renderer comes up, and by the pointer handlers, which are
   // bound once per map.
   const from = pathFrom ?? state.players[state.turn.activeSeat - 1]?.position ?? null;
-  const latest = useRef({ state, path, from, waypoint, walker, cue, planner, onTap, onMoved, onReady });
-  latest.current = { state, path, from, waypoint, walker, cue, planner, onTap, onMoved, onReady };
+  const latest = useRef({ state, path, from, waypoint, walker, cue, planner, found, onTap, onMoved, onReady });
+  latest.current = { state, path, from, waypoint, walker, cue, planner, found, onTap, onMoved, onReady };
   // Whether a walk takes the map along. It follows Track, and stops at once
   // when the map is moved, before the page has unpressed Track.
   const following = useRef(tracking);
@@ -166,6 +175,7 @@ export function MapView({
       const now = latest.current;
       map.setWalker(now.walker);
       map.setPlanner(now.planner);
+      map.setFound(now.found);
       map.setState(now.state);
       map.setPathPreview(now.path, now.from);
       map.setWaypoint(now.waypoint);
@@ -347,17 +357,24 @@ export function MapView({
       };
 
       const planeOf = (node: NodeId): Point => scene.projection.toScreen(position(gameMap.graph, node));
+      const centerAt = (plane: Point): void => {
+        stopCamera();
+        camera.centerOn(plane, fit().zoom * PLAY_ZOOM_OF_FIT);
+        touched = true;
+        apply();
+      };
       latest.current.onReady?.({
         screenOf: (node) => planeToScreen(camera.camera, viewport(), planeOf(node)),
         screenOfFigure: (player) => {
           const top = figureTop(map.characters, art.shape, player);
           return top === null ? null : planeToScreen(camera.camera, viewport(), top);
         },
-        centerOn: (node) => {
-          stopCamera();
-          camera.centerOn(planeOf(node), fit().zoom * PLAY_ZOOM_OF_FIT);
-          touched = true;
-          apply();
+        centerOn: (node) => centerAt(planeOf(node)),
+        centerOnFigure: (player) => {
+          const walking = latest.current.walker;
+          if (walking !== null && walking.player === player) return centerAt(scene.projection.toScreen(walking.at));
+          const stands = latest.current.state.players.find((one) => one.id === player);
+          if (stands !== undefined) centerAt(planeOf(stands.position));
         },
         glideTo: (node) => {
           const to = planeOf(node);
@@ -417,6 +434,9 @@ export function MapView({
   useEffect(() => {
     renderer.current?.setPlanner(planner);
   }, [planner]);
+  useEffect(() => {
+    renderer.current?.setFound(found);
+  }, [found]);
   useEffect(() => {
     following.current = tracking;
   }, [tracking]);
