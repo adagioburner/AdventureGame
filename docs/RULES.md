@@ -112,12 +112,15 @@ path and can still be changed (§7.1). The client's coloured path preview
 what a player is shown and what the server commits cannot disagree. Grey means
 "not this turn", never "impossible" — resting always restores stamina.
 
-**One distance metric, everywhere.** That same 1 / 2 / 3 weighted terrain cost is
-the only distance in the design: the UI's shortest path, the remoteness walk
-(§5.1) and the AI's POI targeting (§9) all use it, from
-`packages/core/src/path.ts`. There is no second cost function in the repo, and
-shortest-path ties break deterministically so two clients, the server and a
-replay all draw the identical path.
+**One cost per step, everywhere.** That same 1 / 2 / 3 weighted terrain cost is
+the only cost in the design: the remoteness walk (§5.1) and the AI's POI
+targeting (§9) use it, from `packages/core/src/path.ts`. There is no second
+cost function in the repo, and shortest-path ties break deterministically so
+two clients, the server and a replay all draw the identical path. Since Q210
+the route drawn for a person, and the computer's real move, is the best for the
+player's speeds (`bestRoute`): free steps cost nothing and a turn counts as 5
+stamina. It is picked as deterministically, and with no speeds it is the
+cheapest route.
 
 ### Arriving at a POI
 

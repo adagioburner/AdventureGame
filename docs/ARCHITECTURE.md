@@ -306,10 +306,16 @@ the map and skip simulating a settled tail. The terminal test also stops on a
 finished game, because §1's win condition can fire earlier, when a leader's lead
 already exceeds what remains.
 
-**There is one distance metric in the whole repo.** `terrainStepCost` in
+**There is one cost per step in the whole repo.** `terrainStepCost` in
 `core/path.ts` (1 plains / 2 forest / 3 mountain, charged on *entering* a node,
-per §8's worked example) is used by remoteness walks, the UI's shortest path,
-the AI's targeting and stamina charging. No second cost function exists.
+per §8's worked example) is used by remoteness walks, the AI's targeting and
+imagined routes, and stamina charging. No second cost function exists. Since
+Q210 the route drawn for a person and the route a computer's real move walks
+are the best for the player's speeds (`bestRoute` in
+`core/rules/bestRoute.ts`), picked from `RouteTable.routesFrom`: every route
+that no other route beats on all three terrains' step counts, worked out the
+first time a node is asked for. A route only as good as the cheapest keeps the
+cheapest, so a player with no speeds is drawn exactly the route they were.
 
 ---
 
@@ -411,9 +417,11 @@ pass `closestBySpeeds` (`packages/sim/src/speeds.ts`) in place of
 `closestPoiCandidates`: every eligible POI's effective distance, the least over
 n turns of 5n plus the stamina still needed after n turns of free steps, from
 the steps per terrain along the cheapest route (`RouteTable.stepsFrom`, counted
-the first time a node is asked for). Only the ranking changes; routes are still
-the cheapest by weighted terrain cost, and the remoteness walk still ranks by
-that cost. `closestByTerrainCost` keeps the earlier ranking for the balancing
+the first time a node is asked for). Only the ranking changes; the routes its
+search and its imagined players walk are still the cheapest by weighted
+terrain cost, and the remoteness walk still ranks by that cost. Its real move
+walks the best route for its speeds (Q210, stage 1: `firstTurnOf` passes
+`bestRouteForSpeeds` to `turnTowards`). `closestByTerrainCost` keeps the earlier ranking for the balancing
 harness's `+fixed` seats.
 
 **Routes are searched once per map in a game** (Andrei, 2026-09-28):

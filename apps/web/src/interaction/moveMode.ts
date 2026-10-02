@@ -1,8 +1,8 @@
 import {
+  bestRouteVia,
   endTurnActionFor,
   previewPath,
   refreshAllowance,
-  routeVia,
   type GameState,
   type NodeId,
   type PathPreview,
@@ -18,7 +18,8 @@ import type { UiModeConfig } from '../modes/hotseat.ts';
  * mode; clicking a destination node highlights the shortest path (weighted
  * terrain cost, §5.1) with a thick dotted line and an isometric cross at the
  * destination. Shift-click sets an intermediate waypoint when more than one
- * path exists."
+ * path exists." [Q210] The path highlighted is now the best for the player's
+ * speeds (`bestRouteVia`), not the cheapest by terrain alone.
  *
  * A small explicit state machine rather than scattered flags, because the same
  * states behave differently in the two modes (§7.1 vs §7.2).
@@ -142,8 +143,9 @@ export interface PlannedRoute {
 }
 
 /**
- * Routes and colours for `player` in `game`: `routeVia`'s cheapest path
- * (through the waypoint, if any) and `previewPath`'s colours for it.
+ * Routes and colours for `player` in `game`: `bestRouteVia`'s route, the best
+ * for the player's speeds through the waypoint, if any, a leg at a time
+ * (Q210, 810 A to 812 A), and `previewPath`'s colours for it.
  *
  * The allowance is the turn's own for the player whose turn it is. A player
  * planning out of turn (§7.1, online only) will start their next turn with a
@@ -155,7 +157,7 @@ export function gamePreviewSource(game: GameState, player: PlayerId): PreviewSou
   const config = game.map.ruleset.config;
   return {
     previewFor(destination, waypoint) {
-      const path = routeVia(game.map.graph, planner.position, waypoint, destination, config);
+      const path = bestRouteVia(game.map.graph, planner.position, waypoint, destination, planner.stats, config);
       if (path === null) return null;
       return { path, preview: previewFor(game, planner, path) };
     },
@@ -166,6 +168,18 @@ function previewFor(game: GameState, planner: PlayerState, path: readonly NodeId
   const active = planner.seat === game.turn.activeSeat;
   const allowance = active ? game.turn.allowance : refreshAllowance(planner.stats);
   return previewPath(game.map.graph, planner.position, path, allowance, planner.stats.stamina, game.map.ruleset.config);
+}
+
+/** Whether `player`'s plains, forest or mountains speed differs between the two states. */
+function speedsChanged(before: GameState, after: GameState, player: PlayerId): boolean {
+  const was = before.players.find((candidate) => candidate.id === player)?.stats;
+  const now = after.players.find((candidate) => candidate.id === player)?.stats;
+  if (was === undefined || now === undefined) return false;
+  return was.plains_move !== now.plains_move || was.forest_move !== now.forest_move || was.mountain_move !== now.mountain_move;
+}
+
+function samePath(a: readonly NodeId[], b: readonly NodeId[]): boolean {
+  return a.length === b.length && a.every((node, index) => node === b[index]);
 }
 
 function playerIn(game: GameState, id: PlayerId): PlayerState {
@@ -273,6 +287,20 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
         armed = false;
         engaged = false;
         return set(resume(next));
+      }
+      // [Q210, 813 A] Speeds bought this turn pick the route shown again for
+      // them, a waypoint still ahead kept, as choosing its destination again
+      // would: a route that changes is picked up, so online it is saved.
+      if (!newTurn && planner !== null && before !== null && speedsChanged(before, next, planner)) {
+        const shown = engaged ? state : resume(next);
+        if (shown.kind === 'previewing') {
+          const waypoint = shown.waypoint !== null && shown.path.includes(shown.waypoint) ? shown.waypoint : null;
+          const again = plan(shown.destination, waypoint);
+          if (again.kind === 'previewing' && !samePath(again.path, shown.path)) {
+            engaged = true;
+            return set(again);
+          }
+        }
       }
       // [Q56, 53] A route not picked up is the saved one, which another of
       // this player's devices, or a Cancel from this one, may have changed.

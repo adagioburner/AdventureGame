@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyAction,
+  bestRoute,
+  bestRouteVia,
   pathCost,
   previewPath,
   refreshAllowance,
@@ -481,5 +483,94 @@ describe('Track closes planning (Q57, 75)', () => {
     expect(controller.engaged).toBe(false);
     expect(controller.planner).toBe(bram.id);
     expect(controller.state).toMatchObject({ kind: 'previewing', path: route });
+  });
+});
+
+/** `state` with `player`'s three speeds set, as buying them would leave it. */
+function withSpeeds(state: GameState, player: GameState['players'][number]['id'], plains: number, forest: number, mountain: number): GameState {
+  return {
+    ...state,
+    players: state.players.map((candidate) =>
+      candidate.id === player ? { ...candidate, stats: { ...candidate.stats, plains_move: plains, forest_move: forest, mountain_move: mountain } } : candidate,
+    ),
+  };
+}
+
+/** A site whose best route from the first seat, with `state`'s speeds, is not the cheapest by terrain alone. */
+function siteWithBetterRoute(state: GameState): { target: NodeId; best: readonly NodeId[]; cheapest: readonly NodeId[] } {
+  const player = seat(state, 0);
+  for (const poi of map.pois) {
+    const best = bestRoute(map.graph, player.position, poi.node, player.stats, config) ?? [];
+    const cheapest = shortestPath(map.graph, player.position, poi.node, config) ?? [];
+    if (best.length > 0 && best.join() !== cheapest.join()) return { target: poi.node, best, cheapest };
+  }
+  throw new Error('no site has a better route for these speeds');
+}
+
+describe('the route drawn is the best for the player’s speeds (Q210, 810 A to 813 A)', () => {
+  it('draws the best route for the player’s speeds, not the cheapest by terrain alone', () => {
+    const { game, controller } = setup();
+    const player = seat(game.state, 0);
+    const fast = withSpeeds(game.state, player.id, 1, 2, 4);
+    controller.setGame(fast);
+    const { target, best } = siteWithBetterRoute(fast);
+    controller.enter(player.id);
+    controller.selectDestination(target);
+    expect(controller.state).toMatchObject({ kind: 'previewing', destination: target, path: best });
+  });
+
+  it('takes each leg the best way through a waypoint (812 A)', () => {
+    const { game, controller } = setup();
+    const player = seat(game.state, 0);
+    const fast = withSpeeds(game.state, player.id, 1, 2, 4);
+    controller.setGame(fast);
+    const { target, best } = siteWithBetterRoute(fast);
+    const waypoint = best[Math.floor(best.length / 2)] as NodeId;
+    controller.enter(player.id);
+    controller.choose(target, false);
+    controller.choose(waypoint, true);
+    const stats = seat(fast, 0).stats;
+    expect(controller.state).toMatchObject({
+      kind: 'previewing',
+      waypoint,
+      path: bestRouteVia(map.graph, player.position, waypoint, target, stats, config),
+    });
+  });
+
+  it('picks the route drawn again when speeds are bought, as choosing its destination again would (813 A)', () => {
+    const { game, controller } = setup();
+    const player = seat(game.state, 0);
+    const { target, best, cheapest } = siteWithBetterRoute(withSpeeds(game.state, player.id, 1, 2, 4));
+    controller.enter(player.id);
+    controller.selectDestination(target);
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: cheapest });
+    controller.setGame(withSpeeds(game.state, player.id, 1, 2, 4));
+    expect(controller.state).toMatchObject({ kind: 'previewing', destination: target, path: best });
+    expect(controller.engaged).toBe(true);
+  });
+
+  it('picks a saved route not picked up again too, and picks it up, so online it is saved (813 A)', () => {
+    const { game, controller } = setup();
+    const player = seat(game.state, 0);
+    const { target, best, cheapest } = siteWithBetterRoute(withSpeeds(game.state, player.id, 1, 2, 4));
+    const saved = planned(game.state, player.id, cheapest);
+    controller.setGame(saved);
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: cheapest });
+    expect(controller.engaged).toBe(false);
+    controller.setGame(withSpeeds(saved, player.id, 1, 2, 4));
+    expect(controller.state).toMatchObject({ kind: 'previewing', destination: target, path: best });
+    expect(controller.engaged).toBe(true);
+  });
+
+  it('leaves the route as it was, only recoloured, when the speeds bought do not change it', () => {
+    const { game, controller } = setup();
+    const player = seat(game.state, 0);
+    const { target } = nodeAlong(game.state, 3);
+    controller.setGame(planned(game.state, player.id, shortestPath(map.graph, player.position, target, config) ?? []));
+    const before = controller.state;
+    // A plains speed of 1 leaves this short route the best one.
+    controller.setGame(withSpeeds(planned(game.state, player.id, before.kind === 'previewing' ? before.path : []), player.id, 1, 0, 0));
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: before.kind === 'previewing' ? before.path : null });
+    expect(controller.engaged).toBe(false);
   });
 });

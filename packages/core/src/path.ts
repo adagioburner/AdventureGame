@@ -3,13 +3,17 @@ import { asNodeId, type NodeId } from './ids.ts';
 import { neighbours, type MapGraph } from './graph.ts';
 
 /**
- * [SOURCE §1.2, chat] There is exactly **one** distance metric in this design:
+ * [SOURCE §1.2, chat] There is exactly **one** cost per step in this design:
  * weighted terrain cost, 1 plains / 2 forest / 3 mountain per step. It is used
- * for remoteness walks (§5.1), for the UI's shortest-path display (§7.1), for
- * the AI's routes (§9), and it is the same table that stamina is charged from
- * (§7). Every component imports it from here; there is no second cost function
- * in the repo. The AI ranks the sites at the ends of these routes by its own
- * speeds from `stepsFrom` (Q112), but walks the routes this metric finds.
+ * for remoteness walks (§5.1), for the AI's imagined routes (§9), and it is the
+ * same table that stamina is charged from (§7). Every component imports it from
+ * here; there is no second cost function in the repo. The AI ranks the sites at
+ * the ends of these routes by its own speeds from `stepsFrom` (Q112).
+ *
+ * [Q210] The route drawn for a person and the route a computer's real move
+ * walks are the best for the player's speeds instead (`bestRoute`), picked
+ * from `routesFrom`: a route can only be best if no other route takes fewer
+ * steps on every terrain.
  *
  * The cost is charged for *entering* a node, so it depends on the destination
  * node's terrain — confirmed by the §8 worked example, where a step onto a
@@ -180,6 +184,44 @@ export interface RouteTable {
    * second route postponed.
    */
   stepsFrom(from: NodeId): TerrainSteps;
+  /**
+   * [Q210] Every route from `from` that no other route beats on all three
+   * terrains' step counts, to every node. Worked out the first time it is
+   * asked for, so a caller that never asks pays nothing.
+   */
+  routesFrom(from: NodeId): RouteFront;
+}
+
+/**
+ * [Q210] The routes from one node that could be the best for some speeds:
+ * for each node, the routes to it that no other route to it beats on the
+ * steps onto every terrain (fewer or as many on all three, and fewer on one).
+ * Two routes with the same steps per terrain are one entry, the one found
+ * first.
+ *
+ * Each route is an entry; `start[node]` up to `start[node + 1]` are the
+ * entries ending on `node`, in the order they were found: by weighted terrain
+ * cost, so the first is the cheapest by terrain alone. `previous` is the
+ * entry the route came through (-1 for the start), so `frontPath` walks a
+ * route back.
+ */
+export interface RouteFront {
+  readonly start: Int32Array;
+  readonly plains: Uint16Array;
+  readonly forest: Uint16Array;
+  readonly mountain: Uint16Array;
+  /** The node each entry ends on. */
+  readonly node: Int32Array;
+  readonly previous: Int32Array;
+}
+
+/** The route `entry` of `front` stands for, excluding its starting node. */
+export function frontPath(front: RouteFront, entry: number): readonly NodeId[] {
+  const reversed: NodeId[] = [];
+  for (let at = entry; (front.previous[at] as number) !== -1; at = front.previous[at] as number) {
+    reversed.push(asNodeId(front.node[at] as number));
+  }
+  return reversed.reverse();
 }
 
 /** Steps onto each terrain, indexed by the node a route ends on. */
@@ -199,6 +241,7 @@ export function routeTable(graph: MapGraph, config: GameConfig): RouteTable {
 
   const searches = graph.nodes.map((_node, from) => dijkstra(graph, asNodeId(from), config));
   const steps: (TerrainSteps | undefined)[] = new Array(graph.nodes.length);
+  const fronts: (RouteFront | undefined)[] = new Array(graph.nodes.length);
   const table: RouteTable = {
     from(from: NodeId): DijkstraResult {
       const search = searches[from];
@@ -216,6 +259,15 @@ export function routeTable(graph: MapGraph, config: GameConfig): RouteTable {
         steps[from] = counts;
       }
       return counts;
+    },
+    routesFrom(from: NodeId): RouteFront {
+      if (from < 0 || from >= graph.nodes.length) throw new RangeError(`unknown node ${from}`);
+      let front = fronts[from];
+      if (front === undefined) {
+        front = routeFront(graph, from, config);
+        fronts[from] = front;
+      }
+      return front;
     },
   };
   byConfig.set(config, table);
@@ -243,6 +295,99 @@ function stepsAlong(graph: MapGraph, from: NodeId, search: DijkstraResult): Terr
     }
   }
   return counts;
+}
+
+/**
+ * `RouteTable.routesFrom`: a search like `dijkstra`'s, but keeping every route
+ * to a node that no route found before it beats on all three terrains' steps.
+ * Routes are taken in order of weighted terrain cost, so a route that beats
+ * another, having fewer steps somewhere and no more anywhere, always comes
+ * first and the beaten one is dropped on arrival. Ties in cost go in the
+ * order the routes were found, so the result is the same on every device.
+ */
+function routeFront(graph: MapGraph, from: NodeId, config: GameConfig): RouteFront {
+  const count = graph.nodes.length;
+  const terrainOf = graph.nodes.map((node) => TERRAINS.indexOf(node.terrain));
+  const costOf = TERRAINS.map((terrain) => terrainStepCost(terrain, config));
+
+  // Every route found, kept or not: steps per terrain, end node, the route it extends.
+  const steps: [number[], number[], number[]] = [[], [], []];
+  const ends: number[] = [];
+  const previous: number[] = [];
+  const costs: number[] = [];
+  const kept: number[][] = Array.from({ length: count }, () => []);
+
+  const beaten = (node: number, plains: number, forest: number, mountain: number): boolean => {
+    for (const other of kept[node] as number[]) {
+      if ((steps[0][other] as number) <= plains && (steps[1][other] as number) <= forest && (steps[2][other] as number) <= mountain) {
+        return true;
+      }
+    }
+    return false;
+  };
+
+  const heap: HeapEntry[] = [];
+  const found = (plains: number, forest: number, mountain: number, node: number, before: number, cost: number): void => {
+    steps[0].push(plains);
+    steps[1].push(forest);
+    steps[2].push(mountain);
+    ends.push(node);
+    previous.push(before);
+    costs.push(cost);
+    // The heap's `node` is the route's index here: `(cost, index)` is the order.
+    heapPush(heap, { node: asNodeId(ends.length - 1), cost });
+  };
+
+  found(0, 0, 0, from, -1, 0);
+  for (;;) {
+    const entry = heapPop(heap);
+    if (entry === undefined) break;
+    const route = entry.node as number;
+    const node = ends[route] as number;
+    const plains = steps[0][route] as number;
+    const forest = steps[1][route] as number;
+    const mountain = steps[2][route] as number;
+    if (beaten(node, plains, forest, mountain)) continue;
+    (kept[node] as number[]).push(route);
+
+    for (const next of neighbours(graph, asNodeId(node))) {
+      const terrain = terrainOf[next] as number;
+      const p = plains + (terrain === 0 ? 1 : 0);
+      const f = forest + (terrain === 1 ? 1 : 0);
+      const m = mountain + (terrain === 2 ? 1 : 0);
+      if (beaten(next, p, f, m)) continue;
+      found(p, f, m, next, route, (costs[route] as number) + (costOf[terrain] as number));
+    }
+  }
+
+  // Kept routes only, grouped by end node; a kept route's predecessor is always kept.
+  const start = new Int32Array(count + 1);
+  let total = 0;
+  for (let node = 0; node < count; node++) {
+    start[node] = total;
+    total += (kept[node] as number[]).length;
+  }
+  start[count] = total;
+  const renumbered = new Map<number, number>();
+  for (const list of kept) for (const route of list) renumbered.set(route, renumbered.size);
+
+  const front = {
+    start,
+    plains: new Uint16Array(total),
+    forest: new Uint16Array(total),
+    mountain: new Uint16Array(total),
+    node: new Int32Array(total),
+    previous: new Int32Array(total),
+  };
+  for (const [route, at] of renumbered) {
+    front.plains[at] = steps[0][route] as number;
+    front.forest[at] = steps[1][route] as number;
+    front.mountain[at] = steps[2][route] as number;
+    front.node[at] = ends[route] as number;
+    const before = previous[route] as number;
+    front.previous[at] = before === -1 ? -1 : (renumbered.get(before) as number);
+  }
+  return front;
 }
 
 /* -- A binary min-heap ordered by `(cost, node id)`. Infrastructure only. --- */

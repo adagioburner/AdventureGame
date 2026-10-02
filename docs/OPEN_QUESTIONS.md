@@ -3071,6 +3071,54 @@ happens before the walk, not after"*.
 788. **A purchase that ends the game:** the end card waits for its notices
      (as built). **Answered:** as built, 13:39.
 
+### Q210. Which route do players take? — **stage 1 answered 2026-10-02: the best for their speeds, drawn for people and walked by the computer's real moves; stages 2 and 3 open (810-817)**
+
+[SOURCE §4, §9, chat] Andrei, 2026-10-02 at 18:12: *"it bothers me that the
+game shows to me the path that is not optimal based on my current skills. How
+hard is it to make the players, including computer players, take the optimal
+path by default"*. This is the second route [Q112](#q112)'s 422 A postponed. At
+18:52 he set the order: *"1. Keep simulated games as they are, but switch the
+actual paths players walk to the most efficient 2. Build MCTS nodes with the
+most efficient paths, but leave the simulated games as they are 3. Switch
+simulated games to the strategy above"*, the strategy being: *"Most of the time
+it does not matter what path the simulated player takes. We an quickly
+calculate how soon it arrives to the destination based on our cached distance
+in steps for each terrain. If it arrives there, the path did not matter. It is
+only in case where some other player overtakes it and claims the target POI
+first we need to calculate the path and figure out where it is on it."*
+Answered at 18:56.
+
+810. **What counts as best:** his Q112 formula on the route itself, free steps
+     costing nothing and a turn counting as 5 stamina (recommended); the least
+     stamina on this turn's walk; or the fewest turns with the stamina held
+     now. **Answered:** as recommended.
+811. **Two routes equally good:** the one cheaper by terrain alone, today's
+     route whenever it is one of them (recommended); or the one with fewer
+     steps. **Answered:** as recommended.
+812. **With a waypoint:** each leg the best for the player's speeds
+     (recommended); or waypoint routes as before. **Answered:** as
+     recommended.
+813. **Buying a speed with a route drawn:** the route is picked again for the
+     new speeds, a waypoint kept (recommended); or it stays and is only
+     recoloured. **Answered:** as recommended.
+814. **Where the computer uses it:** settled by his three stages above.
+815. **Games already under way:** they get it too, no rule changing
+     (recommended); or new games only. **Answered:** as recommended.
+816. **The rulebook:** *"drop the details on how the route is calculated. THe
+     players only need to know that we picked for them what we think is the
+     best"*: it says the game draws the route it thinks is best for you. How
+     it is picked is in GDD.md §7.
+817. **Comparing stage 1's computer with today's at 3 s:** *"B is good enough,
+     you are not changing how computers decide the next move"*: no comparison
+     for stage 1; one PR per stage.
+
+Stage 1, as built: `bestRoute` and `bestRouteVia` (`packages/core`), from
+`RouteTable.routesFrom`, every route no other route beats on all three
+terrains' step counts. The move planner draws it; a purchase that changes the
+planner's speeds picks the route shown again, as choosing its destination
+again would. The computer's real move (`firstTurnOf`) walks it; its search and
+the games it imagines still rank and walk the cheapest route.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design
