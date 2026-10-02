@@ -2886,6 +2886,37 @@ Answered 21:30, and 692 at 22:04.
      packages, headers and keys renamed with saved games moved over.
      **Answered:** they keep their names.
 
+### Q180. ~~What can be done about the trees crowding the map's edge?~~ — **answered 2026-10-01: a third of the trees past the outermost roads stay, and the rest are planted in the middle of the forest, as many as fit by today's rules (710, 711)**
+
+Andrei, 2026-10-01 at 21:19, with a picture of the back edges against the
+new sky: *"Trees are crowding too at the edge. Can we do something about
+it?"*, and at 21:21: *"I would rather ask you to fit more in the middle"*.
+Each forest gets a set number of trees (3.2 per forest space), and inside the forest
+most spots are refused because a tree would stand on a road or a space or
+hide one behind it. The strip between the outermost roads and the map's edge
+has nothing to keep clear of, and along the back edges a tree hides nothing
+behind it, so that strip took most of the trees: 188 of the 230 on seed
+adventure. The floating island (Q170) placed no trees; its sky only made the
+hedge stand out. Answered 21:59 and 22:09.
+
+710. **How many of the trees past the outermost roads stay:** half; a third,
+     in small groups with sky between them (recommended); a sixth; or none.
+     **Answered:** a third. Each stays by that chance (`EDGE_TREES_KEPT` in
+     `apps/web/src/render/dressing.ts`). All four edges alike; the two front
+     edges rarely have any.
+711. **The trees taken off the edge:** planted in the middle of the forest
+     wherever a tree fits by today's rules (recommended); planted there and
+     allowed to stand closer to roads, a tree's leaves possibly touching a
+     road's side; or not planted, leaving the forest with fewer trees.
+     **Answered:** planted by today's rules. On seed adventure 48 of the 120
+     fit, so the middle goes from 42 trees to 90. Each tree taken off gets
+     `MIDDLE_TRIES` (40) tries before it is dropped.
+
+Andrei also asked, at 22:01, whether trees could hide a small piece of road;
+letting a tree hide up to a road's width of road would fit 74 instead of 48
+on seed adventure. Not built: he picked 711's first answer after asking.
+Every other tree, bush and stone stays where it was.
+
 ### Q185. ~~Which guard does forest gold get now?~~ — **answered 2026-10-01: always magic, by the same chance turned to 100%; kept games keep their coin flips, and the rulebook says each terrain's guard (730, 731 A)**
 
 [SOURCE §4.4, chat] Andrei, 2026-10-01: "After playing some more I think we
