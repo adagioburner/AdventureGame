@@ -3091,7 +3091,7 @@ early. Asked at 15:10 with a picture; at 15:22, *"790 to 792: looks good"*.
      35 stamina"*, since it shows what differs between seats (recommended);
      or B, *"... and 5 gold"*. **Answered:** A.
 
-### Q210. Which route do players take? — **stage 1 answered 2026-10-02: the best for their speeds, drawn for people and walked by the computer's real moves; stage 2 answered: its search's own choices too; stage 3 open (810-821)**
+### Q210. Which route do players take? — **stage 1 answered 2026-10-02: the best for their speeds, drawn for people and walked by the computer's real moves; stage 2 answered: its search's own choices too; stage 3 answered: the games it imagines walk it, counted along a route traced once (810-825)**
 
 [SOURCE §4, §9, chat] Andrei, 2026-10-02 at 18:12: *"it bothers me that the
 game shows to me the path that is not optimal based on my current skills. How
@@ -3159,6 +3159,41 @@ Answered at 18:56.
      wins, gold margins and games imagined per move (recommended); B, none.
      **Answered:** A.
 
+Stage 3, asked 2026-10-02 at 22:58 after *"go ahead merge it and let's go to
+stage 3"* (22:51), answered at 23:34 and 23:36:
+
+822. **Which sites imagined players head for:** the 10 closest by the best
+     route for their speeds, like the search's own choices (recommended, and
+     the costly part: on its own it cut games imagined per move from 1,800 to
+     700 at turn 1); or the 10 closest along the cheapest route as before, only
+     the walk changing. **Answered:** B.
+823. **How an imagined walk is counted:** the best route traced once when a
+     player picks its site and its turns counted along it in order, as a real
+     walk goes, the figure not moved step by step but placed when it arrives,
+     when a turn ends on a site on the way, or when someone takes its site
+     first (recommended); or his
+     shortcut as written, arrival from the steps per terrain and the route
+     traced only when overtaken. On a turn that ends short the order of the
+     terrain decides where the walk stops: a step that cannot be paid stops it
+     even with free steps after it. On 8 maps the totals gave a different
+     arrival turn in 10% to 27% of trips, mostly a turn early, and left out
+     the 1.4% to 2.6% of claims made where a turn ends on a site on the way;
+     and tracing a route costs about as much as counting it. 23:34: *"The
+     "shortcut" is simply lazy evaluation of the path; we do that only when
+     needed. Are you saying that picking the path is simply not costly enough
+     to bother?"* Yes, and the totals alone do not give the arrival. 23:36:
+     **Answered:** A, *"let's proceed with 823 A and lo[o]k at the numbers"*.
+824. **Games where skills come back** (started before buying), whose returning
+     skill goes far from every figure: they keep the imagined games of before
+     (recommended), or get stage 3 too. **Answered:** *"whatever is the most
+     convenient, there arent too many old games"*. Stage 3 places every figure
+     after every turn and brings skills back as a played turn does, so these
+     games get it too with nothing added.
+825. **Comparing stage 3 at 3 s before it merges:** 20 games, 2 computers,
+     seats swapped, against the computer before it, reporting wins, gold
+     margins and games imagined per move (recommended); or none. **Answered:**
+     A, *"of course"*.
+
 Stage 1, as built: `bestRoute` and `bestRouteVia` (`packages/core`), from
 `RouteTable.routesFrom`, every route no other route beats on all three
 terrains' step counts. The move planner draws it; a purchase that changes the
@@ -3182,6 +3217,22 @@ Tested (821 A), 20 games with the seats swapped at 3 s a move on ten maps
 counting the cheapest route as before: 10 wins each, none shared, +2.1 ± 2.4
 gold a game for stage 2, within luck. Games imagined per move 5,647 against
 5,322, so counting the best route did not slow the search.
+
+Stage 3, as built: the players in the games the computer imagines, the other
+seats inside its own tree edges included, still pick among the 10 closest
+along the cheapest route (`closestBySpeeds`, 822 B) and walk the best route
+for their speeds, traced once when they pick (`bestRoute`). Each turn is
+counted along it by §7's rules (`countWalk`) and played with
+`applyCountedTurn`, which places the figure where the count ends and then does
+what a played turn does there: fight or take an unclaimed site, check for a
+win after gold, bring a short skill back, hand over. Counted along the
+cheapest route, an imagined game is exactly the one `applyAction` would play;
+600 of them on real maps came out identical, every claim, roll and rest. The
+route is not picked again on later turns, as the computer's real move does;
+the search's own walk along a tree edge is still played turn by turn (stage
+2). The figure is placed where every turn's count ends, not only at the
+moments 823 named: that costs little, and games where skills come back need
+every figure's place (824).
 
 ---
 

@@ -40,6 +40,8 @@ export interface ComputerSettings {
   readonly pick?: TargetPicker;
   /** [Q210] Which routes the search's own choices count; the best for the player's speeds when absent, as the game plays. */
   readonly searchRoutes?: 'best' | 'cheapest';
+  /** [Q210] How the players in its imagined games walk; counted along the best route for their speeds when absent, as the game plays. */
+  readonly imaginedWalks?: 'counted' | 'replayed';
   /** Told after every move how many iterations the search ran in how long. */
   readonly onSearch?: (iterations: number, took: number) => void;
 }
@@ -79,6 +81,7 @@ export function computerDriver(settings: ComputerSettings): PlaythroughDriver {
         ...(settings.closest === undefined ? {} : { closest: settings.closest }),
         ...(settings.pick === undefined ? {} : { pick: settings.pick }),
         ...(settings.searchRoutes === undefined ? {} : { searchRoutes: settings.searchRoutes }),
+        ...(settings.imaginedWalks === undefined ? {} : { imaginedWalks: settings.imaginedWalks }),
       });
       const took = settings.now() - started;
       settings.onSearch?.(result.iterations, took);

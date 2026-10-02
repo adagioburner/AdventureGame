@@ -429,10 +429,20 @@ steps, all from the cached steps per terrain of the routes kept to each site
 up to `BEST_ROUTE_MEMO_KEYS` of them per map, since the search asks the same
 ones every round), and its own walk along a tree edge is
 `MctsOptions.edgeRoute`, `bestRouteForSpeeds`. Its imagined games, the other
-seats' turns inside a tree edge included, still rank by `closestBySpeeds` and
-walk the cheapest route (stage 3). `closestByTerrainCost` keeps the earlier
-ranking for the balancing harness's `+fixed` seats, and `+cheapest-search`
-the search before stage 2.
+seats' turns inside a tree edge included, still rank by `closestBySpeeds`
+(822 B). Since stage 3 they walk the best route for the player's speeds,
+traced once when a player picks its site (`bestRoute`, picked afresh rather
+than from `bestRouteSteps`' answers, since imagined players stand on too many
+spaces with too many speeds for any store of them) and counted a turn at a
+time along it (`countWalk`, §7's accounting without its record), each turn
+played with `applyCountedTurn` (823 A): `applyAction`'s turn with the walk
+already counted, so a turn ending on an unclaimed site still fights or takes
+it. `RolloutCursor.walks` carries each seat's route and how far along it the
+seat is. Counted along the cheapest route, an imagined game is exactly the one
+`applyAction` plays (a test holds them equal). `closestByTerrainCost` keeps
+the earlier ranking for the balancing harness's `+fixed` seats,
+`+cheapest-search` the search before stage 2, and `+replayed-walks` the
+imagined walks before stage 3.
 
 **Routes are searched once per map in a game** (Andrei, 2026-09-28):
 `routeTable` in `packages/core/src/path.ts` runs the whole Dijkstra from every

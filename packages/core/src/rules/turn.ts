@@ -65,6 +65,9 @@ export interface ActionOutcome {
  * Every action but `post_message` and `delete_message` requires a game in
  * progress; the board is not a game move and stays open once a game has
  * finished.
+ *
+ * The one other writer is `applyCountedTurn`, for the games the computer
+ * imagines and never for a game being played.
  */
 export function applyAction(state: GameState, action: GameAction, dice: DiceSource): ActionOutcome {
   switch (action.kind) {
@@ -122,19 +125,23 @@ function applyTurnAction(state: GameState, action: TurnAction, dice: DiceSource)
   const player = requireActivePlayer(state, action.player);
   const events: GameEvent[] = [];
 
-  let next =
+  const next =
     action.kind === 'move'
       ? applyMove(state, player, action.path, action.waypoint, events)
       : applyRest(state, player, action, events);
+  return { state: finishTurn(next, player.id, action.kind === 'move', dice, events), events };
+}
 
+/** A turn once its walk or rest is done: what happens where it ends, then the hand-over. */
+function finishTurn(state: GameState, playerId: PlayerId, moved: boolean, dice: DiceSource, events: GameEvent[]): GameState {
+  let next = state;
   // §7/§8: the interaction is a property of where the *turn* ends, so a POI
   // walked over on the way is not interacted with, and resting on one is not
   // either — [SOURCE §7, chat] rest is "no movement/interaction".
-  if (action.kind === 'move') next = applyArrival(next, player.id, dice, events);
+  if (moved) next = applyArrival(next, playerId, dice, events);
   // [Q135] Once the turn's claim is made, and only while the game goes on.
   if (next.status === 'in_progress') next = respawnShortRewards(next, dice, events);
-
-  return { state: endTurn(next, player.id, events), events };
+  return endTurn(next, playerId, events);
 }
 
 function applyMove(
@@ -227,6 +234,46 @@ function applyArrival(state: GameState, playerId: PlayerId, dice: DiceSource, ev
 
   events.push({ type: 'game_won', winners });
   return { ...claimed, status: 'finished', winners, ending: 'won' };
+}
+
+/**
+ * A turn of a game the computer imagines whose walk has already been counted
+ * along its route (`applyCountedTurn`): a rest, or a walk that ends on `to`
+ * having spent `staminaSpent`, which may be no steps at all.
+ */
+export type CountedTurn =
+  | { readonly kind: 'rest' }
+  | { readonly kind: 'walk'; readonly to: NodeId; readonly staminaSpent: number };
+
+/**
+ * [Q210] Stage 3 of Andrei's plan, 2026-10-02: the games the computer
+ * imagines count a walk along the route a player picked, once, rather than
+ * replaying it through `applyAction` every turn (823 A). This plays a turn
+ * so counted: the active player rests, or stands on `to` with
+ * `staminaSpent` less stamina, and the turn ends as `applyAction`'s would:
+ * §8 on an unclaimed site where a walk ends, §1's win check after a gold
+ * claim, any short speed or skill brought back (Q135), and the hand-over.
+ *
+ * The walk itself is the caller's to count, by §7's rules (`countWalk`),
+ * and is not checked again here; no events are kept, and the saved route is
+ * left as it is, as imagined games read neither. Never for a game being
+ * played.
+ */
+export function applyCountedTurn(state: GameState, turn: CountedTurn, dice: DiceSource): GameState {
+  requireInProgress(state);
+  const player = activePlayer(state);
+  const next =
+    turn.kind === 'rest'
+      ? withPlayer(state, player.id, (current) => ({
+          ...current,
+          stats: { ...current.stats, stamina: current.stats.stamina + state.map.ruleset.config.movement.REST_STAMINA_GAIN },
+        }))
+      : withPlayer(state, player.id, (current) => ({
+          ...current,
+          position: turn.to,
+          stats: { ...current.stats, stamina: current.stats.stamina - turn.staminaSpent },
+        }));
+  return finishTurn(next, player.id, turn.kind === 'walk', dice, []);
 }
 
 /**

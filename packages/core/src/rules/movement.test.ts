@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_GAME_CONFIG } from '@adventure/config';
 import { RuleViolationError } from '../errors.ts';
 import type { MovementAllowance } from '../player.ts';
-import { previewPath, refreshAllowance, resolveMovement } from './movement.ts';
+import { countWalk, previewPath, refreshAllowance, resolveMovement } from './movement.ts';
 import { fixtureMap, n } from './scenario.fixture.ts';
 
 const config = DEFAULT_GAME_CONFIG;
@@ -188,5 +188,25 @@ describe('previewPath', () => {
     expect(preview.steps).toEqual([]);
     expect(preview.destination).toBe(n(3));
     expect(preview.destinationReachable).toBe(true);
+  });
+});
+
+describe('countWalk (Q210, stage 3)', () => {
+  it('pays for the steps resolveMovement walks, from any step of the path on', () => {
+    // The games the computer imagines count their walks with it, so it must
+    // walk exactly what the rules walk, wherever along its route a turn starts.
+    const path = [n(1), n(2), n(3), n(4), n(5), n(6)];
+    for (let start = 0; start <= path.length; start++) {
+      const from = start === 0 ? n(0) : (path[start - 1] as typeof path[number]);
+      for (let stamina = 0; stamina <= 8; stamina++) {
+        for (const allowance of [{ plains: 0, forest: 0, mountain: 0 }, { plains: 2, forest: 0, mountain: 1 }, workedAllowance]) {
+          const resolution = resolveMovement(worked.graph, from, path.slice(start), allowance, stamina, config);
+          expect(countWalk(worked.graph, path, start, allowance, stamina, config)).toEqual({
+            steps: resolution.walked.length,
+            staminaSpent: resolution.staminaSpent,
+          });
+        }
+      }
+    }
   });
 });

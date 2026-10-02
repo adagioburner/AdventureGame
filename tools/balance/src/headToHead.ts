@@ -53,8 +53,10 @@ export function isEvaluatorName(name: string): name is EvaluatorName {
  *  - `cheapest-search`: the search's own choices count the cheapest route,
  *    as before Q210's stage 2: which sites are choices, the resting and
  *    buying checks, and its own walk along a choice.
+ *  - `replayed-walks`: the players in its imagined games walk the cheapest
+ *    route turn by turn, as before Q210's stage 3.
  */
-export const SEAT_FLAGS = ['winnable', 'gold-later', 'speeds', 'fixed', 'cheapest-search'] as const;
+export const SEAT_FLAGS = ['winnable', 'gold-later', 'speeds', 'fixed', 'cheapest-search', 'replayed-walks'] as const;
 export type SeatFlag = (typeof SEAT_FLAGS)[number];
 
 /**
@@ -142,6 +144,7 @@ export function playHeadToHead(options: HeadToHeadOptions): { readonly game: Hea
       ...(spec.flags.includes('speeds') ? { closest: closestBySpeeds } : {}),
       ...(spec.flags.includes('fixed') ? { closest: closestByTerrainCost } : {}),
       ...(spec.flags.includes('cheapest-search') ? { searchRoutes: 'cheapest' as const } : {}),
+      ...(spec.flags.includes('replayed-walks') ? { imaginedWalks: 'replayed' as const } : {}),
       onSearch: (iterations) => {
         const counter = counters[index];
         if (counter === undefined) return;
@@ -171,6 +174,8 @@ export function playHeadToHead(options: HeadToHeadOptions): { readonly game: Hea
       '# The search\'s own choices count the best route for its speeds instead (Q210 stage 2): which sites are',
       '# choices, whether resting and which purchases are weighed, and its own walk along a choice.',
       '# +cheapest-search: they count the cheapest route, as before stage 2.',
+      '# Players in its imagined games walk the best route for their speeds, traced once when they pick a site',
+      '# and counted turn by turn along it (Q210 stage 3). +replayed-walks: they walk the cheapest route, as before.',
       ...(drivers[0]?.describe ?? []),
     ],
     choose(state, playerId) {
