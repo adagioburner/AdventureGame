@@ -3177,6 +3177,12 @@ turn and which purchases to skip by those steps (`stepsReachability`,
 (`MctsOptions.edgeRoute`). The games it imagines, and the other seats' turns
 inside a tree edge, still rank and walk the cheapest route (stage 3).
 
+Tested (821 A), 20 games with the seats swapped at 3 s a move on ten maps
+(seeds stage2-0 to stage2-9), against the same computer with its search
+counting the cheapest route as before: 10 wins each, none shared, +2.1 ± 2.4
+gold a game for stage 2, within luck. Games imagined per move 5,647 against
+5,322, so counting the best route did not slow the search.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design
