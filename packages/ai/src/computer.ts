@@ -1,5 +1,5 @@
 import type { GameConfig } from '@adventure/config';
-import type { DiceSource, GameState, PlayerId, Rng, TurnAction } from '@adventure/core';
+import type { DiceSource, GameState, PlayerId, Rng } from '@adventure/core';
 import {
   closestBySpeeds,
   goldExhaustedTermination,
@@ -9,7 +9,7 @@ import {
   type TargetFilter,
   type TargetPicker,
 } from '@adventure/sim';
-import { firstTurnOf, searchTree, startSearch, type SearchResult } from './mcts.ts';
+import { planTurn, searchTree, startSearch, type SearchResult, type TurnPlan } from './mcts.ts';
 import { simulatedLeadEvaluator } from './policies/evaluators.ts';
 import { closestPoiRolloutPolicy } from './policies/rollout.ts';
 import { closestUnclaimedPoiEnumerator, previewReachability, uctTreePolicy } from './policies/tree.ts';
@@ -58,7 +58,8 @@ export function computerEvaluator(): NodeEvaluator {
 
 /**
  * §9's computer player with the v1 setup: UCT with `MCTS_EXPLORATION_CONSTANT`
- * over the `CLOSE_CANDIDATE_COUNT` closest unclaimed POIs plus rest, closest
+ * over the `CLOSE_CANDIDATE_COUNT` closest unclaimed POIs plus rest and the
+ * purchases worth weighing (Q190, `buyBranches`), closest
  * by the player's own speeds (Q112), the §9 rollout policy ranking the same
  * way, and the lead score (Q113, `computerEvaluator`). The games it plays in
  * its head rest when stuck (Q43) and stop when the gold is gone, the game is
@@ -92,9 +93,12 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
   };
 }
 
-export interface ComputerMove {
-  /** This turn's move: the first turn of the branch the search chose. */
-  readonly action: TurnAction;
+/**
+ * This turn's purchases (Q190; usually none) and its move: the first turn of
+ * the branch the search chose after them, `null` only when a purchase ends
+ * the game (756). See `planTurn`.
+ */
+export interface ComputerMove extends TurnPlan {
   readonly search: SearchResult;
 }
 
@@ -102,7 +106,7 @@ export interface ComputerMove {
 export function chooseComputerMove(state: GameState, subject: PlayerId, settings: ComputerSettings): ComputerMove {
   const options = computerSearchOptions(state, subject, settings);
   const search = searchTree(state, options);
-  return { action: firstTurnOf(state, search.best.action, options), search };
+  return { ...planTurn(state, search, options), search };
 }
 
 /** A computer seat's move, thought about a slice at a time (see `SlicedSearch`). */
@@ -121,7 +125,7 @@ export function startComputerMove(state: GameState, subject: PlayerId, settings:
     step: (sliceMs) => search.step(sliceMs),
     move() {
       const result = search.result();
-      return { action: firstTurnOf(state, result.best.action, options), search: result };
+      return { ...planTurn(state, result, options), search: result };
     },
   };
 }

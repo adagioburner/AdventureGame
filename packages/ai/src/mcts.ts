@@ -1,4 +1,4 @@
-import { activePlayer, applyAction, type GameState, type TurnAction } from '@adventure/core';
+import { activePlayer, applyAction, type BuyAction, type GameState, type TurnAction } from '@adventure/core';
 import {
   macroAdvanceToTarget,
   playUntilTurnOf,
@@ -33,10 +33,11 @@ import type { MctsBranch, MctsNode, MctsOptions } from './types.ts';
  * Loop until `now() - start >= timeBudgetMs`, then return the move implied by
  * `treePolicy.bestChild(root)`.
  *
- * `search()` returns a single `TurnAction` — the **first turn** of the branch
- * `bestChild` picks, since the session layer commits one turn at a time. The
- * rest of a macro-action is re-derived on the AI's next turn, when the search
- * runs again from the new state.
+ * `search()` returns this turn's plan (`planTurn`): the purchases on the way
+ * down the tree, if any (Q190), and then a single `TurnAction` — the **first
+ * turn** of the branch picked after them, since the session layer commits one
+ * turn at a time. The rest of a macro-action is re-derived on the AI's next
+ * turn, when the search runs again from the new state.
  *
  * [SOURCE §9, chat] Tree expansion uses the same macro-action semantics as the
  * rollout — confirmed, so a tree edge and a rollout leg mean the same thing and
@@ -50,9 +51,8 @@ import type { MctsBranch, MctsNode, MctsOptions } from './types.ts';
  * choices are sampled afresh every time, and a branch is judged on all its
  * outcomes rather than on the first one it happened to have.
  */
-export function search(root: GameState, options: MctsOptions): TurnAction {
-  const { best } = searchTree(root, options);
-  return firstTurnOf(root, best.action, options);
+export function search(root: GameState, options: MctsOptions): TurnPlan {
+  return planTurn(root, searchTree(root, options), options);
 }
 
 /** What a search found, for the harness and the playthrough log. */
@@ -165,19 +165,29 @@ function iterate(tree: MctsNode, root: GameState, options: MctsOptions): void {
   }
 }
 
-/** Branches are the same decision when they head for the same POI, or both rest. */
+/** Branches are the same decision when they head for the same POI, both rest, or buy the same kind. */
 function sameBranch(a: MctsBranch | null, b: MctsBranch): boolean {
-  if (a === null) return false;
-  if (a.kind === 'rest' || b.kind === 'rest') return a.kind === b.kind;
-  return a.target.node === b.target.node;
+  if (a === null || a.kind !== b.kind) return false;
+  switch (b.kind) {
+    case 'rest':
+      return true;
+    case 'buy':
+      return a.kind === 'buy' && a.skill === b.skill;
+    case 'target':
+      return a.kind === 'target' && a.target.node === b.target.node;
+  }
 }
 
 /**
  * The subject's macro-action for `branch`, then the other seats' turns until
- * the subject is to move again.
+ * the subject is to move again. A purchase leaves the turn with the subject
+ * (Q190, 751), so after one nobody else plays.
  */
 function realise(cursor: RolloutCursor, branch: MctsBranch, options: MctsOptions, rules: RolloutOptions): RolloutCursor {
   let after: RolloutCursor;
+  if (branch.kind === 'buy') {
+    return { ...cursor, state: applyAction(cursor.state, buyOf(branch, options), options.dice).state };
+  }
   if (branch.kind === 'rest') {
     const rested = applyAction(cursor.state, { kind: 'rest', player: options.subject }, options.dice).state;
     after = { ...cursor, state: rested };
@@ -190,8 +200,50 @@ function realise(cursor: RolloutCursor, branch: MctsBranch, options: MctsOptions
 /** The move a branch makes this turn: the first turn of its macro-action. */
 export function firstTurnOf(state: GameState, branch: MctsBranch | null, options: MctsOptions): TurnAction {
   if (branch === null) throw new RangeError('the search found no branch to take');
+  if (branch.kind === 'buy') throw new RangeError('a purchase is not a move: plan the turn with planTurn');
   if (branch.kind === 'rest') return { kind: 'rest', player: options.subject };
   return turnTowards(state, branch.target.node, options.restRule);
+}
+
+/** What the subject does this turn: the purchases first, in order, then the move. */
+export interface TurnPlan {
+  readonly buys: readonly BuyAction[];
+  /** `null` only when the purchases end the game (§1's win check, 756), leaving no move to make. */
+  readonly action: TurnAction | null;
+  /** The branch `action` is the first turn of; `null` with `action`. */
+  readonly branch: Exclude<MctsBranch, { readonly kind: 'buy' }> | null;
+}
+
+/**
+ * [Q190] 761: the computer thinks once a turn, then buys and moves. The plan
+ * follows `treePolicy.bestChild` from the root through the buy branches it
+ * picks, each a purchase, to the first branch that is not one, whose first
+ * turn is the move. A purchase leaves the game as it was but for the buyer's
+ * gold and the unit (no dice, nobody else plays), so the tree below a buy
+ * branch was searched from exactly the position the plan reaches.
+ *
+ * Should the search have tried nothing yet below a purchase it picked, which
+ * only a very short thinking time leaves, the rest of the plan comes from one
+ * more round of search from there.
+ */
+export function planTurn(root: GameState, result: SearchResult, options: MctsOptions): TurnPlan {
+  const buys: BuyAction[] = [];
+  let state = root;
+  let node = result.best;
+  while (node.action?.kind === 'buy') {
+    const buy = buyOf(node.action, options);
+    state = applyAction(state, buy, options.dice).state;
+    buys.push(buy);
+    if (state.status !== 'in_progress') return { buys, action: null, branch: null };
+    node = node.children.length > 0 ? options.treePolicy.bestChild(node) : searchTree(state, { ...options, timeBudgetMs: 0 }).best;
+  }
+  const branch = node.action;
+  if (branch === null) throw new RangeError('the search found no branch to take');
+  return { buys, action: firstTurnOf(state, branch, options), branch };
+}
+
+function buyOf(branch: { readonly kind: 'buy'; readonly skill: BuyAction['skill'] }, options: MctsOptions): BuyAction {
+  return { kind: 'buy', player: options.subject, skill: branch.skill };
 }
 
 function rolloutOptions(options: MctsOptions): RolloutOptions {

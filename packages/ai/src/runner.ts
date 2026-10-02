@@ -1,4 +1,4 @@
-import type { GameState, PlayerId, TurnAction } from '@adventure/core';
+import type { BuyAction, GameState, PlayerId, TurnAction } from '@adventure/core';
 
 /**
  * The session layer's view of an AI player — deliberately tiny, and async.
@@ -13,7 +13,17 @@ import type { GameState, PlayerId, TurnAction } from '@adventure/core';
  * decision (§12.1) has to satisfy.
  */
 export interface AiPlayer {
-  chooseAction(state: GameState, subject: PlayerId, cancel?: Cancellation): Promise<TurnAction>;
+  chooseAction(state: GameState, subject: PlayerId, cancel?: Cancellation): Promise<ComputerTurn>;
+}
+
+/**
+ * [Q190] A computer seat's turn, as 761 has it: it thinks once, then buys
+ * (usually nothing) and moves. `action` is `null` only when a purchase has
+ * ended the game (756).
+ */
+export interface ComputerTurn {
+  readonly buys: readonly BuyAction[];
+  readonly action: TurnAction | null;
 }
 
 /**
