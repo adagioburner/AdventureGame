@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { GameTitle } from '../page/GameTitle.tsx';
 import { logIn, LoginRefused, register, type Login } from './api.ts';
 
 interface LoginScreenProps {
@@ -40,7 +41,7 @@ export function LoginScreen({ onLogin, onHotseat }: LoginScreenProps) {
   return (
     <div className="shell">
       <header className="bar">
-        <h1>Adventure</h1>
+        <GameTitle />
       </header>
       <main className="site-page">
         <form

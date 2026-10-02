@@ -1,4 +1,4 @@
-# Adventure Game
+# Skyholm Adventures
 
 A multiplayer turn-based adventure game: procedural map generation, turn-based
 movement and combat resolution, MCTS-driven AI players, a web client, and a
