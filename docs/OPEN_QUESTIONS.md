@@ -3071,7 +3071,27 @@ happens before the walk, not after"*.
 788. **A purchase that ends the game:** the end card waits for its notices
      (as built). **Answered:** as built, 13:39.
 
-### Q210. Which route do players take? — **stage 1 answered 2026-10-02: the best for their speeds, drawn for people and walked by the computer's real moves; stages 2 and 3 open (810-817)**
+### Q200. ~~Should players start with gold?~~ — **answered 2026-10-02: yes, 5 each, in games started from now on (790-792)**
+
+[SOURCE §6, chat] Andrei, 2026-10-02 at 14:57: *"Now that players can buy
+skills for gold, it makes sense to starts them with 5 gold to enable a variety
+of strategies"*. Every seat gets the same 5, as he wrote; it is
+`STARTING_GOLD`. Nothing that decides the winner moves: the win check compares
+a lead with the gold left on the map, and the same 5 each changes no lead. The
+computer follows the buying rules as they are, so it may spend some of its 5
+early. Asked at 15:10 with a picture; at 15:22, *"790 to 792: looks good"*.
+
+790. **Which games:** only games started from now on, while games already
+     under way keep starting at 0, as with buying (recommended).
+     **Answered:** yes.
+791. **The rulebook:** *"Every player starts with 5 gold. The other stats
+     (the three speeds, combat and magic) start at 0."*, plus a Quick
+     reference row "Starting gold: 5" (recommended). **Answered:** yes.
+792. **The New game screen's seat line:** A, as today, *"Seat 2 · starts with
+     35 stamina"*, since it shows what differs between seats (recommended);
+     or B, *"... and 5 gold"*. **Answered:** A.
+
+### Q210. Which route do players take? — **stage 1 answered 2026-10-02: the best for their speeds, drawn for people and walked by the computer's real moves; stages 2 and 3 open (810-818)**
 
 [SOURCE §4, §9, chat] Andrei, 2026-10-02 at 18:12: *"it bothers me that the
 game shows to me the path that is not optimal based on my current skills. How
@@ -3111,6 +3131,10 @@ Answered at 18:56.
 817. **Comparing stage 1's computer with today's at 3 s:** *"B is good enough,
      you are not changing how computers decide the next move"*: no comparison
      for stage 1; one PR per stage.
+818. **Track when a purchase picks a route brought back again:** A, Track
+     unpresses, as when you change a route yourself (as built); or B, Track
+     stays pressed, as a route brought back leaves it (575; recommended).
+     Either way the new route is saved online. **Open.**
 
 Stage 1, as built: `bestRoute` and `bestRouteVia` (`packages/core`), from
 `RouteTable.routesFrom`, every route no other route beats on all three

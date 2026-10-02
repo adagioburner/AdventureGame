@@ -233,6 +233,16 @@ export interface PlayerConfig {
   readonly STARTING_STAMINA_BASE: number;
   /** §11 `STARTING_STAMINA_INCREMENT` — tunable (5; 10 until Q75). */
   readonly STARTING_STAMINA_INCREMENT: number;
+  /**
+   * §11 `STARTING_GOLD` — tunable (5). [Q200] Andrei, 2026-10-02: "Now that
+   * players can buy skills for gold, it makes sense to starts them with 5
+   * gold to enable a variety of strategies". The same for every seat.
+   *
+   * Absent on the maps of games started before it (790), whose players
+   * started with none: an online game carries the config its map was made
+   * with. Read it through `startingGoldOf`.
+   */
+  readonly STARTING_GOLD?: number;
 }
 
 /** A dice specification. §11 `GUARD_DIE` is fixed at 1d6 (§8). */

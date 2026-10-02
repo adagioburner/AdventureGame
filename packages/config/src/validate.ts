@@ -170,6 +170,11 @@ export function validateRuleset(ruleset: Ruleset): void {
   if (!Number.isFinite(config.ai.BUY_SKIP_STAMINA) || config.ai.BUY_SKIP_STAMINA < 0) {
     problems.push('Q190: ai.BUY_SKIP_STAMINA must be a non-negative number.');
   }
+  // Q200: whole gold, none at the least.
+  const gold = config.players.STARTING_GOLD;
+  if (gold !== undefined && (!Number.isInteger(gold) || gold < 0)) {
+    problems.push('Q200: players.STARTING_GOLD must be a non-negative integer.');
+  }
 
   if (problems.length > 0) {
     throw new RulesetError(`Invalid ruleset:\n  - ${problems.join('\n  - ')}`);

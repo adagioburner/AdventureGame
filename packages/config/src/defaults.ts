@@ -49,6 +49,8 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     PLAYER_COUNT: { min: 2, max: 5 },
     STARTING_STAMINA_BASE: 30,
     STARTING_STAMINA_INCREMENT: 5,
+    // [Q200] Andrei, 2026-10-02: "starts them with 5 gold to enable a variety of strategies".
+    STARTING_GOLD: 5,
   },
   combat: {
     GUARD_DIE: { count: 1, sides: 6 },

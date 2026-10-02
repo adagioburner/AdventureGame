@@ -60,15 +60,18 @@ export interface PlayerState {
  */
 export type MovementAllowance = PerTerrain<number>;
 
-/** All stats start at zero except stamina, which is seat-dependent (§6). */
-export function initialStats(startingStamina: number): PlayerStats {
+/**
+ * All stats start at zero except stamina, which is seat-dependent (§6), and
+ * [Q200] gold, the same for every seat.
+ */
+export function initialStats(startingStamina: number, startingGold = 0): PlayerStats {
   return {
     plains_move: 0,
     forest_move: 0,
     mountain_move: 0,
     fighting: 0,
     magic: 0,
-    gold: 0,
+    gold: startingGold,
     stamina: startingStamina,
   };
 }

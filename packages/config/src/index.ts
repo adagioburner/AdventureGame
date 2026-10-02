@@ -113,3 +113,12 @@ export function startingStaminaForSeat(seat: number, ruleset: Ruleset): number {
   const { STARTING_STAMINA_BASE, STARTING_STAMINA_INCREMENT } = ruleset.config.players;
   return STARTING_STAMINA_BASE + (seat - 1) * STARTING_STAMINA_INCREMENT;
 }
+
+/**
+ * [Q200] The gold every player starts with: `STARTING_GOLD`, the same for
+ * every seat, or none in a game started before players started with gold
+ * (790), whose map has no `STARTING_GOLD`.
+ */
+export function startingGoldOf(ruleset: Ruleset): number {
+  return ruleset.config.players.STARTING_GOLD ?? 0;
+}
