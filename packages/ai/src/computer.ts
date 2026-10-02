@@ -94,7 +94,7 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
 }
 
 /**
- * This turn's purchases (Q190; usually none) and its move: the first turn of
+ * This turn's purchase (Q190; usually none) and its move: the first turn of
  * the branch the search chose after them, `null` only when a purchase ends
  * the game (756). See `planTurn`.
  */

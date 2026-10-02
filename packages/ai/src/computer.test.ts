@@ -36,8 +36,8 @@ function settings(): ComputerSettings {
 describe('the computer player', () => {
   it('chooses a legal move for the seat whose turn it is', () => {
     const state = fixtureGame(line, 0);
-    const { buys, action, search } = chooseComputerMove(state, player('one'), settings());
-    expect(buys).toEqual([]);
+    const { buy, action, search } = chooseComputerMove(state, player('one'), settings());
+    expect(buy).toBeNull();
     if (action === null) throw new Error('no move');
     expect(action.player).toBe(player('one'));
     expect(search.iterations).toBeGreaterThan(0);

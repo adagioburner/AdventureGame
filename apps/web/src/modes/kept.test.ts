@@ -1,4 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { RESPAWN_RULES } from '@adventure/config';
+import { routeTable } from '@adventure/core';
 import { mapFor } from '../page/seed.ts';
 import { inOrder, toHotseatSeats, type LocalSetup } from '../setup/local.ts';
 import { HotseatGame } from './hotseat.ts';
@@ -44,33 +46,52 @@ describe('a game on one device kept in the browser (Q56, 66)', () => {
     expect(again?.turns.length).toBe(12);
   });
 
-  it('keeps whether skills come back, and replays a game kept before they did by its old rules (Q135)', () => {
+  it('keeps that speeds and skills can be bought, and replays a game kept before buying by its old rules (Q190, 758)', () => {
     const game = new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'kept' });
     keep('adventure', setup, null, game);
     const kept = readKept();
-    expect(kept?.respawn).toBe(true);
-    expect(kept === null ? null : replayKept(kept, map)?.setup.map.ruleset.config.respawn).toEqual(map.ruleset.config.respawn);
+    expect(kept).toMatchObject({ buying: true, respawn: false });
+    expect(kept === null ? null : replayKept(kept, map)?.setup.map).toBe(map);
 
-    const { respawn: _respawn, ...older } = kept ?? { respawn: undefined };
-    const before = replayKept(older as NonNullable<typeof kept>, map);
-    expect(before?.setup.map.ruleset.config.respawn).toBeUndefined();
-    expect(before?.setup.map.graph).toBe(map.graph);
+    // Kept on 2026-10-01: skills came back, at most 1 unit a site, and nothing could be bought.
+    const { buying: _buying, ...older } = kept ?? { buying: undefined };
+    const respawned = replayKept({ ...(older as NonNullable<typeof kept>), respawn: true, respawnMaxUnits: 1 }, map)?.setup.map.ruleset.config;
+    expect(respawned?.buying).toBeUndefined();
+    expect(respawned?.respawn).toEqual(RESPAWN_RULES);
+    expect(replayKept({ ...(older as NonNullable<typeof kept>), respawn: true, respawnMaxUnits: 2 }, map)?.setup.map.ruleset.config.respawn?.MAX_UNITS).toBe(2);
+    const uncapped = replayKept({ ...(older as NonNullable<typeof kept>), respawn: true }, map)?.setup.map.ruleset.config.respawn;
+    expect(uncapped?.MAX_UNITS).toBeUndefined();
+    expect(uncapped?.SHORT_BELOW_SITES).toBe(RESPAWN_RULES.SHORT_BELOW_SITES);
+
+    // Kept before skills came back (Q135): neither.
+    const { respawn: _respawn, ...oldest } = older as NonNullable<typeof kept>;
+    const before = replayKept(oldest as NonNullable<typeof kept>, map)?.setup.map;
+    expect(before?.ruleset.config.respawn).toBeUndefined();
+    expect(before?.ruleset.config.buying).toBeUndefined();
+    expect(before?.graph).toBe(map.graph);
   });
 
-  it('keeps the most units a site comes back with, and replays a game kept before the cap with whole stacks (Q135)', () => {
-    keep('adventure', setup, null, new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'kept' }));
-    const kept = readKept();
-    expect(kept?.respawnMaxUnits).toBe(1);
-    expect(kept === null ? null : replayKept(kept, map)?.setup.map.ruleset.config.respawn?.MAX_UNITS).toBe(1);
-    // A game kept while the cap was 2 goes on with 2.
-    const underTwo = kept === null ? null : replayKept({ ...kept, respawnMaxUnits: 2 }, map);
-    expect(underTwo?.setup.map.ruleset.config.respawn?.MAX_UNITS).toBe(2);
+  it('comes back with its purchases (Q190)', () => {
+    const game = new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'kept-buy' });
+    const config = map.ruleset.config;
+    const gold = map.pois.find((poi) => poi.reward.kind === 'gold' && poi.guard === null);
+    if (gold === undefined) throw new Error('no unguarded gold on the map');
+    // Ada walks to the gold, resting when she runs short of stamina, while Bram rests; then she buys with it.
+    for (let turn = 0; turn < 200 && game.state.players[0]!.stats.gold === 0; turn += 1) {
+      const player = game.state.players[game.state.turn.activeSeat - 1]!;
+      const path = routeTable(map.graph, config).path(player.position, gold.node) ?? [];
+      const walks = player.seat === 1 && player.stats.stamina >= 3;
+      game.play(walks ? { kind: 'move', player: player.id, path } : { kind: 'rest', player: player.id });
+    }
+    if (game.state.turn.activeSeat === 2) game.play({ kind: 'rest', player: game.state.players[1]!.id });
+    game.buy({ kind: 'buy', player: game.state.players[0]!.id, skills: ['magic'] });
+    keep('adventure', setup, null, game);
 
-    const { respawnMaxUnits: _max, ...older } = kept ?? { respawnMaxUnits: undefined };
-    const before = replayKept(older as NonNullable<typeof kept>, map)?.setup.map.ruleset.config.respawn;
-    expect(before).toBeDefined();
-    expect(before?.MAX_UNITS).toBeUndefined();
-    expect(before?.SHORT_BELOW_SITES).toBe(map.ruleset.config.respawn?.SHORT_BELOW_SITES);
+    const kept = readKept();
+    expect(kept?.actions.at(-1)).toEqual({ kind: 'buy', player: 'seat-1', skills: ['magic'] });
+    const again = kept === null ? null : replayKept(kept, map);
+    expect(again?.state).toEqual(game.state);
+    expect(again?.state.players[0]?.stats.magic).toBe(1);
   });
 
   it('keeps the size of map a game is played on, and puts a game kept before maps grew on the standard map (Q160)', () => {

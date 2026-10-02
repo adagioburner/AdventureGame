@@ -18,11 +18,11 @@ export interface AiPlayer {
 
 /**
  * [Q190] A computer seat's turn, as 761 has it: it thinks once, then buys
- * (usually nothing) and moves. `action` is `null` only when a purchase has
- * ended the game (756).
+ * (usually nothing: `buy` is `null`) and moves. `action` is `null` only when
+ * the purchase has ended the game (756).
  */
 export interface ComputerTurn {
-  readonly buys: readonly BuyAction[];
+  readonly buy: BuyAction | null;
   readonly action: TurnAction | null;
 }
 

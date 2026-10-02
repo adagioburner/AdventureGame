@@ -16,10 +16,13 @@ describe('the hot seat computer (Q41, Q42)', () => {
     for (const seconds of [1, 2]) {
       const player = game.state.players[game.state.turn.activeSeat - 1]!;
       const started = performance.now();
-      const action = await computer.chooseAction(game.state, player.id);
+      const { buy, action } = await computer.chooseAction(game.state, player.id);
       const took = performance.now() - started;
       expect(took).toBeGreaterThanOrEqual(seconds * 1000);
       expect(took).toBeLessThan(seconds * 1000 + 500);
+      // Nobody has gold on the first turns, so nothing is bought.
+      expect(buy).toBeNull();
+      if (action === null) throw new Error('no move');
       expect(action.player).toBe(player.id);
       expect(() => game.play(action)).not.toThrow();
     }

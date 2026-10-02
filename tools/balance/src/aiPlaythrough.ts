@@ -65,7 +65,7 @@ export function computerDriver(settings: ComputerSettings): PlaythroughDriver {
     ],
     choose(state: GameState, playerId: PlayerId): TurnChoice {
       const started = settings.now();
-      const { buys, action, branch, search: result } = chooseComputerMove(state, playerId, {
+      const { buy, action, branch, search: result } = chooseComputerMove(state, playerId, {
         config,
         thinkingMs: settings.thinkingMs,
         rng,
@@ -81,14 +81,14 @@ export function computerDriver(settings: ComputerSettings): PlaythroughDriver {
       const why = explain(state, result.root, result.best, result.iterations, took, evaluator);
 
       // [Q190] The move is the first turn of the first branch after the purchases.
-      if (branch === null || branch.kind === 'rest') return { buys, action, heading: null, why };
+      if (branch === null || branch.kind === 'rest') return { buy, action, heading: null, why };
 
       const target = branch.target.node;
       const player = activePlayer(state);
       const route = shortestPath(state.map.graph, player.position, target, config);
       if (route === null) throw new Error(`node ${target} is unreachable from ${player.position}`);
       return {
-        buys,
+        buy,
         action,
         heading: { target, route, reason: 'the computer’s choice' },
         why,

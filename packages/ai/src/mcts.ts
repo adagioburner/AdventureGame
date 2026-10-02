@@ -205,9 +205,9 @@ export function firstTurnOf(state: GameState, branch: MctsBranch | null, options
   return turnTowards(state, branch.target.node, options.restRule);
 }
 
-/** What the subject does this turn: the purchases first, in order, then the move. */
+/** What the subject does this turn: its purchases first, as one (`null` for none), then the move. */
 export interface TurnPlan {
-  readonly buys: readonly BuyAction[];
+  readonly buy: BuyAction | null;
   /** `null` only when the purchases end the game (§1's win check, 756), leaving no move to make. */
   readonly action: TurnAction | null;
   /** The branch `action` is the first turn of; `null` with `action`. */
@@ -217,8 +217,9 @@ export interface TurnPlan {
 /**
  * [Q190] 761: the computer thinks once a turn, then buys and moves. The plan
  * follows `treePolicy.bestChild` from the root through the buy branches it
- * picks, each a purchase, to the first branch that is not one, whose first
- * turn is the move. A purchase leaves the game as it was but for the buyer's
+ * picks, each a unit bought, to the first branch that is not one, whose first
+ * turn is the move. The units are bought as one purchase, a line in the turn
+ * log as a person's Done is (769). A purchase leaves the game as it was but for the buyer's
  * gold and the unit (no dice, nobody else plays), so the tree below a buy
  * branch was searched from exactly the position the plan reaches.
  *
@@ -227,23 +228,23 @@ export interface TurnPlan {
  * more round of search from there.
  */
 export function planTurn(root: GameState, result: SearchResult, options: MctsOptions): TurnPlan {
-  const buys: BuyAction[] = [];
+  const skills: BuyAction['skills'][number][] = [];
+  const bought = (): BuyAction | null => (skills.length === 0 ? null : { kind: 'buy', player: options.subject, skills });
   let state = root;
   let node = result.best;
   while (node.action?.kind === 'buy') {
-    const buy = buyOf(node.action, options);
-    state = applyAction(state, buy, options.dice).state;
-    buys.push(buy);
-    if (state.status !== 'in_progress') return { buys, action: null, branch: null };
+    state = applyAction(state, buyOf(node.action, options), options.dice).state;
+    skills.push(node.action.skill);
+    if (state.status !== 'in_progress') return { buy: bought(), action: null, branch: null };
     node = node.children.length > 0 ? options.treePolicy.bestChild(node) : searchTree(state, { ...options, timeBudgetMs: 0 }).best;
   }
   const branch = node.action;
   if (branch === null) throw new RangeError('the search found no branch to take');
-  return { buys, action: firstTurnOf(state, branch, options), branch };
+  return { buy: bought(), action: firstTurnOf(state, branch, options), branch };
 }
 
-function buyOf(branch: { readonly kind: 'buy'; readonly skill: BuyAction['skill'] }, options: MctsOptions): BuyAction {
-  return { kind: 'buy', player: options.subject, skill: branch.skill };
+function buyOf(branch: { readonly kind: 'buy'; readonly skill: BuyAction['skills'][number] }, options: MctsOptions): BuyAction {
+  return { kind: 'buy', player: options.subject, skills: [branch.skill] };
 }
 
 function rolloutOptions(options: MctsOptions): RolloutOptions {

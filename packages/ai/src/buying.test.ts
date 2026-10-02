@@ -114,24 +114,20 @@ describe('the turn the computer plays (761)', () => {
     const thenFighting = node({ kind: 'buy', skill: 'fighting' }, 5, [rest]);
     const magic = node({ kind: 'buy', skill: 'magic' }, 9, [thenFighting, node({ kind: 'rest' }, 3)]);
     expect(planTurn(state, result(magic), options)).toMatchObject({
-      buys: [
-        { kind: 'buy', player: one, skill: 'magic' },
-        { kind: 'buy', player: one, skill: 'fighting' },
-      ],
+      buy: { kind: 'buy', player: one, skills: ['magic', 'fighting'] },
       action: { kind: 'rest', player: one },
     });
   });
 
   it('moves without buying when the search chose a move', () => {
-    expect(planTurn(state, result(node({ kind: 'rest' }, 3)), options)).toEqual({ buys: [], action: { kind: 'rest', player: one }, branch: { kind: 'rest' } });
+    expect(planTurn(state, result(node({ kind: 'rest' }, 3)), options)).toEqual({ buy: null, action: { kind: 'rest', player: one }, branch: { kind: 'rest' } });
   });
 
   it('searches once more after a purchase nothing was tried below', () => {
     const plan = planTurn(state, result(node({ kind: 'buy', skill: 'magic' }, 1)), options);
-    expect(plan.buys[0]).toEqual({ kind: 'buy', player: one, skill: 'magic' });
-    if (plan.action === null) throw new Error('no move');
-    let after = state;
-    for (const buy of plan.buys) after = applyAction(after, buy, options.dice).state;
+    expect(plan.buy?.skills[0]).toBe('magic');
+    if (plan.action === null || plan.buy === null) throw new Error('no move');
+    const after = applyAction(state, plan.buy, options.dice).state;
     expect(() => applyAction(after, plan.action as NonNullable<typeof plan.action>, options.dice)).not.toThrow();
   });
 
@@ -139,6 +135,6 @@ describe('the turn the computer plays (761)', () => {
     // Two leads by 3 with 3 gold left; one buys and two leads by 4.
     const close = withStats(withStats(fixtureGame(ridge, 0), player('two'), { gold: 4 }), one, { gold: 1 });
     const plan = planTurn(close, result(node({ kind: 'buy', skill: 'magic' }, 1)), computerSearchOptions(close, one, settings()));
-    expect(plan).toEqual({ buys: [{ kind: 'buy', player: one, skill: 'magic' }], action: null, branch: null });
+    expect(plan).toEqual({ buy: { kind: 'buy', player: one, skills: ['magic'] }, action: null, branch: null });
   });
 });

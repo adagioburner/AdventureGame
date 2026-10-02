@@ -57,6 +57,7 @@ const CLIENT_MESSAGE_TYPE_RECORD: Record<ClientMessage['type'], true> = {
   'turn.plan': true,
   'turn.end': true,
   'turn.rest': true,
+  'turn.buy': true,
   'gm.forceTurn': true,
   'gm.extendLifetime': true,
   'gm.endGame': true,

@@ -183,10 +183,10 @@ describe('search', () => {
     const state = fixtureGame(star, 0);
     const clock = tickingClock();
     const options = optionsFor(state, { now: clock, timeBudgetMs: 150 });
-    const { buys, action } = search(state, options);
+    const { buy, action } = search(state, options);
     // One read to start, one per iteration: the budget is spent, not overrun.
     expect(clock()).toBeLessThanOrEqual(152);
-    expect(buys).toEqual([]);
+    expect(buy).toBeNull();
     if (action === null) throw new Error('no move');
     expect(action.player).toBe(player('one'));
     expect(() => applyAction(state, action, createDiceSource(createRng('check'), DEFAULT_GAME_CONFIG))).not.toThrow();
@@ -217,7 +217,7 @@ describe('search', () => {
     // steps into forest behind a guard of 4.
     const state = fixtureGame(star, 0);
     const plan = search(state, optionsFor(state, { timeBudgetMs: 2000 }));
-    expect(plan).toMatchObject({ buys: [], action: { kind: 'move', player: player('one'), path: [n(1)], waypoint: null } });
+    expect(plan).toMatchObject({ buy: null, action: { kind: 'move', player: player('one'), path: [n(1)], waypoint: null } });
   });
 
   it('is reproducible from its seeds and clock', () => {

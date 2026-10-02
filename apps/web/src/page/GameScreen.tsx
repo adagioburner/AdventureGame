@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import {
+  applyAction,
+  buyableNow,
   previewPath,
+  type BuyAction,
+  type DiceSource,
   type GameEvent,
   type GameState,
   type NodeId,
@@ -21,8 +25,9 @@ import type { LoadedArt } from '../render/pixi/textures.ts';
 import type { FigureCue, MapScene, Walker } from '../render/sceneModel.ts';
 import { endingSound, isRest, returnedSites } from '../sound/cues.ts';
 import { soundTableOf, sounds } from '../sound/player.ts';
+import { BuyPanel } from './BuyPanel.tsx';
 import { ClaimNotice, EndCard, ResultCard } from './Cards.tsx';
-import { isUnguardedClaim, journalEntry, type JournalEntry } from './journal.ts';
+import { isUnguardedClaim, journalEntry, purchaseEntry, type JournalEntry } from './journal.ts';
 import { MapView, type MapHandle } from './MapView.tsx';
 import { Players } from './Players.tsx';
 import { TurnControls } from './TurnControls.tsx';
@@ -189,8 +194,11 @@ export function GameScreen({
   const locateFigure = useCallback((player: PlayerId) => handle.current?.screenOfFigure(player) ?? null, []);
 
   const commit = useRef<(action: TurnAction) => void>(() => undefined);
-  /** Commit a turn to `play`, keeping `planned` to walk it along when it comes back. */
-  const play = useRef<(action: TurnAction, planned: Planned) => void>(() => undefined);
+  /** Commit a turn to `play`, keeping `planned` to walk it along when it comes back, after what a computer `buy`s first. */
+  const play = useRef<(action: TurnAction, planned: Planned, buy?: BuyAction | null) => void>(() => undefined);
+  // [Q190] The turn the buy panel was opened on; online, whether a purchase this page sent is not played yet.
+  const [buyTurn, setBuyTurn] = useState<number | null>(null);
+  const [purchasing, setPurchasing] = useState(false);
   /** The route of the turn this page committed last, until that turn is shown. */
   const committed = useRef<{ readonly turn: number; readonly planned: Planned } | null>(null);
   const controller = useMemo(
@@ -236,10 +244,10 @@ export function GameScreen({
       action.kind === 'move' && move.kind === 'previewing' ? { path: move.preview, waypoint: move.waypoint } : { path: null, waypoint: null };
     play.current(action, planned);
   };
-  play.current = (action, planned) => {
+  play.current = (action, planned, buy = null) => {
     committed.current = { turn: source.state.turn.number, planned };
     try {
-      source.commit(action);
+      source.commit(action, buy);
     } catch (error) {
       committed.current = null;
       say(error instanceof Error ? error.message : String(error));
@@ -261,6 +269,7 @@ export function GameScreen({
   const show = useRef<(update: PlayUpdate) => Promise<void>>(async () => undefined);
   show.current = async (update) => {
     if (update.kind === 'refused') {
+      setPurchasing(false);
       // What this page committed was not played: its controls come back.
       if (committed.current !== null) {
         committed.current = null;
@@ -271,7 +280,13 @@ export function GameScreen({
       if (update.reason !== null) say(update.reason);
       return;
     }
-    const { before, after, turn, movedOn = false, resignedYou = false } = update.change;
+    const { before, after, turn, purchase = null, movedOn = false, resignedYou = false } = update.change;
+    // [Q190] A purchase shows on the cards at once; it has a line in its turn's
+    // log entry, or an entry of its own if it ended the game (756).
+    if (purchase !== null) {
+      if (source.localPlayers.has(purchase.player)) setPurchasing(false);
+      if (after.status === 'finished') setEntries((current) => [purchaseEntry(purchase), ...current]);
+    }
     // [Q85, 296] Resigned by the game master, whenever it happens.
     if (resignedYou) {
       const name = after.players.find((player) => player.resigned && !before.players.find((was) => was.id === player.id)?.resigned)?.name;
@@ -420,8 +435,18 @@ export function GameScreen({
     if (player === undefined || !source.thinksFor(player)) return;
     const cancel = { aborted: false };
     computer.chooseAction(shown, player.id, cancel).then(
-      (action) => {
-        if (!cancel.aborted) play.current(action, { path: routeOf(shown, action), waypoint: null });
+      ({ buy, action }) => {
+        if (cancel.aborted) return;
+        // [Q190, 761] What it bought, then its move; no move if buying ended the game (756).
+        if (action !== null) {
+          play.current(action, { path: routeOf(afterBuying(shown, buy), action), waypoint: null }, buy);
+          return;
+        }
+        try {
+          if (buy !== null) source.buy(buy);
+        } catch (error) {
+          say(error instanceof Error ? error.message : String(error));
+        }
       },
       (error: unknown) => say(error instanceof Error ? error.message : String(error)),
     );
@@ -466,6 +491,25 @@ export function GameScreen({
   const canPlan = online ? planFor !== undefined : active?.control !== 'ai';
   /** The turn is this page's to play: hot seat's player on turn, or online this page's own. */
   const ownTurn = !othersTurn && active !== undefined && source.localPlayers.has(active.id);
+  // [Q190] The person on turn here can buy while they hold the gold for a unit
+  // and nothing they did is still playing out. Only Done and Cancel close the
+  // panel (766); a turn that moves on under it (the game master's Move on)
+  // takes it away, and nothing is bought.
+  const buyable = ownTurn && active !== undefined && active.control === 'human' ? buyableNow(shown, active.id) : null;
+  const buyOpen = buyable !== null && buyTurn === shown.turn.number;
+  const canBuy = buyable !== null && buyable.kinds.length > 0 && shown === source.state && !busy && !purchasing && !offline;
+  const buyFor = (canBuy || buyOpen) && active !== undefined ? active : null;
+  /** [768] Done: everything picked, bought at once; nothing if nothing was. */
+  const finishBuying = (skills: BuyAction['skills']): void => {
+    setBuyTurn(null);
+    if (skills.length === 0 || active === undefined) return;
+    try {
+      source.buy({ kind: 'buy', player: active.id, skills });
+      if (online) setPurchasing(true);
+    } catch (error) {
+      say(error instanceof Error ? error.message : String(error));
+    }
+  };
   const onTap = (target: Pick, shift: boolean): void => {
     if (busy || shown.status !== 'in_progress') return;
     if (controller.state.kind === 'idle') {
@@ -635,13 +679,20 @@ export function GameScreen({
 
   return (
     <div className="game">
-      <Players catalog={catalog} state={shown} away={away} onFind={findPlayer} />
+      <Players
+        catalog={catalog}
+        state={shown}
+        away={away}
+        onFind={findPlayer}
+        buy={buyFor === null ? null : { player: buyFor.id, open: buyOpen, onOpen: () => setBuyTurn(shown.turn.number) }}
+      />
       <TurnControls
         state={shown}
         move={move}
         waypointArmed={armed}
         busy={busy}
         awaiting={awaiting}
+        buying={buyOpen}
         thinkingMs={thinkingMsOf(source, active)}
         waiting={waitingOn?.(shown) ?? null}
         othersTurn={othersTurn}
@@ -683,6 +734,16 @@ export function GameScreen({
             setMapReady(ready !== null);
           }}
         />
+        {buyOpen && buyFor !== null && buyable !== null ? (
+          <BuyPanel
+            catalog={catalog}
+            player={buyFor}
+            kinds={buyable.kinds}
+            price={buyable.price}
+            onDone={finishBuying}
+            onCancel={() => setBuyTurn(null)}
+          />
+        ) : null}
         {notice === null ? null : (
           <div className="notice" role="status">
             {notice}
@@ -711,7 +772,11 @@ export function GameScreen({
 
 /** The turn log's entries for the turns played before the screen opened, newest first. */
 function journalOf(history: readonly PlayedChange[]): JournalEntry[] {
-  return history.flatMap(({ before, turn, movedOn = false }) => (turn === null ? [] : [journalEntry(turn, before, movedOn)])).reverse();
+  return history
+    .flatMap(({ before, after, turn, purchase = null, movedOn = false }) =>
+      turn !== null ? [journalEntry(turn, before, movedOn)] : purchase !== null && after.status === 'finished' ? [purchaseEntry(purchase)] : [],
+    )
+    .reverse();
 }
 
 /** A route as the page compares routes: its steps and its waypoint. */
@@ -756,6 +821,25 @@ function walk(player: PlayerId, nodes: readonly Point[], show: (walker: Walker) 
     requestAnimationFrame(frame);
   });
 }
+
+/** [Q190] `state` once `buy` is played: no die is rolled for it. The state as it was if it is refused. */
+function afterBuying(state: GameState, buy: BuyAction | null): GameState {
+  if (buy === null) return state;
+  try {
+    return applyAction(state, buy, NO_DICE).state;
+  } catch {
+    return state;
+  }
+}
+
+const NO_DICE: DiceSource = {
+  roll: () => {
+    throw new RangeError('a purchase rolls no die');
+  },
+  pick: () => {
+    throw new RangeError('a purchase draws nothing');
+  },
+};
 
 /** The computer's route as a person's End turn would show it: §7's colours for this turn. */
 function routeOf(state: GameState, action: TurnAction): PathPreview | null {

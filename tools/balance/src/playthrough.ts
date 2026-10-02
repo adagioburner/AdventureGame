@@ -59,9 +59,9 @@ export type PlaythroughEnd = 'victory' | 'stalemate' | 'turn_cap';
 
 /** One seat's decision for its turn, and what the transcript says about it. */
 export interface TurnChoice {
-  /** [Q190] What the seat buys before it moves, in order; none when absent. */
-  readonly buys?: readonly BuyAction[];
-  /** `null` only when one of `buys` ended the game (756). */
+  /** [Q190] What the seat buys before it moves; nothing when absent or `null`. */
+  readonly buy?: BuyAction | null;
+  /** `null` only when `buy` ended the game (756). */
   readonly action: TurnAction | null;
   /** Where the player is going; `null` for a rest that heads nowhere. */
   readonly heading: Heading | null;
@@ -198,8 +198,8 @@ export function playGame(
     const turnNumber = state.turn.number;
     // [Q190] Purchases first: the move then starts from what they bought.
     const events: GameEvent[] = [];
-    for (const buy of chosen?.buys ?? []) {
-      const bought = applyAction(state, buy, dice);
+    if (chosen?.buy != null) {
+      const bought = applyAction(state, chosen.buy, dice);
       state = bought.state;
       events.push(...bought.events);
     }
@@ -412,8 +412,8 @@ function turnLines(turn: PlayedTurn, run: Playthrough): string[] {
         break;
       case 'bought':
         lines.push(
-          `  bought  ${event.kind} x${event.units} for ${event.gold} gold before moving (Q190)` +
-            (event.kind in SPEED_TERRAIN ? ', a free step this turn too, counted in the allowance above' : ''),
+          `  bought  ${event.skills.join(' ')} for ${event.gold} gold before moving (Q190)` +
+            (event.skills.some((skill) => skill in SPEED_TERRAIN) ? '; a speed bought gives free steps this turn too, counted in the allowance above' : ''),
         );
         break;
       case 'interacted':

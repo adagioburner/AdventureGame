@@ -1,8 +1,8 @@
 import type { AiPlayer } from '@adventure/ai';
-import type { GameMap, GameState, NodeId, PlayerId, PlayerState, TurnAction, UserId } from '@adventure/core';
+import type { BuyAction, GameMap, GameState, NodeId, PlayerId, PlayerState, TurnAction, UserId } from '@adventure/core';
 import { computerMoveRequestId, type ClientMessage, type GameRecord, type ProtocolErrorCode, type SetupState } from '@adventure/protocol';
 import { hotseatComputer, pageComputer } from './computer.ts';
-import { HOTSEAT_MODE, type HotseatGame, type PlayedTurn, type UiModeConfig } from './hotseat.ts';
+import { HOTSEAT_MODE, type HotseatGame, type PlayedTurn, type Purchase, type UiModeConfig } from './hotseat.ts';
 import { ONLINE_MODE, type AppliedRecord, type OnlineGame } from './online.ts';
 
 /** One change to the game as the play screen shows it: a turn, or something else (a saved route, the end). */
@@ -11,6 +11,12 @@ export interface PlayedChange {
   readonly after: GameState;
   /** `null` for a change that is not a turn: nothing walks, and the log has no entry. */
   readonly turn: PlayedTurn | null;
+  /**
+   * [Q190] A purchase, which is not a turn: the cards show it at once, and the
+   * log gives it a line in its turn's entry, or an entry of its own if it ends
+   * the game (756).
+   */
+  readonly purchase?: Purchase | null;
   /** [Q56, 54] The game master moved the player on: their saved route, or a rest. */
   readonly movedOn?: boolean;
   /** [Q85, 296] The game master resigned the player this page plays for. */
@@ -75,8 +81,16 @@ export interface PlaySource {
    * online for a computer's move, which waits for the connection instead. The
    * turn comes back through `subscribe`: at once on one device, online once
    * the server has played it, or a refusal if the server would not.
+   *
+   * [Q190, 761] `buy` is what a computer bought before its move, played first.
    */
-  commit(action: TurnAction): void;
+  commit(action: TurnAction, buy?: BuyAction | null): void;
+  /**
+   * [Q190] Done in the buy panel (768), or a computer's purchase that ends the
+   * game (756). Throws as `commit` does; comes back through `subscribe` as a
+   * change with a `purchase`, at once on one device, online once played.
+   */
+  buy(action: BuyAction): void;
   /** Hears every update from now on, in order. */
   subscribe(listener: (update: PlayUpdate) => void): () => void;
 }
@@ -85,6 +99,11 @@ export interface PlaySource {
 export function hotseatPlay(game: HotseatGame): PlaySource {
   const listeners = new Set<(update: PlayUpdate) => void>();
   const computer = hotseatComputer(game);
+  const purchase = (action: BuyAction): void => {
+    const before = game.state;
+    const bought = game.buy(action);
+    for (const listener of listeners) listener({ kind: 'change', change: { before, after: bought.after, turn: null, purchase: bought }, shown: 'played' });
+  };
   return {
     mode: HOTSEAT_MODE,
     map: game.setup.map,
@@ -96,23 +115,33 @@ export function hotseatPlay(game: HotseatGame): PlaySource {
     localPlayers: new Set(game.state.players.filter((player) => player.control === 'human').map((player) => player.id)),
     diceSeed: game.setup.diceSeed,
     // A game brought back after a reload ([Q56, 66]) opens with its turns in the log.
-    history: game.turns.map((turn, index) => ({ before: game.turns[index - 1]?.after ?? game.opening, after: turn.after, turn })),
+    history: hotseatHistory(game),
     computer,
     savePlan: null,
     moveOn: null,
     resignPlayer: null,
     thinksFor: (player) => player.control === 'ai',
     thinkingSecondsOf: (player) => (player.control === 'ai' ? (game.setup.seats[player.seat - 1]?.thinkingSeconds ?? 0) : null),
-    commit(action) {
+    commit(action, buy) {
+      if (buy !== undefined && buy !== null) purchase(buy);
       const before = game.state;
       const turn = game.play(action);
       for (const listener of listeners) listener({ kind: 'change', change: { before, after: turn.after, turn }, shown: 'played' });
     },
+    buy: purchase,
     subscribe(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);
     },
   };
+}
+
+/** The changes a hot seat game reloaded has played: its turns, and the purchase that ended it, if one did. */
+function hotseatHistory(game: HotseatGame): PlayedChange[] {
+  const turns: PlayedChange[] = game.turns.map((turn, index) => ({ before: game.turns[index - 1]?.after ?? game.opening, after: turn.after, turn }));
+  const ending = game.endingPurchase;
+  if (ending === null) return turns;
+  return [...turns, { before: game.turns.at(-1)?.after ?? game.opening, after: ending.after, turn: null, purchase: ending }];
 }
 
 /** A stored game on the play screen, fed by the page's socket. */
@@ -191,11 +220,14 @@ export function onlinePlay(options: OnlinePlayOptions): OnlinePlay {
   // unnoticed, goes again once the connection is back: without it the
   // computer's turn would wait for good.
   let computerMove: Extract<ClientMessage, { type: 'gm.aiMove' }> | null = null;
+  // [Q190] The turn of the purchase this page sent last, until it is played or refused.
+  let buying: number | null = null;
 
-  const changeOf = ({ record, before, after, turn }: AppliedRecord): PlayedChange => ({
+  const changeOf = ({ record, before, after, turn, purchase }: AppliedRecord): PlayedChange => ({
     before,
     after,
     turn,
+    purchase,
     movedOn: record.action.kind === 'force_turn',
     resignedYou: record.action.kind === 'resign' && record.by !== me && seatOf(record.action.player)?.userId === me,
   });
@@ -229,11 +261,18 @@ export function onlinePlay(options: OnlinePlayOptions): OnlinePlay {
         }
       : null,
     resignPlayer: isGameMaster ? (player) => deliver({ type: 'gm.resignPlayer', gameId, player: player.id }) : null,
-    commit(action) {
+    commit(action, buy) {
       const state = game.state;
       const player = state.players.find((candidate) => candidate.id === action.player);
       if (player?.control === 'ai') {
-        computerMove = { type: 'gm.aiMove', gameId, requestId: computerMoveRequestId(state), player: player.id, action };
+        computerMove = {
+          type: 'gm.aiMove',
+          gameId,
+          requestId: computerMoveRequestId(state),
+          player: player.id,
+          ...(buy === undefined || buy === null ? {} : { buy }),
+          action,
+        };
         send(computerMove);
         return;
       }
@@ -250,6 +289,18 @@ export function onlinePlay(options: OnlinePlayOptions): OnlinePlay {
       if (action.kind !== 'move') throw new Error('Only a move or a rest can end a turn.');
       deliver({ type: 'turn.end', gameId, turn: state.turn.number, path: action.path, waypoint: action.waypoint ?? null });
     },
+    buy(action) {
+      const state = game.state;
+      const player = state.players.find((candidate) => candidate.id === action.player);
+      if (player?.control === 'ai') {
+        // [756] A computer's purchase that ends the game, with no move after it.
+        computerMove = { type: 'gm.aiMove', gameId, requestId: computerMoveRequestId(state), player: player.id, buy: action, action: null };
+        send(computerMove);
+        return;
+      }
+      deliver({ type: 'turn.buy', gameId, turn: state.turn.number, skills: action.skills });
+      buying = state.turn.number;
+    },
     subscribe(listener) {
       listeners.add(listener);
       return () => listeners.delete(listener);
@@ -258,10 +309,18 @@ export function onlinePlay(options: OnlinePlayOptions): OnlinePlay {
       const applied = game.apply(record);
       if (record.action.kind === 'force_turn' && movingOn !== null && movingOn.turn === applied.before.turn.number) movingOn = null;
       if (computerMove !== null && computerMove.requestId !== computerMoveRequestId(game.state)) computerMove = null;
+      if (record.action.kind === 'buy' && record.by === me) buying = null;
       if (record.action.kind === 'resign') refreshLocal();
       tell({ kind: 'change', change: changeOf(applied), shown });
     },
     refused(reason, code) {
+      // [Q190] Done in the buy panel crossed the end of the turn: nothing was bought.
+      if (code === 'turn_over' && buying !== null) {
+        buying = null;
+        tell({ kind: 'refused', reason: 'Your turn ended before the purchase arrived, so nothing was bought.' });
+        return;
+      }
+      buying = null;
       if (code === 'turn_over') {
         // [Q56, 55] Someone acted on this turn first, and the page has the
         // turn that was played. The game master is told who; a player whose
@@ -274,6 +333,7 @@ export function onlinePlay(options: OnlinePlayOptions): OnlinePlay {
       tell({ kind: 'refused', reason });
     },
     reconnected() {
+      buying = null;
       const waiting = computerMove;
       if (waiting !== null && game.state.status === 'in_progress' && waiting.requestId === computerMoveRequestId(game.state)) {
         send(waiting);

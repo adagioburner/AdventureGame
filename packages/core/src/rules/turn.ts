@@ -242,20 +242,22 @@ function applyBuy(state: GameState, action: BuyAction): ActionOutcome {
   const player = requireActivePlayer(state, action.player);
   const buying = state.map.ruleset.config.buying;
   if (buying === undefined) throw new RuleViolationError('nothing can be bought in this game');
-  if (!buying.KINDS.includes(action.skill)) throw new RuleViolationError(`${action.skill} cannot be bought`);
-  const price = buying.GOLD_PER_UNIT;
+  if (action.skills.length === 0) throw new RuleViolationError('a purchase buys at least one unit');
+  for (const skill of action.skills) {
+    if (!buying.KINDS.includes(skill)) throw new RuleViolationError(`${skill} cannot be bought`);
+  }
+  const price = buying.GOLD_PER_UNIT * action.skills.length;
   if (player.stats.gold < price) {
-    throw new RuleViolationError(`${player.name} has ${player.stats.gold} gold, and a unit costs ${price}`);
+    throw new RuleViolationError(`${player.name} has ${player.stats.gold} gold, and ${action.skills.length} units cost ${price}`);
   }
 
-  const events: GameEvent[] = [{ type: 'bought', player: player.id, kind: action.skill, units: 1, gold: price }];
-  const terrain = SPEED_TERRAIN[action.skill];
-  const bought = withPlayer(state, player.id, (current) => ({
-    ...current,
-    stats: addToStat(addToStat(current.stats, 'gold', -price), action.skill, 1),
-  }));
-  const next: GameState =
-    terrain === undefined ? bought : { ...bought, turn: { ...bought.turn, allowance: { ...bought.turn.allowance, [terrain]: bought.turn.allowance[terrain] + 1 } } };
+  const events: GameEvent[] = [{ type: 'bought', player: player.id, skills: action.skills, gold: price }];
+  let next = withPlayer(state, player.id, (current) => ({ ...current, stats: addToStat(current.stats, 'gold', -price) }));
+  for (const skill of action.skills) {
+    next = withPlayer(next, player.id, (current) => ({ ...current, stats: addToStat(current.stats, skill, 1) }));
+    const terrain = SPEED_TERRAIN[skill];
+    if (terrain !== undefined) next = { ...next, turn: { ...next.turn, allowance: { ...next.turn.allowance, [terrain]: next.turn.allowance[terrain] + 1 } } };
+  }
 
   const winners = checkVictory(next);
   if (winners.length === 0) return { state: next, events };

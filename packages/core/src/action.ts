@@ -68,16 +68,22 @@ export type TurnAction = MoveAction | RestAction;
 
 /**
  * [Q190] Andrei, 2026-10-02: "allow players buy skills for gold, 1 to 1."
- * One unit of `skill` for `GOLD_PER_UNIT` gold, on the player's own turn
- * before they end it (754), as many times as their gold pays for (751, Free).
- * It is not a turn: the turn goes on, and still ends with a move or a rest.
- * A speed bought counts this turn too (752); nothing bought is sold back (755).
+ * A unit of each of `skills` for `GOLD_PER_UNIT` gold apiece, on the player's
+ * own turn before they end it (754), as often as their gold pays for (751,
+ * Free). It is not a turn: the turn goes on, and still ends with a move or a
+ * rest. A speed bought counts this turn too (752); nothing bought is sold
+ * back (755).
+ *
+ * One action is what a person picked in the buy panel before pressing Done
+ * (768), so the turn log has a line for it (769); the computer's are its
+ * purchases for the turn (761). All of it is bought or, should the gold fall
+ * short, none.
  */
 export interface BuyAction {
   readonly kind: 'buy';
   readonly player: PlayerId;
-  /** One of the game's `buying.KINDS`: a speed, combat or magic. */
-  readonly skill: RewardKind;
+  /** One entry per unit, each one of the game's `buying.KINDS`: a speed, combat or magic. */
+  readonly skills: readonly RewardKind[];
 }
 
 /**
@@ -247,8 +253,8 @@ export type GameEvent =
   | { readonly type: 'message_posted'; readonly post: BoardPost }
   | { readonly type: 'message_deleted'; readonly id: string }
   | { readonly type: 'planned'; readonly player: PlayerId; readonly plan: PlannedPath | null }
-  /** [Q190] A player bought `units` of `kind` for `gold` gold, during their turn. */
-  | { readonly type: 'bought'; readonly player: PlayerId; readonly kind: RewardKind; readonly units: number; readonly gold: number }
+  /** [Q190] A player bought a unit of each of `skills` for `gold` gold in all, during their turn. */
+  | { readonly type: 'bought'; readonly player: PlayerId; readonly skills: readonly RewardKind[]; readonly gold: number }
   /** [Q135] A speed or skill ran short and came back to an empty site, far from every figure. */
   | { readonly type: 'reward_returned'; readonly node: NodeId; readonly reward: Reward }
   | { readonly type: 'game_won'; readonly winners: readonly PlayerId[] }
