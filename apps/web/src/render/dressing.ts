@@ -40,6 +40,19 @@ export const CLUSTER_TOUCH = 0.75;
 /** How many directions a sprite of a cluster tries before it settles for crowding its neighbours. */
 const CLUSTER_TRIES = 8;
 
+/**
+ * [710] The share of the trees between the outermost roads and the ground's
+ * edge that stay: each stays by this chance, the rest are planted in the
+ * middle of the forest instead (711).
+ */
+export const EDGE_TREES_KEPT = 1 / 3;
+
+/**
+ * [711] How many spots in the middle of the forest are tried for each tree
+ * taken off the edge before the ones that have not fitted are dropped.
+ */
+export const MIDDLE_TRIES = 40;
+
 interface Ground {
   readonly map: GameMap;
   readonly catalog: ArtCatalog;
@@ -98,8 +111,11 @@ function pick(options: readonly DressingArt[], roll: number): DressingArt | unde
  * terrain's density. A bush of a cluster that breaks a rule is left out, and
  * so is one no longer touching any other; a cluster left with fewer than two
  * is not placed at all.
+ *
+ * Last, all but `edgeTreesKept` of the trees past the outermost roads are
+ * taken off and planted in the middle of the forest instead (710, 711).
  */
-export function placeDressing(ground: Ground, taken: readonly Box[]): Billboard[] {
+export function placeDressing(ground: Ground, taken: readonly Box[], edgeTreesKept = EDGE_TREES_KEPT): Billboard[] {
   const { map, catalog, projection, spacing, bounds, shapeOf } = ground;
   const { manifest } = catalog;
   const graph = map.graph;
@@ -210,7 +226,66 @@ export function placeDressing(ground: Ground, taken: readonly Box[]): Billboard[
     for (const { item } of joined) placed.push(item);
     quota.set(nearest.terrain, left - joined.length);
   }
-  return placed;
+  const kept = thinEdgeTrees(ground, placed, edgeTreesKept);
+
+  // [Andrei, 2026-10-01] "I would rather ask you to fit more in the middle."
+  // 711: the trees taken off the edge are planted in the middle of the forest
+  // instead, by the same rules as every other tree, as many as fit. They come
+  // from a stream of their own, so nothing placed above moves.
+  const middle = createRng(map.seed).fork('middle trees');
+  const trees = manifest.terrain.forest.dressing.filter((d) => d.layer === 'standing');
+  const moved = placed.length - kept.length;
+  let planted = 0;
+  for (let attempt = 0; attempt < moved * MIDDLE_TRIES && planted < moved; attempt++) {
+    const at = { x: bounds.min.x + middle.nextFloat() * width, y: bounds.min.y + middle.nextFloat() * height };
+    const pickDressing = middle.nextFloat();
+    const pickSprite = middle.nextUint32();
+    if (nearestNode(map, at)?.terrain !== 'forest' || pastTheRoads(map, bounds, at)) continue;
+    const option = pick(trees, pickDressing);
+    if (option === undefined) continue;
+    const item = stand(at, option, 'forest', dressingSprite(catalog, option, pickSprite));
+    if (item === null) continue;
+    kept.push(item);
+    planted++;
+  }
+  return kept;
+}
+
+/**
+ * [Andrei, 2026-10-01] "Trees are crowding too at the edge." Nothing stands
+ * between the outermost roads and the ground's edge for a tree to keep clear
+ * of, and along the back edges a tree hides nothing behind it, so that strip
+ * took most of the forest's trees and stood them in a hedge. So the trees
+ * past the outermost roads are taken off but for `kept` of them, each staying
+ * by that chance (710: a third); every other tree, bush and stone stays where
+ * it was.
+ */
+function thinEdgeTrees(ground: Ground, placed: Billboard[], kept: number): Billboard[] {
+  const { map, projection, bounds } = ground;
+  const rng = createRng(map.seed).fork('edge trees');
+  return placed.filter((item) => {
+    const at = projection.toWorld(item.foot);
+    if (nearestNode(map, at)?.terrain !== 'forest' || !pastTheRoads(map, bounds, at)) return true;
+    return rng.nextFloat() < kept;
+  });
+}
+
+/** Whether the straight way from `at` to the nearest edge of the ground crosses no road. */
+function pastTheRoads(map: GameMap, bounds: Bounds, at: Point): boolean {
+  const graph = map.graph;
+  const ways: Point[] = [
+    { x: bounds.min.x, y: at.y },
+    { x: bounds.max.x, y: at.y },
+    { x: at.x, y: bounds.min.y },
+    { x: at.x, y: bounds.max.y },
+  ];
+  const edge = ways.reduce((best, way) => (distance(at, way) < distance(at, best) ? way : best));
+  return !graph.edges.some((road) => segmentsCross(at, edge, position(graph, road.a), position(graph, road.b)));
+}
+
+function segmentsCross(p: Point, q: Point, a: Point, b: Point): boolean {
+  const side = (o: Point, s: Point, t: Point): number => Math.sign((s.x - o.x) * (t.y - o.y) - (s.y - o.y) * (t.x - o.x));
+  return side(p, q, a) !== side(p, q, b) && side(a, b, p) !== side(a, b, q);
 }
 
 /**
