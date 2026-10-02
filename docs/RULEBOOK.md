@@ -1,4 +1,4 @@
-# Adventure Game — Rulebook
+# Skyholm Adventures — Rulebook
 
 ## Object of the game
 
@@ -105,7 +105,7 @@ A claimed site is empty until its speed or skill comes back: its icons disappear
 
 ### Speeds and skills come back
 
-At the end of every turn, each speed, combat and magic is counted on its own. If fewer than 2 sites still offer it, one empty site that held it at the start gets back 1 unit of it. That site is picked at random from the farther half of those empty sites (rounding up, never one a figure stands on), measured by what the cheapest route from the nearest figure would cost in stamina. A site can come back more than once. Gold and stamina never come back.
+At the end of every turn, each speed, combat and magic is counted on its own. If fewer than 2 sites still offer it, one empty site that held it at the start gets back 1 unit of it. Gold and stamina never come back.
 
 ## Winning and ending the game
 
