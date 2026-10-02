@@ -38,9 +38,11 @@ function lineMap(terrains: readonly Terrain[], pois: readonly { node: number; ki
     group: { kind: poi.kind, guard: poi.guard?.type ?? null },
     artVariant: 0,
   }));
+  // Players start on no gold here, as in §8's example (Q200 gives them 5): a test's gold is what it hands out.
+  const { STARTING_GOLD: _gold, ...players } = DEFAULT_RULESET.config.players;
   return {
     seed: 'journal',
-    ruleset: DEFAULT_RULESET,
+    ruleset: { ...DEFAULT_RULESET, config: { ...DEFAULT_RULESET.config, players } },
     graph: {
       nodes: terrains.map((terrain, index) => ({ id: n(index), position: { x: index, y: 0 }, terrain })),
       edges,

@@ -181,6 +181,8 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 [SOURCE §2, chat] Starting stamina by seat: `STARTING_STAMINA_BASE` (default 30) + (seat − 1) × `STARTING_STAMINA_INCREMENT` (default 5).
 
+[SOURCE §2, chat] **Every player starts with `STARTING_GOLD` (5) gold, the same for every seat.** Andrei, 2026-10-02: "Now that players can buy skills for gold, it makes sense to starts them with 5 gold to enable a variety of strategies" (Q200). Only games started since get it: a game started before keeps its players starting on none to the end, online because its map carries the config it was made with, on one device because the kept game records the gold its players started with (790). The New game screen's seat line still names only the starting stamina, which is what differs between seats (792). Nothing that decides the winner moves: the win check compares a lead with the gold left on the map, and 5 each changes no lead.
+
 [SOURCE §2, chat] **The increment is 5, not 10** (Andrei, 2026-09-29, after 4-seat computer games at 3 s a move: with 10 the later seats ended with more gold; with 5 the four seats came out even). Registered as Q75.
 
 ### 6.1 Setup flow
@@ -363,6 +365,7 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `REST_STAMINA_GAIN` | 5 | tunable |
 | `STARTING_STAMINA_BASE` | 30 | tunable |
 | `STARTING_STAMINA_INCREMENT` | 5 | tunable (Q75; was 10) |
+| `STARTING_GOLD` | 5 | tunable — the gold every player starts with, §6 (Q200); none in games started before |
 | `PLAYER_COUNT_MIN` / `MAX` | 2 / 5 | tunable, not a hard limit |
 | `GUARD_DIE` | d6 | fixed |
 | `MCTS_TIME_BUDGET_PER_MOVE` | 10 seconds | tunable; per computer seat on the setup screen, 1 to 60 seconds [SOURCE §5, review] |

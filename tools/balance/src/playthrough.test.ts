@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_RULESET } from '@adventure/config';
+import { DEFAULT_RULESET, startingGoldOf } from '@adventure/config';
 import { previewPath, totalGoldUnits } from '@adventure/core';
 import { formatPlaythrough, playGame } from './playthrough.ts';
 
@@ -32,7 +32,7 @@ describe('a full game', () => {
     expect(winner?.stats.gold).toBe(best);
   });
 
-  it('never creates or destroys gold', () => {
+  it('never creates or destroys gold: what the players started with and the map held is held, left or spent', () => {
     const held = run.finalState.players.reduce((sum, player) => sum + player.stats.gold, 0);
     const left = run.map.pois.reduce(
       (sum, poi, index) =>
@@ -40,7 +40,11 @@ describe('a full game', () => {
         (poi.reward.kind === 'gold' && run.finalState.poiRuntime[index]?.claimedBy === null ? poi.reward.units : 0),
       0,
     );
-    expect(held + left).toBe(totalGoldUnits(run.map));
+    // [Q190] Spent gold leaves the game; [Q200] each player started with some.
+    const spent = run.turns.flatMap((turn) => turn.events).reduce((sum, event) => sum + (event.type === 'bought' ? event.gold : 0), 0);
+    const started = startingGoldOf(run.map.ruleset) * run.finalState.players.length;
+    expect(started).toBe(10);
+    expect(held + left + spent).toBe(totalGoldUnits(run.map) + started);
   });
 
   it('shares the one map object across every turn of the game', () => {
