@@ -2,7 +2,7 @@ import { TERRAINS, type GameConfig, type PerTerrain } from '@adventure/config';
 import type { NodeId } from '../ids.ts';
 import type { MapGraph } from '../graph.ts';
 import type { PlayerStats } from '../player.ts';
-import { frontPath, routeTable } from '../path.ts';
+import { frontPath, routeTable, type RouteTable } from '../path.ts';
 import { refreshAllowance } from './movement.ts';
 
 /**
@@ -25,24 +25,118 @@ import { refreshAllowance } from './movement.ts';
  */
 export function effectiveDistance(steps: PerTerrain<number>, stats: PlayerStats, config: GameConfig): number {
   if (!TERRAINS.every((terrain) => Number.isFinite(steps[terrain]))) return Number.POSITIVE_INFINITY;
-  const speeds = refreshAllowance(stats);
+  return distanceOf(steps.plains, steps.forest, steps.mountain, refreshAllowance(stats), config);
+}
+
+/** `effectiveDistance` of finite steps, for speeds already read off the player. */
+function distanceOf(plains: number, forest: number, mountain: number, speeds: PerTerrain<number>, config: GameConfig): number {
   const perTurn = config.movement.REST_STAMINA_GAIN;
   const cost = config.movement.STAMINA_COST;
 
   let best = Number.POSITIVE_INFINITY;
   for (let turns = 1; ; turns++) {
+    const leftPlains = plains - turns * speeds.plains;
+    const leftForest = forest - turns * speeds.forest;
+    const leftMountain = mountain - turns * speeds.mountain;
     let total = perTurn * turns;
-    let covered = true;
-    for (const terrain of TERRAINS) {
-      const left = steps[terrain] - turns * speeds[terrain];
-      if (left <= 0) continue;
-      total += cost[terrain] * left;
-      if (speeds[terrain] > 0) covered = false;
-    }
+    if (leftPlains > 0) total += cost.plains * leftPlains;
+    if (leftForest > 0) total += cost.forest * leftForest;
+    if (leftMountain > 0) total += cost.mountain * leftMountain;
     if (total < best) best = total;
     else if (total > best) return best;
+    // Once every terrain the player has a speed on is covered, it only climbs.
+    const covered =
+      (leftPlains <= 0 || speeds.plains === 0) && (leftForest <= 0 || speeds.forest === 0) && (leftMountain <= 0 || speeds.mountain === 0);
     if (covered) return best;
   }
+}
+
+/** The best route's steps per terrain and score, without the route itself (`bestRouteSteps`). */
+export interface BestRouteSteps {
+  readonly steps: PerTerrain<number>;
+  /** Its `effectiveDistance` for the player's speeds. */
+  readonly distance: number;
+  /** -1 for today's route, `routes.path`; otherwise its entry in `routesFrom(from)`. */
+  readonly entry: number;
+}
+
+/**
+ * [Q210, 820 A] What `bestRoute` picks, as the cached counts of steps per
+ * terrain and its score, with no route traced: all the computer's search
+ * needs to rank sites and to tell what it reaches this turn. `null` only if
+ * `to` cannot be reached. On the spot it is no steps at all.
+ *
+ * Only the player's speeds count, and the search asks for the same space and
+ * speeds over and over, once a round per position it weighs; so each answer
+ * is kept, for up to `BEST_ROUTE_MEMO_KEYS` spaces and speeds per map.
+ */
+export function bestRouteSteps(
+  graph: MapGraph,
+  from: NodeId,
+  to: NodeId,
+  stats: PlayerStats,
+  config: GameConfig,
+): BestRouteSteps | null {
+  const routes = routeTable(graph, config);
+  const speeds = refreshAllowance(stats);
+  let rows = memos.get(routes);
+  if (rows === undefined) {
+    rows = new Map();
+    memos.set(routes, rows);
+  }
+  const key = `${from} ${speeds.plains} ${speeds.forest} ${speeds.mountain}`;
+  let row = rows.get(key);
+  if (row === undefined) {
+    if (rows.size >= BEST_ROUTE_MEMO_KEYS) rows.clear();
+    row = new Array<BestRouteSteps | null | undefined>(graph.nodes.length);
+    rows.set(key, row);
+  }
+  const known = row[to];
+  if (known !== undefined) return known;
+  const found = pickBestRoute(routes, from, to, speeds, config);
+  row[to] = found;
+  return found;
+}
+
+/** How many spaces and speeds `bestRouteSteps` keeps answers for, per map: a few MB at most. */
+const BEST_ROUTE_MEMO_KEYS = 2048;
+
+const memos = new WeakMap<RouteTable, Map<string, (BestRouteSteps | null | undefined)[]>>();
+
+function pickBestRoute(routes: RouteTable, from: NodeId, to: NodeId, speeds: PerTerrain<number>, config: GameConfig): BestRouteSteps | null {
+  const counts = routes.stepsFrom(from);
+  const cheapest = { plains: counts.plains[to] as number, forest: counts.forest[to] as number, mountain: counts.mountain[to] as number };
+  if (!Number.isFinite(cheapest.plains)) return null;
+  const today = distanceOf(cheapest.plains, cheapest.forest, cheapest.mountain, speeds, config);
+  if (from === to) return { steps: cheapest, distance: today, entry: -1 };
+
+  const front = routes.routesFrom(from);
+  const first = front.start[to] as number;
+  const last = front.start[to + 1] as number;
+  const cost = config.movement.STAMINA_COST;
+  // Only a route strictly better than today's replaces it; among those, the
+  // least weighted terrain cost, then the first found.
+  let chosen = -1;
+  let distance = today;
+  let weight = 0;
+  for (let entry = first; entry < last; entry++) {
+    const plains = front.plains[entry] as number;
+    const forest = front.forest[entry] as number;
+    const mountain = front.mountain[entry] as number;
+    const candidate = distanceOf(plains, forest, mountain, speeds, config);
+    if (candidate > distance) continue;
+    const entryWeight = cost.plains * plains + cost.forest * forest + cost.mountain * mountain;
+    if (candidate === distance && (chosen === -1 || entryWeight >= weight)) continue;
+    chosen = entry;
+    distance = candidate;
+    weight = entryWeight;
+  }
+  if (chosen === -1) return { steps: cheapest, distance: today, entry: -1 };
+  return {
+    steps: { plains: front.plains[chosen] as number, forest: front.forest[chosen] as number, mountain: front.mountain[chosen] as number },
+    distance,
+    entry: chosen,
+  };
 }
 
 /**
@@ -57,7 +151,8 @@ export function effectiveDistance(steps: PerTerrain<number>, stats: PlayerStats,
  * stamina. Among routes equally good, the cheapest by weighted terrain cost,
  * and today's route, `shortestPath`, whenever it is one of them (811 A), so a
  * player with no speeds is drawn and walks exactly the route they were.
- * `null` only if `to` cannot be reached.
+ * `null` only if `to` cannot be reached. The route is traced only here, from
+ * the entry `bestRouteSteps` picks.
  */
 export function bestRoute(
   graph: MapGraph,
@@ -67,37 +162,10 @@ export function bestRoute(
   config: GameConfig,
 ): readonly NodeId[] | null {
   if (from === to) return [];
+  const choice = bestRouteSteps(graph, from, to, stats, config);
+  if (choice === null) return null;
   const routes = routeTable(graph, config);
-  const front = routes.routesFrom(from);
-  const first = front.start[to] as number;
-  const last = front.start[to + 1] as number;
-  if (first === last) return null;
-
-  const steps = routes.stepsFrom(from);
-  const cheapest = effectiveDistance(
-    { plains: steps.plains[to] as number, forest: steps.forest[to] as number, mountain: steps.mountain[to] as number },
-    stats,
-    config,
-  );
-  const cost = config.movement.STAMINA_COST;
-  // Only a route strictly better than today's replaces it; among those, the
-  // least weighted terrain cost, then the first found.
-  let chosen = -1;
-  let distance = cheapest;
-  let weight = 0;
-  for (let entry = first; entry < last; entry++) {
-    const plains = front.plains[entry] as number;
-    const forest = front.forest[entry] as number;
-    const mountain = front.mountain[entry] as number;
-    const candidate = effectiveDistance({ plains, forest, mountain }, stats, config);
-    if (candidate > distance) continue;
-    const entryWeight = cost.plains * plains + cost.forest * forest + cost.mountain * mountain;
-    if (candidate === distance && (chosen === -1 || entryWeight >= weight)) continue;
-    chosen = entry;
-    distance = candidate;
-    weight = entryWeight;
-  }
-  return chosen === -1 ? routes.path(from, to) : frontPath(front, chosen);
+  return choice.entry === -1 ? routes.path(from, to) : frontPath(routes.routesFrom(from), choice.entry);
 }
 
 /**

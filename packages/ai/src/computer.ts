@@ -1,6 +1,11 @@
 import type { GameConfig } from '@adventure/config';
 import type { DiceSource, GameState, PlayerId, Rng } from '@adventure/core';
 import {
+  bestRouteForSpeeds,
+  bestRouteStepsFor,
+  cheapestRoute,
+  cheapestRouteSteps,
+  closestByBestRoute,
   closestBySpeeds,
   goldExhaustedTermination,
   restWhenStuck,
@@ -12,7 +17,7 @@ import {
 import { planTurn, searchTree, startSearch, type SearchResult, type TurnPlan } from './mcts.ts';
 import { simulatedLeadEvaluator } from './policies/evaluators.ts';
 import { closestPoiRolloutPolicy } from './policies/rollout.ts';
-import { closestUnclaimedPoiEnumerator, previewReachability, uctTreePolicy } from './policies/tree.ts';
+import { closestUnclaimedPoiEnumerator, previewReachability, stepsReachability, uctTreePolicy } from './policies/tree.ts';
 import type { MctsOptions, NodeEvaluator } from './types.ts';
 
 /** What a computer seat needs besides the position. */
@@ -44,6 +49,15 @@ export interface ComputerSettings {
   readonly closest?: ClosestFinder;
   /** Which of the closest a player in an imagined game heads for; uniformly at random when absent. */
   readonly pick?: TargetPicker;
+  /**
+   * [Q210] Which routes the search's own choices count: which sites are
+   * choices, whether resting and which purchases are weighed, and its own
+   * walk along a choice. The game leaves it out and gets the best for the
+   * player's speeds (stage 2, 820 A); the balancing harness passes
+   * `'cheapest'` to compare with the search before. The games it imagines
+   * count the cheapest route either way (stage 3).
+   */
+  readonly searchRoutes?: 'best' | 'cheapest';
 }
 
 /**
@@ -60,8 +74,11 @@ export function computerEvaluator(): NodeEvaluator {
  * §9's computer player with the v1 setup: UCT with `MCTS_EXPLORATION_CONSTANT`
  * over the `CLOSE_CANDIDATE_COUNT` closest unclaimed POIs plus rest and the
  * purchases worth weighing (Q190, `buyBranches`), closest
- * by the player's own speeds (Q112), the §9 rollout policy ranking the same
- * way, and the lead score (Q113, `computerEvaluator`). The games it plays in
+ * by the player's own speeds along the best route for them (Q112, Q210 stage
+ * 2: `closestByBestRoute`), its resting and buying checks and its own walk
+ * along that route too, the §9 rollout policy ranking by the speeds along the
+ * cheapest route (`closestBySpeeds`), and the lead score (Q113,
+ * `computerEvaluator`). The games it plays in
  * its head rest when stuck (Q43) and stop when the gold is gone, the game is
  * won, or `SIMULATION_TURN_CAP` turns have passed since `state` (Q44).
  */
@@ -70,11 +87,20 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
   const termination = turnCapTermination(goldExhaustedTermination(), state.turn.number, config.ai.SIMULATION_TURN_CAP);
   const restRule = restWhenStuck();
   const closest = settings.closest ?? closestBySpeeds;
+  const cheapest = settings.searchRoutes === 'cheapest';
+  const stepsTo = cheapest ? cheapestRouteSteps : bestRouteStepsFor;
   return {
     subject,
     config,
     treePolicy: uctTreePolicy(config.ai.MCTS_EXPLORATION_CONSTANT),
-    actions: closestUnclaimedPoiEnumerator(config, previewReachability(), settings.targets, closest),
+    actions: closestUnclaimedPoiEnumerator(
+      config,
+      cheapest ? previewReachability() : stepsReachability(stepsTo),
+      settings.targets,
+      settings.closest ?? (cheapest ? closestBySpeeds : closestByBestRoute),
+      stepsTo,
+    ),
+    edgeRoute: cheapest ? cheapestRoute : bestRouteForSpeeds,
     rollout: closestPoiRolloutPolicy({
       config,
       termination,

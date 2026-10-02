@@ -421,8 +421,18 @@ the first time a node is asked for). Only the ranking changes; the routes its
 search and its imagined players walk are still the cheapest by weighted
 terrain cost, and the remoteness walk still ranks by that cost. Its real move
 walks the best route for its speeds (Q210, stage 1: `firstTurnOf` passes
-`bestRouteForSpeeds` to `turnTowards`). `closestByTerrainCost` keeps the earlier ranking for the balancing
-harness's `+fixed` seats.
+`bestRouteForSpeeds` to `turnTowards`). Since stage 2 its search's own choices
+count that route too: the tree ranks by `closestByBestRoute`, its rest check
+is `stepsReachability(bestRouteStepsFor)` and its buy check counts the same
+steps, all from the cached steps per terrain of the routes kept to each site
+(`bestRouteSteps`, no route traced; it keeps each answer per space and speeds,
+up to `BEST_ROUTE_MEMO_KEYS` of them per map, since the search asks the same
+ones every round), and its own walk along a tree edge is
+`MctsOptions.edgeRoute`, `bestRouteForSpeeds`. Its imagined games, the other
+seats' turns inside a tree edge included, still rank by `closestBySpeeds` and
+walk the cheapest route (stage 3). `closestByTerrainCost` keeps the earlier
+ranking for the balancing harness's `+fixed` seats, and `+cheapest-search`
+the search before stage 2.
 
 **Routes are searched once per map in a game** (Andrei, 2026-09-28):
 `routeTable` in `packages/core/src/path.ts` runs the whole Dijkstra from every

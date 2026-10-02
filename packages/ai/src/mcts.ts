@@ -193,7 +193,7 @@ function realise(cursor: RolloutCursor, branch: MctsBranch, options: MctsOptions
     const rested = applyAction(cursor.state, { kind: 'rest', player: options.subject }, options.dice).state;
     after = { ...cursor, state: rested };
   } else {
-    after = macroAdvanceToTarget(cursor, branch.target.node, rules).cursor;
+    after = macroAdvanceToTarget(cursor, branch.target.node, rules, options.edgeRoute).cursor;
   }
   return playUntilTurnOf(after, options.subject, rules);
 }
@@ -204,8 +204,8 @@ function realise(cursor: RolloutCursor, branch: MctsBranch, options: MctsOptions
  * [Q210] Stage 1 of Andrei's plan, 2026-10-02: "Keep simulated games as they
  * are, but switch the actual paths players walk to the most efficient". The
  * real move walks the best route for the subject's speeds, after anything it
- * bought this turn; the search that chose the target still imagined the
- * cheapest route (stages 2 and 3).
+ * bought this turn. Since stage 2 the search that chose the target counts the
+ * best route too; only the games it imagines still walk the cheapest (stage 3).
  */
 export function firstTurnOf(state: GameState, branch: MctsBranch | null, options: MctsOptions): TurnAction {
   if (branch === null) throw new RangeError('the search found no branch to take');

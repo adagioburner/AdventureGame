@@ -17,6 +17,8 @@ export {
   closestUnclaimedPoiEnumerator,
   unclaimedPoiNodesOf,
   previewReachability,
+  stepsReachability,
+  staminaBeyondThisTurn,
 } from './policies/tree.ts';
 export {
   simulatedRolloutEvaluator,
