@@ -2940,7 +2940,7 @@ site are as before.
      the mountains by either."* (recommended); or forests only; or no change.
      **Answered:** all three terrains.
 
-### Q190. ~~Can speeds and skills be bought with gold?~~ — **answered 2026-10-02: yes, 1 gold a unit on your own turn, as many as you like, from a Buy panel with Cancel on every screen; it replaces speeds and skills coming back in new games; other players' purchases float up from the buyer's figure with a cash register (750-786)**
+### Q190. ~~Can speeds and skills be bought with gold?~~ — **answered 2026-10-02: yes, 1 gold a unit on your own turn, as many as you like, from a Buy panel with Cancel on every screen; it replaces speeds and skills coming back in new games; other players' purchases float up from the buyer's figure with a cash register (750-788)**
 
 [SOURCE §2, §5, chat] Andrei, 2026-10-02 at 00:41: *"Players complain that if
 they didn't get the right skill early on they are screwed for the rest of the
@@ -3065,6 +3065,11 @@ happens before the walk, not after"*.
      notice (as recommended)"* (07:50). And at 07:55: *"Maybe "Bought", not
      "Purchased", for a shorter card"*: the notice reads *"Bought magic
      +2"*.
+787. **The sound with several notices:** each notice plays its own cash
+     register (as built), or only the first. **Answered:** as built, 13:39,
+     *"787 and 788 look good"*.
+788. **A purchase that ends the game:** the end card waits for its notices
+     (as built). **Answered:** as built, 13:39.
 
 ---
 
