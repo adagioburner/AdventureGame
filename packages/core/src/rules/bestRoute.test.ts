@@ -6,7 +6,7 @@ import { neighbours, type MapGraph } from '../graph.ts';
 import { initialStats, type PlayerStats } from '../player.ts';
 import { createRng } from '../rng.ts';
 import { routeTable, shortestPath } from '../path.ts';
-import { bestRoute, bestRouteVia, effectiveDistance } from './bestRoute.ts';
+import { bestRoute, bestRouteSteps, bestRouteVia, effectiveDistance } from './bestRoute.ts';
 
 const config = DEFAULT_GAME_CONFIG;
 
@@ -186,5 +186,39 @@ describe('bestRouteVia (Q210, 812 A)', () => {
       ...(bestRoute(detour, n(7), n(3), stats, config) ?? []),
     ]);
     expect(bestRouteVia(detour, n(0), null, n(5), stats, config)).toEqual(bestRoute(detour, n(0), n(5), stats, config));
+  });
+});
+
+describe('bestRouteSteps (Q210, 820 A)', () => {
+  it('gives the steps per terrain and the score of the route bestRoute traces, without tracing it', () => {
+    const rng = createRng('best-route-steps');
+    for (let round = 0; round < 4; round++) {
+      const graph = randomGrid(`best-route-steps-${round}`, 6);
+      const stats = speeds(rng.nextIntInclusive(0, 3), rng.nextIntInclusive(0, 3), rng.nextIntInclusive(0, 3));
+      for (let to = 1; to < graph.nodes.length; to++) {
+        const route = bestRoute(graph, n(0), n(to), stats, config) ?? [];
+        const choice = bestRouteSteps(graph, n(0), n(to), stats, config);
+        expect(choice?.steps).toEqual(stepsOf(graph, route));
+        expect(choice?.distance).toBe(effectiveDistance(stepsOf(graph, route), stats, config));
+      }
+    }
+  });
+
+  it('keeps its answers for each set of speeds apart', () => {
+    const forest = { plains: 1, forest: 3, mountain: 0 };
+    const plains = { plains: 5, forest: 0, mountain: 0 };
+    expect(bestRouteSteps(detour, n(0), n(5), speeds(0, 3, 0), config)?.steps).toEqual(forest);
+    expect(bestRouteSteps(detour, n(0), n(5), speeds(0, 0, 0), config)?.steps).toEqual(plains);
+    expect(bestRouteSteps(detour, n(0), n(5), { ...speeds(0, 3, 0), gold: 7, stamina: 2 }, config)?.steps).toEqual(forest);
+  });
+
+  it('is no steps on the spot, and null where nothing reaches', () => {
+    expect(bestRouteSteps(detour, n(3), n(3), speeds(1, 1, 1), config)).toEqual({
+      steps: { plains: 0, forest: 0, mountain: 0 },
+      distance: 5,
+      entry: -1,
+    });
+    const apart = graphOf(['plains', 'plains', 'plains'], [[0, 1]]);
+    expect(bestRouteSteps(apart, n(0), n(2), speeds(1, 1, 1), config)).toBeNull();
   });
 });

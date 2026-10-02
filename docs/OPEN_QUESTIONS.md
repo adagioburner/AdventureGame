@@ -3091,7 +3091,7 @@ early. Asked at 15:10 with a picture; at 15:22, *"790 to 792: looks good"*.
      35 stamina"*, since it shows what differs between seats (recommended);
      or B, *"... and 5 gold"*. **Answered:** A.
 
-### Q210. Which route do players take? — **stage 1 answered 2026-10-02: the best for their speeds, drawn for people and walked by the computer's real moves; stages 2 and 3 open (810-819)**
+### Q210. Which route do players take? — **stage 1 answered 2026-10-02: the best for their speeds, drawn for people and walked by the computer's real moves; stage 2 answered: its search's own choices too; stage 3 open (810-821)**
 
 [SOURCE §4, §9, chat] Andrei, 2026-10-02 at 18:12: *"it bothers me that the
 game shows to me the path that is not optimal based on my current skills. How
@@ -3143,6 +3143,21 @@ Answered at 18:56.
      C, leave it. **Answered** at 20:04: *"sure, let's fix it"*: A. The same
      cause brought last turn's route back after Cancel and a purchase, against
      610; that is fixed too.
+820. **Stage 2, where the search counts the best route:** A, all four places
+     its own choices look at routes: which 10 sites are choices, whether
+     resting is weighed, which purchases are skipped, and its own walk to a
+     choice (recommended); B, only the ranking and its own walk. Andrei,
+     21:59: *"the first three items don't need the path, and can use the
+     distance provided by the formula, right? It's only the walk that needs
+     the actual path"*. Confirmed: ranking and the buy check already read
+     only the cached steps per terrain, and the rest check can, since the
+     walk arrives this turn exactly when the player holds Σ cost × max(steps
+     − free steps, 0) stamina. All three count the best route's steps, the
+     route the computer walks. 22:00: *"yes, please go ahead"*.
+821. **Comparing stage 2 at 3 s before it merges:** A, 20 games, 2 computers,
+     3 s a move, seats swapped, against the computer before it, reporting
+     wins, gold margins and games imagined per move (recommended); B, none.
+     **Answered:** A.
 
 Stage 1, as built: `bestRoute` and `bestRouteVia` (`packages/core`), from
 `RouteTable.routesFrom`, every route no other route beats on all three
@@ -3152,8 +3167,21 @@ again would. A route brought back and not picked up stays down when that
 happens, so Track stays as it was, and online the page saves the new route
 (818 B). A route put down with Track, or nothing after Cancel, stays as it is
 when something is bought, until the turn ends or, online, the saved route
-changes (819 A). The computer's real move (`firstTurnOf`) walks it; its search and the
-games it imagines still rank and walk the cheapest route.
+changes (819 A). The computer's real move (`firstTurnOf`) walks it.
+
+Stage 2, as built: `bestRouteSteps` gives the best route's steps per terrain
+and score from the cached route lists, tracing nothing. The computer's search
+ranks its choices by it (`closestByBestRoute`), checks what it reaches this
+turn and which purchases to skip by those steps (`stepsReachability`,
+`buyBranches`), and walks the best route along its own tree edges
+(`MctsOptions.edgeRoute`). The games it imagines, and the other seats' turns
+inside a tree edge, still rank and walk the cheapest route (stage 3).
+
+Tested (821 A), 20 games with the seats swapped at 3 s a move on ten maps
+(seeds stage2-0 to stage2-9), against the same computer with its search
+counting the cheapest route as before: 10 wins each, none shared, +2.1 ± 2.4
+gold a game for stage 2, within luck. Games imagined per move 5,647 against
+5,322, so counting the best route did not slow the search.
 
 ---
 

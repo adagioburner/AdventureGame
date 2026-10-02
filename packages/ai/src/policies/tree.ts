@@ -1,4 +1,4 @@
-import { TERRAINS, type GameConfig, type RewardKind } from '@adventure/config';
+import { TERRAINS, type GameConfig, type PerTerrain, type RewardKind } from '@adventure/config';
 import {
   buyableNow,
   playerById,
@@ -10,7 +10,15 @@ import {
   type PlayerState,
   type Rng,
 } from '@adventure/core';
-import { closestPoiCandidates, unclaimedPoiNodes, type ClosestFinder, type PoiCandidate, type TargetFilter } from '@adventure/sim';
+import {
+  cheapestRouteSteps,
+  closestPoiCandidates,
+  unclaimedPoiNodes,
+  type ClosestFinder,
+  type PoiCandidate,
+  type RouteStepsFinder,
+  type TargetFilter,
+} from '@adventure/sim';
 import type { ActionEnumerator, MctsBranch, MctsNode, TreePolicy, TurnReachability } from '../types.ts';
 
 /**
@@ -121,15 +129,17 @@ function argMaxWithRandomTieBreak<T>(items: readonly T[], score: (item: T) => nu
  * cannot take.
  *
  * [Q190] Then a buy branch for each speed or skill the player may buy, pruned
- * as `buyBranches` says.
+ * as `buyBranches` says, along the routes `stepsTo` counts.
  */
 export function closestUnclaimedPoiEnumerator(
   config: GameConfig,
   reachability: TurnReachability,
   /** Which POIs may be targets; every unclaimed one when absent, as the game plays. */
   allowed?: TargetFilter,
-  /** Which of those count as closest; by weighted terrain cost when absent, as the game plays. */
+  /** Which of those count as closest; by weighted terrain cost when absent. The game passes `closestByBestRoute` (Q210). */
   closest?: ClosestFinder,
+  /** The steps per terrain the buy branches are pruned by; along the cheapest route when absent. */
+  stepsTo: RouteStepsFinder = cheapestRouteSteps,
 ): ActionEnumerator {
   return {
     name: 'closest-unclaimed-pois+rest+buy',
@@ -160,7 +170,7 @@ export function closestUnclaimedPoiEnumerator(
       if (reachable < config.ai.MIN_REACHABLE_NODES_FOR_REST) {
         branches.push({ kind: 'rest' });
       }
-      branches.push(...buyBranches(state, player, config));
+      branches.push(...buyBranches(state, player, config, stepsTo));
       return branches;
     },
   };
@@ -176,35 +186,57 @@ export function closestUnclaimedPoiEnumerator(
  *
  * One branch for each kind the player could buy now (`buyableNow`), a unit
  * each, except a kind some unclaimed site offers within that reach: walking
- * the cached cheapest route there (Q65's steps per terrain) costs no more
- * stamina beyond this turn's free steps than that. The stamina is Q65's
- * stamina(1), Σ cost × max(steps − free steps, 0) over the three terrains.
- * Every site offering the kind counts, not only the closest few.
+ * the route `stepsTo` counts there (Q65's steps per terrain, cached; the
+ * cheapest route when absent, the best for the player's speeds in the game,
+ * Q210 820 A) costs no more stamina beyond this turn's free steps than that.
+ * The stamina is Q65's stamina(1), `staminaBeyondThisTurn`. Every site
+ * offering the kind counts, not only the closest few.
  */
-export function buyBranches(state: GameState, player: PlayerState, config: GameConfig): readonly MctsBranch[] {
+export function buyBranches(
+  state: GameState,
+  player: PlayerState,
+  config: GameConfig,
+  stepsTo: RouteStepsFinder = cheapestRouteSteps,
+): readonly MctsBranch[] {
   const { kinds } = buyableNow(state, player.id);
   if (kinds.length === 0) return [];
   const spare = Math.min(config.ai.BUY_SKIP_STAMINA, player.stats.stamina);
-  const near = kindsWithinReach(state, player, spare, config);
+  const near = kindsWithinReach(state, player, spare, config, stepsTo);
   return kinds.filter((kind) => !near.has(kind)).map((skill) => ({ kind: 'buy', skill }));
 }
 
 /** The kinds unclaimed sites offer that `player` can reach this turn for at most `spare` stamina. */
-function kindsWithinReach(state: GameState, player: PlayerState, spare: number, config: GameConfig): ReadonlySet<RewardKind> {
-  const steps = routeTable(state.map.graph, config).stepsFrom(player.position);
-  const cost = config.movement.STAMINA_COST;
-  const free = state.turn.allowance;
+function kindsWithinReach(
+  state: GameState,
+  player: PlayerState,
+  spare: number,
+  config: GameConfig,
+  stepsTo: RouteStepsFinder,
+): ReadonlySet<RewardKind> {
   const near = new Set<RewardKind>();
   state.map.pois.forEach((poi, index) => {
     if (state.poiRuntime[index]?.claimedBy !== null || near.has(poi.reward.kind)) return;
-    let stamina = 0;
-    for (const terrain of TERRAINS) {
-      const beyond = (steps[terrain][poi.node] as number) - free[terrain];
-      if (beyond > 0) stamina += cost[terrain] * beyond;
-    }
-    if (stamina <= spare) near.add(poi.reward.kind);
+    const steps = stepsTo(state, player, poi.node);
+    if (steps !== null && staminaBeyondThisTurn(steps, state.turn.allowance, config) <= spare) near.add(poi.reward.kind);
   });
   return near;
+}
+
+/**
+ * Q65's stamina(1): what walking `steps` costs beyond this turn's free steps,
+ * Σ cost × max(steps − free steps, 0) over the three terrains. Free steps go
+ * first on each terrain whatever the order of the steps (§7), so this is what
+ * the walk spends, and the walk arrives this turn exactly when the player
+ * holds that much stamina.
+ */
+export function staminaBeyondThisTurn(steps: PerTerrain<number>, free: PerTerrain<number>, config: GameConfig): number {
+  const cost = config.movement.STAMINA_COST;
+  let stamina = 0;
+  for (const terrain of TERRAINS) {
+    const beyond = steps[terrain] - free[terrain];
+    if (beyond > 0) stamina += cost[terrain] * beyond;
+  }
+  return stamina;
 }
 
 /** POIs whose reward is still unclaimed (§4.5) — the eligible target set. */
@@ -216,6 +248,9 @@ export function unclaimedPoiNodesOf(state: GameState): ReadonlySet<NodeId> {
  * [SOURCE §12.2, chat] "reachable in one turn": walking the cheapest route to
  * the target (the one metric, §5.1) arrives this turn, on this turn's
  * allowance and the player's stamina (§7). Standing on it already counts.
+ *
+ * The search before Q210's stage 2, kept to compare with; the game's is
+ * `stepsReachability(bestRouteStepsFor)`.
  */
 export function previewReachability(): TurnReachability {
   return {
@@ -226,6 +261,26 @@ export function previewReachability(): TurnReachability {
       if (route === null) return false;
       return previewPath(state.map.graph, player.position, route, state.turn.allowance, player.stats.stamina, config)
         .destinationReachable;
+    },
+  };
+}
+
+/**
+ * [Q210, 820 A] "reachable in one turn" from the cached steps per terrain of
+ * the route `stepsTo` counts, the best for the player's speeds in the game,
+ * with no route traced: Andrei, 2026-10-02, "the first three items don't need
+ * the path, and can use the distance provided by the formula". The walk
+ * arrives this turn exactly when the player holds `staminaBeyondThisTurn` of
+ * it, so this agrees with `previewPath` over the same route. Standing on the
+ * target already counts.
+ */
+export function stepsReachability(stepsTo: RouteStepsFinder): TurnReachability {
+  return {
+    isReachableThisTurn(state: GameState, subject: PlayerId, target: PoiCandidate): boolean {
+      const player = playerById(state, subject);
+      const steps = stepsTo(state, player, target.node);
+      if (steps === null) return false;
+      return staminaBeyondThisTurn(steps, state.turn.allowance, state.map.ruleset.config) <= player.stats.stamina;
     },
   };
 }

@@ -217,10 +217,10 @@ export const bestRouteForSpeeds: RouteChoice = (state, player, target) =>
  * is the empty path, which §8 makes another roll at its guard. Otherwise
  * `restRule` may turn the turn into a rest.
  *
- * The tree and the rollout walk the cheapest route (`cheapestRoute`, from the
- * map's `routeTable`). The computer's real move, once the search has chosen a
+ * The rollout walks the cheapest route (`cheapestRoute`, from the map's
+ * `routeTable`). The computer's real move, once the search has chosen a
  * target, walks the best route for its speeds instead (Q210, stage 1:
- * `bestRouteForSpeeds`).
+ * `bestRouteForSpeeds`), and so does its own walk along a tree edge (stage 2).
  */
 export function turnTowards(state: GameState, target: NodeId, restRule: RestRule, routeOf: RouteChoice = cheapestRoute): TurnAction {
   const player = activePlayer(state);
@@ -263,9 +263,10 @@ function comparedTarget(
  * A seat with no commitment picks one uniformly among the K closest unclaimed
  * POIs (`chooseWalkTarget`, shared with §5.1). After the turn, a commitment
  * lapses for whoever has arrived at theirs and for anyone whose target someone
- * has just claimed; everyone else keeps theirs.
+ * has just claimed; everyone else keeps theirs. The seat walks the route
+ * `routeOf` picks, the cheapest when absent.
  */
-export function playRolloutTurn(cursor: RolloutCursor, options: RolloutOptions): RolloutCursor {
+export function playRolloutTurn(cursor: RolloutCursor, options: RolloutOptions, routeOf: RouteChoice = cheapestRoute): RolloutCursor {
   const state = cursor.state;
   const player = activePlayer(state);
   const index = player.seat - 1;
@@ -292,7 +293,7 @@ export function playRolloutTurn(cursor: RolloutCursor, options: RolloutOptions):
     target = choice.node;
   }
 
-  const action = turnTowards(state, target, options.restRule);
+  const action = turnTowards(state, target, options.restRule, routeOf);
   const next = applyAction(state, action, options.dice).state;
   const arrived = action.kind === 'move' && next.players[index]?.position === target;
 
@@ -328,11 +329,16 @@ export function playRolloutTurn(cursor: RolloutCursor, options: RolloutOptions):
  * enough to be searched in ten seconds: a node is a real decision point rather
  * than a single step. The returned cursor is the one right after the turn that
  * ended it.
+ *
+ * The mover walks the route `moverRoute` picks, the cheapest when absent; the
+ * other seats walk the rollout's (Q210, 820 A: the search's own walk is the
+ * best route for its speeds, its imagined players' are stage 3).
  */
 export function macroAdvanceToTarget(
   cursor: RolloutCursor,
   target: NodeId,
   options: RolloutOptions,
+  moverRoute: RouteChoice = cheapestRoute,
 ): { readonly cursor: RolloutCursor; readonly outcome: MacroAdvanceOutcome } {
   const mover = activePlayer(cursor.state);
   const index = mover.seat - 1;
@@ -344,7 +350,7 @@ export function macroAdvanceToTarget(
   for (let turns = 0; ; turns++) {
     if (options.termination.isTerminal(current, turns)) return { cursor: current, outcome: 'terminal' };
     const moving = activePlayer(current.state).id === mover.id;
-    current = playRolloutTurn(current, options);
+    current = playRolloutTurn(current, options, moving ? moverRoute : cheapestRoute);
     if (current.targets[index] !== null) continue;
     const claimedBy = poiRuntimeAt(current.state, target)?.claimedBy ?? null;
     if (claimedBy !== null && claimedBy !== mover.id) return { cursor: current, outcome: 'target_claimed_by_other' };

@@ -1,11 +1,22 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_GAME_CONFIG } from '@adventure/config';
-import { asNodeId, createDiceSource, createRng } from '@adventure/core';
-import { turnTowards } from '@adventure/sim';
+import { asNodeId, createDiceSource, createRng, playerById } from '@adventure/core';
+import {
+  bestRouteForSpeeds,
+  bestRouteStepsFor,
+  cheapestRoute,
+  cheapestRouteSteps,
+  closestByBestRoute,
+  closestBySpeeds,
+  macroAdvanceToTarget,
+  rolloutCursor,
+  turnTowards,
+} from '@adventure/sim';
 import { fixtureGame, fixtureMap, player, withStats } from '../../core/src/rules/scenario.fixture.ts';
 import { computerSearchOptions, type ComputerSettings } from './computer.ts';
 import { firstTurnOf } from './mcts.ts';
+import { buyBranches, previewReachability, stepsReachability } from './policies/tree.ts';
 
 /**
  * [Q210] Stage 1: the computer's real move walks the best route for its
@@ -59,9 +70,89 @@ describe('the route the computer walks (Q210, stage 1)', () => {
     });
   });
 
-  it('leaves the games it imagines on the cheapest route (stages 2 and 3 come later)', () => {
+  it('leaves the games it imagines on the cheapest route (stage 3 comes later)', () => {
     const state = withStats(fixtureGame(detour, 0), one, { forest_move: 3 });
     const options = computerSearchOptions(state, one, settings());
     expect(turnTowards(state, n(5), options.restRule)).toMatchObject({ kind: 'move', path: [n(1), n(2), n(3), n(4), n(5)] });
+  });
+});
+
+/**
+ * [Q210] Stage 2: the search's own choices count the best route for its
+ * speeds, from the cached steps per terrain (820 A); the games it imagines
+ * still count the cheapest.
+ *
+ *   0 ── 1 ── 2 ── 3 (gold) ── 4 ── 5 (magic)
+ *   └─── 6f ── 7f ── 8f ───────────┘
+ *
+ * With forest speed 3, magic is 1 stamina away through the forest (score 6)
+ * and 5 along the plains (score 10); gold is 3 along the plains (score 8).
+ */
+const sites = fixtureMap({
+  terrains: ['plains', 'plains', 'plains', 'plains', 'plains', 'plains', 'forest', 'forest', 'forest'],
+  edges: [
+    [0, 1],
+    [1, 2],
+    [2, 3],
+    [3, 4],
+    [4, 5],
+    [0, 6],
+    [6, 7],
+    [7, 8],
+    [8, 5],
+  ],
+  pois: [
+    { node: 5, kind: 'magic', units: 1, guard: null },
+    { node: 3, kind: 'gold', units: 3, guard: null },
+  ],
+});
+
+describe('the computer search’s own choices (Q210, stage 2, 820 A)', () => {
+  it('ranks sites by the best route for its speeds, where its imagined games rank by the cheapest', () => {
+    const state = withStats(fixtureGame(sites, 0), one, { forest_move: 3 });
+    const eligible = new Set([n(3), n(5)]);
+    expect(closestByBestRoute(state, playerById(state, one), eligible, 1)).toEqual([{ node: n(5), cost: 5 }]);
+    expect(closestBySpeeds(state, playerById(state, one), eligible, 1)).toEqual([{ node: n(3), cost: 3 }]);
+  });
+
+  it('counts a site reached this turn along the best route, from its steps per terrain', () => {
+    const state = withStats(fixtureGame(sites, 0), one, { forest_move: 3, stamina: 1 });
+    const magic = { node: n(5), cost: 5 };
+    expect(stepsReachability(bestRouteStepsFor).isReachableThisTurn(state, one, magic)).toBe(true);
+    expect(previewReachability().isReachableThisTurn(state, one, magic)).toBe(false);
+  });
+
+  it('tells what is reached this turn from the steps per terrain exactly as walking the route does', () => {
+    for (let forest = 0; forest <= 3; forest++) {
+      for (let stamina = 0; stamina <= 7; stamina++) {
+        const state = withStats(fixtureGame(sites, 0), one, { forest_move: forest, stamina });
+        for (let node = 0; node <= 8; node++) {
+          const site = { node: n(node), cost: 0 };
+          expect(stepsReachability(cheapestRouteSteps).isReachableThisTurn(state, one, site)).toBe(
+            previewReachability().isReachableThisTurn(state, one, site),
+          );
+        }
+      }
+    }
+  });
+
+  it('skips buying a kind a site offers within reach along the best route', () => {
+    const state = withStats(fixtureGame(sites, 0), one, { forest_move: 3, stamina: 1, gold: 1 });
+    const kinds = (stepsTo?: typeof bestRouteStepsFor) =>
+      buyBranches(state, playerById(state, one), DEFAULT_GAME_CONFIG, stepsTo).flatMap((branch) => (branch.kind === 'buy' ? [branch.skill] : []));
+    expect(kinds(bestRouteStepsFor)).not.toContain('magic');
+    expect(kinds()).toContain('magic');
+  });
+
+  it('walks a choice along the best route for its speeds, and the cheapest as before with searchRoutes cheapest', () => {
+    const state = withStats(fixtureGame(sites, 0), one, { forest_move: 3, stamina: 10 });
+    const options = computerSearchOptions(state, one, settings());
+    expect(options.edgeRoute).toBe(bestRouteForSpeeds);
+    expect(computerSearchOptions(state, one, { ...settings(), searchRoutes: 'cheapest' }).edgeRoute).toBe(cheapestRoute);
+    const rules = { config: options.config, termination: options.termination, restRule: options.restRule, dice: options.dice, rng: options.rng };
+    const walked = (route: typeof cheapestRoute) =>
+      playerById(macroAdvanceToTarget(rolloutCursor(state, one), n(5), rules, route).cursor.state, one).stats.stamina;
+    expect(walked(bestRouteForSpeeds)).toBe(9);
+    expect(walked(cheapestRoute)).toBe(5);
   });
 });

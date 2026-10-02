@@ -50,8 +50,11 @@ export function isEvaluatorName(name: string): name is EvaluatorName {
  *    commands still read the same.
  *  - `fixed`: closest by weighted terrain cost alone, the computer player's
  *    ranking before Q112.
+ *  - `cheapest-search`: the search's own choices count the cheapest route,
+ *    as before Q210's stage 2: which sites are choices, the resting and
+ *    buying checks, and its own walk along a choice.
  */
-export const SEAT_FLAGS = ['winnable', 'gold-later', 'speeds', 'fixed'] as const;
+export const SEAT_FLAGS = ['winnable', 'gold-later', 'speeds', 'fixed', 'cheapest-search'] as const;
 export type SeatFlag = (typeof SEAT_FLAGS)[number];
 
 /**
@@ -138,6 +141,7 @@ export function playHeadToHead(options: HeadToHeadOptions): { readonly game: Hea
       ...(spec.flags.includes('gold-later') ? { pick: goldByProgressPicker() } : {}),
       ...(spec.flags.includes('speeds') ? { closest: closestBySpeeds } : {}),
       ...(spec.flags.includes('fixed') ? { closest: closestByTerrainCost } : {}),
+      ...(spec.flags.includes('cheapest-search') ? { searchRoutes: 'cheapest' as const } : {}),
       onSearch: (iterations) => {
         const counter = counters[index];
         if (counter === undefined) return;
@@ -164,6 +168,9 @@ export function playHeadToHead(options: HeadToHeadOptions): { readonly game: Hea
       '# Every seat ranks its 10 closest, for itself and in its imagined games, by the least over n turns of',
       '# 5n + the stamina still needed after n turns of free steps, from the steps per terrain of the cheapest route',
       '# (Q112; +speeds says so explicitly). +fixed: ranked by weighted terrain cost alone, as before Q112.',
+      '# The search\'s own choices count the best route for its speeds instead (Q210 stage 2): which sites are',
+      '# choices, whether resting and which purchases are weighed, and its own walk along a choice.',
+      '# +cheapest-search: they count the cheapest route, as before stage 2.',
       ...(drivers[0]?.describe ?? []),
     ],
     choose(state, playerId) {

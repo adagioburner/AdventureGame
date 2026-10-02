@@ -38,6 +38,8 @@ export interface ComputerSettings {
   readonly closest?: ClosestFinder;
   /** Which of the closest a player in an imagined game heads for; uniformly when absent. */
   readonly pick?: TargetPicker;
+  /** [Q210] Which routes the search's own choices count; the best for the player's speeds when absent, as the game plays. */
+  readonly searchRoutes?: 'best' | 'cheapest';
   /** Told after every move how many iterations the search ran in how long. */
   readonly onSearch?: (iterations: number, took: number) => void;
 }
@@ -76,6 +78,7 @@ export function computerDriver(settings: ComputerSettings): PlaythroughDriver {
         ...(settings.targets === undefined ? {} : { targets: settings.targets }),
         ...(settings.closest === undefined ? {} : { closest: settings.closest }),
         ...(settings.pick === undefined ? {} : { pick: settings.pick }),
+        ...(settings.searchRoutes === undefined ? {} : { searchRoutes: settings.searchRoutes }),
       });
       const took = settings.now() - started;
       settings.onSearch?.(result.iterations, took);

@@ -1,6 +1,6 @@
 import type { GameConfig, RewardKind } from '@adventure/config';
 import type { DiceSource, GameState, PlayerId, Rng } from '@adventure/core';
-import type { PoiCandidate, RestRule, RolloutCursor, RolloutTermination } from '@adventure/sim';
+import type { PoiCandidate, RestRule, RolloutCursor, RolloutTermination, RouteChoice } from '@adventure/sim';
 
 /**
  * One branch of the search tree.
@@ -108,8 +108,9 @@ export interface ActionEnumerator {
  * "Reachable in one turn" for the rest-pruning rule — can this player actually
  * arrive at that target within this turn's allowance and stamina (§7)?
  *
- * Injected so a test can fix it; `previewReachability()` is the real one,
- * `previewPath` over the cheapest route.
+ * Injected so a test can fix it; the game's is
+ * `stepsReachability(bestRouteStepsFor)` (Q210, 820 A), `previewReachability()`
+ * the one before, `previewPath` over the cheapest route.
  */
 export interface TurnReachability {
   isReachableThisTurn(state: GameState, subject: PlayerId, target: PoiCandidate): boolean;
@@ -185,4 +186,10 @@ export interface MctsOptions {
   readonly timeBudgetMs: number;
   /** Injected clock, so search is testable and deterministic under a fake one. */
   readonly now: () => number;
+  /**
+   * [Q210, 820 A] The route the subject walks along a tree edge; the cheapest
+   * when absent. The game's computer walks the best for its speeds
+   * (`bestRouteForSpeeds`); the other seats' turns walk the rollout's.
+   */
+  readonly edgeRoute?: RouteChoice;
 }
