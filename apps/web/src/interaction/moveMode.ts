@@ -50,11 +50,13 @@ export interface MoveModeController {
    */
   readonly engaged: boolean;
   /**
-   * [Q210, 818 B] Whether the route shown was picked again for speeds just
-   * bought while not picked up, and is not saved yet. It stays down, so Track
-   * stays as it was, but online the page saves it as it would one picked up.
+   * Whether what is shown, though not picked up, is not the saved route yet:
+   * a route put down with Track before it was saved (819 A), one picked again
+   * for speeds bought (Q210, 818 B), or nothing after Cancel (610). Updates
+   * in the same turn leave it shown until the saved route changes, and online
+   * the page saves a route shown so as it would one picked up.
    */
-  readonly repicked: boolean;
+  readonly unsaved: boolean;
   /**
    * Touch screens have no shift key, so the waypoint can also be armed with a
    * button: while armed, the next node chosen becomes the waypoint.
@@ -207,8 +209,8 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
   let planner: PlayerId | null = null;
   let armed = false;
   let engaged = false;
-  /** [818 B] The saved route a route picked again for speeds bought replaces, while that is not saved yet. */
-  let repickedOver: PlannedPath | null = null;
+  /** While `unsaved`: the saved route what is shown replaces. */
+  let unsaved: { readonly over: PlannedPath | null } | null = null;
   /** Which turn `state` was planned in, so a new turn starts over. */
   let turnOf: number | null = null;
   const listeners = new Set<() => void>();
@@ -271,8 +273,8 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
     get engaged() {
       return engaged;
     },
-    get repicked() {
-      return repickedOver !== null;
+    get unsaved() {
+      return unsaved !== null;
     },
 
     setGame(next) {
@@ -284,7 +286,7 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
         planner = null;
         armed = false;
         engaged = false;
-        repickedOver = null;
+        unsaved = null;
         return set(IDLE);
       }
       // [Q56, 51] Online, a route someone is planning out of turn carries on
@@ -303,35 +305,36 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
         planner = defaultPlanner(next);
         armed = false;
         engaged = false;
-        repickedOver = null;
+        unsaved = null;
         return set(resume(next));
       }
       // [Q210, 813 A] Speeds bought this turn pick the route shown again for
       // them, a waypoint still ahead kept, as choosing its destination again
       // would. [818 B] A route not picked up stays down, so Track stays as it
-      // was, and is shown until it is saved (`repicked`).
+      // was, and is shown until it is saved (`unsaved`).
       if (!newTurn && planner !== null && before !== null && speedsChanged(before, next, planner)) {
-        const shown = engaged || repickedOver !== null ? state : resume(next);
+        const shown = engaged || unsaved !== null ? state : resume(next);
         if (shown.kind === 'previewing') {
           const waypoint = shown.waypoint !== null && shown.path.includes(shown.waypoint) ? shown.waypoint : null;
           const again = plan(shown.destination, waypoint);
           if (again.kind === 'previewing' && !samePath(again.path, shown.path)) {
             if (!engaged) {
-              const saved = repickedOver ?? playerIn(next, planner).plannedPath;
-              repickedOver = samePlan(saved, { path: again.path, waypoint: again.waypoint }) ? null : saved;
+              const over = unsaved !== null ? unsaved.over : playerIn(next, planner).plannedPath;
+              unsaved = samePlan(over, { path: again.path, waypoint: again.waypoint }) ? null : { over };
             }
             return set(again);
           }
         }
       }
       // [Q56, 53] A route not picked up is the saved one, which another of
-      // this player's devices, or a Cancel from this one, may have changed;
-      // one picked again for speeds bought stays until the saved one changes.
+      // this player's devices, or a Cancel from this one, may have changed.
+      // What is shown unsaved stays until the saved route changes (819 A).
       if (!engaged && planner !== null) {
-        if (repickedOver !== null && state.kind === 'previewing' && samePlan(playerIn(next, planner).plannedPath, repickedOver)) {
+        if (unsaved !== null && samePlan(playerIn(next, planner).plannedPath, unsaved.over)) {
+          if (state.kind !== 'previewing') return notify();
           return set({ ...state, preview: previewFor(next, playerIn(next, planner), state.path) });
         }
-        repickedOver = null;
+        unsaved = null;
         return set(resume(next));
       }
       // Same turn, new state (another player's move arriving, online), or a
@@ -354,7 +357,7 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
         state = resume(game);
       }
       engaged = true;
-      repickedOver = null;
+      unsaved = null;
       if (state.kind === 'idle') set({ kind: 'selecting', waypoint: null });
       else notify();
       return null;
@@ -363,12 +366,18 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
     engage() {
       if (state.kind === 'idle' || engaged) return;
       engaged = true;
-      repickedOver = null;
+      unsaved = null;
       notify();
     },
 
     putDown() {
       armed = false;
+      // [819 A] On one device nothing saves the route before the turn ends,
+      // and online it may not be saved yet: until it is, it stays shown.
+      if (engaged && unsaved === null && state.kind === 'previewing' && game !== null && planner !== null) {
+        const over = playerIn(game, planner).plannedPath;
+        if (!samePlan(over, { path: state.path, waypoint: state.waypoint })) unsaved = { over };
+      }
       engaged = false;
       if (state.kind === 'selecting') return set(IDLE);
       notify();
@@ -380,7 +389,7 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
         state = { kind: 'selecting', waypoint: null };
       }
       engaged = true;
-      repickedOver = null;
+      unsaved = null;
       if (shift || armed) {
         armed = false;
         controller.setWaypoint(node);
@@ -415,7 +424,9 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
     cancel() {
       armed = false;
       engaged = false;
-      repickedOver = null;
+      // [610, 819 A] Nothing stays shown until the saved route goes too, as
+      // online the page clears it; on one device that is at the turn's end.
+      unsaved = game !== null && planner !== null ? { over: playerIn(game, planner).plannedPath } : null;
       set(IDLE);
     },
 
@@ -427,7 +438,7 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
       const kept = shownPlan(who);
       armed = false;
       engaged = false;
-      repickedOver = null;
+      unsaved = null;
       state = IDLE;
       const action = endTurnActionFor(game, who, path, path.length === 0 ? null : waypoint);
       // [610] End turn's rest with nothing shown keeps no route on one device either.
@@ -440,7 +451,7 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
       const kept = shownPlan(who);
       armed = false;
       engaged = false;
-      repickedOver = null;
+      unsaved = null;
       state = IDLE;
       options.commit(kept === null ? { kind: 'rest', player: who } : { kind: 'rest', player: who, plan: kept });
     },

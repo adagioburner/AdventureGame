@@ -3091,7 +3091,7 @@ early. Asked at 15:10 with a picture; at 15:22, *"790 to 792: looks good"*.
      35 stamina"*, since it shows what differs between seats (recommended);
      or B, *"... and 5 gold"*. **Answered:** A.
 
-### Q210. Which route do players take? — **stage 1 answered 2026-10-02: the best for their speeds, drawn for people and walked by the computer's real moves; stages 2 and 3 open (810-818)**
+### Q210. Which route do players take? — **stage 1 answered 2026-10-02: the best for their speeds, drawn for people and walked by the computer's real moves; stages 2 and 3 open (810-819)**
 
 [SOURCE §4, §9, chat] Andrei, 2026-10-02 at 18:12: *"it bothers me that the
 game shows to me the path that is not optimal based on my current skills. How
@@ -3136,6 +3136,13 @@ Answered at 18:56.
      pressed, as a route brought back leaves it (575; recommended). Either way
      the new route is saved online. **Answered** at 19:27: *"818: B, the
      rulebook wording is OK"*.
+819. **A bug found while checking 818, on the live site since buying
+     ([Q190](#q190)):** on one device, a route drawn and put down with Track
+     jumped back to the route saved last turn when anything was bought. A,
+     fix it in this PR, so the route drawn stays (recommended); B, its own PR;
+     C, leave it. **Answered** at 20:04: *"sure, let's fix it"*: A. The same
+     cause brought last turn's route back after Cancel and a purchase, against
+     610; that is fixed too.
 
 Stage 1, as built: `bestRoute` and `bestRouteVia` (`packages/core`), from
 `RouteTable.routesFrom`, every route no other route beats on all three
@@ -3143,7 +3150,9 @@ terrains' step counts. The move planner draws it; a purchase that changes the
 planner's speeds picks the route shown again, as choosing its destination
 again would. A route brought back and not picked up stays down when that
 happens, so Track stays as it was, and online the page saves the new route
-(818 B). The computer's real move (`firstTurnOf`) walks it; its search and the
+(818 B). A route put down with Track, or nothing after Cancel, stays as it is
+when something is bought, until the turn ends or, online, the saved route
+changes (819 A). The computer's real move (`firstTurnOf`) walks it; its search and the
 games it imagines still rank and walk the cheapest route.
 
 ---

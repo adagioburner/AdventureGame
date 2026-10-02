@@ -230,8 +230,8 @@ export function GameScreen({
       const saved = savedRouteKey(source.state, who);
       if (sent.current === saved) sent.current = null;
       const now = controller.state;
-      // [Q210, 818 B] So is a route picked again for speeds bought, though it stays down.
-      if (!(controller.engaged || controller.repicked) || now.kind !== 'previewing') return;
+      // [Q210, 818 B] So is a route shown unsaved, though it stays down.
+      if (!(controller.engaged || controller.unsaved) || now.kind !== 'previewing') return;
       const key = routeKey(now.path, now.waypoint);
       if (key === saved || key === sent.current) return;
       if (save(who, now.path, now.waypoint)) sent.current = key;
