@@ -36,9 +36,12 @@ server's die stream online (`drawSeats`, `packages/session/src/setup.ts`) and
 the browser's generator on one device (`startingOrder`,
 `apps/web/src/setup/local.ts`). Every player starts on the *same* node: a random plains
 node that is not a POI (`chooseStartingNode`, `packages/core/src/gamemap.ts`).
-Stamina is the one stat that does not start at zero — seat *n* starts with
+Stamina and gold are the stats that do not start at zero — seat *n* starts with
 `STARTING_STAMINA_BASE + (n − 1) × STARTING_STAMINA_INCREMENT`, i.e. 30, 35, 40…
-(`startingStaminaForSeat`, `packages/config/src/index.ts`). `createGameState`
+(`startingStaminaForSeat`, `packages/config/src/index.ts`), and every seat with
+`STARTING_GOLD` gold, 5 (`startingGoldOf`; Q200). A map whose config has no
+`STARTING_GOLD` (a game started before it, online or kept on a device) starts
+everyone on none. `createGameState`
 (`packages/core/src/rules/setup.ts`) builds that opening position, and is the
 only function other than `applyAction` that produces a `GameState`.
 

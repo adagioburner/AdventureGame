@@ -1,4 +1,4 @@
-import { DEFAULT_RULESET, type RewardKind, type Terrain } from '@adventure/config';
+import { DEFAULT_RULESET, type RewardKind, type Ruleset, type Terrain } from '@adventure/config';
 import type { DieRoll } from '../action.ts';
 import type { GameMap } from '../gamemap.ts';
 import type { MapGraph } from '../graph.ts';
@@ -41,6 +41,16 @@ export interface MapSpec {
   readonly pois?: readonly PoiSpec[];
 }
 
+/**
+ * The game's rules, but with players starting on no gold (Q200 gives them 5):
+ * a scenario sets the stats it is about, so the only gold in it is what the
+ * test hands out.
+ */
+const NO_STARTING_GOLD: Ruleset = (() => {
+  const { STARTING_GOLD: _gold, ...players } = DEFAULT_RULESET.config.players;
+  return { ...DEFAULT_RULESET, config: { ...DEFAULT_RULESET.config, players } };
+})();
+
 export function fixtureMap(spec: MapSpec): GameMap {
   const adjacency: NodeId[][] = spec.terrains.map(() => []);
   for (const [a, b] of spec.edges) {
@@ -70,7 +80,7 @@ export function fixtureMap(spec: MapSpec): GameMap {
 
   return {
     seed: 'fixture',
-    ruleset: DEFAULT_RULESET,
+    ruleset: NO_STARTING_GOLD,
     graph,
     pois,
     poiByNode: new Map(pois.map((poi, index) => [poi.node, index])),

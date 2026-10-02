@@ -3071,6 +3071,26 @@ happens before the walk, not after"*.
 788. **A purchase that ends the game:** the end card waits for its notices
      (as built). **Answered:** as built, 13:39.
 
+### Q200. ~~Should players start with gold?~~ — **answered 2026-10-02: yes, 5 each, in games started from now on (790-792)**
+
+[SOURCE §6, chat] Andrei, 2026-10-02 at 14:57: *"Now that players can buy
+skills for gold, it makes sense to starts them with 5 gold to enable a variety
+of strategies"*. Every seat gets the same 5, as he wrote; it is
+`STARTING_GOLD`. Nothing that decides the winner moves: the win check compares
+a lead with the gold left on the map, and the same 5 each changes no lead. The
+computer follows the buying rules as they are, so it may spend some of its 5
+early. Asked at 15:10 with a picture; at 15:22, *"790 to 792: looks good"*.
+
+790. **Which games:** only games started from now on, while games already
+     under way keep starting at 0, as with buying (recommended).
+     **Answered:** yes.
+791. **The rulebook:** *"Every player starts with 5 gold. The other stats
+     (the three speeds, combat and magic) start at 0."*, plus a Quick
+     reference row "Starting gold: 5" (recommended). **Answered:** yes.
+792. **The New game screen's seat line:** A, as today, *"Seat 2 · starts with
+     35 stamina"*, since it shows what differs between seats (recommended);
+     or B, *"... and 5 gold"*. **Answered:** A.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design

@@ -1,4 +1,4 @@
-import { COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE, RESPAWN_RULES, magicGuardChanceOf, mapSizeOfRuleset, type MapSize } from '@adventure/config';
+import { COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE, RESPAWN_RULES, magicGuardChanceOf, mapSizeOfRuleset, startingGoldOf, type MapSize } from '@adventure/config';
 import type { BuyAction, GameMap, TurnAction } from '@adventure/core';
 import { inOrder, toHotseatSeats, type LocalSetup } from '../setup/local.ts';
 import { HotseatGame } from './hotseat.ts';
@@ -50,6 +50,11 @@ export interface KeptGame {
    * which goes on with the coin-flip guards it began with.
    */
   readonly magicGuardChance?: number;
+  /**
+   * [Q200] The gold every player started with. Absent on a game kept before
+   * players started with gold, whose players started with none (790).
+   */
+  readonly startingGold?: number;
 }
 
 const KEY = 'adventure.hotseat';
@@ -90,6 +95,7 @@ export function keep(seed: string, setup: LocalSetup, order: readonly string[] |
     ...(respawn?.MAX_UNITS === undefined ? {} : { respawnMaxUnits: respawn.MAX_UNITS }),
     mapSize: mapSizeOfRuleset(game.setup.map.ruleset),
     magicGuardChance: magicGuardChanceOf(game.setup.map.ruleset),
+    startingGold: startingGoldOf(game.setup.map.ruleset),
   };
   try {
     window.localStorage.setItem(KEY, JSON.stringify(kept));
@@ -119,7 +125,10 @@ export function keptMagicGuardChance(kept: KeptGame): number {
 /** The kept game played again on `map`; `null` if its turns no longer replay. */
 export function replayKept(kept: KeptGame, map: GameMap): HotseatGame | null {
   try {
-    const rules = kept.buying === true ? map : startedBeforeBuying(map, kept.respawn === true, kept.respawnMaxUnits);
+    const rules = withStartingGold(
+      kept.buying === true ? map : startedBeforeBuying(map, kept.respawn === true, kept.respawnMaxUnits),
+      typeof kept.startingGold === 'number' ? kept.startingGold : 0,
+    );
     const game = new HotseatGame({ map: rules, seats: toHotseatSeats(inOrder(kept.setup, kept.order ?? null)), diceSeed: kept.diceSeed });
     for (const action of kept.actions) {
       if (action.kind === 'buy') game.buy(action);
@@ -142,4 +151,12 @@ function startedBeforeBuying(map: GameMap, respawn: boolean, max: number | undef
   const { MAX_UNITS: _max, ...uncapped } = RESPAWN_RULES;
   const rules = max === undefined ? uncapped : { ...uncapped, MAX_UNITS: max };
   return { ...map, ruleset: { ...map.ruleset, config: { ...config, respawn: rules } } };
+}
+
+/** `map` with its players starting on `gold` (Q200): none for a game kept before they started with any. */
+function withStartingGold(map: GameMap, gold: number): GameMap {
+  if (startingGoldOf(map.ruleset) === gold) return map;
+  const { STARTING_GOLD: _gold, ...players } = map.ruleset.config.players;
+  const config = { ...map.ruleset.config, players: gold === 0 ? players : { ...players, STARTING_GOLD: gold } };
+  return { ...map, ruleset: { ...map.ruleset, config } };
 }

@@ -135,6 +135,24 @@ describe('a game on one device kept in the browser (Q56, 66)', () => {
     expect(replayKept(before, coinFlips)?.setup.map).toBe(coinFlips);
   });
 
+  it('keeps the gold players started with, and resumes a game kept before they started with any on none (Q200, 790)', () => {
+    const game = new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'kept' });
+    game.play({ kind: 'rest', player: game.state.players[0]!.id });
+    keep('adventure', setup, null, game);
+    const kept = readKept();
+    expect(kept?.startingGold).toBe(5);
+    const again = kept === null ? null : replayKept(kept, map);
+    expect(again?.setup.map).toBe(map);
+    expect(again?.state.players.map((player) => player.stats.gold)).toEqual([5, 5]);
+
+    // Kept before players started with gold.
+    const { startingGold: _gold, ...older } = kept ?? { startingGold: undefined };
+    const before = replayKept(older as NonNullable<typeof kept>, map);
+    expect(before?.setup.map.ruleset.config.players.STARTING_GOLD).toBeUndefined();
+    expect(before?.state.players.map((player) => player.stats.gold)).toEqual([0, 0]);
+    expect(before?.turns.length).toBe(1);
+  });
+
   it('keeps the order Shuffle seats drew, and the seats as set for the next New game (Q165)', () => {
     const drawn = inOrder(setup, ['seat-2', 'seat-1']);
     const game = new HotseatGame({ map, seats: toHotseatSeats(drawn), diceSeed: 'kept' });
