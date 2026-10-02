@@ -3132,16 +3132,19 @@ Answered at 18:56.
      you are not changing how computers decide the next move"*: no comparison
      for stage 1; one PR per stage.
 818. **Track when a purchase picks a route brought back again:** A, Track
-     unpresses, as when you change a route yourself (as built); or B, Track
-     stays pressed, as a route brought back leaves it (575; recommended).
-     Either way the new route is saved online. **Open.**
+     unpresses, as when you change a route yourself; or B, Track stays
+     pressed, as a route brought back leaves it (575; recommended). Either way
+     the new route is saved online. **Answered** at 19:27: *"818: B, the
+     rulebook wording is OK"*.
 
 Stage 1, as built: `bestRoute` and `bestRouteVia` (`packages/core`), from
 `RouteTable.routesFrom`, every route no other route beats on all three
 terrains' step counts. The move planner draws it; a purchase that changes the
 planner's speeds picks the route shown again, as choosing its destination
-again would. The computer's real move (`firstTurnOf`) walks it; its search and
-the games it imagines still rank and walk the cheapest route.
+again would. A route brought back and not picked up stays down when that
+happens, so Track stays as it was, and online the page saves the new route
+(818 B). The computer's real move (`firstTurnOf`) walks it; its search and the
+games it imagines still rank and walk the cheapest route.
 
 ---
 
