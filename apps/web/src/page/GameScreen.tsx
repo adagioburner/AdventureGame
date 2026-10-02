@@ -18,7 +18,7 @@ import {
 import { GLIDE_MS } from '../interaction/camera.ts';
 import { createMoveModeController, type EnterRefusal, type MoveModeState } from '../interaction/moveMode.ts';
 import type { Pick } from '../interaction/picking.ts';
-import type { PlayedTurn } from '../modes/hotseat.ts';
+import type { PlayedTurn, Purchase } from '../modes/hotseat.ts';
 import type { PlayedChange, PlaySource, PlayUpdate } from '../modes/play.ts';
 import { position } from '../render/geometry.ts';
 import type { LoadedArt } from '../render/pixi/textures.ts';
@@ -26,8 +26,8 @@ import type { FigureCue, MapScene, Walker } from '../render/sceneModel.ts';
 import { endingSound, isRest, returnedSites } from '../sound/cues.ts';
 import { soundTableOf, sounds } from '../sound/player.ts';
 import { BuyPanel } from './BuyPanel.tsx';
-import { ClaimNotice, EndCard, ResultCard } from './Cards.tsx';
-import { isUnguardedClaim, journalEntry, purchaseEntry, type JournalEntry } from './journal.ts';
+import { ClaimNotice, EndCard, PurchaseNotice, ResultCard } from './Cards.tsx';
+import { isUnguardedClaim, journalEntry, purchaseEntry, purchaseNotices, type JournalEntry } from './journal.ts';
 import { MapView, type MapHandle } from './MapView.tsx';
 import { Players } from './Players.tsx';
 import { TurnControls } from './TurnControls.tsx';
@@ -199,6 +199,9 @@ export function GameScreen({
   // [Q190] The turn the buy panel was opened on; online, whether a purchase this page sent is not played yet.
   const [buyTurn, setBuyTurn] = useState<number | null>(null);
   const [purchasing, setPurchasing] = useState(false);
+  // [Q190, 774] Another player's purchase floating up from their figure, while it shows.
+  const [bought, setBought] = useState<{ readonly purchase: Purchase; readonly text: string; readonly key: number } | null>(null);
+  const boughtKey = useRef(0);
   /** The route of the turn this page committed last, until that turn is shown. */
   const committed = useRef<{ readonly turn: number; readonly planned: Planned } | null>(null);
   const controller = useMemo(
@@ -305,6 +308,7 @@ export function GameScreen({
       setShown(after);
       controller.setGame(after);
       if (after.status === 'finished') setEndOpen(true);
+      if (purchase !== null && update.shown === 'played' && !source.localPlayers.has(purchase.player)) await showPurchase(purchase);
       return;
     }
     const mine = committed.current;
@@ -337,6 +341,26 @@ export function GameScreen({
     announce(turn, movedOn);
     await bringBack(turn, back).catch(() => undefined);
     setReturning(null);
+  };
+  /**
+   * [Andrei, 2026-10-02] "Basically the purchase notice works the same way as
+   * claiming a reward, but happens before the walk, not after" (Q190, 774
+   * and 775). Online every page but the buyer's sees it; on one device, a
+   * computer's purchases only (773). Each speed or skill bought floats up on
+   * its own (785), one after another, each with the cash register (778), and
+   * what the buyer does next waits until the last has faded (776), so
+   * purchases made one after another float up one after another (779).
+   * Purchases caught up or already in the log when the screen opened never
+   * come here (780).
+   */
+  const showPurchase = async (purchase: Purchase): Promise<void> => {
+    for (const text of purchaseNotices(purchase)) {
+      boughtKey.current += 1;
+      setBought({ purchase, text, key: boughtKey.current });
+      sounds.play('purchase');
+      await sleep(timing.claimMs + timing.fadeMs);
+    }
+    setBought(null);
   };
   const announce = (turn: PlayedTurn, movedOn: boolean): void => {
     // [Q56, 55] A player the game master moved on is told so, whenever it happens.
@@ -505,6 +529,8 @@ export function GameScreen({
     if (skills.length === 0 || active === undefined) return;
     try {
       source.buy({ kind: 'buy', player: active.id, skills });
+      // [Q190, 778] The buyer hears the cash register on Done.
+      sounds.play('purchase');
       if (online) setPurchasing(true);
     } catch (error) {
       say(error instanceof Error ? error.message : String(error));
@@ -761,8 +787,19 @@ export function GameScreen({
         ) : (
           <ResultCard catalog={catalog} turn={result.turn} rolling={result.rolling} onClose={() => setResult(null)} />
         )}
-        {/* The winning turn's own card comes first; OK on it brings up the end. */}
-        {shown.status === 'finished' && endOpen && inFlight === null && result === null ? (
+        {bought === null ? null : (
+          <PurchaseNotice
+            key={bought.key}
+            purchase={bought.purchase}
+            text={bought.text}
+            locate={locateFigure}
+            stayMs={timing.claimMs}
+            appearMs={timing.appearMs}
+            fadeMs={timing.fadeMs}
+          />
+        )}
+        {/* The winning turn's own card, or the purchase that won, comes first; OK on a card brings up the end. */}
+        {shown.status === 'finished' && endOpen && inFlight === null && result === null && bought === null ? (
           <EndCard catalog={catalog} state={shown} newGameLabel={newGameLabel} onNewGame={onNewGame} onClose={() => setEndOpen(false)} />
         ) : null}
       </main>

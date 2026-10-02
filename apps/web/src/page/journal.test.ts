@@ -17,7 +17,7 @@ import {
   type TurnAction,
 } from '@adventure/core';
 import { playedTurnOf, purchaseOf, type PlayedTurn, type Purchase } from '../modes/hotseat.ts';
-import { journalEntry, purchaseEntry, statLine } from './journal.ts';
+import { journalEntry, purchaseEntry, purchaseNotices, statLine } from './journal.ts';
 
 /**
  * §8's map, as the rules tests draw it: five plains, a forest and a mountain in
@@ -199,6 +199,17 @@ describe('the turn log, in words that can be checked by hand', () => {
     const entry = journalEntry(playedTurnOf(state, rest, outcome.events, outcome.state, bought), state);
     expect(entry.details.slice(0, 2)).toEqual(['Ada bought 2 mountains speed and 1 combat for 3 gold.', 'Ada bought 1 magic for 1 gold.']);
     expect(entry.headline).toBe('Rested: +5 stamina');
+  });
+
+  it('floats up a notice for each speed or skill bought, units counted together, in lowercase (Q190, 779, 785 and 786)', () => {
+    const state = game({ gold: 4 });
+    const action = { kind: 'buy', player: state.players[0]!.id, skills: ['magic', 'mountain_move', 'magic', 'fighting'] } as const;
+    const outcome = applyAction(state, action, dice());
+    expect(purchaseNotices(purchaseOf(state, action, outcome.events, outcome.state))).toEqual([
+      'Bought mountains speed +1',
+      'Bought combat +1',
+      'Bought magic +2',
+    ]);
   });
 
   it('gives a purchase that hands another player the win an entry of its own (Q190, 756)', () => {

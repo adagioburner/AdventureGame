@@ -252,6 +252,20 @@ export function purchaseLine(purchase: Purchase): string {
 }
 
 /**
+ * [Q190, 779] What another player's purchase floats up as: a notice for each
+ * speed or skill, "Bought magic +2", units of a kind counted together, in
+ * the cards' order. [785] Andrei, 2026-10-02: one per skill, "otherwise the
+ * text becomes too long"; [786] in lowercase, "like the claim notice"; and
+ * "Maybe "Bought", not "Purchased", for a shorter card".
+ */
+export function purchaseNotices(purchase: Purchase): string[] {
+  return STAT_ORDER.flatMap((kind) => {
+    const units = purchase.skills.filter((skill) => skill === kind).length;
+    return units === 0 ? [] : [`Bought ${STAT_LABEL[kind]} +${units}`];
+  });
+}
+
+/**
  * [Q190, 756] The entry for a purchase that ended the game: spending put
  * another player's lead past the gold left, so the turn has no move to log.
  * Purchases earlier in the same turn come first.

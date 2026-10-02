@@ -2940,7 +2940,7 @@ site are as before.
      the mountains by either."* (recommended); or forests only; or no change.
      **Answered:** all three terrains.
 
-### Q190. ~~Can speeds and skills be bought with gold?~~ — **answered 2026-10-02: yes, 1 gold a unit on your own turn, as many as you like, from a Buy panel with Cancel on every screen; it replaces speeds and skills coming back in new games (750-772)**
+### Q190. ~~Can speeds and skills be bought with gold?~~ — **answered 2026-10-02: yes, 1 gold a unit on your own turn, as many as you like, from a Buy panel with Cancel on every screen; it replaces speeds and skills coming back in new games; other players' purchases float up from the buyer's figure with a cash register (750-786)**
 
 [SOURCE §2, §5, chat] Andrei, 2026-10-02 at 00:41: *"Players complain that if
 they didn't get the right skill early on they are screwed for the rest of the
@@ -2987,7 +2987,7 @@ some stamina."* Answered between 02:17 and 02:50.
 761. **The computer's turn:** it thinks once, then buys and moves
      (recommended). **Answered:** yes.
 762. **What others see:** a turn log line, no sound or notice (recommended).
-     **Answered:** yes.
+     **Answered:** yes. *Changed at 07:02 by 773-786.*
 763. **Which screens get the Buy button:** every screen that shows Menu,
      phones held sideways too (recommended). **Answered:** yes.
 764. **"Playing now" on an upright phone:** "Turn N ·" and "Playing now" on two
@@ -3021,6 +3021,50 @@ some stamina."* Answered between 02:17 and 02:50.
 
 The rulebook draft was approved at 02:45 with the panel sentence in place of
 the + signs.
+
+At 06:58 Andrei asked *"How do I see it when other players buy something?"*,
+and at 07:02, told it was 762's log line: *"We need to change that. Their
+purchase panel should open, with the purchases they made, and stay open for
+some time, e.g. 2 seconds. It also would be nice if a purchase got completed
+with some sound, e.g. a cash register sound"*. At 07:25 he sent the cash
+register he had in mind, and at 07:26 offered *"another option is to have a
+small panel floating up similar to when you claim a reward."* At 07:45:
+*"Basically the purchase notice works the same way as claiming a reward, but
+happens before the walk, not after"*.
+
+773. **Who sees it:** *"online, everyone but the buyer. Hotseat, only
+     computer's purchases."* (07:30).
+774. **What it looks like:** the buyer's Buy panel opening on their card, or
+     a notice floating up from their figure like a claim's. **Answered:**
+     *"Let's go with a gloating* [floating] *notice"* (07:45).
+775. **How long it stays:** *"same timing as a regular claim"* (07:45): it
+     fades in, stays 2 seconds and fades out.
+776. **A computer's walk:** *"a computer's walk waits until the purchase
+     notice closes (whatever form we decide on)"* (07:30).
+777. **The sound:** his own cash register, not a placeholder; *"as
+     recommended"* (07:45). It is `purchase` in Art/manifest.json.
+778. **When it is heard:** by the buyer as they press Done; by everyone else
+     as the notice appears (recommended). **Answered:** yes, 07:30.
+779. **Several purchases in one turn:** one after another (recommended).
+     **Answered:** yes, 07:30, *"especially if we go with a floating notice.
+     Purchases of the same skill can be combined, e.g. Purchased Magic +2"*.
+780. **Purchases caught up online** (missed while the connection was down):
+     in the log, no notice and no sound (recommended). **Answered:** yes,
+     07:30.
+781. **The rulebook:** unchanged, as it says nothing about what players see
+     (recommended). **Answered:** confirmed, 07:30.
+782. **The panel over the map on a phone:** moot with 774's floating notice.
+783. **Who supplies the sound:** answered by 777, his own file.
+784. **A buyer off screen:** the notice rides on the figure, so it is missed
+     when the figure is out of view, as a claim's is: taken from 07:45's
+     *"works the same way as claiming"*, and said so to him.
+785. **One notice per skill, or one per Done listing every skill:**
+     **Answered:** one per skill, one after the other, *"otherwise the text
+     becomes too long"* (07:50). Each comes with the sound (778).
+786. **Capital or lowercase:** **Answered:** lowercase, *"like the claim
+     notice (as recommended)"* (07:50). And at 07:55: *"Maybe "Bought", not
+     "Purchased", for a shorter card"*: the notice reads *"Bought magic
+     +2"*.
 
 ---
 

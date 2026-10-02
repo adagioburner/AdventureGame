@@ -140,8 +140,11 @@ export interface IslandCorners {
  * beaten or not once the die has stopped. [2026-09-28] "the resting sound and
  * the "new message" as well, for a complete minimal set": a rest as it is
  * shown, and, online, a message someone else posts.
+ *
+ * [Q190, 777] Andrei, 2026-10-02: "It also would be nice if a purchase got
+ * completed with some sound, e.g. a cash register sound", and he supplied it.
  */
-export const SOUND_NAMES = ['step', 'pickup', 'battle_won', 'battle_lost', 'rest', 'message', 'respawn'] as const;
+export const SOUND_NAMES = ['step', 'pickup', 'battle_won', 'battle_lost', 'rest', 'message', 'respawn', 'purchase'] as const;
 export type SoundName = (typeof SOUND_NAMES)[number];
 
 export interface SoundArt {

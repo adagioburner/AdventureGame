@@ -135,14 +135,15 @@
     "sky": { "file": "Island/sky.png", "color": "#809ab4", "shade": { "light": 0, "dark": 0.3 } }
   },
   "sounds": {
-    "notes": "The sound effects (Q63), each a list of files under Art/ and a volume (1 plays a file as it is). A sound with several files uses them in turn, so a walk's footsteps are not all alike. All nine are placeholders made by Art/tools/make_sounds.py from the samples Andrei picked by ear; a replacement drops in over the file, or goes in under a new name changed here, and loses its placeholder flag. WAV or MP3 plays in every browser.",
+    "notes": "The sound effects (Q63), each a list of files under Art/ and a volume (1 plays a file as it is). A sound with several files uses them in turn, so a walk's footsteps are not all alike. All but `purchase` are placeholders made by Art/tools/make_sounds.py from the samples Andrei picked by ear; `purchase` is the cash register Andrei supplied (Q190, 777); a replacement drops in over the file, or goes in under a new name changed here, and loses its placeholder flag. WAV or MP3 plays in every browser.",
     "step": { "files": ["Sounds/step_1.wav", "Sounds/step_2.wav", "Sounds/step_3.wav"], "volume": 1, "placeholder": true },
     "pickup": { "files": ["Sounds/pickup.wav"], "volume": 1, "placeholder": true },
     "battle_won": { "files": ["Sounds/battle_won.wav"], "volume": 1, "placeholder": true },
     "battle_lost": { "files": ["Sounds/battle_lost.wav"], "volume": 1, "placeholder": true },
     "rest": { "files": ["Sounds/rest.wav"], "volume": 1, "placeholder": true },
     "message": { "files": ["Sounds/message.wav"], "volume": 1, "placeholder": true },
-    "respawn": { "files": ["Sounds/respawn.wav"], "volume": 1, "placeholder": true }
+    "respawn": { "files": ["Sounds/respawn.wav"], "volume": 1, "placeholder": true },
+    "purchase": { "files": ["Sounds/purchase.mp3"], "volume": 1, "placeholder": false }
   },
   "shadows": {
     "notes": "Some supplied sheets bake their drop shadow in as an opaque flat grey, which would sit on the terrain as a grey patch. The loader turns the colours listed here into a translucent dark shadow instead, at `opacity`. No sheet in use needs it: the sheets packed from Art/originals/ by Art/tools/pack_sheets.py have their shadows made dark and see-through as they are packed, at the same strength.",
