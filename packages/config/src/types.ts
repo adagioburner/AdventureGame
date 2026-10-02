@@ -314,6 +314,17 @@ export interface AiConfig {
    */
   readonly STAMINA_PER_SKILL_POINT: number;
   /**
+   * `BUY_SKIP_STAMINA` — 5. [Q190] Andrei, 2026-10-02: "buying a skill is not
+   * available to a computer player if that skill is within 1 turn reach from
+   * them [...] or 1 turn reach plus some stamina"; 759 B, plus 5 stamina.
+   *
+   * The computer's search has no branch for buying a skill while an unclaimed
+   * site offering it can be reached this turn for at most this much stamina
+   * past its free steps, and no more than it holds. 5 is what his distance
+   * formula (Q65) counts a turn as.
+   */
+  readonly BUY_SKIP_STAMINA: number;
+  /**
    * The thinking time a computer seat can be given on the start game panel, in
    * whole seconds. Not in §11; the designer's, 2026-09-24 (Q41): 1 to 60, the
    * box starting at `MCTS_TIME_BUDGET_PER_MOVE_MS`.
@@ -360,6 +371,22 @@ export interface RespawnConfig {
 }
 
 /**
+ * [Q190] Buying speeds and skills with gold.
+ *
+ * Andrei, 2026-10-02: "allow players buy skills for gold, 1 to 1. We won't
+ * need respawning skills then, this mechanism substitutes that." On their own
+ * turn, before they end it, a player buys one unit of a kind in `KINDS` for
+ * `GOLD_PER_UNIT` gold, as many times as their gold pays for (751, Free). A
+ * speed bought counts this turn too (752). The gold leaves the game (756).
+ */
+export interface BuyingConfig {
+  /** 753: the five skills, the three speeds with combat and magic. Never stamina or gold. */
+  readonly KINDS: readonly RewardKind[];
+  /** The gold one unit costs: 1 ("1 to 1"). */
+  readonly GOLD_PER_UNIT: number;
+}
+
+/**
  * GDD.md §11's table, plus constants the *designer* has added to it in review
  * (currently `GOLD_WEIGHT`). Nothing the implementation invented on its own —
  * that lives in `EngineeringConfig`.
@@ -378,6 +405,13 @@ export interface GameConfig {
    * games keep the rules they started with to the end.
    */
   readonly respawn?: RespawnConfig;
+  /**
+   * [Q190] Absent on the maps of games started before speeds and skills could
+   * be bought, which keep the rules they started with (758), speeds and skills
+   * coming back included; present on every game started since, which have no
+   * `respawn` (757).
+   */
+  readonly buying?: BuyingConfig;
 }
 
 /* -------------------------------------------------------------------------- */

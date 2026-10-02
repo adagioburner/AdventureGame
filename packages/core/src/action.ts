@@ -67,6 +67,20 @@ export const ZERO_LENGTH_MOVE_PATH: readonly NodeId[] = [];
 export type TurnAction = MoveAction | RestAction;
 
 /**
+ * [Q190] Andrei, 2026-10-02: "allow players buy skills for gold, 1 to 1."
+ * One unit of `skill` for `GOLD_PER_UNIT` gold, on the player's own turn
+ * before they end it (754), as many times as their gold pays for (751, Free).
+ * It is not a turn: the turn goes on, and still ends with a move or a rest.
+ * A speed bought counts this turn too (752); nothing bought is sold back (755).
+ */
+export interface BuyAction {
+  readonly kind: 'buy';
+  readonly player: PlayerId;
+  /** One of the game's `buying.KINDS`: a speed, combat or magic. */
+  readonly skill: RewardKind;
+}
+
+/**
  * [SOURCE §4] Game-master controls (§7.3) and resignation. These change game
  * state, so they live in the engine; *who is allowed to issue them* is decided
  * by the session layer, which is the only place that knows who the game master
@@ -175,6 +189,7 @@ export interface EndGameAction {
 
 export type GameAction =
   | TurnAction
+  | BuyAction
   | SetControlAction
   | ResignAction
   | ForceTurnAction
@@ -232,6 +247,8 @@ export type GameEvent =
   | { readonly type: 'message_posted'; readonly post: BoardPost }
   | { readonly type: 'message_deleted'; readonly id: string }
   | { readonly type: 'planned'; readonly player: PlayerId; readonly plan: PlannedPath | null }
+  /** [Q190] A player bought `units` of `kind` for `gold` gold, during their turn. */
+  | { readonly type: 'bought'; readonly player: PlayerId; readonly kind: RewardKind; readonly units: number; readonly gold: number }
   /** [Q135] A speed or skill ran short and came back to an empty site, far from every figure. */
   | { readonly type: 'reward_returned'; readonly node: NodeId; readonly reward: Reward }
   | { readonly type: 'game_won'; readonly winners: readonly PlayerId[] }

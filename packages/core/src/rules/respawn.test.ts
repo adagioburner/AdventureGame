@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_RULESET } from '@adventure/config';
+import { DEFAULT_RULESET, RESPAWN_RULES } from '@adventure/config';
 import type { GameEvent } from '../action.ts';
 import type { GameMap } from '../gamemap.ts';
 import { playerById, type GameState } from '../state.ts';
@@ -20,7 +20,16 @@ import { fixtureGame, fixtureMap, n, noDice, player, scriptedDice, withPosition,
  *   0 ── 10(p) ── 11(p) ── 12(p): 1 plains speed on 12, three plains steps (3 stamina)
  *   7 ── 13(p): 5 gold, unguarded
  */
-const map = fixtureMap({
+/**
+ * [Q190, 757 and 758] Only games started before speeds and skills could be
+ * bought bring them back: those carry `RESPAWN_RULES` and no `buying`.
+ */
+function startedBeforeBuying(on: GameMap): GameMap {
+  const { buying: _buying, ...config } = on.ruleset.config;
+  return { ...on, ruleset: { ...on.ruleset, config: { ...config, respawn: RESPAWN_RULES } } };
+}
+
+const today = fixtureMap({
   terrains: [
     'plains', 'plains', 'plains', 'plains', 'plains', 'plains', 'plains', 'plains',
     'forest', 'forest', 'plains', 'plains', 'plains', 'plains',
@@ -41,6 +50,7 @@ const map = fixtureMap({
     { node: 13, kind: 'gold', units: 5, guard: null },
   ],
 });
+const map = startedBeforeBuying(today);
 
 const one = player('one');
 const two = player('two');
@@ -178,26 +188,28 @@ describe('speeds and skills coming back (Q135)', () => {
   });
 
   it('brings 2 units back in a game started while the cap was 2', () => {
-    const respawn = DEFAULT_RULESET.config.respawn;
-    if (respawn === undefined) throw new Error('the default rules bring speeds and skills back');
-    const before: GameMap = { ...map, ruleset: { ...DEFAULT_RULESET, config: { ...DEFAULT_RULESET.config, respawn: { ...respawn, MAX_UNITS: 2 } } } };
+    const before: GameMap = { ...map, ruleset: { ...map.ruleset, config: { ...map.ruleset.config, respawn: { ...RESPAWN_RULES, MAX_UNITS: 2 } } } };
     const { events } = applyAction(game([6], before), rest, scriptedDice([], 6, [0]));
     expect(returned(events)).toEqual([{ node: n(6), kind: 'magic', units: 2 }]);
   });
 
   it('brings the whole stack back in a game started before the cap', () => {
-    const respawn = DEFAULT_RULESET.config.respawn;
-    if (respawn === undefined) throw new Error('the default rules bring speeds and skills back');
-    const { MAX_UNITS: _max, ...uncapped } = respawn;
-    const before: GameMap = { ...map, ruleset: { ...DEFAULT_RULESET, config: { ...DEFAULT_RULESET.config, respawn: uncapped } } };
+    const { MAX_UNITS: _max, ...uncapped } = RESPAWN_RULES;
+    const before: GameMap = { ...map, ruleset: { ...map.ruleset, config: { ...map.ruleset.config, respawn: uncapped } } };
     const { events } = applyAction(game([6], before), rest, scriptedDice([], 6, [0]));
     expect(returned(events)).toEqual([{ node: n(6), kind: 'magic', units: 3 }]);
   });
 
   it('leaves a game started before the rule as it was', () => {
-    const { respawn: _respawn, ...config } = DEFAULT_RULESET.config;
-    const before: GameMap = { ...map, ruleset: { ...DEFAULT_RULESET, config } };
+    const { respawn: _respawn, ...config } = map.ruleset.config;
+    const before: GameMap = { ...map, ruleset: { ...map.ruleset, config } };
     const { events } = applyAction(game([5, 7], before), rest, noDice);
+    expect(returned(events)).toEqual([]);
+  });
+
+  it('brings nothing back in a game started since speeds and skills can be bought (Q190, 757)', () => {
+    expect(DEFAULT_RULESET.config.respawn).toBeUndefined();
+    const { events } = applyAction(game([5, 7], today), rest, noDice);
     expect(returned(events)).toEqual([]);
   });
 });
