@@ -73,6 +73,7 @@ const TABLE: SoundTable = {
   rest: { urls: ['rest'], volume: 1 },
   message: { urls: ['message'], volume: 1 },
   respawn: { urls: ['respawn'], volume: 1 },
+  purchase: { urls: ['purchase'], volume: 1 },
 };
 
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));

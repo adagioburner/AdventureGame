@@ -13,7 +13,7 @@ import {
   type NodeId,
   type PlayerStats,
 } from '@adventure/core';
-import type { PlayedTurn } from '../modes/hotseat.ts';
+import type { PlayedTurn, Purchase } from '../modes/hotseat.ts';
 
 /**
  * A played turn in words, for the turn log beside the map.
@@ -95,6 +95,8 @@ export function journalEntry(turn: PlayedTurn, before: GameState, movedOn = fals
   const won = find(turn.events, 'game_won');
 
   const details: string[] = movedOn ? ['Moved on by the game master.'] : [];
+  // [Q190, 769] A line for each Done in the buy panel this turn, before the move.
+  details.push(...turn.bought.map(purchaseLine));
   let headline: string;
   let tone: JournalEntry['tone'] = 'plain';
 
@@ -234,6 +236,53 @@ function describeInteraction(
         headline: `, lost to the guard`,
         detail: `${kind}: ${sum}, not more than ${guard.strength}. The ${STAT_LABEL[reward.kind]} stays.`,
       };
+}
+
+/**
+ * [Q190, 769] A purchase in words: "Bea bought 1 mountains speed and 1 combat
+ * for 2 gold." Units of a kind are counted together, in the cards' order.
+ */
+export function purchaseLine(purchase: Purchase): string {
+  const counts = STAT_ORDER.flatMap((kind) => {
+    const units = purchase.skills.filter((skill) => skill === kind).length;
+    return units === 0 ? [] : [`${units} ${STAT_LABEL[kind]}`];
+  });
+  const list = counts.length < 2 ? counts.join('') : `${counts.slice(0, -1).join(', ')} and ${counts.at(-1)}`;
+  return `${purchase.name} bought ${list} for ${purchase.gold} gold.`;
+}
+
+/**
+ * [Q190, 779] What another player's purchase floats up as: a notice for each
+ * speed or skill, "Bought magic +2", units of a kind counted together, in
+ * the cards' order. [785] Andrei, 2026-10-02: one per skill, "otherwise the
+ * text becomes too long"; [786] in lowercase, "like the claim notice"; and
+ * "Maybe "Bought", not "Purchased", for a shorter card".
+ */
+export function purchaseNotices(purchase: Purchase): string[] {
+  return STAT_ORDER.flatMap((kind) => {
+    const units = purchase.skills.filter((skill) => skill === kind).length;
+    return units === 0 ? [] : [`Bought ${STAT_LABEL[kind]} +${units}`];
+  });
+}
+
+/**
+ * [Q190, 756] The entry for a purchase that ended the game: spending put
+ * another player's lead past the gold left, so the turn has no move to log.
+ * Purchases earlier in the same turn come first.
+ */
+export function purchaseEntry(purchase: Purchase): JournalEntry {
+  const buyer = purchase.after.players.find((player) => player.id === purchase.player);
+  if (buyer === undefined) throw new RangeError(`no player ${purchase.player}`);
+  const won = find(purchase.events, 'game_won');
+  return {
+    number: purchase.number,
+    seat: purchase.seat,
+    name: purchase.name,
+    headline: 'Bought, and the game ended',
+    details: [...[...purchase.earlier, purchase].map(purchaseLine), ...(won === undefined ? [] : [victoryLine(won.winners.length, purchase.after)])],
+    tone: won === undefined ? 'plain' : 'won',
+    statsAfter: buyer.stats,
+  };
 }
 
 function victoryLine(winners: number, after: GameState): string {

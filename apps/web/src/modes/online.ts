@@ -1,6 +1,6 @@
 import { forcedTurnAction, type GameState, type TurnAction } from '@adventure/core';
 import { openingStateOf, replayRecord, type GameRecord, type SetupState } from '@adventure/protocol';
-import { playedTurnOf, type PlayedTurn } from './hotseat.ts';
+import { playedTurnOf, purchaseOf, type PlayedTurn, type Purchase } from './hotseat.ts';
 
 /**
  * [SOURCE §4] Online play: the §7.1 UI in full.
@@ -26,6 +26,8 @@ export interface AppliedRecord {
   readonly after: GameState;
   /** The turn it played, for the walk, the die and the log; `null` for a saved route, a post or the end. */
   readonly turn: PlayedTurn | null;
+  /** [Q190] The purchase it made; `null` for anything else. */
+  readonly purchase: Purchase | null;
 }
 
 /** A record that does not follow the last one: a message was missed, and the page must load the game again. */
@@ -45,10 +47,13 @@ export class MissedRecords extends Error {
 export class OnlineGame {
   private current: GameState;
   private seq: number;
+  /** [Q190] Purchases made in the turn under way, for its entry once it is played. */
+  private pending: Purchase[];
 
-  private constructor(state: GameState, seq: number) {
+  private constructor(state: GameState, seq: number, pending: Purchase[]) {
     this.current = state;
     this.seq = seq;
+    this.pending = pending;
   }
 
   /**
@@ -59,9 +64,11 @@ export class OnlineGame {
   static open(setup: SetupState, state: GameState, records: readonly GameRecord[]): { game: OnlineGame; applied: AppliedRecord[] } {
     const applied: AppliedRecord[] = [];
     let replayed = openingStateOf(setup, state.map);
+    let pending: Purchase[] = [];
     try {
       for (const record of records) {
-        const step = apply(replayed, record);
+        const step = apply(replayed, record, pending);
+        pending = step.purchase !== null ? [...pending, step.purchase] : step.turn !== null ? [] : pending;
         applied.push(step);
         replayed = step.after;
       }
@@ -70,7 +77,7 @@ export class OnlineGame {
     }
     const last = records[records.length - 1]?.seq ?? 0;
     if (!sameGame(replayed, state)) console.error('the replayed game differs from the server’s');
-    return { game: new OnlineGame(state, last), applied };
+    return { game: new OnlineGame(state, last, pending), applied };
   }
 
   get state(): GameState {
@@ -85,21 +92,25 @@ export class OnlineGame {
   apply(record: GameRecord): AppliedRecord {
     if (record.seq <= this.seq) throw new MissedRecords(`record ${record.seq} again, after ${this.seq}`);
     if (record.seq !== this.seq + 1) throw new MissedRecords(`record ${record.seq} after ${this.seq}`);
-    const step = apply(this.current, record);
+    const step = apply(this.current, record, this.pending);
+    if (step.purchase !== null) this.pending = [...this.pending, step.purchase];
+    else if (step.turn !== null) this.pending = [];
     this.current = step.after;
     this.seq = record.seq;
     return step;
   }
 }
 
-function apply(before: GameState, record: GameRecord): AppliedRecord {
+/** `record` applied to `before`, a turn carrying `bought`, the purchases made earlier in it. */
+function apply(before: GameState, record: GameRecord, bought: readonly Purchase[]): AppliedRecord {
   const outcome = replayRecord(before, record);
   const action = turnActionOf(before, record);
   return {
     record,
     before,
     after: outcome.state,
-    turn: action === null ? null : playedTurnOf(before, action, outcome.events, outcome.state),
+    turn: action === null ? null : playedTurnOf(before, action, outcome.events, outcome.state, bought),
+    purchase: record.action.kind === 'buy' ? purchaseOf(before, record.action, outcome.events, outcome.state, bought) : null,
   };
 }
 

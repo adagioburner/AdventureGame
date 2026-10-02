@@ -21,17 +21,23 @@ import { Portrait, StatIcon } from './Sprites.tsx';
  * on the map", every card, during the game and after it ends (474), by
  * `onFind`. On a laptop the pointer turns into a hand over a card, which
  * otherwise looks as before (472).
+ *
+ * [Q190, 750 and 768] The card of a person on turn who could buy has a Buy
+ * button in its top right corner, which opens the buy panel (`BuyPanel`).
  */
 export function Players({
   catalog,
   state,
   away,
   onFind,
+  buy,
 }: {
   catalog: ArtCatalog;
   state: GameState;
   away?: ReadonlySet<PlayerId> | undefined;
   onFind?: ((player: PlayerId) => void) | undefined;
+  /** Whose card has the Buy button, and what pressing it does; absent when nobody's has. */
+  buy?: { readonly player: PlayerId; readonly open: boolean; readonly onOpen: () => void } | null | undefined;
 }) {
   const playing = state.status === 'in_progress';
   const list = useRef<HTMLElement | null>(null);
@@ -64,10 +70,11 @@ export function Players({
       {state.players.map((player) => {
         const current = playing && player.seat === state.turn.activeSeat;
         const winner = state.winners.includes(player.id);
+        const buys = buy !== null && buy !== undefined && buy.player === player.id;
         return (
           <article
             key={player.id}
-            className={`player${current ? ' current' : ''}${winner ? ' winner' : ''}${onFind === undefined ? '' : ' findable'}`}
+            className={`player${current ? ' current' : ''}${winner ? ' winner' : ''}${onFind === undefined ? '' : ' findable'}${buys ? ' buys' : ''}`}
             aria-current={current ? 'true' : undefined}
             onClick={onFind === undefined ? undefined : () => onFind(player.id)}
           >
@@ -76,16 +83,33 @@ export function Players({
               <div className="who">
                 <h2>{player.name}</h2>
                 <span className="tag">
-                  {winner
-                    ? 'Winner'
-                    : current
-                      ? `Turn ${state.turn.number} · playing now`
-                      : player.resigned
-                        ? 'Resigned · the computer plays'
-                        : `Seat ${player.seat}`}
+                  {winner ? (
+                    'Winner'
+                  ) : current ? (
+                    // [764] On a phone held upright "Playing now" takes its own line, clear of the Buy button.
+                    <>
+                      <span className="turn-no">Turn {state.turn.number} ·</span> <span className="now">playing now</span>
+                    </>
+                  ) : player.resigned
+                    ? 'Resigned · the computer plays'
+                    : `Seat ${player.seat}`}
                   {away?.has(player.id) === true ? ' · Away' : null}
                 </span>
               </div>
+              {buys ? (
+                <button
+                  className="btn buy-open"
+                  type="button"
+                  aria-expanded={buy.open}
+                  onClick={(event) => {
+                    // Not a click on the card, which would find the player on the map.
+                    event.stopPropagation();
+                    buy.onOpen();
+                  }}
+                >
+                  Buy
+                </button>
+              ) : null}
             </header>
             {/* [Q140] On a laptop STAT_ORDER fills four rows a column at a
                 time: what moves a player on the left, the rest on the right

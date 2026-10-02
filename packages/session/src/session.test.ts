@@ -327,6 +327,51 @@ describe('GameSession in play', () => {
     expect(h.game()?.turn.number).toBe(3);
   });
 
+  it('plays a purchase on the sender’s own turn, which goes on, and refuses one out of turn or for a turn already over (Q190)', async () => {
+    const h = await started();
+    const game = h.game() as GameState;
+    h.put({ ...game, players: game.players.map((player) => ({ ...player, stats: { ...player.stats, gold: 2 } })) });
+    await send(h.session, bea, { type: 'turn.buy', gameId: G, turn: 1, skills: ['fighting'] });
+    await send(h.session, andrei, { type: 'turn.buy', gameId: G, turn: 1, skills: ['fighting', 'forest_move'] });
+    await send(h.session, andrei, { type: 'turn.buy', gameId: G, turn: 0, skills: ['magic'] });
+    await send(h.session, andrei, { type: 'turn.buy', gameId: G, turn: 1, skills: ['stamina'] });
+    expect(h.take().map(({ to, message }) => [to, message.type === 'error' ? message.code : message.type])).toEqual([
+      ['bea', 'not_your_turn'],
+      ['all', 'game.played'],
+      ['andrei', 'turn_over'],
+      ['andrei', 'invalid_action'],
+    ]);
+    expect(h.records().map((record) => [record.action, record.by])).toEqual([
+      [{ kind: 'buy', player: 'seat-1', skills: ['fighting', 'forest_move'] }, andrei],
+    ]);
+    expect(h.game()?.turn).toMatchObject({ number: 1, activeSeat: 1, allowance: { plains: 0, forest: 1, mountain: 0 } });
+    expect(h.game()?.players[0]?.stats).toMatchObject({ gold: 0, fighting: 1, forest_move: 1 });
+  });
+
+  it('plays what the computer bought before its move (Q190, 761)', async () => {
+    const h = harness();
+    await h.session.create({ name: 'g', gameMaster: { userId: andrei, displayName: 'Andrei' }, mapSeed: 'fixture' });
+    await send(h.session, andrei, { type: 'setup.start', gameId: G });
+    await send(h.session, andrei, { type: 'gm.mapGenerated', gameId: G, map: playMap });
+    const game = h.game() as GameState;
+    h.put({ ...game, players: game.players.map((player) => ({ ...player, stats: { ...player.stats, gold: 1 } })) });
+    await send(h.session, andrei, { type: 'turn.rest', gameId: G, turn: 1 });
+    h.take();
+    const move = {
+      type: 'gm.aiMove',
+      gameId: G,
+      requestId: 'turn-2',
+      player: 'seat-2',
+      buy: { kind: 'buy', player: 'seat-2', skills: ['magic'] },
+      action: { kind: 'rest', player: 'seat-2' },
+    } as unknown as ClientMessage;
+    await send(h.session, andrei, move);
+    await send(h.session, andrei, move);
+    expect(h.records().map((record) => record.action.kind)).toEqual(['rest', 'buy', 'rest']);
+    expect(h.game()?.players[1]?.stats).toMatchObject({ gold: 0, magic: 1 });
+    expect(h.game()?.turn.number).toBe(3);
+  });
+
   it('lets anyone holding a seat resign, after which the computer plays it for 10 seconds a move (Q56 57)', async () => {
     const h = await started();
     await send(h.session, bea, { type: 'player.resign', gameId: G });

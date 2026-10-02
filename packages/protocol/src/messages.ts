@@ -1,4 +1,6 @@
+import type { RewardKind } from '@adventure/config';
 import type {
+  BuyAction,
   ControlMode,
   GameId,
   GameMap,
@@ -106,6 +108,12 @@ export type ClientMessage =
   /** [SOURCE §2] Rest instead of moving. `turn` as for `turn.end`. */
   | { readonly type: 'turn.rest'; readonly gameId: GameId; readonly turn: number }
   /**
+   * [Q190] Done in the buy panel (768): a unit of each of `skills`, bought
+   * at once on the sender's own turn, which goes on. `turn` as for
+   * `turn.end`, so a purchase meant for a turn already over is refused.
+   */
+  | { readonly type: 'turn.buy'; readonly gameId: GameId; readonly turn: number; readonly skills: readonly RewardKind[] }
+  /**
    * [SOURCE §4] GM forces a slow player's planned move, or a rest if none;
    * [491] a rest too when the planned move would walk nothing away from a guard.
    * `turn` is the turn the game master saw, so a Move on that crosses the
@@ -157,13 +165,18 @@ export type ClientMessage =
    * save bandwidth here.
    */
   | { readonly type: 'gm.mapGenerated'; readonly gameId: GameId; readonly map: GameMap }
-  /** The GM's client answering a `gm.requestAiMove`, with the searched move. */
+  /**
+   * The GM's client answering a `gm.requestAiMove`, with the searched move.
+   * [Q190] `buy`, when present, is played first (761); `action` is `null`
+   * only when that purchase ends the game (756).
+   */
   | {
       readonly type: 'gm.aiMove';
       readonly gameId: GameId;
       readonly requestId: string;
       readonly player: PlayerId;
-      readonly action: TurnAction;
+      readonly buy?: BuyAction;
+      readonly action: TurnAction | null;
     };
 
 /**

@@ -1,5 +1,5 @@
-import { COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE, magicGuardChanceOf, mapSizeOfRuleset, type MapSize } from '@adventure/config';
-import type { GameMap, TurnAction } from '@adventure/core';
+import { COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE, RESPAWN_RULES, magicGuardChanceOf, mapSizeOfRuleset, type MapSize } from '@adventure/config';
+import type { BuyAction, GameMap, TurnAction } from '@adventure/core';
 import { inOrder, toHotseatSeats, type LocalSetup } from '../setup/local.ts';
 import { HotseatGame } from './hotseat.ts';
 
@@ -20,7 +20,13 @@ export interface KeptGame {
    */
   readonly order?: readonly string[];
   readonly diceSeed: string;
-  readonly actions: readonly TurnAction[];
+  /** Every turn played, and [Q190] every purchase, in order. */
+  readonly actions: readonly (TurnAction | BuyAction)[];
+  /**
+   * [Q190] Whether speeds and skills can be bought in this game. Absent on a
+   * game kept before they could, which goes on by the rules it began with.
+   */
+  readonly buying?: boolean;
   /**
    * [Q135] Whether speeds and skills come back in this game. Absent on a game
    * kept before they did, which replays, and goes on, by the rules it began with.
@@ -72,13 +78,14 @@ export function readKept(): KeptGame | null {
  * `order` (`null`: as set); without storage, nothing is kept.
  */
 export function keep(seed: string, setup: LocalSetup, order: readonly string[] | null, game: HotseatGame): void {
-  const respawn = game.setup.map.ruleset.config.respawn;
+  const { respawn, buying } = game.setup.map.ruleset.config;
   const kept: KeptGame = {
     seed,
     setup,
     ...(order === null ? {} : { order }),
     diceSeed: game.setup.diceSeed,
-    actions: game.turns.map((turn) => turn.action),
+    actions: game.actions,
+    buying: buying !== undefined,
     respawn: respawn !== undefined,
     ...(respawn?.MAX_UNITS === undefined ? {} : { respawnMaxUnits: respawn.MAX_UNITS }),
     mapSize: mapSizeOfRuleset(game.setup.map.ruleset),
@@ -112,26 +119,27 @@ export function keptMagicGuardChance(kept: KeptGame): number {
 /** The kept game played again on `map`; `null` if its turns no longer replay. */
 export function replayKept(kept: KeptGame, map: GameMap): HotseatGame | null {
   try {
-    const rules = kept.respawn === true ? withRespawnCap(map, kept.respawnMaxUnits) : withoutRespawn(map);
+    const rules = kept.buying === true ? map : startedBeforeBuying(map, kept.respawn === true, kept.respawnMaxUnits);
     const game = new HotseatGame({ map: rules, seats: toHotseatSeats(inOrder(kept.setup, kept.order ?? null)), diceSeed: kept.diceSeed });
-    for (const action of kept.actions) game.play(action);
+    for (const action of kept.actions) {
+      if (action.kind === 'buy') game.buy(action);
+      else game.play(action);
+    }
     return game;
   } catch {
     return null;
   }
 }
 
-/** `map` under the rules from before speeds and skills came back (Q135). */
-function withoutRespawn(map: GameMap): GameMap {
-  const { respawn: _respawn, ...config } = map.ruleset.config;
-  return { ...map, ruleset: { ...map.ruleset, config } };
-}
-
-/** `map` with sites coming back at most `max` units, or with everything they started with when `max` is absent (Q135). */
-function withRespawnCap(map: GameMap, max: number | undefined): GameMap {
-  const respawn = map.ruleset.config.respawn;
-  if (respawn === undefined || respawn.MAX_UNITS === max) return map;
-  const { MAX_UNITS: _max, ...uncapped } = respawn;
-  const capped = max === undefined ? uncapped : { ...uncapped, MAX_UNITS: max };
-  return { ...map, ruleset: { ...map.ruleset, config: { ...map.ruleset.config, respawn: capped } } };
+/**
+ * `map` under the rules a game kept before buying began with (Q190, 758): no
+ * buying, and speeds and skills coming back if they did then (Q135), at most
+ * `max` units a site, or everything it started with when `max` is absent.
+ */
+function startedBeforeBuying(map: GameMap, respawn: boolean, max: number | undefined): GameMap {
+  const { buying: _buying, respawn: _respawn, ...config } = map.ruleset.config;
+  if (!respawn) return { ...map, ruleset: { ...map.ruleset, config } };
+  const { MAX_UNITS: _max, ...uncapped } = RESPAWN_RULES;
+  const rules = max === undefined ? uncapped : { ...uncapped, MAX_UNITS: max };
+  return { ...map, ruleset: { ...map.ruleset, config: { ...config, respawn: rules } } };
 }

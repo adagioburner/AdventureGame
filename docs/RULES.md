@@ -131,12 +131,34 @@ Interaction is automatic on arrival (§8,
   no penalty.
 
 Either outcome ends the turn. A claimed reward is consumed and the node
-thereafter behaves like any ordinary node of its terrain (§4.5), until its
-reward comes back.
+thereafter behaves like any ordinary node of its terrain (§4.5) for the rest
+of the game, or, in a game started before buying, until its reward comes back.
+
+### Buying speeds and skills (Q190)
+
+`BuyAction` (`kind: 'buy'`) is not a `TurnAction`: `applyBuy`
+(`packages/core/src/rules/turn.ts`) applies it in the middle of the active
+player's turn and the turn goes on. It carries every unit picked before Done,
+`skills`, each one of `buying.KINDS` (the five skills, never stamina or gold),
+and is all or nothing: refused unless the player holds `buying.GOLD_PER_UNIT`
+gold for each. The gold leaves the game, each skill goes up by one, and a speed
+also adds its free step to this turn's allowance. The `bought` event follows,
+then the victory check, since the spent gold can put another player's lead past
+the gold left. `buyableNow` lists what the player can afford now. A map whose
+config has no `buying` (a game started before it) refuses purchases and keeps
+its `respawn`; one that has it has no `respawn`.
+
+The computer (`packages/ai/src/policies/tree.ts`, `buyBranches`) adds a
+`{ kind: 'buy', skill }` branch per kind it can afford at every node of its own
+tree, except a kind an unclaimed site offers within `ai.BUY_SKIP_STAMINA`
+stamina this turn, capped by the stamina it holds; a buy branch stays in the
+same turn. `planTurn` (`packages/ai/src/mcts.ts`) follows the best line through
+the buys, merges them into one `BuyAction`, and plays the move after them. The
+rollout's players never buy.
 
 ### Speeds and skills coming back (Q135)
 
-At the end of every turn that did not win the game, after its claim,
+Only in games started before buying (Q190). At the end of every turn that did not win the game, after its claim,
 `respawnShortRewards` (`packages/core/src/rules/respawn.ts`) counts each kind in
 `respawn.KINDS` (the five skills: three speeds, fighting, magic) on its own.
 While fewer than `respawn.SHORT_BELOW_SITES` (2) unclaimed POIs offer a kind,
@@ -278,6 +300,7 @@ a time; the rest of the macro-action is re-derived next turn
 | Automatic interaction, guard rolls | `packages/core/src/rules/interaction.ts` |
 | Victory and unclaimed gold | `packages/core/src/rules/victory.ts` |
 | Speeds and skills coming back | `packages/core/src/rules/respawn.ts` |
+| Buying speeds and skills | `packages/core/src/rules/turn.ts` (`applyBuy`) |
 | The `GUARD_DIE` stream | `packages/core/src/rules/dice.ts` |
 | The action space | `packages/core/src/action.ts` |
 | Distance metric, path preview | `packages/core/src/path.ts` |

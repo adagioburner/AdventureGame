@@ -183,9 +183,11 @@ describe('search', () => {
     const state = fixtureGame(star, 0);
     const clock = tickingClock();
     const options = optionsFor(state, { now: clock, timeBudgetMs: 150 });
-    const action = search(state, options);
+    const { buy, action } = search(state, options);
     // One read to start, one per iteration: the budget is spent, not overrun.
     expect(clock()).toBeLessThanOrEqual(152);
+    expect(buy).toBeNull();
+    if (action === null) throw new Error('no move');
     expect(action.player).toBe(player('one'));
     expect(() => applyAction(state, action, createDiceSource(createRng('check'), DEFAULT_GAME_CONFIG))).not.toThrow();
   });
@@ -206,16 +208,16 @@ describe('search', () => {
 
   it('plays the second seat too, reading that seat’s gold', () => {
     const state = applyAction(fixtureGame(star, 0), { kind: 'rest', player: player('one') }, createDiceSource(createRng('x'), DEFAULT_GAME_CONFIG)).state;
-    const action = search(state, optionsFor(state));
-    expect(action.player).toBe(player('two'));
+    const { action } = search(state, optionsFor(state));
+    expect(action?.player).toBe(player('two'));
   });
 
   it('takes the gold next door over everything else when it has the time', () => {
     // Gold 2 on 1 is one free... stamina step away; the guarded 3 is four
     // steps into forest behind a guard of 4.
     const state = fixtureGame(star, 0);
-    const action = search(state, optionsFor(state, { timeBudgetMs: 2000 }));
-    expect(action).toEqual({ kind: 'move', player: player('one'), path: [n(1)], waypoint: null });
+    const plan = search(state, optionsFor(state, { timeBudgetMs: 2000 }));
+    expect(plan).toMatchObject({ buy: null, action: { kind: 'move', player: player('one'), path: [n(1)], waypoint: null } });
   });
 
   it('is reproducible from its seeds and clock', () => {

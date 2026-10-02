@@ -1,5 +1,5 @@
-import { startComputerMove, type AiPlayer, type Cancellation } from '@adventure/ai';
-import { createDiceSource, createRng, routeTable, type GameMap, type GameState, type PlayerId, type TurnAction } from '@adventure/core';
+import { startComputerMove, type AiPlayer, type Cancellation, type ComputerTurn } from '@adventure/ai';
+import { createDiceSource, createRng, routeTable, type GameMap, type GameState, type PlayerId } from '@adventure/core';
 import type { HotseatGame } from './hotseat.ts';
 
 /** How long the computer thinks in each frame before handing the page back to draw it. */
@@ -48,7 +48,7 @@ export function pageComputer(
   const dice = createDiceSource(rng.fork('dice'), config);
 
   return {
-    chooseAction(state: GameState, subject: PlayerId, cancel?: Cancellation): Promise<TurnAction> {
+    chooseAction(state: GameState, subject: PlayerId, cancel?: Cancellation): Promise<ComputerTurn> {
       const seconds = secondsFor(state, subject);
       if (seconds === undefined) return Promise.reject(new RangeError(`no seat for ${subject}`));
 
@@ -57,8 +57,10 @@ export function pageComputer(
         const slice = (): void => {
           if (cancel?.aborted === true) return;
           try {
-            if (thinking.step(SLICE_MS)) resolve(thinking.move().action);
-            else handBack(slice);
+            if (thinking.step(SLICE_MS)) {
+              const { buy, action } = thinking.move();
+              resolve({ buy, action });
+            } else handBack(slice);
           } catch (error) {
             reject(error);
           }

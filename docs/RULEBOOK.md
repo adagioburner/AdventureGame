@@ -27,7 +27,7 @@ Each site holds exactly one kind of reward, often a stack of several units, show
 | Mountains speed | Black mountain | 1 free mountain step per turn for each point |
 | Combat | Red crossed swords | Added to your roll against combat guards |
 | Magic | Purple orb | Added to your roll against magic guards |
-| Gold | Yellow coin | The only thing that wins the game |
+| Gold | Yellow coin | Wins the game, and buys speeds and skills |
 | Stamina | White heart | Paid for steps beyond your free ones |
 
 ## Setting up
@@ -54,6 +54,8 @@ On your turn you do exactly one of two things:
 
 - **Move.** Walk a route. If your figure stops on a site at the end of your walk, you claim its reward or fight its guard automatically when your turn ends.
 - **Rest.** Gain 5 stamina. You do not move and do not interact with anything, not even the site you are standing on. Your route is kept for next turn.
+
+Before you end your turn you can also buy speeds and skills with your gold: see *Buying speeds and skills*.
 
 Only the space where you stop counts. Walking through a site does not claim it.
 
@@ -101,11 +103,15 @@ Gold on plains is guarded by combat, in forests by magic, and in the mountains b
 
 ### After a claim
 
-A claimed site is empty until its speed or skill comes back: its icons disappear and it becomes an ordinary space.
+A claimed site stays empty for the rest of the game: its icons disappear and it becomes an ordinary space.
 
-### Speeds and skills come back
+## Buying speeds and skills
 
-At the end of every turn, each speed, combat and magic is counted on its own. If fewer than 2 sites still offer it, one empty site that held it at the start gets back 1 unit of it. Gold and stamina never come back.
+On your turn, before you end it, you can buy plains, forest or mountains speed, combat or magic for 1 gold a unit, as many units as your gold pays for. A speed you buy gives its free step this turn too. Stamina cannot be bought, and nothing you buy can be sold back.
+
+Spent gold leaves the game. If spending it puts another player's lead past all the gold left on the map, that player wins at once.
+
+The Buy button on your card opens the buy panel. Each + there adds one unit, Done buys them, and Cancel puts everything back.
 
 ## Winning and ending the game
 
@@ -155,7 +161,7 @@ Computer players follow the same rules. When setting up, you choose how many sec
 | Rest | +5 stamina |
 | Stamina per step past your free steps | Plains 1 · forest 2 · mountains 3 |
 | Fight | 1 die + your skill; beat the guard's strength to win |
-| Speeds and skills come back | When fewer than 2 sites offer one: one far empty site a turn, with 1 unit |
+| Buy a speed or skill | 1 gold a unit, on your turn |
 | Gold on the map | 45, or 63 with 4 or 5 players |
 | Win | Lead by more than the gold left on the map |
 | Online time limit | 1, 3, 7 or 14 days |

@@ -65,7 +65,7 @@ export function computerDriver(settings: ComputerSettings): PlaythroughDriver {
     ],
     choose(state: GameState, playerId: PlayerId): TurnChoice {
       const started = settings.now();
-      const { action, search: result } = chooseComputerMove(state, playerId, {
+      const { buy, action, branch, search: result } = chooseComputerMove(state, playerId, {
         config,
         thinkingMs: settings.thinkingMs,
         rng,
@@ -80,15 +80,15 @@ export function computerDriver(settings: ComputerSettings): PlaythroughDriver {
       settings.onSearch?.(result.iterations, took);
       const why = explain(state, result.root, result.best, result.iterations, took, evaluator);
 
-      const branch = result.best.action;
-      if (branch === null) throw new Error('the search chose nothing');
-      if (branch.kind === 'rest') return { action, heading: null, why };
+      // [Q190] The move is the first turn of the first branch after the purchases.
+      if (branch === null || branch.kind === 'rest') return { buy, action, heading: null, why };
 
       const target = branch.target.node;
       const player = activePlayer(state);
       const route = shortestPath(state.map.graph, player.position, target, config);
       if (route === null) throw new Error(`node ${target} is unreachable from ${player.position}`);
       return {
+        buy,
         action,
         heading: { target, route, reason: 'the computer’s choice' },
         why,
@@ -158,6 +158,7 @@ function label(state: GameState, node: MctsNode): string {
   const branch = node.action;
   if (branch === null) return 'root';
   if (branch.kind === 'rest') return 'rest';
+  if (branch.kind === 'buy') return `buy ${branch.skill}`;
   return `node ${branch.target.node} (${poiText(state, branch.target.node)})`;
 }
 

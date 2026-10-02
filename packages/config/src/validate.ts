@@ -158,6 +158,19 @@ export function validateRuleset(ruleset: Ruleset): void {
     if (respawn.KINDS.includes('gold')) problems.push('Q135: gold never comes back.');
   }
 
+  // Q190: a whole number of gold for a unit, and only kinds gold may buy: never
+  // gold itself, and never stamina (753).
+  const buying = config.buying;
+  if (buying !== undefined) {
+    if (!Number.isInteger(buying.GOLD_PER_UNIT) || buying.GOLD_PER_UNIT < 1) {
+      problems.push('Q190: buying.GOLD_PER_UNIT must be a positive integer.');
+    }
+    if (buying.KINDS.includes('gold') || buying.KINDS.includes('stamina')) problems.push('Q190: gold buys neither gold nor stamina.');
+  }
+  if (!Number.isFinite(config.ai.BUY_SKIP_STAMINA) || config.ai.BUY_SKIP_STAMINA < 0) {
+    problems.push('Q190: ai.BUY_SKIP_STAMINA must be a non-negative number.');
+  }
+
   if (problems.length > 0) {
     throw new RulesetError(`Invalid ruleset:\n  - ${problems.join('\n  - ')}`);
   }

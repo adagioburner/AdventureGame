@@ -199,6 +199,20 @@ export class GameSession {
         return;
       }
 
+      case 'turn.buy': {
+        // [Q190] The sender's own turn only (754); the turn goes on.
+        const game = await this.gameInProgress();
+        const player = humanPlayerOf(setup, game, from);
+        requireTurn(game, message.turn);
+        if (activePlayer(game).id !== player) throw new SetupError('not_your_turn', `it is ${activePlayer(game).name}’s turn`);
+        const skills: unknown = message.skills;
+        if (!Array.isArray(skills) || !skills.every((skill) => typeof skill === 'string')) {
+          throw new SetupError('invalid_action', 'that is not a purchase');
+        }
+        await this.play(setup, game, { kind: 'buy', player, skills: message.skills }, from);
+        return;
+      }
+
       case 'gm.forceTurn': {
         // [SOURCE §4] At the game master's discretion, with no time limit.
         if (from !== setup.gameMaster) throw new SetupError('not_game_master', 'only the game master can move a player on');
@@ -220,11 +234,22 @@ export class GameSession {
         if (game === null || game.status !== 'in_progress' || message.requestId !== computerMoveRequestId(game)) return;
         const active = activePlayer(game);
         if (active.control !== 'ai' || message.player !== active.id) return;
-        const action = message.action;
-        if ((action.kind !== 'move' && action.kind !== 'rest') || action.player !== active.id) {
+        const { action, buy } = message;
+        if (action !== null && ((action.kind !== 'move' && action.kind !== 'rest') || action.player !== active.id)) {
           throw new SetupError('invalid_action', 'that is not a move for the computer on turn');
         }
-        await this.play(setup, game, action, from);
+        // [Q190, 761] What the computer bought, then its move.
+        if (buy !== undefined) {
+          if (buy.kind !== 'buy' || buy.player !== active.id || !Array.isArray(buy.skills)) {
+            throw new SetupError('invalid_action', 'that is not a purchase for the computer on turn');
+          }
+          await this.play(setup, game, buy, from);
+        } else if (action === null) {
+          throw new SetupError('invalid_action', 'a computer’s turn needs a move');
+        }
+        const now = buy === undefined ? game : await this.ports.games.load(this.gameId);
+        if (action === null || now === null || now.status !== 'in_progress') return;
+        await this.play(setup, now, action, from);
         return;
       }
 

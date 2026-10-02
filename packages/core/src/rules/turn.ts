@@ -1,5 +1,7 @@
+import type { RewardKind, Terrain } from '@adventure/config';
 import { assertNever, RuleViolationError } from '../errors.ts';
 import type {
+  BuyAction,
   DieRoll,
   ForceTurnAction,
   GameAction,
@@ -71,6 +73,8 @@ export function applyAction(state: GameState, action: GameAction, dice: DiceSour
       return applyTurnAction(state, action, dice);
     case 'force_turn':
       return applyTurnAction(state, forcedTurnAction(state, action), dice);
+    case 'buy':
+      return applyBuy(state, action);
     case 'set_control':
       return applySetControl(state, action.player, action.control);
     case 'resign':
@@ -224,6 +228,62 @@ function applyArrival(state: GameState, playerId: PlayerId, dice: DiceSource, ev
   events.push({ type: 'game_won', winners });
   return { ...claimed, status: 'finished', winners, ending: 'won' };
 }
+
+/**
+ * [Q190] One unit of a speed or skill for gold, during the buyer's own turn
+ * (754), which goes on: no `turn_ended`, and the turn still ends with a move
+ * or a rest. A speed counts at once, as one more free step this turn (752).
+ *
+ * The gold leaves the game (756), so a purchase can push another player's lead
+ * past the gold left on the map: §1's win is checked after it as after a gold
+ * claim (756, "the moment").
+ */
+function applyBuy(state: GameState, action: BuyAction): ActionOutcome {
+  const player = requireActivePlayer(state, action.player);
+  const buying = state.map.ruleset.config.buying;
+  if (buying === undefined) throw new RuleViolationError('nothing can be bought in this game');
+  if (action.skills.length === 0) throw new RuleViolationError('a purchase buys at least one unit');
+  for (const skill of action.skills) {
+    if (!buying.KINDS.includes(skill)) throw new RuleViolationError(`${skill} cannot be bought`);
+  }
+  const price = buying.GOLD_PER_UNIT * action.skills.length;
+  if (player.stats.gold < price) {
+    throw new RuleViolationError(`${player.name} has ${player.stats.gold} gold, and ${action.skills.length} units cost ${price}`);
+  }
+
+  const events: GameEvent[] = [{ type: 'bought', player: player.id, skills: action.skills, gold: price }];
+  let next = withPlayer(state, player.id, (current) => ({ ...current, stats: addToStat(current.stats, 'gold', -price) }));
+  for (const skill of action.skills) {
+    next = withPlayer(next, player.id, (current) => ({ ...current, stats: addToStat(current.stats, skill, 1) }));
+    const terrain = SPEED_TERRAIN[skill];
+    if (terrain !== undefined) next = { ...next, turn: { ...next.turn, allowance: { ...next.turn.allowance, [terrain]: next.turn.allowance[terrain] + 1 } } };
+  }
+
+  const winners = checkVictory(next);
+  if (winners.length === 0) return { state: next, events };
+  events.push({ type: 'game_won', winners });
+  return { state: { ...next, status: 'finished', winners, ending: 'won' }, events };
+}
+
+/**
+ * [Q190] What `playerId` may buy right now, and for how much gold a unit: the
+ * game's `buying.KINDS` on their own turn while they have the gold for one,
+ * else none. The page shows its + buttons and the computer its buy branches by
+ * this, so neither offers what `applyAction` would refuse.
+ */
+export function buyableNow(state: GameState, playerId: PlayerId): { readonly kinds: readonly RewardKind[]; readonly price: number } {
+  const buying = state.map.ruleset.config.buying;
+  if (buying === undefined || state.status !== 'in_progress' || activePlayer(state).id !== playerId) return { kinds: [], price: 0 };
+  const gold = playerById(state, playerId).stats.gold;
+  return { kinds: gold >= buying.GOLD_PER_UNIT ? buying.KINDS : [], price: buying.GOLD_PER_UNIT };
+}
+
+/** The terrain each speed gives free steps onto (§7). */
+const SPEED_TERRAIN: Partial<Record<keyof PlayerStats, Terrain>> = {
+  plains_move: 'plains',
+  forest_move: 'forest',
+  mountain_move: 'mountain',
+};
 
 /**
  * End the turn and hand over (§7). A finished game hands over to nobody, so

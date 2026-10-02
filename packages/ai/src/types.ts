@@ -1,4 +1,4 @@
-import type { GameConfig } from '@adventure/config';
+import type { GameConfig, RewardKind } from '@adventure/config';
 import type { DiceSource, GameState, PlayerId, Rng } from '@adventure/core';
 import type { PoiCandidate, RestRule, RolloutCursor, RolloutTermination } from '@adventure/sim';
 
@@ -8,10 +8,17 @@ import type { PoiCandidate, RestRule, RolloutCursor, RolloutTermination } from '
  * [SOURCE §12.2, chat] Branches are POI targets, plus a rest branch when the
  * player has fewer than `MIN_REACHABLE_NODES_FOR_REST` targets reachable this
  * turn.
+ *
+ * [Q190] Andrei, 2026-10-02: "we'll need new actions to consider from every
+ * MCTS node, up to 5 of them": a buy branch per speed or skill the player
+ * could buy, one unit for `GOLD_PER_UNIT` gold. Buying does not end the turn
+ * (751), so the node a buy branch leads to is the same player's decision in
+ * the same turn, with one more unit and less gold, and may buy again.
  */
 export type MctsBranch =
   | { readonly kind: 'target'; readonly target: PoiCandidate }
-  | { readonly kind: 'rest' };
+  | { readonly kind: 'rest' }
+  | { readonly kind: 'buy'; readonly skill: RewardKind };
 
 /**
  * A node of the search tree: a decision point of the search's subject, reached

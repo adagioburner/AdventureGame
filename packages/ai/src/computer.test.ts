@@ -36,7 +36,9 @@ function settings(): ComputerSettings {
 describe('the computer player', () => {
   it('chooses a legal move for the seat whose turn it is', () => {
     const state = fixtureGame(line, 0);
-    const { action, search } = chooseComputerMove(state, player('one'), settings());
+    const { buy, action, search } = chooseComputerMove(state, player('one'), settings());
+    expect(buy).toBeNull();
+    if (action === null) throw new Error('no move');
     expect(action.player).toBe(player('one'));
     expect(search.iterations).toBeGreaterThan(0);
     expect(() => applyAction(state, action, createDiceSource(createRng('check'), DEFAULT_GAME_CONFIG))).not.toThrow();
@@ -47,6 +49,7 @@ describe('the computer player', () => {
     const thinking = startComputerMove(state, player('one'), settings());
     while (!thinking.step(10));
     const { action } = thinking.move();
+    if (action === null) throw new Error('no move');
     expect(action.player).toBe(player('one'));
     expect(() => applyAction(state, action, createDiceSource(createRng('check'), DEFAULT_GAME_CONFIG))).not.toThrow();
   });

@@ -1,5 +1,15 @@
-import type { GameConfig } from '@adventure/config';
-import { playerById, previewPath, routeTable, type GameState, type NodeId, type PlayerId, type Rng } from '@adventure/core';
+import { TERRAINS, type GameConfig, type RewardKind } from '@adventure/config';
+import {
+  buyableNow,
+  playerById,
+  previewPath,
+  routeTable,
+  type GameState,
+  type NodeId,
+  type PlayerId,
+  type PlayerState,
+  type Rng,
+} from '@adventure/core';
 import { closestPoiCandidates, unclaimedPoiNodes, type ClosestFinder, type PoiCandidate, type TargetFilter } from '@adventure/sim';
 import type { ActionEnumerator, MctsBranch, MctsNode, TreePolicy, TurnReachability } from '../types.ts';
 
@@ -109,6 +119,9 @@ function argMaxWithRandomTieBreak<T>(items: readonly T[], score: (item: T) => nu
  * the map: a distant reachable POI outside that list is not a branch, so
  * counting it would let rest be pruned on the strength of a target the search
  * cannot take.
+ *
+ * [Q190] Then a buy branch for each speed or skill the player may buy, pruned
+ * as `buyBranches` says.
  */
 export function closestUnclaimedPoiEnumerator(
   config: GameConfig,
@@ -119,7 +132,7 @@ export function closestUnclaimedPoiEnumerator(
   closest?: ClosestFinder,
 ): ActionEnumerator {
   return {
-    name: 'closest-unclaimed-pois+rest',
+    name: 'closest-unclaimed-pois+rest+buy',
     enumerate(state: GameState, subject: PlayerId): readonly MctsBranch[] {
       const player = state.players.find((candidate) => candidate.id === subject);
       if (player === undefined) throw new RangeError(`no such player ${subject}`);
@@ -147,9 +160,51 @@ export function closestUnclaimedPoiEnumerator(
       if (reachable < config.ai.MIN_REACHABLE_NODES_FOR_REST) {
         branches.push({ kind: 'rest' });
       }
+      branches.push(...buyBranches(state, player, config));
       return branches;
     },
   };
+}
+
+/**
+ * [Q190] Andrei, 2026-10-02: "Similar to resting, it seems prudent to
+ * introduce some pruning here, e.g. buying a skill is not available to a
+ * computer player if that skill is within 1 turn reach from them (cached
+ * distances to the skill site less or equal current speed), or 1 turn reach
+ * plus some stamina." 759 B: plus `BUY_SKIP_STAMINA` stamina, and never more
+ * than the player has.
+ *
+ * One branch for each kind the player could buy now (`buyableNow`), a unit
+ * each, except a kind some unclaimed site offers within that reach: walking
+ * the cached cheapest route there (Q65's steps per terrain) costs no more
+ * stamina beyond this turn's free steps than that. The stamina is Q65's
+ * stamina(1), Σ cost × max(steps − free steps, 0) over the three terrains.
+ * Every site offering the kind counts, not only the closest few.
+ */
+export function buyBranches(state: GameState, player: PlayerState, config: GameConfig): readonly MctsBranch[] {
+  const { kinds } = buyableNow(state, player.id);
+  if (kinds.length === 0) return [];
+  const spare = Math.min(config.ai.BUY_SKIP_STAMINA, player.stats.stamina);
+  const near = kindsWithinReach(state, player, spare, config);
+  return kinds.filter((kind) => !near.has(kind)).map((skill) => ({ kind: 'buy', skill }));
+}
+
+/** The kinds unclaimed sites offer that `player` can reach this turn for at most `spare` stamina. */
+function kindsWithinReach(state: GameState, player: PlayerState, spare: number, config: GameConfig): ReadonlySet<RewardKind> {
+  const steps = routeTable(state.map.graph, config).stepsFrom(player.position);
+  const cost = config.movement.STAMINA_COST;
+  const free = state.turn.allowance;
+  const near = new Set<RewardKind>();
+  state.map.pois.forEach((poi, index) => {
+    if (state.poiRuntime[index]?.claimedBy !== null || near.has(poi.reward.kind)) return;
+    let stamina = 0;
+    for (const terrain of TERRAINS) {
+      const beyond = (steps[terrain][poi.node] as number) - free[terrain];
+      if (beyond > 0) stamina += cost[terrain] * beyond;
+    }
+    if (stamina <= spare) near.add(poi.reward.kind);
+  });
+  return near;
 }
 
 /** POIs whose reward is still unclaimed (§4.5) — the eligible target set. */

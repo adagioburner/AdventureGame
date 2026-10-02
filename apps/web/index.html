@@ -466,6 +466,119 @@
         font-size: 12px;
         color: var(--muted);
       }
+      /* [Q190, 750 and 768] The Buy button in the top right corner of the
+         card of the person on turn, clear of the name, and the buy panel it
+         opens over the map (770): beside the card, level with its top, or
+         across the top of the map on a phone held upright. */
+      .player.buys {
+        position: relative;
+      }
+      .player.buys .who h2 {
+        padding-right: 52px;
+      }
+      .buy-open {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        min-height: 26px;
+        padding: 0 10px;
+        border: 1.5px solid var(--accent);
+        background: var(--panel);
+        color: var(--accent);
+        font: 700 13px var(--ui);
+      }
+      .buy-panel {
+        position: absolute;
+        z-index: 4;
+        left: 12px;
+        width: min(400px, calc(100% - 24px));
+        padding: 10px 12px 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+      .buy-panel h3 {
+        margin: 0 0 8px;
+        font: 700 13.5px var(--ui);
+      }
+      .buy-panel .tiles {
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 6px;
+      }
+      .buy-panel .tile {
+        display: grid;
+        justify-items: center;
+        gap: 3px;
+        padding: 6px 2px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--ground);
+      }
+      .buy-panel .tile.picked {
+        border-color: var(--accent);
+      }
+      .buy-panel .tile small {
+        min-height: 24px;
+        font-size: 10.5px;
+        line-height: 1.15;
+        text-align: center;
+        color: var(--muted);
+      }
+      /* The number stays centred on its tile; what was added hangs beside it. */
+      .buy-panel .tile b {
+        position: relative;
+        font: 600 14px var(--ui);
+        font-variant-numeric: tabular-nums;
+      }
+      .buy-panel .tile b em {
+        position: absolute;
+        left: 100%;
+        bottom: 1px;
+        margin-left: 2px;
+        font: 700 11px var(--ui);
+        font-style: normal;
+        color: var(--accent);
+      }
+      .buy-panel .tile button {
+        width: 34px;
+        height: 30px;
+        padding: 0;
+        border: 1.5px solid var(--accent);
+        border-radius: 6px;
+        background: var(--panel);
+        color: var(--accent);
+        font: 700 18px/1 var(--ui);
+        cursor: pointer;
+      }
+      .buy-panel .tile button:disabled {
+        border-color: var(--line);
+        color: var(--muted);
+        opacity: 0.5;
+        cursor: default;
+      }
+      .buy-panel .foot {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+        margin-top: 10px;
+      }
+      .buy-panel .your-gold {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        font: 600 15px var(--ui);
+      }
+      .buy-panel .your-gold b {
+        font: 700 16px var(--ui);
+        color: var(--gold-number);
+      }
+      .buy-panel .acts {
+        display: flex;
+        gap: 8px;
+      }
       .controls {
         grid-area: controls;
         display: grid;
@@ -1005,6 +1118,32 @@
         .tag {
           font-size: 10px;
         }
+        /* [764] Held upright, "Playing now" takes its own line, clear of the Buy button. */
+        .tag .now {
+          display: block;
+        }
+        .player.buys .who h2 {
+          padding-right: 46px;
+        }
+        .buy-open {
+          top: 6px;
+          right: 6px;
+          min-height: 22px;
+          padding: 0 7px;
+          font-size: 12px;
+        }
+        .buy-panel {
+          left: 8px;
+          right: 8px;
+          width: auto;
+        }
+        /* At 340 px "mountains" only just fits its tile. */
+        .buy-panel .tiles {
+          gap: 4px;
+        }
+        .buy-panel .tile small {
+          font-size: 10px;
+        }
         .stats {
           grid-template-columns: repeat(7, 1fr);
           grid-template-rows: none;
@@ -1164,6 +1303,13 @@
           grid-row: auto;
         }
         /* [Q72, 280 and 283] The bars keep their Menu here too, as upright. */
+        .tag .now {
+          display: inline;
+        }
+        .buy-panel {
+          right: auto;
+          width: min(400px, calc(100% - 16px));
+        }
       }
     </style>
   </head>

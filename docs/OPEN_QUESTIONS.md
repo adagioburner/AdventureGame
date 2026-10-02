@@ -2578,6 +2578,8 @@ players, the game engine takes care of them. THey need to be removed from the
 rulebook -- but we also need to make sure they are preserved somewhere else."
 The rulebook drops them; 545: GDD.md §4.5 keeps them.
 
+*Since [Q190](#q190) (2026-10-02) speeds and skills are bought instead: games started since have none of this, and games started before keep it (757, 758).*
+
 ### Q140. ~~How are a player card's stats arranged, and how does gold stand out?~~ — **answered 2026-10-01: moving down the left, the rest down the right with gold last, gold's number deep red (550-553 A)**
 
 [SOURCE §2, chat] Andrei, 2026-09-30: "On a player card, it would be nice to
@@ -2937,6 +2939,137 @@ site are as before.
      10", *"Gold on plains is guarded by combat, in forests by magic, and in
      the mountains by either."* (recommended); or forests only; or no change.
      **Answered:** all three terrains.
+
+### Q190. ~~Can speeds and skills be bought with gold?~~ — **answered 2026-10-02: yes, 1 gold a unit on your own turn, as many as you like, from a Buy panel with Cancel on every screen; it replaces speeds and skills coming back in new games; other players' purchases float up from the buyer's figure with a cash register (750-788)**
+
+[SOURCE §2, §5, chat] Andrei, 2026-10-02 at 00:41: *"Players complain that if
+they didn't get the right skill early on they are screwed for the rest of the
+game. I have the following idea: allow players buy skills for gold, 1 to 1. We
+won't need respawning skills then, this mechanism substitutes that. Please
+suggest a convenient UI that wont clutter the view. Maybe have a little "+" sign
+next to every skill? [...] As for computer players, we'll need new actions to
+consider from every MCTS node, up to 5 of them. Similar to resting, it seems
+prudent to introduce some pruning here, e.g. buying a skill is not available to
+a computer player if that skill is within 1 turn reach from them (cached
+distances to the skill site less or equal current speed), or 1 turn reach plus
+some stamina."* Answered between 02:17 and 02:50.
+
+750. **Where buying happens:** a + beside each skill on every card; one Buy
+     button on the card of the player on turn, opening a panel with a + per
+     skill; or the + on laptops and the panel on phones (recommended).
+     **Answered:** the last, then at 02:42 *"a separate buy panel in all
+     cases, and a cancel option on it. This way, if you misclick, you can
+     always cancel"*: the Buy panel on every screen.
+751. **Does buying use the turn:** no, any number during your turn
+     (recommended); one a turn; or it takes the turn as resting does.
+     **Answered:** any number.
+752. **A speed bought counts this turn:** its free step is there at once
+     (recommended). **Answered:** yes.
+753. **What can be bought:** the five skills, the three speeds with combat and
+     magic (recommended). **Answered:** never stamina.
+754. **When:** only on your own turn, online too (recommended). **Answered:**
+     own turn only.
+755. **Undo and selling back:** neither (recommended). **Answered:** no
+     selling back; undo became 765.
+756. **The spent gold:** leaves the game, and a purchase runs the win check, as
+     a claim does (recommended). **Answered:** yes.
+757. **Speeds and skills coming back (Q135):** off for new games, the code kept
+     (recommended). **Answered:** keep the code.
+758. **Games already started:** keep the rules they began with, coming back
+     included and no buying (recommended). **Answered:** whatever is
+     convenient, so they keep their rules.
+759. **When the computer considers a purchase:** not while a site offering the
+     skill is within this turn's free steps; nor within them plus 5 stamina,
+     capped by the stamina it holds (recommended, `BUY_SKIP_STAMINA`); or plus
+     all its stamina. **Answered:** plus 5 stamina.
+760. **The players the computer imagines:** never buy, as they never rest by
+     choice (recommended). **Answered:** off.
+761. **The computer's turn:** it thinks once, then buys and moves
+     (recommended). **Answered:** yes.
+762. **What others see:** a turn log line, no sound or notice (recommended).
+     **Answered:** yes. *Changed at 07:02 by 773-786.*
+763. **Which screens get the Buy button:** every screen that shows Menu,
+     phones held sideways too (recommended). **Answered:** yes.
+764. **"Playing now" on an upright phone:** "Turn N ·" and "Playing now" on two
+     lines on every turn, clear of the Buy button, the card no taller
+     (recommended). **Answered:** yes.
+765. **Undoing a misclick:** answered by 750's change: Cancel on the panel.
+766. **The panel stays open:** until Done, with every + greyed once the gold
+     runs out (recommended); "Your gold" with its coin by Done, in the cards'
+     gold red, replaces "you have 3 gold" in the heading (Andrei, 02:31).
+     **Answered:** yes.
+767. **Room for the laptop +:** moot after 750's change.
+768. **Nothing is bought until Done:** each + adds to the panel, the tile's
+     number going up with a blue +1 beside it and Your gold counting down;
+     Cancel puts everything back and closes the panel; no −; Rest and End
+     turn greyed while it is open (recommended). **Answered:** yes. And, at
+     02:50, *"”1 +1” should still center on 1, not on plus"*: the number stays
+     centred in its tile and the +1 hangs to its right.
+769. **The log:** one line per Done, *"Bea bought 1 mountains speed and 1
+     combat for 2 gold."* (recommended). **Answered:** yes.
+770. **Where the panel opens on a laptop:** over the map, next to the card,
+     level with its top (recommended). **Answered:** yes.
+771. **Online, Done arriving after the turn has ended** (the game master moved
+     the player on just as they pressed it): nothing is bought, and a notice at
+     the bottom of the map says *"Your turn ended before the purchase arrived,
+     so nothing was bought."* (recommended); or nothing is said. **Answered:**
+     as recommended, 03:28.
+772. **The log when a purchase ends the game** (the turn has no move): the
+     headline *"Bought, and the game ended"* above the 769 line and who won
+     (recommended); or the 769 line as the headline. **Answered:** as
+     recommended, 03:28.
+
+The rulebook draft was approved at 02:45 with the panel sentence in place of
+the + signs.
+
+At 06:58 Andrei asked *"How do I see it when other players buy something?"*,
+and at 07:02, told it was 762's log line: *"We need to change that. Their
+purchase panel should open, with the purchases they made, and stay open for
+some time, e.g. 2 seconds. It also would be nice if a purchase got completed
+with some sound, e.g. a cash register sound"*. At 07:25 he sent the cash
+register he had in mind, and at 07:26 offered *"another option is to have a
+small panel floating up similar to when you claim a reward."* At 07:45:
+*"Basically the purchase notice works the same way as claiming a reward, but
+happens before the walk, not after"*.
+
+773. **Who sees it:** *"online, everyone but the buyer. Hotseat, only
+     computer's purchases."* (07:30).
+774. **What it looks like:** the buyer's Buy panel opening on their card, or
+     a notice floating up from their figure like a claim's. **Answered:**
+     *"Let's go with a gloating* [floating] *notice"* (07:45).
+775. **How long it stays:** *"same timing as a regular claim"* (07:45): it
+     fades in, stays 2 seconds and fades out.
+776. **A computer's walk:** *"a computer's walk waits until the purchase
+     notice closes (whatever form we decide on)"* (07:30).
+777. **The sound:** his own cash register, not a placeholder; *"as
+     recommended"* (07:45). It is `purchase` in Art/manifest.json.
+778. **When it is heard:** by the buyer as they press Done; by everyone else
+     as the notice appears (recommended). **Answered:** yes, 07:30.
+779. **Several purchases in one turn:** one after another (recommended).
+     **Answered:** yes, 07:30, *"especially if we go with a floating notice.
+     Purchases of the same skill can be combined, e.g. Purchased Magic +2"*.
+780. **Purchases caught up online** (missed while the connection was down):
+     in the log, no notice and no sound (recommended). **Answered:** yes,
+     07:30.
+781. **The rulebook:** unchanged, as it says nothing about what players see
+     (recommended). **Answered:** confirmed, 07:30.
+782. **The panel over the map on a phone:** moot with 774's floating notice.
+783. **Who supplies the sound:** answered by 777, his own file.
+784. **A buyer off screen:** the notice rides on the figure, so it is missed
+     when the figure is out of view, as a claim's is: taken from 07:45's
+     *"works the same way as claiming"*, and said so to him.
+785. **One notice per skill, or one per Done listing every skill:**
+     **Answered:** one per skill, one after the other, *"otherwise the text
+     becomes too long"* (07:50). Each comes with the sound (778).
+786. **Capital or lowercase:** **Answered:** lowercase, *"like the claim
+     notice (as recommended)"* (07:50). And at 07:55: *"Maybe "Bought", not
+     "Purchased", for a shorter card"*: the notice reads *"Bought magic
+     +2"*.
+787. **The sound with several notices:** each notice plays its own cash
+     register (as built), or only the first. **Answered:** as built, 13:39,
+     *"787 and 788 look good"*.
+788. **A purchase that ends the game:** the end card waits for its notices
+     (as built). **Answered:** as built, 13:39.
 
 ---
 

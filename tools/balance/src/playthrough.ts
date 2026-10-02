@@ -13,6 +13,8 @@ import {
   shortestPath,
   asGameId,
   asPlayerId,
+  playerById,
+  type BuyAction,
   type GameEvent,
   type GameMap,
   type GameState,
@@ -57,7 +59,10 @@ export type PlaythroughEnd = 'victory' | 'stalemate' | 'turn_cap';
 
 /** One seat's decision for its turn, and what the transcript says about it. */
 export interface TurnChoice {
-  readonly action: TurnAction;
+  /** [Q190] What the seat buys before it moves; nothing when absent or `null`. */
+  readonly buy?: BuyAction | null;
+  /** `null` only when `buy` ended the game (756). */
+  readonly action: TurnAction | null;
   /** Where the player is going; `null` for a rest that heads nowhere. */
   readonly heading: Heading | null;
   /** Lines under the plan saying why the driver chose this. */
@@ -96,9 +101,9 @@ export interface PlayedTurn {
   readonly name: string;
   readonly events: readonly GameEvent[];
   readonly positionBefore: NodeId;
-  /** The free steps per terrain this turn started with (§7). */
+  /** The free steps per terrain this turn's move started with (§7), counting what it bought (Q190). */
   readonly allowanceBefore: MovementAllowance;
-  /** The acting player's stats as the turn began, so a roll can be read back. */
+  /** The acting player's stats as the move began, after any purchase, so a roll can be read back. */
   readonly statsBefore: PlayerStats;
   /** Every player's stats once the turn resolved, in seat order. */
   readonly standings: readonly PlayerStanding[];
@@ -183,7 +188,7 @@ export function playGame(
     // nothing left is the game stuck: no claim can happen, so §1's win
     // condition can never be reached and playing on would only burn turns.
     const chosen = driver.choose(state, player.id);
-    const action = chosen?.action ?? { kind: 'rest' as const, player: player.id };
+    const action = chosen === null ? { kind: 'rest' as const, player: player.id } : chosen.action;
     idleSeats = chosen === null ? idleSeats + 1 : 0;
     if (idleSeats >= state.players.length) {
       endedBy = 'stalemate';
@@ -191,21 +196,32 @@ export function playGame(
     }
 
     const turnNumber = state.turn.number;
+    // [Q190] Purchases first: the move then starts from what they bought.
+    const events: GameEvent[] = [];
+    if (chosen?.buy != null) {
+      const bought = applyAction(state, chosen.buy, dice);
+      state = bought.state;
+      events.push(...bought.events);
+    }
     const allowanceBefore = state.turn.allowance;
+    const statsBefore = playerById(state, player.id).stats;
     const target = chosen?.heading?.target;
     const targetPoi = target === undefined ? undefined : poiAt(state.map, target);
     const offered = target === undefined || targetPoi === undefined ? null : offeredReward(targetPoi, poiRuntimeAt(state, target));
-    const outcome = applyAction(state, action, dice);
-    state = outcome.state;
+    if (action !== null && state.status === 'in_progress') {
+      const outcome = applyAction(state, action, dice);
+      state = outcome.state;
+      events.push(...outcome.events);
+    }
 
     turns.push({
       number: turnNumber,
       seat,
       name: player.name,
-      events: outcome.events,
+      events,
       positionBefore: player.position,
       allowanceBefore,
-      statsBefore: player.stats,
+      statsBefore,
       standings: state.players.map((current) => ({ name: current.name, stats: current.stats })),
       heading: chosen?.heading ?? null,
       offered,
@@ -304,6 +320,9 @@ function couldTake(state: GameState, node: NodeId, playerId: PlayerId, ruleset: 
 /*  The transcript                                                             */
 /* -------------------------------------------------------------------------- */
 
+/** The speeds, which give free steps the turn they are bought (752). */
+const SPEED_TERRAIN: Partial<Record<string, Terrain>> = { plains_move: 'plains', forest_move: 'forest', mountain_move: 'mountain' };
+
 const TERRAIN_SKILL: Record<Terrain, keyof PlayerStats> = {
   plains: 'plains_move',
   forest: 'forest_move',
@@ -355,7 +374,8 @@ export function formatPlaythrough(run: Playthrough): string {
   lines.push(
     `meta rest_stamina_gain=${config.movement.REST_STAMINA_GAIN} guard_die=${config.combat.GUARD_DIE.count}d${config.combat.GUARD_DIE.sides}` +
       (config.respawn === undefined ? '' : ` respawn_short_below_sites=${config.respawn.SHORT_BELOW_SITES} respawn_far_share=${config.respawn.FAR_SHARE}`) +
-      (config.respawn?.MAX_UNITS === undefined ? '' : ` respawn_max_units=${config.respawn.MAX_UNITS}`),
+      (config.respawn?.MAX_UNITS === undefined ? '' : ` respawn_max_units=${config.respawn.MAX_UNITS}`) +
+      (config.buying === undefined ? '' : ` buy_gold_per_unit=${config.buying.GOLD_PER_UNIT}`),
   );
   for (const player of run.finalState.players) {
     lines.push(
@@ -389,6 +409,12 @@ function turnLines(turn: PlayedTurn, run: Playthrough): string[] {
         break;
       case 'rested':
         lines.push(`  rest    +${event.staminaGained} stamina (REST_STAMINA_GAIN), no move and no interaction`);
+        break;
+      case 'bought':
+        lines.push(
+          `  bought  ${event.skills.join(' ')} for ${event.gold} gold before moving (Q190)` +
+            (event.skills.some((skill) => skill in SPEED_TERRAIN) ? '; a speed bought gives free steps this turn too, counted in the allowance above' : ''),
+        );
         break;
       case 'interacted':
         lines.push(...interactionLines(event.resolution, turn, run));

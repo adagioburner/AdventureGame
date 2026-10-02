@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyAction, asGameId, asNodeId, asPlayerId, asUserId, shortestPath, type GameAction, type GameState } from '@adventure/core';
+import { RESPAWN_RULES } from '@adventure/config';
+import { applyAction, asGameId, asNodeId, asPlayerId, asUserId, shortestPath, type GameAction, type GameMap, type GameState } from '@adventure/core';
 import { openingStateOf, type GameRecord, type SetupState } from '@adventure/protocol';
 import { fixtureMap, scriptedDice } from '../../../../packages/core/src/rules/scenario.fixture.ts';
 import { MissedRecords, OnlineGame } from './online.ts';
@@ -103,10 +104,44 @@ describe('OnlineGame', () => {
     expect(game.state.players).toEqual(state.players);
   });
 
+  it('carries a purchase into the entry of the turn it was made in, after a reload too (Q190, 769)', () => {
+    // 0 ── 1 ── 2 ── 3: 1 gold on 1, and 5 behind a guard on 3.
+    const rich = fixtureMap({
+      terrains: ['plains', 'plains', 'plains', 'plains'],
+      edges: [
+        [0, 1],
+        [1, 2],
+        [2, 3],
+      ],
+      pois: [
+        { node: 1, kind: 'gold', units: 1, guard: null },
+        { node: 3, kind: 'gold', units: 5, guard: { type: 'fighting', strength: 9 } },
+      ],
+    });
+    const start = openingStateOf(setup, rich).players[0]!.position;
+    const route = shortestPath(rich.graph, start, n(1), rich.ruleset.config) ?? [];
+    const played: GameAction[] = [
+      { kind: 'move', player: one, path: route, waypoint: null },
+      { kind: 'rest', player: two },
+      { kind: 'buy', player: one, skills: ['magic'] },
+      { kind: 'rest', player: one },
+    ];
+    const { state, records } = serverPlays(played, [], [], rich);
+    const { applied } = OnlineGame.open(setup, state, records);
+    expect(applied[2]).toMatchObject({ turn: null, purchase: { name: 'Andrei', skills: ['magic'], gold: 1 } });
+    expect(applied[3]?.turn?.bought.map((purchase) => purchase.skills)).toEqual([['magic']]);
+
+    // Opened just after the purchase, the turn played next still carries it.
+    const midway = serverPlays(played.slice(0, 3), [], [], rich);
+    const { game } = OnlineGame.open(setup, midway.state, midway.records);
+    expect(game.apply(records[3]!).turn?.bought.map((purchase) => purchase.skills)).toEqual([['magic']]);
+  });
+
   it('replays a skill coming back to the site the server drew (Q135)', () => {
     // 0 ── 1 ── 2 ── 3 ── 4, one combat on 1 and on 4. Taking the second
-    // leaves none, and node 1, empty with nobody on it, comes back.
-    const skills = fixtureMap({
+    // leaves none, and node 1, empty with nobody on it, comes back, in a
+    // game started before buying (Q190, 758).
+    const today = fixtureMap({
       terrains: ['plains', 'plains', 'plains', 'plains', 'plains'],
       edges: [
         [0, 1],
@@ -119,6 +154,8 @@ describe('OnlineGame', () => {
         { node: 4, kind: 'fighting', units: 1, guard: null },
       ],
     });
+    const { buying: _buying, ...config } = today.ruleset.config;
+    const skills: GameMap = { ...today, ruleset: { ...today.ruleset, config: { ...config, respawn: RESPAWN_RULES } } };
     const start = openingStateOf(setup, skills).players[0]!.position;
     const route = (from: number, to: number) => shortestPath(skills.graph, n(from), n(to), skills.ruleset.config) ?? [];
     const played: GameAction[] = [

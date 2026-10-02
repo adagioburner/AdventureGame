@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { poiAt, unclaimedGoldUnits, type GameEvent, type GameState, type PlayerId, type Point } from '@adventure/core';
 import type { ArtCatalog } from '../art/catalog.ts';
-import type { PlayedTurn } from '../modes/hotseat.ts';
+import type { PlayedTurn, Purchase } from '../modes/hotseat.ts';
 import { GUARD_LABEL, STAT_LABEL, STAT_ORDER } from './journal.ts';
 import { Die, Portrait, StatIcon } from './Sprites.tsx';
 
@@ -69,23 +69,37 @@ const NOTICE_GAP = 2;
  * keeps its size at any zoom and moves with the figure through a pan. The page
  * takes it away once it has faded.
  */
-export function ClaimNotice({
-  turn,
-  locate,
-  stayMs,
-  appearMs,
-  fadeMs,
-}: {
-  turn: PlayedTurn;
+export function ClaimNotice({ turn, ...timing }: { turn: PlayedTurn } & NoticeTiming) {
+  const interacted = turn.events.find((event): event is Extract<GameEvent, { type: 'interacted' }> => event.type === 'interacted');
+  const reward = interacted?.resolution.reward ?? null;
+  if (reward === null) return null;
+  return <FloatingNotice player={turn.player} text={`${STAT_LABEL[reward.kind]} +${reward.units}`} {...timing} />;
+}
+
+/**
+ * [Q190] Andrei, 2026-10-02: "Their purchase panel should open, with the
+ * purchases they made, and stay open for some time", then "another option is
+ * to have a small panel floating up similar to when you claim a reward", which
+ * he chose (774): "Basically the purchase notice works the same way as
+ * claiming a reward, but happens before the walk, not after". So it is the
+ * claim's notice, on the buyer's figure, with the claim's timing (775).
+ */
+export function PurchaseNotice({ purchase, text, ...timing }: { purchase: Purchase; text: string } & NoticeTiming) {
+  return <FloatingNotice player={purchase.player} text={text} {...timing} />;
+}
+
+interface NoticeTiming {
   /** Where the top of a player's figure shows on the map right now. */
   locate: (player: PlayerId) => Point | null;
   stayMs: number;
   appearMs: number;
   fadeMs: number;
-}) {
+}
+
+/** A small card on a player's figure that fades in, drifts up, and fades out. */
+function FloatingNotice({ player, text, locate, stayMs, appearMs, fadeMs }: { player: PlayerId; text: string } & NoticeTiming) {
   const anchor = useRef<HTMLDivElement>(null);
   const card = useRef<HTMLDivElement>(null);
-  const player = turn.player;
 
   useEffect(() => {
     let frame = 0;
@@ -123,15 +137,10 @@ export function ClaimNotice({
     return () => animation.cancel();
   }, [stayMs, appearMs, fadeMs]);
 
-  const interacted = turn.events.find((event): event is Extract<GameEvent, { type: 'interacted' }> => event.type === 'interacted');
-  const reward = interacted?.resolution.reward ?? null;
-  if (reward === null) return null;
   return (
     <div ref={anchor} className="claim-anchor" role="status" aria-live="polite">
       <div ref={card} className="claim">
-        <h2>
-          {STAT_LABEL[reward.kind]} +{reward.units}
-        </h2>
+        <h2>{text}</h2>
       </div>
     </div>
   );

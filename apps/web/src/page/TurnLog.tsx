@@ -38,8 +38,9 @@ export function TurnLog({ entries, map, diceSeed, onClose }: { entries: readonly
               Turn {entry.number} · {entry.name}
             </p>
             <p className="headline">{entry.headline}</p>
-            {entry.details.map((line) => (
-              <p key={line}>{line}</p>
+            {entry.details.map((line, index) => (
+              // Two purchases alike in one turn read the same (Q190), so lines go by place.
+              <p key={index}>{line}</p>
             ))}
             <p className="after">After: {statLine(entry.statsAfter)}</p>
           </li>

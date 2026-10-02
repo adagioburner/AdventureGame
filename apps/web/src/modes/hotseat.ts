@@ -6,6 +6,7 @@ import {
   createGameState,
   createRng,
   startingNodeFor,
+  type BuyAction,
   type ControlMode,
   type DiceSource,
   type GameEvent,
@@ -17,6 +18,7 @@ import {
   type PlayerStats,
   type TurnAction,
 } from '@adventure/core';
+import type { RewardKind } from '@adventure/config';
 import type { OnlineModeConfig } from './online.ts';
 
 /**
@@ -90,6 +92,27 @@ export interface PlayedTurn {
   readonly statsBefore: PlayerStats;
   /** The state the turn left, which is also the next turn's `before`. */
   readonly after: GameState;
+  /**
+   * [Q190] What the player bought earlier in this turn, before the move or
+   * rest: one per Done in the buy panel (769), or the computer's for the
+   * turn. `allowanceBefore` and `statsBefore` count it.
+   */
+  readonly bought: readonly Purchase[];
+}
+
+/** [Q190] A purchase as the page shows and logs it: who bought what, on which turn, for how much gold. */
+export interface Purchase {
+  readonly number: number;
+  readonly seat: number;
+  readonly player: PlayerId;
+  readonly name: string;
+  readonly skills: readonly RewardKind[];
+  readonly gold: number;
+  /** `bought`, and `game_won` when the spending put another player's lead past the gold left (756). */
+  readonly events: readonly GameEvent[];
+  readonly after: GameState;
+  /** The purchases made earlier in the same turn, for a log entry of its own when this one ends the game. */
+  readonly earlier: readonly Purchase[];
 }
 
 /**
@@ -107,6 +130,10 @@ export class HotseatGame {
   private current: GameState;
   private readonly dice: DiceSource;
   private readonly played: PlayedTurn[] = [];
+  private readonly taken: (TurnAction | BuyAction)[] = [];
+  /** [Q190] Purchases made this turn, for the turn's own entry once it is played. */
+  private pending: Purchase[] = [];
+  private last: Purchase | null = null;
 
   constructor(setup: HotseatSetup) {
     // [Q51, 21] Any player count the game takes, 2 to 5, as online; Q22's two
@@ -145,19 +172,49 @@ export class HotseatGame {
     return this.played;
   }
 
+  /** Every action played so far, turns and purchases, oldest first: what replays the game. */
+  get actions(): readonly (TurnAction | BuyAction)[] {
+    return this.taken;
+  }
+
+  /** [Q190] The purchase that ended the game (756), if one did. */
+  get endingPurchase(): Purchase | null {
+    return this.current.status === 'finished' && this.last !== null && this.last.after === this.current ? this.last : null;
+  }
+
   /** Play the active seat's turn. Throws `RuleViolationError` for anyone else's. */
   play(action: TurnAction): PlayedTurn {
     const before = this.current;
     const outcome = applyAction(before, action, this.dice);
     this.current = outcome.state;
-    const turn = playedTurnOf(before, action, outcome.events, outcome.state);
+    const turn = playedTurnOf(before, action, outcome.events, outcome.state, this.pending);
+    this.pending = [];
     this.played.push(turn);
+    this.taken.push(action);
     return turn;
+  }
+
+  /** [Q190] Buy for the active seat; its turn goes on. Throws `RuleViolationError` if the rules refuse it. */
+  buy(action: BuyAction): Purchase {
+    const before = this.current;
+    const outcome = applyAction(before, action, this.dice);
+    this.current = outcome.state;
+    const purchase = purchaseOf(before, action, outcome.events, outcome.state, this.pending);
+    this.pending = [...this.pending, purchase];
+    this.last = purchase;
+    this.taken.push(action);
+    return purchase;
   }
 }
 
-/** The turn the active seat played in `before`, as the page shows and logs it. */
-export function playedTurnOf(before: GameState, action: TurnAction, events: readonly GameEvent[], after: GameState): PlayedTurn {
+/** The turn the active seat played in `before`, as the page shows and logs it, after `bought` earlier in it. */
+export function playedTurnOf(
+  before: GameState,
+  action: TurnAction,
+  events: readonly GameEvent[],
+  after: GameState,
+  bought: readonly Purchase[] = [],
+): PlayedTurn {
   const player = before.players[before.turn.activeSeat - 1];
   if (player === undefined) throw new RangeError(`no player in seat ${before.turn.activeSeat}`);
   return {
@@ -171,6 +228,31 @@ export function playedTurnOf(before: GameState, action: TurnAction, events: read
     allowanceBefore: before.turn.allowance,
     statsBefore: player.stats,
     after,
+    bought,
+  };
+}
+
+/** [Q190] A purchase the active seat made in `before`, as the page shows and logs it. */
+export function purchaseOf(
+  before: GameState,
+  action: BuyAction,
+  events: readonly GameEvent[],
+  after: GameState,
+  earlier: readonly Purchase[] = [],
+): Purchase {
+  const player = before.players[before.turn.activeSeat - 1];
+  if (player === undefined) throw new RangeError(`no player in seat ${before.turn.activeSeat}`);
+  const bought = events.find((event) => event.type === 'bought');
+  return {
+    number: before.turn.number,
+    seat: player.seat,
+    player: player.id,
+    name: player.name,
+    skills: action.skills,
+    gold: bought?.type === 'bought' ? bought.gold : 0,
+    events,
+    after,
+    earlier,
   };
 }
 

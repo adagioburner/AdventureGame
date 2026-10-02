@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_RULESET, type RewardKind, type Terrain } from '@adventure/config';
+import { DEFAULT_RULESET, RESPAWN_RULES, type RewardKind, type Terrain } from '@adventure/config';
 import {
   applyAction,
   asGameId,
@@ -16,8 +16,8 @@ import {
   type PlayerStats,
   type TurnAction,
 } from '@adventure/core';
-import type { PlayedTurn } from '../modes/hotseat.ts';
-import { journalEntry, statLine } from './journal.ts';
+import { playedTurnOf, purchaseOf, type PlayedTurn, type Purchase } from '../modes/hotseat.ts';
+import { journalEntry, purchaseEntry, purchaseNotices, statLine } from './journal.ts';
 
 /**
  * §8's map, as the rules tests draw it: five plains, a forest and a mountain in
@@ -94,6 +94,7 @@ function describeTurn(before: GameState, plan: Plan, roll: DiceSource = dice()) 
     allowanceBefore: before.turn.allowance,
     statsBefore: player.stats,
     after: outcome.state,
+    bought: [],
   };
   return journalEntry(turn, before);
 }
@@ -162,13 +163,16 @@ describe('the turn log, in words that can be checked by hand', () => {
   it('says where a skill came back, by its site’s terrain (Q135, 536)', () => {
     // Combat on nodes 2 and 5; Ada takes node 2's, the last left, and node 5,
     // taken earlier, comes back: with 1 of its 3, all a site comes back with.
-    const skills = lineMap(
+    // Only games started before buying (Q190, 757) bring skills back.
+    const { buying: _buying, ...config } = DEFAULT_RULESET.config;
+    const today = lineMap(
       ['plains', 'plains', 'plains', 'plains', 'plains', 'forest', 'mountain'],
       [
         { node: 2, kind: 'fighting', units: 1, guard: null },
         { node: 5, kind: 'fighting', units: 3, guard: null },
       ],
     );
+    const skills: GameMap = { ...today, ruleset: { ...today.ruleset, config: { ...config, respawn: RESPAWN_RULES } } };
     const fresh = createGameState({
       id: asGameId('journal'),
       map: skills,
@@ -178,6 +182,48 @@ describe('the turn log, in words that can be checked by hand', () => {
     const before = { ...fresh, poiRuntime: [fresh.poiRuntime[0]!, { claimedBy: asPlayerId('Bram'), claimedOnTurn: 1 }] };
     const entry = describeTurn(before, { kind: 'move', path: path(1, 2) });
     expect(entry.details.at(-1)).toBe('1 combat came back at a forest site.');
+  });
+
+  it('gives each Done in the buy panel a line, before the move (Q190, 769)', () => {
+    let state = game({ gold: 4 });
+    const ada = state.players[0]!.id;
+    const bought: Purchase[] = [];
+    for (const skills of [['mountain_move', 'fighting', 'mountain_move'], ['magic']] as const) {
+      const action = { kind: 'buy', player: ada, skills } as const;
+      const outcome = applyAction(state, action, dice());
+      bought.push(purchaseOf(state, action, outcome.events, outcome.state, bought));
+      state = outcome.state;
+    }
+    const rest = { kind: 'rest', player: ada } as const;
+    const outcome = applyAction(state, rest, dice());
+    const entry = journalEntry(playedTurnOf(state, rest, outcome.events, outcome.state, bought), state);
+    expect(entry.details.slice(0, 2)).toEqual(['Ada bought 2 mountains speed and 1 combat for 3 gold.', 'Ada bought 1 magic for 1 gold.']);
+    expect(entry.headline).toBe('Rested: +5 stamina');
+  });
+
+  it('floats up a notice for each speed or skill bought, units counted together, in lowercase (Q190, 779, 785 and 786)', () => {
+    const state = game({ gold: 4 });
+    const action = { kind: 'buy', player: state.players[0]!.id, skills: ['magic', 'mountain_move', 'magic', 'fighting'] } as const;
+    const outcome = applyAction(state, action, dice());
+    expect(purchaseNotices(purchaseOf(state, action, outcome.events, outcome.state))).toEqual([
+      'Bought mountains speed +1',
+      'Bought combat +1',
+      'Bought magic +2',
+    ]);
+  });
+
+  it('gives a purchase that hands another player the win an entry of its own (Q190, 756)', () => {
+    // 8 gold on the map; Bram has 6 and Ada 1, then Ada spends hers: 6 − 0 is not more than 8, so take some away.
+    const start = game({ gold: 1 });
+    const rich = { ...start, poiRuntime: start.poiRuntime.map((runtime, index) => (index === 0 ? { claimedBy: asPlayerId('Bram'), claimedOnTurn: 1 } : runtime)), players: start.players.map((player) => (player.name === 'Bram' ? { ...player, stats: { ...player.stats, gold: 6 } } : player)) };
+    const action = { kind: 'buy', player: rich.players[0]!.id, skills: ['magic'] } as const;
+    const outcome = applyAction(rich, action, dice());
+    const entry = purchaseEntry(purchaseOf(rich, action, outcome.events, outcome.state));
+    expect(entry.tone).toBe('won');
+    expect(entry.details).toEqual([
+      'Ada bought 1 magic for 1 gold.',
+      'Bram wins: 6 gold, 6 ahead of Ada, with 5 gold left on the map — a lead nobody can catch.',
+    ]);
   });
 
   it('writes the winning claim with the lead and the gold left', () => {
