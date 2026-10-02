@@ -2578,6 +2578,8 @@ players, the game engine takes care of them. THey need to be removed from the
 rulebook -- but we also need to make sure they are preserved somewhere else."
 The rulebook drops them; 545: GDD.md §4.5 keeps them.
 
+*Since [Q190](#q190) (2026-10-02) speeds and skills are bought instead: games started since have none of this, and games started before keep it (757, 758).*
+
 ### Q140. ~~How are a player card's stats arranged, and how does gold stand out?~~ — **answered 2026-10-01: moving down the left, the rest down the right with gold last, gold's number deep red (550-553 A)**
 
 [SOURCE §2, chat] Andrei, 2026-09-30: "On a player card, it would be nice to
@@ -2906,6 +2908,79 @@ site are as before.
      10", *"Gold on plains is guarded by combat, in forests by magic, and in
      the mountains by either."* (recommended); or forests only; or no change.
      **Answered:** all three terrains.
+
+### Q190. ~~Can speeds and skills be bought with gold?~~ — **answered 2026-10-02: yes, 1 gold a unit on your own turn, as many as you like, from a Buy panel with Cancel on every screen; it replaces speeds and skills coming back in new games (750-770)**
+
+[SOURCE §2, §5, chat] Andrei, 2026-10-02 at 00:41: *"Players complain that if
+they didn't get the right skill early on they are screwed for the rest of the
+game. I have the following idea: allow players buy skills for gold, 1 to 1. We
+won't need respawning skills then, this mechanism substitutes that. Please
+suggest a convenient UI that wont clutter the view. Maybe have a little "+" sign
+next to every skill? [...] As for computer players, we'll need new actions to
+consider from every MCTS node, up to 5 of them. Similar to resting, it seems
+prudent to introduce some pruning here, e.g. buying a skill is not available to
+a computer player if that skill is within 1 turn reach from them (cached
+distances to the skill site less or equal current speed), or 1 turn reach plus
+some stamina."* Answered between 02:17 and 02:50.
+
+750. **Where buying happens:** a + beside each skill on every card; one Buy
+     button on the card of the player on turn, opening a panel with a + per
+     skill; or the + on laptops and the panel on phones (recommended).
+     **Answered:** the last, then at 02:42 *"a separate buy panel in all
+     cases, and a cancel option on it. This way, if you misclick, you can
+     always cancel"*: the Buy panel on every screen.
+751. **Does buying use the turn:** no, any number during your turn
+     (recommended); one a turn; or it takes the turn as resting does.
+     **Answered:** any number.
+752. **A speed bought counts this turn:** its free step is there at once
+     (recommended). **Answered:** yes.
+753. **What can be bought:** the five skills, the three speeds with combat and
+     magic (recommended). **Answered:** never stamina.
+754. **When:** only on your own turn, online too (recommended). **Answered:**
+     own turn only.
+755. **Undo and selling back:** neither (recommended). **Answered:** no
+     selling back; undo became 765.
+756. **The spent gold:** leaves the game, and a purchase runs the win check, as
+     a claim does (recommended). **Answered:** yes.
+757. **Speeds and skills coming back (Q135):** off for new games, the code kept
+     (recommended). **Answered:** keep the code.
+758. **Games already started:** keep the rules they began with, coming back
+     included and no buying (recommended). **Answered:** whatever is
+     convenient, so they keep their rules.
+759. **When the computer considers a purchase:** not while a site offering the
+     skill is within this turn's free steps; nor within them plus 5 stamina,
+     capped by the stamina it holds (recommended, `BUY_SKIP_STAMINA`); or plus
+     all its stamina. **Answered:** plus 5 stamina.
+760. **The players the computer imagines:** never buy, as they never rest by
+     choice (recommended). **Answered:** off.
+761. **The computer's turn:** it thinks once, then buys and moves
+     (recommended). **Answered:** yes.
+762. **What others see:** a turn log line, no sound or notice (recommended).
+     **Answered:** yes.
+763. **Which screens get the Buy button:** every screen that shows Menu,
+     phones held sideways too (recommended). **Answered:** yes.
+764. **"Playing now" on an upright phone:** "Turn N ·" and "Playing now" on two
+     lines on every turn, clear of the Buy button, the card no taller
+     (recommended). **Answered:** yes.
+765. **Undoing a misclick:** answered by 750's change: Cancel on the panel.
+766. **The panel stays open:** until Done, with every + greyed once the gold
+     runs out (recommended); "Your gold" with its coin by Done, in the cards'
+     gold red, replaces "you have 3 gold" in the heading (Andrei, 02:31).
+     **Answered:** yes.
+767. **Room for the laptop +:** moot after 750's change.
+768. **Nothing is bought until Done:** each + adds to the panel, the tile's
+     number going up with a blue +1 beside it and Your gold counting down;
+     Cancel puts everything back and closes the panel; no −; Rest and End
+     turn greyed while it is open (recommended). **Answered:** yes. And, at
+     02:50, *"”1 +1” should still center on 1, not on plus"*: the number stays
+     centred in its tile and the +1 hangs to its right.
+769. **The log:** one line per Done, *"Bea bought 1 mountains speed and 1
+     combat for 2 gold."* (recommended). **Answered:** yes.
+770. **Where the panel opens on a laptop:** over the map, next to the card,
+     level with its top (recommended). **Answered:** yes.
+
+The rulebook draft was approved at 02:45 with the panel sentence in place of
+the + signs.
 
 ---
 
