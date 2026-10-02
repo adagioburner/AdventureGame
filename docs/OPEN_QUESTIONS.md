@@ -2940,7 +2940,7 @@ site are as before.
      the mountains by either."* (recommended); or forests only; or no change.
      **Answered:** all three terrains.
 
-### Q190. ~~Can speeds and skills be bought with gold?~~ — **answered 2026-10-02: yes, 1 gold a unit on your own turn, as many as you like, from a Buy panel with Cancel on every screen; it replaces speeds and skills coming back in new games (750-770)**
+### Q190. ~~Can speeds and skills be bought with gold?~~ — **answered 2026-10-02: yes, 1 gold a unit on your own turn, as many as you like, from a Buy panel with Cancel on every screen; it replaces speeds and skills coming back in new games (750-772)**
 
 [SOURCE §2, §5, chat] Andrei, 2026-10-02 at 00:41: *"Players complain that if
 they didn't get the right skill early on they are screwed for the rest of the
@@ -3009,6 +3009,15 @@ some stamina."* Answered between 02:17 and 02:50.
      combat for 2 gold."* (recommended). **Answered:** yes.
 770. **Where the panel opens on a laptop:** over the map, next to the card,
      level with its top (recommended). **Answered:** yes.
+771. **Online, Done arriving after the turn has ended** (the game master moved
+     the player on just as they pressed it): nothing is bought, and a notice at
+     the bottom of the map says *"Your turn ended before the purchase arrived,
+     so nothing was bought."* (recommended); or nothing is said. **Answered:**
+     as recommended, 03:28.
+772. **The log when a purchase ends the game** (the turn has no move): the
+     headline *"Bought, and the game ended"* above the 769 line and who won
+     (recommended); or the 769 line as the headline. **Answered:** as
+     recommended, 03:28.
 
 The rulebook draft was approved at 02:45 with the panel sentence in place of
 the + signs.
