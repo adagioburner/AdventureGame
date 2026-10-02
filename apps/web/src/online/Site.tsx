@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { asGameId, type GameId } from '@adventure/core';
 import { App } from '../page/App.tsx';
+import { GAME_NAME } from '../page/GameTitle.tsx';
 import { toNewGameSetup, type LocalSetup } from '../setup/local.ts';
 import { createGame, logOut, saveLogin, savedLogin, whoAmI, type Login } from './api.ts';
 import { GameListScreen } from './GameListScreen.tsx';
@@ -42,7 +43,7 @@ export function Site() {
   }, []);
 
   useEffect(() => {
-    document.title = route.page === 'hotseat' ? 'Adventure Hot Seat' : 'Adventure';
+    document.title = route.page === 'hotseat' ? `${GAME_NAME} Hot Seat` : GAME_NAME;
   }, [route]);
 
   const go = useCallback((path: string): void => {

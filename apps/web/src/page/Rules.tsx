@@ -30,7 +30,7 @@ export function RulesButton() {
   );
 }
 
-/** [234] The rulebook in the game's own fonts and colours, its headings in the style of the word Adventure. */
+/** [234] The rulebook in the game's own fonts and colours, its headings in the style of the game's name in the top bar. */
 function Rulebook({ onClose }: { onClose(): void }) {
   const close = useRef<HTMLButtonElement | null>(null);
   useEffect(() => {

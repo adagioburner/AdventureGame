@@ -1,4 +1,4 @@
-# Game Design Document — Multiplayer Turn-Based Adventure Game
+# Game Design Document — Skyholm Adventures
 
 Status: v1 design, consolidated from `Annotated_Design_Document.md` (the traceability record — original text plus every clarification, in full, with typo/naming history preserved). This file is the clean version for implementation: typo corrections, superseded terminology, and clarifications that only confirmed an already-obvious reading have been left out. **Every statement is still tagged with its provenance** — `[SOURCE §x]`, `[SOURCE §x, chat]`, `[SOURCE §x, review]`, `[INFERRED]`, or `[OPEN]` — so nothing here is invented. `[SOURCE §x, review]` is a decision the designer made reviewing a pull request, superseding or extending what §x said; the superseded text is kept alongside it, tagged as it was. `[OPEN]` items are genuinely undecided; do not fill them in. See §12 before writing code that touches those areas.
 
@@ -7,6 +7,8 @@ Status: v1 design, consolidated from `Annotated_Design_Document.md` (the traceab
 ## 1. Overview
 
 [SOURCE §intro] A multiplayer turn-based adventure game, supporting AI players alongside humans, playable online or via a hotseat mode (§7.2).
+
+[SOURCE chat, review] **The game is called Skyholm Adventures.** Andrei, 2026-10-01: "Since we are going with the floating island theme, let's change the game's name to Skyholm Adventures. We need to change it to that everywhere it fits, and just to Skyholm where it doesn't. The site address can stay adventure.aburago.workers.dev for now". The top bar's title reads Skyholm Adventures, or Skyholm where the full name would push the bar onto another row; browser tabs carry the full name. Names no player sees (code packages, browser storage keys, the Workers behind the address, the repository) keep the old one. Registered as Q175.
 
 [SOURCE §2] There is no hidden information: the entire map, all POIs, and all rewards are visible to every player at all times.
 

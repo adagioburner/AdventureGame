@@ -2845,6 +2845,39 @@ the same rock at their size. Rock and sky are both inside the map's box, so a
 phone's map loses no height. Both are in `Art/Island/`, named in
 `Art/manifest.json`'s `island` section.
 
+### Q175. ~~What is the game called?~~ — **answered 2026-10-01: Skyholm Adventures, and Skyholm where that doesn't fit; 690-693 as recommended**
+
+Andrei, 2026-10-01 at 19:28: *"Since we are going with the floating island
+theme, let's change the game's name to Skyholm Adventures. We need to change it
+to that everywhere it fits, and just to Skyholm where it doesn't. The site
+address can stay adventure.aburago.workers.dev for now"*. Players read
+"Adventure" in the top bar's title on every screen, in the browser tab, and in
+the rulebook's heading "Adventure Game — Rulebook"; readers of the repository
+in the README's and the design document's titles. No art carries the name.
+Answered 21:30, and 692 at 22:04.
+
+690. **Which top bars show Skyholm:** Skyholm Adventures wherever it fits on
+     the bar's rows, and Skyholm where it would push the bar onto another row,
+     judged by the room each bar actually has (recommended). Measured, that is
+     an online game's bar in play on a phone held upright, and its bar before
+     the start on a 340 px phone; elsewhere the seed or "Logged in as" beside
+     the name is cut shorter on phones. Or Skyholm in every bar on a phone held
+     upright; or in every bar everywhere. **Answered:** where it fits.
+691. **Browser tab titles:** the full name, "Skyholm Adventures", "Skyholm
+     Adventures Hot Seat" and "Your turn · Skyholm Adventures" (recommended);
+     or Skyholm. **Answered:** the full name.
+692. **The documents' titles:** "Skyholm Adventures — Rulebook", the README's
+     "Skyholm Adventures" and "Game Design Document — Skyholm Adventures"
+     (recommended); or the design document keeps "Multiplayer Turn-Based
+     Adventure Game". Sentences describing the kind of game stay either way.
+     **Answered:** all three.
+693. **Names nobody sees:** code packages (`@adventure/…`), the browser keys
+     that keep saved games, logins and the sound setting, request headers, the
+     Workers behind the site address, the repository, the `adventure` seed the
+     tests use and past rulings here all keep their names (recommended); or
+     packages, headers and keys renamed with saved games moved over.
+     **Answered:** they keep their names.
+
 ### Q185. ~~Which guard does forest gold get now?~~ — **answered 2026-10-01: always magic, by the same chance turned to 100%; kept games keep their coin flips, and the rulebook says each terrain's guard (730, 731 A)**
 
 [SOURCE §4.4, chat] Andrei, 2026-10-01: "After playing some more I think we

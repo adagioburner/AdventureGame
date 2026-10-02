@@ -2,6 +2,7 @@ import { useState } from 'react';
 import type { GameId } from '@adventure/core';
 import type { GameSummary } from '@adventure/protocol';
 import { BarMenu } from '../page/BarMenu.tsx';
+import { GameTitle } from '../page/GameTitle.tsx';
 import { RulesButton } from '../page/Rules.tsx';
 import { socketUrl, type Login } from './api.ts';
 import { sentence } from '../setup/text.ts';
@@ -80,7 +81,7 @@ export function GameListScreen({ login, onOpen, onLogOut, onRefused }: GameListS
   return (
     <div className="shell">
       <header className="bar">
-        <h1>Adventure</h1>
+        <GameTitle />
         <span className="seed-shown">
           Logged in as <b>{me.displayName}</b>
         </span>
