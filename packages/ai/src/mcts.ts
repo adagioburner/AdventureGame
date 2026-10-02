@@ -1,5 +1,6 @@
 import { activePlayer, applyAction, type BuyAction, type GameState, type TurnAction } from '@adventure/core';
 import {
+  bestRouteForSpeeds,
   macroAdvanceToTarget,
   playUntilTurnOf,
   rolloutCursor,
@@ -197,12 +198,20 @@ function realise(cursor: RolloutCursor, branch: MctsBranch, options: MctsOptions
   return playUntilTurnOf(after, options.subject, rules);
 }
 
-/** The move a branch makes this turn: the first turn of its macro-action. */
+/**
+ * The move a branch makes this turn: the first turn of its macro-action.
+ *
+ * [Q210] Stage 1 of Andrei's plan, 2026-10-02: "Keep simulated games as they
+ * are, but switch the actual paths players walk to the most efficient". The
+ * real move walks the best route for the subject's speeds, after anything it
+ * bought this turn; the search that chose the target still imagined the
+ * cheapest route (stages 2 and 3).
+ */
 export function firstTurnOf(state: GameState, branch: MctsBranch | null, options: MctsOptions): TurnAction {
   if (branch === null) throw new RangeError('the search found no branch to take');
   if (branch.kind === 'buy') throw new RangeError('a purchase is not a move: plan the turn with planTurn');
   if (branch.kind === 'rest') return { kind: 'rest', player: options.subject };
-  return turnTowards(state, branch.target.node, options.restRule);
+  return turnTowards(state, branch.target.node, options.restRule, bestRouteForSpeeds);
 }
 
 /** What the subject does this turn: its purchases first, as one (`null` for none), then the move. */

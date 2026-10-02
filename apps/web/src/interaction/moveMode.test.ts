@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
   applyAction,
+  bestRoute,
+  bestRouteVia,
   pathCost,
   previewPath,
   refreshAllowance,
@@ -10,7 +12,7 @@ import {
   type NodeId,
   type TurnAction,
 } from '@adventure/core';
-import { HotseatGame, HOTSEAT_MODE } from '../modes/hotseat.ts';
+import { HotseatGame, HOTSEAT_MODE, type UiModeConfig } from '../modes/hotseat.ts';
 import { ONLINE_MODE } from '../modes/online.ts';
 import { mapFor } from '../page/seed.ts';
 import { createMoveModeController, type MoveModeController } from './moveMode.ts';
@@ -18,7 +20,7 @@ import { createMoveModeController, type MoveModeController } from './moveMode.ts
 const map = mapFor('adventure', 'standard');
 const config = map.ruleset.config;
 
-function setup(): { game: HotseatGame; controller: MoveModeController; sent: TurnAction[] } {
+function setup(mode: UiModeConfig = HOTSEAT_MODE): { game: HotseatGame; controller: MoveModeController; sent: TurnAction[] } {
   const game = new HotseatGame({
     map,
     seats: [
@@ -29,7 +31,7 @@ function setup(): { game: HotseatGame; controller: MoveModeController; sent: Tur
   });
   const sent: TurnAction[] = [];
   const controller = createMoveModeController({
-    mode: HOTSEAT_MODE,
+    mode,
     localPlayers: new Set(game.state.players.map((player) => player.id)),
     commit: (action) => {
       sent.push(action);
@@ -481,5 +483,248 @@ describe('Track closes planning (Q57, 75)', () => {
     expect(controller.engaged).toBe(false);
     expect(controller.planner).toBe(bram.id);
     expect(controller.state).toMatchObject({ kind: 'previewing', path: route });
+  });
+});
+
+/** `state` with `player`'s three speeds set, as buying them would leave it. */
+function withSpeeds(state: GameState, player: GameState['players'][number]['id'], plains: number, forest: number, mountain: number): GameState {
+  return {
+    ...state,
+    players: state.players.map((candidate) =>
+      candidate.id === player ? { ...candidate, stats: { ...candidate.stats, plains_move: plains, forest_move: forest, mountain_move: mountain } } : candidate,
+    ),
+  };
+}
+
+/** `state` with `player`'s combat 1 higher, as buying it would leave it. */
+function withFighting(state: GameState, player: GameState['players'][number]['id']): GameState {
+  return {
+    ...state,
+    players: state.players.map((candidate) =>
+      candidate.id === player ? { ...candidate, stats: { ...candidate.stats, fighting: candidate.stats.fighting + 1 } } : candidate,
+    ),
+  };
+}
+
+/** A site whose best route from the first seat, with `state`'s speeds, is not the cheapest by terrain alone. */
+function siteWithBetterRoute(state: GameState): { target: NodeId; best: readonly NodeId[]; cheapest: readonly NodeId[] } {
+  const player = seat(state, 0);
+  for (const poi of map.pois) {
+    const best = bestRoute(map.graph, player.position, poi.node, player.stats, config) ?? [];
+    const cheapest = shortestPath(map.graph, player.position, poi.node, config) ?? [];
+    if (best.length > 0 && best.join() !== cheapest.join()) return { target: poi.node, best, cheapest };
+  }
+  throw new Error('no site has a better route for these speeds');
+}
+
+describe('the route drawn is the best for the player’s speeds (Q210, 810 A to 813 A, 818 B)', () => {
+  it('draws the best route for the player’s speeds, not the cheapest by terrain alone', () => {
+    const { game, controller } = setup();
+    const player = seat(game.state, 0);
+    const fast = withSpeeds(game.state, player.id, 1, 2, 4);
+    controller.setGame(fast);
+    const { target, best } = siteWithBetterRoute(fast);
+    controller.enter(player.id);
+    controller.selectDestination(target);
+    expect(controller.state).toMatchObject({ kind: 'previewing', destination: target, path: best });
+  });
+
+  it('takes each leg the best way through a waypoint (812 A)', () => {
+    const { game, controller } = setup();
+    const player = seat(game.state, 0);
+    const fast = withSpeeds(game.state, player.id, 1, 2, 4);
+    controller.setGame(fast);
+    const { target, best } = siteWithBetterRoute(fast);
+    const waypoint = best[Math.floor(best.length / 2)] as NodeId;
+    controller.enter(player.id);
+    controller.choose(target, false);
+    controller.choose(waypoint, true);
+    const stats = seat(fast, 0).stats;
+    expect(controller.state).toMatchObject({
+      kind: 'previewing',
+      waypoint,
+      path: bestRouteVia(map.graph, player.position, waypoint, target, stats, config),
+    });
+  });
+
+  it('picks the route drawn again when speeds are bought, as choosing its destination again would (813 A)', () => {
+    const { game, controller } = setup();
+    const player = seat(game.state, 0);
+    const { target, best, cheapest } = siteWithBetterRoute(withSpeeds(game.state, player.id, 1, 2, 4));
+    controller.enter(player.id);
+    controller.selectDestination(target);
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: cheapest });
+    controller.setGame(withSpeeds(game.state, player.id, 1, 2, 4));
+    expect(controller.state).toMatchObject({ kind: 'previewing', destination: target, path: best });
+    expect(controller.engaged).toBe(true);
+  });
+
+  it('picks a saved route not picked up again too, leaving it down, so Track stays as it was (818 B)', () => {
+    const { game, controller } = setup();
+    const player = seat(game.state, 0);
+    const { target, best, cheapest } = siteWithBetterRoute(withSpeeds(game.state, player.id, 1, 2, 4));
+    const saved = planned(game.state, player.id, cheapest);
+    controller.setGame(saved);
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: cheapest });
+    expect(controller.engaged).toBe(false);
+    expect(controller.unsaved).toBe(false);
+    controller.setGame(withSpeeds(saved, player.id, 1, 2, 4));
+    expect(controller.state).toMatchObject({ kind: 'previewing', destination: target, path: best });
+    expect(controller.engaged).toBe(false);
+    expect(controller.unsaved).toBe(true);
+  });
+
+  it('keeps showing a route picked again until the turn ends, and End turn walks it, on one device (818 B)', () => {
+    const { game, controller, sent } = setup();
+    const player = seat(game.state, 0);
+    const { best, cheapest } = siteWithBetterRoute(withSpeeds(game.state, player.id, 1, 2, 4));
+    const saved = planned(game.state, player.id, cheapest);
+    controller.setGame(saved);
+    const fast = withSpeeds(saved, player.id, 1, 2, 4);
+    controller.setGame(fast);
+    // Fighting bought later in the turn: the saved route is still last turn's.
+    controller.setGame(withFighting(fast, player.id));
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: best });
+    expect(controller.engaged).toBe(false);
+    controller.endTurn();
+    expect(sent).toEqual([{ kind: 'move', player: player.id, path: best, waypoint: null }]);
+    expect(controller.unsaved).toBe(false);
+  });
+
+  it('keeps a route picked again for the next turn when the player rests, on one device (818 B)', () => {
+    const { game, controller, sent } = setup();
+    const player = seat(game.state, 0);
+    const { best, cheapest } = siteWithBetterRoute(withSpeeds(game.state, player.id, 1, 2, 4));
+    const saved = planned(game.state, player.id, cheapest);
+    controller.setGame(saved);
+    controller.setGame(withSpeeds(saved, player.id, 1, 2, 4));
+    controller.rest();
+    expect(sent).toEqual([{ kind: 'rest', player: player.id, plan: { path: best, waypoint: null } }]);
+  });
+
+  it('online, once the route picked again is saved, shows the saved route as before (818 B)', () => {
+    const { game, controller } = setup(ONLINE_MODE);
+    const player = seat(game.state, 0);
+    const { best, cheapest } = siteWithBetterRoute(withSpeeds(game.state, player.id, 1, 2, 4));
+    const fast = withSpeeds(planned(game.state, player.id, cheapest), player.id, 1, 2, 4);
+    controller.setGame(planned(game.state, player.id, cheapest));
+    controller.setGame(fast);
+    expect(controller.unsaved).toBe(true);
+    // The page saves it on the server, which sends the game back with it.
+    controller.setGame(planned(fast, player.id, best));
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: best });
+    expect(controller.unsaved).toBe(false);
+    expect(controller.engaged).toBe(false);
+  });
+
+  it('online, a saved route changed another way replaces the route picked again (818 B)', () => {
+    const { game, controller } = setup(ONLINE_MODE);
+    const player = seat(game.state, 0);
+    const { cheapest } = siteWithBetterRoute(withSpeeds(game.state, player.id, 1, 2, 4));
+    const fast = withSpeeds(planned(game.state, player.id, cheapest), player.id, 1, 2, 4);
+    controller.setGame(planned(game.state, player.id, cheapest));
+    controller.setGame(fast);
+    const elsewhere = nodeAlong(game.state, 2).route;
+    controller.setGame(planned(fast, player.id, elsewhere));
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: elsewhere });
+    expect(controller.unsaved).toBe(false);
+  });
+
+  it('picks a route picked again up when the figure is tapped (818 B)', () => {
+    const { game, controller } = setup();
+    const player = seat(game.state, 0);
+    const { best, cheapest } = siteWithBetterRoute(withSpeeds(game.state, player.id, 1, 2, 4));
+    const saved = planned(game.state, player.id, cheapest);
+    controller.setGame(saved);
+    controller.setGame(withSpeeds(saved, player.id, 1, 2, 4));
+    controller.engage();
+    expect(controller.engaged).toBe(true);
+    expect(controller.unsaved).toBe(false);
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: best });
+  });
+
+  it('leaves the route as it was, only recoloured, when the speeds bought do not change it', () => {
+    const { game, controller } = setup();
+    const player = seat(game.state, 0);
+    const { target } = nodeAlong(game.state, 3);
+    controller.setGame(planned(game.state, player.id, shortestPath(map.graph, player.position, target, config) ?? []));
+    const before = controller.state;
+    // A plains speed of 1 leaves this short route the best one.
+    controller.setGame(withSpeeds(planned(game.state, player.id, before.kind === 'previewing' ? before.path : []), player.id, 1, 0, 0));
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: before.kind === 'previewing' ? before.path : null });
+    expect(controller.engaged).toBe(false);
+  });
+});
+
+describe('a route put down with Track, or cancelled, stays as it is when something is bought (819 A)', () => {
+  it('keeps a route put down with Track on one device, and End turn walks it', () => {
+    const { game, controller, sent } = setup();
+    const player = seat(game.state, 0);
+    const { target, route } = nodeAlong(game.state, 3);
+    // Last turn's route, brought back; the player draws another and presses Track.
+    const saved = planned(game.state, player.id, nodeAlong(game.state, 2).route);
+    controller.setGame(saved);
+    controller.enter(player.id);
+    controller.selectDestination(target);
+    controller.putDown();
+    expect(controller.unsaved).toBe(true);
+    controller.setGame(withFighting(saved, player.id));
+    expect(controller.state).toMatchObject({ kind: 'previewing', destination: target, path: route });
+    expect(controller.engaged).toBe(false);
+    controller.endTurn();
+    expect(sent).toEqual([{ kind: 'move', player: player.id, path: route, waypoint: null }]);
+  });
+
+  it('picks a route put down with Track again for speeds bought, from where it was going', () => {
+    const { game, controller } = setup();
+    const player = seat(game.state, 0);
+    const { target, best, cheapest } = siteWithBetterRoute(withSpeeds(game.state, player.id, 1, 2, 4));
+    controller.enter(player.id);
+    controller.selectDestination(target);
+    controller.putDown();
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: cheapest });
+    controller.setGame(withSpeeds(game.state, player.id, 1, 2, 4));
+    expect(controller.state).toMatchObject({ kind: 'previewing', destination: target, path: best });
+    expect(controller.engaged).toBe(false);
+  });
+
+  it('brings back no route after Cancel on one device (610)', () => {
+    const { game, controller } = setup();
+    const player = seat(game.state, 0);
+    const saved = planned(game.state, player.id, nodeAlong(game.state, 3).route);
+    controller.setGame(saved);
+    expect(controller.state.kind).toBe('previewing');
+    controller.cancel();
+    controller.setGame(withFighting(saved, player.id));
+    expect(controller.state.kind).toBe('idle');
+    controller.setGame(withSpeeds(withFighting(saved, player.id), player.id, 1, 2, 4));
+    expect(controller.state.kind).toBe('idle');
+  });
+
+  it('online, keeps a route put down before it is saved, then shows the saved one', () => {
+    const { game, controller } = setup(ONLINE_MODE);
+    const player = seat(game.state, 0);
+    const { target, route } = nodeAlong(game.state, 3);
+    controller.enter(player.id);
+    controller.selectDestination(target);
+    controller.putDown();
+    expect(controller.unsaved).toBe(true);
+    // Something else arrives before the save does.
+    controller.setGame(withFighting(game.state, player.id));
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: route });
+    controller.setGame(planned(withFighting(game.state, player.id), player.id, route));
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: route });
+    expect(controller.unsaved).toBe(false);
+  });
+
+  it('online, a route already saved when put down is the saved one as before', () => {
+    const { game, controller } = setup(ONLINE_MODE);
+    const player = seat(game.state, 0);
+    const { target, route } = nodeAlong(game.state, 3);
+    controller.enter(player.id);
+    controller.selectDestination(target);
+    controller.setGame(planned(game.state, player.id, route));
+    controller.putDown();
+    expect(controller.unsaved).toBe(false);
   });
 });

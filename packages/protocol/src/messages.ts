@@ -82,8 +82,8 @@ export type ClientMessage =
    * [SOURCE §4] Out-of-turn planning: a player may plan while others play, and
    * an unfinished path is saved and may still be changed. Sent whenever the
    * plan changes, by any player, at any time. The route is the one the page
-   * drew with `routeVia`, excluding the player's own node; an empty path
-   * clears it.
+   * drew with `bestRouteVia` (Q210), excluding the player's own node; an
+   * empty path clears it.
    * [SOURCE §intro, chat] In hotseat mode the client never sends this for a
    * player who is not the active one — there is no out-of-turn planning there.
    */

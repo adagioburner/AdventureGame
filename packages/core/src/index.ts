@@ -21,6 +21,7 @@ export * from './state.ts';
 export * from './action.ts';
 export * from './rules/setup.ts';
 export * from './rules/movement.ts';
+export * from './rules/bestRoute.ts';
 export * from './rules/interaction.ts';
 export * from './rules/turn.ts';
 export * from './rules/dice.ts';

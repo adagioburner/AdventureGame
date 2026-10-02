@@ -1,12 +1,13 @@
 import type { Ruleset } from '@adventure/config';
 import {
   activePlayer,
+  applyAction,
+  bestRoute,
   createDiceSource,
   createRng,
   offeredReward,
   poiAt,
   poiRuntimeAt,
-  shortestPath,
   totalGoldUnits,
   type GameState,
   type NodeId,
@@ -83,9 +84,11 @@ export function computerDriver(settings: ComputerSettings): PlaythroughDriver {
       // [Q190] The move is the first turn of the first branch after the purchases.
       if (branch === null || branch.kind === 'rest') return { buy, action, heading: null, why };
 
+      // [Q210] The route it walks: the best for its speeds after what it bought.
       const target = branch.target.node;
-      const player = activePlayer(state);
-      const route = shortestPath(state.map.graph, player.position, target, config);
+      const moving = buy === null ? state : applyAction(state, buy, dice).state;
+      const player = activePlayer(moving);
+      const route = action?.kind === 'move' ? action.path : bestRoute(moving.map.graph, player.position, target, player.stats, config);
       if (route === null) throw new Error(`node ${target} is unreachable from ${player.position}`);
       return {
         buy,

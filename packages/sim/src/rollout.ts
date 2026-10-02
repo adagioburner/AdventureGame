@@ -2,6 +2,7 @@ import type { GameConfig } from '@adventure/config';
 import {
   activePlayer,
   applyAction,
+  bestRoute,
   poiRuntimeAt,
   previewPath,
   routeTable,
@@ -199,20 +200,32 @@ export function winnablePoiNodes(state: GameState, player: PlayerState): Readonl
   return nodes.size > 0 ? nodes : unclaimedPoiNodes(state);
 }
 
+/** Which route a player takes to a target: the whole route, excluding where they stand. */
+export type RouteChoice = (state: GameState, player: PlayerState, target: NodeId) => readonly NodeId[] | null;
+
+/** The cheapest route by weighted terrain cost (the one metric, §5.1), the one `shortestPath` gives. */
+export const cheapestRoute: RouteChoice = (state, player, target) =>
+  routeTable(state.map.graph, state.map.ruleset.config).path(player.position, target);
+
+/** [Q210] The best route for the player's speeds (`bestRoute`). */
+export const bestRouteForSpeeds: RouteChoice = (state, player, target) =>
+  bestRoute(state.map.graph, player.position, target, player.stats, state.map.ruleset.config);
+
 /**
- * The active player's turn toward `target`: the whole cheapest route (the one
- * metric, §5.1), which §7 walks as far as this turn affords. Standing on the
- * target already is the empty path, which §8 makes another roll at its guard.
- * Otherwise `restRule` may turn the turn into a rest.
+ * The active player's turn toward `target`: the whole route `routeOf` picks,
+ * which §7 walks as far as this turn affords. Standing on the target already
+ * is the empty path, which §8 makes another roll at its guard. Otherwise
+ * `restRule` may turn the turn into a rest.
  *
- * This is also the computer's real move once the search has chosen a target,
- * so the tree and the rollout take a step the same way. The route comes from
- * the map's `routeTable`, the same route `shortestPath` gives.
+ * The tree and the rollout walk the cheapest route (`cheapestRoute`, from the
+ * map's `routeTable`). The computer's real move, once the search has chosen a
+ * target, walks the best route for its speeds instead (Q210, stage 1:
+ * `bestRouteForSpeeds`).
  */
-export function turnTowards(state: GameState, target: NodeId, restRule: RestRule): TurnAction {
+export function turnTowards(state: GameState, target: NodeId, restRule: RestRule, routeOf: RouteChoice = cheapestRoute): TurnAction {
   const player = activePlayer(state);
   const config = state.map.ruleset.config;
-  const route = routeTable(state.map.graph, config).path(player.position, target);
+  const route = routeOf(state, player, target);
   if (route === null) throw new RangeError(`no route from ${player.position} to ${target}`);
   if (route.length === 0) return { kind: 'move', player: player.id, path: route, waypoint: null };
 
