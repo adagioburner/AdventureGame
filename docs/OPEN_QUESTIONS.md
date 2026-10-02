@@ -2572,6 +2572,12 @@ to one." `RESPAWN_MAX_UNITS` is 1, so every site that comes back offers 1 unit;
 games started under the cap of 2 keep 2. 544 A: the rulebook says the site
 "gets back 1 unit of it", and the quick reference row "with 1 unit".
 
+Andrei, 2026-10-01, on the rulebook's sentences about how the site is picked
+and that it can come back again: "These all are unnecessary details for the
+players, the game engine takes care of them. THey need to be removed from the
+rulebook -- but we also need to make sure they are preserved somewhere else."
+The rulebook drops them; 545: GDD.md §4.5 keeps them.
+
 ### Q140. ~~How are a player card's stats arranged, and how does gold stand out?~~ — **answered 2026-10-01: moving down the left, the rest down the right with gold last, gold's number deep red (550-553 A)**
 
 [SOURCE §2, chat] Andrei, 2026-09-30: "On a player card, it would be nice to
