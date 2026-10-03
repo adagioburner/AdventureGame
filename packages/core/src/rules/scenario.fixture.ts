@@ -44,11 +44,14 @@ export interface MapSpec {
 /**
  * The game's rules, but with players starting on no gold (Q200 gives them 5):
  * a scenario sets the stats it is about, so the only gold in it is what the
- * test hands out.
+ * test hands out. Nor does it start away from the forest (Q225): a few
+ * hand-built spaces have no farther half worth the name, so the start is any
+ * plains space that is not a site, as before.
  */
-const NO_STARTING_GOLD: Ruleset = (() => {
+const SCENARIO_RULES: Ruleset = (() => {
   const { STARTING_GOLD: _gold, ...players } = DEFAULT_RULESET.config.players;
-  return { ...DEFAULT_RULESET, config: { ...DEFAULT_RULESET.config, players } };
+  const { start: _start, ...config } = DEFAULT_RULESET.config;
+  return { ...DEFAULT_RULESET, config: { ...config, players } };
 })();
 
 export function fixtureMap(spec: MapSpec): GameMap {
@@ -80,7 +83,7 @@ export function fixtureMap(spec: MapSpec): GameMap {
 
   return {
     seed: 'fixture',
-    ruleset: NO_STARTING_GOLD,
+    ruleset: SCENARIO_RULES,
     graph,
     pois,
     poiByNode: new Map(pois.map((poi, index) => [poi.node, index])),

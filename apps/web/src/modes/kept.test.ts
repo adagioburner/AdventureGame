@@ -153,6 +153,26 @@ describe('a game on one device kept in the browser (Q56, 66)', () => {
     expect(before?.turns.length).toBe(1);
   });
 
+  it('keeps a start away from the forest, and resumes a game kept before on the start it began on (Q225, 853)', () => {
+    const game = new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'kept' });
+    game.play({ kind: 'rest', player: game.state.players[0]!.id });
+    keep('adventure', setup, null, game);
+    const kept = readKept();
+    expect(kept?.startAway).toBe(true);
+    const again = kept === null ? null : replayKept(kept, map);
+    expect(again?.setup.map).toBe(map);
+    expect(again?.state).toEqual(game.state);
+
+    // Kept before the start moved: it goes on from any plains space, as it began.
+    const { startAway: _away, ...older } = kept ?? { startAway: undefined };
+    const before = replayKept(older as NonNullable<typeof kept>, map);
+    const { start: _start, ...config } = map.ruleset.config;
+    const began = new HotseatGame({ map: { ...map, ruleset: { ...map.ruleset, config } }, seats: toHotseatSeats(setup), diceSeed: 'kept' });
+    expect(before?.setup.map.ruleset.config.start).toBeUndefined();
+    expect(before?.state.players.map((player) => player.position)).toEqual(began.state.players.map((player) => player.position));
+    expect(before?.turns.length).toBe(1);
+  });
+
   it('keeps the order Shuffle seats drew, and the seats as set for the next New game (Q165)', () => {
     const drawn = inOrder(setup, ['seat-2', 'seat-1']);
     const game = new HotseatGame({ map, seats: toHotseatSeats(drawn), diceSeed: 'kept' });

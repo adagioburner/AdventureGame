@@ -279,6 +279,8 @@ carries over, and it is the skill numerator
 [SOURCE §6, chat] "The players start at a random spot of the plains that is not
 a POI. All players start from the same spot." `chooseStartingNode(map, rng)`,
 with its `Rng` derived from the map seed so the start point replays with the map.
+*Since Q225 (2026-10-03), away from the forest and never right next to the
+mountains.*
 
 ### Q13. ~~Is a zero-length move a legal action?~~ — **answered, confirmed**
 
@@ -3290,6 +3292,48 @@ they show under the map as well, to create smoother trasition"*.
      sharp on the ground's edge, as before, and is blurred more the higher it
      rises over the map, fully at the top of the fade. **Answered** at 03:12:
      graded, medium (`blur` 6 of the picture's pixels in `Art/manifest.json`).
+
+### Q225. ~~Where on the plains do players start?~~ — **answered 2026-10-03: in the farther half from the forest by road, never one step from the mountains, in games started from now on (850-855)**
+
+[SOURCE §6, chat] Andrei, 2026-10-03 at 06:45: *"can we adjust the starting
+position so it is not next to the forest or to the mountains but let us say in
+the farther half from each of them"*. The start was any plains space that is
+not a site: on 400 maps 1 game in 6 started one road step from the forest or
+the mountains, and 1 in 3 looked right beside them. Nothing else on the map
+looks at the start, so only the figures move. Asked at 07:12 with pictures.
+
+850. **How "farther" is measured:** A, the stamina of the cheapest road to the
+     nearest forest or mountain space; B, road steps; or C, a straight line on
+     the map (recommended, since the map is nearly a tree and a space 10
+     stamina from the forest can still touch it on the map). **Answered** at
+     07:28: *"I am thinking road distance, so players don't go to the forest
+     immediately but spend some time on the plains"*; at 07:46, A, stamina.
+851. **The map's edge:** spaces by the edge stay allowed (recommended), or the
+     start keeps off them. **Answered** at 07:46: allowed.
+852. **No space in both halves** (never on 400 maps): the farther half from
+     the nearer of the two (recommended), or the old rule. Asked again for the
+     rule he chose: the whole farther half from the forest. **Answered** at
+     07:46: as recommended.
+853. **Games already started keep their start.** **Answered:** *"yes of
+     course"*.
+854. **The rulebook:** *"a random plains space that is not a site, away from
+     the forest and the mountains"* (recommended). **Answered** at 07:28: *"I'm
+     not sure we need to mention this in the rulebook at all. The rulebook is
+     supposed to tell people how to play, not how the game engine works."* It
+     keeps its line as it was; GDD §6 says how.
+855. **"Starting away from the forest is more important"** (07:28): 1, the
+     farther half from the forest alone; 2, that half, then the half of those
+     farther from the mountains (recommended); 3, that half, leaving out spaces
+     one step from the mountains; or 4, both alike, as first asked.
+     **Answered** at 07:46: 3.
+
+The start is drawn from the `START_FOREST_FAR_SHARE` (0.5) of the plains
+spaces that are not sites, rounded up, that cost the most stamina to reach the
+nearest forest space by road, leaving out any fewer than
+`START_MOUNTAIN_MIN_STEPS` (2) road steps from a mountain space. Over 400 maps
+it is typically 11 road steps from the forest and 8 from the mountains, against
+7 and 6 before; about 1 start in 3 is within a road's length of the map's edge,
+against 1 in 4.
 
 ---
 

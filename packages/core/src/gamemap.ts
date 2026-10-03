@@ -1,6 +1,7 @@
-import { SKILL_KINDS, type Ruleset } from '@adventure/config';
+import { SKILL_KINDS, type Ruleset, type StartConfig, type Terrain } from '@adventure/config';
 import type { NodeId } from './ids.ts';
-import type { MapGraph } from './graph.ts';
+import { neighbours, type MapGraph } from './graph.ts';
+import { dijkstra } from './path.ts';
 import type { Poi } from './poi.ts';
 import { createRng, type Rng, type Seed } from './rng.ts';
 
@@ -54,6 +55,12 @@ export function totalSkillUnits(map: GameMap): number {
  * [SOURCE §6, chat] "the players start at a random spot of the plains that is
  * not a POI. All players start from the same spot."
  *
+ * [Q225] Away from the forest and not right next to the mountains, on a map
+ * whose ruleset has `start` (853: a game started before keeps the start it
+ * began on). Andrei, 2026-10-03: "starting away from the forest is more
+ * important. And yes, I am thinking road distance, so players don't go to the
+ * forest immediately but spend some time on the plains." See `awayFromForest`.
+ *
  * One node for every player, so `PlayerState.position` is identical for all
  * seats at turn 1. Multiple players sharing a node is already unrestricted
  * (§8), so nothing special is needed to let them all stand there.
@@ -70,7 +77,63 @@ export function chooseStartingNode(map: GameMap, rng: Rng): NodeId {
   if (candidates.length === 0) {
     throw new RangeError('no non-POI plains node available as a starting position');
   }
-  return rng.pick(candidates);
+  const start = map.ruleset.config.start;
+  return rng.pick(start === undefined ? candidates : awayFromForest(map, candidates, start));
+}
+
+/**
+ * [Q225] The spaces of `candidates` the start is drawn from: the
+ * `FOREST_FAR_SHARE` of them, rounded up, whose cheapest road to the nearest
+ * forest space costs the most stamina (850 A), leaving out those fewer than
+ * `MOUNTAIN_MIN_STEPS` road steps from a mountain space (855 3). Spaces by the
+ * map's edge count like any other (851). Should that leave none, which never
+ * happened on 400 maps, it is the whole farther half (852).
+ *
+ * The node id settles a tie at the half, as where a skill comes back (§4.5),
+ * and the result is in node id order, so a pick means the same space wherever
+ * the game is opened.
+ */
+function awayFromForest(map: GameMap, candidates: readonly NodeId[], start: StartConfig): NodeId[] {
+  const { graph } = map;
+  const toForest = new Map<NodeId, number>();
+  for (const from of candidates) {
+    let cost = Number.POSITIVE_INFINITY;
+    dijkstra(graph, from, map.ruleset.config, {
+      stopWhen: (node, reached) => {
+        if (graph.nodes[node]?.terrain !== 'forest') return false;
+        cost = reached;
+        return true;
+      },
+    });
+    toForest.set(from, cost);
+  }
+  const far = [...candidates]
+    // Farthest first. A map with no forest to reach ranks them all alike, and
+    // `NaN || …` falls through to the node id.
+    .sort((a, b) => (toForest.get(b) ?? 0) - (toForest.get(a) ?? 0) || a - b)
+    .slice(0, Math.ceil(candidates.length * start.FOREST_FAR_SHARE))
+    .sort((a, b) => a - b);
+  const clear = far.filter((node) => !terrainWithin(graph, node, 'mountain', start.MOUNTAIN_MIN_STEPS - 1));
+  return clear.length > 0 ? clear : far;
+}
+
+/** Whether a `terrain` node is at most `steps` road steps from `from`. */
+function terrainWithin(graph: MapGraph, from: NodeId, terrain: Terrain, steps: number): boolean {
+  let ring: NodeId[] = [from];
+  const seen = new Set<NodeId>(ring);
+  for (let step = 1; step <= steps; step++) {
+    const next: NodeId[] = [];
+    for (const node of ring) {
+      for (const neighbour of neighbours(graph, node)) {
+        if (seen.has(neighbour)) continue;
+        if (graph.nodes[neighbour]?.terrain === terrain) return true;
+        seen.add(neighbour);
+        next.push(neighbour);
+      }
+    }
+    ring = next;
+  }
+  return false;
 }
 
 /**

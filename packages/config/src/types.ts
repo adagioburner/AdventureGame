@@ -397,6 +397,29 @@ export interface BuyingConfig {
 }
 
 /**
+ * [Q225] Where the figures start: away from the forest, and not right next to
+ * the mountains.
+ *
+ * Andrei, 2026-10-03: "can we adjust the starting position so it is not next
+ * to the forest or to the mountains but let us say in the farther half from
+ * each of them", then "Actually starting away from the forest is more
+ * important. And yes, I am thinking road distance, so players don't go to the
+ * forest immediately but spend some time on the plains." Of the plains spaces
+ * that are not sites, the start is drawn from the `FOREST_FAR_SHARE` that cost
+ * the most stamina to reach the nearest forest space by road, rounded up
+ * (850 A, 855 3), leaving out any fewer than `MOUNTAIN_MIN_STEPS` road steps
+ * from a mountain space (855 3). Spaces by the map's edge count like any
+ * other (851). Should that leave none, which never happened on 400 maps, the
+ * whole farther half from the forest is used (852).
+ */
+export interface StartConfig {
+  /** 855: the share of the plains spaces, farthest from the forest first and rounded up, the start is drawn from. 0.5. */
+  readonly FOREST_FAR_SHARE: number;
+  /** 855 3: the fewest road steps from the start to any mountain space. 2, so never right next to the mountains. */
+  readonly MOUNTAIN_MIN_STEPS: number;
+}
+
+/**
  * GDD.md §11's table, plus constants the *designer* has added to it in review
  * (currently `GOLD_WEIGHT`). Nothing the implementation invented on its own —
  * that lives in `EngineeringConfig`.
@@ -422,6 +445,12 @@ export interface GameConfig {
    * `respawn` (757).
    */
   readonly buying?: BuyingConfig;
+  /**
+   * [Q225] Absent on the maps of games started before the start moved away
+   * from the forest, which keep the start they began on (853): any plains
+   * space that is not a site.
+   */
+  readonly start?: StartConfig;
 }
 
 /* -------------------------------------------------------------------------- */
