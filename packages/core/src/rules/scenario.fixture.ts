@@ -44,9 +44,9 @@ export interface MapSpec {
 /**
  * The game's rules, but with players starting on no gold (Q200 gives them 5):
  * a scenario sets the stats it is about, so the only gold in it is what the
- * test hands out. Nor does it start away from the forest (Q225): a few
- * hand-built spaces have no farther half worth the name, so the start is any
- * plains space that is not a site, as before.
+ * test hands out. Nor does it start deep in the plains (Q226): a few
+ * hand-built spaces have no depth worth the name, so the start is any plains
+ * space that is not a site, as before.
  */
 const SCENARIO_RULES: Ruleset = (() => {
   const { STARTING_GOLD: _gold, ...players } = DEFAULT_RULESET.config.players;

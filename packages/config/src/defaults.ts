@@ -74,12 +74,11 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     KINDS: SKILL_KINDS,
     GOLD_PER_UNIT: 1,
   },
-  // [Q225] Andrei, 2026-10-03: "starting away from the forest is more
-  // important [...] I am thinking road distance, so players don't go to the
-  // forest immediately but spend some time on the plains" (850 A, 855 3).
+  // [Q226] Andrei, 2026-10-03: "the ideal number would leave a few positions
+  // on average (around 10) and be small enough to find something even in the
+  // worst case" (856).
   start: {
-    FOREST_FAR_SHARE: 0.5,
-    MOUNTAIN_MIN_STEPS: 2,
+    MIN_SPACES: 10,
   },
 };
 

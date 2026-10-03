@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { RESPAWN_RULES } from '@adventure/config';
-import { routeTable } from '@adventure/core';
+import { createRng, startingNodeFor } from '@adventure/core';
 import { mapFor } from '../page/seed.ts';
 import { inOrder, toHotseatSeats, type LocalSetup } from '../setup/local.ts';
 import { HotseatGame } from './hotseat.ts';
-import { forgetKept, keep, keptMagicGuardChance, keptMapSize, readKept, replayKept } from './kept.ts';
+import { forgetKept, keep, keptDeepStart, keptMagicGuardChance, keptMapSize, readKept, replayKept } from './kept.ts';
 
 const map = mapFor('adventure', 'standard');
 const setup: LocalSetup = {
@@ -73,17 +73,7 @@ describe('a game on one device kept in the browser (Q56, 66)', () => {
 
   it('comes back with its purchases (Q190)', () => {
     const game = new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'kept-buy' });
-    const config = map.ruleset.config;
-    const gold = map.pois.find((poi) => poi.reward.kind === 'gold' && poi.guard === null);
-    if (gold === undefined) throw new Error('no unguarded gold on the map');
-    // Ada walks to the gold, resting when she runs short of stamina, while Bram rests; then she buys with it.
-    for (let turn = 0; turn < 200 && game.state.players[0]!.stats.gold === 0; turn += 1) {
-      const player = game.state.players[game.state.turn.activeSeat - 1]!;
-      const path = routeTable(map.graph, config).path(player.position, gold.node) ?? [];
-      const walks = player.seat === 1 && player.stats.stamina >= 3;
-      game.play(walks ? { kind: 'move', player: player.id, path } : { kind: 'rest', player: player.id });
-    }
-    if (game.state.turn.activeSeat === 2) game.play({ kind: 'rest', player: game.state.players[1]!.id });
+    // Ada buys with the gold every player starts with (Q200).
     game.buy({ kind: 'buy', player: game.state.players[0]!.id, skills: ['magic'] });
     keep('adventure', setup, null, game);
 
@@ -153,24 +143,33 @@ describe('a game on one device kept in the browser (Q56, 66)', () => {
     expect(before?.turns.length).toBe(1);
   });
 
-  it('keeps a start away from the forest, and resumes a game kept before on the start it began on (Q225, 853)', () => {
+  it('keeps a map that starts deep in the plains, and makes a game kept before on the map and start it began with (Q226, 861)', () => {
     const game = new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'kept' });
     game.play({ kind: 'rest', player: game.state.players[0]!.id });
     keep('adventure', setup, null, game);
     const kept = readKept();
-    expect(kept?.startAway).toBe(true);
+    expect(kept?.deepStart).toBe(true);
+    expect(kept === null ? null : keptDeepStart(kept)).toBe(true);
     const again = kept === null ? null : replayKept(kept, map);
     expect(again?.setup.map).toBe(map);
     expect(again?.state).toEqual(game.state);
 
-    // Kept before the start moved: it goes on from any plains space, as it began.
-    const { startAway: _away, ...older } = kept ?? { startAway: undefined };
-    const before = replayKept(older as NonNullable<typeof kept>, map);
-    const { start: _start, ...config } = map.ruleset.config;
-    const began = new HotseatGame({ map: { ...map, ruleset: { ...map.ruleset, config } }, seats: toHotseatSeats(setup), diceSeed: 'kept' });
-    expect(before?.setup.map.ruleset.config.start).toBeUndefined();
-    expect(before?.state.players.map((player) => player.position)).toEqual(began.state.players.map((player) => player.position));
-    expect(before?.turns.length).toBe(1);
+    // Kept before: the same roads and sites, the remoteness walks and the
+    // start anywhere on the plains, so its own rewards, guards and start.
+    const { deepStart: _deep, ...older } = kept ?? { deepStart: undefined };
+    const before = older as NonNullable<typeof kept>;
+    expect(keptDeepStart(before)).toBe(false);
+    const began = mapFor('adventure', 'standard', undefined, keptDeepStart(before));
+    expect(began.ruleset.config.start).toBeUndefined();
+    expect(began.graph).toEqual(map.graph);
+    expect(began.pois.map((poi) => poi.node)).toEqual(map.pois.map((poi) => poi.node));
+    expect(began.pois.map((poi) => poi.remoteness)).not.toEqual(map.pois.map((poi) => poi.remoteness));
+    const plains = began.graph.nodes.filter((node) => node.terrain === 'plains' && !began.poiByNode.has(node.id)).map((node) => node.id);
+    expect(startingNodeFor(began)).toBe(createRng('adventure').fork('starting-node').pick(plains));
+    const resumed = replayKept(before, began);
+    expect(resumed?.setup.map).toBe(began);
+    expect(resumed?.state.players.map((player) => player.position)).toEqual([startingNodeFor(began), startingNodeFor(began)]);
+    expect(resumed?.turns.length).toBe(1);
   });
 
   it('keeps the order Shuffle seats drew, and the seats as set for the next New game (Q165)', () => {

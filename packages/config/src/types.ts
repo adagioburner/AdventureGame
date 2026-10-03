@@ -397,26 +397,25 @@ export interface BuyingConfig {
 }
 
 /**
- * [Q225] Where the figures start: away from the forest, and not right next to
- * the mountains.
+ * [Q226] Where the figures start, and where the remoteness walks (§5.1)
+ * start: the plains spaces deepest in the plains.
  *
- * Andrei, 2026-10-03: "can we adjust the starting position so it is not next
- * to the forest or to the mountains but let us say in the farther half from
- * each of them", then "Actually starting away from the forest is more
- * important. And yes, I am thinking road distance, so players don't go to the
- * forest immediately but spend some time on the plains." Of the plains spaces
- * that are not sites, the start is drawn from the `FOREST_FAR_SHARE` that cost
- * the most stamina to reach the nearest forest space by road, rounded up
- * (850 A, 855 3), leaving out any fewer than `MOUNTAIN_MIN_STEPS` road steps
- * from a mountain space (855 3). Spaces by the map's edge count like any
- * other (851). Should that leave none, which never happened on 400 maps, the
- * whole farther half from the forest is used (852).
+ * Andrei, 2026-10-03, after seeing the start away from the forest (Q225):
+ * "Starting near the forest is not the problem. It is the remoteness score of
+ * nodes that makes the starting position unbalanced", then "find all plains
+ * positions that are 4 or more steps from forests and mountains - start
+ * remoteness walks from one of those positions at random - then choose one of
+ * those positions as the start", and on the number of steps: "the ideal number
+ * would leave a few positions on average (around 10) and be small enough to
+ * find something even in the worst case". No one number of steps does both,
+ * so the number is worked out per map: the most road steps from every forest
+ * and mountain space that still leaves `MIN_SPACES` plains spaces that are not
+ * sites (856). Steps are road steps, one per road whatever the
+ * terrain (857).
  */
 export interface StartConfig {
-  /** 855: the share of the plains spaces, farthest from the forest first and rounded up, the start is drawn from. 0.5. */
-  readonly FOREST_FAR_SHARE: number;
-  /** 855 3: the fewest road steps from the start to any mountain space. 2, so never right next to the mountains. */
-  readonly MOUNTAIN_MIN_STEPS: number;
+  /** 856: the fewest deep plains spaces the start and the walks are drawn from. 10. */
+  readonly MIN_SPACES: number;
 }
 
 /**
@@ -446,9 +445,9 @@ export interface GameConfig {
    */
   readonly buying?: BuyingConfig;
   /**
-   * [Q225] Absent on the maps of games started before the start moved away
-   * from the forest, which keep the start they began on (853): any plains
-   * space that is not a site.
+   * [Q226] Absent on the maps of games started before the start and the
+   * remoteness walks moved deep into the plains, which keep their map and
+   * start (861): the walks and the start anywhere on the plains.
    */
   readonly start?: StartConfig;
 }

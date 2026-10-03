@@ -1,5 +1,5 @@
 import { TERRAINS, type GameConfig, type Terrain } from '@adventure/config';
-import { asNodeId, dijkstra, isLeaf, type NodeId } from '@adventure/core';
+import { asNodeId, deepPlainsSpaces, dijkstra, isLeaf, type NodeId } from '@adventure/core';
 import { draftAsGraph } from '../graphops.ts';
 import { assignGuardStrengths } from '../rewards/guards.ts';
 import { assignRewards } from '../rewards/assign.ts';
@@ -21,6 +21,8 @@ import {
  *   7a. Select POI nodes (§3).
  *   7b. Compute remoteness over those nodes (§5.1) — depends only on POI
  *       *positions*, never on their rewards, which is why it can run here.
+ *       [Q226] The walks start from the deepest plains spaces that are not
+ *       POIs, which is why it must also come after 7a.
  *   7c. Assign kinds and distribute units (§4.3), which consumes remoteness.
  *   7d. Assign guard strengths (§5.2), which consumes both remoteness and the
  *       final gold amounts from 7c.
@@ -86,9 +88,14 @@ export const placePoisStep: GenerationStep = {
     draft.assignments = surplus;
 
     // 7b. §5.1 over every POI, the surplus stamina ones included: they are
-    // ordinary POIs and the walk visits them like any other.
+    // ordinary POIs and the walk visits them like any other. [Q226] The walks
+    // start deep in the plains, from the spaces the figures will start from
+    // too (`startingNodeFor` draws from the same ones on the finished map).
+    const start = ruleset.config.start;
+    const startSpaces =
+      start === undefined ? undefined : deepPlainsSpaces(graph, new Set(draft.poiNodes), start.MIN_SPACES);
     draft.remoteness = new Map(
-      computeRemoteness(graph, draft.poiNodes, ruleset.config, rng, context.remotenessScorer()),
+      computeRemoteness(graph, draft.poiNodes, ruleset.config, rng, context.remotenessScorer(), startSpaces),
     );
 
     // 7c and 7d.

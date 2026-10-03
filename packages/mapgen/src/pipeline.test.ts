@@ -8,14 +8,17 @@ import {
   SKILL_KINDS,
   TERRAINS,
   withMagicGuardChance,
+  withoutDeepStart,
   type Ruleset,
   type Terrain,
 } from '@adventure/config';
 import {
+  deepPlainsSpaces,
   isLeaf,
   leafNodes,
   poiAt,
   rewardGroupKeyOf,
+  startingNodeFor,
   totalGoldUnits,
   totalSkillUnits,
   type GameMap,
@@ -205,6 +208,14 @@ describe('§5.1 — remoteness', () => {
     expect(pois(mapOf('adventure', withBalancing({ CLOSE_CANDIDATE_COUNT: 3 })))).toEqual(today);
     expect(pois(mapOf('adventure', withBalancing({ REMOTENESS_CANDIDATE_COUNT: 3 })))).not.toEqual(today);
   }, 30000);
+
+  it('walks from the deep plains spaces, which moves rewards but not roads or sites (Q226, 858)', () => {
+    const deep = mapOf('adventure');
+    const before = mapOf('adventure', withoutDeepStart(DEFAULT_RULESET));
+    expect(deep.graph).toEqual(before.graph);
+    expect(deep.pois.map((poi) => poi.node)).toEqual(before.pois.map((poi) => poi.node));
+    expect(deep.pois.map((poi) => poi.remoteness)).not.toEqual(before.pois.map((poi) => poi.remoteness));
+  }, 30000);
 });
 
 describe('§5.2 — guard strengths', () => {
@@ -346,6 +357,15 @@ describe('§6 — starting position', () => {
         (node) => node.terrain === 'plains' && !map.poiByNode.has(node.id as NodeId),
       );
       expect(candidates.length).toBeGreaterThan(0);
+    }
+  }, 30000);
+
+  it('starts deep in the plains, on one of at least 10 spaces (Q226, 856, 859)', () => {
+    for (const seed of SEEDS) {
+      const map = mapOf(seed);
+      const deep = deepPlainsSpaces(map.graph, map.poiByNode, DEFAULT_RULESET.config.start?.MIN_SPACES ?? 0);
+      expect(deep.length).toBeGreaterThanOrEqual(10);
+      expect(deep).toContain(startingNodeFor(map));
     }
   }, 30000);
 });

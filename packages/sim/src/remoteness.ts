@@ -155,6 +155,10 @@ export function normalizeToUnitRange(raw: ReadonlyMap<NodeId, number>): Readonly
  * assignment, because §4.3 step 3 consumes remoteness — [INFERRED §1.3/§4.3],
  * and consistent with remoteness depending only on POI positions, never on
  * their rewards.
+ *
+ * [Q226] `startSpaces` are the spaces a walk may start from, one drawn at
+ * random for each walk (858): the map's deepest plains spaces on maps that
+ * start there, every plains space when it is left out, as on maps from before.
  */
 export function computeRemoteness(
   graph: MapGraph,
@@ -162,14 +166,15 @@ export function computeRemoteness(
   config: GameConfig,
   rng: Rng,
   scorer: RemotenessScorer,
+  startSpaces?: readonly NodeId[],
 ): ReadonlyMap<NodeId, number> {
-  const plainsNodes = graph.nodes.filter((node) => node.terrain === 'plains').map((node) => node.id);
-  if (plainsNodes.length === 0) throw new RangeError('no plains node to start a remoteness walk from');
+  const startNodes = startSpaces ?? graph.nodes.filter((node) => node.terrain === 'plains').map((node) => node.id);
+  if (startNodes.length === 0) throw new RangeError('no plains node to start a remoteness walk from');
 
   for (let run = 0; run < config.balancing.REMOTENESS_SIMULATION_RUNS; run++) {
     // [SOURCE §1.2] "start at a random plains position" — any plains node, not
-    // necessarily a POI.
-    const start: RemotenessCursor = { at: rng.pick(plainsNodes), unvisited: new Set(poiNodes) };
+    // necessarily a POI; [Q226] one of `startSpaces` when given.
+    const start: RemotenessCursor = { at: rng.pick(startNodes), unvisited: new Set(poiNodes) };
     scorer.beginWalk();
     runWalk(
       graph,

@@ -1,4 +1,4 @@
-import { COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE, RESPAWN_RULES, magicGuardChanceOf, mapSizeOfRuleset, startingGoldOf, type MapSize } from '@adventure/config';
+import { COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE, RESPAWN_RULES, deepStartOf, magicGuardChanceOf, mapSizeOfRuleset, startingGoldOf, type MapSize } from '@adventure/config';
 import type { BuyAction, GameMap, TurnAction } from '@adventure/core';
 import { inOrder, toHotseatSeats, type LocalSetup } from '../setup/local.ts';
 import { HotseatGame } from './hotseat.ts';
@@ -56,10 +56,11 @@ export interface KeptGame {
    */
   readonly startingGold?: number;
   /**
-   * [Q225] Whether the game started away from the forest. Absent on a game
-   * kept before it did, which goes on from the start it began on (853).
+   * [Q226] Whether the game's map started the figures and the remoteness
+   * walks deep in the plains. Absent on a game kept before it did, whose map
+   * is made again with the rewards, guards and start it began with (861).
    */
-  readonly startAway?: boolean;
+  readonly deepStart?: boolean;
 }
 
 const KEY = 'adventure.hotseat';
@@ -88,7 +89,7 @@ export function readKept(): KeptGame | null {
  * `order` (`null`: as set); without storage, nothing is kept.
  */
 export function keep(seed: string, setup: LocalSetup, order: readonly string[] | null, game: HotseatGame): void {
-  const { respawn, buying, start } = game.setup.map.ruleset.config;
+  const { respawn, buying } = game.setup.map.ruleset.config;
   const kept: KeptGame = {
     seed,
     setup,
@@ -101,7 +102,7 @@ export function keep(seed: string, setup: LocalSetup, order: readonly string[] |
     mapSize: mapSizeOfRuleset(game.setup.map.ruleset),
     magicGuardChance: magicGuardChanceOf(game.setup.map.ruleset),
     startingGold: startingGoldOf(game.setup.map.ruleset),
-    startAway: start !== undefined,
+    deepStart: deepStartOf(game.setup.map.ruleset),
   };
   try {
     window.localStorage.setItem(KEY, JSON.stringify(kept));
@@ -128,15 +129,17 @@ export function keptMagicGuardChance(kept: KeptGame): number {
   return typeof kept.magicGuardChance === 'number' ? kept.magicGuardChance : COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE;
 }
 
+/** Whether `kept`'s map starts deep in the plains: see `KeptGame.deepStart`. */
+export function keptDeepStart(kept: KeptGame): boolean {
+  return kept.deepStart === true;
+}
+
 /** The kept game played again on `map`; `null` if its turns no longer replay. */
 export function replayKept(kept: KeptGame, map: GameMap): HotseatGame | null {
   try {
-    const rules = withStartAway(
-      withStartingGold(
-        kept.buying === true ? map : startedBeforeBuying(map, kept.respawn === true, kept.respawnMaxUnits),
-        typeof kept.startingGold === 'number' ? kept.startingGold : 0,
-      ),
-      kept.startAway === true,
+    const rules = withStartingGold(
+      kept.buying === true ? map : startedBeforeBuying(map, kept.respawn === true, kept.respawnMaxUnits),
+      typeof kept.startingGold === 'number' ? kept.startingGold : 0,
     );
     const game = new HotseatGame({ map: rules, seats: toHotseatSeats(inOrder(kept.setup, kept.order ?? null)), diceSeed: kept.diceSeed });
     for (const action of kept.actions) {
@@ -160,13 +163,6 @@ function startedBeforeBuying(map: GameMap, respawn: boolean, max: number | undef
   const { MAX_UNITS: _max, ...uncapped } = RESPAWN_RULES;
   const rules = max === undefined ? uncapped : { ...uncapped, MAX_UNITS: max };
   return { ...map, ruleset: { ...map.ruleset, config: { ...config, respawn: rules } } };
-}
-
-/** `map` with its start away from the forest (Q225), or anywhere on the plains for a game kept before (853). */
-function withStartAway(map: GameMap, away: boolean): GameMap {
-  if (away || map.ruleset.config.start === undefined) return map;
-  const { start: _start, ...config } = map.ruleset.config;
-  return { ...map, ruleset: { ...map.ruleset, config } };
 }
 
 /** `map` with its players starting on `gold` (Q200): none for a game kept before they started with any. */

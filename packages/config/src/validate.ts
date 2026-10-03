@@ -170,15 +170,10 @@ export function validateRuleset(ruleset: Ruleset): void {
   if (!Number.isFinite(config.ai.BUY_SKIP_STAMINA) || config.ai.BUY_SKIP_STAMINA < 0) {
     problems.push('Q190: ai.BUY_SKIP_STAMINA must be a non-negative number.');
   }
-  // Q225: a share of the plains spaces, and a whole number of steps.
+  // Q226: at least one space to start on.
   const start = config.start;
-  if (start !== undefined) {
-    if (!(start.FOREST_FAR_SHARE > 0 && start.FOREST_FAR_SHARE <= 1)) {
-      problems.push('Q225: start.FOREST_FAR_SHARE must be above 0 and at most 1.');
-    }
-    if (!Number.isInteger(start.MOUNTAIN_MIN_STEPS) || start.MOUNTAIN_MIN_STEPS < 0) {
-      problems.push('Q225: start.MOUNTAIN_MIN_STEPS must be a non-negative integer.');
-    }
+  if (start !== undefined && (!Number.isInteger(start.MIN_SPACES) || start.MIN_SPACES < 1)) {
+    problems.push('Q226: start.MIN_SPACES must be a positive integer.');
   }
 
   // Q200: whole gold, none at the least.

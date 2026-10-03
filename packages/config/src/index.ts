@@ -103,6 +103,26 @@ export function withMagicGuardChance(ruleset: Ruleset, chance: number): Ruleset 
 }
 
 /**
+ * [Q226] Whether maps made with `ruleset` start the figures and the
+ * remoteness walks deep in the plains. False for a hot seat game kept from
+ * before they did, whose map is made again without it (861).
+ */
+export function deepStartOf(ruleset: Ruleset): boolean {
+  return ruleset.config.start !== undefined;
+}
+
+/**
+ * [Q226, 861] `ruleset` as it was before the start and the remoteness walks
+ * moved deep into the plains, so a hot seat game kept from before gets back
+ * the map and the start it began with. `ruleset` itself when it already is.
+ */
+export function withoutDeepStart(ruleset: Ruleset): Ruleset {
+  if (!deepStartOf(ruleset)) return ruleset;
+  const { start: _start, ...config } = ruleset.config;
+  return { ...ruleset, config };
+}
+
+/**
  * [SOURCE §2, chat] Starting stamina for a 1-based seat:
  * `STARTING_STAMINA_BASE + (seat − 1) × STARTING_STAMINA_INCREMENT`.
  *

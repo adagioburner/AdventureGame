@@ -279,8 +279,8 @@ carries over, and it is the skill numerator
 [SOURCE §6, chat] "The players start at a random spot of the plains that is not
 a POI. All players start from the same spot." `chooseStartingNode(map, rng)`,
 with its `Rng` derived from the map seed so the start point replays with the map.
-*Since Q225 (2026-10-03), away from the forest and never right next to the
-mountains.*
+*Since Q226 (2026-10-03), deep in the plains, on one of the spaces the
+remoteness walks start from.*
 
 ### Q13. ~~Is a zero-length move a legal action?~~ — **answered, confirmed**
 
@@ -3293,7 +3293,7 @@ they show under the map as well, to create smoother trasition"*.
      rises over the map, fully at the top of the fade. **Answered** at 03:12:
      graded, medium (`blur` 6 of the picture's pixels in `Art/manifest.json`).
 
-### Q225. ~~Where on the plains do players start?~~ — **answered 2026-10-03: in the farther half from the forest by road, never one step from the mountains, in games started from now on (850-855)**
+### Q225. ~~Where on the plains do players start?~~ — **answered 2026-10-03: in the farther half from the forest by road, never one step from the mountains (850-855); replaced by Q226 before it shipped**
 
 [SOURCE §6, chat] Andrei, 2026-10-03 at 06:45: *"can we adjust the starting
 position so it is not next to the forest or to the mountains but let us say in
@@ -3334,6 +3334,60 @@ nearest forest space by road, leaving out any fewer than
 it is typically 11 road steps from the forest and 8 from the mountains, against
 7 and 6 before; about 1 start in 3 is within a road's length of the map's edge,
 against 1 in 4.
+
+Never shipped: at 12:48, on seeing it, Andrei changed approach (Q226).
+
+### Q226. ~~Start deep in the plains, and walk remoteness from there?~~ — **answered 2026-10-03: the start and the remoteness walks drawn from about 10 deepest plains spaces, in games started from now on (856-862); 863 open**
+
+[SOURCE §6, chat] Andrei, 2026-10-03 at 12:48, looking at Q225's pictures:
+*"Starting near the forest is not the problem. It is the remoteness score of
+nodes that makes the starting position unbalanced. Can we try a different
+approach: pick the starting point before doing remoteness walks and assigning
+rewards. Pick it well within plains, e.g. at least 4 steps from both forests
+and mountains. - start all remoteness walks from this point"*; at 12:56, *"let
+us soften it a little [...] find all plains positions that are 4 or more steps
+from forests and mountains - start remoteness ealks from one of those positions
+at random - then choose one of those positions as the start"*; at 12:59, *"the
+ideal number would leave a few positions on average (around 10) and be small
+enough to find something even in the worst case"*. Asked with pictures at
+13:19.
+
+856. **How many steps:** 4 (47 spaces on average on the standard map, 13 at the
+     fewest; 73 and 42 on the larger), 5 (39 and 4; 62 and 27), or about 10
+     spaces (recommended): the most steps that still leaves at least 10 spaces,
+     worked out per map, since no one number does both (11 steps averages 9
+     spaces but leaves none on 1 map in 5). **Answered** at 13:23: about 10
+     spaces, `START_MIN_SPACES` = 10.
+857. **Steps are road steps**, one per road whatever the terrain
+     (recommended), or stamina. **Answered:** road steps.
+858. **Each of the 100 walks starts from its own space** drawn from the deep
+     spaces (recommended), or all from one space drawn once (the same rewards
+     and guards on average over 400 maps). **Answered:** each its own.
+859. **The start is drawn at random from the same spaces**, separately from the
+     walks; sites are left out and placed first, so they do not move.
+     **Answered:** as recommended.
+860. **No space qualifies:** count one step fewer. **Answered** at 13:30: *"don't
+     write too much code for this fringe case"*; the about-10 rule never comes
+     out empty, so it needs none.
+861. **Games already started keep their map, rewards and start**, as 853.
+     **Answered:** as recommended.
+862. **PR #66** is reworked on its branch rather than closed. **Answered:** as
+     recommended.
+
+The same seed now gives different rewards and guards; roads, terrain and sites
+stay. Over 400 maps the start is typically 12 road steps from the forest and
+from the mountains (16 on the larger map), against 7 and 6 (8 and 8) before.
+
+863. **Big gold near the start.** Andrei at 13:27: *"by starting the random
+     walks from the starting point, or one of the few potential candidates, we
+     make sure we don't start near a huge reward"*. Measured over 400 maps: the
+     map's biggest gold stack is within 5 road steps of the start on 1 map in 4
+     before (1 in 6 on the larger map), 1 in 5 with 856-862 (1 in 6), the same
+     as moving the start alone, and about 1 in 4 with every walk from the start
+     itself; a site's score counts the roads between sites in a walk, not the
+     way from its start. Asked at 13:40: A, keep 856-862; B, a site's remoteness
+     becomes its road distance from the start in stamina, scaled to [0, 1]
+     (recommended: 1 map in 11, never on the larger map); C, something else.
 
 ---
 
