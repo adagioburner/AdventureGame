@@ -183,6 +183,8 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 [SOURCE §2, chat] **Every player starts with `STARTING_GOLD` (5) gold, the same for every seat.** Andrei, 2026-10-02: "Now that players can buy skills for gold, it makes sense to starts them with 5 gold to enable a variety of strategies" (Q200). Only games started since get it: a game started before keeps its players starting on none to the end, online because its map carries the config it was made with, on one device because the kept game records the gold its players started with (790). The New game screen's seat line still names only the starting stamina, which is what differs between seats (792). Nothing that decides the winner moves: the win check compares a lead with the gold left on the map, and 5 each changes no lead.
 
+[SOURCE §6, chat] **The figures start on the deepest plains space whose sites nearby are not remote** (Q227). Andrei, 2026-10-03, worried about big forest speed or magic stacks near the start, measured several ways of starting away from the forest and mountains, and settled on: "change the starting place to go to the deepest plains space with remoteness less than 0.1. We don't need any changes in how remoteness is calculated". A space's remoteness is the average remoteness (§5.1) of the sites, of every terrain, within `START_NEARBY_STEPS` (5) road steps of it (876, 878): "since we're looking for a forest speed site 3+ within 5 steps". How deep a space is counts road steps to the nearest forest or mountain space, one per road whatever the terrain (878). Of the plains spaces that are not sites, the start is the deepest whose remoteness is below `START_MAX_REMOTENESS` (0.1, "please make 0.1 a config setting"); of equally deep ones, the least remote (873); and with none below it, the least remote space (874), which none of 400 maps measured needed. Measured on 200 maps per size, the start is typically 8 road steps deep on the standard map and 10 on the larger one, against 5 and 6 when drawn at random, and a forest speed stack of 3 or more lies within 5 steps of it on 10% of standard maps and 8% of larger ones, against 22% and 19%. Games started before keep their start, online because the map carries the config it was made with, on one device because the kept game records it and makes the start again as it was. The rulebook says only "a plains space that is not a site" (875).
+
 [SOURCE §2, chat] **The increment is 5, not 10** (Andrei, 2026-09-29, after 4-seat computer games at 3 s a move: with 10 the later seats ended with more gold; with 5 the four seats came out even). Registered as Q75.
 
 ### 6.1 Setup flow
@@ -368,6 +370,8 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `STARTING_STAMINA_BASE` | 30 | tunable |
 | `STARTING_STAMINA_INCREMENT` | 5 | tunable (Q75; was 10) |
 | `STARTING_GOLD` | 5 | tunable — the gold every player starts with, §6 (Q200); none in games started before |
+| `START_NEARBY_STEPS` | 5 | tunable — the road steps within which a space's sites are averaged into its remoteness, for the start, §6 (Q227, 876) |
+| `START_MAX_REMOTENESS` | 0.1 | tunable — the start is the deepest plains space whose remoteness is below this, §6 (Q227); a random plains space in games started before |
 | `PLAYER_COUNT_MIN` / `MAX` | 2 / 5 | tunable, not a hard limit |
 | `GUARD_DIE` | d6 | fixed |
 | `MCTS_TIME_BUDGET_PER_MOVE` | 10 seconds | tunable; per computer seat on the setup screen, 1 to 60 seconds [SOURCE §5, review] |

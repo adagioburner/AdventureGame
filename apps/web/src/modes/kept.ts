@@ -1,4 +1,4 @@
-import { COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE, RESPAWN_RULES, magicGuardChanceOf, mapSizeOfRuleset, startingGoldOf, type MapSize } from '@adventure/config';
+import { COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE, RESPAWN_RULES, deepStartOf, magicGuardChanceOf, mapSizeOfRuleset, startingGoldOf, type MapSize } from '@adventure/config';
 import type { BuyAction, GameMap, TurnAction } from '@adventure/core';
 import { inOrder, toHotseatSeats, type LocalSetup } from '../setup/local.ts';
 import { HotseatGame } from './hotseat.ts';
@@ -55,6 +55,12 @@ export interface KeptGame {
    * players started with gold, whose players started with none (790).
    */
   readonly startingGold?: number;
+  /**
+   * [Q227] Whether the game's map started the figures deep in the plains.
+   * Absent on a game kept before it did, whose map is made again with the
+   * start it began on.
+   */
+  readonly deepStart?: boolean;
 }
 
 const KEY = 'adventure.hotseat';
@@ -96,6 +102,7 @@ export function keep(seed: string, setup: LocalSetup, order: readonly string[] |
     mapSize: mapSizeOfRuleset(game.setup.map.ruleset),
     magicGuardChance: magicGuardChanceOf(game.setup.map.ruleset),
     startingGold: startingGoldOf(game.setup.map.ruleset),
+    deepStart: deepStartOf(game.setup.map.ruleset),
   };
   try {
     window.localStorage.setItem(KEY, JSON.stringify(kept));
@@ -120,6 +127,11 @@ export function keptMapSize(kept: KeptGame): MapSize {
 /** The chance `kept`'s forest gold sites are magic-guarded at: see `KeptGame.magicGuardChance`. */
 export function keptMagicGuardChance(kept: KeptGame): number {
   return typeof kept.magicGuardChance === 'number' ? kept.magicGuardChance : COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE;
+}
+
+/** Whether `kept`'s map starts deep in the plains: see `KeptGame.deepStart`. */
+export function keptDeepStart(kept: KeptGame): boolean {
+  return kept.deepStart === true;
 }
 
 /** The kept game played again on `map`; `null` if its turns no longer replay. */
