@@ -117,6 +117,13 @@ export interface IslandArt {
      */
     readonly fade: number;
     /**
+     * [832, 833] How far, in the picture's pixels, the stone tops over the
+     * ground are blurred at the top of the fade, shading back to sharp on the
+     * ground's edge (`blurStoneTops` in `render/island.ts`). 0, or left out of
+     * the manifest, leaves them sharp.
+     */
+    readonly blur: number;
+    /**
      * [830, 831] How the rock's moss and ivy turn towards the map's forest
      * green (`turnGreens` in `render/island.ts`). Left out of the manifest,
      * they stay as drawn.
@@ -410,6 +417,7 @@ function parseIsland(island: Readonly<Record<string, unknown>>, where: string): 
       file: string(underside['file'], `${where}.underside.file`),
       corners: { left, bottom, right },
       fade: positive(underside['fade'], `${where}.underside.fade`),
+      blur: underside['blur'] === undefined ? 0 : nonNegative(underside['blur'], `${where}.underside.blur`),
       greens: underside['greens'] === undefined ? AS_DRAWN : parseGreens(underside['greens'], `${where}.underside.greens`),
     },
     sky: {

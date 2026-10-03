@@ -96,8 +96,7 @@ export function shapeUnderside(pixels: Uint8ClampedArray, width: number, corners
   for (let x = 0; x < width; x++) {
     const across = x + 0.5;
     const outside = across < corners.left.x || across > corners.right.x;
-    const [from, to] = across <= corners.bottom.x ? [corners.left, corners.bottom] : [corners.bottom, corners.right];
-    const edge = from.y + ((to.y - from.y) * (across - from.x)) / (to.x - from.x);
+    const edge = frontEdge(corners, across);
     for (let y = 0; y < height; y++) {
       const down = y + 0.5;
       const alpha = (y * width + x) * 4 + 3;
@@ -107,6 +106,105 @@ export function shapeUnderside(pixels: Uint8ClampedArray, width: number, corners
       else pixels[alpha] = Math.round(pixels[alpha]! * Math.max(0, 1 - (edge - down) / fade));
     }
   }
+}
+
+/**
+ * Blurs the stone tops that rise over the ground, in place: `pixels` is the
+ * rock picture's RGBA data, `width` pixels across, before `shapeUnderside`
+ * fades them.
+ *
+ * [Andrei, 2026-10-03] "Looking at the transition though I wonder if the
+ * stones underneath could be blurred where they show under the map as well,
+ * to create smoother trasition". The rock is as drawn on the line through
+ * `corners` (the ground's front edges) and below it; above it, where
+ * `shapeUnderside` fades the stone tops into the ground, it shades into a copy
+ * blurred by `radius` pixels, all blurred `fade` pixels up, where the stone
+ * tops are gone. Blurred evenly from the line up, the blurred stone met the
+ * sharp stone on the line and drew the map's edge as a line again (02:47).
+ */
+export function blurStoneTops(pixels: Uint8ClampedArray, width: number, corners: IslandCorners, fade: number, radius: number): void {
+  if (radius <= 0) return;
+  // Only rows that reach above the front edges change; the blur reads a
+  // little below them too.
+  const rows = Math.min(pixels.length / 4 / width, Math.ceil(corners.bottom.y + 3 * radius + 1));
+  const sharp = new Float32Array(width * rows * 4);
+  for (let i = 0; i < sharp.length; i += 4) {
+    const alpha = (pixels[i + 3] as number) / 255;
+    sharp[i] = (pixels[i] as number) * alpha;
+    sharp[i + 1] = (pixels[i + 1] as number) * alpha;
+    sharp[i + 2] = (pixels[i + 2] as number) * alpha;
+    sharp[i + 3] = pixels[i + 3] as number;
+  }
+  const blurred = boxBlur(sharp, width, rows, radius);
+  for (let x = 0; x < width; x++) {
+    const across = x + 0.5;
+    const edge = frontEdge(corners, across);
+    for (let y = 0; y < rows && y + 0.5 < edge; y++) {
+      const share = Math.min(1, (edge - (y + 0.5)) / fade);
+      const i = (y * width + x) * 4;
+      const alpha = (sharp[i + 3] as number) * (1 - share) + (blurred[i + 3] as number) * share;
+      pixels[i + 3] = Math.round(alpha);
+      if (alpha === 0) continue;
+      for (let c = 0; c < 3; c++) {
+        pixels[i + c] = Math.round((((sharp[i + c] as number) * (1 - share) + (blurred[i + c] as number) * share) * 255) / alpha);
+      }
+    }
+  }
+}
+
+/** Where the line through the ground's front edges crosses the picture's column at `across`. */
+function frontEdge(corners: IslandCorners, across: number): number {
+  const [from, to] = across <= corners.bottom.x ? [corners.left, corners.bottom] : [corners.bottom, corners.right];
+  return from.y + ((to.y - from.y) * (across - from.x)) / (to.x - from.x);
+}
+
+/**
+ * Premultiplied RGBA `pixels`, `width` by `height`, blurred by three box blurs
+ * of `radius` across and down, which comes close to a Gaussian blur. Past the
+ * picture's sides and ends, its outermost pixels are repeated.
+ */
+function boxBlur(pixels: Float32Array, width: number, height: number, radius: number): Float32Array {
+  const r = Math.max(1, Math.round(radius));
+  const size = 2 * r + 1;
+  let from: Float32Array = pixels.slice();
+  let to: Float32Array = new Float32Array(pixels.length);
+  // One line at a time, all four channels together: a running sum over the
+  // window, which gains the pixel entering it and loses the one leaving.
+  const pass = (lines: number, length: number, step: number, lineStep: number): void => {
+    for (let line = 0; line < lines; line++) {
+      const start = line * lineStep;
+      const last = start + (length - 1) * step;
+      let s0 = 0;
+      let s1 = 0;
+      let s2 = 0;
+      let s3 = 0;
+      for (let k = -r; k <= r; k++) {
+        const at = start + Math.min(length - 1, Math.max(0, k)) * step;
+        s0 += from[at] as number;
+        s1 += from[at + 1] as number;
+        s2 += from[at + 2] as number;
+        s3 += from[at + 3] as number;
+      }
+      for (let k = 0, at = start; k < length; k++, at += step) {
+        to[at] = s0 / size;
+        to[at + 1] = s1 / size;
+        to[at + 2] = s2 / size;
+        to[at + 3] = s3 / size;
+        const entering = k + r + 1 < length ? at + (r + 1) * step : last;
+        const leaving = k - r >= 0 ? at - r * step : start;
+        s0 += (from[entering] as number) - (from[leaving] as number);
+        s1 += (from[entering + 1] as number) - (from[leaving + 1] as number);
+        s2 += (from[entering + 2] as number) - (from[leaving + 2] as number);
+        s3 += (from[entering + 3] as number) - (from[leaving + 3] as number);
+      }
+    }
+    [from, to] = [to, from];
+  };
+  for (let round = 0; round < 3; round++) {
+    pass(height, width, 4, width * 4);
+    pass(width, height, width * 4, 4);
+  }
+  return from;
 }
 
 /**

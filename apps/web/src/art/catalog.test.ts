@@ -285,11 +285,12 @@ describe('a bad art drop', () => {
     expect(catalog.manifest.island.underside.fade).toBe(24);
     expect(catalog.manifest.island.sky.color).toBe('#809ab4');
     expect(catalog.manifest.island.underside.greens).toEqual({ hue: 42, saturation: 0.75, darken: 0.25 });
+    expect(catalog.manifest.island.underside.blur).toBe(6);
     expect(() => buildArtCatalog(without('Island/underside.png'))).toThrow(/Island\/underside\.png is missing/);
     expect(() => buildArtCatalog(without('Island/sky.png'))).toThrow(/Island\/sky\.png is missing/);
   });
 
-  it('rejects underside corners that would turn the rock over, a fade of nothing, a sky colour that is not one, a shade outside 0 to 1, and greens turned past half a circle or darkened past black', () => {
+  it('rejects underside corners that would turn the rock over, a fade of nothing, a sky colour that is not one, a shade outside 0 to 1, greens turned past half a circle or darkened past black, and a blur below nothing', () => {
     const manifest = ART_FILES.json.get('manifest.json') as Record<string, Record<string, Record<string, unknown>>>;
     const island = manifest['island'] as Record<string, Record<string, unknown>>;
     const withCorners = (corners: object) => ({
@@ -311,5 +312,9 @@ describe('a bad art drop', () => {
     expect(() => parseManifest(withGreens({ hue: 42, saturation: 1, darken: 1.5 }))).toThrow(/island\.underside\.greens\.darken: must be between 0 and 1/);
     // Left out, the rock's greens stay as drawn.
     expect(parseManifest(withGreens(undefined)).island.underside.greens).toEqual({ hue: 0, saturation: 1, darken: 0 });
+    const withBlur = (blur: unknown) => ({ ...manifest, island: { ...island, underside: { ...island['underside'], blur } } });
+    expect(() => parseManifest(withBlur(-2))).toThrow(/island\.underside\.blur/);
+    // Left out, the stone tops stay sharp.
+    expect(parseManifest(withBlur(undefined)).island.underside.blur).toBe(0);
   });
 });

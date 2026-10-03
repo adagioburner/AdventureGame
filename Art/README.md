@@ -152,7 +152,10 @@ there for people and ignored by the game.
   ground, so its top edges lie along the map's front edges at any map size;
   the points sit a little below the rock's topmost pixels, and the rock is
   drawn over the ground, so its stone tops rise over the ground's edge and
-  fade into it over `fade` of the picture's pixels (670, 679). `greens` turns
+  fade into it over `fade` of the picture's pixels (670, 679). As they fade
+  they are blurred too, sharp on the ground's edge and blurred by `blur` of
+  the picture's pixels at the top, so they soften without drawing the edge
+  as a line (Q220); 0 or left out keeps them sharp. `greens` turns
   its moss and ivy towards the map's forest green as it loads (Q220): each
   green's hue turns `hue` degrees, its saturation is multiplied by
   `saturation`, and it is darkened by `darken`, from 0 (as bright) to 1

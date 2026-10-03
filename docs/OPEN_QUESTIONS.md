@@ -3251,7 +3251,7 @@ players walking the cheapest route turn by turn as before: stage 3 won 8, the
 computer before it 11, one shared; +0.7 ± 2.1 gold a game for stage 3, within
 luck. Games imagined per move 10,207 against 9,882.
 
-### Q220. ~~Should the rock's green match the map's?~~ — **answered 2026-10-03: the rock's moss takes the forest's green, darker, and the map stays as it is (830, 831)**
+### Q220. ~~Should the rock's green match the map's?~~ — **answered 2026-10-03: the rock's moss takes the forest's green, darker, and the map stays as it is; the stone tops over the map get a graded blur (830-833)**
 
 Andrei, 2026-10-02 at 22:49: *"The green on the background rocks and roots
 that extend down from the "skyholm" does not quite match what is prominently
@@ -3275,6 +3275,21 @@ quarters of their saturation and are darkened by a quarter (`greens` in
 supplied it). The stone and roots, greyish pixels and the palest sunlit spots
 stay as drawn; those spots, turned and darkened, had shown as grey-green
 specks on the stone. Nothing on the map changes.
+
+At 02:21 he added: *"The colors blend really well now. Looking at the
+transition though I wonder if the stones underneath could be blurred where
+they show under the map as well, to create smoother trasition"*.
+
+832. **How strong a blur:** light, medium (recommended) or strong, the whole
+     strip where the stone tops fade over the map blurred evenly. **Answered**
+     at 02:47: *"No, this doesn't work at all. Somehow I see the edge of the
+     map as a line again, and that's pretty bad"*. Blurred stone met sharp
+     stone right on the ground's edge and drew it as a line.
+833. **A graded blur instead:** no blur, PR #65 going in with the greens
+     alone; graded, medium (recommended); or graded, strong. The stone stays
+     sharp on the ground's edge, as before, and is blurred more the higher it
+     rises over the map, fully at the top of the fade. **Answered** at 03:12:
+     graded, medium (`blur` 6 of the picture's pixels in `Art/manifest.json`).
 
 ---
 
