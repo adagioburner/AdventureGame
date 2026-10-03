@@ -3234,6 +3234,12 @@ the search's own walk along a tree edge is still played turn by turn (stage
 moments 823 named: that costs little, and games where skills come back need
 every figure's place (824).
 
+Tested (825 A), 20 games with the seats swapped at 3 s a move on ten maps
+(seeds stage3-0 to stage3-9), against the same computer with its imagined
+players walking the cheapest route turn by turn as before: stage 3 won 8, the
+computer before it 11, one shared; +0.7 ± 2.1 gold a game for stage 3, within
+luck. Games imagined per move 10,207 against 9,882.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design
