@@ -74,6 +74,13 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     KINDS: SKILL_KINDS,
     GOLD_PER_UNIT: 1,
   },
+  // [Q227] Andrei, 2026-10-03: "the deepest plains space with remoteness less
+  // than 0.1", a space's remoteness being the average of the sites within 5
+  // steps of it (876), "please make 0.1 a config setting".
+  start: {
+    NEARBY_STEPS: 5,
+    MAX_REMOTENESS: 0.1,
+  },
 };
 
 /**

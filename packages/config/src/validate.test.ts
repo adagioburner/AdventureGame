@@ -131,6 +131,15 @@ describe('validateRuleset', () => {
     expect(() => validateRuleset(ruleset)).not.toThrow();
   });
 
+  it('rejects a start NEARBY_STEPS that is not a whole number of steps, and a MAX_REMOTENESS of 0 or less (Q227)', () => {
+    const steps = clone();
+    (steps.config.start as { NEARBY_STEPS: number }).NEARBY_STEPS = 2.5;
+    expect(() => validateRuleset(steps)).toThrow(/start\.NEARBY_STEPS must be a non-negative integer/);
+    const limit = clone();
+    (limit.config.start as { MAX_REMOTENESS: number }).MAX_REMOTENESS = 0;
+    expect(() => validateRuleset(limit)).toThrow(/start\.MAX_REMOTENESS must be a positive number/);
+  });
+
   it('reports every problem at once rather than the first', () => {
     const ruleset = clone();
     (ruleset.config.balancing as { CLOSE_CANDIDATE_COUNT: number }).CLOSE_CANDIDATE_COUNT = 0;

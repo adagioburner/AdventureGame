@@ -170,6 +170,14 @@ export function validateRuleset(ruleset: Ruleset): void {
   if (!Number.isFinite(config.ai.BUY_SKIP_STAMINA) || config.ai.BUY_SKIP_STAMINA < 0) {
     problems.push('Q190: ai.BUY_SKIP_STAMINA must be a non-negative number.');
   }
+  // Q227: whole steps, and a limit remoteness can be below.
+  const start = config.start;
+  if (start !== undefined && (!Number.isInteger(start.NEARBY_STEPS) || start.NEARBY_STEPS < 0)) {
+    problems.push('Q227: start.NEARBY_STEPS must be a non-negative integer.');
+  }
+  if (start !== undefined && !(start.MAX_REMOTENESS > 0)) {
+    problems.push('Q227: start.MAX_REMOTENESS must be a positive number.');
+  }
   // Q200: whole gold, none at the least.
   const gold = config.players.STARTING_GOLD;
   if (gold !== undefined && (!Number.isInteger(gold) || gold < 0)) {

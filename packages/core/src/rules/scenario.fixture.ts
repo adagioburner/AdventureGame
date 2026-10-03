@@ -32,6 +32,8 @@ export interface PoiSpec {
   readonly kind: RewardKind;
   readonly units: number;
   readonly guard: Guard | null;
+  /** §5.1's score; 0.5 unless a test is about it. */
+  readonly remoteness?: number;
 }
 
 export interface MapSpec {
@@ -73,7 +75,7 @@ export function fixtureMap(spec: MapSpec): GameMap {
     terrain: spec.terrains[poi.node] as Terrain,
     reward: { kind: poi.kind, units: poi.units },
     guard: poi.guard,
-    remoteness: 0.5,
+    remoteness: poi.remoteness ?? 0.5,
     group: { kind: poi.kind, guard: poi.guard === null ? null : poi.guard.type },
     artVariant: 0,
   }));

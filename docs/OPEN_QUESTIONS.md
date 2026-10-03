@@ -3291,6 +3291,43 @@ they show under the map as well, to create smoother trasition"*.
      rises over the map, fully at the top of the fade. **Answered** at 03:12:
      graded, medium (`blur` 6 of the picture's pixels in `Art/manifest.json`).
 
+### Q227. ~~Where on the plains do players start?~~ — **answered 2026-10-03: on the deepest plains space whose sites within 5 steps average less than 0.1 remoteness, in games started from now on (873-878)**
+
+Andrei, 2026-10-03 at 06:45, asked to start away from the forest and the
+mountains; at 13:46 he named the worry, big forest speed or magic stacks near
+the start. PR #66 tried a start in the forest's farther half, then a start and
+the remoteness walks deep in the plains, then half of remoteness the distance
+from the start ("simply unplayable", 14:43: the speeds piled up in a far
+corner). Each idea after that was measured rather than built. At 20:21 he
+asked for *"remoteness of a space as the average of all sites within 5 steps
+from it"*; on 200 maps per size, the deepest space below 0.1 by it lay 8.2
+road steps from the forest and mountains (10.2 on the larger map), and a
+forest speed stack of 3 or more lay within 5 steps of it on 10% of maps,
+against 22% (18%) for today's random start. At 20:46: *"change the starting
+place to go to the deepest plains space with remoteness less than 0.1. We
+don't need any changes in how remoteness is calculated etc. It would probably
+make sense to abandon #66 and make that change in a new PR"*. #66 was closed.
+
+873. **Several spaces equally deep** (on about half the maps): the least
+     remote of them (recommended), or one at random from the map's seed.
+     **Answered** at 20:53: the least remote.
+874. **No space below 0.1** (none of 400 maps measured): the least remote
+     plains space (recommended), or a random one as before. **Answered**: the
+     least remote.
+875. **The rulebook:** drop "random" (recommended), or describe the rule.
+     **Answered**: drop "random"; the rule is §6 of GDD.md.
+876. **A space's remoteness:** the average remoteness of the sites within 5
+     road steps (recommended). **Answered**: yes.
+877. **Less than 0.1 or 0.1 or less:** **answered** *"does not matter"*; less
+     than, as he wrote.
+878. **Sites of every terrain count, the start is never a site, and depth is
+     road steps to the nearest forest or mountain space** (recommended).
+     **Answered**: yes.
+
+And *"please make 0.1 a config setting"*: `start.MAX_REMOTENESS` (0.1), with
+`start.NEARBY_STEPS` (5) beside it. Games started before keep the random start
+they began on.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design
