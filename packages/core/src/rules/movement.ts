@@ -96,6 +96,51 @@ function walkPath(
   return { charges, staminaSpent, allowanceSpent };
 }
 
+/**
+ * [Q210, 823 A] `walkPath`'s accounting with nothing recorded: how many steps
+ * of `path`, from step `start` on, this turn's allowance and stamina pay for,
+ * and the stamina they cost. The same rules, in the same order: the terrain
+ * entered, free steps first per terrain, `STAMINA_COST` beyond, and a stop at
+ * the first step that cannot be paid.
+ *
+ * The games the computer imagines count a walk along a route traced from the
+ * map with it, a turn at a time and without allocating, so the route is not
+ * checked again here.
+ */
+export function countWalk(
+  graph: MapGraph,
+  path: readonly NodeId[],
+  start: number,
+  allowance: MovementAllowance,
+  stamina: number,
+  config: GameConfig,
+): { readonly steps: number; readonly staminaSpent: number } {
+  let plains = allowance.plains;
+  let forest = allowance.forest;
+  let mountain = allowance.mountain;
+  let spent = 0;
+  let at = start;
+  for (; at < path.length; at++) {
+    const terrain = terrainOf(graph, path[at] as NodeId);
+    if (terrain === 'plains' && plains > 0) {
+      plains--;
+      continue;
+    }
+    if (terrain === 'forest' && forest > 0) {
+      forest--;
+      continue;
+    }
+    if (terrain === 'mountain' && mountain > 0) {
+      mountain--;
+      continue;
+    }
+    const price = terrainStepCost(terrain, config);
+    if (spent + price > stamina) break;
+    spent += price;
+  }
+  return { steps: at - start, staminaSpent: spent };
+}
+
 function terrainOf(graph: MapGraph, node: NodeId): Terrain {
   const target = graph.nodes[node];
   if (target === undefined) throw new RuleViolationError(`path enters unknown node ${node}`);

@@ -205,7 +205,7 @@ function realise(cursor: RolloutCursor, branch: MctsBranch, options: MctsOptions
  * are, but switch the actual paths players walk to the most efficient". The
  * real move walks the best route for the subject's speeds, after anything it
  * bought this turn. Since stage 2 the search that chose the target counts the
- * best route too; only the games it imagines still walk the cheapest (stage 3).
+ * best route too, and since stage 3 the games it imagines walk it.
  */
 export function firstTurnOf(state: GameState, branch: MctsBranch | null, options: MctsOptions): TurnAction {
   if (branch === null) throw new RangeError('the search found no branch to take');

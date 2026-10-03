@@ -2,7 +2,9 @@ import type { GameConfig } from '@adventure/config';
 import {
   activePlayer,
   applyAction,
+  applyCountedTurn,
   bestRoute,
+  countWalk,
   poiRuntimeAt,
   previewPath,
   routeTable,
@@ -10,7 +12,6 @@ import {
   type DiceSource,
   type GameState,
   type NodeId,
-  type PathPreview,
   type PlayerId,
   type PlayerState,
   type Rng,
@@ -46,6 +47,16 @@ import type { ClosestFinder } from './speeds.ts';
  * reasons in docs/IMPLEMENTATION_PLAN.md phase 5): a leg here can end without
  * reaching its target, costs whatever the real turns cost rather than the
  * Dijkstra estimate, and records nothing. `walk.ts` is remoteness's loop alone.
+ *
+ * [Q210] Stage 3 of Andrei's plan, 2026-10-02: "Switch simulated games to the
+ * strategy above", a player's arrival worked out from its route rather than
+ * walked out turn by turn. A player walks the best route for its speeds,
+ * traced once when it picks its target (823 A), and each turn is counted
+ * along it (`countWalk`) and played with `applyCountedTurn`, which fights
+ * or takes an unclaimed site where a turn ends, its target or another on the
+ * way, as `applyAction` does. The figure stands where the count puts it after
+ * every turn, so the game is the one `applyAction` would have played along
+ * that route. Which sites it picks among is as before (822 B).
  */
 export interface RolloutCursor {
   readonly state: GameState;
@@ -58,11 +69,29 @@ export interface RolloutCursor {
    * the others.
    */
   readonly targets: readonly (NodeId | null)[];
+  /**
+   * [Q210, 823 A] The route each seat is walking to its target, in seat
+   * order, or `null` for a seat that traces one when it next moves. A walk
+   * that is not for the seat's target, or does not continue from where it
+   * stands, is traced again.
+   */
+  readonly walks: readonly (RouteWalk | null)[];
+}
+
+/** [Q210, 823 A] A route an imagined player walks, traced once when it heads for `target`. */
+export interface RouteWalk {
+  readonly target: NodeId;
+  /** Where the player stood when the route was traced. */
+  readonly from: NodeId;
+  /** The route, excluding `from`. */
+  readonly route: readonly NodeId[];
+  /** How many of its steps are walked. */
+  readonly walked: number;
 }
 
 /** A cursor at `state` with no seat committed to anything yet. */
 export function rolloutCursor(state: GameState, subject: PlayerId): RolloutCursor {
-  return { state, subject, targets: state.players.map(() => null) };
+  return { state, subject, targets: state.players.map(() => null), walks: state.players.map(() => null) };
 }
 
 /**
@@ -125,7 +154,7 @@ export function turnCapTermination(inner: RolloutTermination, startTurn: number,
 
 /**
  * Whether a player heading for a target spends this turn resting instead of
- * walking. Given the route to the target and this turn's preview of it.
+ * walking. Given how many steps of its route this turn would walk.
  *
  * §9 says a simulated player keeps moving to its POI, and nothing about when
  * it rests; stamina runs out often, so the rollout needs a rule. Injected so
@@ -133,7 +162,7 @@ export function turnCapTermination(inner: RolloutTermination, startTurn: number,
  */
 export interface RestRule {
   readonly name: string;
-  restsInstead(state: GameState, player: PlayerState, route: readonly NodeId[], preview: PathPreview): boolean;
+  restsInstead(state: GameState, player: PlayerState, steps: number): boolean;
 }
 
 /**
@@ -145,7 +174,7 @@ export interface RestRule {
 export function restWhenStuck(): RestRule {
   return {
     name: 'rest-when-stuck',
-    restsInstead: (_state, _player, _route, preview) => preview.reachableStepCount === 0,
+    restsInstead: (_state, _player, steps) => steps === 0,
   };
 }
 
@@ -161,6 +190,14 @@ export interface RolloutOptions {
   readonly closest?: ClosestFinder;
   /** Which of the closest a player heads for; uniformly at random when absent, as the game plays. */
   readonly pick?: TargetPicker;
+  /**
+   * [Q210] How a player walks to its target: counted along its route, as the
+   * game plays since stage 3, when absent; `replayed` walks the cheapest
+   * route turn by turn through `applyAction`, as before it, for comparison.
+   */
+  readonly walks?: 'counted' | 'replayed';
+  /** The route a counted walk follows; the best for the player's speeds when absent, as the game plays. */
+  readonly walkRoute?: RouteChoice;
 }
 
 /** Which POIs `player` may head for in `state`. */
@@ -217,10 +254,10 @@ export const bestRouteForSpeeds: RouteChoice = (state, player, target) =>
  * is the empty path, which §8 makes another roll at its guard. Otherwise
  * `restRule` may turn the turn into a rest.
  *
- * The rollout walks the cheapest route (`cheapestRoute`, from the map's
- * `routeTable`). The computer's real move, once the search has chosen a
- * target, walks the best route for its speeds instead (Q210, stage 1:
- * `bestRouteForSpeeds`), and so does its own walk along a tree edge (stage 2).
+ * The computer's real move, once the search has chosen a target, walks the
+ * best route for its speeds (Q210, stage 1: `bestRouteForSpeeds`), and so
+ * does its own walk along a tree edge (stage 2). The games it imagines count
+ * their walks instead (stage 3, `playRolloutTurn`).
  */
 export function turnTowards(state: GameState, target: NodeId, restRule: RestRule, routeOf: RouteChoice = cheapestRoute): TurnAction {
   const player = activePlayer(state);
@@ -230,7 +267,7 @@ export function turnTowards(state: GameState, target: NodeId, restRule: RestRule
   if (route.length === 0) return { kind: 'move', player: player.id, path: route, waypoint: null };
 
   const preview = previewPath(state.map.graph, player.position, route, state.turn.allowance, player.stats.stamina, config);
-  if (restRule.restsInstead(state, player, route, preview)) return { kind: 'rest', player: player.id };
+  if (restRule.restsInstead(state, player, preview.reachableStepCount)) return { kind: 'rest', player: player.id };
   return { kind: 'move', player: player.id, path: route, waypoint: null };
 }
 
@@ -263,47 +300,133 @@ function comparedTarget(
  * A seat with no commitment picks one uniformly among the K closest unclaimed
  * POIs (`chooseWalkTarget`, shared with §5.1). After the turn, a commitment
  * lapses for whoever has arrived at theirs and for anyone whose target someone
- * has just claimed; everyone else keeps theirs. The seat walks the route
- * `routeOf` picks, the cheapest when absent.
+ * has just claimed; everyone else keeps theirs.
+ *
+ * [Q210] The seat walks the best route for its speeds, counted (stage 3,
+ * 823 A); with `walks: 'replayed'` it walks the cheapest route through
+ * `applyAction`, as before.
  */
-export function playRolloutTurn(cursor: RolloutCursor, options: RolloutOptions, routeOf: RouteChoice = cheapestRoute): RolloutCursor {
+export function playRolloutTurn(cursor: RolloutCursor, options: RolloutOptions): RolloutCursor {
+  if (options.walks === 'replayed') return playWalkedTurn(cursor, options, cheapestRoute);
+  const player = activePlayer(cursor.state);
+  return playCountedTurn(cursor, options, player.seat - 1, committedTarget(cursor, player, options));
+}
+
+/** The active seat's target: the one it is committed to, or one it picks now. */
+function committedTarget(cursor: RolloutCursor, player: PlayerState, options: RolloutOptions): NodeId {
+  const committed = cursor.targets[player.seat - 1] ?? null;
+  if (committed !== null) return committed;
+
+  const state = cursor.state;
+  const eligible = options.targets === undefined ? unclaimedPoiNodes(state) : options.targets(state, player);
+  const count = options.config.balancing.CLOSE_CANDIDATE_COUNT;
+  const choice =
+    options.closest === undefined && options.pick === undefined
+      ? chooseWalkTarget(
+          state.map.graph,
+          player.position,
+          eligible,
+          count,
+          options.config,
+          options.rng,
+          routeTable(state.map.graph, options.config),
+        )
+      : comparedTarget(state, player, eligible, count, options);
+  // No unclaimed POI means no unclaimed gold, which every termination stops
+  // on first; reaching here is a caller bug, not a position.
+  if (choice === null) throw new RangeError('a rollout turn with no unclaimed POI left to head for');
+  return choice.node;
+}
+
+/**
+ * The active seat's turn walked through `applyAction` along the route
+ * `routeOf` picks from where it stands: every imagined turn before stage 3,
+ * and the search's own walk along a tree edge.
+ */
+function playWalkedTurn(cursor: RolloutCursor, options: RolloutOptions, routeOf: RouteChoice): RolloutCursor {
   const state = cursor.state;
   const player = activePlayer(state);
   const index = player.seat - 1;
-
-  let target = cursor.targets[index] ?? null;
-  if (target === null) {
-    const eligible = options.targets === undefined ? unclaimedPoiNodes(state) : options.targets(state, player);
-    const count = options.config.balancing.CLOSE_CANDIDATE_COUNT;
-    const choice =
-      options.closest === undefined && options.pick === undefined
-        ? chooseWalkTarget(
-            state.map.graph,
-            player.position,
-            eligible,
-            count,
-            options.config,
-            options.rng,
-            routeTable(state.map.graph, options.config),
-          )
-        : comparedTarget(state, player, eligible, count, options);
-    // No unclaimed POI means no unclaimed gold, which every termination stops
-    // on first; reaching here is a caller bug, not a position.
-    if (choice === null) throw new RangeError('a rollout turn with no unclaimed POI left to head for');
-    target = choice.node;
-  }
+  const target = committedTarget(cursor, player, options);
 
   const action = turnTowards(state, target, options.restRule, routeOf);
   const next = applyAction(state, action, options.dice).state;
   const arrived = action.kind === 'move' && next.players[index]?.position === target;
+  const walks = cursor.walks.map((walk, at) => (at === index ? null : walk));
+  return afterClaims(cursor, next, index, target, arrived, walks);
+}
 
+/**
+ * [Q210, 823 A] The active seat's turn counted along its route. The route is
+ * traced when the seat starts for its target, and each turn walks on along it
+ * as far as §7 pays for (`countWalk`), or rests by `restRule`, and is played
+ * with `applyCountedTurn`. Standing on its target already, the seat walks no
+ * steps, which §8 makes another roll at the guard there, as the empty move.
+ */
+function playCountedTurn(cursor: RolloutCursor, options: RolloutOptions, index: number, target: NodeId): RolloutCursor {
+  const state = cursor.state;
+  const player = activePlayer(state);
+  let walk = cursor.walks[index] ?? null;
+  if (walk === null || walk.target !== target || standsOn(walk) !== player.position) {
+    const route = (options.walkRoute ?? bestRouteForSpeeds)(state, player, target);
+    if (route === null) throw new RangeError(`no route from ${player.position} to ${target}`);
+    walk = { target, from: player.position, route, walked: 0 };
+  }
+
+  const route = walk.route;
+  let walked = walk.walked;
+  let next: GameState;
+  let moved = true;
+  let claims = false;
+  const turn = countWalk(state.map.graph, route, walked, state.turn.allowance, player.stats.stamina, options.config);
+  if (walked < route.length && options.restRule.restsInstead(state, player, turn.steps)) {
+    next = applyCountedTurn(state, { kind: 'rest' }, options.dice);
+    moved = false;
+  } else {
+    walked += turn.steps;
+    const to = walked === 0 ? walk.from : (route[walked - 1] as NodeId);
+    claims = unclaimedSiteAt(state, to);
+    next = applyCountedTurn(state, { kind: 'walk', to, staminaSpent: turn.staminaSpent }, options.dice);
+  }
+
+  const arrived = moved && walked === route.length;
+  const walks = cursor.walks.map((kept, at) => (at !== index ? kept : arrived ? null : { ...(walk as RouteWalk), walked }));
+  if (claims) return afterClaims(cursor, next, index, target, arrived, walks);
+  // Nothing was claimed, so every other seat keeps its target.
+  const targets = cursor.targets[index] === target ? cursor.targets : cursor.targets.map((committed, at) => (at === index ? target : committed));
+  return { state: next, subject: cursor.subject, targets, walks };
+}
+
+/** Where a walk has brought its player. */
+function standsOn(walk: RouteWalk): NodeId {
+  return walk.walked === 0 ? walk.from : (walk.route[walk.walked - 1] as NodeId);
+}
+
+/** Whether an unclaimed site stands on `node`, which a turn ending there fights or takes (§8). */
+function unclaimedSiteAt(state: GameState, node: NodeId): boolean {
+  return poiRuntimeAt(state, node)?.claimedBy === null;
+}
+
+/**
+ * The cursor after a turn that may have claimed a site: the mover's
+ * commitment lapses on arrival, and anyone's lapses once someone has claimed
+ * their target, their walk with it.
+ */
+function afterClaims(
+  cursor: RolloutCursor,
+  next: GameState,
+  index: number,
+  target: NodeId,
+  arrived: boolean,
+  walks: readonly (RouteWalk | null)[],
+): RolloutCursor {
   const targets = cursor.targets.map((committed, at) => {
     const current = at === index ? target : committed;
     if (current === null) return null;
     if (at === index && arrived) return null;
     return poiRuntimeAt(next, current)?.claimedBy === null ? current : null;
   });
-  return { state: next, subject: cursor.subject, targets };
+  return { state: next, subject: cursor.subject, targets, walks: walks.map((walk, at) => (targets[at] === null ? null : walk)) };
 }
 
 /**
@@ -330,9 +453,10 @@ export function playRolloutTurn(cursor: RolloutCursor, options: RolloutOptions, 
  * than a single step. The returned cursor is the one right after the turn that
  * ended it.
  *
- * The mover walks the route `moverRoute` picks, the cheapest when absent; the
- * other seats walk the rollout's (Q210, 820 A: the search's own walk is the
- * best route for its speeds, its imagined players' are stage 3).
+ * The mover walks the route `moverRoute` picks, the cheapest when absent,
+ * turn by turn through `applyAction` (Q210, 820 A: the search's own walk is
+ * the best route for its speeds); the other seats play the rollout's turns,
+ * counted along theirs since stage 3.
  */
 export function macroAdvanceToTarget(
   cursor: RolloutCursor,
@@ -350,7 +474,7 @@ export function macroAdvanceToTarget(
   for (let turns = 0; ; turns++) {
     if (options.termination.isTerminal(current, turns)) return { cursor: current, outcome: 'terminal' };
     const moving = activePlayer(current.state).id === mover.id;
-    current = playRolloutTurn(current, options, moving ? moverRoute : cheapestRoute);
+    current = moving ? playWalkedTurn(current, options, moverRoute) : playRolloutTurn(current, options);
     if (current.targets[index] !== null) continue;
     const claimedBy = poiRuntimeAt(current.state, target)?.claimedBy ?? null;
     if (claimedBy !== null && claimedBy !== mover.id) return { cursor: current, outcome: 'target_claimed_by_other' };

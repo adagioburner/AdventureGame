@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_GAME_CONFIG, type GameConfig } from '@adventure/config';
-import { applyAction, createDiceSource, createRng, poiRuntimeAt, unclaimedGoldUnits, type GameState } from '@adventure/core';
+import { applyAction, createDiceSource, createRng, poiRuntimeAt, unclaimedGoldUnits, type GameMap, type GameState } from '@adventure/core';
 import {
   fixtureGame,
   fixtureMap,
@@ -12,6 +12,7 @@ import {
   withStats,
 } from '../../core/src/rules/scenario.fixture.ts';
 import {
+  cheapestRoute,
   goldExhaustedTermination,
   macroAdvanceToTarget,
   playRolloutTurn,
@@ -69,8 +70,8 @@ const line = fixtureMap({
 });
 
 /** Seat one to move, both players with no free steps and no stamina. */
-function stuckGame(): GameState {
-  let state = fixtureGame(line, 0);
+function stuckGame(map: GameMap = line): GameState {
+  let state = fixtureGame(map, 0);
   state = withStats(state, player('two'), { stamina: 0 });
   return withStats(state, player('one'), { stamina: 0 });
 }
@@ -274,5 +275,99 @@ describe('turnCapTermination', () => {
     state = withStats(state, player('one'), { stamina: 10 });
     const end = runRollout(rolloutCursor(state, player('one')), options({ termination: turnCapTermination(goldExhaustedTermination(), 1, 250) }));
     expect(unclaimedGoldUnits(end.state)).toBe(0);
+  });
+});
+
+describe('counted walks in imagined games (Q210, stage 3, 823 A)', () => {
+  /**
+   *   0 ── 1 ── 2 ── 3 ── 4 ── 5 (gold 3)    plains all the way
+   *   └─── 6f ── 7f ── 8f ──────┘            or through the forest
+   * Gold 1 on 9, off 0, so taking 5 does not end the game.
+   */
+  const detour = fixtureMap({
+    terrains: ['plains', 'plains', 'plains', 'plains', 'plains', 'plains', 'forest', 'forest', 'forest', 'plains'],
+    edges: [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [4, 5],
+      [0, 6],
+      [6, 7],
+      [7, 8],
+      [8, 5],
+      [0, 9],
+    ],
+    pois: [
+      { node: 5, kind: 'gold', units: 3, guard: null },
+      { node: 9, kind: 'gold', units: 1, guard: null },
+    ],
+  });
+  const forester = () => withStats(stuckGame(detour), player('one'), { forest_move: 3, plains_move: 1 });
+
+  it('walks the best route for the player’s speeds', () => {
+    // Through the forest it is four free steps; along the plains it gets one.
+    const cursor = { ...rolloutCursor(forester(), player('one')), targets: [n(5), null] };
+    const counted = playRolloutTurn(cursor, options());
+    expect(counted.state.players[0]?.position).toBe(n(5));
+    expect(poiRuntimeAt(counted.state, n(5))?.claimedBy).toBe(player('one'));
+    expect(counted.targets[0]).toBeNull();
+
+    const replayed = playRolloutTurn(cursor, options({ walks: 'replayed' }));
+    expect(replayed.state.players[0]?.position).toBe(n(1));
+  });
+
+  it('traces the route once and walks on along it', () => {
+    let cursor = rolloutCursor(withStats(stuckGame(), player('one'), { plains_move: 1 }), player('one'));
+    cursor = { ...cursor, targets: [n(6), null] };
+    cursor = playRolloutTurn(cursor, options());
+    const route = cursor.walks[0]?.route;
+    expect(route).toEqual([n(1), n(2), n(3), n(4), n(5), n(6)]);
+    expect(cursor.walks[0]?.walked).toBe(1);
+    cursor = playRolloutTurn(playRolloutTurn(cursor, options()), options());
+    expect(cursor.walks[0]?.route).toBe(route);
+    expect(cursor.walks[0]?.walked).toBe(2);
+    expect(cursor.state.players[0]?.position).toBe(n(2));
+  });
+
+  it('takes a site where a turn ends on the way, and keeps its target', () => {
+    // Two free steps end the first turn on the stamina site at 2.
+    let cursor = rolloutCursor(withStats(stuckGame(), player('one'), { plains_move: 2 }), player('one'));
+    cursor = playRolloutTurn({ ...cursor, targets: [n(5), null] }, options());
+    expect(cursor.state.players[0]?.position).toBe(n(2));
+    expect(poiRuntimeAt(cursor.state, n(2))?.claimedBy).toBe(player('one'));
+    expect(cursor.state.players[0]?.stats.stamina).toBe(1);
+    expect(cursor.targets[0]).toBe(n(5));
+  });
+
+  it('plays exactly the game the rules would along the same route', () => {
+    // Counted along the cheapest route, an imagined game is the one walked
+    // turn by turn through applyAction: every claim, roll, rest and win.
+    const board = (state: GameState) => ({
+      players: state.players.map((seat) => ({ position: seat.position, stats: seat.stats })),
+      poiRuntime: state.poiRuntime,
+      turn: state.turn,
+      status: state.status,
+      winners: state.winners,
+    });
+    for (const seed of ['a', 'b', 'c', 'd', 'e', 'f']) {
+      for (const [map, start] of [
+        [line, 3],
+        [detour, 0],
+      ] as const) {
+        const play = (walks: 'counted' | 'replayed') =>
+          runRollout(
+            rolloutCursor(fixtureGame(map, start), player('one')),
+            options({
+              config: DEFAULT_GAME_CONFIG,
+              rng: createRng(seed),
+              dice: createDiceSource(createRng(seed), DEFAULT_GAME_CONFIG),
+              walks,
+              walkRoute: cheapestRoute,
+            }),
+          ).state;
+        expect(board(play('counted'))).toEqual(board(play('replayed')));
+      }
+    }
   });
 });

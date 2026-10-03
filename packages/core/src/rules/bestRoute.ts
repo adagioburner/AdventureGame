@@ -152,7 +152,12 @@ function pickBestRoute(routes: RouteTable, from: NodeId, to: NodeId, speeds: Per
  * and today's route, `shortestPath`, whenever it is one of them (811 A), so a
  * player with no speeds is drawn and walks exactly the route they were.
  * `null` only if `to` cannot be reached. The route is traced only here, from
- * the entry `bestRouteSteps` picks.
+ * the entry `bestRouteSteps` would pick.
+ *
+ * It picks that entry afresh rather than from `bestRouteSteps`' answers:
+ * one site's few routes cost little to score, while the players in the games
+ * the computer imagines pick their sites from more spaces and speeds than
+ * any store of answers could keep (Q210, stage 3).
  */
 export function bestRoute(
   graph: MapGraph,
@@ -162,9 +167,9 @@ export function bestRoute(
   config: GameConfig,
 ): readonly NodeId[] | null {
   if (from === to) return [];
-  const choice = bestRouteSteps(graph, from, to, stats, config);
-  if (choice === null) return null;
   const routes = routeTable(graph, config);
+  const choice = pickBestRoute(routes, from, to, refreshAllowance(stats), config);
+  if (choice === null) return null;
   return choice.entry === -1 ? routes.path(from, to) : frontPath(routes.routesFrom(from), choice.entry);
 }
 

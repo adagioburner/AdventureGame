@@ -54,10 +54,16 @@ export interface ComputerSettings {
    * choices, whether resting and which purchases are weighed, and its own
    * walk along a choice. The game leaves it out and gets the best for the
    * player's speeds (stage 2, 820 A); the balancing harness passes
-   * `'cheapest'` to compare with the search before. The games it imagines
-   * count the cheapest route either way (stage 3).
+   * `'cheapest'` to compare with the search before.
    */
   readonly searchRoutes?: 'best' | 'cheapest';
+  /**
+   * [Q210] How the players in the games it imagines walk. The game leaves it
+   * out and gets a walk counted along the best route for their speeds (stage
+   * 3, 823 A); the balancing harness passes `'replayed'`, the cheapest route
+   * turn by turn, to compare with the computer before.
+   */
+  readonly imaginedWalks?: 'counted' | 'replayed';
 }
 
 /**
@@ -77,7 +83,8 @@ export function computerEvaluator(): NodeEvaluator {
  * by the player's own speeds along the best route for them (Q112, Q210 stage
  * 2: `closestByBestRoute`), its resting and buying checks and its own walk
  * along that route too, the §9 rollout policy ranking by the speeds along the
- * cheapest route (`closestBySpeeds`), and the lead score (Q113,
+ * cheapest route (`closestBySpeeds`, 822 B) and walking the best route for
+ * them, counted (Q210 stage 3, 823 A), and the lead score (Q113,
  * `computerEvaluator`). The games it plays in
  * its head rest when stuck (Q43) and stop when the gold is gone, the game is
  * won, or `SIMULATION_TURN_CAP` turns have passed since `state` (Q44).
@@ -108,6 +115,7 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
       closest,
       ...(settings.targets === undefined ? {} : { targets: settings.targets }),
       ...(settings.pick === undefined ? {} : { pick: settings.pick }),
+      ...(settings.imaginedWalks === undefined ? {} : { walks: settings.imaginedWalks }),
     }),
     evaluator: settings.evaluator ?? computerEvaluator(),
     termination,
