@@ -3183,6 +3183,31 @@ counting the cheapest route as before: 10 wins each, none shared, +2.1 ± 2.4
 gold a game for stage 2, within luck. Games imagined per move 5,647 against
 5,322, so counting the best route did not slow the search.
 
+### Q220. ~~Should the rock's green match the map's?~~ — **answered 2026-10-03: the rock's moss takes the forest's green, darker, and the map stays as it is (830, 831)**
+
+Andrei, 2026-10-02 at 22:49: *"The green on the background rocks and roots
+that extend down from the "skyholm" does not quite match what is prominently
+used in the map. Can we make them agree a little more?"* The moss and ivy on
+his rock ([Q170](#q170)) are a yellow olive (hue about 54), while the forest's
+ground and trees are a cooler grass green (hue about 96). The plains ground is
+sand, and its few tufts and bushes already share the rock's olive, so the
+forest's green is the map's only large green.
+
+830. **Which greens move:** the rock's halfway to the forest's; the rock's all
+     the way (recommended); or both halfway, every forest turning a little
+     more yellow. **Answered** at 23:19: *"I like "rock all the way" but I
+     think the rock's green is too bright, it needs to be darker"*.
+831. **How much darker:** 15%, close to the forest ground; 25%, between the
+     ground and the trees (recommended); or 35%, as deep as the trees.
+     **Answered** at 00:00 on 10-03: 25% darker.
+
+The rock's greens turn 42 degrees of hue towards the forest's, keep three
+quarters of their saturation and are darkened by a quarter (`greens` in
+`Art/manifest.json`, applied as the picture loads, so the PNG stays as he
+supplied it). The stone and roots, greyish pixels and the palest sunlit spots
+stay as drawn; those spots, turned and darkened, had shown as grey-green
+specks on the stone. Nothing on the map changes.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design

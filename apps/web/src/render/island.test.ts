@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildArtCatalog } from '../art/catalog.ts';
 import { ART_FILES } from '../art/files.ts';
-import { applyAffine, groundCorners, shapeUnderside, undersideDepth, undersideMatrix } from './island.ts';
+import { applyAffine, groundCorners, shapeUnderside, turnGreens, undersideDepth, undersideMatrix } from './island.ts';
 import { isometricProjection } from './isometric.ts';
 
 describe("the rock under the map's front edges (Q170)", () => {
@@ -94,5 +94,58 @@ describe("the rock under the map's front edges (Q170)", () => {
     expect(alpha(5, 11)).toBe(200);
     expect(alpha(8, 10)).toBe(200);
     expect(alpha(12, 11)).toBe(200);
+  });
+
+  describe("the rock's moss in the forest's green (830, 831)", () => {
+    const greens = { hue: 42, saturation: 0.75, darken: 0.25 };
+    const turned = (...rgba: number[]) => {
+      const pixels = new Uint8ClampedArray(rgba);
+      turnGreens(pixels, greens);
+      return [...pixels];
+    };
+    const hsl = ([r, g, b]: number[]) => {
+      const [red, green, blue] = [r! / 255, g! / 255, b! / 255];
+      const max = Math.max(red, green, blue);
+      const min = Math.min(red, green, blue);
+      const chroma = max - min;
+      const lightness = (max + min) / 2;
+      const hue = 60 * (max === red ? (green - blue) / chroma : max === green ? (blue - red) / chroma + 2 : (red - green) / chroma + 4);
+      return { hue, saturation: chroma / (1 - Math.abs(2 * lightness - 1)), lightness };
+    };
+
+    it('turns the olive moss to green, less saturated and darker', () => {
+      const moss = [119, 112, 41, 255];
+      const before = hsl(moss);
+      const after = hsl(turned(...moss));
+      expect(after.hue).toBeCloseTo(before.hue + 42, 0);
+      expect(after.saturation).toBeCloseTo(before.saturation * 0.75, 1);
+      expect(after.lightness).toBeCloseTo(before.lightness * 0.75, 2);
+      expect(turned(...moss)[3]).toBe(255);
+    });
+
+    it('leaves the stone, the roots, greys, the palest sunlit spots and see-through pixels as drawn', () => {
+      for (const pixel of [
+        [200, 180, 140, 255], // sunlit stone, hue 40
+        [122, 90, 58, 255], // a root's wood
+        [128, 128, 128, 255], // grey
+        [240, 236, 200, 255], // a pale sunlit spot, yellow-green but nearly white
+        [119, 112, 41, 0], // see-through
+      ]) {
+        expect(turned(...pixel)).toEqual(pixel);
+      }
+    });
+
+    it('turns a green at the edge of the stone\'s yellows part of the way, so moss shades off into stone', () => {
+      const edge = [150, 133, 60, 255]; // hue about 49
+      const turn = hsl(turned(...edge)).hue - hsl(edge).hue;
+      expect(turn).toBeGreaterThan(5);
+      expect(turn).toBeLessThan(42);
+    });
+
+    it('changes nothing when the manifest leaves the greens as drawn', () => {
+      const pixels = new Uint8ClampedArray([119, 112, 41, 255]);
+      turnGreens(pixels, { hue: 0, saturation: 1, darken: 0 });
+      expect([...pixels]).toEqual([119, 112, 41, 255]);
+    });
   });
 });

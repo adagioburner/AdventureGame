@@ -116,6 +116,12 @@ export interface IslandArt {
      * fade into it rather than ending in a straight cut.
      */
     readonly fade: number;
+    /**
+     * [830, 831] How the rock's moss and ivy turn towards the map's forest
+     * green (`turnGreens` in `render/island.ts`). Left out of the manifest,
+     * they stay as drawn.
+     */
+    readonly greens: IslandGreens;
   };
   readonly sky: {
     /** A picture under `Art/`. */
@@ -125,6 +131,15 @@ export interface IslandArt {
     /** How much it is darkened, from 0 (as drawn) to 1 (black), on a light and a dark screen. */
     readonly shade: { readonly light: number; readonly dark: number };
   };
+}
+
+export interface IslandGreens {
+  /** Degrees each green's hue turns. */
+  readonly hue: number;
+  /** What each green's saturation is multiplied by. */
+  readonly saturation: number;
+  /** How much each green is darkened, from 0 (as bright) to 1 (black). */
+  readonly darken: number;
 }
 
 export interface IslandCorners {
@@ -395,12 +410,26 @@ function parseIsland(island: Readonly<Record<string, unknown>>, where: string): 
       file: string(underside['file'], `${where}.underside.file`),
       corners: { left, bottom, right },
       fade: positive(underside['fade'], `${where}.underside.fade`),
+      greens: underside['greens'] === undefined ? AS_DRAWN : parseGreens(underside['greens'], `${where}.underside.greens`),
     },
     sky: {
       file: string(sky['file'], `${where}.sky.file`),
       color: color(sky['color'], `${where}.sky.color`),
       shade: { light: fraction(shade['light'], `${where}.sky.shade.light`), dark: fraction(shade['dark'], `${where}.sky.shade.dark`) },
     },
+  };
+}
+
+const AS_DRAWN: IslandGreens = { hue: 0, saturation: 1, darken: 0 };
+
+function parseGreens(json: unknown, where: string): IslandGreens {
+  const greens = record(json, where);
+  const hue = finite(greens['hue'], `${where}.hue`);
+  if (hue < -180 || hue > 180) throw new ArtError(`${where}.hue: must be between -180 and 180 degrees`);
+  return {
+    hue,
+    saturation: positive(greens['saturation'], `${where}.saturation`),
+    darken: fraction(greens['darken'], `${where}.darken`),
   };
 }
 
