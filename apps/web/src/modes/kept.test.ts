@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { RESPAWN_RULES } from '@adventure/config';
-import { routeTable } from '@adventure/core';
+import { createRng, routeTable, startingNodeFor } from '@adventure/core';
 import { mapFor } from '../page/seed.ts';
 import { inOrder, toHotseatSeats, type LocalSetup } from '../setup/local.ts';
 import { HotseatGame } from './hotseat.ts';
-import { forgetKept, keep, keptMagicGuardChance, keptMapSize, readKept, replayKept } from './kept.ts';
+import { forgetKept, keep, keptDeepStart, keptMagicGuardChance, keptMapSize, readKept, replayKept } from './kept.ts';
 
 const map = mapFor('adventure', 'standard');
 const setup: LocalSetup = {
@@ -151,6 +151,35 @@ describe('a game on one device kept in the browser (Q56, 66)', () => {
     expect(before?.setup.map.ruleset.config.players.STARTING_GOLD).toBeUndefined();
     expect(before?.state.players.map((player) => player.stats.gold)).toEqual([0, 0]);
     expect(before?.turns.length).toBe(1);
+  });
+
+  it('keeps a map that starts deep in the plains, and makes a game kept before on the start it began on (Q227)', () => {
+    const game = new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'kept' });
+    game.play({ kind: 'rest', player: game.state.players[0]!.id });
+    keep('adventure', setup, null, game);
+    const kept = readKept();
+    expect(kept?.deepStart).toBe(true);
+    expect(kept === null ? null : keptDeepStart(kept)).toBe(true);
+    const again = kept === null ? null : replayKept(kept, map);
+    expect(again?.setup.map).toBe(map);
+    expect(again?.state).toEqual(game.state);
+
+    // Kept before: the same roads, sites and rewards, but the start drawn at
+    // random from the plains spaces that are not sites, as it was then.
+    const { deepStart: _deep, ...older } = kept ?? { deepStart: undefined };
+    const before = older as NonNullable<typeof kept>;
+    expect(keptDeepStart(before)).toBe(false);
+    const began = mapFor('adventure', 'standard', undefined, keptDeepStart(before));
+    expect(began.ruleset.config.start).toBeUndefined();
+    expect(began.graph).toEqual(map.graph);
+    expect(began.pois).toEqual(map.pois);
+    const plains = began.graph.nodes.filter((node) => node.terrain === 'plains' && !began.poiByNode.has(node.id)).map((node) => node.id);
+    expect(startingNodeFor(began)).toBe(createRng('adventure').fork('starting-node').pick(plains));
+    expect(startingNodeFor(began)).not.toBe(startingNodeFor(map));
+    const resumed = replayKept(before, began);
+    expect(resumed?.setup.map).toBe(began);
+    expect(resumed?.state.players.map((player) => player.position)).toEqual([startingNodeFor(began), startingNodeFor(began)]);
+    expect(resumed?.turns.length).toBe(1);
   });
 
   it('keeps the order Shuffle seats drew, and the seats as set for the next New game (Q165)', () => {

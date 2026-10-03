@@ -397,6 +397,25 @@ export interface BuyingConfig {
 }
 
 /**
+ * [Q227] Where the figures start: the plains space that is not a site and is
+ * the most road steps from every forest and mountain space, among those whose
+ * remoteness is below `MAX_REMOTENESS` (878). A space's remoteness is the
+ * average remoteness (§5.1) of the sites, of any terrain, within
+ * `NEARBY_STEPS` road steps of it (876). Remoteness itself is unchanged.
+ *
+ * Andrei, 2026-10-03, after measuring it: "change the starting place to go to
+ * the deepest plains space with remoteness less than 0.1. We don't need any
+ * changes in how remoteness is calculated". Of equally deep spaces, the least
+ * remote (873); with none below `MAX_REMOTENESS`, the least remote space (874).
+ */
+export interface StartConfig {
+  /** 876: the road steps within which a space's sites are averaged. 5. */
+  readonly NEARBY_STEPS: number;
+  /** "please make 0.1 a config setting": the start's remoteness is below this. 0.1. */
+  readonly MAX_REMOTENESS: number;
+}
+
+/**
  * GDD.md §11's table, plus constants the *designer* has added to it in review
  * (currently `GOLD_WEIGHT`). Nothing the implementation invented on its own —
  * that lives in `EngineeringConfig`.
@@ -422,6 +441,12 @@ export interface GameConfig {
    * `respawn` (757).
    */
   readonly buying?: BuyingConfig;
+  /**
+   * [Q227] Absent on the maps of games started before the start moved deep
+   * into the plains, which keep the start they began on: a random plains
+   * space that is not a site.
+   */
+  readonly start?: StartConfig;
 }
 
 /* -------------------------------------------------------------------------- */

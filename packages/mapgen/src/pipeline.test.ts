@@ -8,14 +8,19 @@ import {
   SKILL_KINDS,
   TERRAINS,
   withMagicGuardChance,
+  withoutDeepStart,
   type Ruleset,
   type Terrain,
 } from '@adventure/config';
 import {
+  createRng,
   isLeaf,
   leafNodes,
   poiAt,
   rewardGroupKeyOf,
+  spaceRemoteness,
+  startingNodeFor,
+  stepsFromForestAndMountains,
   totalGoldUnits,
   totalSkillUnits,
   type GameMap,
@@ -204,6 +209,49 @@ describe('§5.1 — remoteness', () => {
     const today = pois(mapOf('adventure'));
     expect(pois(mapOf('adventure', withBalancing({ CLOSE_CANDIDATE_COUNT: 3 })))).toEqual(today);
     expect(pois(mapOf('adventure', withBalancing({ REMOTENESS_CANDIDATE_COUNT: 3 })))).not.toEqual(today);
+  }, 30000);
+});
+
+describe('Q227 — the start, deep in the plains where the sites nearby are not remote', () => {
+  const spacesOf = (map: GameMap): NodeId[] =>
+    map.graph.nodes.filter((node) => node.terrain === 'plains' && !map.poiByNode.has(node.id)).map((node) => node.id);
+
+  it('starts on the deepest plains space whose sites within 5 steps average below 0.1, the least remote of equally deep ones', () => {
+    for (const seed of SEEDS) {
+      const map = mapOf(seed);
+      const { NEARBY_STEPS, MAX_REMOTENESS } = map.ruleset.config.start ?? { NEARBY_STEPS: -1, MAX_REMOTENESS: -1 };
+      expect([NEARBY_STEPS, MAX_REMOTENESS]).toEqual([5, 0.1]);
+      const start = startingNodeFor(map);
+      const depth = stepsFromForestAndMountains(map.graph);
+      const own = spaceRemoteness(map, start, NEARBY_STEPS);
+      expect(spacesOf(map)).toContain(start);
+      expect(own).not.toBeNull();
+      expect(own as number).toBeLessThan(MAX_REMOTENESS);
+      for (const node of spacesOf(map)) {
+        const remoteness = spaceRemoteness(map, node, NEARBY_STEPS);
+        if (remoteness === null || remoteness >= MAX_REMOTENESS) continue;
+        expect(depth[node] as number).toBeLessThanOrEqual(depth[start] as number);
+        if (depth[node] === depth[start]) expect(remoteness).toBeGreaterThanOrEqual(own as number);
+      }
+    }
+  }, 30000);
+
+  // Remoteness is not touched: a map from before differs in its ruleset alone,
+  // and its start is drawn at random as it was.
+  it('changes nothing on a map but the start, which a map from before still draws at random', () => {
+    for (const seed of SEEDS) {
+      const before = mapOf(seed, withoutDeepStart(DEFAULT_RULESET));
+      const after = mapOf(seed);
+      expect(after.graph).toEqual(before.graph);
+      expect(after.pois).toEqual(before.pois);
+      expect(startingNodeFor(before)).toBe(createRng(seed).fork('starting-node').pick(spacesOf(before)));
+    }
+  }, 30000);
+
+  it('starts the larger maps by the same rule', () => {
+    const map = mapOf('adventure', LARGER_MAP_RULESET);
+    expect(map.ruleset.config.start).toEqual(DEFAULT_RULESET.config.start);
+    expect(spaceRemoteness(map, startingNodeFor(map), 5) as number).toBeLessThan(0.1);
   }, 30000);
 });
 

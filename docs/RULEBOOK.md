@@ -46,7 +46,7 @@ Later seats start with more stamina to make up for moving later:
 | 4 | 45 |
 | 5 | 50 |
 
-Every player starts with 5 gold. The other stats (the three speeds, combat and magic) start at 0. All figures begin on the same space: a random plains space that is not a site.
+Every player starts with 5 gold. The other stats (the three speeds, combat and magic) start at 0. All figures begin on the same space: a plains space that is not a site.
 
 ## Your turn
 

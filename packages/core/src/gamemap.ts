@@ -1,6 +1,6 @@
-import { SKILL_KINDS, type Ruleset } from '@adventure/config';
+import { SKILL_KINDS, type Ruleset, type StartConfig } from '@adventure/config';
 import type { NodeId } from './ids.ts';
-import type { MapGraph } from './graph.ts';
+import { neighbours, type MapGraph } from './graph.ts';
 import type { Poi } from './poi.ts';
 import { createRng, type Rng, type Seed } from './rng.ts';
 
@@ -54,6 +54,14 @@ export function totalSkillUnits(map: GameMap): number {
  * [SOURCE §6, chat] "the players start at a random spot of the plains that is
  * not a POI. All players start from the same spot."
  *
+ * [Q227] On a map whose ruleset has `start`, not at random: the deepest plains
+ * space whose remoteness is below `MAX_REMOTENESS` (see `StartConfig`), the
+ * least remote of equally deep ones (873), and with none below it the least
+ * remote space (874); the lowest node id where those are equal too. A map
+ * with no site within `NEARBY_STEPS` of any of its spaces, which no generated
+ * map has, draws one at random as before. A game started before keeps the
+ * start it began on.
+ *
  * One node for every player, so `PlayerState.position` is identical for all
  * seats at turn 1. Multiple players sharing a node is already unrestricted
  * (§8), so nothing special is needed to let them all stand there.
@@ -70,7 +78,79 @@ export function chooseStartingNode(map: GameMap, rng: Rng): NodeId {
   if (candidates.length === 0) {
     throw new RangeError('no non-POI plains node available as a starting position');
   }
-  return rng.pick(candidates);
+  const start = map.ruleset.config.start;
+  return (start === undefined ? null : deepestNotRemote(map, candidates, start)) ?? rng.pick(candidates);
+}
+
+/** [Q227] `chooseStartingNode`'s pick among `candidates`, in node id order; null when none has a remoteness. */
+function deepestNotRemote(map: GameMap, candidates: readonly NodeId[], start: StartConfig): NodeId | null {
+  const depth = stepsFromForestAndMountains(map.graph);
+  let deepest: { readonly node: NodeId; readonly depth: number; readonly remoteness: number } | null = null;
+  let leastRemote: { readonly node: NodeId; readonly remoteness: number } | null = null;
+  for (const node of candidates) {
+    const remoteness = spaceRemoteness(map, node, start.NEARBY_STEPS);
+    if (remoteness === null) continue;
+    if (leastRemote === null || remoteness < leastRemote.remoteness) leastRemote = { node, remoteness };
+    if (remoteness >= start.MAX_REMOTENESS) continue;
+    const steps = depth[node] as number;
+    if (deepest === null || steps > deepest.depth || (steps === deepest.depth && remoteness < deepest.remoteness)) {
+      deepest = { node, depth: steps, remoteness };
+    }
+  }
+  return deepest?.node ?? leastRemote?.node ?? null;
+}
+
+/**
+ * [Q227, 878] How deep each space is in the plains: the road steps from it to
+ * the nearest forest or mountain space, one per road whatever the terrain.
+ * Indexed by node id; 0 on forest and mountain spaces, and infinite on plains
+ * with no road to either.
+ */
+export function stepsFromForestAndMountains(graph: MapGraph): number[] {
+  const steps = new Array<number>(graph.nodes.length).fill(Number.POSITIVE_INFINITY);
+  const queue: NodeId[] = [];
+  for (const node of graph.nodes) {
+    if (node.terrain === 'plains') continue;
+    steps[node.id] = 0;
+    queue.push(node.id);
+  }
+  for (let head = 0; head < queue.length; head++) {
+    const at = queue[head] as NodeId;
+    for (const next of neighbours(graph, at)) {
+      if (steps[next] !== Number.POSITIVE_INFINITY) continue;
+      steps[next] = (steps[at] as number) + 1;
+      queue.push(next);
+    }
+  }
+  return steps;
+}
+
+/**
+ * [Q227, 876] A space's remoteness: the average remoteness of the sites of
+ * every terrain within `steps` road steps of `node` (878), the site on `node`
+ * itself included if it has one. Null when there is none.
+ */
+export function spaceRemoteness(map: GameMap, node: NodeId, steps: number): number | null {
+  const reached = new Map<NodeId, number>([[node, 0]]);
+  const queue: NodeId[] = [node];
+  let sum = 0;
+  let count = 0;
+  for (let head = 0; head < queue.length; head++) {
+    const at = queue[head] as NodeId;
+    const site = map.poiByNode.get(at);
+    if (site !== undefined) {
+      sum += (map.pois[site] as Poi).remoteness;
+      count += 1;
+    }
+    const away = reached.get(at) as number;
+    if (away === steps) continue;
+    for (const next of neighbours(map.graph, at)) {
+      if (reached.has(next)) continue;
+      reached.set(next, away + 1);
+      queue.push(next);
+    }
+  }
+  return count === 0 ? null : sum / count;
 }
 
 /**
