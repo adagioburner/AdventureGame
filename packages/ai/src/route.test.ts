@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_GAME_CONFIG } from '@adventure/config';
-import { asNodeId, createDiceSource, createRng, playerById } from '@adventure/core';
+import { asNodeId, createDiceSource, createRng, playerById, poiRuntimeAt } from '@adventure/core';
 import {
   bestRouteForSpeeds,
   bestRouteStepsFor,
@@ -20,7 +20,7 @@ import { buyBranches, previewReachability, stepsReachability } from './policies/
 
 /**
  * [Q210] Stage 1: the computer's real move walks the best route for its
- * speeds; the games it imagines still walk the cheapest.
+ * speeds; since stage 3 the games it imagines do too.
  *
  *   0 ── 1 ── 2 ── 3 ── 4 ── 5 (gold)    plains all the way: 5 stamina
  *   └─── 6f ── 7f ── 8f ──────┘          through the forest: 7 stamina
@@ -70,9 +70,14 @@ describe('the route the computer walks (Q210, stage 1)', () => {
     });
   });
 
-  it('leaves the games it imagines on the cheapest route (stage 3 comes later)', () => {
-    const state = withStats(fixtureGame(detour, 0), one, { forest_move: 3 });
+  it('has the players in the games it imagines walk the best route for their speeds too (stage 3)', () => {
+    // Through the forest seat one arrives on its first turn; along the plains
+    // its stamina would not have taken it past node 1.
+    const state = withStats(fixtureGame(detour, 0), one, { forest_move: 3, plains_move: 1, stamina: 0 });
     const options = computerSearchOptions(state, one, settings());
+    const end = options.rollout.run(rolloutCursor(state, one), createRng('imagined'), createDiceSource(createRng('imagined'), DEFAULT_GAME_CONFIG));
+    expect(poiRuntimeAt(end.state, n(5))).toEqual({ claimedBy: one, claimedOnTurn: state.turn.number });
+    // Before stage 3 they walked the cheapest route.
     expect(turnTowards(state, n(5), options.restRule)).toMatchObject({ kind: 'move', path: [n(1), n(2), n(3), n(4), n(5)] });
   });
 });

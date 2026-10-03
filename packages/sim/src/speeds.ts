@@ -11,7 +11,8 @@ import type { PoiCandidate } from './candidates.ts';
  * ranks by weighted terrain cost alone. A person's drawn route and the
  * computer's real move walk the best route for the player's speeds instead
  * (Q210, `bestRoute`), and the computer's search counts it too
- * (`closestByBestRoute`, stage 2); its imagined games are stage 3.
+ * (`closestByBestRoute`, stage 2); its imagined players walk it (stage 3)
+ * but still rank by `closestBySpeeds` (822 B).
  */
 
 /** The `count` POIs of `eligible` that `player` counts as closest, nearest first. */
@@ -32,11 +33,11 @@ export { effectiveDistance } from '@adventure/core';
  * of the game you can have lots of mountain speed."
  *
  * Each POI's `effectiveDistance`, from the steps per terrain along the
- * cheapest route (422 A: that route only), with the player's speeds now. The
- * computer's own choices and every player in the games it imagines rank by it
- * (424 A). Equal distances keep the weighted-terrain-cost order, then node id.
- * `cost` stays the weighted terrain cost, and the route walked is still the
- * cheapest one, the only one counted.
+ * cheapest route (422 A: that route only), with the player's speeds now.
+ * Every player in the games the computer imagines ranks by it (424 A; Q210,
+ * 822 B), its own choices by `closestByBestRoute` since Q210's stage 2. Equal
+ * distances keep the weighted-terrain-cost order, then node id. `cost` stays
+ * the weighted terrain cost.
  */
 export function closestBySpeeds(
   state: GameState,

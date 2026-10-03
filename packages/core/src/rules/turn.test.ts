@@ -4,7 +4,7 @@ import { DEFAULT_RULESET } from '@adventure/config';
 import { RuleViolationError } from '../errors.ts';
 import type { GameAction } from '../action.ts';
 import type { GameState } from '../state.ts';
-import { applyAction, endTurnActionFor, moveOnActionFor, nextSeat } from './turn.ts';
+import { applyAction, applyCountedTurn, endTurnActionFor, moveOnActionFor, nextSeat } from './turn.ts';
 import {
   fixtureGame,
   fixtureMap,
@@ -426,5 +426,52 @@ describe('applyAction — ending a game early (Q55)', () => {
     expect(start.ending).toBeNull();
     const { state } = applyAction(start, { kind: 'move', player: one, path: [n(6)] }, noDice);
     expect(state).toMatchObject({ status: 'finished', winners: [one], ending: 'won' });
+  });
+});
+
+describe('applyCountedTurn (Q210, stage 3: a turn of a game the computer imagines)', () => {
+  /** What a turn leaves on the board, which imagined games read: not the log or the saved route. */
+  const board = (state: GameState) => ({
+    players: state.players.map((seat) => ({ position: seat.position, stats: seat.stats })),
+    poiRuntime: state.poiRuntime,
+    turn: state.turn,
+    status: state.status,
+    winners: state.winners,
+  });
+
+  it('rests as applyAction does', () => {
+    const start = withPosition(fixtureGame(map, 0), one, 6);
+    expect(board(applyCountedTurn(start, { kind: 'rest' }, noDice))).toEqual(board(applyAction(start, { kind: 'rest', player: one }, noDice).state));
+  });
+
+  it('ends a walk short of anything as applyAction does', () => {
+    const start = workedExampleGame();
+    const counted = applyCountedTurn(start, { kind: 'walk', to: n(4), staminaSpent: 1 }, noDice);
+    expect(board(counted)).toEqual(board(applyAction(start, { kind: 'move', player: one, path: [n(1), n(2), n(3), n(4)] }, noDice).state));
+    expect(counted.players[0]?.stats.stamina).toBe(13);
+    expect(counted.turn.activeSeat).toBe(2);
+  });
+
+  it('fights the guard where a walk ends, with the same roll, as applyAction does', () => {
+    for (const roll of [3, 4]) {
+      const counted = applyCountedTurn(workedExampleGame(), { kind: 'walk', to: n(5), staminaSpent: 1 }, scriptedDice([roll]));
+      const played = applyAction(workedExampleGame(), walkToPoi, scriptedDice([roll])).state;
+      expect(board(counted)).toEqual(board(played));
+    }
+  });
+
+  it('takes the gold where a walk ends and checks for a win, as applyAction does', () => {
+    const start = withPosition(withStats(fixtureGame(map, 0), one, { stamina: 3 }), one, 5);
+    const counted = applyCountedTurn(start, { kind: 'walk', to: n(6), staminaSpent: 3 }, noDice);
+    expect(board(counted)).toEqual(board(applyAction(start, { kind: 'move', player: one, path: [n(6)] }, noDice).state));
+    expect(counted.status).toBe('finished');
+    expect(counted.winners).toEqual([one]);
+  });
+
+  it('fights again on the spot for a walk of no steps, the empty move', () => {
+    const failed = withPosition(workedExampleGame(), one, 5);
+    const counted = applyCountedTurn(failed, { kind: 'walk', to: n(5), staminaSpent: 0 }, scriptedDice([4]));
+    expect(board(counted)).toEqual(board(applyAction(failed, { kind: 'move', player: one, path: [] }, scriptedDice([4])).state));
+    expect(counted.poiRuntime[0]?.claimedBy).toBe(one);
   });
 });
