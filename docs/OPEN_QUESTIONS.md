@@ -3091,7 +3091,7 @@ early. Asked at 15:10 with a picture; at 15:22, *"790 to 792: looks good"*.
      35 stamina"*, since it shows what differs between seats (recommended);
      or B, *"... and 5 gold"*. **Answered:** A.
 
-### Q210. Which route do players take? — **stage 1 answered 2026-10-02: the best for their speeds, drawn for people and walked by the computer's real moves; stage 2 answered: its search's own choices too; stage 3 answered: the games it imagines walk it, counted along a route traced once (810-825)**
+### Q210. Which route do players take? — **stage 1 answered 2026-10-02: the best for their speeds, drawn for people and walked by the computer's real moves; stage 2 answered: its search's own choices too; stage 3 answered: the games it imagines walk it, counted along a route traced once (810-826)**
 
 [SOURCE §4, §9, chat] Andrei, 2026-10-02 at 18:12: *"it bothers me that the
 game shows to me the path that is not optimal based on my current skills. How
@@ -3193,6 +3193,17 @@ stage 3"* (22:51), answered at 23:34 and 23:36:
      seats swapped, against the computer before it, reporting wins, gold
      margins and games imagined per move (recommended); or none. **Answered:**
      A, *"of course"*.
+826. **Where an imagined figure is placed**, asked 2026-10-03 at 00:13
+     because it was built before asking (823 had said only at the moments it
+     names): A, after every turn, where that turn's count ends (as built,
+     recommended); or B, only when it arrives, stops on a site or is
+     overtaken, the walk keeping its place and stamina in between. Both find
+     the same route and count every turn the same way, so every imagined game
+     comes out the same; B imagines about 1-2% more games per move, but needs
+     stamina kept in two places, a second way to end a turn, the old walk for
+     games where skills come back, and leaves positions stale for any later
+     rule that reads them. 01:34: *"there are no older games"*. 01:43:
+     **Answered:** A, *"Please proceed as recommended"*.
 
 Stage 1, as built: `bestRoute` and `bestRouteVia` (`packages/core`), from
 `RouteTable.routesFrom`, every route no other route beats on all three
@@ -3231,8 +3242,8 @@ cheapest route, an imagined game is exactly the one `applyAction` would play;
 route is not picked again on later turns, as the computer's real move does;
 the search's own walk along a tree edge is still played turn by turn (stage
 2). The figure is placed where every turn's count ends, not only at the
-moments 823 named: that costs little, and games where skills come back need
-every figure's place (824).
+moments 823 named (826 A): that costs little, and games where skills come back
+need every figure's place (824).
 
 Tested (825 A), 20 games with the seats swapped at 3 s a move on ten maps
 (seeds stage3-0 to stage3-9), against the same computer with its imagined
