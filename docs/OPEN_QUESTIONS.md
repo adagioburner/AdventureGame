@@ -3337,7 +3337,7 @@ against 1 in 4.
 
 Never shipped: at 12:48, on seeing it, Andrei changed approach (Q226).
 
-### Q226. ~~Start deep in the plains, and walk remoteness from there?~~ — **answered 2026-10-03: the start and the remoteness walks drawn from about 10 deepest plains spaces, in games started from now on (856-862); 863 open**
+### Q226. ~~Start deep in the plains, and walk remoteness from there?~~ — **answered 2026-10-03: the start and the remoteness walks drawn from about 10 deepest plains spaces, and half of remoteness the distance from the start, in games started from now on (856-864)**
 
 [SOURCE §6, chat] Andrei, 2026-10-03 at 12:48, looking at Q225's pictures:
 *"Starting near the forest is not the problem. It is the remoteness score of
@@ -3378,16 +3378,30 @@ The same seed now gives different rewards and guards; roads, terrain and sites
 stay. Over 400 maps the start is typically 12 road steps from the forest and
 from the mountains (16 on the larger map), against 7 and 6 (8 and 8) before.
 
-863. **Big gold near the start.** Andrei at 13:27: *"by starting the random
+863. **Big rewards near the start.** Andrei at 13:27: *"by starting the random
      walks from the starting point, or one of the few potential candidates, we
-     make sure we don't start near a huge reward"*. Measured over 400 maps: the
-     map's biggest gold stack is within 5 road steps of the start on 1 map in 4
-     before (1 in 6 on the larger map), 1 in 5 with 856-862 (1 in 6), the same
-     as moving the start alone, and about 1 in 4 with every walk from the start
-     itself; a site's score counts the roads between sites in a walk, not the
-     way from its start. Asked at 13:40: A, keep 856-862; B, a site's remoteness
-     becomes its road distance from the start in stamina, scaled to [0, 1]
-     (recommended: 1 map in 11, never on the larger map); C, something else.
+     make sure we don't start near a huge reward"*; at 13:46: *"I do not care
+     about the biggest gold at all [...] I am more worried about big stacks of
+     forest speed or magic"*. Measured over 400 maps, the maps with a forest
+     speed or magic stack of 3 or more within 5 road steps of the start (2-3 /
+     4-5 players): before, forest speed 22% / 19%, magic 4% / 8%; with
+     856-862, 33% / 40% and 14% / 20%. The deep plains hold fewer sites (about
+     3 within 5 steps of the start against 5), so their roads are longer and
+     the walks score them remote; forest speed and magic are plains rewards.
+     At 13:47 he valued that a walk scores a cluster low *"even if it is far
+     away from the start"*, and at 13:58 suggested fewer nearest sites to
+     choose from: with 5, 3, 2 or 1, at best 27% / 29% and 9% / 14%. Asked
+     at 14:10: A, half the walk score and half the distance from the start
+     (recommended: 6% / 8% and 2% / 3%); B, distance only (0%, but clusters
+     no longer score low); C, one nearest site; D, back to before. At 14:22:
+     *"with C there is no randomness in the walks [...] So C is out"*.
+     **Answered** at 14:24: *"let's try half and half, and see how that
+     looks"*, `REMOTENESS_DISTANCE_SHARE` = 0.5.
+864. **The distance half is measured** along the cheapest road in stamina
+     (recommended: as measured, and the walks count their roads in stamina
+     too), or in road steps. **Answered** at 14:24: stamina. Both halves are
+     scaled so the nearest or least remote site is 0 and the farthest or most
+     remote 1, and the mix is scaled to [0, 1] again.
 
 ---
 

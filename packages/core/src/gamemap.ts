@@ -124,5 +124,12 @@ export function deepPlainsSpaces(
  * and online games share it, so a seed starts in the same place either way.
  */
 export function startingNodeFor(map: GameMap): NodeId {
-  return chooseStartingNode(map, createRng(map.seed).fork('starting-node'));
+  return chooseStartingNode(map, createRng(map.seed).fork(STARTING_NODE_STREAM));
 }
+
+/**
+ * The name of the map seed's stream the start is drawn from. [Q226, 863] Map
+ * generation draws the same start from it, before the map is finished, to
+ * measure each site's distance from the start.
+ */
+export const STARTING_NODE_STREAM = 'starting-node';

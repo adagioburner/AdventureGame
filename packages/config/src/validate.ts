@@ -170,10 +170,13 @@ export function validateRuleset(ruleset: Ruleset): void {
   if (!Number.isFinite(config.ai.BUY_SKIP_STAMINA) || config.ai.BUY_SKIP_STAMINA < 0) {
     problems.push('Q190: ai.BUY_SKIP_STAMINA must be a non-negative number.');
   }
-  // Q226: at least one space to start on.
+  // Q226: at least one space to start on, and a share of remoteness.
   const start = config.start;
   if (start !== undefined && (!Number.isInteger(start.MIN_SPACES) || start.MIN_SPACES < 1)) {
     problems.push('Q226: start.MIN_SPACES must be a positive integer.');
+  }
+  if (start !== undefined && !(start.DISTANCE_SHARE >= 0 && start.DISTANCE_SHARE <= 1)) {
+    problems.push('Q226: start.DISTANCE_SHARE must be between 0 and 1.');
   }
 
   // Q200: whole gold, none at the least.

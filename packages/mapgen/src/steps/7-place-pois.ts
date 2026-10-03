@@ -1,9 +1,9 @@
 import { TERRAINS, type GameConfig, type Terrain } from '@adventure/config';
-import { asNodeId, deepPlainsSpaces, dijkstra, isLeaf, type NodeId } from '@adventure/core';
+import { STARTING_NODE_STREAM, asNodeId, createRng, deepPlainsSpaces, dijkstra, isLeaf, type NodeId } from '@adventure/core';
 import { draftAsGraph } from '../graphops.ts';
 import { assignGuardStrengths } from '../rewards/guards.ts';
 import { assignRewards } from '../rewards/assign.ts';
-import { computeRemoteness } from '@adventure/sim';
+import { computeRemoteness, withDistanceFrom } from '@adventure/sim';
 import {
   GenerationRejected,
   type GenerationContext,
@@ -22,7 +22,8 @@ import {
  *   7b. Compute remoteness over those nodes (§5.1) — depends only on POI
  *       *positions*, never on their rewards, which is why it can run here.
  *       [Q226] The walks start from the deepest plains spaces that are not
- *       POIs, which is why it must also come after 7a.
+ *       POIs, which is why it must also come after 7a, and half of it is the
+ *       distance from the start, which is drawn from those spaces (863).
  *   7c. Assign kinds and distribute units (§4.3), which consumes remoteness.
  *   7d. Assign guard strengths (§5.2), which consumes both remoteness and the
  *       final gold amounts from 7c.
@@ -94,8 +95,19 @@ export const placePoisStep: GenerationStep = {
     const start = ruleset.config.start;
     const startSpaces =
       start === undefined ? undefined : deepPlainsSpaces(graph, new Set(draft.poiNodes), start.MIN_SPACES);
+    const walked = computeRemoteness(graph, draft.poiNodes, ruleset.config, rng, context.remotenessScorer(), startSpaces);
+    // [Q226, 863] Half of it is the distance from the start, drawn here from
+    // its own stream of the seed exactly as `startingNodeFor` draws it later.
     draft.remoteness = new Map(
-      computeRemoteness(graph, draft.poiNodes, ruleset.config, rng, context.remotenessScorer(), startSpaces),
+      start === undefined || startSpaces === undefined
+        ? walked
+        : withDistanceFrom(
+            walked,
+            graph,
+            createRng(context.seed).fork(STARTING_NODE_STREAM).pick(startSpaces),
+            start.DISTANCE_SHARE,
+            ruleset.config,
+          ),
     );
 
     // 7c and 7d.

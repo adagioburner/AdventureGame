@@ -416,6 +416,14 @@ export interface BuyingConfig {
 export interface StartConfig {
   /** 856: the fewest deep plains spaces the start and the walks are drawn from. 10. */
   readonly MIN_SPACES: number;
+  /**
+   * 863: the share of a site's remoteness that is its distance from the start
+   * by the cheapest road in stamina (864), the rest being its walk score (§5.1),
+   * each scaled so the nearest or least remote site is 0 and the farthest or
+   * most remote 1. 0.5. Andrei, 2026-10-03, after the walks alone left big
+   * forest speed and magic stacks near the start: "let's try half and half".
+   */
+  readonly DISTANCE_SHARE: number;
 }
 
 /**

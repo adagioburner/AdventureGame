@@ -8,7 +8,7 @@ import { fixtureMap, n } from './rules/scenario.fixture.ts';
 /** Today's rules with `MIN_SPACES` deep plains spaces to start on (Q226, 856). */
 const deepest = (spaces: number): Ruleset => ({
   ...DEFAULT_RULESET,
-  config: { ...DEFAULT_RULESET.config, start: { MIN_SPACES: spaces } },
+  config: { ...DEFAULT_RULESET.config, start: { MIN_SPACES: spaces, DISTANCE_SHARE: 0.5 } },
 });
 
 /**

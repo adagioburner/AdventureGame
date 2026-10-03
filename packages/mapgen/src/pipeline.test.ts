@@ -14,6 +14,7 @@ import {
 } from '@adventure/config';
 import {
   deepPlainsSpaces,
+  dijkstra,
   isLeaf,
   leafNodes,
   poiAt,
@@ -207,6 +208,18 @@ describe('§5.1 — remoteness', () => {
     const today = pois(mapOf('adventure'));
     expect(pois(mapOf('adventure', withBalancing({ CLOSE_CANDIDATE_COUNT: 3 })))).toEqual(today);
     expect(pois(mapOf('adventure', withBalancing({ REMOTENESS_CANDIDATE_COUNT: 3 })))).not.toEqual(today);
+  }, 30000);
+
+  it('takes half from the distance to the start the game will have (Q226, 863, 864)', () => {
+    const start = DEFAULT_RULESET.config.start;
+    if (start === undefined) throw new Error('today starts deep in the plains');
+    const distanceOnly: Ruleset = { ...DEFAULT_RULESET, config: { ...DEFAULT_RULESET.config, start: { ...start, DISTANCE_SHARE: 1 } } };
+    const map = mapOf('adventure', distanceOnly);
+    const { costs } = dijkstra(map.graph, startingNodeFor(map), map.ruleset.config);
+    const far = Math.max(...map.pois.map((poi) => costs[poi.node] ?? 0));
+    const near = Math.min(...map.pois.map((poi) => costs[poi.node] ?? 0));
+    for (const poi of map.pois) expect(poi.remoteness).toBeCloseTo(((costs[poi.node] ?? 0) - near) / (far - near), 10);
+    expect(start.DISTANCE_SHARE).toBe(0.5);
   }, 30000);
 
   it('walks from the deep plains spaces, which moves rewards but not roads or sites (Q226, 858)', () => {

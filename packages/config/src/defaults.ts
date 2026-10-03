@@ -79,6 +79,8 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
   // worst case" (856).
   start: {
     MIN_SPACES: 10,
+    // [Q226] 863: "let's try half and half, and see how that looks".
+    DISTANCE_SHARE: 0.5,
   },
 };
 

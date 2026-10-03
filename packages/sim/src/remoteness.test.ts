@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_RULESET, type GameConfig } from '@adventure/config';
 import { asNodeId, createRng, type MapGraph, type NodeId } from '@adventure/core';
-import { computeRemoteness, segmentSumRemotenessScorer, type RemotenessScorer } from './remoteness.ts';
+import { computeRemoteness, segmentSumRemotenessScorer, withDistanceFrom, type RemotenessScorer } from './remoteness.ts';
 
 const n = (value: number): NodeId => asNodeId(value);
 
@@ -53,5 +53,33 @@ describe('§5.1 remoteness walks', () => {
     const both = firstSites();
     computeRemoteness(line, sites, config, createRng('walks'), both.scorer, [n(1), n(5)]);
     expect(new Set(both.first)).toEqual(new Set([n(0), n(6)]));
+  });
+});
+
+describe('§5.1 remoteness, half from the start (Q226, 863)', () => {
+  // Walk scores for the three sites, and their stamina from space 1: 1, 2 and 5.
+  const walked = new Map([
+    [n(0), 1],
+    [n(3), 0],
+    [n(6), 0.5],
+  ]);
+
+  it('is the walk score alone at share 0, and the distance from the start alone at share 1', () => {
+    expect(withDistanceFrom(walked, line, n(1), 0, config)).toEqual(walked);
+    expect(withDistanceFrom(walked, line, n(1), 1, config)).toEqual(
+      new Map([
+        [n(0), 0],
+        [n(3), 0.25],
+        [n(6), 1],
+      ]),
+    );
+  });
+
+  it('mixes the two by the share, then scales the mix to [0, 1] again', () => {
+    // Half and half: 0.5, 0.125 and 0.75, scaled from 0.125..0.75.
+    const mixed = withDistanceFrom(walked, line, n(1), 0.5, config);
+    expect(mixed.get(n(3))).toBe(0);
+    expect(mixed.get(n(0))).toBeCloseTo(0.6, 10);
+    expect(mixed.get(n(6))).toBe(1);
   });
 });

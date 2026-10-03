@@ -1,5 +1,5 @@
 import type { GameConfig } from '@adventure/config';
-import type { MapGraph, NodeId, Rng } from '@adventure/core';
+import { dijkstra, type MapGraph, type NodeId, type Rng } from '@adventure/core';
 import { runWalk, type WalkDriver, type WalkVisit } from './walk.ts';
 import type { PoiCandidate } from './candidates.ts';
 
@@ -189,4 +189,29 @@ export function computeRemoteness(
   }
 
   return normalizeToUnitRange(scorer.finish());
+}
+
+/**
+ * [Q226, 863] `remoteness` with a `share` of it replaced by each POI's distance
+ * from `start` along the cheapest road in stamina (864), scaled like it so the
+ * nearest POI is 0 and the farthest 1; the mix is scaled to [0, 1] again.
+ *
+ * Andrei, 2026-10-03: the walks alone, started deep in the plains, still left
+ * big forest speed and magic stacks near the start, since the few sites there
+ * are far apart; but a walk scores a cluster low wherever it is, which he
+ * values ("a cluster of sites would get less remoteness even if it is far away
+ * from the start"). Half and half keeps half of that.
+ */
+export function withDistanceFrom(
+  remoteness: ReadonlyMap<NodeId, number>,
+  graph: MapGraph,
+  start: NodeId,
+  share: number,
+  config: GameConfig,
+): ReadonlyMap<NodeId, number> {
+  const { costs } = dijkstra(graph, start, config);
+  const distance = normalizeToUnitRange(new Map([...remoteness.keys()].map((node) => [node, costs[node] ?? 0])));
+  return normalizeToUnitRange(
+    new Map([...remoteness].map(([node, walked]) => [node, (1 - share) * walked + share * (distance.get(node) ?? 0)])),
+  );
 }
