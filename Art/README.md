@@ -152,7 +152,15 @@ there for people and ignored by the game.
   ground, so its top edges lie along the map's front edges at any map size;
   the points sit a little below the rock's topmost pixels, and the rock is
   drawn over the ground, so its stone tops rise over the ground's edge and
-  fade into it over `fade` of the picture's pixels (670, 679). `sky` is the
+  fade into it over `fade` of the picture's pixels (670, 679). As they fade
+  they are blurred too, sharp on the ground's edge and blurred by `blur` of
+  the picture's pixels at the top, so they soften without drawing the edge
+  as a line (Q220); 0 or left out keeps them sharp. `greens` turns
+  its moss and ivy towards the map's forest green as it loads (Q220): each
+  green's hue turns `hue` degrees, its saturation is multiplied by
+  `saturation`, and it is darkened by `darken`, from 0 (as bright) to 1
+  (black); the stone, the roots and the palest sunlit spots stay as drawn,
+  and left out, so do the greens. `sky` is the
   picture behind the map. It fills the map's box, cropped to its shape,
   stays put as the map is dragged and grows a little as the map is zoomed
   in (676 to 678); `color` is its average colour, shown in its place while
@@ -177,7 +185,8 @@ stone, the left and right ones a little in from the rock's ends so the rock
 reaches right up to the map's side corners, where it is cut off flush with
 the map's back edges (681), and a `fade` about as tall as its stone tops rise above them, so they
 blend into the ground's edge. A rock drawn at another size or slope still
-lines up, because the three points decide how it is stretched. The New game
+lines up, because the three points decide how it is stretched. A rock whose
+greens already match the forest's needs no `greens`. The New game
 screen frames the rock down to its lowest solid pixel, so blank room round
 the picture does not matter. A sky of any size fills the map's box; give it
 its own average `color`, so the switch from that colour to the picture as it

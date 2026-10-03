@@ -1,5 +1,5 @@
 import type { Point } from '@adventure/core';
-import type { IslandCorners } from '../art/manifest.ts';
+import type { IslandCorners, IslandGreens } from '../art/manifest.ts';
 import type { Rect } from '../art/pixels.ts';
 import type { Affine, Bounds, Projection } from './isometric.ts';
 
@@ -96,8 +96,7 @@ export function shapeUnderside(pixels: Uint8ClampedArray, width: number, corners
   for (let x = 0; x < width; x++) {
     const across = x + 0.5;
     const outside = across < corners.left.x || across > corners.right.x;
-    const [from, to] = across <= corners.bottom.x ? [corners.left, corners.bottom] : [corners.bottom, corners.right];
-    const edge = from.y + ((to.y - from.y) * (across - from.x)) / (to.x - from.x);
+    const edge = frontEdge(corners, across);
     for (let y = 0; y < height; y++) {
       const down = y + 0.5;
       const alpha = (y * width + x) * 4 + 3;
@@ -107,6 +106,185 @@ export function shapeUnderside(pixels: Uint8ClampedArray, width: number, corners
       else pixels[alpha] = Math.round(pixels[alpha]! * Math.max(0, 1 - (edge - down) / fade));
     }
   }
+}
+
+/**
+ * Blurs the stone tops that rise over the ground, in place: `pixels` is the
+ * rock picture's RGBA data, `width` pixels across, before `shapeUnderside`
+ * fades them.
+ *
+ * [Andrei, 2026-10-03] "Looking at the transition though I wonder if the
+ * stones underneath could be blurred where they show under the map as well,
+ * to create smoother trasition". The rock is as drawn on the line through
+ * `corners` (the ground's front edges) and below it; above it, where
+ * `shapeUnderside` fades the stone tops into the ground, it shades into a copy
+ * blurred by `radius` pixels, all blurred `fade` pixels up, where the stone
+ * tops are gone. Blurred evenly from the line up, the blurred stone met the
+ * sharp stone on the line and drew the map's edge as a line again (02:47).
+ */
+export function blurStoneTops(pixels: Uint8ClampedArray, width: number, corners: IslandCorners, fade: number, radius: number): void {
+  if (radius <= 0) return;
+  // Only rows that reach above the front edges change; the blur reads a
+  // little below them too.
+  const rows = Math.min(pixels.length / 4 / width, Math.ceil(corners.bottom.y + 3 * radius + 1));
+  const sharp = new Float32Array(width * rows * 4);
+  for (let i = 0; i < sharp.length; i += 4) {
+    const alpha = (pixels[i + 3] as number) / 255;
+    sharp[i] = (pixels[i] as number) * alpha;
+    sharp[i + 1] = (pixels[i + 1] as number) * alpha;
+    sharp[i + 2] = (pixels[i + 2] as number) * alpha;
+    sharp[i + 3] = pixels[i + 3] as number;
+  }
+  const blurred = boxBlur(sharp, width, rows, radius);
+  for (let x = 0; x < width; x++) {
+    const across = x + 0.5;
+    const edge = frontEdge(corners, across);
+    for (let y = 0; y < rows && y + 0.5 < edge; y++) {
+      const share = Math.min(1, (edge - (y + 0.5)) / fade);
+      const i = (y * width + x) * 4;
+      const alpha = (sharp[i + 3] as number) * (1 - share) + (blurred[i + 3] as number) * share;
+      pixels[i + 3] = Math.round(alpha);
+      if (alpha === 0) continue;
+      for (let c = 0; c < 3; c++) {
+        pixels[i + c] = Math.round((((sharp[i + c] as number) * (1 - share) + (blurred[i + c] as number) * share) * 255) / alpha);
+      }
+    }
+  }
+}
+
+/** Where the line through the ground's front edges crosses the picture's column at `across`. */
+function frontEdge(corners: IslandCorners, across: number): number {
+  const [from, to] = across <= corners.bottom.x ? [corners.left, corners.bottom] : [corners.bottom, corners.right];
+  return from.y + ((to.y - from.y) * (across - from.x)) / (to.x - from.x);
+}
+
+/**
+ * Premultiplied RGBA `pixels`, `width` by `height`, blurred by three box blurs
+ * of `radius` across and down, which comes close to a Gaussian blur. Past the
+ * picture's sides and ends, its outermost pixels are repeated.
+ */
+function boxBlur(pixels: Float32Array, width: number, height: number, radius: number): Float32Array {
+  const r = Math.max(1, Math.round(radius));
+  const size = 2 * r + 1;
+  let from: Float32Array = pixels.slice();
+  let to: Float32Array = new Float32Array(pixels.length);
+  // One line at a time, all four channels together: a running sum over the
+  // window, which gains the pixel entering it and loses the one leaving.
+  const pass = (lines: number, length: number, step: number, lineStep: number): void => {
+    for (let line = 0; line < lines; line++) {
+      const start = line * lineStep;
+      const last = start + (length - 1) * step;
+      let s0 = 0;
+      let s1 = 0;
+      let s2 = 0;
+      let s3 = 0;
+      for (let k = -r; k <= r; k++) {
+        const at = start + Math.min(length - 1, Math.max(0, k)) * step;
+        s0 += from[at] as number;
+        s1 += from[at + 1] as number;
+        s2 += from[at + 2] as number;
+        s3 += from[at + 3] as number;
+      }
+      for (let k = 0, at = start; k < length; k++, at += step) {
+        to[at] = s0 / size;
+        to[at + 1] = s1 / size;
+        to[at + 2] = s2 / size;
+        to[at + 3] = s3 / size;
+        const entering = k + r + 1 < length ? at + (r + 1) * step : last;
+        const leaving = k - r >= 0 ? at - r * step : start;
+        s0 += (from[entering] as number) - (from[leaving] as number);
+        s1 += (from[entering + 1] as number) - (from[leaving + 1] as number);
+        s2 += (from[entering + 2] as number) - (from[leaving + 2] as number);
+        s3 += (from[entering + 3] as number) - (from[leaving + 3] as number);
+      }
+    }
+    [from, to] = [to, from];
+  };
+  for (let round = 0; round < 3; round++) {
+    pass(height, width, 4, width * 4);
+    pass(width, height, width * 4, 4);
+  }
+  return from;
+}
+
+/**
+ * Turns the rock's moss and ivy towards the map's forest green, in place:
+ * `pixels` is the picture's RGBA data.
+ *
+ * [Andrei, 2026-10-02] "The green on the background rocks and roots that
+ * extend down from the "skyholm" does not quite match what is prominently
+ * used in the map. Can we make them agree a little more?" 830: he picked the
+ * rock's greens moving all the way to the forest's, the map left as it is,
+ * "but I think the rock's green is too bright, it needs to be darker" (831).
+ *
+ * A green's hue turns by `hue` degrees, its saturation is scaled by
+ * `saturation`, and it is darkened by `darken` (0 leaves it as bright, 1 makes
+ * it black). Only greens change: the stone and roots, which are browns and
+ * yellows below hue 42, the greyish pixels, and the palest sunlit spots stay
+ * as drawn, and a pixel near those limits changes partly, so moss shades off
+ * into the stone rather than ending in a hard line.
+ */
+export function turnGreens(pixels: Uint8ClampedArray, greens: IslandGreens): void {
+  if (greens.hue === 0 && greens.saturation === 1 && greens.darken === 0) return;
+  for (let i = 0; i < pixels.length; i += 4) {
+    if ((pixels[i + 3] as number) === 0) continue;
+    const r = (pixels[i] as number) / 255;
+    const g = (pixels[i + 1] as number) / 255;
+    const b = (pixels[i + 2] as number) / 255;
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    const chroma = max - min;
+    if (chroma === 0) continue;
+    const lightness = (max + min) / 2;
+    const saturation = chroma / (1 - Math.abs(2 * lightness - 1));
+    const hue = 60 * (max === r ? (((g - b) / chroma) % 6 + 6) % 6 : max === g ? (b - r) / chroma + 2 : (r - g) / chroma + 4);
+    const share =
+      ramp(hue, GREEN_HUES.from, GREEN_HUES.full) *
+      ramp(hue, GREEN_HUES.to, GREEN_HUES.to - (GREEN_HUES.full - GREEN_HUES.from)) *
+      ramp(saturation, GREEN_SATURATION.from, GREEN_SATURATION.full) *
+      ramp(lightness, GREEN_LIGHTNESS.none, GREEN_LIGHTNESS.full);
+    if (share === 0) continue;
+    const [r2, g2, b2] = hslToRgb(
+      (hue + greens.hue * share + 360) % 360,
+      Math.min(1, saturation * (1 + (greens.saturation - 1) * share)),
+      lightness,
+    );
+    const shade = 1 - greens.darken * share;
+    pixels[i] = Math.round(r2 * shade * 255);
+    pixels[i + 1] = Math.round(g2 * shade * 255);
+    pixels[i + 2] = Math.round(b2 * shade * 255);
+  }
+}
+
+/**
+ * Which hues count as green: none below `from` (the stone's browns and
+ * yellows), all from `full`, and none past `to` (blues), shading off over as
+ * many degrees there as between `from` and `full`.
+ */
+const GREEN_HUES = { from: 42, full: 50, to: 160 } as const;
+/** Greyish pixels, below `from` in HSL saturation, are not greens; from `full` they are. */
+const GREEN_SATURATION = { from: 0.15, full: 0.3 } as const;
+/**
+ * The palest pixels, from `none` in HSL lightness, are sunlit spots on the
+ * stone and stay as drawn; up to `full` they are greens. Turned and darkened,
+ * they showed as grey-green specks on the stone.
+ */
+const GREEN_LIGHTNESS = { full: 0.6, none: 0.72 } as const;
+
+/** 0 at `from`, 1 at `full`, in a straight line between and clamped outside. */
+function ramp(value: number, from: number, full: number): number {
+  return Math.min(1, Math.max(0, (value - from) / (full - from)));
+}
+
+/** HSL (hue in degrees, saturation and lightness 0 to 1) to RGB 0 to 1. */
+function hslToRgb(hue: number, saturation: number, lightness: number): [number, number, number] {
+  const chroma = (1 - Math.abs(2 * lightness - 1)) * saturation;
+  const sector = hue / 60;
+  const x = chroma * (1 - Math.abs((sector % 2) - 1));
+  const m = lightness - chroma / 2;
+  const [r, g, b] =
+    sector < 1 ? [chroma, x, 0] : sector < 2 ? [x, chroma, 0] : sector < 3 ? [0, chroma, x] : sector < 4 ? [0, x, chroma] : sector < 5 ? [x, 0, chroma] : [chroma, 0, x];
+  return [r + m, g + m, b + m];
 }
 
 /** `matrix` applied to a point. */

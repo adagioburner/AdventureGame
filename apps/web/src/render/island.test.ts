@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildArtCatalog } from '../art/catalog.ts';
 import { ART_FILES } from '../art/files.ts';
-import { applyAffine, groundCorners, shapeUnderside, undersideDepth, undersideMatrix } from './island.ts';
+import { applyAffine, blurStoneTops, groundCorners, shapeUnderside, turnGreens, undersideDepth, undersideMatrix } from './island.ts';
 import { isometricProjection } from './isometric.ts';
 
 describe("the rock under the map's front edges (Q170)", () => {
@@ -94,5 +94,103 @@ describe("the rock under the map's front edges (Q170)", () => {
     expect(alpha(5, 11)).toBe(200);
     expect(alpha(8, 10)).toBe(200);
     expect(alpha(12, 11)).toBe(200);
+  });
+
+  describe("the rock's moss in the forest's green (830, 831)", () => {
+    const greens = { hue: 42, saturation: 0.75, darken: 0.25 };
+    const turned = (...rgba: number[]) => {
+      const pixels = new Uint8ClampedArray(rgba);
+      turnGreens(pixels, greens);
+      return [...pixels];
+    };
+    const hsl = ([r, g, b]: number[]) => {
+      const [red, green, blue] = [r! / 255, g! / 255, b! / 255];
+      const max = Math.max(red, green, blue);
+      const min = Math.min(red, green, blue);
+      const chroma = max - min;
+      const lightness = (max + min) / 2;
+      const hue = 60 * (max === red ? (green - blue) / chroma : max === green ? (blue - red) / chroma + 2 : (red - green) / chroma + 4);
+      return { hue, saturation: chroma / (1 - Math.abs(2 * lightness - 1)), lightness };
+    };
+
+    it('turns the olive moss to green, less saturated and darker', () => {
+      const moss = [119, 112, 41, 255];
+      const before = hsl(moss);
+      const after = hsl(turned(...moss));
+      expect(after.hue).toBeCloseTo(before.hue + 42, 0);
+      expect(after.saturation).toBeCloseTo(before.saturation * 0.75, 1);
+      expect(after.lightness).toBeCloseTo(before.lightness * 0.75, 2);
+      expect(turned(...moss)[3]).toBe(255);
+    });
+
+    it('leaves the stone, the roots, greys, the palest sunlit spots and see-through pixels as drawn', () => {
+      for (const pixel of [
+        [200, 180, 140, 255], // sunlit stone, hue 40
+        [122, 90, 58, 255], // a root's wood
+        [128, 128, 128, 255], // grey
+        [240, 236, 200, 255], // a pale sunlit spot, yellow-green but nearly white
+        [119, 112, 41, 0], // see-through
+      ]) {
+        expect(turned(...pixel)).toEqual(pixel);
+      }
+    });
+
+    it('turns a green at the edge of the stone\'s yellows part of the way, so moss shades off into stone', () => {
+      const edge = [150, 133, 60, 255]; // hue about 49
+      const turn = hsl(turned(...edge)).hue - hsl(edge).hue;
+      expect(turn).toBeGreaterThan(5);
+      expect(turn).toBeLessThan(42);
+    });
+
+    it('changes nothing when the manifest leaves the greens as drawn', () => {
+      const pixels = new Uint8ClampedArray([119, 112, 41, 255]);
+      turnGreens(pixels, { hue: 0, saturation: 1, darken: 0 });
+      expect([...pixels]).toEqual([119, 112, 41, 255]);
+    });
+  });
+
+  describe('the stone tops over the map, blurred (832, 833)', () => {
+    // A 21 by 16 picture whose front edges run from (0, 10) down to (10.5, 11) and back up to (21, 10).
+    const width = 21;
+    const height = 16;
+    const corners = { left: { x: 0, y: 10 }, bottom: { x: 10.5, y: 11 }, right: { x: 21, y: 10 } };
+    const pixel = (pixels: Uint8ClampedArray, x: number, y: number) => [...pixels.slice((y * width + x) * 4, (y * width + x) * 4 + 4)];
+    const picture = (paint: (x: number, y: number) => number[]) => {
+      const pixels = new Uint8ClampedArray(width * height * 4);
+      for (let y = 0; y < height; y++) for (let x = 0; x < width; x++) pixels.set(paint(x, y), (y * width + x) * 4);
+      return pixels;
+    };
+    const stripes = () => picture((x) => (x % 2 === 0 ? [255, 255, 255, 255] : [0, 0, 0, 255]));
+
+    it('blurs them fully at the top of the fade, shading back to sharp at the edge, and leaves the rock below it as drawn', () => {
+      const pixels = stripes();
+      blurStoneTops(pixels, width, corners, 4, 2);
+      // Four rows and more above the edge: the stripes are blurred into grey.
+      expect(Math.abs(pixel(pixels, 6, 4)[0]! - pixel(pixels, 7, 4)[0]!)).toBeLessThan(40);
+      expect(pixel(pixels, 6, 4)[3]).toBe(255);
+      // Just above the edge: still nearly sharp, so the edge draws no line (833).
+      expect(pixel(pixels, 6, 10)[0]).toBeGreaterThan(240);
+      expect(pixel(pixels, 7, 10)[0]).toBeLessThan(15);
+      // Below the edge: untouched.
+      expect(pixel(pixels, 6, 13)).toEqual([255, 255, 255, 255]);
+      expect(pixel(pixels, 7, 13)).toEqual([0, 0, 0, 255]);
+    });
+
+    it("softens a stone top's outline against the ground", () => {
+      // Stone on the left, nothing on the right.
+      const pixels = picture((x) => (x < 10 ? [200, 180, 140, 255] : [0, 0, 0, 0]));
+      blurStoneTops(pixels, width, corners, 4, 2);
+      const alpha = pixel(pixels, 10, 3)[3]!;
+      expect(alpha).toBeGreaterThan(0);
+      expect(alpha).toBeLessThan(255);
+      // Its colour stays the stone's, not darkened by the see-through pixels beside it.
+      expect(pixel(pixels, 10, 3)[0]).toBeGreaterThan(190);
+    });
+
+    it('changes nothing with no blur', () => {
+      const pixels = stripes();
+      blurStoneTops(pixels, width, corners, 4, 0);
+      expect([...pixels]).toEqual([...stripes()]);
+    });
   });
 });

@@ -3251,6 +3251,46 @@ players walking the cheapest route turn by turn as before: stage 3 won 8, the
 computer before it 11, one shared; +0.7 ± 2.1 gold a game for stage 3, within
 luck. Games imagined per move 10,207 against 9,882.
 
+### Q220. ~~Should the rock's green match the map's?~~ — **answered 2026-10-03: the rock's moss takes the forest's green, darker, and the map stays as it is; the stone tops over the map get a graded blur (830-833)**
+
+Andrei, 2026-10-02 at 22:49: *"The green on the background rocks and roots
+that extend down from the "skyholm" does not quite match what is prominently
+used in the map. Can we make them agree a little more?"* The moss and ivy on
+his rock ([Q170](#q170)) are a yellow olive (hue about 54), while the forest's
+ground and trees are a cooler grass green (hue about 96). The plains ground is
+sand, and its few tufts and bushes already share the rock's olive, so the
+forest's green is the map's only large green.
+
+830. **Which greens move:** the rock's halfway to the forest's; the rock's all
+     the way (recommended); or both halfway, every forest turning a little
+     more yellow. **Answered** at 23:19: *"I like "rock all the way" but I
+     think the rock's green is too bright, it needs to be darker"*.
+831. **How much darker:** 15%, close to the forest ground; 25%, between the
+     ground and the trees (recommended); or 35%, as deep as the trees.
+     **Answered** at 00:00 on 10-03: 25% darker.
+
+The rock's greens turn 42 degrees of hue towards the forest's, keep three
+quarters of their saturation and are darkened by a quarter (`greens` in
+`Art/manifest.json`, applied as the picture loads, so the PNG stays as he
+supplied it). The stone and roots, greyish pixels and the palest sunlit spots
+stay as drawn; those spots, turned and darkened, had shown as grey-green
+specks on the stone. Nothing on the map changes.
+
+At 02:21 he added: *"The colors blend really well now. Looking at the
+transition though I wonder if the stones underneath could be blurred where
+they show under the map as well, to create smoother trasition"*.
+
+832. **How strong a blur:** light, medium (recommended) or strong, the whole
+     strip where the stone tops fade over the map blurred evenly. **Answered**
+     at 02:47: *"No, this doesn't work at all. Somehow I see the edge of the
+     map as a line again, and that's pretty bad"*. Blurred stone met sharp
+     stone right on the ground's edge and drew it as a line.
+833. **A graded blur instead:** no blur, PR #65 going in with the greens
+     alone; graded, medium (recommended); or graded, strong. The stone stays
+     sharp on the ground's edge, as before, and is blurred more the higher it
+     rises over the map, fully at the top of the fade. **Answered** at 03:12:
+     graded, medium (`blur` 6 of the picture's pixels in `Art/manifest.json`).
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design
