@@ -3329,7 +3329,7 @@ And *"please make 0.1 a config setting"*: `start.MAX_REMOTENESS` (0.1), with
 `start.NEARBY_STEPS` (5) beside it. Games started before keep the random start
 they began on.
 
-### Q230. ~~Should the swords stick out of their disc?~~ — **answered 2026-10-03: yes, further than the 27 September option (880-882)**
+### Q230. ~~Should the swords stick out of their disc?~~ — **answered 2026-10-03: yes, as the 27 September option, just over the contour (880-882)**
 
 Andrei, 2026-10-03 at 21:01: *"I remember when we were choosing the rewards
 icons there was an option for the crossed swords icon with the swords slightly
@@ -3342,7 +3342,9 @@ the whole-map view, a middle zoom and the play zoom.
 880. **How far the swords stick out:** A, the 27 September option, as big as
      the foot, tips and handles just over the contour (recommended); or B,
      about 45% bigger than inside the disc, tips further out. **Answered** at
-     22:13: *"880 I actually prefer B"*.
+     22:13: *"880 I actually prefer B"*; then, with B built, at 23:55: *"i am
+     comparing this with other icons, and you're right, it sticks out too
+     much. let us change the andwer of 880 to A"*.
 881. **Stacks:** each disc is drawn over the tips of the swords on the disc
      before it, where they overlap (recommended). **Answered**: as
      recommended.
@@ -3350,10 +3352,10 @@ the whole-map view, a middle zoom and the play zoom.
      swords without a disc, so they stay as they are (recommended).
      **Answered**: as recommended.
 
-The smallest circle round the swords now spans 1.2 of their disc's width
+The smallest circle round the swords now spans 1.06 of their disc's width
 (`pictures` in `icons.backing`, `Art/manifest.json`), where every circled icon
-had 0.82, so the swords are 1.46 times as big as before and their tips reach a
-tenth of the disc's width past its edge. The tips stay inside the disc's
+had 0.82, so the swords are 1.29 times as big as before, as big as the foot,
+and their tips reach 3% of the disc's width past its edge. The tips stay inside the disc's
 square, so the icon takes the same room on the map and nothing moves. The
 disc, its contour, the foot and the mountain are unchanged.
 

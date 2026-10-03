@@ -87,7 +87,7 @@
       "contour": 0.04,
       "picture": 0.82,
       "circled": { "fighting": "#b71b1c", "forest_move": "#1d8b28", "mountain_move": "#000000" },
-      "pictures": { "fighting": 1.2 },
+      "pictures": { "fighting": 1.06 },
       "filled": ["plains_move"]
     }
   },

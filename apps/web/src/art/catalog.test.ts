@@ -124,7 +124,7 @@ describe('the art catalog built from Art/', () => {
 
   it('lets the swords reach over their contour (Q230)', () => {
     const { backing } = catalog.manifest.icons;
-    expect(backing.pictures).toEqual({ fighting: 1.2 });
+    expect(backing.pictures).toEqual({ fighting: 1.06 });
     expect(backing.picture).toBe(0.82);
   });
 
