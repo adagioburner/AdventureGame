@@ -3359,6 +3359,50 @@ and their tips reach 3% of the disc's width past its edge. The tips stay inside 
 square, so the icon takes the same room on the map and nothing moves. The
 disc, its contour, the foot and the mountain are unchanged.
 
+### Q240. ~~How do stamina sites come to the plains?~~ — **answered 2026-10-04: like every other plains reward, 5 sites and 10 units (7 and 14 on the larger map), each unit 5 stamina, pictures 0.45 of a road, in games started from now on (900-907)**
+
+Andrei, 2026-10-03 at 21:32, with a sheet of 12 pictures (a well, a fountain,
+an apple tree, a campfire, a barrel, a statue, a bench, a tent, a picnic
+table, a waterfall pool, a hot spring, a herb garden): *"I'd like to add
+stamina rewarding sites to plains. [...] I am thinking of adding 5 sites,
+rewarding 10 stamina units total (and each stamina unit adds 5 stamina).
+[...] Stamina sites follow the same rules any other reward type does."* The
+details were asked at 22:18 with pictures and numbers from 600 maps per size,
+and answered at 00:03, 00:04 and 02:50 on 10-04.
+
+900. **Where the 5 sites go:** like every other plains reward, the plains
+     getting 30 sites instead of 25 and 5 drawn for stamina (recommended), or
+     only in the deep plains. **Answered**: A, like every other reward. A
+     stamina site lay within 5 steps of the start on 60% of maps (57% on the
+     larger map).
+901. **"Same rules":** unguarded; 1 unit a site and the other 5 leaning toward
+     the more remote sites, usually 3-2-2-2-1 or 3-3-2-1-1; one of the 12
+     pictures for each site, drawn from the seed (recommended). **Answered**: A.
+902. **4-5 player maps:** 7 sites with 14 units, the usual 1.4 × (recommended),
+     or 5 with 10. **Answered**: A.
+903. **Spare dead ends** (each already a 1-unit stamina site, on 10 of 600
+     maps, any terrain): stamina sites in every way, 5 stamina a unit and the
+     new pictures (recommended), or left at 1 stamina with a borrowed house.
+     **Answered**: A.
+904. **Picture size:** asked at 0.5 of a road's length, like the houses; he
+     answered *"slightly smaller, so a bench or a campfire doesn't look as big
+     as a house"*, then asked between 0.5, 0.45, 0.4 (recommended) and 0.35.
+     **Answered** at 02:50: 0.45, a tenth smaller than the houses.
+905. **Hearts on the map:** one white heart a unit (recommended). **Answered**:
+     A.
+906. **Words players read:** the stamina a site gives, "took 10 stamina", "the
+     10 stamina site (plains)" (recommended), or the units. **Answered**: A.
+907. **Rulebook:** the stamina row reads "5 stamina for each heart, paid for
+     steps beyond your free ones", and the quick reference gains "Stamina
+     site | 5 stamina for each heart" (recommended). **Answered**: A.
+
+Stated without a choice, unchallenged: games already started keep the map
+they began with (their stamina units worth 1); 5 sites, 10 units and 5
+stamina a unit are named settings (the stamina row of `REWARD_TABLE`,
+`pois.STAMINA_PER_UNIT`); with 5 more plains sites a seed draws a different
+map than before; computer players take stamina sites by the same rules, and
+how they think does not change.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design

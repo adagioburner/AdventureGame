@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_RULESET } from '@adventure/config';
+import { DEFAULT_RULESET, withoutStaminaSites } from '@adventure/config';
 
 import { RuleViolationError } from '../errors.ts';
 import type { GameAction } from '../action.ts';
@@ -170,6 +170,41 @@ describe('applyAction — rest', () => {
     const { state } = applyAction(onThePoi, { kind: 'rest', player: one }, noDice);
     expect(state.poiRuntime[1]?.claimedBy).toBeNull();
     expect(state.players[0]?.stats.gold).toBe(0);
+  });
+});
+
+describe('applyAction — a stamina site (Q240)', () => {
+  /** 0(p) ── 1(p) ── 2(p): 2 stamina units on node 1, and gold ahead so the claim decides nothing. */
+  const staminaMap = fixtureMap({
+    terrains: ['plains', 'plains', 'plains'],
+    edges: [
+      [0, 1],
+      [1, 2],
+    ],
+    pois: [
+      { node: 1, kind: 'stamina', units: 2, guard: null },
+      { node: 2, kind: 'gold', units: 1, guard: null },
+    ],
+  });
+
+  function staminaAfterClaiming(on: GameState): number {
+    const start = withStats(on, one, { stamina: 4 });
+    const { state, events } = applyAction(start, { kind: 'move', player: one, path: [n(1)] }, noDice);
+    const moved = events.find((event) => event.type === 'moved');
+    const spent = moved?.type === 'moved' ? moved.resolution.staminaSpent : Number.NaN;
+    expect(state.poiRuntime[0]?.claimedBy).toBe(one);
+    return (state.players[0]?.stats.stamina ?? 0) - (4 - spent);
+  }
+
+  it('gives STAMINA_PER_UNIT, 5 stamina, for each unit', () => {
+    expect(staminaMap.ruleset.config.pois.STAMINA_PER_UNIT).toBe(5);
+    expect(staminaAfterClaiming(fixtureGame(staminaMap, 0))).toBe(2 * 5);
+  });
+
+  it('gives 1 stamina for each unit on a map from before the plains had stamina sites', () => {
+    const before = { ...staminaMap, ruleset: withoutStaminaSites(staminaMap.ruleset) };
+    expect(before.ruleset.config.pois.STAMINA_PER_UNIT).toBeUndefined();
+    expect(staminaAfterClaiming(fixtureGame(before, 0))).toBe(2);
   });
 });
 

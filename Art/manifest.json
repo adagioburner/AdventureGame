@@ -61,14 +61,7 @@
     },
     { "terrain": "mountain", "reward": "gold", "guard": "fighting", "sheet": "Mountains_GoldGuardedByFighting", "size": 0.6, "on_node": true },
     { "terrain": "mountain", "reward": "gold", "guard": "magic", "sheet": "Mountains_GoldGuardedByMagic", "size": 0.6, "on_node": true },
-    {
-      "terrain": "any",
-      "reward": "stamina",
-      "guard": null,
-      "sheet": "Plains_PlainsMovement",
-      "size": 0.5,
-      "borrowed": "Q20: stamina POIs come from surplus leaves on any terrain and have no sheet of their own yet, so they borrow the plains-movement houses."
-    }
+    { "terrain": "any", "reward": "stamina", "guard": null, "sheet": "Plains_Stamina", "size": 0.45 }
   ],
   "icons": {
     "size": 0.24,

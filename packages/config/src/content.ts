@@ -11,16 +11,17 @@ import type { GameContent, RewardTable } from './types.ts';
  *   2. Per row, `totalUnits >= poiCount` — §4.3 step 2 gives every POI in the
  *      group one guaranteed unit before step 3 distributes the remainder.
  *
- * Note what is *absent*: `stamina` appears in §4.1's seven reward kinds but in
- * no row of §4.2. [SOURCE §4.2, chat] that is deliberate — "right now the
- * configuration for stamina is 0, but we may change the rewards balance and add
- * a non-zero default number of stamina rewards". The only stamina a v1 map
- * carries is incidental, from surplus leaf nodes (§3/§9, chat).
- *
- * Adding a stamina row later is a config edit, but **not a purely additive
- * one**: invariant 1 requires each terrain's `poiCount` column to sum to
- * `POI_COUNT[terrain]`, so giving stamina POIs means taking them from another
- * kind on that terrain. `validateRuleset` catches it either way.
+ * `stamina` had no row of §4.2 until [Q240]: "right now the configuration for
+ * stamina is 0, but we may change the rewards balance and add a non-zero
+ * default number of stamina rewards" (§4.2, chat), and the only stamina a map
+ * carried was incidental, from surplus leaf nodes (§3/§9, chat). Andrei,
+ * 2026-10-03: "I'd like to add stamina rewarding sites to plains [...] 5 sites,
+ * rewarding 10 stamina units total (and each stamina unit adds 5 stamina).
+ * [...] Stamina sites follow the same rules any other reward type does." So
+ * the plains have a stamina row (900 A, 901 A), unguarded like the speeds, and
+ * `POI_COUNT.plains` grew by its 5 sites, since invariant 1 below needs each
+ * terrain's `poiCount` column to sum to it. What a unit gives is
+ * `STAMINA_PER_UNIT` in defaults.ts.
  */
 /**
  * [Q115] The chance that a forest gold POI is guarded by magic instead of by
@@ -44,6 +45,8 @@ export const DEFAULT_REWARD_TABLE: RewardTable = {
     { kind: 'magic', guard: null, totalUnits: 10, poiCount: 6 },
     // [SOURCE §1.1] Informally "cities".
     { kind: 'gold', guard: 'fighting', totalUnits: 10, poiCount: 2 },
+    // [Q240] The stamina sites. Changing `poiCount` changes POI_COUNT.plains with it.
+    { kind: 'stamina', guard: null, totalUnits: 10, poiCount: 5 },
   ],
   forest: [
     { kind: 'mountain_move', guard: null, totalUnits: 15, poiCount: 8 },
@@ -76,6 +79,8 @@ export const LARGER_MAP_REWARD_TABLE: RewardTable = {
     { kind: 'forest_move', guard: null, totalUnits: 21, poiCount: 10 },
     { kind: 'magic', guard: null, totalUnits: 14, poiCount: 8 },
     { kind: 'gold', guard: 'fighting', totalUnits: 14, poiCount: 3 },
+    // [Q240, 902 A] 1.4 × the stamina sites too: 7 sites, 14 units.
+    { kind: 'stamina', guard: null, totalUnits: 14, poiCount: 7 },
   ],
   forest: [
     { kind: 'mountain_move', guard: null, totalUnits: 21, poiCount: 11 },

@@ -68,7 +68,7 @@ describe('the art catalog built from Art/', () => {
     }
   });
 
-  it('keeps the two Q20 substitutions and the Q115 one in the table, each saying why', () => {
+  it('keeps the Q20 substitution and the Q115 one in the table, each saying why', () => {
     const forestGold = poiArtRow(catalog.manifest, 'forest', 'gold', 'fighting');
     expect(forestGold.sheet).toBe('Mountains_GoldGuardedByFighting');
     expect(forestGold.borrowed).toMatch(/Q20/);
@@ -76,13 +76,17 @@ describe('the art catalog built from Art/', () => {
     const forestMagicGold = poiArtRow(catalog.manifest, 'forest', 'gold', 'magic');
     expect(forestMagicGold.sheet).toBe('Mountains_GoldGuardedByMagic');
     expect(forestMagicGold.borrowed).toMatch(/Q115/);
+    const borrowed = catalog.manifest.pois.filter((row) => row.borrowed !== null);
+    expect(borrowed).toHaveLength(2);
+  });
+
+  it('draws every stamina site, the spare dead ends in any terrain included, with the stamina sheet (Q240, 903 A)', () => {
     for (const terrain of TERRAINS) {
       const stamina = poiArtRow(catalog.manifest, terrain, 'stamina', null);
-      expect(stamina.sheet).toBe('Plains_PlainsMovement');
-      expect(stamina.borrowed).toMatch(/Q20/);
+      expect(stamina.sheet).toBe('Plains_Stamina');
+      expect(stamina.borrowed).toBeNull();
     }
-    const borrowed = catalog.manifest.pois.filter((row) => row.borrowed !== null);
-    expect(borrowed).toHaveLength(3);
+    expect(atlasOf(catalog, 'Plains_Stamina').sprites).toHaveLength(12);
   });
 
   it('prefers a row naming the terrain over one for any terrain, and a matching guard over a fallback', () => {

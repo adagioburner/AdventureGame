@@ -14,7 +14,6 @@ import {
 } from '@adventure/config';
 import {
   createRng,
-  isLeaf,
   leafNodes,
   poiAt,
   rewardGroupKeyOf,
@@ -155,20 +154,26 @@ describe('§4.2 — the reward table reconciles exactly', () => {
   }, 30000);
 
   it('accounts for every POI: table rows plus surplus-leaf stamina, nothing else', () => {
+    const rows = TERRAINS.flatMap((terrain) => DEFAULT_RULESET.content.REWARD_TABLE[terrain]);
+    const tabled = rows.reduce((sum, row) => sum + row.poiCount, 0);
+    // [Q240] The plains' stamina row: 5 sites holding 10 units.
+    const staminaRows = rows.filter((row) => row.kind === 'stamina');
+    const tabledStamina = staminaRows.reduce((sum, row) => sum + row.poiCount, 0);
+    const tabledStaminaUnits = staminaRows.reduce((sum, row) => sum + row.totalUnits, 0);
+    expect([tabledStamina, tabledStaminaUnits]).toEqual([5, 10]);
     for (const seed of SEEDS) {
       const map = mapOf(seed);
-      const tabled = TERRAINS.reduce(
-        (sum, terrain) =>
-          sum + DEFAULT_RULESET.content.REWARD_TABLE[terrain].reduce((rows, row) => rows + row.poiCount, 0),
-        0,
-      );
       const stamina = map.pois.filter((poi) => poi.reward.kind === 'stamina');
-      expect(map.pois.length).toBe(tabled + stamina.length);
+      const surplus = stamina.length - tabledStamina;
+      expect(surplus).toBeGreaterThanOrEqual(0);
+      expect(map.pois.length).toBe(tabled + surplus);
+      expect(stamina.filter((poi) => poi.terrain === 'plains').length).toBeGreaterThanOrEqual(tabledStamina);
 
-      // §3/§9, chat: surplus leaves, one stamina unit each, always unguarded.
+      // §3/§9, chat: surplus leaves, one stamina unit each; [Q240, 901 A] the
+      // table's stamina sites unguarded like every other plains reward but gold.
+      const units = stamina.reduce((sum, poi) => sum + poi.reward.units, 0);
+      expect(units).toBe(tabledStaminaUnits + surplus * DEFAULT_RULESET.config.pois.OVERFLOW_LEAF_STAMINA_UNITS);
       for (const poi of stamina) {
-        expect(isLeaf(map.graph, poi.node)).toBe(true);
-        expect(poi.reward.units).toBe(DEFAULT_RULESET.config.pois.OVERFLOW_LEAF_STAMINA_UNITS);
         expect(poi.guard).toBeNull();
         expect(poi.group).toEqual({ kind: 'stamina', guard: null });
       }
@@ -477,7 +482,7 @@ describe('terrain', () => {
 
 describe('regeneration', () => {
   it('throws away an attempt whose terrain cannot hold its §4.2 POI quota, rather than failing', () => {
-    // A mountain quota of 100 passes `validateRuleset` — 145 POIs over ~240
+    // A mountain quota of 100 passes `validateRuleset` — 150 POIs over ~240
     // nodes — but no map's mountains are that big, so the attempt is rejected
     // at step 7, the retry loop runs to its bound, and the failure names the
     // reason. Without the check this crashes with a RangeError from §4.3.
@@ -485,7 +490,7 @@ describe('regeneration', () => {
       ...DEFAULT_RULESET,
       config: {
         ...DEFAULT_RULESET.config,
-        pois: { ...DEFAULT_RULESET.config.pois, POI_COUNT: { plains: 25, forest: 20, mountain: 100 } },
+        pois: { ...DEFAULT_RULESET.config.pois, POI_COUNT: { plains: 30, forest: 20, mountain: 100 } },
       },
       content: {
         REWARD_TABLE: {

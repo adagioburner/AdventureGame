@@ -26,7 +26,10 @@ Every player has seven uncapped stats, one per reward kind: plains / forest /
 mountain moving skill, fighting, magic, gold and stamina. Claiming a reward of
 kind K with N units simply adds N to stat K — the stat block is typed as
 `Record<RewardKind, number>` so the two lists cannot drift apart
-(`packages/core/src/player.ts`).
+(`packages/core/src/player.ts`) — except stamina, whose units are worth
+`pois.STAMINA_PER_UNIT` (5) stamina each since the plains have stamina sites
+(§4.2, Q240), or 1 on a map made before (`rewardAmount`,
+`packages/core/src/reward.ts`).
 
 **Setup.** Seats are allocated in the order the game master accepts join
 requests, and turn order is frozen when the game starts and never changes

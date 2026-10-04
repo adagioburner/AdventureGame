@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { RESPAWN_RULES } from '@adventure/config';
-import { createRng, routeTable, startingNodeFor } from '@adventure/core';
+import { RESPAWN_RULES, startingGoldOf } from '@adventure/config';
+import { createRng, startingNodeFor } from '@adventure/core';
 import { mapFor } from '../page/seed.ts';
 import { inOrder, toHotseatSeats, type LocalSetup } from '../setup/local.ts';
 import { HotseatGame } from './hotseat.ts';
-import { forgetKept, keep, keptDeepStart, keptMagicGuardChance, keptMapSize, readKept, replayKept } from './kept.ts';
+import { forgetKept, keep, keptDeepStart, keptMagicGuardChance, keptMapSize, keptStaminaSites, readKept, replayKept } from './kept.ts';
 
 const map = mapFor('adventure', 'standard');
 const setup: LocalSetup = {
@@ -73,17 +73,8 @@ describe('a game on one device kept in the browser (Q56, 66)', () => {
 
   it('comes back with its purchases (Q190)', () => {
     const game = new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'kept-buy' });
-    const config = map.ruleset.config;
-    const gold = map.pois.find((poi) => poi.reward.kind === 'gold' && poi.guard === null);
-    if (gold === undefined) throw new Error('no unguarded gold on the map');
-    // Ada walks to the gold, resting when she runs short of stamina, while Bram rests; then she buys with it.
-    for (let turn = 0; turn < 200 && game.state.players[0]!.stats.gold === 0; turn += 1) {
-      const player = game.state.players[game.state.turn.activeSeat - 1]!;
-      const path = routeTable(map.graph, config).path(player.position, gold.node) ?? [];
-      const walks = player.seat === 1 && player.stats.stamina >= 3;
-      game.play(walks ? { kind: 'move', player: player.id, path } : { kind: 'rest', player: player.id });
-    }
-    if (game.state.turn.activeSeat === 2) game.play({ kind: 'rest', player: game.state.players[1]!.id });
+    // Ada buys with the gold she started with (Q200).
+    expect(game.state.players[0]?.stats.gold).toBe(startingGoldOf(map.ruleset));
     game.buy({ kind: 'buy', player: game.state.players[0]!.id, skills: ['magic'] });
     keep('adventure', setup, null, game);
 
@@ -179,6 +170,32 @@ describe('a game on one device kept in the browser (Q56, 66)', () => {
     const resumed = replayKept(before, began);
     expect(resumed?.setup.map).toBe(began);
     expect(resumed?.state.players.map((player) => player.position)).toEqual([startingNodeFor(began), startingNodeFor(began)]);
+    expect(resumed?.turns.length).toBe(1);
+  });
+
+  it('keeps a map with stamina sites on the plains, and makes a game kept before on the map it began on (Q240)', () => {
+    const tabled = (on: typeof map): number => on.pois.filter((poi) => poi.terrain === 'plains' && poi.reward.kind === 'stamina').length;
+    const game = new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'kept' });
+    game.play({ kind: 'rest', player: game.state.players[0]!.id });
+    keep('adventure', setup, null, game);
+    const kept = readKept();
+    expect(kept?.staminaSites).toBe(true);
+    expect(kept === null ? null : keptStaminaSites(kept)).toBe(true);
+    expect(map.ruleset.config.pois.STAMINA_PER_UNIT).toBe(5);
+    expect(tabled(map)).toBeGreaterThanOrEqual(5);
+    expect(replayKept(kept!, map)?.state).toEqual(game.state);
+
+    // Kept before: no stamina row, 25 plains sites, and a stamina unit worth 1.
+    const { staminaSites: _sites, ...older } = kept ?? { staminaSites: undefined };
+    const before = older as NonNullable<typeof kept>;
+    expect(keptStaminaSites(before)).toBe(false);
+    const began = mapFor('adventure', 'standard', undefined, true, keptStaminaSites(before));
+    expect(began.ruleset.config.pois.STAMINA_PER_UNIT).toBeUndefined();
+    expect(began.ruleset.config.pois.POI_COUNT.plains).toBe(25);
+    expect(began.ruleset.content.REWARD_TABLE.plains.some((row) => row.kind === 'stamina')).toBe(false);
+    expect(tabled(began)).toBeLessThan(5);
+    const resumed = replayKept(before, began);
+    expect(resumed?.setup.map).toBe(began);
     expect(resumed?.turns.length).toBe(1);
   });
 

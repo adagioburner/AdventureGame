@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_RULESET, startingGoldOf } from '@adventure/config';
-import { previewPath, totalGoldUnits } from '@adventure/core';
+import { previewPath, rewardAmount, totalGoldUnits } from '@adventure/core';
 import { formatPlaythrough, playGame } from './playthrough.ts';
 
 /**
@@ -83,7 +83,8 @@ describe('a full game', () => {
         if (event.type === 'moved') expected -= event.resolution.staminaSpent;
         if (event.type === 'rested') expected += event.staminaGained;
         if (event.type === 'interacted' && event.resolution.claimed && event.resolution.reward?.kind === 'stamina') {
-          expected += event.resolution.reward.units;
+          // [Q240] Each unit is STAMINA_PER_UNIT stamina.
+          expected += rewardAmount(event.resolution.reward, run.map.ruleset.config);
         }
       }
       expect(turn.standings[turn.seat - 1]?.stats.stamina).toBe(expected);
