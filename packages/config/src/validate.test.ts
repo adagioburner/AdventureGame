@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_RULESET, LARGER_MAP_RULESET, withoutStaminaSites } from './index.ts';
+import { DEFAULT_RULESET, LARGER_MAP_RULESET, withoutMoreSeeds, withoutStaminaSites } from './index.ts';
 import type { PendingValue, RewardGroupSpec, Ruleset } from './types.ts';
 import { RulesetError, UnresolvedDesignError, resolvePending, validateRuleset } from './validate.ts';
 import type { Terrain } from './vocabulary.ts';
@@ -148,6 +148,16 @@ describe('validateRuleset', () => {
     }
     expect(() => validateRuleset(withoutStaminaSites(DEFAULT_RULESET))).not.toThrow();
     expect(() => validateRuleset(withoutStaminaSites(LARGER_MAP_RULESET))).not.toThrow();
+  });
+
+  it('rejects terrain seeds below 1, not whole, or with min above max, and accepts a ruleset from before them (Q245)', () => {
+    for (const range of [{ min: 0, max: 3 }, { min: 1.5, max: 3 }, { min: 3, max: 2 }]) {
+      const ruleset = clone();
+      (ruleset.config.map as { TERRAIN_SEEDS: unknown }).TERRAIN_SEEDS = { ...ruleset.config.map.TERRAIN_SEEDS, forest: range };
+      expect(() => validateRuleset(ruleset)).toThrow(/TERRAIN_SEEDS\.forest/);
+    }
+    expect(() => validateRuleset(withoutMoreSeeds(DEFAULT_RULESET))).not.toThrow();
+    expect(() => validateRuleset(withoutMoreSeeds(LARGER_MAP_RULESET))).not.toThrow();
   });
 
   it('reports every problem at once rather than the first', () => {

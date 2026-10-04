@@ -350,7 +350,7 @@ one `Rng` on `GenerationContext`.
   that disconnects the graph or pushes leaf count outside `LEAF_COUNT` (30–45)
   is skipped and pruning continues. Rebuild `adjacency` whenever `edges`
   changes.
-- **`4-seed-terrain`** — 1 or 2 seeds per terrain, flood fill biased toward
+- **`4-seed-terrain`** — 1 or 2 seeds per terrain (`TERRAIN_SEEDS`, 3 each since Q245), flood fill biased toward
   nodes with more same-terrain neighbours, until shares approach
   `TERRAIN_AREA_SHARE` (45/30/25).
 - **`5-smooth`** — the flip loop. The measurement and its exit test

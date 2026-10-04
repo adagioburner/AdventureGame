@@ -1,14 +1,19 @@
-import { TERRAINS, type Terrain } from '@adventure/config';
+import { EARLIER_TERRAIN_SEEDS, TERRAINS, type Terrain } from '@adventure/config';
 import { asNodeId, degree, type NodeId } from '@adventure/core';
 import { draftAsGraph } from '../graphops.ts';
 import { bestGrowthCandidate, hopDistances, rebalanceTerrainShares, terrainTargets } from '../terraingrowth.ts';
 import { GenerationRejected, type GenerationContext, type GenerationStep, type MapDraft } from '../types.ts';
 
 /**
- * §2.1 step 4 — "Seed terrain regions: 1 or 2 seeds per terrain (plains,
- * forest, mountain); grow by flood fill biased toward nodes with more
+ * §2.1 step 4 — "Seed terrain regions: `TERRAIN_SEEDS` seeds per terrain: 3
+ * each for plains, forest and mountain (Q245; 1 or 2 at random on the maps of
+ * games started before); grow by flood fill biased toward nodes with more
  * same-terrain neighbours, until area shares are approximately 45% plains /
  * 30% forest / 25% mountain."
+ *
+ * [Q245] Nothing keeps two areas of one terrain from growing into each other
+ * (910 B), so a map often shows fewer areas than seeds. The maps of games
+ * started before have no `TERRAIN_SEEDS` and grow from `EARLIER_TERRAIN_SEEDS`.
  *
  * The bias toward same-terrain neighbours is what produces §1's "generally
  * rounded" regions before Smooth ever runs. Targets come from
@@ -58,7 +63,7 @@ export const seedTerrainStep: GenerationStep = {
   gdd: 'GDD.md §2.1 step 4',
   run(draft: MapDraft, context: GenerationContext): void {
     const { rng } = context;
-    const { TERRAIN_AREA_SHARE } = context.ruleset.config.map;
+    const { TERRAIN_AREA_SHARE, TERRAIN_SEEDS = EARLIER_TERRAIN_SEEDS } = context.ruleset.config.map;
     const nodeCount = draft.positions.length;
 
     const assigned = new Array<Terrain | null>(nodeCount).fill(null);
@@ -71,7 +76,8 @@ export const seedTerrainStep: GenerationStep = {
 
     const plan: Terrain[] = [];
     for (const terrain of TERRAINS) {
-      for (let count = rng.nextIntInclusive(1, 2); count > 0; count--) plan.push(terrain);
+      const { min, max } = TERRAIN_SEEDS[terrain];
+      for (let count = rng.nextIntInclusive(min, max); count > 0; count--) plan.push(terrain);
     }
     if (nodeCount < plan.length) {
       throw new GenerationRejected(

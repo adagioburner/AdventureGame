@@ -89,6 +89,22 @@ export interface MapConfig {
    * (OPEN_QUESTIONS Q105, 394).
    */
   readonly JOINED_PIECE_ROADS: number;
+  /**
+   * [Q245] `TERRAIN_SEEDS` — how many seeds each terrain grows from in step 4
+   * (§2.1), drawn per map between `min` and `max`. 3 for every terrain, on
+   * both map sizes (910 B, 911 B, 912 A).
+   *
+   * Andrei, 2026-10-04: "games get more interesting when there are more than
+   * one area of forest and mountains"; "starting with 3 seeds for all 3
+   * terrains but doing nothing to prevent them from merging is a good move".
+   * Areas of one terrain still grow until they touch, so a map shows fewer
+   * areas than seeds as often as not: measured over 300 maps a size, the
+   * forest is in 2 or more areas on 77% of 2-3 player maps and 81% of 4-5.
+   *
+   * Absent on the maps of games started before, which grew every terrain from
+   * `EARLIER_TERRAIN_SEEDS` (913).
+   */
+  readonly TERRAIN_SEEDS?: PerTerrain<IntRange>;
 }
 
 /** §11 rows covering POI counts and guard strength (§3, §4.4). */

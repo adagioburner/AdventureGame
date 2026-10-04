@@ -178,6 +178,16 @@ export function validateRuleset(ruleset: Ruleset): void {
   if (start !== undefined && !(start.MAX_REMOTENESS > 0)) {
     problems.push('Q227: start.MAX_REMOTENESS must be a positive number.');
   }
+  // Q245: whole seeds, at least 1 a terrain, which step 4 needs to grow it at all.
+  const seeds = config.map.TERRAIN_SEEDS;
+  for (const terrain of TERRAINS) {
+    const range = seeds?.[terrain];
+    if (range === undefined) continue;
+    if (!Number.isInteger(range.min) || !Number.isInteger(range.max) || range.min < 1) {
+      problems.push(`Q245: map.TERRAIN_SEEDS.${terrain} must be whole numbers of at least 1.`);
+    }
+    assertRange(problems, `TERRAIN_SEEDS.${terrain}`, range);
+  }
   // Q200: whole gold, none at the least.
   const gold = config.players.STARTING_GOLD;
   if (gold !== undefined && (!Number.isInteger(gold) || gold < 0)) {

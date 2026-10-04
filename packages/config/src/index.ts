@@ -11,6 +11,7 @@ export * from './types.ts';
 export {
   DEFAULT_GAME_CONFIG,
   DEFAULT_ENGINEERING_CONFIG,
+  EARLIER_TERRAIN_SEEDS,
   LARGER_MAP_GAME_CONFIG,
   LARGER_MAP_ENGINEERING_CONFIG,
   RESPAWN_RULES,
@@ -147,6 +148,26 @@ export function withoutStaminaSites(ruleset: Ruleset): Ruleset {
     config: { ...ruleset.config, pois: { ...pois, POI_COUNT: { ...pois.POI_COUNT, plains: pois.POI_COUNT.plains - sites } } },
     content: { ...ruleset.content, REWARD_TABLE: { ...table, plains: table.plains.filter((row) => row.kind !== 'stamina') } },
   };
+}
+
+/**
+ * [Q245] Whether maps made with `ruleset` grow their terrain from
+ * `TERRAIN_SEEDS`. False for a hot seat game kept from before, whose map is
+ * made again as it began, from 1 or 2 seeds a terrain.
+ */
+export function moreSeedsOf(ruleset: Ruleset): boolean {
+  return ruleset.config.map.TERRAIN_SEEDS !== undefined;
+}
+
+/**
+ * [Q245] `ruleset` as it was before terrain grew from `TERRAIN_SEEDS`, so a hot
+ * seat game kept from before gets back the map it began on (913). `ruleset`
+ * itself when it already is.
+ */
+export function withoutMoreSeeds(ruleset: Ruleset): Ruleset {
+  if (!moreSeedsOf(ruleset)) return ruleset;
+  const { TERRAIN_SEEDS: _seeds, ...map } = ruleset.config.map;
+  return { ...ruleset, config: { ...ruleset.config, map } };
 }
 
 /**

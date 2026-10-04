@@ -3403,40 +3403,58 @@ stamina a unit are named settings (the stamina row of `REWARD_TABLE`,
 map than before; computer players take stamina sites by the same rules, and
 how they think does not change.
 
-### Q245. How many seeds do the forest and the mountains grow from? — **asked 2026-10-04 (910-914), open**
+### Q245. ~~How many seeds do the forest and the mountains grow from?~~ — **answered 2026-10-04: 3 seeds for every terrain, plains included, on both map sizes, nothing keeping areas apart, in games started from now on (910-914)**
 
 Andrei, 2026-10-04 at 04:46: *"I noticed that games get more interesting when
 there are more than one area of forest and mountains. can we increase the
-number of seeds every train grow from"* ("train" = terrain). Today GDD §2.1
-step 4 plants 1 or 2 seeds per terrain, drawn at random.
+number of seeds every train grow from"* ("train" = terrain). Until then GDD
+§2.1 step 4 planted 1 or 2 seeds per terrain, drawn at random.
 
-Measured on 300 maps per size before anything was built. Today a forest has
-two or more separate areas on 38% of 2-3 player maps and the mountains on 44%;
-both do on 17%. More seeds alone help less than the count suggests, because a
-terrain's areas grow until they meet: with 2 seeds each, both terrains have
-two or more areas on 34% of maps; with 3, on 58%. Measured right after the
-fill with 3 seeds each, the 6 forest and mountain areas are still 5.3 apart by
-road but only 3.8 on the ground: most meet side by side, with no road between
-them, and read as one area (step 6b then puts a road between them). Keeping a
-terrain's areas from growing into touching each other gives 87% with 2 seeds
-and 99% with 3. The 45/30/25 shares, the start (#67) and site placement hold in every
-option.
+Measured on 300 maps per size before anything was built. With 1 or 2 seeds a
+forest had two or more separate areas on 38% of 2-3 player maps and the
+mountains on 44%; both did on 17%. More seeds alone help less than the count
+suggests, because a terrain's areas grow until they meet: with 2 seeds each,
+both terrains have two or more areas on 34% of maps; with 3, on 58%. Measured
+right after the fill with 3 seeds each, the 6 forest and mountain areas are
+still 5.3 apart by road but only 3.8 on the ground: most meet side by side,
+with no road between them, and read as one area (step 6b then puts a road
+between them). Keeping a terrain's areas from growing into touching each other
+gives 87% with 2 seeds and 99% with 3. The 45/30/25 shares, the start (#67)
+and site placement hold in every option. Asked at 05:22 with pictures; at
+06:20 he set the goal: *"a variety of different maps, with more than one
+forest in most, but not necessarily all of them. Numbers like 70% should work
+well"*, and at 06:24 asked how often 3 seeds for every terrain gives 3 or more
+areas of one terrain (61% of 2-3 player maps, 63% of 4-5) and of two terrains
+(15%, 11%), with pictures of the latter.
 
 910. **How the forest and mountains grow:** A, 2 seeds each; B, 3 seeds each;
      C, 2 seeds each, and an area never grows into another area of its own
-     terrain (recommended); D, 3 seeds each, kept apart the same way. **Open.**
+     terrain (recommended); D, 3 seeds each, kept apart the same way.
+     **Answered** at 06:43: B, *"starting with 3 seeds for all 3 terrains but
+     doing nothing to prevent them from merging is a good move"*, after seeing
+     the pictures: *"A bit patchy but only a little."*
 911. **The plains:** keep 1 or 2 seeds (recommended), or the same count as the
-     forest and mountains. **Open.**
+     forest and mountains. **Answered** at 06:43: the same, 3 seeds.
 912. **4-5 player maps:** the same count as smaller maps (recommended), or one
-     seed more each. **Open.**
+     seed more each. **Answered** at 06:44: *"4-5 players get the same
+     count"*.
 913. **Games already started** keep the map they began with (recommended).
-     **Open.**
+     **Answered** at 06:44: *"Old maps are untouched"*.
 914. **How far apart kept-apart areas stay** (his question at 05:32, "will
      there be just a narrow passage between them?"): at least 1 space, as C was
      first offered, which leaves 57% of pairs 1 space apart at their closest;
      or at least 2 spaces (recommended), which leaves 17%, most of them across a
      valley, for both terrains in 2+ areas on 83% of maps instead of 87%.
-     **Open.**
+     **Falls away** with 910 B: nothing keeps areas apart.
+
+As built, measured on the same 300 maps per size (2-3 / 4-5 players): forest
+in 2 or more areas 77% / 81%, mountains 83% / 84%, plains 57% / 61%; one forest
+and one mountain area 3% / 1% (35% / 36% before). The start is about 6.2 / 8.5
+road steps from the forest and mountains (7.9 / 10.5 before). The seed count
+is a named setting, `map.TERRAIN_SEEDS`, per terrain; every seed draws a
+different map than before. Games already started keep their map: online
+because the map carries the config it was made with, on one device because the
+kept game records whether its map grew from `TERRAIN_SEEDS`.
 
 ---
 
@@ -3455,7 +3473,7 @@ Listed so you can veto any that read as design to you.
 | `Poi.artVariant` as an opaque stable index | §3 says a POI has an image and leaves which one to the art. Since phase 3 it picks sprite `artVariant mod count` from the sheet `Art/manifest.json` names for the POI, so no sheet's sprite count is baked into the generator. |
 | `POISSON_RADIUS_FACTOR` recalibrated 0.85 → 0.815 | An `EngineeringConfig` knob, documented as existing purely "for making step 1 hit its node budget". 0.85 was a guess made before there was a sampler; measured, it yields ~220 nodes against §11's `MAP_NODE_COUNT` of 240. 0.815 centres the yield on 240. No §11 value changed. |
 | `POISSON_RADIUS_FACTOR` 0.808 on the larger map (Q160) | The same knob, calibrated the same way: 0.815 yields about 333 spaces against the larger map's 336, 0.808 averages 336 over 400 seeds. |
-| Farthest-point seed placement in §2.1 step 4, on nodes of degree ≥ 3 | §2.1 fixes the seed *count* (1 or 2 per terrain) and says nothing about placement. On a near-tree graph a seed down a branch is walled in after a few nodes and its terrain never reaches its share; measured, this choice cuts the share error from ~9 points per terrain to ~3. |
+| Farthest-point seed placement in §2.1 step 4, on nodes of degree ≥ 3 | §2.1 fixes the seed *count* (1 or 2 per terrain; `TERRAIN_SEEDS`, 3 each, since Q245) and says nothing about placement. On a near-tree graph a seed down a branch is walled in after a few nodes and its terrain never reaches its share; measured, this choice cuts the share error from ~9 points per terrain to ~3. |
 | Surplus leaves drawn by shuffle | §3 forces every leaf to be a POI and §4.2 fixes how many POIs a terrain's table rows get; nothing says *which* leaves fall inside the quota when a terrain has more leaves than it. Drawn from the map's own stream. |
 | Growing terrain by *trading* when a region is walled in (Q28) | §2.1 asks for the shares and says nothing about how to reach them. A region enclosed by a terrain already at its share cannot take a node without pushing that terrain under; the two-step trade keeps both at their targets and still reduces the total deviation, so the pass terminates. |
 | A `BoardPost`'s id and timestamp are stamped by the caller, not by `applyAction` | The engine is pure and has no clock — `Clock` is a session-layer port for exactly this reason — and a replayed game must rebuild the identical board. |
