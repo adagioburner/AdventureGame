@@ -3658,6 +3658,36 @@ moved and added a seed draws a different map than before. Engine details:
 since no forest row has gold any more, `FOREST_MAGIC_GUARD_CHANCE` only
 reaches maps from before, through `REWARD_TABLE_BEFORE_MOVE`.
 
+### Q255. How far apart are the plains' fortresses? — **asking (930-933)**
+
+Andrei, 2026-10-04 at 19:29: *"I'd like to make sure that two large gold
+prises guarded by combat on plains are well separated from each other"*. The
+fortresses are the plains' gold guarded by combat: 10 gold on 2 sites, 14 on 3
+on the 4-5 player map. Today nothing keeps them apart: §4.3 step 1 shuffles the
+plains' sites into the table's rows, so the fortresses are any two (or three)
+of the 32 (45) plains sites.
+
+Measured over 200 maps per size (road steps: the walk between two sites, any
+terrain): on 2-3 player maps they land a median 16 road steps apart, closer
+than 10 on 1 map in 5, closer than 12 on 3 in 10, within 5 on 9%; the
+farthest two plains sites are 33 apart. On 4-5 player maps the closest pair is
+a median 10 apart, closer than 12 on 2 maps in 3, within 5 on 18%. Road steps
+and the screen can disagree, because a pruned map is nearly a tree: two sites
+12 or more road steps apart sit within 3 spaces of each other in a straight
+line on 1% of 2-3 player maps and 5% of 4-5 player ones.
+
+930. **How they are kept apart:** by road, at least a number of road steps,
+     one fortress swapping places with a random plains site far enough away
+     when they land closer; by road and on screen, the same plus never closer
+     than 5 spaces in a straight line (recommended); or as far apart as
+     possible, the two plains sites farthest apart by road, on every map.
+931. **How many road steps:** 10, 12 (recommended), 14 or 16. Today 1 map in 5,
+     3 in 10, 4 in 10 and half have them closer than that.
+932. **4-5 player maps, three fortresses:** every pair at least the same
+     number apart (recommended), or a bigger number, 14.
+933. **Games already started:** keep the maps they began with (recommended),
+     or not.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design
