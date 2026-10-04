@@ -456,14 +456,14 @@ ranks by its own speeds, see above.) The map generator, the remoteness walk and 
 person's route preview do not use it: the generator's graphs change while it
 works.
 
-**Route lists are worked out ahead** (Q235, 890-894). `RouteTable.routesFrom`
+**Route lists are worked out ahead** (Q235, 890-895). `RouteTable.routesFrom`
 works out a space's list of routes the first time it is asked for, a few
 milliseconds each (about 12 ms on the larger map), and a computer's first moves
 asked for nearly all of them, spending much of their thinking time on it. The
 page that thinks for the computers works them out in the background instead
 (`workOutRouteLists` in `apps/web/src/modes/computer.ts`): on the setup screen
-from the moment it has the map and a computer seat, nearest the starting place
-first, and between the computer's moves once the game is under way, nearest the
+from the moment it has the map and a computer seat (online, or a seat nobody
+holds), nearest the starting place first, and between the computer's moves once the game is under way, nearest the
 figures first, paused while the computer thinks (`pauseRouteLists`). It works
 one list at a time with `requestIdleCallback` where the browser has it, and
 otherwise in slices of `ROUTE_LIST_SLICE_MS` after each frame, as the

@@ -3359,7 +3359,7 @@ and their tips reach 3% of the disc's width past its edge. The tips stay inside 
 square, so the icon takes the same room on the map and nothing moves. The
 disc, its contour, the foot and the mountain are unchanged.
 
-### Q235. ~~When are the route lists worked out?~~ — **answered 2026-10-04: in the background while the game is set up, on the page that thinks for the computers, and on between its moves (890-894)**
+### Q235. ~~When are the route lists worked out?~~ — **answered 2026-10-04: in the background while the game is set up, on the page that thinks for the computers, and on between its moves (890-895)**
 
 [SOURCE §9, chat] Andrei, 2026-10-03 at 21:08, in the thread on Q210: *"We are
 caching the list of possible paths from one point to another, right? The
@@ -3396,6 +3396,17 @@ look good please proceed"*:
      setup screen. **Answered:** as recommended.
 894. **Phones:** the same as everywhere (recommended); or phones skip it.
      **Answered:** as recommended.
+895. **Seats nobody holds** in an online game being set up, which the
+     computer plays if the game starts that way: they count as computer seats
+     for starting the lists (recommended), so nearly every online game's
+     game master works them out while setting up; or only seats set to
+     Computer. Asked 2026-10-04 at 04:58, after 890 was built. At 06:29 he
+     asked whether that means every online game; yes, on the game master's
+     page only, and if people fill every seat it stops, a few seconds of work
+     unused. At 06:31 he asked whether it is noticeable; each list takes
+     about 1 to 2 ms here and at most 28 ms, and runs only while the browser
+     is idle. **Answered** at 06:33: *"That sounds reasonable, Please proceed
+     with 895 as recommended"*.
 
 As built: `workOutRouteLists` (`apps/web/src/modes/computer.ts`) works out one
 list at a time while the browser is idle, from the setup screen's map and from

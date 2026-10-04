@@ -284,8 +284,9 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
   // [Q235, 890 A] The game master's page thinks for the computer seats, so with
   // one it works out the route lists their thinking reads while the game is set
   // up, nearest the starting place first. The game's own computer carries on
-  // from there, on the server's copy of this map.
-  const computerSeat = seats?.some((seat) => seat.control === 'ai') ?? false;
+  // from there, on the server's copy of this map. [895 A] A seat nobody holds
+  // counts too, since the computer plays it if the game starts that way.
+  const computerSeat = seats?.some((seat) => seat.control === 'ai' || isOpenSeat(seat)) ?? false;
   const drawnMap = drawn.map;
   useEffect(() => {
     if (!choosing || drawnMap === null || !computerSeat) return;
