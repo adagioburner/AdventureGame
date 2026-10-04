@@ -3403,7 +3403,7 @@ stamina a unit are named settings (the stamina row of `REWARD_TABLE`,
 map than before; computer players take stamina sites by the same rules, and
 how they think does not change.
 
-### Q245. How many seeds do the forest and the mountains grow from? — **asked 2026-10-04 (910-913), open**
+### Q245. How many seeds do the forest and the mountains grow from? — **asked 2026-10-04 (910-914), open**
 
 Andrei, 2026-10-04 at 04:46: *"I noticed that games get more interesting when
 there are more than one area of forest and mountains. can we increase the
@@ -3430,6 +3430,12 @@ option.
 912. **4-5 player maps:** the same count as smaller maps (recommended), or one
      seed more each. **Open.**
 913. **Games already started** keep the map they began with (recommended).
+     **Open.**
+914. **How far apart kept-apart areas stay** (his question at 05:32, "will
+     there be just a narrow passage between them?"): at least 1 space, as C was
+     first offered, which leaves 57% of pairs 1 space apart at their closest;
+     or at least 2 spaces (recommended), which leaves 17%, most of them across a
+     valley, for both terrains in 2+ areas on 83% of maps instead of 87%.
      **Open.**
 
 ---
