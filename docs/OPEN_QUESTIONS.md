@@ -3397,7 +3397,20 @@ look good please proceed"*:
 894. **Phones:** the same as everywhere (recommended); or phones skip it.
      **Answered:** as recommended.
 
-Reusing a neighbour's routes is not built.
+As built: `workOutRouteLists` (`apps/web/src/modes/computer.ts`) works out one
+list at a time while the browser is idle, from the setup screen's map and from
+the game's own computer once it starts, and stops while the computer thinks.
+An online game's map comes back from the server as a copy of the one the game
+master's page drew, so `shareRouteTable` (`packages/core`) lets the copy read
+the lists already worked out. The balancing harness calls `workOutAllRoutes`
+before a computer's first move. Reusing a neighbour's routes is not built.
+
+Tested (892 A) on 8 maps per size at 3 s a move, the computers' games imagined
+per move before and after. Working out every list took 0.1 to 0.5 s on the
+standard map and 0.2 to 1.5 s on the larger one. With 2 players the first move
+went from 2,658 games on average (2,223 at worst) to 2,910 (2,686), +9%; with
+5 players from 1,019 (514 at worst) to 1,418 (1,277), +39%. Later moves were
+the same within noise. Results in `/mnt/project-files/best-route/route-lists/`.
 
 ### Q240. ~~How do stamina sites come to the plains?~~ — **answered 2026-10-04: like every other plains reward, 5 sites and 10 units (7 and 14 on the larger map), each unit 5 stamina, pictures 0.45 of a road, in games started from now on (900-907)**
 
