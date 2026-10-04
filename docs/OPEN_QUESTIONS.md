@@ -3403,7 +3403,7 @@ stamina a unit are named settings (the stamina row of `REWARD_TABLE`,
 map than before; computer players take stamina sites by the same rules, and
 how they think does not change.
 
-### Q245. ~~How many seeds do the forest and the mountains grow from?~~ — **answered 2026-10-04: 3 seeds for the forest and the mountains on both map sizes, nothing keeping areas apart, in games started from now on (910-914); the plains' count asked again (915), open**
+### Q245. ~~How many seeds do the forest and the mountains grow from?~~ — **answered 2026-10-04: 3 seeds for the forest and the mountains and 2 for the plains, on both map sizes, nothing keeping areas apart, in games started from now on (910-915)**
 
 Andrei, 2026-10-04 at 04:46: *"I noticed that games get more interesting when
 there are more than one area of forest and mountains. can we increase the
@@ -3434,7 +3434,8 @@ areas of one terrain (61% of 2-3 player maps, 63% of 4-5) and of two terrains
      doing nothing to prevent them from merging is a good move"*, after seeing
      the pictures: *"A bit patchy but only a little."*
 911. **The plains:** keep 1 or 2 seeds (recommended), or the same count as the
-     forest and mountains. **Answered** at 06:43: the same, 3 seeds.
+     forest and mountains. **Answered** at 06:43: the same, 3 seeds; then
+     2 seeds (915).
 912. **4-5 player maps:** the same count as smaller maps (recommended), or one
      seed more each. **Answered** at 06:44: *"4-5 players get the same
      count"*.
@@ -3452,16 +3453,17 @@ areas of one terrain (61% of 2-3 player maps, 63% of 4-5) and of two terrains
      (recommended): forest in 2+ areas on 75% / 76% of maps, plains on 43% /
      49%, 3+ areas of two terrains on 10% / 12%, start 7.4 / 9.1 road steps
      deep; or 3 for every terrain as built: 77% / 81%, 57% / 61%, 15% / 11%,
-     6.2 / 8.5. **Open.**
+     6.2 / 8.5. **Answered** at 07:06: plains 2.
 
-As built, measured on the same 300 maps per size (2-3 / 4-5 players): forest
-in 2 or more areas 77% / 81%, mountains 83% / 84%, plains 57% / 61%; one forest
-and one mountain area 3% / 1% (35% / 36% before). The start is about 6.2 / 8.5
-road steps from the forest and mountains (7.9 / 10.5 before). The seed count
-is a named setting, `map.TERRAIN_SEEDS`, per terrain; every seed draws a
-different map than before. Games already started keep their map: online
-because the map carries the config it was made with, on one device because the
-kept game records whether its map grew from `TERRAIN_SEEDS`.
+As built, measured on the same 300 maps per size (2-3 / 4-5 players), plains
+2 seeds, forest and mountains 3: forest in 2 or more areas 75% / 76%,
+mountains 84% / 84%, plains 43% / 49%; one forest and one mountain area 6% /
+4% (35% / 36% before); 3 or more areas of two terrains 10% / 12%. The start is
+about 7.4 / 9.1 road steps from the forest and mountains (7.9 / 10.5 before).
+The seed count is a named setting, `map.TERRAIN_SEEDS`, per terrain; every
+seed draws a different map than before. Games already started keep their map:
+online because the map carries the config it was made with, on one device
+because the kept game records whether its map grew from `TERRAIN_SEEDS`.
 
 ---
 
