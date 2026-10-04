@@ -4,7 +4,7 @@ import { DEFAULT_GAME_CONFIG, type Terrain } from '@adventure/config';
 import { asNodeId, type NodeId } from './ids.ts';
 import type { MapGraph } from './graph.ts';
 import { createRng } from './rng.ts';
-import { dijkstra, pathCost, routeTable, routeVia, shortestPath, stepCost, terrainStepCost } from './path.ts';
+import { dijkstra, pathCost, routeTable, routeVia, shareRouteTable, shortestPath, stepCost, terrainStepCost, workOutAllRoutes } from './path.ts';
 
 const config = DEFAULT_GAME_CONFIG;
 
@@ -190,5 +190,52 @@ describe('routeTable', () => {
     expect(table.from(n(3))).toBe(table.from(n(3)));
     expect(routeTable(jumble('d', 20), config)).not.toBe(table);
     expect(() => table.from(n(20))).toThrow(RangeError);
+  });
+
+  it('works out every route list at once, the same lists as asked one by one (Q235)', () => {
+    const graph = jumble('e', 30);
+    workOutAllRoutes(graph, config);
+    const built = routeTable(graph, config);
+    const asked = routeTable(jumble('e', 30), config);
+    for (let from = 0; from < 30; from++) expect(built.routesFrom(n(from))).toEqual(asked.routesFrom(n(from)));
+  });
+
+  it('shares a table, route lists and all, with a copy of the same map (Q235)', () => {
+    const graph = jumble('f', 30);
+    const table = routeTable(graph, config);
+    const lists = table.routesFrom(n(4));
+    // As an online game's map arrives from the server.
+    const copy = JSON.parse(JSON.stringify(graph)) as MapGraph;
+    const copyConfig = JSON.parse(JSON.stringify(config)) as typeof config;
+    expect(shareRouteTable(graph, config, copy, copyConfig)).toBe(true);
+    expect(routeTable(copy, copyConfig)).toBe(table);
+    expect(routeTable(copy, copyConfig).routesFrom(n(4))).toBe(lists);
+    expect(shareRouteTable(graph, config, copy, copyConfig)).toBe(true);
+  });
+
+  it('shares nothing with another map, other step costs, or a map with a table of its own (Q235)', () => {
+    const graph = jumble('g', 30);
+    expect(shareRouteTable(graph, config, jumble('g', 30), config)).toBe(false);
+    const table = routeTable(graph, config);
+
+    const other = jumble('h', 30);
+    expect(shareRouteTable(graph, config, other, config)).toBe(false);
+    expect(routeTable(other, config)).not.toBe(table);
+
+    const pricier = { ...config, movement: { ...config.movement, STAMINA_COST: { ...config.movement.STAMINA_COST, forest: 5 } } };
+    const copy = JSON.parse(JSON.stringify(graph)) as MapGraph;
+    expect(shareRouteTable(graph, config, copy, pricier)).toBe(false);
+    expect(routeTable(copy, pricier)).not.toBe(table);
+
+    const own = jumble('g', 30);
+    const ownTable = routeTable(own, config);
+    expect(shareRouteTable(graph, config, own, config)).toBe(false);
+    expect(routeTable(own, config)).toBe(ownTable);
+
+    // The same roads listed in another order find equal-cost routes in another order.
+    const crossing = graph.adjacency.findIndex((next) => next.length >= 2);
+    const rewired = JSON.parse(JSON.stringify(graph)) as { adjacency: number[][] };
+    rewired.adjacency[crossing] = [...(rewired.adjacency[crossing] ?? [])].reverse();
+    expect(shareRouteTable(graph, config, rewired as unknown as MapGraph, config)).toBe(false);
   });
 });

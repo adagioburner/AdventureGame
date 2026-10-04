@@ -229,13 +229,18 @@ export type TerrainSteps = PerTerrain<readonly number[]>;
 
 const routeTables = new WeakMap<MapGraph, WeakMap<GameConfig, RouteTable>>();
 
-/** The one `RouteTable` for `graph` under `config`'s step costs. */
-export function routeTable(graph: MapGraph, config: GameConfig): RouteTable {
+function tablesOf(graph: MapGraph): WeakMap<GameConfig, RouteTable> {
   let byConfig = routeTables.get(graph);
   if (byConfig === undefined) {
     byConfig = new WeakMap();
     routeTables.set(graph, byConfig);
   }
+  return byConfig;
+}
+
+/** The one `RouteTable` for `graph` under `config`'s step costs. */
+export function routeTable(graph: MapGraph, config: GameConfig): RouteTable {
+  const byConfig = tablesOf(graph);
   const known = byConfig.get(config);
   if (known !== undefined) return known;
 
@@ -272,6 +277,53 @@ export function routeTable(graph: MapGraph, config: GameConfig): RouteTable {
   };
   byConfig.set(config, table);
   return table;
+}
+
+/**
+ * [Q235, 892 A] Works out `routesFrom` for every node of `graph` now. The page
+ * that thinks for the computers works them out in the background while a game
+ * is set up; the games computers play against each other call this before
+ * their first move, so their computers think on their first moves as a page's
+ * do.
+ */
+export function workOutAllRoutes(graph: MapGraph, config: GameConfig): void {
+  const table = routeTable(graph, config);
+  for (let from = 0; from < graph.nodes.length; from++) table.routesFrom(asNodeId(from));
+}
+
+/**
+ * [Q235] Lets `graph` under `config` read the `RouteTable` already worked out
+ * for `known` under `knownConfig`, route lists and all, when the two are the
+ * same map: the same spaces on the same terrain, joined by the same roads in
+ * the same order, at the same step costs. An online game's map reaches the
+ * page from the server as a copy of the one the page drew while the game was
+ * set up, and this keeps the route lists worked out for that one.
+ *
+ * Whether `graph` now reads that table: `false`, changing nothing, when the
+ * maps differ, `known` has no table yet, or `graph` already has one of its own.
+ */
+export function shareRouteTable(known: MapGraph, knownConfig: GameConfig, graph: MapGraph, config: GameConfig): boolean {
+  const table = routeTables.get(known)?.get(knownConfig);
+  if (table === undefined) return false;
+  const byConfig = tablesOf(graph);
+  const own = byConfig.get(config);
+  if (own !== undefined) return own === table;
+  if (!sameRoads(known, graph)) return false;
+  if (TERRAINS.some((terrain) => terrainStepCost(terrain, knownConfig) !== terrainStepCost(terrain, config))) return false;
+  byConfig.set(config, table);
+  return true;
+}
+
+/** Whether `a` and `b` have the same nodes on the same terrain, with the same neighbours in the same order. */
+function sameRoads(a: MapGraph, b: MapGraph): boolean {
+  if (a.nodes.length !== b.nodes.length) return false;
+  for (let node = 0; node < a.nodes.length; node++) {
+    if (a.nodes[node]?.terrain !== b.nodes[node]?.terrain) return false;
+    const mine = a.adjacency[node] ?? [];
+    const theirs = b.adjacency[node] ?? [];
+    if (mine.length !== theirs.length || mine.some((next, index) => next !== theirs[index])) return false;
+  }
+  return true;
 }
 
 /**

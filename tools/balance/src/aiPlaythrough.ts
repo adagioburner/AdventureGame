@@ -9,6 +9,7 @@ import {
   poiAt,
   poiRuntimeAt,
   totalGoldUnits,
+  workOutAllRoutes,
   type GameState,
   type NodeId,
   type PlayerId,
@@ -69,6 +70,11 @@ export function computerDriver(settings: ComputerSettings): PlaythroughDriver {
       ...describeWhy(evaluator),
     ],
     choose(state: GameState, playerId: PlayerId): TurnChoice {
+      // [Q235, 892 A] Every route list is worked out before the first move, as
+      // the game's page works them out while the game is set up, so no thinking
+      // time goes on them; once they are, this costs nothing.
+      workOutAllRoutes(state.map.graph, state.map.ruleset.config);
+      workOutAllRoutes(state.map.graph, config);
       const started = settings.now();
       const { buy, action, branch, search: result } = chooseComputerMove(state, playerId, {
         config,
