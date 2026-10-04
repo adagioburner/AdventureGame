@@ -3403,6 +3403,35 @@ stamina a unit are named settings (the stamina row of `REWARD_TABLE`,
 map than before; computer players take stamina sites by the same rules, and
 how they think does not change.
 
+### Q245. How many seeds do the forest and the mountains grow from? — **asked 2026-10-04 (910-913), open**
+
+Andrei, 2026-10-04 at 04:46: *"I noticed that games get more interesting when
+there are more than one area of forest and mountains. can we increase the
+number of seeds every train grow from"* ("train" = terrain). Today GDD §2.1
+step 4 plants 1 or 2 seeds per terrain, drawn at random.
+
+Measured on 300 maps per size before anything was built. Today a forest has
+two or more separate areas on 38% of 2-3 player maps and the mountains on 44%;
+both do on 17%. More seeds alone help less than the count suggests, because a
+terrain's areas grow until they meet: with 2 seeds each, both terrains have
+two or more areas on 34% of maps; with 3, on 58%. Measured right after the
+fill with 3 seeds each, the 6 forest and mountain areas are still 5.3 apart by
+road but only 3.8 on the ground: most meet side by side, with no road between
+them, and read as one area (step 6b then puts a road between them). Keeping a
+terrain's areas from growing into touching each other gives 87% with 2 seeds
+and 99% with 3. The 45/30/25 shares, the start (#67) and site placement hold in every
+option.
+
+910. **How the forest and mountains grow:** A, 2 seeds each; B, 3 seeds each;
+     C, 2 seeds each, and an area never grows into another area of its own
+     terrain (recommended); D, 3 seeds each, kept apart the same way. **Open.**
+911. **The plains:** keep 1 or 2 seeds (recommended), or the same count as the
+     forest and mountains. **Open.**
+912. **4-5 player maps:** the same count as smaller maps (recommended), or one
+     seed more each. **Open.**
+913. **Games already started** keep the map they began with (recommended).
+     **Open.**
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design
