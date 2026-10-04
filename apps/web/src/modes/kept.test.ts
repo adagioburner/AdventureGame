@@ -4,7 +4,17 @@ import { createRng, startingNodeFor } from '@adventure/core';
 import { mapFor } from '../page/seed.ts';
 import { inOrder, toHotseatSeats, type LocalSetup } from '../setup/local.ts';
 import { HotseatGame } from './hotseat.ts';
-import { forgetKept, keep, keptDeepStart, keptMagicGuardChance, keptMapSize, keptStaminaSites, readKept, replayKept } from './kept.ts';
+import {
+  forgetKept,
+  keep,
+  keptDeepStart,
+  keptMagicGuardChance,
+  keptMapSize,
+  keptSeparateAreas,
+  keptStaminaSites,
+  readKept,
+  replayKept,
+} from './kept.ts';
 
 const map = mapFor('adventure', 'standard');
 const setup: LocalSetup = {
@@ -194,6 +204,31 @@ describe('a game on one device kept in the browser (Q56, 66)', () => {
     expect(began.ruleset.config.pois.POI_COUNT.plains).toBe(25);
     expect(began.ruleset.content.REWARD_TABLE.plains.some((row) => row.kind === 'stamina')).toBe(false);
     expect(tabled(began)).toBeLessThan(5);
+    const resumed = replayKept(before, began);
+    expect(resumed?.setup.map).toBe(began);
+    expect(resumed?.turns.length).toBe(1);
+  });
+
+  it('keeps a map grown in separate areas without valleys, and makes a game kept before on the map it began on (Q245)', () => {
+    const game = new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'kept' });
+    game.play({ kind: 'rest', player: game.state.players[0]!.id });
+    keep('adventure', setup, null, game);
+    const kept = readKept();
+    expect(kept?.separateAreas).toBe(true);
+    expect(kept === null ? null : keptSeparateAreas(kept)).toBe(true);
+    expect(map.ruleset.config.map.TERRAIN_SEEDS?.forest).toEqual({ min: 2, max: 2 });
+    expect(map.ruleset.config.map.VALLEY_COUNT).toEqual({ min: 0, max: 0 });
+    expect(replayKept(kept!, map)?.state).toEqual(game.state);
+
+    // Kept before: the same seed grows its terrain from 1 or 2 seeds a terrain, as it began.
+    const { separateAreas: _seeds, ...older } = kept ?? { separateAreas: undefined };
+    const before = older as NonNullable<typeof kept>;
+    expect(keptSeparateAreas(before)).toBe(false);
+    const began = mapFor('adventure', 'standard', undefined, true, true, keptSeparateAreas(before));
+    expect(began.ruleset.config.map.TERRAIN_SEEDS).toBeUndefined();
+    expect(began.ruleset.config.map.KEPT_APART).toBeUndefined();
+    expect(began.ruleset.config.map.VALLEY_COUNT).toEqual({ min: 2, max: 4 });
+    expect(began.graph.nodes.map((node) => node.terrain)).not.toEqual(map.graph.nodes.map((node) => node.terrain));
     const resumed = replayKept(before, began);
     expect(resumed?.setup.map).toBe(began);
     expect(resumed?.turns.length).toBe(1);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_RULESET, LARGER_MAP_RULESET, withoutStaminaSites } from './index.ts';
+import { DEFAULT_RULESET, LARGER_MAP_RULESET, withoutSeparateAreas, withoutStaminaSites } from './index.ts';
 import type { PendingValue, RewardGroupSpec, Ruleset } from './types.ts';
 import { RulesetError, UnresolvedDesignError, resolvePending, validateRuleset } from './validate.ts';
 import type { Terrain } from './vocabulary.ts';
@@ -148,6 +148,30 @@ describe('validateRuleset', () => {
     }
     expect(() => validateRuleset(withoutStaminaSites(DEFAULT_RULESET))).not.toThrow();
     expect(() => validateRuleset(withoutStaminaSites(LARGER_MAP_RULESET))).not.toThrow();
+  });
+
+  it('rejects terrain seeds below 1, not whole, or with min above max, and accepts a ruleset from before them (Q245)', () => {
+    for (const range of [{ min: 0, max: 3 }, { min: 1.5, max: 3 }, { min: 3, max: 2 }]) {
+      const ruleset = clone();
+      (ruleset.config.map as { TERRAIN_SEEDS: unknown }).TERRAIN_SEEDS = { ...ruleset.config.map.TERRAIN_SEEDS, forest: range };
+      expect(() => validateRuleset(ruleset)).toThrow(/TERRAIN_SEEDS\.forest/);
+    }
+    expect(() => validateRuleset(withoutSeparateAreas(DEFAULT_RULESET))).not.toThrow();
+    expect(() => validateRuleset(withoutSeparateAreas(LARGER_MAP_RULESET))).not.toThrow();
+  });
+
+  it('rejects a kept-apart gap below 1 or out of order and a terrain named twice, and accepts no valleys (Q245)', () => {
+    for (const range of [{ min: 0, max: 3 }, { min: 1.5, max: 3 }, { min: 3, max: 1 }]) {
+      const gap = clone();
+      (gap.config.map as { KEPT_APART: unknown }).KEPT_APART = { ...gap.config.map.KEPT_APART, GAP: range };
+      expect(() => validateRuleset(gap)).toThrow(/KEPT_APART\.GAP/);
+    }
+    expect(DEFAULT_RULESET.config.map.KEPT_APART?.GAP).toEqual({ min: 1, max: 3 });
+    const twice = clone();
+    (twice.config.map as { KEPT_APART: unknown }).KEPT_APART = { ...twice.config.map.KEPT_APART, TERRAINS: ['forest', 'forest'] };
+    expect(() => validateRuleset(twice)).toThrow(/KEPT_APART\.TERRAINS/);
+    expect(DEFAULT_RULESET.config.map.VALLEY_COUNT).toEqual({ min: 0, max: 0 });
+    expect(() => validateRuleset(DEFAULT_RULESET)).not.toThrow();
   });
 
   it('reports every problem at once rather than the first', () => {

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_RULESET } from '@adventure/config';
+import { DEFAULT_RULESET, withoutSeparateAreas } from '@adventure/config';
 import { generateAndReport } from './index.ts';
 import { formatMapSummary } from './report.ts';
 
@@ -22,5 +22,13 @@ describe('golden map', () => {
   it('matches the committed snapshot for seed "adventure"', async () => {
     const { map } = generateAndReport('adventure', DEFAULT_RULESET);
     await expect(formatMapSummary(map)).toMatchFileSnapshot('../../../golden/maps/adventure.txt');
+  }, 30000);
+
+  // [Q245, 913] A game kept from before the forest and mountains grew in separate areas is
+  // drawn again on the map it began on: this file is the snapshot above as it
+  // stood until then, and should never need updating for a seed count.
+  it('draws the map from before separate areas unchanged for seed "adventure"', async () => {
+    const { map } = generateAndReport('adventure', withoutSeparateAreas(DEFAULT_RULESET));
+    await expect(formatMapSummary(map)).toMatchFileSnapshot('../../../golden/maps/adventure-earlier-seeds.txt');
   }, 30000);
 });

@@ -1,4 +1,11 @@
-import { rulesetForMapSize, withMagicGuardChance, withoutDeepStart, withoutStaminaSites, type MapSize } from '@adventure/config';
+import {
+  rulesetForMapSize,
+  withMagicGuardChance,
+  withoutDeepStart,
+  withoutSeparateAreas,
+  withoutStaminaSites,
+  type MapSize,
+} from '@adventure/config';
 import { friendlySeed, type GameMap, type Seed } from '@adventure/core';
 import { generateMap } from '@adventure/mapgen';
 import { defaultRemotenessScorer } from '@adventure/sim';
@@ -13,13 +20,23 @@ import { defaultRemotenessScorer } from '@adventure/sim';
  * that chance instead of today's, for a kept game that began before it changed.
  * [Q227] `deepStart` false draws it as before the start moved deep into the
  * plains, for a kept game from before. [Q240] `staminaSites` false draws it as
- * before the plains had stamina sites, likewise.
+ * before the plains had stamina sites, likewise. [Q245] `separateAreas` false
+ * draws it as before the forest and mountains grew in separate areas, with
+ * valleys, likewise.
  */
-export function mapFor(seed: Seed, size: MapSize, magicGuardChance?: number, deepStart = true, staminaSites = true): GameMap {
+export function mapFor(
+  seed: Seed,
+  size: MapSize,
+  magicGuardChance?: number,
+  deepStart = true,
+  staminaSites = true,
+  separateAreas = true,
+): GameMap {
   const today = rulesetForMapSize(size);
   const chance = magicGuardChance === undefined ? today : withMagicGuardChance(today, magicGuardChance);
   const start = deepStart ? chance : withoutDeepStart(chance);
-  const ruleset = staminaSites ? start : withoutStaminaSites(start);
+  const stamina = staminaSites ? start : withoutStaminaSites(start);
+  const ruleset = separateAreas ? stamina : withoutSeparateAreas(stamina);
   return generateMap({ seed, ruleset, remotenessScorer: defaultRemotenessScorer });
 }
 

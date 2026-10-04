@@ -178,6 +178,29 @@ export function validateRuleset(ruleset: Ruleset): void {
   if (start !== undefined && !(start.MAX_REMOTENESS > 0)) {
     problems.push('Q227: start.MAX_REMOTENESS must be a positive number.');
   }
+  // Q245: whole seeds, at least 1 a terrain, which step 4 needs to grow it at all.
+  const seeds = config.map.TERRAIN_SEEDS;
+  for (const terrain of TERRAINS) {
+    const range = seeds?.[terrain];
+    if (range === undefined) continue;
+    if (!Number.isInteger(range.min) || !Number.isInteger(range.max) || range.min < 1) {
+      problems.push(`Q245: map.TERRAIN_SEEDS.${terrain} must be whole numbers of at least 1.`);
+    }
+    assertRange(problems, `TERRAIN_SEEDS.${terrain}`, range);
+  }
+  const apart = config.map.KEPT_APART;
+  if (apart !== undefined) {
+    if (!Number.isInteger(apart.GAP.min) || !Number.isInteger(apart.GAP.max) || apart.GAP.min < 1) {
+      problems.push('Q245: map.KEPT_APART.GAP must be whole numbers of at least 1.');
+    }
+    assertRange(problems, 'KEPT_APART.GAP', apart.GAP);
+    if (apart.TERRAINS.some((terrain) => !TERRAINS.includes(terrain)) || new Set(apart.TERRAINS).size !== apart.TERRAINS.length) {
+      problems.push('Q245: map.KEPT_APART.TERRAINS must name each terrain at most once.');
+    }
+  }
+  if (!Number.isInteger(config.map.VALLEY_COUNT.min) || config.map.VALLEY_COUNT.min < 0) {
+    problems.push('§11: VALLEY_COUNT.min must be a whole number, 0 or more.');
+  }
   // Q200: whole gold, none at the least.
   const gold = config.players.STARTING_GOLD;
   if (gold !== undefined && (!Number.isInteger(gold) || gold < 0)) {

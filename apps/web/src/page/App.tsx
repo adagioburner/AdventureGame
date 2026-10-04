@@ -6,6 +6,7 @@ import {
   magicGuardChanceOf,
   mapSizeForPlayers,
   mapSizeOfRuleset,
+  separateAreasOf,
   staminaSitesOf,
   type MapSize,
 } from '@adventure/config';
@@ -14,7 +15,17 @@ import { atlasOf, buildArtCatalog, type ArtCatalog } from '../art/catalog.ts';
 import { ART_FILES } from '../art/files.ts';
 import { workOutRouteLists } from '../modes/computer.ts';
 import { HotseatGame, newDiceSeed } from '../modes/hotseat.ts';
-import { forgetKept, keep, keptDeepStart, keptMagicGuardChance, keptMapSize, keptStaminaSites, readKept, replayKept } from '../modes/kept.ts';
+import {
+  forgetKept,
+  keep,
+  keptDeepStart,
+  keptMagicGuardChance,
+  keptMapSize,
+  keptSeparateAreas,
+  keptStaminaSites,
+  readKept,
+  replayKept,
+} from '../modes/kept.ts';
 import { hotseatPlay } from '../modes/play.ts';
 import { loadArt, type LoadedArt } from '../render/pixi/textures.ts';
 import { buildMapScene, type MapScene } from '../render/sceneModel.ts';
@@ -115,6 +126,9 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
   // [Q240] And whether its plains have stamina sites, likewise.
   const staminaSites =
     game !== null ? staminaSitesOf(game.setup.map.ruleset) : resuming && kept !== null ? keptStaminaSites(kept) : true;
+  // [Q245] And whether its forest and mountains grew in separate areas, likewise.
+  const separateAreas =
+    game !== null ? separateAreasOf(game.setup.map.ruleset) : resuming && kept !== null ? keptSeparateAreas(kept) : true;
 
   useEffect(() => {
     if (size === null) return;
@@ -126,13 +140,13 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
     // Let "Drawing the map" paint before generation takes the main thread.
     const timer = window.setTimeout(() => {
       try {
-        setMap(mapFor(seed, size, magicChance, deepStart, staminaSites));
+        setMap(mapFor(seed, size, magicChance, deepStart, staminaSites, separateAreas));
       } catch (error) {
         setProblem(error instanceof Error ? error.message : String(error));
       }
     }, 30);
     return () => window.clearTimeout(timer);
-  }, [seed, size, magicChance, deepStart, staminaSites]);
+  }, [seed, size, magicChance, deepStart, staminaSites, separateAreas]);
 
   // [Q56, 66] Once its map is drawn, the kept game is played again to where it was.
   useEffect(() => {
@@ -144,7 +158,8 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
       mapSizeOfRuleset(map.ruleset) !== keptMapSize(kept) ||
       magicGuardChanceOf(map.ruleset) !== keptMagicGuardChance(kept) ||
       deepStartOf(map.ruleset) !== keptDeepStart(kept) ||
-      staminaSitesOf(map.ruleset) !== keptStaminaSites(kept)
+      staminaSitesOf(map.ruleset) !== keptStaminaSites(kept) ||
+      separateAreasOf(map.ruleset) !== keptSeparateAreas(kept)
     ) {
       return;
     }

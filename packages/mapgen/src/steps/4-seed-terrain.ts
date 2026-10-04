@@ -1,14 +1,34 @@
-import { TERRAINS, type Terrain } from '@adventure/config';
+import { EARLIER_TERRAIN_SEEDS, TERRAINS, type Terrain } from '@adventure/config';
 import { asNodeId, degree, type NodeId } from '@adventure/core';
 import { draftAsGraph } from '../graphops.ts';
-import { bestGrowthCandidate, hopDistances, rebalanceTerrainShares, terrainTargets } from '../terraingrowth.ts';
+import {
+  areaLabels,
+  bestGrowthCandidate,
+  drawApartGaps,
+  hopDistances,
+  keptApartOf,
+  rebalanceTerrainShares,
+  terrainTargets,
+  wouldJoin,
+  type KeptApart,
+} from '../terraingrowth.ts';
 import { GenerationRejected, type GenerationContext, type GenerationStep, type MapDraft } from '../types.ts';
 
 /**
- * §2.1 step 4 — "Seed terrain regions: 1 or 2 seeds per terrain (plains,
- * forest, mountain); grow by flood fill biased toward nodes with more
+ * §2.1 step 4 — "Seed terrain regions: `TERRAIN_SEEDS` seeds per terrain, 2
+ * each for plains, forest and mountain, the forest's and the mountains' areas
+ * kept apart (Q245; 1 or 2 at random, nothing kept apart, on the maps of games
+ * started before); grow by flood fill biased toward nodes with more
  * same-terrain neighbours, until area shares are approximately 45% plains /
  * 30% forest / 25% mountain."
+ *
+ * [Q245] A `KEPT_APART` terrain never floods into a node that would bring two
+ * of its areas within that node's gap of each other on the ground, here and in
+ * the share balancing that finishes the step. Every node draws its gap from
+ * `GAP`, 1 to 3 spaces, before the fill (917), so the plains left between two
+ * areas winds instead of running straight. Without it, areas of one
+ * terrain grew until they touched and read as one. The maps of games started
+ * before have no `TERRAIN_SEEDS` and grow from `EARLIER_TERRAIN_SEEDS`.
  *
  * The bias toward same-terrain neighbours is what produces §1's "generally
  * rounded" regions before Smooth ever runs. Targets come from
@@ -58,7 +78,7 @@ export const seedTerrainStep: GenerationStep = {
   gdd: 'GDD.md §2.1 step 4',
   run(draft: MapDraft, context: GenerationContext): void {
     const { rng } = context;
-    const { TERRAIN_AREA_SHARE } = context.ruleset.config.map;
+    const { TERRAIN_AREA_SHARE, TERRAIN_SEEDS = EARLIER_TERRAIN_SEEDS } = context.ruleset.config.map;
     const nodeCount = draft.positions.length;
 
     const assigned = new Array<Terrain | null>(nodeCount).fill(null);
@@ -71,7 +91,8 @@ export const seedTerrainStep: GenerationStep = {
 
     const plan: Terrain[] = [];
     for (const terrain of TERRAINS) {
-      for (let count = rng.nextIntInclusive(1, 2); count > 0; count--) plan.push(terrain);
+      const { min, max } = TERRAIN_SEEDS[terrain];
+      for (let count = rng.nextIntInclusive(min, max); count > 0; count--) plan.push(terrain);
     }
     if (nodeCount < plan.length) {
       throw new GenerationRejected(
@@ -96,10 +117,13 @@ export const seedTerrainStep: GenerationStep = {
       seeds.push(node);
     }
 
+    draft.apartGaps = drawApartGaps(context.ruleset.config.map, nodeCount, rng);
+    const apart = keptApartOf(context.ruleset.config.map, draft.triangulation, draft.apartGaps);
     for (let remaining = nodeCount - plan.length; remaining > 0; remaining--) {
-      const terrain = neediestGrowableTerrain(draft, assigned, counts, targets);
+      const free = freeNodes(assigned, apart);
+      const terrain = neediestGrowableTerrain(draft, assigned, counts, targets, free);
       if (terrain === null) break;
-      const node = bestFrontierNode(draft, assigned, terrain, rng);
+      const node = bestFrontierNode(draft, assigned, terrain, free[terrain], rng);
       if (node === null) break;
       assigned[node] = terrain;
       counts[terrain]++;
@@ -117,6 +141,7 @@ export const seedTerrainStep: GenerationStep = {
       terrainTargets(nodeCount, TERRAIN_AREA_SHARE),
       new Set(),
       rng,
+      apart,
     );
   },
 };
@@ -157,13 +182,14 @@ function neediestGrowableTerrain(
   assigned: readonly (Terrain | null)[],
   counts: Record<Terrain, number>,
   targets: Record<Terrain, number>,
+  free: Readonly<Record<Terrain, (node: NodeId) => boolean>>,
 ): Terrain | null {
   let best: Terrain | null = null;
   let bestDeficit = Number.NEGATIVE_INFINITY;
   let fallback: Terrain | null = null;
 
   for (const terrain of TERRAINS) {
-    if (!hasFrontier(draft, assigned, terrain)) continue;
+    if (!hasFrontier(draft, assigned, terrain, free[terrain])) continue;
     fallback ??= terrain;
     const deficit = ((targets[terrain] as number) - (counts[terrain] as number)) / (targets[terrain] as number);
     if (deficit > bestDeficit) {
@@ -177,14 +203,35 @@ function neediestGrowableTerrain(
   return bestDeficit > 0 ? best : fallback;
 }
 
-function hasFrontier(draft: MapDraft, assigned: readonly (Terrain | null)[], terrain: Terrain): boolean {
+function hasFrontier(
+  draft: MapDraft,
+  assigned: readonly (Terrain | null)[],
+  terrain: Terrain,
+  isFree: (node: NodeId) => boolean,
+): boolean {
   for (let node = 0; node < assigned.length; node++) {
     if (assigned[node] !== terrain) continue;
     for (const neighbour of draft.adjacency[node] ?? []) {
-      if (assigned[neighbour] === null) return true;
+      if (isFree(neighbour)) return true;
     }
   }
   return false;
+}
+
+/**
+ * The nodes each terrain may flood into: unclaimed ones, and for a
+ * `KEPT_APART` terrain only those that keep its areas the gap apart (Q245).
+ */
+function freeNodes(
+  assigned: readonly (Terrain | null)[],
+  apart: KeptApart | null,
+): Record<Terrain, (node: NodeId) => boolean> {
+  const forTerrain = (terrain: Terrain): ((node: NodeId) => boolean) => {
+    if (apart === null || !apart.terrains.has(terrain)) return (node) => assigned[node] === null;
+    const label = areaLabels(apart.ground, (node) => assigned[node] === terrain);
+    return (node) => assigned[node] === null && !wouldJoin(apart.ground, label, node, apart.gaps[node] as number);
+  };
+  return { plains: forTerrain('plains'), forest: forTerrain('forest'), mountain: forTerrain('mountain') };
 }
 
 /**
@@ -196,11 +243,12 @@ function bestFrontierNode(
   draft: MapDraft,
   assigned: readonly (Terrain | null)[],
   terrain: Terrain,
+  isFree: (node: NodeId) => boolean,
   rng: GenerationContext['rng'],
 ): NodeId | null {
   const own: NodeId[] = [];
   for (let index = 0; index < assigned.length; index++) {
     if (assigned[index] === terrain) own.push(asNodeId(index));
   }
-  return bestGrowthCandidate(draft.adjacency, own, (node) => assigned[node] === null, rng);
+  return bestGrowthCandidate(draft.adjacency, own, isFree, rng);
 }

@@ -115,8 +115,9 @@ export function terrainNodes(graph: MapGraph, terrain: Terrain): Set<NodeId> {
 }
 
 /**
- * A terrain's connected components — §2.1 step 4 seeds "1 or 2 seeds per
- * terrain", so a terrain can legitimately occupy two separate regions.
+ * A terrain's connected components — §2.1 step 4 grows every terrain from
+ * `TERRAIN_SEEDS` seeds (2 since Q245; 1 or 2 before), so a terrain can
+ * legitimately occupy several separate regions.
  *
  * [SOURCE §2.1 step 5, chat] "Compactness is measured per connected component."
  * So the Smooth step checks each component separately rather than a terrain's
