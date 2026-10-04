@@ -31,7 +31,7 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     // merge"; "We can do 2 seeds for plains but we don't care if they merge or not".
     TERRAIN_SEEDS: { plains: { min: 2, max: 2 }, forest: { min: 2, max: 2 }, mountain: { min: 2, max: 2 } },
     // GAP: "1 space gap should be enough, like what we have for "valleys" width today" (914).
-    // JOIN_FOR_SHARES is 916, still open: whether two areas may join when the shares need it.
+    // JOIN_FOR_SHARES: two areas may join on the maps where the shares need it (916 A, 12:03).
     KEPT_APART: { TERRAINS: ['forest', 'mountain'], GAP: 1, JOIN_FOR_SHARES: true },
   },
   pois: {

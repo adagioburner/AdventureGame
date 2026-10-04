@@ -3467,7 +3467,7 @@ stamina a unit are named settings (the stamina row of `REWARD_TABLE`,
 map than before; computer players take stamina sites by the same rules, and
 how they think does not change.
 
-### Q245. How many seeds do the forest and the mountains grow from? — **answered 2026-10-04 at 07:53: 2 seeds for every terrain, the forest's and the mountains' areas kept at least 1 space apart, the plains free to merge, no valleys, on both map sizes, in games started from now on (910-915); 916 open**
+### Q245. How many seeds do the forest and the mountains grow from? — **answered 2026-10-04 at 07:53: 2 seeds for every terrain, the forest's and the mountains' areas kept at least 1 space apart, the plains free to merge, no valleys, on both map sizes, in games started from now on (910-916)**
 
 Andrei, 2026-10-04 at 04:46: *"I noticed that games get more interesting when
 there are more than one area of forest and mountains. can we increase the
@@ -3547,7 +3547,7 @@ placed elsewhere by the same rules; the site count does not change.
      space between two of its areas, which joins them. A, let them join on
      those maps only (recommended); B, never join, and those maps end with a
      share off (0.1 to 2.4 points on five of the six, 7 points on one: forest
-     23% on a 4-5 player map). **Open.**
+     23% on a 4-5 player map). **Answered** at 12:03: A, "Allow join".
 
 The seed count is a named setting, `map.TERRAIN_SEEDS`, per terrain; the
 kept-apart rule is `map.KEPT_APART` (terrains, `GAP` in spaces, and

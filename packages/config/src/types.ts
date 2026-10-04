@@ -131,6 +131,7 @@ export interface KeptApartConfig {
   /**
    * 916: whether, on a map where the shares can be reached no other way, the
    * share balancing may give a terrain a space that joins two of its areas.
+   * Andrei, 2026-10-04, chose "Allow join" (916 A): true.
    */
   readonly JOIN_FOR_SHARES: boolean;
 }
