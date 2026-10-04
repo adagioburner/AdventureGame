@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_RULESET, LARGER_MAP_RULESET, withoutMoreSeeds, withoutStaminaSites } from './index.ts';
+import { DEFAULT_RULESET, LARGER_MAP_RULESET, withoutSeparateAreas, withoutStaminaSites } from './index.ts';
 import type { PendingValue, RewardGroupSpec, Ruleset } from './types.ts';
 import { RulesetError, UnresolvedDesignError, resolvePending, validateRuleset } from './validate.ts';
 import type { Terrain } from './vocabulary.ts';
@@ -156,8 +156,19 @@ describe('validateRuleset', () => {
       (ruleset.config.map as { TERRAIN_SEEDS: unknown }).TERRAIN_SEEDS = { ...ruleset.config.map.TERRAIN_SEEDS, forest: range };
       expect(() => validateRuleset(ruleset)).toThrow(/TERRAIN_SEEDS\.forest/);
     }
-    expect(() => validateRuleset(withoutMoreSeeds(DEFAULT_RULESET))).not.toThrow();
-    expect(() => validateRuleset(withoutMoreSeeds(LARGER_MAP_RULESET))).not.toThrow();
+    expect(() => validateRuleset(withoutSeparateAreas(DEFAULT_RULESET))).not.toThrow();
+    expect(() => validateRuleset(withoutSeparateAreas(LARGER_MAP_RULESET))).not.toThrow();
+  });
+
+  it('rejects a kept-apart gap below 1 and a terrain named twice, and accepts no valleys (Q245)', () => {
+    const gap = clone();
+    (gap.config.map as { KEPT_APART: unknown }).KEPT_APART = { ...gap.config.map.KEPT_APART, GAP: 0 };
+    expect(() => validateRuleset(gap)).toThrow(/KEPT_APART\.GAP/);
+    const twice = clone();
+    (twice.config.map as { KEPT_APART: unknown }).KEPT_APART = { ...twice.config.map.KEPT_APART, TERRAINS: ['forest', 'forest'] };
+    expect(() => validateRuleset(twice)).toThrow(/KEPT_APART\.TERRAINS/);
+    expect(DEFAULT_RULESET.config.map.VALLEY_COUNT).toEqual({ min: 0, max: 0 });
+    expect(() => validateRuleset(DEFAULT_RULESET)).not.toThrow();
   });
 
   it('reports every problem at once rather than the first', () => {

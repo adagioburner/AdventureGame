@@ -17,7 +17,8 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     LEAF_COUNT: { min: 30, max: 45 },
     TERRAIN_AREA_SHARE: { plains: 0.45, forest: 0.3, mountain: 0.25 },
     COMPACTNESS_MAX: 25,
-    VALLEY_COUNT: { min: 2, max: 4 },
+    // [Q245] "stop making valleys, because now we are getting them for free".
+    VALLEY_COUNT: { min: 0, max: 0 },
     VALLEY_WIDTH: 1,
     VALLEY_LENGTH: { min: 5, max: 12 },
     EDGE_PRUNE_JITTER: 10,
@@ -26,8 +27,12 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     BORDER_AREA_MIN_SIZE: 5,
     BORDER_ROAD_MAX_LENGTH: 1.3,
     JOINED_PIECE_ROADS: 1,
-    // [Q245] Andrei, 2026-10-04: "3 seeds mountains, 3 seeds forests, and 2 seeds plains" (915 A).
-    TERRAIN_SEEDS: { plains: { min: 2, max: 2 }, forest: { min: 3, max: 3 }, mountain: { min: 3, max: 3 } },
+    // [Q245] Andrei, 2026-10-04: "start with 2 seeds for forest and mountains, and don't let them
+    // merge"; "We can do 2 seeds for plains but we don't care if they merge or not".
+    TERRAIN_SEEDS: { plains: { min: 2, max: 2 }, forest: { min: 2, max: 2 }, mountain: { min: 2, max: 2 } },
+    // GAP: "1 space gap should be enough, like what we have for "valleys" width today" (914).
+    // JOIN_FOR_SHARES is 916, still open: whether two areas may join when the shares need it.
+    KEPT_APART: { TERRAINS: ['forest', 'mountain'], GAP: 1, JOIN_FOR_SHARES: true },
   },
   pois: {
     // [Q240] Plains 25 → 30 for the 5 stamina sites, which follow the same
@@ -116,6 +121,9 @@ export const EARLIER_TERRAIN_SEEDS: PerTerrain<IntRange> = {
   forest: { min: 1, max: 2 },
   mountain: { min: 1, max: 2 },
 };
+
+/** [Q245] The valleys carved before `VALLEY_COUNT` went to none, kept by the maps of games started before. */
+export const EARLIER_VALLEY_COUNT: IntRange = { min: 2, max: 4 };
 
 /**
  * [Q160] Andrei, 2026-10-01: "for four and five player games we need larger

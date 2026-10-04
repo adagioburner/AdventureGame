@@ -1,5 +1,5 @@
-import { TERRAINS, type Terrain } from '@adventure/config';
-import { asNodeId, type NodeId } from '@adventure/core';
+import { TERRAINS, type MapConfig, type Terrain } from '@adventure/config';
+import { asNodeId, type MapEdge, type NodeId } from '@adventure/core';
 import type { GenerationContext } from './types.ts';
 
 /**
@@ -12,6 +12,82 @@ import type { GenerationContext } from './types.ts';
  * allowed to take, so the rule lives here and each caller supplies its own
  * eligibility test.
  */
+
+/**
+ * [Q245] What keeps separate areas of a terrain apart while terrain grows
+ * (`KEPT_APART`): the ground the areas are measured on, which terrains, how
+ * many spaces apart, and whether the share balancing may join two areas when
+ * nothing else can reach the shares (916).
+ *
+ * "Apart" is measured on the ground, step 2's triangulation, not only by road:
+ * two areas side by side with no road between them still read as one area on
+ * the map, and that is how most areas met before this existed.
+ */
+export interface KeptApart {
+  readonly ground: readonly (readonly NodeId[])[];
+  readonly terrains: ReadonlySet<Terrain>;
+  readonly gap: number;
+  readonly joinForShares: boolean;
+}
+
+/** `KEPT_APART` for a draft with `nodeCount` nodes and this triangulation; `null` on maps without it. */
+export function keptApartOf(map: MapConfig, nodeCount: number, triangulation: readonly MapEdge[]): KeptApart | null {
+  const config = map.KEPT_APART;
+  if (config === undefined || config.TERRAINS.length === 0) return null;
+  const ground: NodeId[][] = Array.from({ length: nodeCount }, () => []);
+  for (const edge of triangulation) {
+    (ground[edge.a] as NodeId[]).push(edge.b);
+    (ground[edge.b] as NodeId[]).push(edge.a);
+  }
+  return { ground, terrains: new Set(config.TERRAINS), gap: config.GAP, joinForShares: config.JOIN_FOR_SHARES };
+}
+
+/** Which area of the nodes `isOwn` picks each node is in, on the ground; -1 for every other node. */
+export function areaLabels(ground: readonly (readonly NodeId[])[], isOwn: (node: NodeId) => boolean): Int32Array {
+  const label = new Int32Array(ground.length).fill(-1);
+  let next = 0;
+  for (let start = 0; start < ground.length; start++) {
+    if (label[start] !== -1 || !isOwn(asNodeId(start))) continue;
+    const queue = [start];
+    label[start] = next;
+    for (let head = 0; head < queue.length; head++) {
+      for (const neighbour of ground[queue[head] as number] ?? []) {
+        if (label[neighbour] !== -1 || !isOwn(neighbour)) continue;
+        label[neighbour] = next;
+        queue.push(neighbour);
+      }
+    }
+    next++;
+  }
+  return label;
+}
+
+/**
+ * Whether giving `node` to the labelled terrain would bring two of its areas
+ * within `gap` spaces of each other: true when the terrain's nodes within `gap`
+ * ground steps of `node` belong to more than one area.
+ */
+export function wouldJoin(ground: readonly (readonly NodeId[])[], label: Int32Array, node: NodeId, gap: number): boolean {
+  const steps = new Map<NodeId, number>([[node, 0]]);
+  const queue: NodeId[] = [node];
+  let area = -1;
+  for (let head = 0; head < queue.length; head++) {
+    const at = queue[head] as NodeId;
+    const own = at === node ? -1 : (label[at] as number);
+    if (own !== -1) {
+      if (area === -1) area = own;
+      else if (area !== own) return true;
+    }
+    const step = steps.get(at) as number;
+    if (step === gap) continue;
+    for (const neighbour of ground[at] ?? []) {
+      if (steps.has(neighbour)) continue;
+      steps.set(neighbour, step + 1);
+      queue.push(neighbour);
+    }
+  }
+  return false;
+}
 
 /** Hop distance from a set of sources to every node; `Infinity` where unreachable. */
 export function hopDistances(adjacency: readonly (readonly NodeId[])[], sources: readonly NodeId[]): number[] {
@@ -124,6 +200,11 @@ export function terrainTargets(
  *
  * `locked` names nodes that may not change hands — step 6 uses it to protect a
  * valley it has just carved.
+ *
+ * [Q245] With `apart`, a kept-apart terrain never takes a node that would bring
+ * two of its areas within the gap; when that leaves nothing able to move, the
+ * pass joins two areas only if `apart.joinForShares` (916), and otherwise
+ * keeps the shares it has.
  */
 export function rebalanceTerrainShares(
   terrain: Terrain[],
@@ -131,13 +212,19 @@ export function rebalanceTerrainShares(
   targets: Readonly<Record<Terrain, number>>,
   locked: ReadonlySet<NodeId>,
   rng: GenerationContext['rng'],
+  apart: KeptApart | null = null,
 ): void {
   const counts: Record<Terrain, number> = { plains: 0, forest: 0, mountain: 0 };
   for (const value of terrain) counts[value]++;
 
   let deviation = TERRAINS.reduce((sum, value) => sum + Math.abs(counts[value] - targets[value]), 0);
   while (deviation > 0) {
-    if (!moveOneNode(terrain, adjacency, counts, targets, locked, rng)) return;
+    if (!moveOneNode(terrain, adjacency, counts, targets, locked, rng, apart)) {
+      // [Q245, 916] Keeping areas apart left nothing that can move: two areas
+      // may join for the shares only where `JOIN_FOR_SHARES` allows it.
+      if (apart === null || !apart.joinForShares) return;
+      if (!moveOneNode(terrain, adjacency, counts, targets, locked, rng, null)) return;
+    }
     deviation -= 2;
   }
 }
@@ -149,6 +236,7 @@ function moveOneNode(
   targets: Readonly<Record<Terrain, number>>,
   locked: ReadonlySet<NodeId>,
   rng: GenerationContext['rng'],
+  apart: KeptApart | null,
 ): boolean {
   // Neediest first, as a fraction of the target so the largest quota does not
   // simply win every round; `sort` is stable, so equal deficits keep TERRAINS
@@ -163,11 +251,13 @@ function moveOneNode(
     for (let index = 0; index < terrain.length; index++) {
       if (terrain[index] === wanted) own.push(asNodeId(index));
     }
+    const label = apart !== null && apart.terrains.has(wanted) ? areaLabels(apart.ground, (node) => terrain[node] === wanted) : null;
     return bestGrowthCandidate(
       adjacency,
       own,
       (candidate) => {
         if (locked.has(candidate)) return false;
+        if (apart !== null && label !== null && wouldJoin(apart.ground, label, candidate, apart.gap)) return false;
         const owner = terrain[candidate];
         return owner !== undefined && owner !== wanted && from(owner);
       },

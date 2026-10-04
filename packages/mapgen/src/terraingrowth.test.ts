@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { TERRAINS, type Terrain } from '@adventure/config';
 import { asNodeId, createRng, type NodeId } from '@adventure/core';
-import { rebalanceTerrainShares, terrainTargets } from './terraingrowth.ts';
+import { areaLabels, rebalanceTerrainShares, terrainTargets, wouldJoin, type KeptApart } from './terraingrowth.ts';
 
 /** A path graph, which is the sparsest thing the rebalance ever has to work on. */
 function pathAdjacency(count: number): NodeId[][] {
@@ -98,5 +98,51 @@ describe('rebalanceTerrainShares', () => {
     rebalanceTerrainShares(second, pathAdjacency(30), targets, new Set(), createRng('same'));
 
     expect(first).toEqual(second);
+  });
+});
+
+describe('keeping areas apart (Q245)', () => {
+  const forestOn = (terrain: readonly Terrain[]) => (node: NodeId) => terrain[node] === 'forest';
+  const apartOn = (count: number, joinForShares: boolean, gap = 1): KeptApart => ({
+    ground: pathAdjacency(count),
+    terrains: new Set<Terrain>(['forest']),
+    gap,
+    joinForShares,
+  });
+
+  it('labels each area of a terrain on the ground', () => {
+    const terrain: Terrain[] = ['forest', 'forest', 'plains', 'forest', 'plains'];
+    expect([...areaLabels(pathAdjacency(5), forestOn(terrain))]).toEqual([0, 0, -1, 1, -1]);
+  });
+
+  it('refuses a node that would bring two areas within the gap, and only that node', () => {
+    const terrain: Terrain[] = ['forest', 'plains', 'forest', 'plains', 'plains', 'plains', 'forest'];
+    const ground = pathAdjacency(7);
+    const label = areaLabels(ground, forestOn(terrain));
+    expect(wouldJoin(ground, label, asNodeId(1), 1)).toBe(true);
+    expect(wouldJoin(ground, label, asNodeId(3), 1)).toBe(false);
+    // Two spaces apart: node 4 would leave areas {2} and {6} one space apart.
+    expect(wouldJoin(ground, label, asNodeId(4), 1)).toBe(false);
+    expect(wouldJoin(ground, label, asNodeId(4), 2)).toBe(true);
+  });
+
+  it('grows the area that stays apart rather than the node with more forest neighbours', () => {
+    const terrain: Terrain[] = ['forest', 'plains', 'forest', 'plains', 'plains'];
+    const targets = { plains: 2, forest: 3, mountain: 0 };
+    rebalanceTerrainShares(terrain, pathAdjacency(5), targets, new Set(), createRng('apart'), apartOn(5, true));
+    expect(terrain).toEqual(['forest', 'plains', 'forest', 'forest', 'plains']);
+  });
+
+  it('joins two areas for the shares only when JOIN_FOR_SHARES allows it (916)', () => {
+    const start: Terrain[] = ['forest', 'plains', 'forest'];
+    const targets = { plains: 0, forest: 3, mountain: 0 };
+
+    const kept = [...start];
+    rebalanceTerrainShares(kept, pathAdjacency(3), targets, new Set(), createRng('apart'), apartOn(3, false));
+    expect(kept).toEqual(start);
+
+    const joined = [...start];
+    rebalanceTerrainShares(joined, pathAdjacency(3), targets, new Set(), createRng('apart'), apartOn(3, true));
+    expect(joined).toEqual(['forest', 'forest', 'forest']);
   });
 });

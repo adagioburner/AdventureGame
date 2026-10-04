@@ -1,4 +1,4 @@
-import type { GuardType, IntRange, PerTerrain, RewardKind } from './vocabulary.ts';
+import type { GuardType, IntRange, PerTerrain, RewardKind, Terrain } from './vocabulary.ts';
 
 /* -------------------------------------------------------------------------- */
 /*  GDD.md §11 — Configuration Parameters                                      */
@@ -35,7 +35,11 @@ export interface MapConfig {
    * re-checked at Validate (step 8).
    */
   readonly COMPACTNESS_MAX: number;
-  /** §11 `VALLEY_COUNT` — fixed, 2–4 valleys carved per map. */
+  /**
+   * §11 `VALLEY_COUNT` — 2–4 valleys carved per map until Q245, none since:
+   * "stop making valleys, because now we are getting them for free" (Andrei,
+   * 2026-10-04). The maps of games started before keep `EARLIER_VALLEY_COUNT`.
+   */
   readonly VALLEY_COUNT: IntRange;
   /** §11 `VALLEY_WIDTH` — fixed, 1 node wide. */
   readonly VALLEY_WIDTH: number;
@@ -91,22 +95,44 @@ export interface MapConfig {
   readonly JOINED_PIECE_ROADS: number;
   /**
    * [Q245] `TERRAIN_SEEDS` — how many seeds each terrain grows from in step 4
-   * (§2.1), drawn per map between `min` and `max`. 3 for the forest and the
-   * mountains and 2 for the plains, on both map sizes (910 B, 912 A, 915 A).
+   * (§2.1), drawn per map between `min` and `max`. 2 for every terrain, on
+   * both map sizes.
    *
-   * Andrei, 2026-10-04: "games get more interesting when there are more than
-   * one area of forest and mountains"; "doing nothing to prevent them from
-   * merging is a good move"; then, of 3 seeds for every terrain, "3 seeds
-   * mountains, 3 seeds forests, and 2 seeds plains [...] may be a slightly
-   * better configuration". Areas of one terrain still grow until they touch,
-   * so a map shows fewer areas than seeds as often as not: measured over 300
-   * maps a size, the forest is in 2 or more areas on 75% of 2-3 player maps
-   * and 76% of 4-5.
+   * Andrei, 2026-10-04, after looking at maps grown from 3 seeds without
+   * keeping areas apart ("Many second or third components are tiny, not
+   * adding much to the map structure"): "start with 2 seeds for forest and
+   * mountains, and don't let them merge"; "We can do 2 seeds for plains but we
+   * don't care if they merge or not. This applies to all map sizes". Which
+   * terrains are kept apart is `KEPT_APART`.
    *
    * Absent on the maps of games started before, which grew every terrain from
-   * `EARLIER_TERRAIN_SEEDS` (913).
+   * `EARLIER_TERRAIN_SEEDS`, kept nothing apart and carved valleys (913).
    */
   readonly TERRAIN_SEEDS?: PerTerrain<IntRange>;
+  /**
+   * [Q245] Terrains whose separate areas never grow into each other, in step
+   * 4's fill and in the share balancing of steps 4 and 6. Absent on the maps
+   * of games started before, like `TERRAIN_SEEDS`.
+   */
+  readonly KEPT_APART?: KeptApartConfig;
+}
+
+/**
+ * [Q245] How separate areas of a terrain are kept apart. An area never takes a
+ * space that would bring it within `GAP` spaces of another area of its own
+ * terrain, counting spaces that touch on the ground (step 2's triangulation),
+ * not only by road.
+ */
+export interface KeptApartConfig {
+  /** "don't let them merge": the forest and the mountains. */
+  readonly TERRAINS: readonly Terrain[];
+  /** "1 space gap should be enough, like what we have for valleys width today": 1. */
+  readonly GAP: number;
+  /**
+   * 916: whether, on a map where the shares can be reached no other way, the
+   * share balancing may give a terrain a space that joins two of its areas.
+   */
+  readonly JOIN_FOR_SHARES: boolean;
 }
 
 /** §11 rows covering POI counts and guard strength (§3, §4.4). */

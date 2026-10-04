@@ -4,7 +4,7 @@ import {
   deepStartOf,
   magicGuardChanceOf,
   mapSizeOfRuleset,
-  moreSeedsOf,
+  separateAreasOf,
   staminaSitesOf,
   startingGoldOf,
   type MapSize,
@@ -78,11 +78,12 @@ export interface KeptGame {
    */
   readonly staminaSites?: boolean;
   /**
-   * [Q245] Whether the game's map grew every terrain from `TERRAIN_SEEDS`.
-   * Absent on a game kept before it did, whose map is made again as it began,
-   * from 1 or 2 seeds a terrain (913).
+   * [Q245] Whether the game's map grew its terrain from `TERRAIN_SEEDS` with
+   * the forest's and the mountains' areas kept apart and no valleys. Absent on
+   * a game kept before, whose map is made again as it began, from 1 or 2 seeds
+   * a terrain and with valleys (913).
    */
-  readonly moreSeeds?: boolean;
+  readonly separateAreas?: boolean;
 }
 
 const KEY = 'adventure.hotseat';
@@ -126,7 +127,7 @@ export function keep(seed: string, setup: LocalSetup, order: readonly string[] |
     startingGold: startingGoldOf(game.setup.map.ruleset),
     deepStart: deepStartOf(game.setup.map.ruleset),
     staminaSites: staminaSitesOf(game.setup.map.ruleset),
-    moreSeeds: moreSeedsOf(game.setup.map.ruleset),
+    separateAreas: separateAreasOf(game.setup.map.ruleset),
   };
   try {
     window.localStorage.setItem(KEY, JSON.stringify(kept));
@@ -163,9 +164,9 @@ export function keptStaminaSites(kept: KeptGame): boolean {
   return kept.staminaSites === true;
 }
 
-/** Whether `kept`'s map grew its terrain from `TERRAIN_SEEDS`: see `KeptGame.moreSeeds`. */
-export function keptMoreSeeds(kept: KeptGame): boolean {
-  return kept.moreSeeds === true;
+/** Whether `kept`'s map grew its areas apart, without valleys: see `KeptGame.separateAreas`. */
+export function keptSeparateAreas(kept: KeptGame): boolean {
+  return kept.separateAreas === true;
 }
 
 /** The kept game played again on `map`; `null` if its turns no longer replay. */

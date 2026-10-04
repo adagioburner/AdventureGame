@@ -12,6 +12,7 @@ export {
   DEFAULT_GAME_CONFIG,
   DEFAULT_ENGINEERING_CONFIG,
   EARLIER_TERRAIN_SEEDS,
+  EARLIER_VALLEY_COUNT,
   LARGER_MAP_GAME_CONFIG,
   LARGER_MAP_ENGINEERING_CONFIG,
   RESPAWN_RULES,
@@ -29,6 +30,7 @@ export { validateRuleset, resolvePending, RulesetError, UnresolvedDesignError } 
 import {
   DEFAULT_ENGINEERING_CONFIG,
   DEFAULT_GAME_CONFIG,
+  EARLIER_VALLEY_COUNT,
   LARGER_MAP_ENGINEERING_CONFIG,
   LARGER_MAP_GAME_CONFIG,
 } from './defaults.ts';
@@ -152,22 +154,23 @@ export function withoutStaminaSites(ruleset: Ruleset): Ruleset {
 
 /**
  * [Q245] Whether maps made with `ruleset` grow their terrain from
- * `TERRAIN_SEEDS`. False for a hot seat game kept from before, whose map is
- * made again as it began, from 1 or 2 seeds a terrain.
+ * `TERRAIN_SEEDS`, keep the `KEPT_APART` terrains' areas apart and carve no
+ * valleys. False for a hot seat game kept from before, whose map is made again
+ * as it began, from 1 or 2 seeds a terrain and with valleys.
  */
-export function moreSeedsOf(ruleset: Ruleset): boolean {
+export function separateAreasOf(ruleset: Ruleset): boolean {
   return ruleset.config.map.TERRAIN_SEEDS !== undefined;
 }
 
 /**
- * [Q245] `ruleset` as it was before terrain grew from `TERRAIN_SEEDS`, so a hot
- * seat game kept from before gets back the map it began on (913). `ruleset`
- * itself when it already is.
+ * [Q245] `ruleset` as it was before: no `TERRAIN_SEEDS`, nothing kept apart and
+ * `EARLIER_VALLEY_COUNT` valleys, so a hot seat game kept from before gets back
+ * the map it began on (913). `ruleset` itself when it already is.
  */
-export function withoutMoreSeeds(ruleset: Ruleset): Ruleset {
-  if (!moreSeedsOf(ruleset)) return ruleset;
-  const { TERRAIN_SEEDS: _seeds, ...map } = ruleset.config.map;
-  return { ...ruleset, config: { ...ruleset.config, map } };
+export function withoutSeparateAreas(ruleset: Ruleset): Ruleset {
+  if (!separateAreasOf(ruleset)) return ruleset;
+  const { TERRAIN_SEEDS: _seeds, KEPT_APART: _apart, ...map } = ruleset.config.map;
+  return { ...ruleset, config: { ...ruleset.config, map: { ...map, VALLEY_COUNT: EARLIER_VALLEY_COUNT } } };
 }
 
 /**

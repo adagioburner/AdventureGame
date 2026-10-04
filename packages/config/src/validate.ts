@@ -188,6 +188,16 @@ export function validateRuleset(ruleset: Ruleset): void {
     }
     assertRange(problems, `TERRAIN_SEEDS.${terrain}`, range);
   }
+  const apart = config.map.KEPT_APART;
+  if (apart !== undefined) {
+    if (!Number.isInteger(apart.GAP) || apart.GAP < 1) problems.push('Q245: map.KEPT_APART.GAP must be a whole number of at least 1.');
+    if (apart.TERRAINS.some((terrain) => !TERRAINS.includes(terrain)) || new Set(apart.TERRAINS).size !== apart.TERRAINS.length) {
+      problems.push('Q245: map.KEPT_APART.TERRAINS must name each terrain at most once.');
+    }
+  }
+  if (!Number.isInteger(config.map.VALLEY_COUNT.min) || config.map.VALLEY_COUNT.min < 0) {
+    problems.push('§11: VALLEY_COUNT.min must be a whole number, 0 or more.');
+  }
   // Q200: whole gold, none at the least.
   const gold = config.players.STARTING_GOLD;
   if (gold !== undefined && (!Number.isInteger(gold) || gold < 0)) {
