@@ -164,7 +164,7 @@ Computer players follow the same rules. When setting up, you choose how many sec
 | Stamina per step past your free steps | Plains 1 · forest 2 · mountains 3 |
 | Fight | 1 die + your skill; beat the guard's strength to win |
 | Buy a speed or skill | 1 gold a unit, on your turn |
-| Gold on the map | 45, or 63 with 4 or 5 players |
+| Gold on the map | 48, or 67 with 4 or 5 players |
 | Win | Lead by more than the gold left on the map |
 | Online time limit | 1, 3, 7 or 14 days |
 

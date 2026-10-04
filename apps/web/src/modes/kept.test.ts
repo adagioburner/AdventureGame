@@ -228,7 +228,7 @@ describe('a game on one device kept in the browser (Q56, 66)', () => {
     expect(kept?.rewardsMoved).toBe(true);
     expect(kept === null ? null : keptRewardsMoved(kept)).toBe(true);
     expect(kinds(map, 'forest')).toEqual(new Set(['magic', 'fighting']));
-    expect(map.ruleset.config.pois.POI_COUNT).toEqual({ plains: 31, forest: 19, mountain: 15 });
+    expect(map.ruleset.config.pois.POI_COUNT).toEqual({ plains: 32, forest: 20, mountain: 15 });
     expect(replayKept(kept!, map)?.state).toEqual(game.state);
 
     // Kept before: mountains speed, combat and magic-guarded gold in the forest, 30 plains sites.

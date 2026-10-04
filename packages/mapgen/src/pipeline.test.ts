@@ -157,11 +157,11 @@ describe('§4.2 — the reward table reconciles exactly', () => {
   it('accounts for every POI: table rows plus surplus-leaf stamina, nothing else', () => {
     const rows = TERRAINS.flatMap((terrain) => DEFAULT_RULESET.content.REWARD_TABLE[terrain]);
     const tabled = rows.reduce((sum, row) => sum + row.poiCount, 0);
-    // [Q240] The stamina row: 5 sites holding 10 units, in the forest since Q250.
+    // [Q240] The stamina row: 10 units, in the forest on 6 sites since Q250.
     const staminaRows = rows.filter((row) => row.kind === 'stamina');
     const tabledStamina = staminaRows.reduce((sum, row) => sum + row.poiCount, 0);
     const tabledStaminaUnits = staminaRows.reduce((sum, row) => sum + row.totalUnits, 0);
-    expect([tabledStamina, tabledStaminaUnits]).toEqual([5, 10]);
+    expect([tabledStamina, tabledStaminaUnits]).toEqual([6, 10]);
     for (const seed of SEEDS) {
       const map = mapOf(seed);
       const stamina = map.pois.filter((poi) => poi.reward.kind === 'stamina');
@@ -184,7 +184,7 @@ describe('§4.2 — the reward table reconciles exactly', () => {
   it('puts the same gold and skill totals on every map, because §4.2 fixes them', () => {
     for (const seed of SEEDS) {
       const map = mapOf(seed);
-      expect(totalGoldUnits(map)).toBe(45);
+      expect(totalGoldUnits(map)).toBe(48);
       expect(totalSkillUnits(map)).toBe(75);
       expect(SKILL_KINDS.length).toBe(5);
     }
@@ -594,7 +594,7 @@ describe('Q160 — the larger map for 4 and 5 players', () => {
     });
   }, 30000);
 
-  it('matches its reward table row for row, with 63 gold and 105 speed and skill units', () => {
+  it('matches its reward table row for row, with 67 gold and 105 speed and skill units', () => {
     each((map) => {
       for (const terrain of TERRAINS) {
         for (const row of LARGER_MAP_RULESET.content.REWARD_TABLE[terrain]) {
@@ -607,7 +607,7 @@ describe('Q160 — the larger map for 4 and 5 players', () => {
           expect(group.reduce((sum, poi) => sum + poi.reward.units, 0)).toBe(row.totalUnits);
         }
       }
-      expect(totalGoldUnits(map)).toBe(63);
+      expect(totalGoldUnits(map)).toBe(67);
       expect(totalSkillUnits(map)).toBe(105);
     });
   }, 30000);

@@ -34,15 +34,9 @@ describe('the larger map for 4 and 5 players (Q160)', () => {
     expect(larger.map.MAP_EDGE_COUNT).toBe(Math.round(today.map.MAP_EDGE_COUNT * SCALE));
     expect(larger.map.LEAF_COUNT.min).toBe(Math.round(today.map.LEAF_COUNT.min * SCALE));
     expect(larger.map.LEAF_COUNT.max).toBe(Math.round(today.map.LEAF_COUNT.max * SCALE));
-    // [Q250, 920 A] Since the rewards moved terrain each row keeps its sites,
-    // rounded as 630 rounds them, so a terrain has the sum of its rows' sites
-    // (plains 44, forest 26) and the map 1.4 × today's sites in all.
-    const total = (pois: Readonly<Record<string, number>>): number => Object.values(pois).reduce((sum, count) => sum + count, 0);
     for (const terrain of TERRAINS) {
-      const rows = LARGER_MAP_RULESET.content.REWARD_TABLE[terrain];
-      expect(larger.pois.POI_COUNT[terrain]).toBe(rows.reduce((sum, row) => sum + row.poiCount, 0));
+      expect(larger.pois.POI_COUNT[terrain]).toBe(Math.round(today.pois.POI_COUNT[terrain] * SCALE));
     }
-    expect(total(larger.pois.POI_COUNT)).toBe(Math.round(total(today.pois.POI_COUNT) * SCALE));
   });
 
   it("has 1.4 times every row's units, and its sites rounded to the nearest whole number (630)", () => {
@@ -54,20 +48,22 @@ describe('the larger map for 4 and 5 players (Q160)', () => {
         const before = today[index];
         if (before === undefined) throw new Error('rows differ');
         expect(row.totalUnits).toBe(Math.round(before.totalUnits * SCALE));
-        expect(row.poiCount).toBe(Math.round(before.poiCount * SCALE));
+        // [Q250, 925 A] Except the forest stamina, 9 sites rather than 8, so the forest keeps its 28.
+        const sites = terrain === 'forest' && row.kind === 'stamina' ? 9 : Math.round(before.poiCount * SCALE);
+        expect(row.poiCount).toBe(sites);
         expect(row.magicGuardChance).toBe(before.magicGuardChance);
       });
     }
   });
 
-  it('carries 63 gold, 105 speed and skill units and 14 stamina units, against 45, 75 and 10 (Q240, 902 A)', () => {
+  it('carries 67 gold, 105 speed and skill units and 14 stamina units, against 48, 75 and 10 (Q240, 902 A, Q250)', () => {
     const units = (ruleset: Ruleset, kind: 'gold' | 'stamina' | 'skills'): number =>
       TERRAINS.flatMap((terrain) => ruleset.content.REWARD_TABLE[terrain])
         .filter((row) => (kind === 'skills' ? row.kind !== 'gold' && row.kind !== 'stamina' : row.kind === kind))
         .reduce((sum, row) => sum + row.totalUnits, 0);
     const all = (ruleset: Ruleset): number[] => [units(ruleset, 'gold'), units(ruleset, 'skills'), units(ruleset, 'stamina')];
-    expect(all(DEFAULT_RULESET)).toEqual([45, 75, 10]);
-    expect(all(LARGER_MAP_RULESET)).toEqual([63, 105, 14]);
+    expect(all(DEFAULT_RULESET)).toEqual([48, 75, 10]);
+    expect(all(LARGER_MAP_RULESET)).toEqual([67, 105, 14]);
   });
 
   it('changes nothing else (633)', () => {

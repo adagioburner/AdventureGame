@@ -45,7 +45,7 @@ describe('validateRuleset', () => {
     const row = firstPlainsRow(ruleset);
     plainsRows(ruleset)[0] = { ...row, poiCount: row.poiCount + 1 };
     expect(() => validateRuleset(ruleset)).toThrow(RulesetError);
-    expect(() => validateRuleset(ruleset)).toThrow(/§4.2\/§3: plains reward groups cover 32 POIs/);
+    expect(() => validateRuleset(ruleset)).toThrow(/§4.2\/§3: plains reward groups cover 33 POIs/);
   });
 
   it('rejects a group with fewer units than POIs', () => {
@@ -89,7 +89,7 @@ describe('validateRuleset', () => {
   it('rejects more POIs than the map has nodes', () => {
     const ruleset = clone();
     (ruleset.config.map as { MAP_NODE_COUNT: number }).MAP_NODE_COUNT = 10;
-    expect(() => validateRuleset(ruleset)).toThrow(/65 POIs requested but only 10 nodes/);
+    expect(() => validateRuleset(ruleset)).toThrow(/67 POIs requested but only 10 nodes/);
   });
 
   it('rejects an inverted MIN/MAX range', () => {
