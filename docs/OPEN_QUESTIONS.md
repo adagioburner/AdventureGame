@@ -3658,7 +3658,7 @@ moved and added a seed draws a different map than before. Engine details:
 since no forest row has gold any more, `FOREST_MAGIC_GUARD_CHANCE` only
 reaches maps from before, through `REWARD_TABLE_BEFORE_MOVE`.
 
-### Q255. ~~How far apart are the plains' fortresses?~~ — **answered 2026-10-04: by road and on the map, every pair at least 12 road steps and 5 spaces in a straight line apart, the three on 4-5 player maps by the same numbers; games already started keep their maps (930 B, 931, 932 A, 933 A)**
+### Q255. ~~How far apart are the plains' fortresses?~~ — **answered 2026-10-04: by road and on the map, every pair at least 12 road steps and 5 spaces in a straight line apart, the three on 4-5 player maps by the same numbers; games already started keep their maps; a map with no plains site far enough is drawn again (930 B, 931, 932 A, 933 A, 934 A)**
 
 Andrei, 2026-10-04 at 19:29: *"I'd like to make sure that two large gold
 prises guarded by combat on plains are well separated from each other"*. The
@@ -3714,6 +3714,12 @@ and 10.7 spaces apart (16 and 8.7 before) and 15 and 8.7 on 4-5 player maps
 (10 and 5.6), none under 12 or 5; no map had to be drawn again; the fortresses'
 guards are as before (10 on 94% and 85%). The rulebook is unchanged: it never
 said where the fortresses go, and the rule is an engine detail kept in GDD.md.
+
+934, asked after the build on the coordinator's note: when no plains site is
+far enough for a fortress, draw the map again (recommended, as built), or keep
+the map and put the fortress on the farthest site left even if it is under 12
+steps. Answered by card 2026-10-04: A, *"Draw again"*. It never happened on
+the 400 measured maps; players see only the map that comes out.
 
 ---
 
