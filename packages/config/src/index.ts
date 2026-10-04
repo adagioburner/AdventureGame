@@ -123,6 +123,33 @@ export function withoutDeepStart(ruleset: Ruleset): Ruleset {
 }
 
 /**
+ * [Q240] Whether maps made with `ruleset` have the plains' stamina sites, each
+ * unit giving `STAMINA_PER_UNIT`. False for a hot seat game kept from before
+ * they came, whose map is made again as it was.
+ */
+export function staminaSitesOf(ruleset: Ruleset): boolean {
+  return ruleset.config.pois.STAMINA_PER_UNIT !== undefined;
+}
+
+/**
+ * [Q240] `ruleset` as it was before the plains had stamina sites: no stamina
+ * row, the plains' sites fewer by its sites, and a stamina unit worth 1, so a
+ * hot seat game kept from before gets back the map it began on. `ruleset`
+ * itself when it already is.
+ */
+export function withoutStaminaSites(ruleset: Ruleset): Ruleset {
+  if (!staminaSitesOf(ruleset)) return ruleset;
+  const table = ruleset.content.REWARD_TABLE;
+  const sites = table.plains.filter((row) => row.kind === 'stamina').reduce((sum, row) => sum + row.poiCount, 0);
+  const { STAMINA_PER_UNIT: _perUnit, ...pois } = ruleset.config.pois;
+  return {
+    ...ruleset,
+    config: { ...ruleset.config, pois: { ...pois, POI_COUNT: { ...pois.POI_COUNT, plains: pois.POI_COUNT.plains - sites } } },
+    content: { ...ruleset.content, REWARD_TABLE: { ...table, plains: table.plains.filter((row) => row.kind !== 'stamina') } },
+  };
+}
+
+/**
  * [SOURCE §2, chat] Starting stamina for a 1-based seat:
  * `STARTING_STAMINA_BASE + (seat − 1) × STARTING_STAMINA_INCREMENT`.
  *

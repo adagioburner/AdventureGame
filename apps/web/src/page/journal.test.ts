@@ -162,6 +162,20 @@ describe('the turn log, in words that can be checked by hand', () => {
     expect(entry.details[0]).toContain(`Stamina 7 → ${7 + DEFAULT_RULESET.config.movement.REST_STAMINA_GAIN}.`);
   });
 
+  it('says the stamina a stamina site gives, 5 for each unit (Q240, 906 A)', () => {
+    const plains = lineMap(['plains', 'plains', 'plains'], [{ node: 1, kind: 'stamina', units: 2, guard: null }, { node: 2, kind: 'gold', units: 1, guard: null }]);
+    const fresh = createGameState({
+      id: asGameId('journal'),
+      map: plains,
+      players: ['Ada', 'Bram'].map((name) => ({ id: asPlayerId(name), name, avatarId: name, control: 'human' as const })),
+      startingNode: asNodeId(0),
+    });
+    const entry = describeTurn(fresh, { kind: 'move', path: path(1) });
+    expect(entry.details[0]).toBe('Heading for the 10 stamina site (plains).');
+    expect(entry.headline).toBe('Walked 1 step, took 10 stamina');
+    expect(entry.details.at(-1)).toBe('Took 10 stamina: the site was unguarded.');
+  });
+
   it('says where a skill came back, by its site’s terrain (Q135, 536)', () => {
     // Combat on nodes 2 and 5; Ada takes node 2's, the last left, and node 5,
     // taken earlier, comes back: with 1 of its 3, all a site comes back with.

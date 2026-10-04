@@ -336,7 +336,8 @@ describe('counted walks in imagined games (Q210, stage 3, 823 A)', () => {
     cursor = playRolloutTurn({ ...cursor, targets: [n(5), null] }, options());
     expect(cursor.state.players[0]?.position).toBe(n(2));
     expect(poiRuntimeAt(cursor.state, n(2))?.claimedBy).toBe(player('one'));
-    expect(cursor.state.players[0]?.stats.stamina).toBe(1);
+    // [Q240] Its one stamina unit gives STAMINA_PER_UNIT, 5.
+    expect(cursor.state.players[0]?.stats.stamina).toBe(5);
     expect(cursor.targets[0]).toBe(n(5));
   });
 

@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { poiAt, unclaimedGoldUnits, type GameEvent, type GameState, type PlayerId, type Point } from '@adventure/core';
+import { poiAt, rewardAmount, unclaimedGoldUnits, type GameEvent, type GameState, type PlayerId, type Point } from '@adventure/core';
 import type { ArtCatalog } from '../art/catalog.ts';
 import type { PlayedTurn, Purchase } from '../modes/hotseat.ts';
 import { GUARD_LABEL, STAT_LABEL, STAT_ORDER } from './journal.ts';
@@ -18,7 +18,7 @@ export function ResultCard({ catalog, turn, rolling, onClose }: { catalog: ArtCa
   const guard = poiAt(turn.after.map, interacted.resolution.node)?.guard ?? null;
   if (roll === null || skillUsed === null || guard === null) return null;
   const avatar = turn.after.players.find((player) => player.id === turn.player)?.avatarId ?? '';
-  const prize = `${reward.units} ${STAT_LABEL[reward.kind]}`;
+  const prize = `${rewardAmount(reward, turn.after.map.ruleset.config)} ${STAT_LABEL[reward.kind]}`;
   const className = `card result${rolling ? ' rolling' : claimed ? ' took' : ' missed'}`;
 
   return (
@@ -73,7 +73,7 @@ export function ClaimNotice({ turn, ...timing }: { turn: PlayedTurn } & NoticeTi
   const interacted = turn.events.find((event): event is Extract<GameEvent, { type: 'interacted' }> => event.type === 'interacted');
   const reward = interacted?.resolution.reward ?? null;
   if (reward === null) return null;
-  return <FloatingNotice player={turn.player} text={`${STAT_LABEL[reward.kind]} +${reward.units}`} {...timing} />;
+  return <FloatingNotice player={turn.player} text={`${STAT_LABEL[reward.kind]} +${rewardAmount(reward, turn.after.map.ruleset.config)}`} {...timing} />;
 }
 
 /**
