@@ -257,7 +257,7 @@ function iconCanvas(image: HTMLImageElement, kind: RewardKind, backing: IconBack
     const middle = ICON_PX / 2;
     disc(ctx, middle, middle, middle, contour);
     disc(ctx, middle, middle, middle - backing.contour * ICON_PX, backing.fill);
-    const scale = (backing.picture * ICON_PX) / (2 * fit.r);
+    const scale = ((backing.pictures[kind] ?? backing.picture) * ICON_PX) / (2 * fit.r);
     ctx.imageSmoothingEnabled = true;
     ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(image, middle - fit.x * scale, middle - fit.y * scale, image.width * scale, image.height * scale);

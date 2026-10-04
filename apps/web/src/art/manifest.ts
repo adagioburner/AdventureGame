@@ -72,6 +72,8 @@ export interface IconBacking {
   readonly picture: number;
   /** Icons drawn on a disc, each with its contour colour. */
   readonly circled: Readonly<Partial<Record<RewardKind, string>>>;
+  /** Circled icons whose picture spans its own share of the disc instead of `picture`; above 1 it reaches over the contour (Q230). */
+  readonly pictures: Readonly<Partial<Record<RewardKind, number>>>;
   /** Icons with a disc under the picture, inside its own rim. */
   readonly filled: readonly RewardKind[];
 }
@@ -484,7 +486,7 @@ function parseTerrain(json: unknown, where: string): TerrainArt {
 }
 
 function parseBacking(json: unknown, where: string): IconBacking {
-  if (json === undefined) return { fill: '#ffffff', contour: 0, picture: 1, circled: {}, filled: [] };
+  if (json === undefined) return { fill: '#ffffff', contour: 0, picture: 1, circled: {}, pictures: {}, filled: [] };
   const entry = record(json, where);
   const kind = (value: string, at: string): RewardKind => {
     if (!(REWARD_KINDS as readonly string[]).includes(value)) throw new ArtError(`${at}: ${value} is not a reward kind`);
@@ -504,7 +506,15 @@ function parseBacking(json: unknown, where: string): IconBacking {
   if (contour >= 0.5) throw new ArtError(`${where}.contour: must be under half the disc's width`);
   const picture = fraction(entry['picture'], `${where}.picture`);
   if (picture === 0) throw new ArtError(`${where}.picture: must be above 0`);
-  return { fill: color(entry['fill'], `${where}.fill`), contour, picture, circled, filled };
+  const picturesEntry = entry['pictures'] === undefined ? {} : record(entry['pictures'], `${where}.pictures`);
+  const pictures = Object.fromEntries(
+    Object.entries(picturesEntry).map(([name, value]) => {
+      const icon = kind(name, `${where}.pictures`);
+      if (circled[icon] === undefined) throw new ArtError(`${where}.pictures: ${name} is not circled`);
+      return [icon, positive(value, `${where}.pictures.${name}`)];
+    }),
+  ) as Partial<Record<RewardKind, number>>;
+  return { fill: color(entry['fill'], `${where}.fill`), contour, picture, circled, pictures, filled };
 }
 
 function parseClusters(json: unknown, where: string): DressingClusters {

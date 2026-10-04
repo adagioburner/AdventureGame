@@ -129,8 +129,10 @@ there for people and ignored by the game.
 - `icons`, `guards`, `roads`, `nodes`: reward icons (sized by their picture,
   so the transparent margin round an icon does not matter; `backing` says
   which the map draws on a beige disc with a coloured contour and which get a
-  beige disc filling the gaps in them, Q61, while the players' cards show
-  the files as they are), the red and
+  beige disc filling the gaps in them, Q61, and `pictures` lets a circled
+  picture span more of its disc than the rest, the swords reaching over
+  their contour, Q230, while the players' cards show the files as they
+  are), the red and
   purple guard colours with the width of the ring round a guarded POI's node
   and the size of the guard's number, the road brush and width, and the node
   ovals.
