@@ -75,11 +75,12 @@
       "stamina": "Icons/stamina.png"
     },
     "backing": {
-      "notes": "What the map draws behind some icons as they load, so the PNGs stay as drawn and the players' cards show them as they are (Q61). An icon under `circled` sits on a disc of `fill` with a contour in the colour given, `contour` thick as a share of the disc's width, its picture centred and scaled so the smallest circle round it spans `picture` of the disc's width; `size` above is then the disc's width. An icon under `filled` has a disc of `fill` under its picture, as wide as the picture and hidden under its rim, so the gaps in it show that colour. Any other icon is drawn as it is.",
+      "notes": "What the map draws behind some icons as they load, so the PNGs stay as drawn and the players' cards show them as they are (Q61). An icon under `circled` sits on a disc of `fill` with a contour in the colour given, `contour` thick as a share of the disc's width, its picture centred and scaled so the smallest circle round it spans `picture` of the disc's width, or its own share under `pictures` (above 1 the picture reaches over the contour: the swords, Q230); `size` above is then the disc's width. An icon under `filled` has a disc of `fill` under its picture, as wide as the picture and hidden under its rim, so the gaps in it show that colour. Any other icon is drawn as it is.",
       "fill": "#e6dcd2",
       "contour": 0.04,
       "picture": 0.82,
       "circled": { "fighting": "#b71b1c", "forest_move": "#1d8b28", "mountain_move": "#000000" },
+      "pictures": { "fighting": 1.06 },
       "filled": ["plains_move"]
     }
   },

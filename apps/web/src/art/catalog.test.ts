@@ -126,6 +126,12 @@ describe('the art catalog built from Art/', () => {
     expect(backing.fill).toBe('#e6dcd2');
   });
 
+  it('lets the swords reach over their contour (Q230)', () => {
+    const { backing } = catalog.manifest.icons;
+    expect(backing.pictures).toEqual({ fighting: 1.06 });
+    expect(backing.picture).toBe(0.82);
+  });
+
   it('flags generated placeholders and only those', () => {
     const placeholders = [...catalog.atlases.values()].filter((atlas) => atlas.placeholder).map((atlas) => atlas.name);
     expect(placeholders.sort()).toEqual([
@@ -260,6 +266,8 @@ describe('a bad art drop', () => {
     expect(() => parseManifest(withBacking({ filled: ['fighting'] }))).toThrow(/fighting is both circled and filled/);
     expect(() => parseManifest(withBacking({ fill: 'beige' }))).toThrow(/icons\.backing\.fill: expected a colour/);
     expect(() => parseManifest(withBacking({ contour: 0.5 }))).toThrow(/contour: must be under half/);
+    expect(() => parseManifest(withBacking({ pictures: { plains_move: 1.2 } }))).toThrow(/icons\.backing\.pictures: plains_move is not circled/);
+    expect(() => parseManifest(withBacking({ pictures: { fighting: 0 } }))).toThrow(/icons\.backing\.pictures\.fighting/);
   });
 
   it('is reported with every problem at once', () => {
