@@ -24,7 +24,7 @@ describe('golden map', () => {
     await expect(formatMapSummary(map)).toMatchFileSnapshot('../../../golden/maps/adventure.txt');
   }, 30000);
 
-  // [Q245, 913] A game kept from before terrain grew from 3 seeds a terrain is
+  // [Q245, 913] A game kept from before terrain grew from `TERRAIN_SEEDS` is
   // drawn again on the map it began on: this file is the snapshot above as it
   // stood until then, and should never need updating for a seed count.
   it('draws the map from before TERRAIN_SEEDS unchanged for seed "adventure"', async () => {

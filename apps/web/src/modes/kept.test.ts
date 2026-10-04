@@ -209,7 +209,7 @@ describe('a game on one device kept in the browser (Q56, 66)', () => {
     expect(resumed?.turns.length).toBe(1);
   });
 
-  it('keeps a map grown from 3 seeds a terrain, and makes a game kept before on the map it began on (Q245)', () => {
+  it('keeps a map grown from TERRAIN_SEEDS, and makes a game kept before on the map it began on (Q245)', () => {
     const game = new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'kept' });
     game.play({ kind: 'rest', player: game.state.players[0]!.id });
     keep('adventure', setup, null, game);
@@ -219,7 +219,7 @@ describe('a game on one device kept in the browser (Q56, 66)', () => {
     expect(map.ruleset.config.map.TERRAIN_SEEDS?.forest).toEqual({ min: 3, max: 3 });
     expect(replayKept(kept!, map)?.state).toEqual(game.state);
 
-    // Kept before: the same seed grows its terrain from 1 or 2 seeds, as it began.
+    // Kept before: the same seed grows its terrain from 1 or 2 seeds a terrain, as it began.
     const { moreSeeds: _seeds, ...older } = kept ?? { moreSeeds: undefined };
     const before = older as NonNullable<typeof kept>;
     expect(keptMoreSeeds(before)).toBe(false);

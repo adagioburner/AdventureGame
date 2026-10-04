@@ -5,9 +5,9 @@ import { bestGrowthCandidate, hopDistances, rebalanceTerrainShares, terrainTarge
 import { GenerationRejected, type GenerationContext, type GenerationStep, type MapDraft } from '../types.ts';
 
 /**
- * §2.1 step 4 — "Seed terrain regions: `TERRAIN_SEEDS` seeds per terrain: 3
- * each for plains, forest and mountain (Q245; 1 or 2 at random on the maps of
- * games started before); grow by flood fill biased toward nodes with more
+ * §2.1 step 4 — "Seed terrain regions: `TERRAIN_SEEDS` seeds per terrain: 2
+ * for plains, 3 each for forest and mountain (Q245; 1 or 2 at random on the
+ * maps of games started before); grow by flood fill biased toward nodes with more
  * same-terrain neighbours, until area shares are approximately 45% plains /
  * 30% forest / 25% mountain."
  *

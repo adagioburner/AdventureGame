@@ -21,7 +21,7 @@ import { defaultRemotenessScorer } from '@adventure/sim';
  * [Q227] `deepStart` false draws it as before the start moved deep into the
  * plains, for a kept game from before. [Q240] `staminaSites` false draws it as
  * before the plains had stamina sites, likewise. [Q245] `moreSeeds` false
- * draws it as before every terrain grew from 3 seeds, likewise.
+ * draws it as before terrain grew from `TERRAIN_SEEDS`, likewise.
  */
 export function mapFor(
   seed: Seed,

@@ -26,8 +26,8 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     BORDER_AREA_MIN_SIZE: 5,
     BORDER_ROAD_MAX_LENGTH: 1.3,
     JOINED_PIECE_ROADS: 1,
-    // [Q245] Andrei, 2026-10-04: "starting with 3 seeds for all 3 terrains".
-    TERRAIN_SEEDS: { plains: { min: 3, max: 3 }, forest: { min: 3, max: 3 }, mountain: { min: 3, max: 3 } },
+    // [Q245] Andrei, 2026-10-04: "3 seeds mountains, 3 seeds forests, and 2 seeds plains" (915 A).
+    TERRAIN_SEEDS: { plains: { min: 2, max: 2 }, forest: { min: 3, max: 3 }, mountain: { min: 3, max: 3 } },
   },
   pois: {
     // [Q240] Plains 25 → 30 for the 5 stamina sites, which follow the same

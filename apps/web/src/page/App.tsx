@@ -125,7 +125,7 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
   // [Q240] And whether its plains have stamina sites, likewise.
   const staminaSites =
     game !== null ? staminaSitesOf(game.setup.map.ruleset) : resuming && kept !== null ? keptStaminaSites(kept) : true;
-  // [Q245] And whether its terrain grew from 3 seeds a terrain, likewise.
+  // [Q245] And whether its terrain grew from `TERRAIN_SEEDS`, likewise.
   const moreSeeds =
     game !== null ? moreSeedsOf(game.setup.map.ruleset) : resuming && kept !== null ? keptMoreSeeds(kept) : true;
 
