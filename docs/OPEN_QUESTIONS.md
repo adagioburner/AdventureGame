@@ -3573,7 +3573,7 @@ from `TERRAIN_SEEDS`.
 
 ---
 
-### Q250. ~~Which rewards go on which terrain?~~ — **answered 2026-10-04: as Andrei laid out, every reward keeping its amount and its sites; the moved magic gold guarded by the usual rule; every reward keeping its pictures; the rulebook's short line; the softer forest plan rerun on a few games (920-924); then forest stamina 6 sites with 10 units and plains magic gold 5 sites with 8 gold, his own numbers, and on 4-5 player maps 9 stamina sites with 14 units and 7 magic gold sites with 11 gold (925, 926)**
+### Q250. ~~Which rewards go on which terrain?~~ — **answered 2026-10-04: as Andrei laid out, every reward keeping its amount and its sites; the moved magic gold guarded by the usual rule; every reward keeping its pictures; the rulebook's short line; the softer forest plan rerun, and no longer beating normal play over 24 games (920-924, 927-929); then forest stamina 6 sites with 10 units and plains magic gold 5 sites with 8 gold, his own numbers, and on 4-5 player maps 9 stamina sites with 14 units and 7 magic gold sites with 11 gold (925, 926)**
 
 Andrei, 2026-10-04 at 08:08: *"we seem to have found a simple super strategy:
 buy forest speed +4 and go to the forest. We need to change the allocation of
@@ -3624,6 +3624,24 @@ named the 2-3 player numbers only, so the 4-5 player ones were asked:
 926. **Magic gold on the plains on 4-5 player maps:** 7 sites with 11 gold, 1.4
      times as usual, so the plains have 45 sites and the map 67 gold instead of
      63 (recommended), or other numbers. **Answered**: A.
+
+The softer forest plan (924), played by the Buying skills thread on this
+build: on 2 maps it won 4 of 6 games, as before the move, too few to tell.
+
+927. **A bigger check:** the plan from every seat on the 8 one-piece forest
+     maps that showed the super strategy, plus a normal game on each, 32
+     games (recommended), or stop. **Answered**: A. The plan seat won 8 of
+     24 and shared none; the same seats playing normally won 7 and shared 2
+     (before the move: 15 and 1 shared, against 8). Against its own normal
+     game it finished better 10 times, the same 5 and worse 9, and averaged
+     14.5 gold against 15.8. After the forest the plan seats mostly bought
+     mountains speed and took mountain gold.
+928. **Which maps:** asked when the terrain seeds change (Q245) merged while
+     the games ran on the map shapes from before it; they finished before an
+     answer, so it was moot.
+929. **Rerun on the merged maps:** stop here, since those maps nearly always
+     split the forest, where the plan was weaker even before the move
+     (recommended, inferred), or 32 more games. **Answered**: A.
 
 Measured over 300 maps per size as built (in road steps from the start to the
 nearest site): magic 5 → 13, stamina 5 → 13, mountains speed 12 → 4,
