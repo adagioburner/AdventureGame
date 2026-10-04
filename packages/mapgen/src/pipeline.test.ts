@@ -3,12 +3,16 @@ import { describe, expect, it } from 'vitest';
 import {
   COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE,
   DEFAULT_RULESET,
+  FORTRESS_MIN_LINE_SPACES,
+  FORTRESS_MIN_ROAD_STEPS,
+  fortressesApartOf,
   LARGER_MAP_RULESET,
   REWARD_KINDS,
   SKILL_KINDS,
   TERRAINS,
   withMagicGuardChance,
   withoutDeepStart,
+  withoutFortressesApart,
   withoutSeparateAreas,
   withRewardsBeforeMove,
   type Ruleset,
@@ -441,6 +445,99 @@ describe('Q250 — the rewards by terrain since they moved', () => {
       }
     }
     expect(magic).toBeGreaterThan(0);
+  }, 30000);
+});
+
+describe('Q255 — the fortresses kept apart, by road and on the map', () => {
+  // Andrei, 2026-10-04: "make sure that two large gold prises guarded by combat
+  // on plains are well separated from each other". Every pair at least 12 road
+  // steps and 5 spaces in a straight line apart (930 B, 931), the three on the
+  // larger map as well (932 A).
+  const isFortress = (poi: GameMap['pois'][number]): boolean =>
+    poi.terrain === 'plains' && poi.reward.kind === 'gold' && poi.group.guard === 'fighting';
+
+  function stepsFrom(map: GameMap, from: NodeId): number[] {
+    const steps = map.graph.nodes.map(() => Number.POSITIVE_INFINITY);
+    steps[from] = 0;
+    const queue = [from];
+    for (let head = 0; head < queue.length; head++) {
+      const node = queue[head] as NodeId;
+      for (const next of map.graph.adjacency[node] ?? []) {
+        if (steps[next] !== Number.POSITIVE_INFINITY) continue;
+        steps[next] = (steps[node] as number) + 1;
+        queue.push(next);
+      }
+    }
+    return steps;
+  }
+
+  /** Road steps and straight-line spaces between every pair of the map's fortresses. */
+  function pairsOf(map: GameMap): { steps: number; line: number }[] {
+    const length = (edge: { a: NodeId; b: NodeId }): number => {
+      const a = map.graph.nodes[edge.a]?.position, b = map.graph.nodes[edge.b]?.position;
+      return a === undefined || b === undefined ? 0 : Math.hypot(a.x - b.x, a.y - b.y);
+    };
+    const lengths = map.graph.edges.map(length).sort((x, y) => x - y);
+    const space = lengths[Math.floor(lengths.length / 2)] as number;
+    const nodes = map.pois.filter(isFortress).map((poi) => poi.node);
+    const pairs: { steps: number; line: number }[] = [];
+    nodes.forEach((a, i) => {
+      const steps = stepsFrom(map, a);
+      for (const b of nodes.slice(i + 1)) pairs.push({ steps: steps[b] as number, line: length({ a, b }) / space });
+    });
+    return pairs;
+  }
+
+  const farEnough = ({ steps, line }: { steps: number; line: number }): boolean =>
+    steps >= FORTRESS_MIN_ROAD_STEPS && line >= FORTRESS_MIN_LINE_SPACES;
+
+  it('keeps every pair 12 road steps and 5 spaces in a line apart, two on the standard map and three on the larger', () => {
+    expect([FORTRESS_MIN_ROAD_STEPS, FORTRESS_MIN_LINE_SPACES]).toEqual([12, 5]);
+    for (const [ruleset, count] of [[DEFAULT_RULESET, 2], [LARGER_MAP_RULESET, 3]] as const) {
+      for (const seed of SEEDS) {
+        const map = mapOf(seed, ruleset);
+        expect(map.pois.filter(isFortress)).toHaveLength(count);
+        for (const pair of pairsOf(map)) expect(farEnough(pair)).toBe(true);
+      }
+    }
+  }, 60000);
+
+  it('leaves a map whose fortresses were drawn far enough apart exactly as it was', () => {
+    let unchanged = 0;
+    for (const seed of SEEDS) {
+      const before = mapOf(seed, withoutFortressesApart(DEFAULT_RULESET));
+      if (!pairsOf(before).every(farEnough)) continue;
+      unchanged++;
+      const after = mapOf(seed);
+      expect(after.graph).toEqual(before.graph);
+      expect(after.pois).toEqual(before.pois);
+    }
+    expect(unchanged).toBeGreaterThan(0);
+  }, 30000);
+
+  it("moves one of adventure's fortresses, and changes nothing but the sites it swapped and their rows' gold", () => {
+    const before = mapOf('adventure', withoutFortressesApart(DEFAULT_RULESET));
+    const after = mapOf('adventure');
+    expect(pairsOf(before).every(farEnough)).toBe(false);
+    expect(after.graph).toEqual(before.graph);
+    const changed = after.pois.filter((poi, index) => JSON.stringify(poi) !== JSON.stringify(before.pois[index]));
+    expect(changed.length).toBeGreaterThanOrEqual(2);
+    after.pois.forEach((poi, index) => {
+      const was = before.pois[index] as GameMap['pois'][number];
+      // No site moves and none is more or less remote: only what lies on them.
+      expect(poi.node).toBe(was.node);
+      expect(poi.remoteness).toBe(was.remoteness);
+      if (JSON.stringify(poi) === JSON.stringify(was)) return;
+      expect(poi.terrain).toBe('plains');
+      expect([poi.reward.kind, was.reward.kind]).toEqual(['gold', 'gold']);
+    });
+  }, 30000);
+
+  it("draws a game's map from before with its fortresses where they were drawn", () => {
+    expect(fortressesApartOf(DEFAULT_RULESET)).toBe(true);
+    expect(fortressesApartOf(LARGER_MAP_RULESET)).toBe(true);
+    expect(fortressesApartOf(withoutFortressesApart(LARGER_MAP_RULESET))).toBe(false);
+    expect(pairsOf(mapOf('adventure', withoutFortressesApart(DEFAULT_RULESET))).every(farEnough)).toBe(false);
   }, 30000);
 });
 

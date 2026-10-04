@@ -2,6 +2,7 @@ import {
   COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE,
   RESPAWN_RULES,
   deepStartOf,
+  fortressesApartOf,
   magicGuardChanceOf,
   mapSizeOfRuleset,
   rewardsMovedOf,
@@ -92,6 +93,12 @@ export interface KeptGame {
    * is made again as it began.
    */
   readonly rewardsMoved?: boolean;
+  /**
+   * [Q255] Whether the game's map keeps the plains' fortresses apart. Absent
+   * on a game kept before, whose map is made again with its fortresses where
+   * they were drawn (933 A).
+   */
+  readonly fortressesApart?: boolean;
 }
 
 const KEY = 'adventure.hotseat';
@@ -137,6 +144,7 @@ export function keep(seed: string, setup: LocalSetup, order: readonly string[] |
     staminaSites: staminaSitesOf(game.setup.map.ruleset),
     separateAreas: separateAreasOf(game.setup.map.ruleset),
     rewardsMoved: rewardsMovedOf(game.setup.map.ruleset),
+    fortressesApart: fortressesApartOf(game.setup.map.ruleset),
   };
   try {
     window.localStorage.setItem(KEY, JSON.stringify(kept));
@@ -181,6 +189,11 @@ export function keptSeparateAreas(kept: KeptGame): boolean {
 /** Whether `kept`'s map has the rewards where they moved to: see `KeptGame.rewardsMoved`. */
 export function keptRewardsMoved(kept: KeptGame): boolean {
   return kept.rewardsMoved === true;
+}
+
+/** Whether `kept`'s map keeps the fortresses apart: see `KeptGame.fortressesApart`. */
+export function keptFortressesApart(kept: KeptGame): boolean {
+  return kept.fortressesApart === true;
 }
 
 /** The kept game played again on `map`; `null` if its turns no longer replay. */

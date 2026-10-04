@@ -3658,7 +3658,7 @@ moved and added a seed draws a different map than before. Engine details:
 since no forest row has gold any more, `FOREST_MAGIC_GUARD_CHANCE` only
 reaches maps from before, through `REWARD_TABLE_BEFORE_MOVE`.
 
-### Q255. How far apart are the plains' fortresses? — **asking (930-933)**
+### Q255. ~~How far apart are the plains' fortresses?~~ — **answered 2026-10-04: by road and on the map, every pair at least 12 road steps and 5 spaces in a straight line apart, the three on 4-5 player maps by the same numbers; games already started keep their maps (930 B, 931, 932 A, 933 A)**
 
 Andrei, 2026-10-04 at 19:29: *"I'd like to make sure that two large gold
 prises guarded by combat on plains are well separated from each other"*. The
@@ -3687,6 +3687,33 @@ line on 1% of 2-3 player maps and 5% of 4-5 player ones.
      number apart (recommended), or a bigger number, 14.
 933. **Games already started:** keep the maps they began with (recommended),
      or not.
+
+**Answered**, 2026-10-04 by card: 930 B, *"Road and screen"*; 931, *"12
+steps"* (*"Cool, 12 steps it is"*); 932 A, *"Same number"*; 933 A, *"Keep
+their maps"*. Before answering 931 he asked *"How does 931 affect the
+remoteness score of the sites they are placed on?"*, and whether keeping them
+apart leaves fewer sites to choose from, so they *cannot* go on the most remote
+ones. Measured over 200 maps per size: no site's remoteness changes, since it
+depends only on where the sites are and the rule moves none; the fortresses
+average a little more remote, 0.19 → 0.21 on 2-3 player maps and 0.17 → 0.19
+on 4-5 player ones at 12 steps, because sites close together are the ones
+ruled out; they land on sites above 0.3 remoteness a little more often, 18% →
+22% (16% → 18%), since remoteness never chose their sites and the rule only
+throws out draws that are too close; and the gold splits, the bigger pile on
+the more remote fortress, and the guards (10 on 94%) are as before.
+
+Built as §4.3 step 1b with `FORTRESS_MIN_ROAD_STEPS` 12 and
+`FORTRESS_MIN_LINE_SPACES` 5 in `packages/config/src/content.ts`: the
+fortresses are drawn as before, and one too close to those kept moves to a
+random plains site far enough from all of them, whose reward goes to the site
+it left. A map whose fortresses were already far enough apart is exactly as it
+was. Measured on the build, 200 maps per size: a fortress moves on 33% of 2-3
+player maps and 70% of 4-5 player ones, where a median 3 and 4 sites come out
+different (at most 7 and 13); the closest two are now a median 18 road steps
+and 10.7 spaces apart (16 and 8.7 before) and 15 and 8.7 on 4-5 player maps
+(10 and 5.6), none under 12 or 5; no map had to be drawn again; the fortresses'
+guards are as before (10 on 94% and 85%). The rulebook is unchanged: it never
+said where the fortresses go, and the rule is an engine detail kept in GDD.md.
 
 ---
 

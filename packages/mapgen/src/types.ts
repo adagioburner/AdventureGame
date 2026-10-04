@@ -85,8 +85,16 @@ export interface GenerationContext {
  * `poi_quota_unsatisfiable` used to live here, for a terrain with more leaves
  * than its `POI_COUNT`. [SOURCE §3/§9, chat] settled that without a rejection:
  * surplus leaves become stamina POIs, so the case no longer aborts an attempt.
+ *
+ * `sites_apart_unreachable` [Q255]: a row that keeps its POIs `apart` found no
+ * POI of its terrain far enough from the ones it kept. It is §2.1's answer for
+ * a map that cannot be finished; none of 400 measured maps needed it.
  */
-export type RejectionReason = 'disconnected' | 'leaf_count_out_of_range' | 'terrain_share_unreachable';
+export type RejectionReason =
+  | 'disconnected'
+  | 'leaf_count_out_of_range'
+  | 'terrain_share_unreachable'
+  | 'sites_apart_unreachable';
 
 export class GenerationRejected extends Error {
   readonly reason: RejectionReason;

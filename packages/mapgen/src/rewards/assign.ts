@@ -1,6 +1,6 @@
-import { TERRAINS, type GameConfig, type RewardGroupSpec, type Ruleset, type Terrain } from '@adventure/config';
+import { TERRAINS, type GameConfig, type RewardGroupSpec, type Ruleset, type SitesApart, type Terrain } from '@adventure/config';
 import type { NodeId, Rng } from '@adventure/core';
-import type { MapDraft, PoiAssignment } from '../types.ts';
+import { GenerationRejected, type MapDraft, type PoiAssignment } from '../types.ts';
 
 /**
  * §4.3 step 3's weight, verbatim:
@@ -69,6 +69,102 @@ export function partitionPoisIntoGroups(
     }
   }
   return assignments;
+}
+
+/**
+ * §4.3 step 1b — [Q255] keep a row's POIs `apart`.
+ *
+ * Andrei, 2026-10-04: "make sure that two large gold prises guarded by combat
+ * on plains are well separated from each other". Step 1 draws the row's POIs
+ * at random; this goes through them in the order drawn and keeps each one
+ * that is far enough from every one kept before it, by road and in a straight
+ * line (930 B). One that is too close swaps places with a POI of another row
+ * of the same terrain, drawn at random among those far enough from every one
+ * kept, which takes the place it leaves. So every pair of the row ends up far
+ * enough apart, and a map whose row was drawn far enough apart is left exactly
+ * as it was.
+ *
+ * The draw comes from a stream of its own, forked from the map's by the row,
+ * so the map's stream moves on as if nothing had been swapped: on a map where
+ * a POI moves, only it, the POI it swapped with and the units of their two
+ * rows come out different. It is still an exact function of `(seed, ruleset)`.
+ *
+ * With no POI far enough left, the map cannot be finished and §2.1 draws
+ * another; on measured maps that never happens.
+ */
+export function keepGroupApart(
+  draft: MapDraft,
+  terrain: readonly PoiAssignment[],
+  group: { readonly start: number; readonly count: number },
+  apart: SitesApart,
+  rng: Rng,
+): PoiAssignment[] {
+  const assignments = terrain.slice();
+  const roadLength = medianRoadLength(draft);
+  const stepsFrom = new Map<NodeId, readonly number[]>();
+  const kept: NodeId[] = [];
+  const farEnough = (node: NodeId): boolean =>
+    kept.every((other) => {
+      let steps = stepsFrom.get(other);
+      if (steps === undefined) {
+        steps = roadStepsFrom(draft, other);
+        stepsFrom.set(other, steps);
+      }
+      const a = draft.positions[other], b = draft.positions[node];
+      const line = a === undefined || b === undefined ? 0 : Math.hypot(a.x - b.x, a.y - b.y) / roadLength;
+      return (steps[node] as number) >= apart.roadSteps && line >= apart.lineSpaces;
+    });
+
+  const inGroup = (index: number): boolean => index >= group.start && index < group.start + group.count;
+  for (let index = group.start; index < group.start + group.count; index++) {
+    const assignment = assignments[index] as PoiAssignment;
+    if (!farEnough(assignment.node)) {
+      const candidates: number[] = [];
+      assignments.forEach((other, at) => {
+        if (!inGroup(at) && farEnough(other.node)) candidates.push(at);
+      });
+      if (candidates.length === 0) {
+        throw new GenerationRejected(
+          'sites_apart_unreachable',
+          '7-place-pois',
+          `no ${assignment.terrain} POI is ${apart.roadSteps} road steps and ${apart.lineSpaces} spaces from the ${kept.length} kept`,
+        );
+      }
+      const at = rng.pick(candidates);
+      const other = assignments[at] as PoiAssignment;
+      assignments[index] = { ...assignment, node: other.node };
+      assignments[at] = { ...other, node: assignment.node };
+    }
+    kept.push((assignments[index] as PoiAssignment).node);
+  }
+  return assignments;
+}
+
+/** Road steps from `from` to every node, over any terrain, by breadth-first search on the roads. */
+function roadStepsFrom(draft: MapDraft, from: NodeId): number[] {
+  const steps = new Array<number>(draft.positions.length).fill(Number.POSITIVE_INFINITY);
+  steps[from] = 0;
+  const queue: NodeId[] = [from];
+  for (let head = 0; head < queue.length; head++) {
+    const node = queue[head] as NodeId;
+    for (const next of draft.adjacency[node] ?? []) {
+      if (steps[next] !== Number.POSITIVE_INFINITY) continue;
+      steps[next] = (steps[node] as number) + 1;
+      queue.push(next);
+    }
+  }
+  return steps;
+}
+
+/** [Q255] One space in a straight line: the median length of the map's roads. */
+function medianRoadLength(draft: MapDraft): number {
+  const lengths = draft.edges
+    .map((edge) => {
+      const a = draft.positions[edge.a], b = draft.positions[edge.b];
+      return a === undefined || b === undefined ? 0 : Math.hypot(a.x - b.x, a.y - b.y);
+    })
+    .sort((left, right) => left - right);
+  return lengths[Math.floor(lengths.length / 2)] ?? 1;
 }
 
 /**
@@ -183,7 +279,17 @@ export function assignRewards(draft: MapDraft, ruleset: Ruleset, rng: Rng): void
     const nodes = draft.poiNodes.filter(
       (node) => !spoken.has(node) && draft.terrain[node] === terrain,
     );
-    const groups = partitionPoisIntoGroups(terrain, nodes, rows, rng);
+    let groups = partitionPoisIntoGroups(terrain, nodes, rows, rng);
+
+    // §4.3 step 1b [Q255]: rows that keep their POIs apart, before any unit is given out.
+    let start = 0;
+    for (const row of rows) {
+      if (row.apart !== undefined) {
+        const side = rng.fork(`apart:${terrain}:${row.kind}:${row.guard ?? 'unguarded'}`);
+        groups = keepGroupApart(draft, groups, { start, count: row.poiCount }, row.apart, side);
+      }
+      start += row.poiCount;
+    }
 
     let cursor = 0;
     for (const row of rows) {
