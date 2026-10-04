@@ -2,6 +2,7 @@ import {
   rulesetForMapSize,
   withMagicGuardChance,
   withoutDeepStart,
+  withoutFortressesApart,
   withoutSeparateAreas,
   withoutStaminaSites,
   withRewardsBeforeMove,
@@ -25,7 +26,8 @@ import { defaultRemotenessScorer } from '@adventure/sim';
  * draws it as before the forest and mountains grew in separate areas, with
  * valleys, likewise. [Q250] `rewardsMoved` false draws it with the rewards on
  * the terrains they had before they moved, likewise; every older difference
- * above is drawn on top of that.
+ * above is drawn on top of that. [Q255] `fortressesApart` false draws it with
+ * the fortresses where they were drawn, not kept apart, likewise.
  */
 export function mapFor(
   seed: Seed,
@@ -35,13 +37,15 @@ export function mapFor(
   staminaSites = true,
   separateAreas = true,
   rewardsMoved = true,
+  fortressesApart = true,
 ): GameMap {
   const latest = rulesetForMapSize(size);
   const today = rewardsMoved ? latest : withRewardsBeforeMove(latest);
   const chance = magicGuardChance === undefined ? today : withMagicGuardChance(today, magicGuardChance);
   const start = deepStart ? chance : withoutDeepStart(chance);
   const stamina = staminaSites ? start : withoutStaminaSites(start);
-  const ruleset = separateAreas ? stamina : withoutSeparateAreas(stamina);
+  const areas = separateAreas ? stamina : withoutSeparateAreas(stamina);
+  const ruleset = fortressesApart ? areas : withoutFortressesApart(areas);
   return generateMap({ seed, ruleset, remotenessScorer: defaultRemotenessScorer });
 }
 

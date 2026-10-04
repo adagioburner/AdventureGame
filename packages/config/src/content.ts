@@ -1,4 +1,4 @@
-import type { GameContent, RewardTable } from './types.ts';
+import type { GameContent, RewardTable, SitesApart } from './types.ts';
 
 /**
  * GDD.md §4.2 "Reward totals per terrain", transcribed row for row.
@@ -41,6 +41,23 @@ export const FOREST_MAGIC_GUARD_CHANCE = 1;
 export const COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE = 0.5;
 
 /**
+ * [Q255] Andrei, 2026-10-04: "make sure that two large gold prises guarded by
+ * combat on plains are well separated from each other". The fortresses, the
+ * plains' gold guarded by combat, are drawn at least this many road steps
+ * apart, every pair of them, on both map sizes (931, 932 A)...
+ */
+export const FORTRESS_MIN_ROAD_STEPS = 12;
+
+/** [Q255] ...and at least this many spaces apart in a straight line, so they never look close on screen (930 B). */
+export const FORTRESS_MIN_LINE_SPACES = 5;
+
+/** [Q255] The fortresses' row keeps its sites this far apart: §4.3 step 1b. */
+export const FORTRESSES_APART: SitesApart = {
+  roadSteps: FORTRESS_MIN_ROAD_STEPS,
+  lineSpaces: FORTRESS_MIN_LINE_SPACES,
+};
+
+/**
  * [Q250] Andrei, 2026-10-04: "we seem to have found a simple super strategy:
  * buy forest speed +4 and go to the forest. We need to change the allocation
  * of resources between terrains." The plains get the three speeds, "the gold
@@ -58,8 +75,8 @@ export const DEFAULT_REWARD_TABLE: RewardTable = {
     { kind: 'plains_move', guard: null, totalUnits: 20, poiCount: 10 },
     { kind: 'forest_move', guard: null, totalUnits: 15, poiCount: 7 },
     { kind: 'mountain_move', guard: null, totalUnits: 15, poiCount: 8 },
-    // [SOURCE §1.1] Informally "cities"; Andrei's "fortresses".
-    { kind: 'gold', guard: 'fighting', totalUnits: 10, poiCount: 2 },
+    // [SOURCE §1.1] Informally "cities"; Andrei's "fortresses". [Q255] Kept apart.
+    { kind: 'gold', guard: 'fighting', totalUnits: 10, poiCount: 2, apart: FORTRESSES_APART },
     // [Q250] The forest's magic-guarded gold, moved, and grown from 5 gold on 4 sites.
     { kind: 'gold', guard: 'magic', totalUnits: 8, poiCount: 5 },
   ],
@@ -125,7 +142,8 @@ export const LARGER_MAP_REWARD_TABLE: RewardTable = {
     { kind: 'plains_move', guard: null, totalUnits: 28, poiCount: 14 },
     { kind: 'forest_move', guard: null, totalUnits: 21, poiCount: 10 },
     { kind: 'mountain_move', guard: null, totalUnits: 21, poiCount: 11 },
-    { kind: 'gold', guard: 'fighting', totalUnits: 14, poiCount: 3 },
+    // [Q255, 932 A] Three fortresses, every pair kept as far apart as on the standard map.
+    { kind: 'gold', guard: 'fighting', totalUnits: 14, poiCount: 3, apart: FORTRESSES_APART },
     // [Q250, 926 A] 1.4 × the standard map's 8 gold on 5 sites.
     { kind: 'gold', guard: 'magic', totalUnits: 11, poiCount: 7 },
   ],

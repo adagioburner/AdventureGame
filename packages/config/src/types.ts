@@ -554,6 +554,27 @@ export interface RewardGroupSpec {
    * forest POI are assigned randomly either magic or combat guards".
    */
   readonly magicGuardChance?: number;
+  /**
+   * [Q255] How far apart this group's POIs must be from one another, every
+   * pair of them: §4.3 step 1b. Absent means anywhere, as every group was
+   * before; a map made before keeps its fortresses where they were drawn.
+   */
+  readonly apart?: SitesApart;
+}
+
+/**
+ * [Q255] Andrei, 2026-10-04: "make sure that two large gold prises guarded by
+ * combat on plains are well separated from each other". Two POIs are far
+ * enough apart when both distances hold (930 B).
+ */
+export interface SitesApart {
+  /** The fewest road steps between them, over any terrain: the walk a figure makes (931). */
+  readonly roadSteps: number;
+  /**
+   * The fewest spaces between them in a straight line on the map, one space
+   * being the map's median road length, so they never look close on screen.
+   */
+  readonly lineSpaces: number;
 }
 
 /** §4.2, keyed by terrain. Rows are ordered as in the GDD for readability. */

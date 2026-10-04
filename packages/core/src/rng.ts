@@ -31,10 +31,12 @@ export interface Rng {
   /**
    * A deterministic independent stream derived from this one's seed.
    *
-   * Map generation deliberately does *not* use this — §2.1 requires one single
-   * stream threaded through all eight steps. `fork` exists for streams that
-   * must be kept apart for a different reason, e.g. the server-side die-roll
-   * stream (§8), which must not be predictable from the public map seed.
+   * Map generation draws from one single stream threaded through all its
+   * steps (§2.1), with one exception: §4.3 step 1b [Q255] forks a stream per
+   * row it keeps apart, so a swap there leaves the rest of the map as it was.
+   * `fork` also serves streams that must be kept apart for a different
+   * reason, e.g. the server-side die-roll stream (§8), which must not be
+   * predictable from the public map seed.
    */
   fork(label: string): Rng;
 }

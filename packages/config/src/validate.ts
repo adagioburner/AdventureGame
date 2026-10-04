@@ -78,6 +78,21 @@ export function validateRuleset(ruleset: Ruleset): void {
           );
         }
       }
+      // Q255: road steps are whole steps; a straight line can be any length.
+      if (row.apart !== undefined) {
+        if (!(Number.isInteger(row.apart.roadSteps) && row.apart.roadSteps >= 0)) {
+          problems.push(
+            `Q255: ${terrain} group ${row.kind}/${row.guard ?? 'unguarded'} keeps its POIs ${row.apart.roadSteps} ` +
+              `road steps apart; that must be a whole number of steps, 0 or more.`,
+          );
+        }
+        if (!(row.apart.lineSpaces >= 0)) {
+          problems.push(
+            `Q255: ${terrain} group ${row.kind}/${row.guard ?? 'unguarded'} keeps its POIs ${row.apart.lineSpaces} ` +
+              `spaces apart in a straight line; that must be 0 or more.`,
+          );
+        }
+      }
     }
     // A (kind, guard) key must appear at most once per terrain: the group *is*
     // the partition unit, so a duplicate key would mean two partitions of the

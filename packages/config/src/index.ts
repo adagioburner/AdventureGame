@@ -22,6 +22,9 @@ export {
   DEFAULT_REWARD_TABLE,
   COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE,
   FOREST_MAGIC_GUARD_CHANCE,
+  FORTRESS_MIN_LINE_SPACES,
+  FORTRESS_MIN_ROAD_STEPS,
+  FORTRESSES_APART,
   LARGER_MAP_GAME_CONTENT,
   LARGER_MAP_REWARD_TABLE,
   LARGER_MAP_REWARD_TABLE_BEFORE_MOVE,
@@ -43,7 +46,7 @@ import {
   REWARD_TABLE_BEFORE_MOVE,
 } from './content.ts';
 import type { RewardTable, Ruleset } from './types.ts';
-import type { PerTerrain, Terrain } from './vocabulary.ts';
+import { TERRAINS, type PerTerrain, type Terrain } from './vocabulary.ts';
 
 /** The v1 ruleset: GDD.md §11 defaults + §4.2 content + engineering knobs. */
 export const DEFAULT_RULESET: Ruleset = {
@@ -214,6 +217,34 @@ export function withoutSeparateAreas(ruleset: Ruleset): Ruleset {
   if (!separateAreasOf(ruleset)) return ruleset;
   const { TERRAIN_SEEDS: _seeds, KEPT_APART: _apart, ...map } = ruleset.config.map;
   return { ...ruleset, config: { ...ruleset.config, map: { ...map, VALLEY_COUNT: EARLIER_VALLEY_COUNT } } };
+}
+
+/**
+ * [Q255] Whether maps made with `ruleset` keep the fortresses apart: whether
+ * any row of its table has `apart`. False for a map made before, online or
+ * kept on one device, which keeps its fortresses where they were drawn (933 A).
+ */
+export function fortressesApartOf(ruleset: Ruleset): boolean {
+  return TERRAINS.some((terrain) => ruleset.content.REWARD_TABLE[terrain].some((row) => row.apart !== undefined));
+}
+
+/**
+ * [Q255] `ruleset` as it was before the fortresses were kept apart, so a hot
+ * seat game kept from before gets back the map it began on. `ruleset` itself
+ * when it already is.
+ */
+export function withoutFortressesApart(ruleset: Ruleset): Ruleset {
+  if (!fortressesApartOf(ruleset)) return ruleset;
+  const anywhere = (rows: RewardTable[Terrain]): RewardTable[Terrain] =>
+    rows.map(({ apart: _apart, ...row }) => row);
+  const table = ruleset.content.REWARD_TABLE;
+  return {
+    ...ruleset,
+    content: {
+      ...ruleset.content,
+      REWARD_TABLE: { plains: anywhere(table.plains), forest: anywhere(table.forest), mountain: anywhere(table.mountain) },
+    },
+  };
 }
 
 /**

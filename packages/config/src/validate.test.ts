@@ -2,8 +2,11 @@ import { describe, expect, it } from 'vitest';
 
 import {
   DEFAULT_RULESET,
+  FORTRESSES_APART,
+  fortressesApartOf,
   LARGER_MAP_RULESET,
   rewardsMovedOf,
+  withoutFortressesApart,
   withoutSeparateAreas,
   withoutStaminaSites,
   withRewardsBeforeMove,
@@ -195,6 +198,28 @@ describe('validateRuleset', () => {
     expect(withRewardsBeforeMove(before)).toBe(before);
     for (const ruleset of [before, largerBefore, withoutStaminaSites(before), withoutStaminaSites(largerBefore)]) {
       expect(() => validateRuleset(ruleset)).not.toThrow();
+    }
+  });
+
+  it('keeps the plains fortresses 12 road steps and 5 spaces apart, and takes that away for a map from before (Q255)', () => {
+    expect(FORTRESSES_APART).toEqual({ roadSteps: 12, lineSpaces: 5 });
+    for (const ruleset of [DEFAULT_RULESET, LARGER_MAP_RULESET]) {
+      expect(fortressesApartOf(ruleset)).toBe(true);
+      const kept = (['plains', 'forest', 'mountain'] as const).flatMap((terrain) =>
+        ruleset.content.REWARD_TABLE[terrain].filter((row) => row.apart !== undefined).map((row) => ({ terrain, row })),
+      );
+      expect(kept.map(({ terrain, row }) => `${terrain} ${row.kind}/${row.guard}`)).toEqual(['plains gold/fighting']);
+      const before = withoutFortressesApart(ruleset);
+      expect(fortressesApartOf(before)).toBe(false);
+      expect(withoutFortressesApart(before)).toBe(before);
+      expect(before.content.REWARD_TABLE.plains.map(({ apart: _apart, ...row }) => row)).toEqual(before.content.REWARD_TABLE.plains);
+      expect(() => validateRuleset(before)).not.toThrow();
+    }
+    for (const apart of [{ roadSteps: -1, lineSpaces: 5 }, { roadSteps: 12.5, lineSpaces: 5 }, { roadSteps: 12, lineSpaces: -1 }]) {
+      const ruleset = clone();
+      const row = plainsRows(ruleset).find((spec) => spec.apart !== undefined) as RewardGroupSpec;
+      (row as { apart: unknown }).apart = apart;
+      expect(() => validateRuleset(ruleset)).toThrow(/Q255/);
     }
   });
 
