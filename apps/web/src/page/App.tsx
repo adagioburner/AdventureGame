@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   DEFAULT_RULESET,
-  FOREST_MAGIC_GUARD_CHANCE,
   deepStartOf,
   magicGuardChanceOf,
   mapSizeForPlayers,
   mapSizeOfRuleset,
+  rewardsMovedOf,
   staminaSitesOf,
   type MapSize,
 } from '@adventure/config';
@@ -14,7 +14,17 @@ import { atlasOf, buildArtCatalog, type ArtCatalog } from '../art/catalog.ts';
 import { ART_FILES } from '../art/files.ts';
 import { workOutRouteLists } from '../modes/computer.ts';
 import { HotseatGame, newDiceSeed } from '../modes/hotseat.ts';
-import { forgetKept, keep, keptDeepStart, keptMagicGuardChance, keptMapSize, keptStaminaSites, readKept, replayKept } from '../modes/kept.ts';
+import {
+  forgetKept,
+  keep,
+  keptDeepStart,
+  keptMagicGuardChance,
+  keptMapSize,
+  keptRewardsMoved,
+  keptStaminaSites,
+  readKept,
+  replayKept,
+} from '../modes/kept.ts';
 import { hotseatPlay } from '../modes/play.ts';
 import { loadArt, type LoadedArt } from '../render/pixi/textures.ts';
 import { buildMapScene, type MapScene } from '../render/sceneModel.ts';
@@ -101,13 +111,14 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
           ? null
           : mapSizeForPlayers(setup.seats.length);
   // [Q185, 730 A] Likewise the chance its forest gold is magic-guarded at: a
-  // kept game's own, which may be the coin flip it began with; otherwise today's.
+  // kept game's own, which may be the coin flip it began with; otherwise
+  // today's (undefined), which since Q250 has no forest gold at all.
   const magicChance =
     game !== null
       ? magicGuardChanceOf(game.setup.map.ruleset)
       : resuming && kept !== null
         ? keptMagicGuardChance(kept)
-        : FOREST_MAGIC_GUARD_CHANCE;
+        : undefined;
   // [Q227] And whether it starts deep in the plains: a kept game's own,
   // which may be from before it did; otherwise today's.
   const deepStart =
@@ -115,6 +126,9 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
   // [Q240] And whether its plains have stamina sites, likewise.
   const staminaSites =
     game !== null ? staminaSitesOf(game.setup.map.ruleset) : resuming && kept !== null ? keptStaminaSites(kept) : true;
+  // [Q250] And whether its rewards are on the terrains they moved to, likewise.
+  const rewardsMoved =
+    game !== null ? rewardsMovedOf(game.setup.map.ruleset) : resuming && kept !== null ? keptRewardsMoved(kept) : true;
 
   useEffect(() => {
     if (size === null) return;
@@ -126,13 +140,13 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
     // Let "Drawing the map" paint before generation takes the main thread.
     const timer = window.setTimeout(() => {
       try {
-        setMap(mapFor(seed, size, magicChance, deepStart, staminaSites));
+        setMap(mapFor(seed, size, magicChance, deepStart, staminaSites, rewardsMoved));
       } catch (error) {
         setProblem(error instanceof Error ? error.message : String(error));
       }
     }, 30);
     return () => window.clearTimeout(timer);
-  }, [seed, size, magicChance, deepStart, staminaSites]);
+  }, [seed, size, magicChance, deepStart, staminaSites, rewardsMoved]);
 
   // [Q56, 66] Once its map is drawn, the kept game is played again to where it was.
   useEffect(() => {
@@ -144,7 +158,8 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
       mapSizeOfRuleset(map.ruleset) !== keptMapSize(kept) ||
       magicGuardChanceOf(map.ruleset) !== keptMagicGuardChance(kept) ||
       deepStartOf(map.ruleset) !== keptDeepStart(kept) ||
-      staminaSitesOf(map.ruleset) !== keptStaminaSites(kept)
+      staminaSitesOf(map.ruleset) !== keptStaminaSites(kept) ||
+      rewardsMovedOf(map.ruleset) !== keptRewardsMoved(kept)
     ) {
       return;
     }
@@ -195,12 +210,13 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
 
   const start = (): void => {
     // Never on the map of the number of players before, while the new one is drawn.
-    // Nor on a kept game's map with its forest guards from before (Q185).
+    // Nor on a kept game's map from before the rewards moved terrain (Q250),
+    // as every kept map from before is, its forest guards among them (Q185).
     if (
       map === null ||
       setup === null ||
       mapSizeOfRuleset(map.ruleset) !== mapSizeForPlayers(setup.seats.length) ||
-      magicGuardChanceOf(map.ruleset) !== FOREST_MAGIC_GUARD_CHANCE
+      !rewardsMovedOf(map.ruleset)
     ) {
       return;
     }

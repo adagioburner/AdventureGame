@@ -4,6 +4,7 @@ import {
   deepStartOf,
   magicGuardChanceOf,
   mapSizeOfRuleset,
+  rewardsMovedOf,
   staminaSitesOf,
   startingGoldOf,
   type MapSize,
@@ -76,6 +77,13 @@ export interface KeptGame {
    * again as it began, its stamina units worth 1.
    */
   readonly staminaSites?: boolean;
+  /**
+   * [Q250] Whether the game's map has the rewards on the terrains they moved
+   * to: the speeds and the magic-guarded gold on the plains, magic, combat and
+   * stamina in the forest. Absent on a game kept before they moved, whose map
+   * is made again as it began.
+   */
+  readonly rewardsMoved?: boolean;
 }
 
 const KEY = 'adventure.hotseat';
@@ -119,6 +127,7 @@ export function keep(seed: string, setup: LocalSetup, order: readonly string[] |
     startingGold: startingGoldOf(game.setup.map.ruleset),
     deepStart: deepStartOf(game.setup.map.ruleset),
     staminaSites: staminaSitesOf(game.setup.map.ruleset),
+    rewardsMoved: rewardsMovedOf(game.setup.map.ruleset),
   };
   try {
     window.localStorage.setItem(KEY, JSON.stringify(kept));
@@ -153,6 +162,11 @@ export function keptDeepStart(kept: KeptGame): boolean {
 /** Whether `kept`'s map has the plains' stamina sites: see `KeptGame.staminaSites`. */
 export function keptStaminaSites(kept: KeptGame): boolean {
   return kept.staminaSites === true;
+}
+
+/** Whether `kept`'s map has the rewards where they moved to: see `KeptGame.rewardsMoved`. */
+export function keptRewardsMoved(kept: KeptGame): boolean {
+  return kept.rewardsMoved === true;
 }
 
 /** The kept game played again on `map`; `null` if its turns no longer replay. */

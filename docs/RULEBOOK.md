@@ -93,7 +93,7 @@ Stop on an unguarded site and you claim its whole reward. Stop on a guarded one 
 
 Bigger gold stacks have stronger guards, up to 10.
 
-Gold on plains is guarded by combat, in forests by magic, and in the mountains by either.
+There is no gold in forests. On the plains and in the mountains, gold is guarded by combat or magic.
 
 ### Trying again
 

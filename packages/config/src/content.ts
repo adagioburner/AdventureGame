@@ -18,17 +18,19 @@ import type { GameContent, RewardTable } from './types.ts';
  * 2026-10-03: "I'd like to add stamina rewarding sites to plains [...] 5 sites,
  * rewarding 10 stamina units total (and each stamina unit adds 5 stamina).
  * [...] Stamina sites follow the same rules any other reward type does." So
- * the plains have a stamina row (900 A, 901 A), unguarded like the speeds, and
+ * the plains had a stamina row (900 A, 901 A), unguarded like the speeds, and
  * `POI_COUNT.plains` grew by its 5 sites, since invariant 1 below needs each
  * terrain's `poiCount` column to sum to it. What a unit gives is
- * `STAMINA_PER_UNIT` in defaults.ts.
+ * `STAMINA_PER_UNIT` in defaults.ts. Since [Q250] the row is the forest's.
  */
 /**
  * [Q115] The chance that a forest gold POI is guarded by magic instead of by
  * fighting, drawn for each POI on its own (450 A, 451 A). It was 0.5, a coin
  * flip, from 2026-09-30; [Q185] it is 1 since Andrei, 2026-10-01: "make all
  * gold in the forests guarded by magic. Otherwise magic plays too little
- * role". Kept as a chance so a coin flip is this one number away.
+ * role". Kept as a chance so a coin flip is this one number away. [Q250]
+ * Since the rewards moved terrain the forest has no gold, so only
+ * `REWARD_TABLE_BEFORE_MOVE` and the maps from before use it.
  */
 export const FOREST_MAGIC_GUARD_CHANCE = 1;
 
@@ -38,7 +40,47 @@ export const FOREST_MAGIC_GUARD_CHANCE = 1;
  */
 export const COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE = 0.5;
 
+/**
+ * [Q250] Andrei, 2026-10-04: "we seem to have found a simple super strategy:
+ * buy forest speed +4 and go to the forest. We need to change the allocation
+ * of resources between terrains." The plains get the three speeds, "the gold
+ * guarded by magic that used to be in the forest before" and the two
+ * fortresses; the forests get magic, combat and stamina; the mountains stay as
+ * they were. Every row keeps its units and its sites and only moves terrain
+ * (920 A), so the plains have 31 sites and the forest 19. The magic gold's
+ * guards follow §5.2 as all gold does (921 A). The table before is
+ * `REWARD_TABLE_BEFORE_MOVE`, which games started before keep.
+ */
 export const DEFAULT_REWARD_TABLE: RewardTable = {
+  plains: [
+    { kind: 'plains_move', guard: null, totalUnits: 20, poiCount: 10 },
+    { kind: 'forest_move', guard: null, totalUnits: 15, poiCount: 7 },
+    { kind: 'mountain_move', guard: null, totalUnits: 15, poiCount: 8 },
+    // [SOURCE §1.1] Informally "cities"; Andrei's "fortresses".
+    { kind: 'gold', guard: 'fighting', totalUnits: 10, poiCount: 2 },
+    // [Q250] The forest's magic-guarded gold, moved.
+    { kind: 'gold', guard: 'magic', totalUnits: 5, poiCount: 4 },
+  ],
+  forest: [
+    { kind: 'magic', guard: null, totalUnits: 10, poiCount: 6 },
+    { kind: 'fighting', guard: null, totalUnits: 15, poiCount: 8 },
+    // [Q240] The stamina sites, moved here by [Q250].
+    { kind: 'stamina', guard: null, totalUnits: 10, poiCount: 5 },
+  ],
+  mountain: [
+    // Mountain gold is split by guard type. Both rows are `kind: 'gold'`:
+    // the split is a sub-partition of the gold group, not an extra kind.
+    { kind: 'gold', guard: 'fighting', totalUnits: 20, poiCount: 10 },
+    { kind: 'gold', guard: 'magic', totalUnits: 10, poiCount: 5 },
+  ],
+};
+
+/**
+ * [Q250] The rewards by terrain before they moved, which a game started
+ * before keeps: speeds for the plains and forest, magic and stamina on the
+ * plains, and the forest's gold guarded by `FOREST_MAGIC_GUARD_CHANCE`.
+ */
+export const REWARD_TABLE_BEFORE_MOVE: RewardTable = {
   plains: [
     { kind: 'plains_move', guard: null, totalUnits: 20, poiCount: 10 },
     { kind: 'forest_move', guard: null, totalUnits: 15, poiCount: 7 },
@@ -71,9 +113,32 @@ export const DEFAULT_GAME_CONTENT: GameContent = {
  * (gold 45 → 63, speeds and skills 75 → 105). Six rows' sites do not multiply
  * to a whole number; 630 A rounds them to the nearest (9.8 → 10, 8.4 → 8,
  * 2.8 → 3; 11.2 → 11 twice, 5.6 → 6), and each terrain still totals exactly
- * 1.4 × today's sites, 35 / 28 / 21.
+ * 1.4 × today's sites, 35 / 28 / 21. [Q250] Its rows moved terrain with the
+ * standard map's, each keeping its sites (920 A), so the plains have 44 and
+ * the forest 26.
  */
 export const LARGER_MAP_REWARD_TABLE: RewardTable = {
+  plains: [
+    { kind: 'plains_move', guard: null, totalUnits: 28, poiCount: 14 },
+    { kind: 'forest_move', guard: null, totalUnits: 21, poiCount: 10 },
+    { kind: 'mountain_move', guard: null, totalUnits: 21, poiCount: 11 },
+    { kind: 'gold', guard: 'fighting', totalUnits: 14, poiCount: 3 },
+    { kind: 'gold', guard: 'magic', totalUnits: 7, poiCount: 6 },
+  ],
+  forest: [
+    { kind: 'magic', guard: null, totalUnits: 14, poiCount: 8 },
+    { kind: 'fighting', guard: null, totalUnits: 21, poiCount: 11 },
+    // [Q240, 902 A] 1.4 × the stamina sites too: 7 sites, 14 units.
+    { kind: 'stamina', guard: null, totalUnits: 14, poiCount: 7 },
+  ],
+  mountain: [
+    { kind: 'gold', guard: 'fighting', totalUnits: 28, poiCount: 14 },
+    { kind: 'gold', guard: 'magic', totalUnits: 14, poiCount: 7 },
+  ],
+};
+
+/** [Q250] The larger map's rewards before they moved: see `REWARD_TABLE_BEFORE_MOVE`. */
+export const LARGER_MAP_REWARD_TABLE_BEFORE_MOVE: RewardTable = {
   plains: [
     { kind: 'plains_move', guard: null, totalUnits: 28, poiCount: 14 },
     { kind: 'forest_move', guard: null, totalUnits: 21, poiCount: 10 },

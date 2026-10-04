@@ -64,6 +64,8 @@ Status: v1 design, consolidated from `Annotated_Design_Document.md` (the traceab
 
 [SOURCE §3, chat, Q240] Since the plains have stamina sites (§4.2), **30 on plains** (total 65): the 5 stamina POIs are placed like every other plains POI (900 A).
 
+[SOURCE §3, chat, Q250] Since the rewards moved terrain (§4.2), **31 on plains, 19 in forests, 15 in mountains** (still 65), each reward keeping its sites (920 A); 44 / 26 / 21 on the larger map.
+
 [SOURCE §1.1, chat] **A POI's reward is always exactly one kind** — reward kinds (§4.1) are never mixed on the same POI. A POI can still hold multiple *units* of its one kind (a stack, e.g. "plains movement +3").
 
 ---
@@ -90,9 +92,41 @@ Status: v1 design, consolidated from `Annotated_Design_Document.md` (the traceab
 
 ### 4.2 Reward totals per terrain
 
-Three things per kind, all needed by the assignment algorithm in §4.3: the total reward **units** of that kind on the terrain, how many **POIs** on that terrain are dedicated to that kind (these must sum to the terrain's total POI count, since every POI gets exactly one kind, §3), and — for gold specifically — its **guard type**. Where a terrain's gold has more than one guard type (mountain only), the POI-count and unit-total are further split per guard type, since each guard type is effectively its own sub-kind for the §4.3 algorithm.
+Three things per kind, all needed by the assignment algorithm in §4.3: the total reward **units** of that kind on the terrain, how many **POIs** on that terrain are dedicated to that kind (these must sum to the terrain's total POI count, since every POI gets exactly one kind, §3), and — for gold specifically — its **guard type**. Where a terrain's gold has more than one guard type (mountain, and plains since Q250), the POI-count and unit-total are further split per guard type, since each guard type is effectively its own sub-kind for the §4.3 algorithm.
 
-[SOURCE §1.1] / [SOURCE §1.1, chat]
+[SOURCE §1.1] / [SOURCE §1.1, chat] / [SOURCE §4.2, chat, Q250]
+
+| Terrain | Kind | Guard | Total units | POIs of this kind |
+|---|---|---|---|---|
+| Plains (31 POIs) | Plains moving skill | none | 20 | 10 |
+| | Forest moving skill | none | 15 | 7 |
+| | Mountain moving skill (Q250) | none | 15 | 8 |
+| | Gold (informally "cities", Andrei's "fortresses") | fighting | 10 | 2 |
+| | Gold (Q250, the forest's until then) | magic | 5 | 4 |
+| Forest (19 POIs) | Magic skill (Q250) | none | 10 | 6 |
+| | Fighting skill | none | 15 | 8 |
+| | Stamina (Q240, Q250) | none | 10 | 5 |
+| Mountain (15 POIs) | Gold | fighting | 20 | 10 |
+| | Gold | magic | 10 | 5 |
+
+[SOURCE §4.2, chat, Q160, Q250] With 4 or 5 players the map is 40% larger (§11's larger map): every row's units are 1.4 × the above, and its POIs 1.4 × rounded to the nearest whole number (630), so the map has exactly 1.4 × the POIs, 44 / 26 / 21 by terrain.
+
+| Terrain | Kind | Guard | Total units | POIs of this kind |
+|---|---|---|---|---|
+| Plains (44 POIs) | Plains moving skill | none | 28 | 14 |
+| | Forest moving skill | none | 21 | 10 |
+| | Mountain moving skill | none | 21 | 11 |
+| | Gold | fighting | 14 | 3 |
+| | Gold | magic | 7 | 6 |
+| Forest (26 POIs) | Magic skill | none | 14 | 8 |
+| | Fighting skill | none | 21 | 11 |
+| | Stamina | none | 14 | 7 |
+| Mountain (21 POIs) | Gold | fighting | 28 | 14 |
+| | Gold | magic | 14 | 7 |
+
+[SOURCE §4.2, chat, Q250] **The rewards move terrain.** Andrei, 2026-10-04: "we seem to have found a simple super strategy: buy forest speed +4 and go to the forest. We need to change the allocation of resources between terrains", the plains getting the three moving skills, "the gold guarded by magic that used to be in the forest before" and the two fortresses, the forests magic, fighting and stamina, and the mountains staying as they were. The super strategy was measured by the Buying skills thread: a computer seat that bought forest speed +4 on its first turn and headed for the forest won 15 and shared 1 of 24 games from every seat on maps whose forest was one piece, against 8 wins for the same seats playing normally. Every row keeps its units and its POIs and only moves terrain (920 A), so the plains have a POI more and the forest one fewer. The magic-guarded gold is guarded by §5.2 like all gold (921 A): plains POIs are less remote than forest ones, so over 300 maps a 1-unit stack's guard went from 2.2 to 2.9 on average (mostly 3) and a 2-unit stack's from 4.1 to 5.3. Each reward keeps the pictures it had (922 A, §10). Measured over the same maps, in road steps from the start to the nearest POI: magic 5 → 13, stamina 5 → 13, mountain moving skill 12 → 4, the magic-guarded gold 14 → 6; fighting stays 12, plains and forest moving skills 3–4; the start (§6, Q227) still finds a plains space under 0.1 on every map. Games started before keep the map they began with: online because the map carries the table it was made with, on one device because the kept game records whether its rewards had moved, and the tables from before are kept as `REWARD_TABLE_BEFORE_MOVE` for it.
+
+[SOURCE §1.1] / [SOURCE §1.1, chat] **The table from before the rewards moved (Q250)**, which games started before keep:
 
 | Terrain | Kind | Guard | Total units | POIs of this kind |
 |---|---|---|---|---|
@@ -107,7 +141,7 @@ Three things per kind, all needed by the assignment algorithm in §4.3: the tota
 | Mountain (15 POIs) | Gold | fighting | 20 | 10 |
 | | Gold | magic | 10 | 5 |
 
-[SOURCE §4.2, Q160] With 4 or 5 players the map is 40% larger (§11's larger map): every row's units are 1.4 × the above, and its POIs 1.4 × rounded to the nearest whole number (630), so each terrain still has exactly 1.4 × its POIs. The stamina row too (Q240, 902 A).
+[SOURCE §4.2, Q160] Before the rewards moved, with 4 or 5 players: every row's units are 1.4 × the above, and its POIs 1.4 × rounded to the nearest whole number (630), so each terrain still has exactly 1.4 × its POIs. The stamina row too (Q240, 902 A).
 
 | Terrain | Kind | Guard | Total units | POIs of this kind |
 |---|---|---|---|---|
@@ -122,13 +156,13 @@ Three things per kind, all needed by the assignment algorithm in §4.3: the tota
 | Mountain (21 POIs) | Gold | fighting | 28 | 14 |
 | | Gold | magic | 14 | 7 |
 
-[SOURCE §4.2, chat, Q240] **Stamina sites on the plains.** Andrei, 2026-10-03: "I'd like to add stamina rewarding sites to plains. [...] I am thinking of adding 5 sites, rewarding 10 stamina units total (and each stamina unit adds 5 stamina). [...] Stamina sites follow the same rules any other reward type does." Until then stamina had no row here, and the only stamina on a map came from surplus leaves (§3). The plains' stamina row is placed and filled by the same steps as every other row: its 5 POIs are drawn among the plains' 30 (900 A); they are unguarded, each gets 1 unit and the other 5 lean toward the more remote ones by §4.3, usually 3-2-2-2-1 or 3-3-2-1-1; and each shows one of the 12 pictures of the `Plains_Stamina` sheet, drawn from the seed, so two can share one (901 A), at 0.45 of a road's length, a tenth smaller than the houses' 0.5: "slightly smaller, so a bench or a campfire doesn't look as big as a house" (904 B). The larger map has 7 with 14 units, the usual 1.4 × (902 A). Each unit claimed gives `STAMINA_PER_UNIT` (5) stamina. The map shows one white heart per unit (905 A), and the words players read say the stamina a site gives: "took 10 stamina", "the 10 stamina site (plains)" (906 A). The stamina POIs surplus leaves make (`OVERFLOW_LEAF_STAMINA_UNITS`, 1 unit each) are stamina sites in every way, in any terrain: 5 stamina a unit and the same pictures (903 A). The computer takes them by the same rules; how it thinks does not change. With 5 more plains POIs a seed draws a different map than before. Games started before keep the map they began with, their stamina units worth 1: online because the map carries the config it was made with, on one device because the kept game records whether its map had stamina sites.
+[SOURCE §4.2, chat, Q240] **Stamina sites on the plains** (in the forest since Q250). Andrei, 2026-10-03: "I'd like to add stamina rewarding sites to plains. [...] I am thinking of adding 5 sites, rewarding 10 stamina units total (and each stamina unit adds 5 stamina). [...] Stamina sites follow the same rules any other reward type does." Until then stamina had no row here, and the only stamina on a map came from surplus leaves (§3). The plains' stamina row is placed and filled by the same steps as every other row: its 5 POIs are drawn among the plains' 30 (900 A); they are unguarded, each gets 1 unit and the other 5 lean toward the more remote ones by §4.3, usually 3-2-2-2-1 or 3-3-2-1-1; and each shows one of the 12 pictures of the `Plains_Stamina` sheet, drawn from the seed, so two can share one (901 A), at 0.45 of a road's length, a tenth smaller than the houses' 0.5: "slightly smaller, so a bench or a campfire doesn't look as big as a house" (904 B). The larger map has 7 with 14 units, the usual 1.4 × (902 A). Each unit claimed gives `STAMINA_PER_UNIT` (5) stamina. The map shows one white heart per unit (905 A), and the words players read say the stamina a site gives: "took 10 stamina", "the 10 stamina site (plains)" (906 A). The stamina POIs surplus leaves make (`OVERFLOW_LEAF_STAMINA_UNITS`, 1 unit each) are stamina sites in every way, in any terrain: 5 stamina a unit and the same pictures (903 A). The computer takes them by the same rules; how it thinks does not change. With 5 more plains POIs a seed draws a different map than before. Games started before keep the map they began with, their stamina units worth 1: online because the map carries the config it was made with, on one device because the kept game records whether its map had stamina sites.
 
 ### 4.3 Reward assignment algorithm
 
 [SOURCE §1.3, chat] Run per terrain, per row of the §4.2 table (i.e. per kind, or per kind+guard-type where gold is split by guard type):
 
-1. **Assign kind (and, for gold, guard type) to POIs.** Partition the terrain's POIs into groups sized by the "POIs of this kind" column (e.g. on plains: 10 POIs → plains-movement, 7 → forest-movement, 6 → magic, 2 → gold/fighting-guarded, 5 → stamina (Q240); all 30 plains POIs accounted for, no overlap. On mountain: 10 POIs → gold/fighting-guarded, 5 → gold/magic-guarded).
+1. **Assign kind (and, for gold, guard type) to POIs.** Partition the terrain's POIs into groups sized by the "POIs of this kind" column (e.g. on plains: 10 POIs → plains-movement, 7 → forest-movement, 8 → mountain-movement, 2 → gold/fighting-guarded, 4 → gold/magic-guarded (Q250); all 31 plains POIs accounted for, no overlap. On mountain: 10 POIs → gold/fighting-guarded, 5 → gold/magic-guarded).
 2. **Give every POI 1 guaranteed unit** of its assigned kind.
 3. **Distribute the remaining units** of that row's total (total units − POIs of this kind, from §4.2) one at a time, to a randomly chosen POI within the same group, weighted so each POI's chance is inversely proportional to `(its current count of this type − (remoteness − 1) × REMOTENESS_WEIGHT_FOR_DISTRIBUTION)`. Default `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` = **2** (distinct from `REMOTENESS_WEIGHT` in §5.2) — intentionally: weight decreases as a POI's own count grows, and increases the more remote the POI is, so extra units gravitate toward remote, lightly-stacked POIs.
 4. **Swap pairs toward remoteness.** [SOURCE §4.3, review] Draw `REWARD_SWAP_PASSES × (POIs in the row)` pairs of POIs from within the same group, and swap the two POIs' unit counts whenever the larger stack is sitting on the less remote of the two. Default `REWARD_SWAP_PASSES` = **5**. This is a repair pass, not a sort: it is not run to completion, and the map keeps the variety a full ordering would take out.
@@ -141,11 +175,11 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 [SOURCE §1] A reward may (not must) be guarded: shown as a red number (fighting-gated) or purple number (magic-gated) beside the node, indicating guard strength, range **2–10**.
 
-[SOURCE §1.1, chat] In v1, only gold rewards are guarded — every gold POI on every terrain is guarded, none are exempt. Guard type by terrain (per §4.2): plains' 2 gold POIs are all fighting-guarded; mountain's 15 gold POIs split 10 fighting-guarded / 5 magic-guarded. The engine should not hard-code "gold only" — guarding should work on any reward kind — this is a v1 content choice, not an engine constraint.
+[SOURCE §1.1, chat] In v1, only gold rewards are guarded — every gold POI on every terrain is guarded, none are exempt. Guard type by terrain (per §4.2): plains' 2 gold POIs are all fighting-guarded; mountain's 15 gold POIs split 10 fighting-guarded / 5 magic-guarded. [Q250] Since the rewards moved, the plains' 6 gold POIs split 2 fighting-guarded (the fortresses) / 4 magic-guarded, and the forest has no gold. The engine should not hard-code "gold only" — guarding should work on any reward kind — this is a v1 content choice, not an engine constraint.
 
 [SOURCE §4.4, chat] Forest's 4 gold POIs are each guarded by magic with chance `FOREST_MAGIC_GUARD_CHANCE` and by fighting otherwise, a coin flip for each POI on its own, so a map carries anywhere from none to all four magic-guarded (Q115). Andrei, 2026-09-30: "Magic doesn't play an important enough role. Can you make it so the forest POI are assigned randomly either magic or combat guards?" The POIs stay one §4.2 row (fighting), so its POI count and units are unchanged, and §5.2's strength never reads the guard type. The flips are the map's last draws, after every POI's picture, so on any seed only these guards differ from the map before the change.
 
-[SOURCE §4.4, chat] Since Q185 the chance is 1: every forest gold POI is magic-guarded. Andrei, 2026-10-01: "After playing some more I think we need to make all gold in the forests guarded by magic. Otherwise magic plays too little role", and "it's a good idea to keep the logic that says forest magic is decided by chance, just turn this chance all the way to 100%". A hot seat game kept from the coin-flip days goes on with the guards it began with (730 A).
+[SOURCE §4.4, chat] Since Q185 the chance is 1: every forest gold POI is magic-guarded. Andrei, 2026-10-01: "After playing some more I think we need to make all gold in the forests guarded by magic. Otherwise magic plays too little role", and "it's a good idea to keep the logic that says forest magic is decided by chance, just turn this chance all the way to 100%". A hot seat game kept from the coin-flip days goes on with the guards it began with (730 A). [Q250] Since the rewards moved terrain the forest holds no gold, so the chance only reaches maps from before; the magic-guarded gold on the plains has its own row, guarded by magic outright.
 
 ### 4.5 Consumption
 
@@ -339,6 +373,8 @@ At the opening almost no gold is claimed, so `progress` ≈ 0 and the skill term
 
 [SOURCE §6] Rendering: isometric view throughout; non-interactive dressing (eye candy) are billboard sprites pasted onto the map by the engine.
 
+[SOURCE §10, chat, Q250] When the rewards moved terrain, each kept its pictures (922 A): the mountain moving skill's forts and the magic-guarded gold's guardians stand on the plains, the magic skill's houses and the stamina pictures in the forest. `Art/manifest.json` names them in rows of their own with a `borrowed` note, and the old rows stay for maps from before.
+
 ---
 
 ## 11. Configuration Parameters
@@ -360,7 +396,7 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `BORDER_AREA_MIN_SIZE` | 5 nodes | tunable — smallest area step 6b joins (Q105, 395) |
 | `BORDER_ROAD_MAX_LENGTH` | 1.3 × longest kept edge | tunable — step 6b (Q105, 393) |
 | `JOINED_PIECE_ROADS` | 1 | tunable — step 6b, pieces of one terrain (Q105, 394) |
-| `POI_COUNT` (plains/forest/mountain) | 30 / 20 / 15 | fixed target; plains 25 until its 5 stamina POIs (Q240) |
+| `POI_COUNT` (plains/forest/mountain) | 31 / 19 / 15 | fixed target; plains 25 until its 5 stamina POIs (Q240), then 30 / 20 / 15 until the rewards moved terrain (Q250) |
 | `GUARD_STRENGTH_MIN` / `MAX` | 2 / 10 | fixed (revisit later) |
 | `REMOTENESS_WEIGHT` | 4 | tunable (play-test) — guard/remoteness balance, §5.2 |
 | `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` | 2 | tunable (play-test) — reward stacking, §4.3 |
@@ -389,7 +425,7 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `BUY_SKIP_STAMINA` | 5 | tunable — the computer has no buy branch for a skill a site offers within this much stamina past its free steps this turn, capped by the stamina it holds, §9 (Q190, 759) |
 | MCTS tree/selection policy, exploration constant | — | **OPEN**, unspecified |
 
-[SOURCE §11, Q160] **The larger map, for 4 and 5 players** (`LARGER_MAP_FROM_PLAYERS` 4): `MAP_NODE_COUNT` ~336, `MAP_EDGE_COUNT` ~420, `LEAF_COUNT_MIN` / `MAX` 42 / 63 and `POI_COUNT` 42 / 28 / 21 (plains 35 before Q240's 7 stamina POIs), each 1.4 × the above (631), with §4.2's larger table. Every other parameter is the same on both maps (633), the valleys included.
+[SOURCE §11, Q160] **The larger map, for 4 and 5 players** (`LARGER_MAP_FROM_PLAYERS` 4): `MAP_NODE_COUNT` ~336, `MAP_EDGE_COUNT` ~420, `LEAF_COUNT_MIN` / `MAX` 42 / 63 and `POI_COUNT` 44 / 26 / 21 (42 / 28 / 21 before the rewards moved, Q250; plains 35 before Q240's 7 stamina POIs), each 1.4 × the above (631), with §4.2's larger table. Every other parameter is the same on both maps (633), the valleys included.
 
 ---
 

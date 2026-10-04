@@ -34,9 +34,15 @@ describe('the larger map for 4 and 5 players (Q160)', () => {
     expect(larger.map.MAP_EDGE_COUNT).toBe(Math.round(today.map.MAP_EDGE_COUNT * SCALE));
     expect(larger.map.LEAF_COUNT.min).toBe(Math.round(today.map.LEAF_COUNT.min * SCALE));
     expect(larger.map.LEAF_COUNT.max).toBe(Math.round(today.map.LEAF_COUNT.max * SCALE));
+    // [Q250, 920 A] Since the rewards moved terrain each row keeps its sites,
+    // rounded as 630 rounds them, so a terrain has the sum of its rows' sites
+    // (plains 44, forest 26) and the map 1.4 × today's sites in all.
+    const total = (pois: Readonly<Record<string, number>>): number => Object.values(pois).reduce((sum, count) => sum + count, 0);
     for (const terrain of TERRAINS) {
-      expect(larger.pois.POI_COUNT[terrain]).toBe(Math.round(today.pois.POI_COUNT[terrain] * SCALE));
+      const rows = LARGER_MAP_RULESET.content.REWARD_TABLE[terrain];
+      expect(larger.pois.POI_COUNT[terrain]).toBe(rows.reduce((sum, row) => sum + row.poiCount, 0));
     }
+    expect(total(larger.pois.POI_COUNT)).toBe(Math.round(total(today.pois.POI_COUNT) * SCALE));
   });
 
   it("has 1.4 times every row's units, and its sites rounded to the nearest whole number (630)", () => {

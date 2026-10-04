@@ -3469,6 +3469,59 @@ how they think does not change.
 
 ---
 
+### Q250. ~~Which rewards go on which terrain?~~ — **answered 2026-10-04: as Andrei laid out, every reward keeping its amount and its sites; the moved magic gold guarded by the usual rule; every reward keeping its pictures; the rulebook's short line; the softer forest plan rerun on a few games (920-924)**
+
+Andrei, 2026-10-04 at 08:08: *"we seem to have found a simple super strategy:
+buy forest speed +4 and go to the forest. We need to change the allocation of
+resources between terrains. [...] Plains get: plains speed rewards, forest
+speed rewards, mountain speed rewards, the gold guarded by magic that used to
+be in the forest before, the two "fortresses", large gold piles guarded by
+combat. Forests get: magic rewards, combat rewards, stamina rewards. Mountains
+stay as they are now."* The super strategy was the Buying skills thread's
+softer forest plan (a computer seat buys forest speed +4 on its first turn and
+heads for the forest): from every seat on 8 maps whose forest was one piece it
+won 15 and shared 1 of 24 games, against 8 wins for the same seats playing
+normally. The details were asked at 08:20 with pictures and numbers from 300
+maps per size, and answered between 11:47 and 11:57.
+
+920. **Amounts:** every reward keeps its units and its number of sites and only
+     moves terrain, so the plains have 31 sites instead of 30 and the forest 19
+     instead of 20 (44 and 26 instead of 42 and 28 on the larger map)
+     (recommended), or some amounts change. **Answered**: A.
+921. **Guards on the magic gold:** the rule all gold follows, bigger piles and
+     less remote sites guarded more strongly (recommended), or other
+     strengths. Plains sites are less remote than forest ones, so these guards
+     come out about 1 stronger: a 1 gold pile's mostly 3 instead of 2, a 2 gold
+     pile's 5 instead of 4. **Answered**: A.
+922. **Pictures:** each reward keeps its own on its new ground: the forts of
+     mountains speed and the guardians of the magic gold on the plains, the
+     magic houses and the stamina pictures in the forest (recommended), or new
+     sheets from him later. **Answered**: A.
+923. **Rulebook:** "Gold on plains is guarded by combat, in forests by magic,
+     and in the mountains by either" becomes "There is no gold in forests. On
+     the plains and in the mountains, gold is guarded by combat or magic."
+     (recommended), or a longer line saying the plains' big piles are guarded
+     by combat and their small ones by magic. **Answered**: A.
+924. **Checking it:** the Buying skills thread reruns the softer forest plan on
+     the new maps (recommended), or no runs. **Answered** in his words: *"i
+     dont think the softer forest plan makes any sense in the new config, but
+     yes, we can rerun it on a few games"*: 6 games, 2 maps from every seat.
+
+Measured over 300 maps per size with the rewards moved (in road steps from the
+start to the nearest site): magic 5 → 13, stamina 5 → 13, mountains speed 12
+→ 4, magic-guarded gold 14 → 6; combat stays 12, plains and forest speed 3-4.
+The start rule (Q227) still finds a plains space under 0.1 on every map.
+
+Stated without a choice, unchallenged: games already started keep the map
+they began with, online because the map carries its rules, on one device
+because the kept game records whether its rewards had moved; with a site more
+on the plains and one fewer in the forest a seed draws a different map than
+before. Engine details: since no forest row has gold any more,
+`FOREST_MAGIC_GUARD_CHANCE` only reaches maps from before, through
+`REWARD_TABLE_BEFORE_MOVE`.
+
+---
+
 ## C. Decisions I made that are *implementation*, not design
 
 Listed so you can veto any that read as design to you.
