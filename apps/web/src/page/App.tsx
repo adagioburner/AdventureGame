@@ -10,9 +10,10 @@ import {
   staminaSitesOf,
   type MapSize,
 } from '@adventure/config';
-import type { GameMap } from '@adventure/core';
+import { startingNodeFor, type GameMap } from '@adventure/core';
 import { atlasOf, buildArtCatalog, type ArtCatalog } from '../art/catalog.ts';
 import { ART_FILES } from '../art/files.ts';
+import { workOutRouteLists } from '../modes/computer.ts';
 import { HotseatGame, newDiceSeed } from '../modes/hotseat.ts';
 import {
   forgetKept,
@@ -197,6 +198,15 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
     () => (map === null || setup === null ? null : new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'setup' }).state),
     [map, setup],
   );
+
+  // [Q235, 890 A] With a computer seat, the route lists its thinking reads are
+  // worked out while the game is set up, nearest the starting place first; the
+  // game's own computer carries on from there once it starts.
+  const computerSeat = setup?.seats.some((seat) => seat.control === 'ai') ?? false;
+  useEffect(() => {
+    if (game !== null || map === null || !computerSeat) return;
+    return workOutRouteLists(map, [startingNodeFor(map)]);
+  }, [game, map, computerSeat]);
 
   const start = (): void => {
     // Never on the map of the number of players before, while the new one is drawn.

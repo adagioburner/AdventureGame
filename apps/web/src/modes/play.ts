@@ -196,7 +196,7 @@ export function onlinePlay(options: OnlinePlayOptions): OnlinePlay {
   const isGameMaster = setup.gameMaster === me;
   const map = game.state.map;
   const computer = isGameMaster
-    ? pageComputer(map, `computer-${gameId}`, (_state, subject) => seatOf(subject)?.thinkingSeconds)
+    ? pageComputer(game.state, `computer-${gameId}`, (_state, subject) => seatOf(subject)?.thinkingSeconds)
     : null;
   const deliver = (message: ClientMessage): void => {
     if (!send(message)) throw new Error('The connection to the server dropped. Try again once it is back.');

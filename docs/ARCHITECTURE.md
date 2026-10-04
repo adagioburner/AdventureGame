@@ -456,6 +456,24 @@ ranks by its own speeds, see above.) The map generator, the remoteness walk and 
 person's route preview do not use it: the generator's graphs change while it
 works.
 
+**Route lists are worked out ahead** (Q235, 890-895). `RouteTable.routesFrom`
+works out a space's list of routes the first time it is asked for, a few
+milliseconds each (about 12 ms on the larger map), and a computer's first moves
+asked for nearly all of them, spending much of their thinking time on it. The
+page that thinks for the computers works them out in the background instead
+(`workOutRouteLists` in `apps/web/src/modes/computer.ts`): on the setup screen
+from the moment it has the map and a computer seat (online, or a seat nobody
+holds), nearest the starting place first, and between the computer's moves once the game is under way, nearest the
+figures first, paused while the computer thinks (`pauseRouteLists`). It works
+one list at a time with `requestIdleCallback` where the browser has it, and
+otherwise in slices of `ROUTE_LIST_SLICE_MS` after each frame, as the
+computer's thinking does. An online game's map arrives from the server as a
+copy of the one the game master's page drew while setting it up, so
+`shareRouteTable` lets the copy read the lists already worked out, once it has
+checked the two have the same spaces, terrain, roads and step costs. The
+balancing harness works out every list before a computer's first move
+(`workOutAllRoutes`), as a page would have during setup.
+
 **A branch is a macro-action**, in the tree and in the rollout alike. [SOURCE §9,
 chat] taking a target means "the simulated player keeps moving to the chosen POI
 without making new decision until it's reached or claimed by a different

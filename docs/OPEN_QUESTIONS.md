@@ -3359,6 +3359,70 @@ and their tips reach 3% of the disc's width past its edge. The tips stay inside 
 square, so the icon takes the same room on the map and nothing moves. The
 disc, its contour, the foot and the mountain are unchanged.
 
+### Q235. ~~When are the route lists worked out?~~ — **answered 2026-10-04: in the background while the game is set up, on the page that thinks for the computers, and on between its moves (890-895)**
+
+[SOURCE §9, chat] Andrei, 2026-10-03 at 21:08, in the thread on Q210: *"We are
+caching the list of possible paths from one point to another, right? The
+question is, while building the next path. are we using this cache?"* Each
+space's list of routes (`RouteTable.routesFrom`) is worked out once a game, the
+first time a route starts there, but not from a neighbour's list. Measured on
+main: about 4 ms a space and 0.6 s a game on the standard map, about 12 ms a
+space and 3.8 s a game on the larger one, nearly all in the computer's first
+moves, so on the larger map its first move spent nearly 90% of 3 s on them. At
+21:25: *"The best routes from the next space don't all pass through the first
+one, true, but some of them do, and if I understand the algorithm right, that
+part can be reused. Am I right?"* Yes: a best route that steps onto the
+neighbour goes on along one of the neighbour's best routes, and a space whose
+neighbours all have lists needs no search. About 40% of a space's best routes
+go through any one neighbour (75% through the busiest). At 21:28: *"yes let's
+add some background processing first. THere's plenty of time when the game is
+being set up, but the map and the starting place are already established"*.
+Asked at 21:30 and 21:31; answered 2026-10-04 at 04:40, *"the recommendations
+look good please proceed"*:
+
+890. **Which page, and when:** only the page that thinks for the computers (the
+     hot seat page, or online the game master's), from the moment setup has
+     the map and at least one seat is a computer, nearest the starting place
+     first (recommended); or every page. **Answered:** as recommended.
+891. **If Start comes before it is done, or a game is opened part way
+     through:** keep working between moves, nearest the figures first, the
+     computer working out what it needs while it thinks, as today
+     (recommended); or only during setup. **Answered:** as recommended.
+892. **Checking it:** the computer-against-computer games also work out every
+     list before the first move, and the games imagined on the computer's
+     first two moves are reported before and after, for 2 and 5 players
+     (recommended); or that and 20 games at 3 s. **Answered:** as recommended.
+893. **Anything shown while it runs:** nothing (recommended); or a line on the
+     setup screen. **Answered:** as recommended.
+894. **Phones:** the same as everywhere (recommended); or phones skip it.
+     **Answered:** as recommended.
+895. **Seats nobody holds** in an online game being set up, which the
+     computer plays if the game starts that way: they count as computer seats
+     for starting the lists (recommended), so nearly every online game's
+     game master works them out while setting up; or only seats set to
+     Computer. Asked 2026-10-04 at 04:58, after 890 was built. At 06:29 he
+     asked whether that means every online game; yes, on the game master's
+     page only, and if people fill every seat it stops, a few seconds of work
+     unused. At 06:31 he asked whether it is noticeable; each list takes
+     about 1 to 2 ms here and at most 28 ms, and runs only while the browser
+     is idle. **Answered** at 06:33: *"That sounds reasonable, Please proceed
+     with 895 as recommended"*.
+
+As built: `workOutRouteLists` (`apps/web/src/modes/computer.ts`) works out one
+list at a time while the browser is idle, from the setup screen's map and from
+the game's own computer once it starts, and stops while the computer thinks.
+An online game's map comes back from the server as a copy of the one the game
+master's page drew, so `shareRouteTable` (`packages/core`) lets the copy read
+the lists already worked out. The balancing harness calls `workOutAllRoutes`
+before a computer's first move. Reusing a neighbour's routes is not built.
+
+Tested (892 A) on 8 maps per size at 3 s a move, the computers' games imagined
+per move before and after. Working out every list took 0.1 to 0.5 s on the
+standard map and 0.2 to 1.5 s on the larger one. With 2 players the first move
+went from 2,658 games on average (2,223 at worst) to 2,910 (2,686), +9%; with
+5 players from 1,019 (514 at worst) to 1,418 (1,277), +39%. Later moves were
+the same within noise. Results in `/mnt/project-files/best-route/route-lists/`.
+
 ### Q240. ~~How do stamina sites come to the plains?~~ — **answered 2026-10-04: like every other plains reward, 5 sites and 10 units (7 and 14 on the larger map), each unit 5 stamina, pictures 0.45 of a road, in games started from now on (900-907)**
 
 Andrei, 2026-10-03 at 21:32, with a sheet of 12 pictures (a well, a fountain,
