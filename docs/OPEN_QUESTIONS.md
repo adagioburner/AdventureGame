@@ -3359,7 +3359,7 @@ and their tips reach 3% of the disc's width past its edge. The tips stay inside 
 square, so the icon takes the same room on the map and nothing moves. The
 disc, its contour, the foot and the mountain are unchanged.
 
-### Q240. ~~How do stamina sites come to the plains?~~ — **answered 2026-10-04: like every other plains reward, 5 sites and 10 units (7 and 14 on the larger map), each unit 5 stamina, in games started from now on (900-907)**
+### Q240. ~~How do stamina sites come to the plains?~~ — **answered 2026-10-04: like every other plains reward, 5 sites and 10 units (7 and 14 on the larger map), each unit 5 stamina, pictures 0.45 of a road, in games started from now on (900-907)**
 
 Andrei, 2026-10-03 at 21:32, with a sheet of 12 pictures (a well, a fountain,
 an apple tree, a campfire, a barrel, a statue, a bench, a tent, a picnic
@@ -3368,7 +3368,7 @@ stamina rewarding sites to plains. [...] I am thinking of adding 5 sites,
 rewarding 10 stamina units total (and each stamina unit adds 5 stamina).
 [...] Stamina sites follow the same rules any other reward type does."* The
 details were asked at 22:18 with pictures and numbers from 600 maps per size,
-and answered at 00:03 and 00:04 on 10-04.
+and answered at 00:03, 00:04 and 02:50 on 10-04.
 
 900. **Where the 5 sites go:** like every other plains reward, the plains
      getting 30 sites instead of 25 and 5 drawn for stamina (recommended), or
@@ -3387,7 +3387,7 @@ and answered at 00:03 and 00:04 on 10-04.
 904. **Picture size:** asked at 0.5 of a road's length, like the houses; he
      answered *"slightly smaller, so a bench or a campfire doesn't look as big
      as a house"*, then asked between 0.5, 0.45, 0.4 (recommended) and 0.35.
-     **Open.**
+     **Answered** at 02:50: 0.45, a tenth smaller than the houses.
 905. **Hearts on the map:** one white heart a unit (recommended). **Answered**:
      A.
 906. **Words players read:** the stamina a site gives, "took 10 stamina", "the

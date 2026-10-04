@@ -61,7 +61,7 @@
     },
     { "terrain": "mountain", "reward": "gold", "guard": "fighting", "sheet": "Mountains_GoldGuardedByFighting", "size": 0.6, "on_node": true },
     { "terrain": "mountain", "reward": "gold", "guard": "magic", "sheet": "Mountains_GoldGuardedByMagic", "size": 0.6, "on_node": true },
-    { "terrain": "any", "reward": "stamina", "guard": null, "sheet": "Plains_Stamina", "size": 0.4 }
+    { "terrain": "any", "reward": "stamina", "guard": null, "sheet": "Plains_Stamina", "size": 0.45 }
   ],
   "icons": {
     "size": 0.24,
