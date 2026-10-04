@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { RESPAWN_RULES, startingGoldOf } from '@adventure/config';
+import { RESPAWN_RULES, TERRAINS, startingGoldOf } from '@adventure/config';
 import { createRng, startingNodeFor } from '@adventure/core';
 import { mapFor } from '../page/seed.ts';
 import { inOrder, toHotseatSeats, type LocalSetup } from '../setup/local.ts';
@@ -10,6 +10,7 @@ import {
   keptDeepStart,
   keptMagicGuardChance,
   keptMapSize,
+  keptRewardsMoved,
   keptSeparateAreas,
   keptStaminaSites,
   readKept,
@@ -122,17 +123,24 @@ describe('a game on one device kept in the browser (Q56, 66)', () => {
       on.pois.flatMap((poi) => (poi.terrain === 'forest' && poi.guard !== null ? [poi.guard.type] : []));
     keep('adventure', setup, null, new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'kept' }));
     const kept = readKept();
-    expect(kept?.magicGuardChance).toBe(1);
-    expect(kept === null ? null : keptMagicGuardChance(kept)).toBe(1);
-    expect(new Set(forestGuards(map))).toEqual(new Set(['magic']));
+    // [Q250] Today's forest holds no gold, so no chance to keep.
+    expect(kept?.magicGuardChance).toBe(0);
+    expect(forestGuards(map)).toEqual([]);
+
+    // A game kept on 2026-10-01, before the rewards moved: every forest gold guard magic.
+    const { rewardsMoved: _moved, separateAreas: _areas, ...unmoved } = kept ?? { rewardsMoved: undefined };
+    const always = { ...(unmoved as NonNullable<typeof kept>), magicGuardChance: 1 };
+    expect(keptMagicGuardChance(always)).toBe(1);
+    const allMagic = mapFor('adventure', 'standard', keptMagicGuardChance(always), true, true, keptSeparateAreas(always), keptRewardsMoved(always));
+    expect(new Set(forestGuards(allMagic))).toEqual(new Set(['magic']));
 
     // A game kept from 2026-09-30 began with each forest gold guard a coin flip.
-    const { magicGuardChance: _chance, ...older } = kept ?? { magicGuardChance: undefined };
+    const { magicGuardChance: _chance, ...older } = always;
     const before = older as NonNullable<typeof kept>;
     expect(keptMagicGuardChance(before)).toBe(0.5);
-    const coinFlips = mapFor('adventure', 'standard', keptMagicGuardChance(before));
+    const coinFlips = mapFor('adventure', 'standard', keptMagicGuardChance(before), true, true, keptSeparateAreas(before), keptRewardsMoved(before));
     expect(new Set(forestGuards(coinFlips))).toEqual(new Set(['fighting', 'magic']));
-    expect(coinFlips.graph).toEqual(map.graph);
+    expect(coinFlips.graph).toEqual(allMagic.graph);
     expect(replayKept(before, coinFlips)?.setup.map).toBe(coinFlips);
   });
 
@@ -183,8 +191,10 @@ describe('a game on one device kept in the browser (Q56, 66)', () => {
     expect(resumed?.turns.length).toBe(1);
   });
 
-  it('keeps a map with stamina sites on the plains, and makes a game kept before on the map it began on (Q240)', () => {
-    const tabled = (on: typeof map): number => on.pois.filter((poi) => poi.terrain === 'plains' && poi.reward.kind === 'stamina').length;
+  it('keeps a map with stamina sites, and makes a game kept before on the map it began on (Q240)', () => {
+    // [Q250] The table's stamina sites are in the forest; before the rewards moved, on the plains.
+    const tabled = (on: typeof map, terrain = 'forest'): number =>
+      on.pois.filter((poi) => poi.terrain === terrain && poi.reward.kind === 'stamina').length;
     const game = new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'kept' });
     game.play({ kind: 'rest', player: game.state.players[0]!.id });
     keep('adventure', setup, null, game);
@@ -196,14 +206,42 @@ describe('a game on one device kept in the browser (Q56, 66)', () => {
     expect(replayKept(kept!, map)?.state).toEqual(game.state);
 
     // Kept before: no stamina row, 25 plains sites, and a stamina unit worth 1.
-    const { staminaSites: _sites, ...older } = kept ?? { staminaSites: undefined };
+    const { staminaSites: _sites, separateAreas: _areas, rewardsMoved: _moved, ...older } = kept ?? { staminaSites: undefined };
     const before = older as NonNullable<typeof kept>;
     expect(keptStaminaSites(before)).toBe(false);
-    const began = mapFor('adventure', 'standard', undefined, true, keptStaminaSites(before));
+    const began = mapFor('adventure', 'standard', undefined, true, keptStaminaSites(before), keptSeparateAreas(before), keptRewardsMoved(before));
     expect(began.ruleset.config.pois.STAMINA_PER_UNIT).toBeUndefined();
     expect(began.ruleset.config.pois.POI_COUNT.plains).toBe(25);
-    expect(began.ruleset.content.REWARD_TABLE.plains.some((row) => row.kind === 'stamina')).toBe(false);
-    expect(tabled(began)).toBeLessThan(5);
+    expect(TERRAINS.some((terrain) => began.ruleset.content.REWARD_TABLE[terrain].some((row) => row.kind === 'stamina'))).toBe(false);
+    expect(tabled(began, 'plains')).toBeLessThan(5);
+    const resumed = replayKept(before, began);
+    expect(resumed?.setup.map).toBe(began);
+    expect(resumed?.turns.length).toBe(1);
+  });
+
+  it('keeps a map with the rewards where they moved, and makes a game kept before on the map it began on (Q250)', () => {
+    const kinds = (on: typeof map, terrain: string): Set<string> =>
+      new Set(on.pois.filter((poi) => poi.terrain === terrain && poi.reward.kind !== 'stamina').map((poi) => poi.reward.kind));
+    const game = new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'kept' });
+    game.play({ kind: 'rest', player: game.state.players[0]!.id });
+    keep('adventure', setup, null, game);
+    const kept = readKept();
+    expect(kept?.rewardsMoved).toBe(true);
+    expect(kept === null ? null : keptRewardsMoved(kept)).toBe(true);
+    expect(kinds(map, 'forest')).toEqual(new Set(['magic', 'fighting']));
+    expect(map.ruleset.config.pois.POI_COUNT).toEqual({ plains: 32, forest: 20, mountain: 15 });
+    expect(replayKept(kept!, map)?.state).toEqual(game.state);
+
+    // Kept before, its terrain already in separate areas: mountains speed, combat
+    // and magic-guarded gold in the forest, 30 plains sites.
+    const { rewardsMoved: _moved, ...older } = kept ?? { rewardsMoved: undefined };
+    const before = { ...(older as NonNullable<typeof kept>), magicGuardChance: 1 };
+    expect(keptRewardsMoved(before)).toBe(false);
+    expect(keptSeparateAreas(before)).toBe(true);
+    const began = mapFor('adventure', 'standard', keptMagicGuardChance(before), true, true, keptSeparateAreas(before), keptRewardsMoved(before));
+    expect(kinds(began, 'forest')).toEqual(new Set(['mountain_move', 'fighting', 'gold']));
+    expect(began.ruleset.config.pois.POI_COUNT).toEqual({ plains: 30, forest: 20, mountain: 15 });
+    expect(began.ruleset.config.pois.STAMINA_PER_UNIT).toBe(5);
     const resumed = replayKept(before, began);
     expect(resumed?.setup.map).toBe(began);
     expect(resumed?.turns.length).toBe(1);
@@ -221,10 +259,11 @@ describe('a game on one device kept in the browser (Q56, 66)', () => {
     expect(replayKept(kept!, map)?.state).toEqual(game.state);
 
     // Kept before: the same seed grows its terrain from 1 or 2 seeds a terrain, as it began.
-    const { separateAreas: _seeds, ...older } = kept ?? { separateAreas: undefined };
-    const before = older as NonNullable<typeof kept>;
+    // [Q250] Its rewards were on the terrains they had before they moved, too.
+    const { separateAreas: _seeds, rewardsMoved: _moved, ...older } = kept ?? { separateAreas: undefined };
+    const before = { ...(older as NonNullable<typeof kept>), magicGuardChance: 1 };
     expect(keptSeparateAreas(before)).toBe(false);
-    const began = mapFor('adventure', 'standard', undefined, true, true, keptSeparateAreas(before));
+    const began = mapFor('adventure', 'standard', keptMagicGuardChance(before), true, true, keptSeparateAreas(before), keptRewardsMoved(before));
     expect(began.ruleset.config.map.TERRAIN_SEEDS).toBeUndefined();
     expect(began.ruleset.config.map.KEPT_APART).toBeUndefined();
     expect(began.ruleset.config.map.VALLEY_COUNT).toEqual({ min: 2, max: 4 });

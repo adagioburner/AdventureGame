@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_RULESET, LARGER_MAP_RULESET, withoutSeparateAreas, withoutStaminaSites } from './index.ts';
+import {
+  DEFAULT_RULESET,
+  LARGER_MAP_RULESET,
+  rewardsMovedOf,
+  withoutSeparateAreas,
+  withoutStaminaSites,
+  withRewardsBeforeMove,
+} from './index.ts';
+import { LARGER_MAP_REWARD_TABLE_BEFORE_MOVE, REWARD_TABLE_BEFORE_MOVE } from './content.ts';
 import type { PendingValue, RewardGroupSpec, Ruleset } from './types.ts';
 import { RulesetError, UnresolvedDesignError, resolvePending, validateRuleset } from './validate.ts';
 import type { Terrain } from './vocabulary.ts';
@@ -38,7 +46,7 @@ describe('validateRuleset', () => {
     const row = firstPlainsRow(ruleset);
     plainsRows(ruleset)[0] = { ...row, poiCount: row.poiCount + 1 };
     expect(() => validateRuleset(ruleset)).toThrow(RulesetError);
-    expect(() => validateRuleset(ruleset)).toThrow(/§4.2\/§3: plains reward groups cover 31 POIs/);
+    expect(() => validateRuleset(ruleset)).toThrow(/§4.2\/§3: plains reward groups cover 33 POIs/);
   });
 
   it('rejects a group with fewer units than POIs', () => {
@@ -82,7 +90,7 @@ describe('validateRuleset', () => {
   it('rejects more POIs than the map has nodes', () => {
     const ruleset = clone();
     (ruleset.config.map as { MAP_NODE_COUNT: number }).MAP_NODE_COUNT = 10;
-    expect(() => validateRuleset(ruleset)).toThrow(/65 POIs requested but only 10 nodes/);
+    expect(() => validateRuleset(ruleset)).toThrow(/67 POIs requested but only 10 nodes/);
   });
 
   it('rejects an inverted MIN/MAX range', () => {
@@ -172,6 +180,22 @@ describe('validateRuleset', () => {
     expect(() => validateRuleset(twice)).toThrow(/KEPT_APART\.TERRAINS/);
     expect(DEFAULT_RULESET.config.map.VALLEY_COUNT).toEqual({ min: 0, max: 0 });
     expect(() => validateRuleset(DEFAULT_RULESET)).not.toThrow();
+  });
+
+  it('puts back the rewards by terrain from before they moved, with each terrain\'s sites (Q250)', () => {
+    expect(rewardsMovedOf(DEFAULT_RULESET)).toBe(true);
+    expect(rewardsMovedOf(LARGER_MAP_RULESET)).toBe(true);
+    const before = withRewardsBeforeMove(DEFAULT_RULESET);
+    const largerBefore = withRewardsBeforeMove(LARGER_MAP_RULESET);
+    expect(rewardsMovedOf(before)).toBe(false);
+    expect(before.content.REWARD_TABLE).toBe(REWARD_TABLE_BEFORE_MOVE);
+    expect(largerBefore.content.REWARD_TABLE).toBe(LARGER_MAP_REWARD_TABLE_BEFORE_MOVE);
+    expect(before.config.pois.POI_COUNT).toEqual({ plains: 30, forest: 20, mountain: 15 });
+    expect(largerBefore.config.pois.POI_COUNT).toEqual({ plains: 42, forest: 28, mountain: 21 });
+    expect(withRewardsBeforeMove(before)).toBe(before);
+    for (const ruleset of [before, largerBefore, withoutStaminaSites(before), withoutStaminaSites(largerBefore)]) {
+      expect(() => validateRuleset(ruleset)).not.toThrow();
+    }
   });
 
   it('reports every problem at once rather than the first', () => {

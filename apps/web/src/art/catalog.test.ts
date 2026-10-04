@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_RULESET, REWARD_KINDS, TERRAINS, type GuardType, type RewardKind, type Terrain } from '@adventure/config';
+import {
+  DEFAULT_RULESET,
+  REWARD_KINDS,
+  REWARD_TABLE_BEFORE_MOVE,
+  TERRAINS,
+  type GuardType,
+  type RewardKind,
+  type Terrain,
+} from '@adventure/config';
 import { asNodeId, type Poi } from '@adventure/core';
 import { ArtError, atlasExtent } from './atlas.ts';
 import { atlasOf, buildArtCatalog, poiArt, sheetFile, wrapIndex, type ArtFiles } from './catalog.ts';
@@ -49,12 +57,12 @@ describe('the art catalog built from Art/', () => {
     }
   });
 
-  it('has a picture for every kind of POI the default rules can generate', () => {
+  it('has a picture for every kind of POI the default rules can generate, and the rules from before the rewards moved (Q250)', () => {
     // The §4.2 rows, stamina on any terrain (surplus leaves), and gold whose
     // guard §5.2 capped at 0, which the map carries as unguarded.
     const cases: [Terrain, RewardKind, GuardType | null][] = [];
     for (const terrain of TERRAINS) {
-      for (const row of DEFAULT_RULESET.content.REWARD_TABLE[terrain]) {
+      for (const row of [...DEFAULT_RULESET.content.REWARD_TABLE[terrain], ...REWARD_TABLE_BEFORE_MOVE[terrain]]) {
         cases.push([terrain, row.kind, row.guard]);
         if (row.guard !== null) cases.push([terrain, row.kind, null]);
         // Q115: a row whose guards a coin flip can turn to magic.
@@ -77,7 +85,23 @@ describe('the art catalog built from Art/', () => {
     expect(forestMagicGold.sheet).toBe('Mountains_GoldGuardedByMagic');
     expect(forestMagicGold.borrowed).toMatch(/Q115/);
     const borrowed = catalog.manifest.pois.filter((row) => row.borrowed !== null);
-    expect(borrowed).toHaveLength(2);
+    expect(borrowed).toHaveLength(5);
+  });
+
+  it('keeps the pictures of the rewards that moved terrain, each saying why (Q250, 922 A)', () => {
+    const moved: [Terrain, RewardKind, GuardType | null, string][] = [
+      ['plains', 'mountain_move', null, 'Forest_MountainMovement'],
+      ['plains', 'gold', 'magic', 'Mountains_GoldGuardedByMagic'],
+      ['forest', 'magic', null, 'Plains_Magic'],
+    ];
+    for (const [terrain, kind, guard, sheet] of moved) {
+      const row = poiArtRow(catalog.manifest, terrain, kind, guard);
+      expect(row.sheet).toBe(sheet);
+      expect(row.borrowed).toMatch(/Q250/);
+    }
+    // Their old rows stay for the maps from before (Q250): every picture is the same one.
+    expect(poiArtRow(catalog.manifest, 'forest', 'mountain_move', null).sheet).toBe('Forest_MountainMovement');
+    expect(poiArtRow(catalog.manifest, 'plains', 'magic', null).sheet).toBe('Plains_Magic');
   });
 
   it('draws every stamina site, the spare dead ends in any terrain included, with the stamina sheet (Q240, 903 A)', () => {

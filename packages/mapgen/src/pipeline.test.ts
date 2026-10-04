@@ -10,6 +10,7 @@ import {
   withMagicGuardChance,
   withoutDeepStart,
   withoutSeparateAreas,
+  withRewardsBeforeMove,
   type Ruleset,
   type Terrain,
 } from '@adventure/config';
@@ -159,21 +160,21 @@ describe('§4.2 — the reward table reconciles exactly', () => {
   it('accounts for every POI: table rows plus surplus-leaf stamina, nothing else', () => {
     const rows = TERRAINS.flatMap((terrain) => DEFAULT_RULESET.content.REWARD_TABLE[terrain]);
     const tabled = rows.reduce((sum, row) => sum + row.poiCount, 0);
-    // [Q240] The plains' stamina row: 5 sites holding 10 units.
+    // [Q240] The stamina row: 10 units, in the forest on 6 sites since Q250.
     const staminaRows = rows.filter((row) => row.kind === 'stamina');
     const tabledStamina = staminaRows.reduce((sum, row) => sum + row.poiCount, 0);
     const tabledStaminaUnits = staminaRows.reduce((sum, row) => sum + row.totalUnits, 0);
-    expect([tabledStamina, tabledStaminaUnits]).toEqual([5, 10]);
+    expect([tabledStamina, tabledStaminaUnits]).toEqual([6, 10]);
     for (const seed of SEEDS) {
       const map = mapOf(seed);
       const stamina = map.pois.filter((poi) => poi.reward.kind === 'stamina');
       const surplus = stamina.length - tabledStamina;
       expect(surplus).toBeGreaterThanOrEqual(0);
       expect(map.pois.length).toBe(tabled + surplus);
-      expect(stamina.filter((poi) => poi.terrain === 'plains').length).toBeGreaterThanOrEqual(tabledStamina);
+      expect(stamina.filter((poi) => poi.terrain === 'forest').length).toBeGreaterThanOrEqual(tabledStamina);
 
       // §3/§9, chat: surplus leaves, one stamina unit each; [Q240, 901 A] the
-      // table's stamina sites unguarded like every other plains reward but gold.
+      // table's stamina sites unguarded like every reward but gold.
       const units = stamina.reduce((sum, poi) => sum + poi.reward.units, 0);
       expect(units).toBe(tabledStaminaUnits + surplus * DEFAULT_RULESET.config.pois.OVERFLOW_LEAF_STAMINA_UNITS);
       for (const poi of stamina) {
@@ -186,7 +187,7 @@ describe('§4.2 — the reward table reconciles exactly', () => {
   it('puts the same gold and skill totals on every map, because §4.2 fixes them', () => {
     for (const seed of SEEDS) {
       const map = mapOf(seed);
-      expect(totalGoldUnits(map)).toBe(45);
+      expect(totalGoldUnits(map)).toBe(48);
       expect(totalSkillUnits(map)).toBe(75);
       expect(SKILL_KINDS.length).toBe(5);
     }
@@ -297,11 +298,15 @@ describe('§5.2 — guard strengths', () => {
     // gold POIs at 0 passes to 0.2% at the default 5, and 58 of those 60 maps
     // have none at all — so asking the default seeds for one is asking for a
     // coincidence. The sealing path still has to work when it does happen.
+    // [Q250] Drawn with the rewards from before they moved terrain: the
+    // forest's small remote gold piles were where the cap was met, and on the
+    // plains, the least remote terrain, these seeds no longer meet it.
+    const before = withRewardsBeforeMove(DEFAULT_RULESET);
     const noSwaps: Ruleset = {
-      ...DEFAULT_RULESET,
+      ...before,
       config: {
-        ...DEFAULT_RULESET.config,
-        balancing: { ...DEFAULT_RULESET.config.balancing, REWARD_SWAP_PASSES: 0 },
+        ...before.config,
+        balancing: { ...before.config.balancing, REWARD_SWAP_PASSES: 0 },
       },
     };
     const unguardedGold = SEEDS.flatMap((seed) =>
@@ -332,14 +337,22 @@ describe('§5.2 — guard strengths', () => {
   }, 30000);
 });
 
-describe('Q115, Q185 — forest gold guarded by magic by chance, today always', () => {
+describe('Q115, Q185 — forest gold guarded by magic by chance, always until the rewards moved (Q250)', () => {
+  // [Q250] Only maps from before the rewards moved terrain have forest gold.
+  const before = withRewardsBeforeMove(DEFAULT_RULESET);
+  const beforeMaps = new Map<string, GameMap>();
+  const beforeOf = (seed: string): GameMap => {
+    const held = beforeMaps.get(seed) ?? generateMap({ seed, ruleset: before, remotenessScorer: defaultRemotenessScorer });
+    beforeMaps.set(seed, held);
+    return held;
+  };
   const withoutForestMagic: Ruleset = {
-    ...DEFAULT_RULESET,
+    ...before,
     content: {
-      ...DEFAULT_RULESET.content,
+      ...before.content,
       REWARD_TABLE: {
-        ...DEFAULT_RULESET.content.REWARD_TABLE,
-        forest: DEFAULT_RULESET.content.REWARD_TABLE.forest.map(({ magicGuardChance: _chance, ...row }) => row),
+        ...before.content.REWARD_TABLE,
+        forest: before.content.REWARD_TABLE.forest.map(({ magicGuardChance: _chance, ...row }) => row),
       },
     },
   };
@@ -348,7 +361,7 @@ describe('Q115, Q185 — forest gold guarded by magic by chance, today always', 
   it('guards every forest gold POI by magic, keeping it in its §4.2 row (Q185)', () => {
     let guarded = 0;
     for (const seed of SEEDS) {
-      for (const poi of mapOf(seed).pois.filter(isForestGold)) {
+      for (const poi of beforeOf(seed).pois.filter(isForestGold)) {
         expect(poi.group).toEqual({ kind: 'gold', guard: 'fighting' });
         if (poi.guard === null) continue;
         expect(poi.guard.type).toBe('magic');
@@ -359,7 +372,7 @@ describe('Q115, Q185 — forest gold guarded by magic by chance, today always', 
   }, 30000);
 
   it('guards forest gold with both fighting and magic at the coin flip a kept game may have begun with (Q115, 730)', () => {
-    const coinFlip = withMagicGuardChance(DEFAULT_RULESET, COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE);
+    const coinFlip = withMagicGuardChance(before, COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE);
     const types = new Set<string>();
     for (const seed of SEEDS) {
       for (const poi of mapOf(seed, coinFlip).pois.filter(isForestGold)) if (poi.guard !== null) types.add(poi.guard.type);
@@ -369,7 +382,7 @@ describe('Q115, Q185 — forest gold guarded by magic by chance, today always', 
 
   it('leaves plains gold fighting-guarded and mountain gold split by row', () => {
     for (const seed of SEEDS) {
-      for (const poi of mapOf(seed).pois) {
+      for (const poi of beforeOf(seed).pois) {
         if (poi.guard === null || isForestGold(poi)) continue;
         expect(poi.guard.type).toBe(poi.group.guard);
       }
@@ -380,18 +393,55 @@ describe('Q115, Q185 — forest gold guarded by magic by chance, today always', 
   // else on any seed: every road, reward, strength and picture is as it was.
   it('changes nothing on a map but the guard type of some forest gold', () => {
     for (const seed of SEEDS) {
-      const before = mapOf(seed, withoutForestMagic);
-      const after = mapOf(seed);
-      expect(after.graph).toEqual(before.graph);
-      expect(after.attempts).toBe(before.attempts);
+      const without = mapOf(seed, withoutForestMagic);
+      const after = beforeOf(seed);
+      expect(after.graph).toEqual(without.graph);
+      expect(after.attempts).toBe(without.attempts);
       expect(after.pois.map(({ guard, ...poi }) => ({ ...poi, strength: guard?.strength ?? 0 }))).toEqual(
-        before.pois.map(({ guard, ...poi }) => ({ ...poi, strength: guard?.strength ?? 0 })),
+        without.pois.map(({ guard, ...poi }) => ({ ...poi, strength: guard?.strength ?? 0 })),
       );
       after.pois.forEach((poi, index) => {
-        if (!isForestGold(poi)) expect(poi.guard).toEqual(before.pois[index]?.guard);
+        if (!isForestGold(poi)) expect(poi.guard).toEqual(without.pois[index]?.guard);
       });
     }
   }, 60000);
+});
+
+describe('Q250 — the rewards by terrain since they moved', () => {
+  // Andrei, 2026-10-04: the plains get the three speeds, the magic-guarded gold
+  // that was the forest's and the two fortresses; the forests magic, combat
+  // and stamina; the mountains stay as they were. Spare dead ends still hold
+  // stamina on any terrain (§3).
+  const kindsOn: Record<Terrain, readonly string[]> = {
+    plains: ['plains_move', 'forest_move', 'mountain_move', 'gold/fighting', 'gold/magic', 'stamina'],
+    forest: ['magic', 'fighting', 'stamina'],
+    mountain: ['gold/fighting', 'gold/magic', 'stamina'],
+  };
+
+  it('puts each reward on its terrain, and no gold in the forest', () => {
+    for (const seed of SEEDS) {
+      for (const poi of mapOf(seed).pois) {
+        const key = poi.reward.kind === 'gold' ? `gold/${poi.group.guard}` : poi.reward.kind;
+        expect(kindsOn[poi.terrain]).toContain(key);
+        // A plains stamina site is a spare dead end, never the table's.
+        if (poi.reward.kind === 'stamina' && poi.terrain !== 'forest') {
+          expect(poi.reward.units).toBe(DEFAULT_RULESET.config.pois.OVERFLOW_LEAF_STAMINA_UNITS);
+        }
+      }
+    }
+  }, 30000);
+
+  it("guards the plains' small gold by magic and its fortresses by combat", () => {
+    let magic = 0;
+    for (const seed of SEEDS) {
+      for (const poi of mapOf(seed).pois) {
+        if (poi.terrain !== 'plains' || poi.reward.kind !== 'gold' || poi.guard === null) continue;
+        expect(poi.guard.type).toBe(poi.group.guard);
+        if (poi.guard.type === 'magic') magic += 1;
+      }
+    }
+    expect(magic).toBeGreaterThan(0);
+  }, 30000);
 });
 
 describe('§6 — starting position', () => {
@@ -493,7 +543,7 @@ describe('regeneration', () => {
       ...DEFAULT_RULESET,
       config: {
         ...DEFAULT_RULESET.config,
-        pois: { ...DEFAULT_RULESET.config.pois, POI_COUNT: { plains: 30, forest: 20, mountain: 100 } },
+        pois: { ...DEFAULT_RULESET.config.pois, POI_COUNT: { ...DEFAULT_RULESET.config.pois.POI_COUNT, mountain: 100 } },
       },
       content: {
         REWARD_TABLE: {
@@ -547,7 +597,7 @@ describe('Q160 — the larger map for 4 and 5 players', () => {
     });
   }, 30000);
 
-  it('matches its reward table row for row, with 63 gold and 105 speed and skill units', () => {
+  it('matches its reward table row for row, with 67 gold and 105 speed and skill units', () => {
     each((map) => {
       for (const terrain of TERRAINS) {
         for (const row of LARGER_MAP_RULESET.content.REWARD_TABLE[terrain]) {
@@ -560,7 +610,7 @@ describe('Q160 — the larger map for 4 and 5 players', () => {
           expect(group.reduce((sum, poi) => sum + poi.reward.units, 0)).toBe(row.totalUnits);
         }
       }
-      expect(totalGoldUnits(map)).toBe(63);
+      expect(totalGoldUnits(map)).toBe(67);
       expect(totalSkillUnits(map)).toBe(105);
     });
   }, 30000);

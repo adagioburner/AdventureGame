@@ -93,7 +93,7 @@ Stop on an unguarded site and you claim its whole reward. Stop on a guarded one 
 
 Bigger gold stacks have stronger guards, up to 10.
 
-Gold on plains is guarded by combat, in forests by magic, and in the mountains by either.
+There is no gold in forests. On the plains and in the mountains, gold is guarded by combat or magic.
 
 ### Trying again
 
@@ -164,7 +164,7 @@ Computer players follow the same rules. When setting up, you choose how many sec
 | Stamina per step past your free steps | Plains 1 · forest 2 · mountains 3 |
 | Fight | 1 die + your skill; beat the guard's strength to win |
 | Buy a speed or skill | 1 gold a unit, on your turn |
-| Gold on the map | 45, or 63 with 4 or 5 players |
+| Gold on the map | 48, or 67 with 4 or 5 players |
 | Win | Lead by more than the gold left on the map |
 | Online time limit | 1, 3, 7 or 14 days |
 

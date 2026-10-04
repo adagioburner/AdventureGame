@@ -24,6 +24,8 @@ export {
   FOREST_MAGIC_GUARD_CHANCE,
   LARGER_MAP_GAME_CONTENT,
   LARGER_MAP_REWARD_TABLE,
+  LARGER_MAP_REWARD_TABLE_BEFORE_MOVE,
+  REWARD_TABLE_BEFORE_MOVE,
 } from './content.ts';
 export { validateRuleset, resolvePending, RulesetError, UnresolvedDesignError } from './validate.ts';
 
@@ -34,8 +36,14 @@ import {
   LARGER_MAP_ENGINEERING_CONFIG,
   LARGER_MAP_GAME_CONFIG,
 } from './defaults.ts';
-import { DEFAULT_GAME_CONTENT, LARGER_MAP_GAME_CONTENT } from './content.ts';
-import type { Ruleset } from './types.ts';
+import {
+  DEFAULT_GAME_CONTENT,
+  LARGER_MAP_GAME_CONTENT,
+  LARGER_MAP_REWARD_TABLE_BEFORE_MOVE,
+  REWARD_TABLE_BEFORE_MOVE,
+} from './content.ts';
+import type { RewardTable, Ruleset } from './types.ts';
+import type { PerTerrain, Terrain } from './vocabulary.ts';
 
 /** The v1 ruleset: GDD.md §11 defaults + §4.2 content + engineering knobs. */
 export const DEFAULT_RULESET: Ruleset = {
@@ -103,6 +111,41 @@ export function withMagicGuardChance(ruleset: Ruleset, chance: number): Ruleset 
     ...ruleset,
     content: { ...ruleset.content, REWARD_TABLE: { ...ruleset.content.REWARD_TABLE, forest } },
   };
+}
+
+/**
+ * [Q250] Whether maps made with `ruleset` have the rewards as they moved
+ * terrain on 2026-10-04: the three speeds and the magic-guarded gold on the
+ * plains, magic, combat and stamina in the forest, and so no gold in the
+ * forest. False for a map made before, online or kept on one device, which
+ * keeps the rewards it began with.
+ */
+export function rewardsMovedOf(ruleset: Ruleset): boolean {
+  return !ruleset.content.REWARD_TABLE.forest.some((row) => row.kind === 'gold');
+}
+
+/**
+ * [Q250] `ruleset` with the rewards by terrain as they were before they moved,
+ * and each terrain's sites with them, so a hot seat game kept from before gets
+ * back the map it began on. `ruleset` itself when it already has them. Apply
+ * it before `withMagicGuardChance` and `withoutStaminaSites`, which change the
+ * table it puts back.
+ */
+export function withRewardsBeforeMove(ruleset: Ruleset): Ruleset {
+  if (!rewardsMovedOf(ruleset)) return ruleset;
+  const table = mapSizeOfRuleset(ruleset) === 'larger' ? LARGER_MAP_REWARD_TABLE_BEFORE_MOVE : REWARD_TABLE_BEFORE_MOVE;
+  const pois = ruleset.config.pois;
+  return {
+    ...ruleset,
+    config: { ...ruleset.config, pois: { ...pois, POI_COUNT: sitesOf(table) } },
+    content: { ...ruleset.content, REWARD_TABLE: table },
+  };
+}
+
+/** Each terrain's sites under `table`: the sum of its rows' sites, as `POI_COUNT` must be. */
+function sitesOf(table: RewardTable): PerTerrain<number> {
+  const sites = (terrain: Terrain): number => table[terrain].reduce((sum, row) => sum + row.poiCount, 0);
+  return { plains: sites('plains'), forest: sites('forest'), mountain: sites('mountain') };
 }
 
 /**

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_GAME_CONFIG, DEFAULT_REWARD_TABLE, type RewardTable } from '@adventure/config';
+import { DEFAULT_GAME_CONFIG, DEFAULT_REWARD_TABLE, REWARD_TABLE_BEFORE_MOVE, type RewardTable } from '@adventure/config';
 import { asNodeId, createRng, type NodeId } from '@adventure/core';
 
 import type { PoiAssignment } from '../types.ts';
@@ -109,9 +109,10 @@ describe('assignGuardStrengths', () => {
 });
 
 describe('drawGuardTypes (Q115)', () => {
+  // [Q250] Only maps from before the rewards moved terrain have forest gold.
   const withForestChance = (chance: number): RewardTable => ({
-    ...DEFAULT_REWARD_TABLE,
-    forest: DEFAULT_REWARD_TABLE.forest.map((row) =>
+    ...REWARD_TABLE_BEFORE_MOVE,
+    forest: REWARD_TABLE_BEFORE_MOVE.forest.map((row) =>
       row.kind === 'gold' ? { ...row, magicGuardChance: chance } : row,
     ),
   });
@@ -145,9 +146,24 @@ describe('drawGuardTypes (Q115)', () => {
     expect(drawn).toEqual(['fighting', 'magic', 'fighting', null, null, 'magic', 'magic']);
   });
 
-  it('guards every forest gold POI by magic in the default table (Q185)', () => {
+  it('guarded every forest gold POI by magic before the rewards moved terrain (Q185, Q250)', () => {
     const pois = Array.from({ length: 40 }, (_, node) => forestGold(node));
-    expect(new Set(drawGuardTypes(pois, DEFAULT_REWARD_TABLE, createRng('coin')))).toEqual(new Set(['magic']));
+    expect(new Set(drawGuardTypes(pois, REWARD_TABLE_BEFORE_MOVE, createRng('coin')))).toEqual(new Set(['magic']));
+  });
+
+  it('draws nothing on the default table, whose magic gold has its own row on the plains (Q250)', () => {
+    const rng = createRng('guards');
+    const untouched = createRng('guards');
+    const plainsMagicGold = assignment({ terrain: 'plains', guardType: 'magic' });
+    expect(drawGuardTypes([...everyKind, plainsMagicGold], DEFAULT_REWARD_TABLE, rng)).toEqual([
+      'fighting',
+      'magic',
+      'fighting',
+      null,
+      null,
+      'magic',
+    ]);
+    expect(rng.nextUint32()).toBe(untouched.nextUint32());
   });
 
   it("flips each forest gold POI's guard on its own at a chance of one half", () => {

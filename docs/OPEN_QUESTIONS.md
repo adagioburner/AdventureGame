@@ -3573,6 +3573,93 @@ from `TERRAIN_SEEDS`.
 
 ---
 
+### Q250. ~~Which rewards go on which terrain?~~ — **answered 2026-10-04: as Andrei laid out, every reward keeping its amount and its sites; the moved magic gold guarded by the usual rule; every reward keeping its pictures; the rulebook's short line; the softer forest plan rerun, and no longer beating normal play over 24 games (920-924, 927-929); then forest stamina 6 sites with 10 units and plains magic gold 5 sites with 8 gold, his own numbers, and on 4-5 player maps 9 stamina sites with 14 units and 7 magic gold sites with 11 gold (925, 926)**
+
+Andrei, 2026-10-04 at 08:08: *"we seem to have found a simple super strategy:
+buy forest speed +4 and go to the forest. We need to change the allocation of
+resources between terrains. [...] Plains get: plains speed rewards, forest
+speed rewards, mountain speed rewards, the gold guarded by magic that used to
+be in the forest before, the two "fortresses", large gold piles guarded by
+combat. Forests get: magic rewards, combat rewards, stamina rewards. Mountains
+stay as they are now."* The super strategy was the Buying skills thread's
+softer forest plan (a computer seat buys forest speed +4 on its first turn and
+heads for the forest): from every seat on 8 maps whose forest was one piece it
+won 15 and shared 1 of 24 games, against 8 wins for the same seats playing
+normally. The details were asked at 08:20 with pictures and numbers from 300
+maps per size, and answered between 11:47 and 11:57.
+
+920. **Amounts:** every reward keeps its units and its number of sites and only
+     moves terrain, so the plains have 31 sites instead of 30 and the forest 19
+     instead of 20 (44 and 26 instead of 42 and 28 on the larger map)
+     (recommended), or some amounts change. **Answered**: A.
+921. **Guards on the magic gold:** the rule all gold follows, bigger piles and
+     less remote sites guarded more strongly (recommended), or other
+     strengths. Plains sites are less remote than forest ones, so these guards
+     come out about 1 stronger: a 1 gold pile's mostly 3 instead of 2, a 2 gold
+     pile's 5 instead of 4. **Answered**: A.
+922. **Pictures:** each reward keeps its own on its new ground: the forts of
+     mountains speed and the guardians of the magic gold on the plains, the
+     magic houses and the stamina pictures in the forest (recommended), or new
+     sheets from him later. **Answered**: A.
+923. **Rulebook:** "Gold on plains is guarded by combat, in forests by magic,
+     and in the mountains by either" becomes "There is no gold in forests. On
+     the plains and in the mountains, gold is guarded by combat or magic."
+     (recommended), or a longer line saying the plains' big piles are guarded
+     by combat and their small ones by magic. **Answered**: A.
+924. **Checking it:** the Buying skills thread reruns the softer forest plan on
+     the new maps (recommended), or no runs. **Answered** in his words: *"i
+     dont think the softer forest plan makes any sense in the new config, but
+     yes, we can rerun it on a few games"*: 6 games, 2 maps from every seat.
+
+At 12:14, after the 11:48 reminder of the sites and units on the plains and in
+the forest: *"you know, we can fill forests up to their usual 20 sites, by
+changing stamina to 6/10. And on plains, gold with magic guards can grow to
+5/8"*. So the forest is back to 20 sites, the plains have 32, and a 2-3 player
+map has 48 gold instead of 45 (the rulebook's quick reference says so). He
+named the 2-3 player numbers only, so the 4-5 player ones were asked:
+
+925. **Stamina in the forest on 4-5 player maps:** 9 sites with 14 units, which
+     keeps the forest at its usual 28 sites (recommended), or 8 sites with 14
+     units, the plain 1.4 times, leaving it at 27. **Answered**: A.
+926. **Magic gold on the plains on 4-5 player maps:** 7 sites with 11 gold, 1.4
+     times as usual, so the plains have 45 sites and the map 67 gold instead of
+     63 (recommended), or other numbers. **Answered**: A.
+
+The softer forest plan (924), played by the Buying skills thread on this
+build: on 2 maps it won 4 of 6 games, as before the move, too few to tell.
+
+927. **A bigger check:** the plan from every seat on the 8 one-piece forest
+     maps that showed the super strategy, plus a normal game on each, 32
+     games (recommended), or stop. **Answered**: A. The plan seat won 8 of
+     24 and shared none; the same seats playing normally won 7 and shared 2
+     (before the move: 15 and 1 shared, against 8). Against its own normal
+     game it finished better 10 times, the same 5 and worse 9, and averaged
+     14.5 gold against 15.8. After the forest the plan seats mostly bought
+     mountains speed and took mountain gold.
+928. **Which maps:** asked when the terrain seeds change (Q245) merged while
+     the games ran on the map shapes from before it; they finished before an
+     answer, so it was moot.
+929. **Rerun on the merged maps:** stop here, since those maps nearly always
+     split the forest, where the plan was weaker even before the move
+     (recommended, inferred), or 32 more games. **Answered**: A.
+
+Measured over 300 maps per size as built (in road steps from the start to the
+nearest site): magic 5 → 13, stamina 5 → 13, mountains speed 12 → 4,
+magic-guarded gold 14 → 5; combat stays 12, plains and forest speed 3-4. The
+magic gold's guards: a 1 gold pile mostly 3 (2.2 → 3.0 on average), a 2 gold
+pile 5.6 (4.1 before), and about one pile in twelve now holds 3 gold, guarded 8
+on average. The start rule (Q227) finds a plains space under 0.1 on 299 of 300
+2-3 player maps (297 before) and on every 4-5 player one.
+
+Stated without a choice, unchallenged: games already started keep the map
+they began with, online because the map carries its rules, on one device
+because the kept game records whether its rewards had moved; with the sites
+moved and added a seed draws a different map than before. Engine details:
+since no forest row has gold any more, `FOREST_MAGIC_GUARD_CHANCE` only
+reaches maps from before, through `REWARD_TABLE_BEFORE_MOVE`.
+
+---
+
 ## C. Decisions I made that are *implementation*, not design
 
 Listed so you can veto any that read as design to you.
