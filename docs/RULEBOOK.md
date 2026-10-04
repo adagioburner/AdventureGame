@@ -28,7 +28,7 @@ Each site holds exactly one kind of reward, often a stack of several units, show
 | Combat | Red crossed swords | Added to your roll against combat guards |
 | Magic | Purple orb | Added to your roll against magic guards |
 | Gold | Yellow coin | Wins the game, and buys speeds and skills |
-| Stamina | White heart | Paid for steps beyond your free ones |
+| Stamina | White heart | 5 stamina for each heart, paid for steps beyond your free ones |
 
 ## Setting up
 
@@ -160,6 +160,7 @@ Computer players follow the same rules. When setting up, you choose how many sec
 | Starting gold | 5 |
 | A turn | Move (then claim or fight where you stop) or rest |
 | Rest | +5 stamina |
+| Stamina site | 5 stamina for each heart |
 | Stamina per step past your free steps | Plains 1 · forest 2 · mountains 3 |
 | Fight | 1 die + your skill; beat the guard's strength to win |
 | Buy a speed or skill | 1 gold a unit, on your turn |

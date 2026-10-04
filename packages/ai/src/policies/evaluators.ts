@@ -74,8 +74,10 @@ function normalisedSkills(state: GameState, subject: PlayerId): number {
  * [SOURCE §9, chat] Andrei, 2026-09-30: "p defined as (skills and gold
  * claimed) / (total skills and gold) so we have continuous progress from the
  * start". It was gold alone (Q18), which stood at 0 until the first gold was
- * taken however many skill sites had gone. Stamina rewards are not counted, and
- * a v1 map has none. A map with none of either reads as 1.
+ * taken however many skill sites had gone. Stamina rewards are not counted:
+ * there were none but the spare dead ends' until the plains' stamina sites
+ * (Q240), which left how the computer thinks as it was. A map with none of
+ * either reads as 1.
  */
 function claimedProgress(state: GameState, measure: ProgressMeasure): number {
   let gold = 0;

@@ -183,6 +183,11 @@ export function validateRuleset(ruleset: Ruleset): void {
   if (gold !== undefined && (!Number.isInteger(gold) || gold < 0)) {
     problems.push('Q200: players.STARTING_GOLD must be a non-negative integer.');
   }
+  // Q240: whole stamina for a unit, at least 1, as a unit was worth before.
+  const perUnit = config.pois.STAMINA_PER_UNIT;
+  if (perUnit !== undefined && (!Number.isInteger(perUnit) || perUnit < 1)) {
+    problems.push('Q240: pois.STAMINA_PER_UNIT must be a positive integer.');
+  }
 
   if (problems.length > 0) {
     throw new RulesetError(`Invalid ruleset:\n  - ${problems.join('\n  - ')}`);

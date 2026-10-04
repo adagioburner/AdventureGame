@@ -17,6 +17,7 @@ import type { NodeId, PlayerId, Seat } from '../ids.ts';
 import type { BoardPost } from '../messageboard.ts';
 import type { ControlMode, PlannedPath, PlayerState, PlayerStats } from '../player.ts';
 import { isClaimed, type PoiRuntimeState } from '../poi.ts';
+import { rewardAmount } from '../reward.ts';
 import { activePlayer, playerById, playerBySeat, poiRuntimeAt, type GameState } from '../state.ts';
 import { assertWalkable, refreshAllowance, resolveMovement } from './movement.ts';
 import { resolveInteraction } from './interaction.ts';
@@ -218,8 +219,9 @@ function applyArrival(state: GameState, playerId: PlayerId, dice: DiceSource, ev
     withPlayer(state, playerId, (current) => ({
       ...current,
       // §6/§4.1: the seven stats are the seven reward kinds, so claiming a
-      // reward is one addition, whatever the kind.
-      stats: addToStat(current.stats, reward.kind, reward.units),
+      // reward is one addition, whatever the kind; [Q240] a stamina unit adds
+      // STAMINA_PER_UNIT.
+      stats: addToStat(current.stats, reward.kind, rewardAmount(reward, state.map.ruleset.config)),
     })),
     node,
     { claimedBy: playerId, claimedOnTurn: state.turn.number },

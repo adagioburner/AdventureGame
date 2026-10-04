@@ -3,6 +3,7 @@ import {
   offeredReward,
   poiAt,
   previewPath,
+  rewardAmount,
   terrainStepCost,
   unclaimedGoldUnits,
   type GameEvent,
@@ -218,7 +219,8 @@ function describeInteraction(
 ): { headline: string; detail: string } | null {
   const reward = resolution.reward;
   if (reward === null) return null;
-  const prize = `${reward.units} ${STAT_LABEL[reward.kind]}`;
+  // [Q240, 906 A] What the site gives: a stamina unit is STAMINA_PER_UNIT stamina.
+  const prize = `${rewardAmount(reward, map.ruleset.config)} ${STAT_LABEL[reward.kind]}`;
   const guard = poiAt(map, resolution.node)?.guard ?? null;
 
   if (resolution.roll === null || resolution.skillUsed === null || guard === null) {
@@ -322,7 +324,7 @@ export function describeNode(state: GameState, node: NodeId): string {
   const taken = index !== undefined && runtime?.claimedBy !== null;
   if (poi === undefined || taken) return `a ${terrain} space`;
   const reward = offeredReward(poi, runtime);
-  const what = `${reward.units} ${STAT_LABEL[reward.kind]}`;
+  const what = `${rewardAmount(reward, map.ruleset.config)} ${STAT_LABEL[reward.kind]}`;
   if (poi.guard === null) return `the ${what} site (${terrain})`;
   return `the ${what} site (${terrain}, ${GUARD_LABEL[poi.guard.type]} guard ${poi.guard.strength})`;
 }

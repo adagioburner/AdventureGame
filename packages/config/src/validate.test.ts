@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_RULESET } from './index.ts';
+import { DEFAULT_RULESET, LARGER_MAP_RULESET, withoutStaminaSites } from './index.ts';
 import type { PendingValue, RewardGroupSpec, Ruleset } from './types.ts';
 import { RulesetError, UnresolvedDesignError, resolvePending, validateRuleset } from './validate.ts';
 import type { Terrain } from './vocabulary.ts';
@@ -38,7 +38,7 @@ describe('validateRuleset', () => {
     const row = firstPlainsRow(ruleset);
     plainsRows(ruleset)[0] = { ...row, poiCount: row.poiCount + 1 };
     expect(() => validateRuleset(ruleset)).toThrow(RulesetError);
-    expect(() => validateRuleset(ruleset)).toThrow(/§4.2\/§3: plains reward groups cover 26 POIs/);
+    expect(() => validateRuleset(ruleset)).toThrow(/§4.2\/§3: plains reward groups cover 31 POIs/);
   });
 
   it('rejects a group with fewer units than POIs', () => {
@@ -82,7 +82,7 @@ describe('validateRuleset', () => {
   it('rejects more POIs than the map has nodes', () => {
     const ruleset = clone();
     (ruleset.config.map as { MAP_NODE_COUNT: number }).MAP_NODE_COUNT = 10;
-    expect(() => validateRuleset(ruleset)).toThrow(/60 POIs requested but only 10 nodes/);
+    expect(() => validateRuleset(ruleset)).toThrow(/65 POIs requested but only 10 nodes/);
   });
 
   it('rejects an inverted MIN/MAX range', () => {
@@ -138,6 +138,16 @@ describe('validateRuleset', () => {
     const limit = clone();
     (limit.config.start as { MAX_REMOTENESS: number }).MAX_REMOTENESS = 0;
     expect(() => validateRuleset(limit)).toThrow(/start\.MAX_REMOTENESS must be a positive number/);
+  });
+
+  it('rejects a STAMINA_PER_UNIT below 1 or not a whole number, and accepts a ruleset from before the stamina sites (Q240)', () => {
+    for (const perUnit of [0, 2.5]) {
+      const ruleset = clone();
+      (ruleset.config.pois as { STAMINA_PER_UNIT: number }).STAMINA_PER_UNIT = perUnit;
+      expect(() => validateRuleset(ruleset)).toThrow(/pois\.STAMINA_PER_UNIT must be a positive integer/);
+    }
+    expect(() => validateRuleset(withoutStaminaSites(DEFAULT_RULESET))).not.toThrow();
+    expect(() => validateRuleset(withoutStaminaSites(LARGER_MAP_RULESET))).not.toThrow();
   });
 
   it('reports every problem at once rather than the first', () => {

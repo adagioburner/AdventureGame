@@ -62,6 +62,7 @@ SHEETS = {
     "Plains_ForestMovement": [("Plains_ForestMovement.png", 12)],
     "Forest_MountainMovement": [("Forest_MountainMovement.png", 12)],
     "Plains_Magic": [("Plains_Magic.png", 12)],
+    "Plains_Stamina": [("Plains_Stamina.png", 12)],
     "Forest_Fighting": [("Forest_Fighting.png", 12)],
     "Plains_GoldGuardedByFighting": [("Plains_GoldGuardedByFighting.png", 6)],
     "Mountains_GoldGuardedByFighting": [

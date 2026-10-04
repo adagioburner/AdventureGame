@@ -117,6 +117,15 @@ export interface PoiConfig {
    */
   readonly OVERFLOW_LEAF_STAMINA_UNITS: number;
   /**
+   * [Q240] `STAMINA_PER_UNIT` — the stamina one unit of a stamina reward gives
+   * when it is claimed, on every stamina site, the spare dead ends' included
+   * (903 A). Andrei, 2026-10-03: "each stamina unit adds 5 stamina".
+   *
+   * Absent on the maps of games started before stamina sites came to the
+   * plains, whose stamina units give 1 stamina each, as they began with.
+   */
+  readonly STAMINA_PER_UNIT?: number;
+  /**
    * §11 `GUARD_STRENGTH_MIN` / `MAX`. §11's table says 2–10, but [SOURCE §5.2,
    * chat] superseded the minimum: the guard-strength formula is "capped between
    * 0 and 10", and 0 is a meaningful outcome — it means the POI ends up

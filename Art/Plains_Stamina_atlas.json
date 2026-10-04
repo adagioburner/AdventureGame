@@ -1,0 +1,224 @@
+{
+  "sheet": "Plains_Stamina_sheet.png",
+  "cell_width": 240,
+  "cell_height": 227,
+  "notes": "Packed by Art/tools/pack_sheets.py from Art/originals/, the artist's sheets as supplied, with each picture's grey drop shadow made black and see-through. Do not edit by hand: replace the original and run the tool again.",
+  "sprites": [
+    {
+      "id": "Plains_Stamina_01",
+      "x": 0,
+      "y": 0,
+      "width": 240,
+      "height": 227,
+      "anchor": {
+        "x": 120,
+        "y": 214
+      },
+      "original": "Plains_Stamina.png",
+      "source_box_in_original": [
+        89,
+        242,
+        175,
+        188
+      ]
+    },
+    {
+      "id": "Plains_Stamina_02",
+      "x": 240,
+      "y": 0,
+      "width": 240,
+      "height": 227,
+      "anchor": {
+        "x": 120,
+        "y": 214
+      },
+      "original": "Plains_Stamina.png",
+      "source_box_in_original": [
+        395,
+        275,
+        182,
+        146
+      ]
+    },
+    {
+      "id": "Plains_Stamina_03",
+      "x": 480,
+      "y": 0,
+      "width": 240,
+      "height": 227,
+      "anchor": {
+        "x": 120,
+        "y": 213
+      },
+      "original": "Plains_Stamina.png",
+      "source_box_in_original": [
+        699,
+        245,
+        181,
+        177
+      ]
+    },
+    {
+      "id": "Plains_Stamina_04",
+      "x": 720,
+      "y": 0,
+      "width": 240,
+      "height": 227,
+      "anchor": {
+        "x": 120,
+        "y": 214
+      },
+      "original": "Plains_Stamina.png",
+      "source_box_in_original": [
+        1005,
+        267,
+        186,
+        169
+      ]
+    },
+    {
+      "id": "Plains_Stamina_05",
+      "x": 0,
+      "y": 227,
+      "width": 240,
+      "height": 227,
+      "anchor": {
+        "x": 120,
+        "y": 214
+      },
+      "original": "Plains_Stamina.png",
+      "source_box_in_original": [
+        89,
+        616,
+        178,
+        170
+      ]
+    },
+    {
+      "id": "Plains_Stamina_06",
+      "x": 240,
+      "y": 227,
+      "width": 240,
+      "height": 227,
+      "anchor": {
+        "x": 120,
+        "y": 214
+      },
+      "original": "Plains_Stamina.png",
+      "source_box_in_original": [
+        396,
+        582,
+        179,
+        203
+      ]
+    },
+    {
+      "id": "Plains_Stamina_07",
+      "x": 480,
+      "y": 227,
+      "width": 240,
+      "height": 227,
+      "anchor": {
+        "x": 120,
+        "y": 214
+      },
+      "original": "Plains_Stamina.png",
+      "source_box_in_original": [
+        693,
+        623,
+        198,
+        153
+      ]
+    },
+    {
+      "id": "Plains_Stamina_08",
+      "x": 720,
+      "y": 227,
+      "width": 240,
+      "height": 227,
+      "anchor": {
+        "x": 120,
+        "y": 214
+      },
+      "original": "Plains_Stamina.png",
+      "source_box_in_original": [
+        998,
+        611,
+        200,
+        164
+      ]
+    },
+    {
+      "id": "Plains_Stamina_09",
+      "x": 0,
+      "y": 454,
+      "width": 240,
+      "height": 227,
+      "anchor": {
+        "x": 120,
+        "y": 214
+      },
+      "original": "Plains_Stamina.png",
+      "source_box_in_original": [
+        73,
+        967,
+        193,
+        150
+      ]
+    },
+    {
+      "id": "Plains_Stamina_10",
+      "x": 240,
+      "y": 454,
+      "width": 240,
+      "height": 227,
+      "anchor": {
+        "x": 120,
+        "y": 214
+      },
+      "original": "Plains_Stamina.png",
+      "source_box_in_original": [
+        384,
+        946,
+        192,
+        175
+      ]
+    },
+    {
+      "id": "Plains_Stamina_11",
+      "x": 480,
+      "y": 454,
+      "width": 240,
+      "height": 227,
+      "anchor": {
+        "x": 120,
+        "y": 214
+      },
+      "original": "Plains_Stamina.png",
+      "source_box_in_original": [
+        698,
+        943,
+        189,
+        181
+      ]
+    },
+    {
+      "id": "Plains_Stamina_12",
+      "x": 720,
+      "y": 454,
+      "width": 240,
+      "height": 227,
+      "anchor": {
+        "x": 120,
+        "y": 214
+      },
+      "original": "Plains_Stamina.png",
+      "source_box_in_original": [
+        1002,
+        951,
+        196,
+        165
+      ]
+    }
+  ]
+}

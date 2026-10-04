@@ -1,4 +1,4 @@
-import { rulesetForMapSize, withMagicGuardChance, withoutDeepStart, type MapSize } from '@adventure/config';
+import { rulesetForMapSize, withMagicGuardChance, withoutDeepStart, withoutStaminaSites, type MapSize } from '@adventure/config';
 import { friendlySeed, type GameMap, type Seed } from '@adventure/core';
 import { generateMap } from '@adventure/mapgen';
 import { defaultRemotenessScorer } from '@adventure/sim';
@@ -12,12 +12,14 @@ import { defaultRemotenessScorer } from '@adventure/sim';
  * [Q185, 730 A] `magicGuardChance` draws it with forest gold magic-guarded at
  * that chance instead of today's, for a kept game that began before it changed.
  * [Q227] `deepStart` false draws it as before the start moved deep into the
- * plains, for a kept game from before.
+ * plains, for a kept game from before. [Q240] `staminaSites` false draws it as
+ * before the plains had stamina sites, likewise.
  */
-export function mapFor(seed: Seed, size: MapSize, magicGuardChance?: number, deepStart = true): GameMap {
+export function mapFor(seed: Seed, size: MapSize, magicGuardChance?: number, deepStart = true, staminaSites = true): GameMap {
   const today = rulesetForMapSize(size);
   const chance = magicGuardChance === undefined ? today : withMagicGuardChance(today, magicGuardChance);
-  const ruleset = deepStart ? chance : withoutDeepStart(chance);
+  const start = deepStart ? chance : withoutDeepStart(chance);
+  const ruleset = staminaSites ? start : withoutStaminaSites(start);
   return generateMap({ seed, ruleset, remotenessScorer: defaultRemotenessScorer });
 }
 
