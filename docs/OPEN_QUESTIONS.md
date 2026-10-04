@@ -3403,7 +3403,7 @@ stamina a unit are named settings (the stamina row of `REWARD_TABLE`,
 map than before; computer players take stamina sites by the same rules, and
 how they think does not change.
 
-### Q245. ~~How many seeds do the forest and the mountains grow from?~~ — **answered 2026-10-04: 3 seeds for every terrain, plains included, on both map sizes, nothing keeping areas apart, in games started from now on (910-914)**
+### Q245. ~~How many seeds do the forest and the mountains grow from?~~ — **answered 2026-10-04: 3 seeds for the forest and the mountains on both map sizes, nothing keeping areas apart, in games started from now on (910-914); the plains' count asked again (915), open**
 
 Andrei, 2026-10-04 at 04:46: *"I noticed that games get more interesting when
 there are more than one area of forest and mountains. can we increase the
@@ -3446,6 +3446,13 @@ areas of one terrain (61% of 2-3 player maps, 63% of 4-5) and of two terrains
      or at least 2 spaces (recommended), which leaves 17%, most of them across a
      valley, for both terrains in 2+ areas on 83% of maps instead of 87%.
      **Falls away** with 910 B: nothing keeps areas apart.
+915. **The plains, again** (his question at 06:50, "the numbers for 3 seeds
+     mountains, 3 seeds forests, and 2 seeds plains? It may be a slightly
+     better configuration"): plains from 2 seeds, forest and mountains from 3
+     (recommended): forest in 2+ areas on 75% / 76% of maps, plains on 43% /
+     49%, 3+ areas of two terrains on 10% / 12%, start 7.4 / 9.1 road steps
+     deep; or 3 for every terrain as built: 77% / 81%, 57% / 61%, 15% / 11%,
+     6.2 / 8.5. **Open.**
 
 As built, measured on the same 300 maps per size (2-3 / 4-5 players): forest
 in 2 or more areas 77% / 81%, mountains 83% / 84%, plains 57% / 61%; one forest
