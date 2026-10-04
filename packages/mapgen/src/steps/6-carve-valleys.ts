@@ -74,7 +74,7 @@ export const carveValleysStep: GenerationStep = {
       terrainTargets(draft.terrain.length, context.ruleset.config.map.TERRAIN_AREA_SHARE),
       lockedNodes(draft),
       context.rng,
-      keptApartOf(context.ruleset.config.map, draft.terrain.length, draft.triangulation),
+      keptApartOf(context.ruleset.config.map, draft.triangulation, draft.apartGaps),
     );
   },
 };

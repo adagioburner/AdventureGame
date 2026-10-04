@@ -3467,7 +3467,7 @@ stamina a unit are named settings (the stamina row of `REWARD_TABLE`,
 map than before; computer players take stamina sites by the same rules, and
 how they think does not change.
 
-### Q245. How many seeds do the forest and the mountains grow from? — **answered 2026-10-04 at 07:53: 2 seeds for every terrain, the forest's and the mountains' areas kept at least 1 space apart, the plains free to merge, no valleys, on both map sizes, in games started from now on (910-916)**
+### Q245. How many seeds do the forest and the mountains grow from? — **answered 2026-10-04: 2 seeds for every terrain, the forest's and the mountains' areas kept apart by a gap each space draws between 1 and 3 spaces, the plains free to merge, no valleys, on both map sizes, in games started from now on (910-917)**
 
 Andrei, 2026-10-04 at 04:46: *"I noticed that games get more interesting when
 there are more than one area of forest and mountains. can we increase the
@@ -3532,15 +3532,19 @@ now C, 914 is A (at least 1 space), 911 is 2 seeds for the plains, free to
 merge, 912 stays the same count on both sizes, 913 still holds, and no valleys
 are carved (`VALLEY_COUNT` 0).
 
-Measured on the same 300 maps per size (2-3 / 4-5 players; with 1 or 2 seeds
-and valleys in brackets): forest in 2 or more areas 99% / 98% (38% / 31%),
-mountains 97% / 99% (44% / 47%), exactly 2 of each 94% / 92% (12% / 10%), 3 or
-more of either 3% / 5% (13% / 14%); second and third areas have a median of 22
-/ 31 spaces (16 / 19); plains in 2 or more areas 38% / 45% (31% / 32%). Of the
-pairs of areas of one terrain, 58% / 54% are 1 space apart at their closest.
-The start is about 8.2 / 10.4 road steps from the forest and mountains (7.9 /
-10.5). Without valleys about 3.5 / 4.0 sites a map that sat in valleys are
-placed elsewhere by the same rules; the site count does not change.
+Measured on the same 300 maps per size with one gap of 1 space (2-3 / 4-5
+players; with 1 or 2 seeds and valleys in brackets): forest in 2 or more areas
+99% / 98% (38% / 31%), mountains 97% / 99% (44% / 47%), exactly 2 of each 94% /
+92% (12% / 10%). As built after 917, with the uneven gap: forest 87% / 89%,
+mountains 89% / 97%, exactly 2 of each 75% / 80%, 3 or more of either 5% / 7%
+(13% / 14%); second and third areas have a median of 21 / 27 spaces (16 / 19);
+plains in 2 or more areas 45% / 57% (31% / 32%). Of the pairs of areas of one
+terrain, 27% / 29% are 1 space apart at their closest, and a 1-space line 5 or
+more spaces long is left on 2% / 4% of maps. Two areas join for the shares on
+9% of maps (916). The start is about 7.7 / 10.0 road steps from the forest and
+mountains (7.9 / 10.5). Without valleys about 3.5 / 4.0 sites a map that sat
+in valleys are placed elsewhere by the same rules; the site count does not
+change.
 
 916. **When the shares need two areas to join:** on 3 of 300 maps per size the
      fill and the share balancing can reach 45/30/25 only by giving a terrain a
@@ -3548,13 +3552,24 @@ placed elsewhere by the same rules; the site count does not change.
      those maps only (recommended); B, never join, and those maps end with a
      share off (0.1 to 2.4 points on five of the six, 7 points on one: forest
      23% on a 4-5 player map). **Answered** at 12:03: A, "Allow join".
+917. **How far apart two areas stay** (his message at 12:06, "the batch-6
+     picture lioks very ugly, to tell the truth", and 12:08, "it's line that
+     separates two forests, straight and clearly artificial"): with one gap of
+     1 space for the whole map, a 1-space plains line 5 or more spaces long
+     between two areas of one terrain is on 41% / 49% of maps. A, 1 space as
+     built; B, at least 2 spaces (forest in 2+ areas 94% / 93%); C, at least 3
+     (86% / 82%, recommended); D, uneven: every space draws its own gap of 1,
+     2 or 3, so the plains between two areas winds (89% / 87%). At 12:50:
+     *"i really liked how uneven looks. Can you explain exactly how it's
+     done"*; **answered** at 12:52: D, "Uneven 1-3".
 
 The seed count is a named setting, `map.TERRAIN_SEEDS`, per terrain; the
-kept-apart rule is `map.KEPT_APART` (terrains, `GAP` in spaces, and
-`JOIN_FOR_SHARES` for 916). Every seed draws a different map than before.
-Games already started keep their map, valleys included: online because the
-map carries the config it was made with, on one device because the kept game
-records whether its map grew from `TERRAIN_SEEDS`.
+kept-apart rule is `map.KEPT_APART` (terrains, `GAP`, the range each space
+draws its gap from, 1 to 3 spaces for 917, and `JOIN_FOR_SHARES` for 916).
+Every seed draws a different map than before. Games already started keep
+their map, valleys included: online because the map carries the config it was
+made with, on one device because the kept game records whether its map grew
+from `TERRAIN_SEEDS`.
 
 ---
 

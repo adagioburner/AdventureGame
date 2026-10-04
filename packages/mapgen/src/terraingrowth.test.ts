@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
 
-import { TERRAINS, type Terrain } from '@adventure/config';
+import { DEFAULT_RULESET, TERRAINS, withoutSeparateAreas, type Terrain } from '@adventure/config';
 import { asNodeId, createRng, type NodeId } from '@adventure/core';
-import { areaLabels, rebalanceTerrainShares, terrainTargets, wouldJoin, type KeptApart } from './terraingrowth.ts';
+import {
+  areaLabels,
+  drawApartGaps,
+  rebalanceTerrainShares,
+  terrainTargets,
+  wouldJoin,
+  type KeptApart,
+} from './terraingrowth.ts';
 
 /** A path graph, which is the sparsest thing the rebalance ever has to work on. */
 function pathAdjacency(count: number): NodeId[][] {
@@ -103,10 +110,10 @@ describe('rebalanceTerrainShares', () => {
 
 describe('keeping areas apart (Q245)', () => {
   const forestOn = (terrain: readonly Terrain[]) => (node: NodeId) => terrain[node] === 'forest';
-  const apartOn = (count: number, joinForShares: boolean, gap = 1): KeptApart => ({
+  const apartOn = (count: number, joinForShares: boolean, gaps: readonly number[] = new Array<number>(count).fill(1)): KeptApart => ({
     ground: pathAdjacency(count),
     terrains: new Set<Terrain>(['forest']),
-    gap,
+    gaps,
     joinForShares,
   });
 
@@ -131,6 +138,32 @@ describe('keeping areas apart (Q245)', () => {
     const targets = { plains: 2, forest: 3, mountain: 0 };
     rebalanceTerrainShares(terrain, pathAdjacency(5), targets, new Set(), createRng('apart'), apartOn(5, true));
     expect(terrain).toEqual(['forest', 'plains', 'forest', 'forest', 'plains']);
+  });
+
+  it("reads each node's own gap, so one node refuses what its neighbour would take (917)", () => {
+    // Forest at both ends of a path. Nodes 1 and 3 each touch one forest area;
+    // a gap of 3 reaches the other area as well, a gap of 1 does not.
+    const targets = { plains: 2, forest: 3, mountain: 0 };
+    const start = (): Terrain[] => ['forest', 'plains', 'plains', 'plains', 'forest'];
+
+    const right = start();
+    rebalanceTerrainShares(right, pathAdjacency(5), targets, new Set(), createRng('gaps'), apartOn(5, false, [1, 3, 1, 1, 1]));
+    expect(right).toEqual(['forest', 'plains', 'plains', 'forest', 'forest']);
+
+    const left = start();
+    rebalanceTerrainShares(left, pathAdjacency(5), targets, new Set(), createRng('gaps'), apartOn(5, false, [1, 1, 1, 3, 1]));
+    expect(left).toEqual(['forest', 'forest', 'plains', 'plains', 'forest']);
+  });
+
+  it('draws one gap per space within KEPT_APART.GAP, and nothing at all on a map without it', () => {
+    const map = DEFAULT_RULESET.config.map;
+    const gaps = drawApartGaps(map, 240, createRng('draw'));
+    expect(gaps).toHaveLength(240);
+    expect(new Set(gaps)).toEqual(new Set([1, 2, 3]));
+
+    const rng = createRng('draw');
+    expect(drawApartGaps(withoutSeparateAreas(DEFAULT_RULESET).config.map, 240, rng)).toEqual([]);
+    expect(rng.nextUint32()).toBe(createRng('draw').nextUint32());
   });
 
   it('joins two areas for the shares only when JOIN_FOR_SHARES allows it (916)', () => {

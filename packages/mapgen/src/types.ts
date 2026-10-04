@@ -39,6 +39,13 @@ export interface MapDraft {
    * the balancing harness reads it to tell carved plains from grown plains.
    */
   valleyNodes: Set<NodeId>;
+  /**
+   * [Q245, 917] Indexed by node id: how many spaces apart a `KEPT_APART`
+   * terrain keeps two of its areas when it takes that node. Drawn by step 4,
+   * read again by step 6's share balancing; empty on maps without
+   * `KEPT_APART`.
+   */
+  apartGaps: number[];
   /** Assigned by step 7; parallel to `poiNodes` only after reward assignment. */
   assignments: PoiAssignment[];
 }

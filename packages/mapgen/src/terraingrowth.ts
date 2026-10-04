@@ -15,31 +15,50 @@ import type { GenerationContext } from './types.ts';
 
 /**
  * [Q245] What keeps separate areas of a terrain apart while terrain grows
- * (`KEPT_APART`): the ground the areas are measured on, which terrains, how
- * many spaces apart, and whether the share balancing may join two areas when
+ * (`KEPT_APART`): the ground the areas are measured on, which terrains, each
+ * space's gap, and whether the share balancing may join two areas when
  * nothing else can reach the shares (916).
  *
  * "Apart" is measured on the ground, step 2's triangulation, not only by road:
  * two areas side by side with no road between them still read as one area on
  * the map, and that is how most areas met before this existed.
+ *
+ * [Q245, 917] `gaps[node]` is how many spaces a terrain must keep between two
+ * of its areas when it takes `node`. Every space draws its own, so two areas
+ * stop one space apart in some places and further in others, and the plains
+ * between them winds; one gap for the whole map drew it as a straight line.
  */
 export interface KeptApart {
   readonly ground: readonly (readonly NodeId[])[];
   readonly terrains: ReadonlySet<Terrain>;
-  readonly gap: number;
+  readonly gaps: readonly number[];
   readonly joinForShares: boolean;
 }
 
-/** `KEPT_APART` for a draft with `nodeCount` nodes and this triangulation; `null` on maps without it. */
-export function keptApartOf(map: MapConfig, nodeCount: number, triangulation: readonly MapEdge[]): KeptApart | null {
+/**
+ * Each space's gap, drawn from `KEPT_APART.GAP` once per map, by step 4; empty
+ * on maps without `KEPT_APART`, which draw nothing, so the maps of games
+ * started before are unchanged.
+ */
+export function drawApartGaps(map: MapConfig, nodeCount: number, rng: GenerationContext['rng']): number[] {
   const config = map.KEPT_APART;
-  if (config === undefined || config.TERRAINS.length === 0) return null;
-  const ground: NodeId[][] = Array.from({ length: nodeCount }, () => []);
+  if (config === undefined || config.TERRAINS.length === 0) return [];
+  return Array.from({ length: nodeCount }, () => rng.nextIntInclusive(config.GAP.min, config.GAP.max));
+}
+
+/**
+ * `KEPT_APART` for a draft with this triangulation and the `gaps` step 4 drew;
+ * `null` on maps without it, and on a draft step 4 drew no gaps for.
+ */
+export function keptApartOf(map: MapConfig, triangulation: readonly MapEdge[], gaps: readonly number[]): KeptApart | null {
+  const config = map.KEPT_APART;
+  if (config === undefined || config.TERRAINS.length === 0 || gaps.length === 0) return null;
+  const ground: NodeId[][] = Array.from({ length: gaps.length }, () => []);
   for (const edge of triangulation) {
     (ground[edge.a] as NodeId[]).push(edge.b);
     (ground[edge.b] as NodeId[]).push(edge.a);
   }
-  return { ground, terrains: new Set(config.TERRAINS), gap: config.GAP, joinForShares: config.JOIN_FOR_SHARES };
+  return { ground, terrains: new Set(config.TERRAINS), gaps, joinForShares: config.JOIN_FOR_SHARES };
 }
 
 /** Which area of the nodes `isOwn` picks each node is in, on the ground; -1 for every other node. */
@@ -257,7 +276,7 @@ function moveOneNode(
       own,
       (candidate) => {
         if (locked.has(candidate)) return false;
-        if (apart !== null && label !== null && wouldJoin(apart.ground, label, candidate, apart.gap)) return false;
+        if (apart !== null && label !== null && wouldJoin(apart.ground, label, candidate, apart.gaps[candidate] as number)) return false;
         const owner = terrain[candidate];
         return owner !== undefined && owner !== wanted && from(owner);
       },

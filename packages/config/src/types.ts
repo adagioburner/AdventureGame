@@ -119,15 +119,21 @@ export interface MapConfig {
 
 /**
  * [Q245] How separate areas of a terrain are kept apart. An area never takes a
- * space that would bring it within `GAP` spaces of another area of its own
+ * space that would bring it within that space's gap of another area of its own
  * terrain, counting spaces that touch on the ground (step 2's triangulation),
- * not only by road.
+ * not only by road. Every space draws its own gap from `GAP` once per map.
  */
 export interface KeptApartConfig {
   /** "don't let them merge": the forest and the mountains. */
   readonly TERRAINS: readonly Terrain[];
-  /** "1 space gap should be enough, like what we have for valleys width today": 1. */
-  readonly GAP: number;
+  /**
+   * The gap each space draws, in spaces, from `min` to `max` (917 D, "Uneven
+   * 1-3"). Andrei first asked for "1 space gap should be enough, like what we
+   * have for valleys width today" (914); one gap for the whole map drew a
+   * straight line between two areas, "straight and clearly artificial", so
+   * the gap now changes from space to space and the line winds.
+   */
+  readonly GAP: IntRange;
   /**
    * 916: whether, on a map where the shares can be reached no other way, the
    * share balancing may give a terrain a space that joins two of its areas.

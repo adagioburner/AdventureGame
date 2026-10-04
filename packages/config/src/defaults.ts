@@ -30,9 +30,10 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     // [Q245] Andrei, 2026-10-04: "start with 2 seeds for forest and mountains, and don't let them
     // merge"; "We can do 2 seeds for plains but we don't care if they merge or not".
     TERRAIN_SEEDS: { plains: { min: 2, max: 2 }, forest: { min: 2, max: 2 }, mountain: { min: 2, max: 2 } },
-    // GAP: "1 space gap should be enough, like what we have for "valleys" width today" (914).
+    // GAP: each space draws its own gap of 1 to 3 spaces (917 D, "Uneven 1-3"), so the plains
+    // between two areas winds instead of running in a straight line.
     // JOIN_FOR_SHARES: two areas may join on the maps where the shares need it (916 A, 12:03).
-    KEPT_APART: { TERRAINS: ['forest', 'mountain'], GAP: 1, JOIN_FOR_SHARES: true },
+    KEPT_APART: { TERRAINS: ['forest', 'mountain'], GAP: { min: 1, max: 3 }, JOIN_FOR_SHARES: true },
   },
   pois: {
     // [Q240] Plains 25 → 30 for the 5 stamina sites, which follow the same

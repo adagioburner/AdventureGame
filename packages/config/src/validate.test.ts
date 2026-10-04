@@ -160,10 +160,13 @@ describe('validateRuleset', () => {
     expect(() => validateRuleset(withoutSeparateAreas(LARGER_MAP_RULESET))).not.toThrow();
   });
 
-  it('rejects a kept-apart gap below 1 and a terrain named twice, and accepts no valleys (Q245)', () => {
-    const gap = clone();
-    (gap.config.map as { KEPT_APART: unknown }).KEPT_APART = { ...gap.config.map.KEPT_APART, GAP: 0 };
-    expect(() => validateRuleset(gap)).toThrow(/KEPT_APART\.GAP/);
+  it('rejects a kept-apart gap below 1 or out of order and a terrain named twice, and accepts no valleys (Q245)', () => {
+    for (const range of [{ min: 0, max: 3 }, { min: 1.5, max: 3 }, { min: 3, max: 1 }]) {
+      const gap = clone();
+      (gap.config.map as { KEPT_APART: unknown }).KEPT_APART = { ...gap.config.map.KEPT_APART, GAP: range };
+      expect(() => validateRuleset(gap)).toThrow(/KEPT_APART\.GAP/);
+    }
+    expect(DEFAULT_RULESET.config.map.KEPT_APART?.GAP).toEqual({ min: 1, max: 3 });
     const twice = clone();
     (twice.config.map as { KEPT_APART: unknown }).KEPT_APART = { ...twice.config.map.KEPT_APART, TERRAINS: ['forest', 'forest'] };
     expect(() => validateRuleset(twice)).toThrow(/KEPT_APART\.TERRAINS/);

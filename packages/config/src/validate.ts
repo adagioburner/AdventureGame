@@ -190,7 +190,10 @@ export function validateRuleset(ruleset: Ruleset): void {
   }
   const apart = config.map.KEPT_APART;
   if (apart !== undefined) {
-    if (!Number.isInteger(apart.GAP) || apart.GAP < 1) problems.push('Q245: map.KEPT_APART.GAP must be a whole number of at least 1.');
+    if (!Number.isInteger(apart.GAP.min) || !Number.isInteger(apart.GAP.max) || apart.GAP.min < 1) {
+      problems.push('Q245: map.KEPT_APART.GAP must be whole numbers of at least 1.');
+    }
+    assertRange(problems, 'KEPT_APART.GAP', apart.GAP);
     if (apart.TERRAINS.some((terrain) => !TERRAINS.includes(terrain)) || new Set(apart.TERRAINS).size !== apart.TERRAINS.length) {
       problems.push('Q245: map.KEPT_APART.TERRAINS must name each terrain at most once.');
     }

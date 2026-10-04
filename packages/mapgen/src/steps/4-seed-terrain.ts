@@ -4,6 +4,7 @@ import { draftAsGraph } from '../graphops.ts';
 import {
   areaLabels,
   bestGrowthCandidate,
+  drawApartGaps,
   hopDistances,
   keptApartOf,
   rebalanceTerrainShares,
@@ -22,8 +23,10 @@ import { GenerationRejected, type GenerationContext, type GenerationStep, type M
  * 30% forest / 25% mountain."
  *
  * [Q245] A `KEPT_APART` terrain never floods into a node that would bring two
- * of its areas within `GAP` spaces of each other on the ground, here and in
- * the share balancing that finishes the step. Without it, areas of one
+ * of its areas within that node's gap of each other on the ground, here and in
+ * the share balancing that finishes the step. Every node draws its gap from
+ * `GAP`, 1 to 3 spaces, before the fill (917), so the plains left between two
+ * areas winds instead of running straight. Without it, areas of one
  * terrain grew until they touched and read as one. The maps of games started
  * before have no `TERRAIN_SEEDS` and grow from `EARLIER_TERRAIN_SEEDS`.
  *
@@ -114,7 +117,8 @@ export const seedTerrainStep: GenerationStep = {
       seeds.push(node);
     }
 
-    const apart = keptApartOf(context.ruleset.config.map, nodeCount, draft.triangulation);
+    draft.apartGaps = drawApartGaps(context.ruleset.config.map, nodeCount, rng);
+    const apart = keptApartOf(context.ruleset.config.map, draft.triangulation, draft.apartGaps);
     for (let remaining = nodeCount - plan.length; remaining > 0; remaining--) {
       const free = freeNodes(assigned, apart);
       const terrain = neediestGrowableTerrain(draft, assigned, counts, targets, free);
@@ -225,7 +229,7 @@ function freeNodes(
   const forTerrain = (terrain: Terrain): ((node: NodeId) => boolean) => {
     if (apart === null || !apart.terrains.has(terrain)) return (node) => assigned[node] === null;
     const label = areaLabels(apart.ground, (node) => assigned[node] === terrain);
-    return (node) => assigned[node] === null && !wouldJoin(apart.ground, label, node, apart.gap);
+    return (node) => assigned[node] === null && !wouldJoin(apart.ground, label, node, apart.gaps[node] as number);
   };
   return { plains: forTerrain('plains'), forest: forTerrain('forest'), mountain: forTerrain('mountain') };
 }
