@@ -132,8 +132,8 @@ describe('terrain regions', () => {
   });
 
   it('splits one terrain into its connected components', () => {
-    // §2.1 step 4 seeds "1 or 2 seeds per terrain", so two regions of one
-    // terrain is legitimate and step 5 measures each separately.
+    // §2.1 step 4 grows every terrain from several seeds, so two regions of
+    // one terrain is legitimate and step 5 measures each separately.
     const regions = terrainRegions(path, 'plains');
     expect(regions).toHaveLength(2);
     expect(regions.map((region) => region.size)).toEqual([1, 1]);

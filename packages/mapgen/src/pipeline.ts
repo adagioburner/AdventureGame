@@ -116,6 +116,7 @@ export function emptyDraft(): MapDraft {
     poiNodes: [],
     remoteness: new Map(),
     valleyNodes: new Set(),
+    apartGaps: [],
     assignments: [],
   };
 }

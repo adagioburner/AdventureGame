@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_RULESET, TERRAINS, type Ruleset, type Terrain } from '@adventure/config';
+import { DEFAULT_RULESET, TERRAINS, withoutSeparateAreas, type Ruleset, type Terrain } from '@adventure/config';
 import { asNodeId, createRng, isConnected, isLeaf, leafNodes, type NodeId } from '@adventure/core';
 import { defaultRemotenessScorer } from '@adventure/sim';
 import { draftAsGraph, rebuildAdjacency } from '../graphops.ts';
@@ -291,14 +291,24 @@ describe('step 5 — smooth', () => {
 });
 
 describe('step 6 — carve valleys', () => {
+  // New maps carve none since Q245 (VALLEY_COUNT 0); the maps of games started
+  // before still do, so the carving is tested on those.
+  const EARLIER = withoutSeparateAreas(DEFAULT_RULESET);
+
+  it('carves nothing on a new map', () => {
+    for (const seed of ['adventure', 'alpha', 'beta', 'gamma']) {
+      expect(draftAfter('6-carve-valleys', seed).valleyNodes.size).toBe(0);
+    }
+  });
+
   it('records every carved node, all of them now plains and none of them plains before', () => {
-    const before = draftAfter('5-smooth', 'adventure');
+    const before = draftAfter('5-smooth', 'adventure', EARLIER);
     const nonPlainsBefore = new Set<number>();
     before.terrain.forEach((terrain, index) => {
       if (terrain !== 'plains') nonPlainsBefore.add(index);
     });
 
-    const after = draftAfter('6-carve-valleys', 'adventure');
+    const after = draftAfter('6-carve-valleys', 'adventure', EARLIER);
     expect(after.valleyNodes.size).toBeGreaterThan(0);
     // Also the regression test for the regrowth that follows carving: it may
     // not take a corridor back, and locking only the carved nodes is not
@@ -311,15 +321,15 @@ describe('step 6 — carve valleys', () => {
   });
 
   it('carves no more than VALLEY_COUNT.max fingers of VALLEY_LENGTH.max nodes', () => {
-    const { VALLEY_COUNT, VALLEY_LENGTH } = DEFAULT_RULESET.config.map;
+    const { VALLEY_COUNT, VALLEY_LENGTH } = EARLIER.config.map;
     for (const seed of ['adventure', 'alpha', 'beta', 'gamma']) {
-      const draft = draftAfter('6-carve-valleys', seed);
+      const draft = draftAfter('6-carve-valleys', seed, EARLIER);
       expect(draft.valleyNodes.size).toBeLessThanOrEqual(VALLEY_COUNT.max * VALLEY_LENGTH.max);
     }
   });
 
   it('keeps each finger one node wide: a carved node touches at most one other carved node it came from', () => {
-    const draft = draftAfter('6-carve-valleys', 'adventure');
+    const draft = draftAfter('6-carve-valleys', 'adventure', EARLIER);
     for (const node of draft.valleyNodes) {
       const carvedNeighbours = (draft.adjacency[node] ?? []).filter((neighbour) =>
         draft.valleyNodes.has(neighbour),

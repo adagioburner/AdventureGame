@@ -1,4 +1,4 @@
-import type { GuardType, IntRange, PerTerrain, RewardKind } from './vocabulary.ts';
+import type { GuardType, IntRange, PerTerrain, RewardKind, Terrain } from './vocabulary.ts';
 
 /* -------------------------------------------------------------------------- */
 /*  GDD.md §11 — Configuration Parameters                                      */
@@ -35,7 +35,11 @@ export interface MapConfig {
    * re-checked at Validate (step 8).
    */
   readonly COMPACTNESS_MAX: number;
-  /** §11 `VALLEY_COUNT` — fixed, 2–4 valleys carved per map. */
+  /**
+   * §11 `VALLEY_COUNT` — 2–4 valleys carved per map until Q245, none since:
+   * "stop making valleys, because now we are getting them for free" (Andrei,
+   * 2026-10-04). The maps of games started before keep `EARLIER_VALLEY_COUNT`.
+   */
   readonly VALLEY_COUNT: IntRange;
   /** §11 `VALLEY_WIDTH` — fixed, 1 node wide. */
   readonly VALLEY_WIDTH: number;
@@ -89,6 +93,53 @@ export interface MapConfig {
    * (OPEN_QUESTIONS Q105, 394).
    */
   readonly JOINED_PIECE_ROADS: number;
+  /**
+   * [Q245] `TERRAIN_SEEDS` — how many seeds each terrain grows from in step 4
+   * (§2.1), drawn per map between `min` and `max`. 2 for every terrain, on
+   * both map sizes.
+   *
+   * Andrei, 2026-10-04, after looking at maps grown from 3 seeds without
+   * keeping areas apart ("Many second or third components are tiny, not
+   * adding much to the map structure"): "start with 2 seeds for forest and
+   * mountains, and don't let them merge"; "We can do 2 seeds for plains but we
+   * don't care if they merge or not. This applies to all map sizes". Which
+   * terrains are kept apart is `KEPT_APART`.
+   *
+   * Absent on the maps of games started before, which grew every terrain from
+   * `EARLIER_TERRAIN_SEEDS`, kept nothing apart and carved valleys (913).
+   */
+  readonly TERRAIN_SEEDS?: PerTerrain<IntRange>;
+  /**
+   * [Q245] Terrains whose separate areas never grow into each other, in step
+   * 4's fill and in the share balancing of steps 4 and 6. Absent on the maps
+   * of games started before, like `TERRAIN_SEEDS`.
+   */
+  readonly KEPT_APART?: KeptApartConfig;
+}
+
+/**
+ * [Q245] How separate areas of a terrain are kept apart. An area never takes a
+ * space that would bring it within that space's gap of another area of its own
+ * terrain, counting spaces that touch on the ground (step 2's triangulation),
+ * not only by road. Every space draws its own gap from `GAP` once per map.
+ */
+export interface KeptApartConfig {
+  /** "don't let them merge": the forest and the mountains. */
+  readonly TERRAINS: readonly Terrain[];
+  /**
+   * The gap each space draws, in spaces, from `min` to `max` (917 D, "Uneven
+   * 1-3"). Andrei first asked for "1 space gap should be enough, like what we
+   * have for valleys width today" (914); one gap for the whole map drew a
+   * straight line between two areas, "straight and clearly artificial", so
+   * the gap now changes from space to space and the line winds.
+   */
+  readonly GAP: IntRange;
+  /**
+   * 916: whether, on a map where the shares can be reached no other way, the
+   * share balancing may give a terrain a space that joins two of its areas.
+   * Andrei, 2026-10-04, chose "Allow join" (916 A): true.
+   */
+  readonly JOIN_FOR_SHARES: boolean;
 }
 
 /** §11 rows covering POI counts and guard strength (§3, §4.4). */

@@ -9,6 +9,7 @@ import {
   TERRAINS,
   withMagicGuardChance,
   withoutDeepStart,
+  withoutSeparateAreas,
   withRewardsBeforeMove,
   type Ruleset,
   type Terrain,
@@ -28,6 +29,8 @@ import {
 } from '@adventure/core';
 import { defaultRemotenessScorer } from '@adventure/sim';
 import { generateMap, reviveGameMap } from './pipeline.ts';
+import { areaLabels } from './terraingrowth.ts';
+import type { MapDraft } from './types.ts';
 
 /**
  * Generation is an exact function of `(seed, ruleset)`, so a map is worth
@@ -614,5 +617,66 @@ describe('Q160 — the larger map for 4 and 5 players', () => {
 
   it('is a different map from the standard one for the same seed', () => {
     expect(largerOf('adventure').graph.nodes.length).not.toBe(mapOf('adventure').graph.nodes.length);
+  }, 30000);
+});
+
+describe('Q245 — the forest and mountains in separate areas, no valleys', () => {
+  /** The map for `seed`, with the draft as step 8 left it (valleys and the ground are draft-only). */
+  function drafted(seed: string, ruleset: Ruleset): { map: GameMap; draft: MapDraft } {
+    let last: MapDraft | null = null;
+    const map = generateMap({
+      seed,
+      ruleset,
+      remotenessScorer: defaultRemotenessScorer,
+      observer: {
+        stepCompleted: (step, draft) => {
+          if (step.id === '8-validate') last = structuredClone(draft);
+        },
+      },
+    });
+    return { map, draft: last as unknown as MapDraft };
+  }
+
+  function areasOf(draft: MapDraft, terrain: Terrain): number[] {
+    const ground: NodeId[][] = draft.terrain.map(() => []);
+    for (const edge of draft.triangulation) {
+      (ground[edge.a] as NodeId[]).push(edge.b);
+      (ground[edge.b] as NodeId[]).push(edge.a);
+    }
+    const label = areaLabels(ground, (node) => draft.terrain[node] === terrain);
+    const sizes = new Map<number, number>();
+    for (const value of label) if (value !== -1) sizes.set(value, (sizes.get(value) ?? 0) + 1);
+    return [...sizes.values()].sort((a, b) => b - a);
+  }
+
+  it('carves no valleys, while a map from before still carves them', () => {
+    for (const seed of SEEDS) {
+      expect(drafted(seed, DEFAULT_RULESET).draft.valleyNodes.size).toBe(0);
+      expect(drafted(seed, withoutSeparateAreas(DEFAULT_RULESET)).draft.valleyNodes.size).toBeGreaterThan(0);
+    }
+  }, 30000);
+
+  it('keeps the forest and the mountains in two areas each on most of these maps, at both sizes', () => {
+    // Not on every map: a second area hemmed in by wide gaps early on can stay
+    // under 5 spaces, and two areas join where only that reaches the shares.
+    let two = 0;
+    let cases = 0;
+    for (const ruleset of [DEFAULT_RULESET, LARGER_MAP_RULESET]) {
+      for (const seed of SEEDS) {
+        const { draft } = drafted(seed, ruleset);
+        for (const terrain of ['forest', 'mountain'] as const) {
+          cases++;
+          if (areasOf(draft, terrain).filter((size) => size >= 5).length === 2) two++;
+        }
+      }
+    }
+    expect(two).toBeGreaterThan(cases / 2);
+  }, 60000);
+
+  it("draws every space's gap within KEPT_APART.GAP, and none on a map from before (917)", () => {
+    const { draft } = drafted('adventure', DEFAULT_RULESET);
+    expect(draft.apartGaps).toHaveLength(draft.terrain.length);
+    expect(new Set(draft.apartGaps)).toEqual(new Set([1, 2, 3]));
+    expect(drafted('adventure', withoutSeparateAreas(DEFAULT_RULESET)).draft.apartGaps).toEqual([]);
   }, 30000);
 });

@@ -350,7 +350,7 @@ one `Rng` on `GenerationContext`.
   that disconnects the graph or pushes leaf count outside `LEAF_COUNT` (30–45)
   is skipped and pruning continues. Rebuild `adjacency` whenever `edges`
   changes.
-- **`4-seed-terrain`** — 1 or 2 seeds per terrain, flood fill biased toward
+- **`4-seed-terrain`** — 1 or 2 seeds per terrain (`TERRAIN_SEEDS` since Q245: 2 each, forest and mountain areas `KEPT_APART`), flood fill biased toward
   nodes with more same-terrain neighbours, until shares approach
   `TERRAIN_AREA_SHARE` (45/30/25).
 - **`5-smooth`** — the flip loop. The measurement and its exit test
@@ -358,7 +358,7 @@ one `Rng` on `GenerationContext`.
   nodes to their majority-neighbour terrain is not. Compactness is
   `boundary² / area`, measured **per connected component**, and this is the
   only step that enforces it.
-- **`6-carve-valleys`** — `VALLEY_COUNT` (2–4) fingers of `VALLEY_LENGTH`
+- **`6-carve-valleys`** — `VALLEY_COUNT` (2–4; 0 since Q245) fingers of `VALLEY_LENGTH`
   (5–12) nodes, `VALLEY_WIDTH` 1, from the plains boundary into a neighbour.
   Record them in `draft.valleyNodes` even though the Smooth exemption is
   already satisfied by ordering — the harness needs to tell carved plains from

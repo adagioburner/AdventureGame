@@ -6,6 +6,7 @@ import {
   mapSizeForPlayers,
   mapSizeOfRuleset,
   rewardsMovedOf,
+  separateAreasOf,
   staminaSitesOf,
   type MapSize,
 } from '@adventure/config';
@@ -21,6 +22,7 @@ import {
   keptMagicGuardChance,
   keptMapSize,
   keptRewardsMoved,
+  keptSeparateAreas,
   keptStaminaSites,
   readKept,
   replayKept,
@@ -126,6 +128,9 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
   // [Q240] And whether its plains have stamina sites, likewise.
   const staminaSites =
     game !== null ? staminaSitesOf(game.setup.map.ruleset) : resuming && kept !== null ? keptStaminaSites(kept) : true;
+  // [Q245] And whether its forest and mountains grew in separate areas, likewise.
+  const separateAreas =
+    game !== null ? separateAreasOf(game.setup.map.ruleset) : resuming && kept !== null ? keptSeparateAreas(kept) : true;
   // [Q250] And whether its rewards are on the terrains they moved to, likewise.
   const rewardsMoved =
     game !== null ? rewardsMovedOf(game.setup.map.ruleset) : resuming && kept !== null ? keptRewardsMoved(kept) : true;
@@ -140,13 +145,13 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
     // Let "Drawing the map" paint before generation takes the main thread.
     const timer = window.setTimeout(() => {
       try {
-        setMap(mapFor(seed, size, magicChance, deepStart, staminaSites, rewardsMoved));
+        setMap(mapFor(seed, size, magicChance, deepStart, staminaSites, separateAreas, rewardsMoved));
       } catch (error) {
         setProblem(error instanceof Error ? error.message : String(error));
       }
     }, 30);
     return () => window.clearTimeout(timer);
-  }, [seed, size, magicChance, deepStart, staminaSites, rewardsMoved]);
+  }, [seed, size, magicChance, deepStart, staminaSites, separateAreas, rewardsMoved]);
 
   // [Q56, 66] Once its map is drawn, the kept game is played again to where it was.
   useEffect(() => {
@@ -159,6 +164,7 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
       magicGuardChanceOf(map.ruleset) !== keptMagicGuardChance(kept) ||
       deepStartOf(map.ruleset) !== keptDeepStart(kept) ||
       staminaSitesOf(map.ruleset) !== keptStaminaSites(kept) ||
+      separateAreasOf(map.ruleset) !== keptSeparateAreas(kept) ||
       rewardsMovedOf(map.ruleset) !== keptRewardsMoved(kept)
     ) {
       return;

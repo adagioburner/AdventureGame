@@ -5,6 +5,7 @@ import {
   magicGuardChanceOf,
   mapSizeOfRuleset,
   rewardsMovedOf,
+  separateAreasOf,
   staminaSitesOf,
   startingGoldOf,
   type MapSize,
@@ -78,6 +79,13 @@ export interface KeptGame {
    */
   readonly staminaSites?: boolean;
   /**
+   * [Q245] Whether the game's map grew its terrain from `TERRAIN_SEEDS` with
+   * the forest's and the mountains' areas kept apart and no valleys. Absent on
+   * a game kept before, whose map is made again as it began, from 1 or 2 seeds
+   * a terrain and with valleys (913).
+   */
+  readonly separateAreas?: boolean;
+  /**
    * [Q250] Whether the game's map has the rewards on the terrains they moved
    * to: the speeds and the magic-guarded gold on the plains, magic, combat and
    * stamina in the forest. Absent on a game kept before they moved, whose map
@@ -127,6 +135,7 @@ export function keep(seed: string, setup: LocalSetup, order: readonly string[] |
     startingGold: startingGoldOf(game.setup.map.ruleset),
     deepStart: deepStartOf(game.setup.map.ruleset),
     staminaSites: staminaSitesOf(game.setup.map.ruleset),
+    separateAreas: separateAreasOf(game.setup.map.ruleset),
     rewardsMoved: rewardsMovedOf(game.setup.map.ruleset),
   };
   try {
@@ -162,6 +171,11 @@ export function keptDeepStart(kept: KeptGame): boolean {
 /** Whether `kept`'s map has the plains' stamina sites: see `KeptGame.staminaSites`. */
 export function keptStaminaSites(kept: KeptGame): boolean {
   return kept.staminaSites === true;
+}
+
+/** Whether `kept`'s map grew its areas apart, without valleys: see `KeptGame.separateAreas`. */
+export function keptSeparateAreas(kept: KeptGame): boolean {
+  return kept.separateAreas === true;
 }
 
 /** Whether `kept`'s map has the rewards where they moved to: see `KeptGame.rewardsMoved`. */
