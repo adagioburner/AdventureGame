@@ -20,8 +20,11 @@ describe('the hot seat computer (Q41, Q42)', () => {
       const took = performance.now() - started;
       expect(took).toBeGreaterThanOrEqual(seconds * 1000);
       expect(took).toBeLessThan(seconds * 1000 + 500);
-      // Nobody has gold on the first turns, so nothing is bought.
-      expect(buy).toBeNull();
+      // Players start with gold (Q200), so it may buy before it moves.
+      if (buy !== null) {
+        expect(buy.player).toBe(player.id);
+        expect(() => game.buy(buy)).not.toThrow();
+      }
       if (action === null) throw new Error('no move');
       expect(action.player).toBe(player.id);
       expect(() => game.play(action)).not.toThrow();
