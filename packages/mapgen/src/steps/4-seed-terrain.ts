@@ -7,9 +7,9 @@ import { GenerationRejected, type GenerationContext, type GenerationStep, type M
 /**
  * §2.1 step 4 — "Seed terrain regions: `TERRAIN_SEEDS` seeds per terrain: 2
  * for plains, 3 each for forest and mountain (Q245; 1 or 2 at random on the
- * maps of games started before); grow by flood fill biased toward nodes with more
- * same-terrain neighbours, until area shares are approximately 45% plains /
- * 30% forest / 25% mountain."
+ * maps of games started before); grow by flood fill biased toward nodes with
+ * more same-terrain neighbours, until area shares are approximately 45% plains
+ * / 30% forest / 25% mountain."
  *
  * [Q245] Nothing keeps two areas of one terrain from growing into each other
  * (910 B), so a map often shows fewer areas than seeds. The maps of games
