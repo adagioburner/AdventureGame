@@ -150,9 +150,7 @@ and is all or nothing: refused unless the player holds `buying.GOLD_PER_UNIT`
 gold for each. The gold leaves the game, each skill goes up by one, and a speed
 also adds its free step to this turn's allowance. The `bought` event follows,
 then the victory check, since the spent gold can put another player's lead past
-the gold left. `buyableNow` lists what the player can afford now. A map whose
-config has no `buying` (a game started before it) refuses purchases and keeps
-its `respawn`; one that has it has no `respawn`.
+the gold left. `buyableNow` lists what the player can afford now.
 
 The computer (`packages/ai/src/policies/tree.ts`, `buyBranches`) adds a
 `{ kind: 'buy', skill }` branch per kind it can afford at every node of its own
