@@ -56,14 +56,14 @@ describe('the larger map for 4 and 5 players (Q160)', () => {
     }
   });
 
-  it('carries 67 gold, 105 speed and skill units and 14 stamina units, against 48, 75 and 10 (Q240, 902 A, Q250)', () => {
+  it('carries 67 gold, 105 speed and skill units and 17 stamina units, against 48, 75 and 12 (Q240, 902 A, Q250, Q260)', () => {
     const units = (ruleset: Ruleset, kind: 'gold' | 'stamina' | 'skills'): number =>
       TERRAINS.flatMap((terrain) => ruleset.content.REWARD_TABLE[terrain])
         .filter((row) => (kind === 'skills' ? row.kind !== 'gold' && row.kind !== 'stamina' : row.kind === kind))
         .reduce((sum, row) => sum + row.totalUnits, 0);
     const all = (ruleset: Ruleset): number[] => [units(ruleset, 'gold'), units(ruleset, 'skills'), units(ruleset, 'stamina')];
-    expect(all(DEFAULT_RULESET)).toEqual([48, 75, 10]);
-    expect(all(LARGER_MAP_RULESET)).toEqual([67, 105, 14]);
+    expect(all(DEFAULT_RULESET)).toEqual([48, 75, 12]);
+    expect(all(LARGER_MAP_RULESET)).toEqual([67, 105, 17]);
   });
 
   it('changes nothing else (633)', () => {

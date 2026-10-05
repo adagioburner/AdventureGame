@@ -5,6 +5,7 @@ import {
   fortressesApartOf,
   magicGuardChanceOf,
   mapSizeOfRuleset,
+  moreStaminaUnitsOf,
   rewardsMovedOf,
   separateAreasOf,
   staminaSitesOf,
@@ -99,6 +100,12 @@ export interface KeptGame {
    * they were drawn (933 A).
    */
   readonly fortressesApart?: boolean;
+  /**
+   * [Q260] Whether the game's map has the forest stamina sites' hearts as
+   * raised to 12 (17 on the larger map). Absent on a game kept before, whose
+   * map is made again with the 10 (14) it began with (941 A).
+   */
+  readonly moreStaminaUnits?: boolean;
 }
 
 const KEY = 'adventure.hotseat';
@@ -145,6 +152,7 @@ export function keep(seed: string, setup: LocalSetup, order: readonly string[] |
     separateAreas: separateAreasOf(game.setup.map.ruleset),
     rewardsMoved: rewardsMovedOf(game.setup.map.ruleset),
     fortressesApart: fortressesApartOf(game.setup.map.ruleset),
+    moreStaminaUnits: moreStaminaUnitsOf(game.setup.map.ruleset),
   };
   try {
     window.localStorage.setItem(KEY, JSON.stringify(kept));
@@ -194,6 +202,11 @@ export function keptRewardsMoved(kept: KeptGame): boolean {
 /** Whether `kept`'s map keeps the fortresses apart: see `KeptGame.fortressesApart`. */
 export function keptFortressesApart(kept: KeptGame): boolean {
   return kept.fortressesApart === true;
+}
+
+/** Whether `kept`'s map has the forest stamina sites' hearts as raised: see `KeptGame.moreStaminaUnits`. */
+export function keptMoreStaminaUnits(kept: KeptGame): boolean {
+  return kept.moreStaminaUnits === true;
 }
 
 /** The kept game played again on `map`; `null` if its turns no longer replay. */

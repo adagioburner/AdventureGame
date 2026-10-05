@@ -21,10 +21,14 @@ export {
   DEFAULT_GAME_CONTENT,
   DEFAULT_REWARD_TABLE,
   COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE,
+  EARLIER_FOREST_STAMINA_UNITS,
+  EARLIER_LARGER_MAP_FOREST_STAMINA_UNITS,
   FOREST_MAGIC_GUARD_CHANCE,
+  FOREST_STAMINA_UNITS,
   FORTRESS_MIN_LINE_SPACES,
   FORTRESS_MIN_ROAD_STEPS,
   FORTRESSES_APART,
+  LARGER_MAP_FOREST_STAMINA_UNITS,
   LARGER_MAP_GAME_CONTENT,
   LARGER_MAP_REWARD_TABLE,
   LARGER_MAP_REWARD_TABLE_BEFORE_MOVE,
@@ -41,6 +45,8 @@ import {
 } from './defaults.ts';
 import {
   DEFAULT_GAME_CONTENT,
+  EARLIER_FOREST_STAMINA_UNITS,
+  EARLIER_LARGER_MAP_FOREST_STAMINA_UNITS,
   LARGER_MAP_GAME_CONTENT,
   LARGER_MAP_REWARD_TABLE_BEFORE_MOVE,
   REWARD_TABLE_BEFORE_MOVE,
@@ -245,6 +251,36 @@ export function withoutFortressesApart(ruleset: Ruleset): Ruleset {
       REWARD_TABLE: { plains: anywhere(table.plains), forest: anywhere(table.forest), mountain: anywhere(table.mountain) },
     },
   };
+}
+
+/** [Q260] The hearts a map made with `ruleset` had on its forest stamina sites before Q260: 10, or 14 on the larger map. */
+function earlierForestStaminaUnits(ruleset: Ruleset): number {
+  return mapSizeOfRuleset(ruleset) === 'larger' ? EARLIER_LARGER_MAP_FOREST_STAMINA_UNITS : EARLIER_FOREST_STAMINA_UNITS;
+}
+
+/**
+ * [Q260] Whether maps made with `ruleset` have the forest stamina sites' hearts
+ * as raised on 2026-10-05, 12 (17 on the larger map) rather than 10 (14).
+ * False for a map made before, online or kept on one device, which keeps the
+ * hearts it began with (941 A), and for a table from before the rewards moved,
+ * whose stamina is on the plains.
+ */
+export function moreStaminaUnitsOf(ruleset: Ruleset): boolean {
+  const row = ruleset.content.REWARD_TABLE.forest.find((candidate) => candidate.kind === 'stamina');
+  return row !== undefined && row.totalUnits !== earlierForestStaminaUnits(ruleset);
+}
+
+/**
+ * [Q260] `ruleset` with the forest stamina sites' hearts as they were before,
+ * so a hot seat game kept from before gets back the map it began on (941 A).
+ * `ruleset` itself when it already has them.
+ */
+export function withEarlierStaminaUnits(ruleset: Ruleset): Ruleset {
+  if (!moreStaminaUnitsOf(ruleset)) return ruleset;
+  const units = earlierForestStaminaUnits(ruleset);
+  const table = ruleset.content.REWARD_TABLE;
+  const forest = table.forest.map((row) => (row.kind === 'stamina' ? { ...row, totalUnits: units } : row));
+  return { ...ruleset, content: { ...ruleset.content, REWARD_TABLE: { ...table, forest } } };
 }
 
 /**

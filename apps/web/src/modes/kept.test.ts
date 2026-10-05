@@ -11,6 +11,7 @@ import {
   keptFortressesApart,
   keptMagicGuardChance,
   keptMapSize,
+  keptMoreStaminaUnits,
   keptRewardsMoved,
   keptSeparateAreas,
   keptStaminaSites,
@@ -297,6 +298,35 @@ describe('a game on one device kept in the browser (Q56, 66)', () => {
     expect(began.graph).toEqual(map.graph);
     expect(began.pois.map((poi) => poi.node)).toEqual(map.pois.map((poi) => poi.node));
     expect(fortresses(began)).not.toEqual(fortresses(map));
+    const resumed = replayKept(before, began);
+    expect(resumed?.setup.map).toBe(began);
+    expect(resumed?.turns.length).toBe(1);
+  });
+
+  it('keeps a map with 12 hearts on its stamina sites, and makes a game kept before on the map it began on (Q260, 941 A)', () => {
+    const hearts = (on: typeof map): number =>
+      on.pois.filter((poi) => poi.terrain === 'forest' && poi.reward.kind === 'stamina').reduce((sum, poi) => sum + poi.reward.units, 0);
+    expect(hearts(map)).toBe(12);
+    const game = new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'kept' });
+    game.play({ kind: 'rest', player: game.state.players[0]!.id });
+    keep('adventure', setup, null, game);
+    const kept = readKept();
+    expect(kept?.moreStaminaUnits).toBe(true);
+    expect(kept === null ? null : keptMoreStaminaUnits(kept)).toBe(true);
+    expect(replayKept(kept!, map)?.state).toEqual(game.state);
+
+    // Kept before: the map it began on, with 10 hearts.
+    const { moreStaminaUnits: _more, ...older } = kept ?? { moreStaminaUnits: undefined };
+    const before = older as NonNullable<typeof kept>;
+    expect(keptMoreStaminaUnits(before)).toBe(false);
+    expect(keptFortressesApart(before)).toBe(true);
+    const began = mapFor(
+      'adventure', 'standard', keptMagicGuardChance(before), keptDeepStart(before), keptStaminaSites(before),
+      keptSeparateAreas(before), keptRewardsMoved(before), keptFortressesApart(before), keptMoreStaminaUnits(before),
+    );
+    expect(hearts(began)).toBe(10);
+    expect(began.graph).toEqual(map.graph);
+    expect(began.pois.map((poi) => poi.node)).toEqual(map.pois.map((poi) => poi.node));
     const resumed = replayKept(before, began);
     expect(resumed?.setup.map).toBe(began);
     expect(resumed?.turns.length).toBe(1);
