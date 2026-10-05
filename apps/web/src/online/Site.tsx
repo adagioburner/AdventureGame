@@ -5,6 +5,7 @@ import { GAME_NAME } from '../page/GameTitle.tsx';
 import { toNewGameSetup, type LocalSetup } from '../setup/local.ts';
 import { createGame, logOut, saveLogin, savedLogin, whoAmI, type Login } from './api.ts';
 import { GameListScreen } from './GameListScreen.tsx';
+import { GameTrouble } from './GameTrouble.tsx';
 import { LoginScreen } from './LoginScreen.tsx';
 import { OnlineGameScreen } from './OnlineGameScreen.tsx';
 import './site.css';
@@ -119,17 +120,18 @@ export function Site() {
   };
 
   return route.page === 'game' ? (
-    <OnlineGameScreen
-      key={route.gameId}
-      gameId={route.gameId}
-      login={login}
-      onBack={() => go('/')}
-      onRefused={checkLogin}
-      onGoLocal={(setup, seed) => {
-        go(`/hotseat?seed=${encodeURIComponent(seed)}`);
-        setCarried(setup);
-      }}
-    />
+    <GameTrouble key={route.gameId} onBack={() => go('/')}>
+      <OnlineGameScreen
+        gameId={route.gameId}
+        login={login}
+        onBack={() => go('/')}
+        onRefused={checkLogin}
+        onGoLocal={(setup, seed) => {
+          go(`/hotseat?seed=${encodeURIComponent(seed)}`);
+          setCarried(setup);
+        }}
+      />
+    </GameTrouble>
   ) : (
     <GameListScreen
       login={login}

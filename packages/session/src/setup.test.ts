@@ -391,7 +391,7 @@ describe('starting', () => {
     const starting = play(fresh(), [andrei, act.count(3)], [andrei, act.start()]);
     expect(starting.phase).toBe('starting');
     expect(idsOf(starting)).toEqual(['person:andrei', 'computer:3', 'computer:4']);
-    const { setup, game } = startGame(starting, map);
+    const { setup, game } = startGame(starting, map, map.ruleset);
     expect(setup.phase).toBe('started');
     expect(game.players.map((player) => [player.seat, player.name, player.control])).toEqual([
       [1, 'Andrei', 'human'],
@@ -406,9 +406,17 @@ describe('starting', () => {
   it('is the game master’s, and needs the map for the setup’s own seed', () => {
     expect(refused(fresh(), bea, act.start()).code).toBe('not_game_master');
     const starting = play(fresh(), [andrei, act.start()]);
-    expect(() => startGame(starting, { ...map, seed: 'another' })).toThrow(/another seed/);
-    expect(() => startGame(fresh(), map)).toThrow(/not starting/);
+    expect(() => startGame(starting, { ...map, seed: 'another' }, map.ruleset)).toThrow(/another seed/);
+    expect(() => startGame(fresh(), map, map.ruleset)).toThrow(/not starting/);
     expect(refused(starting, andrei, act.count(3)).code).toBe('invalid_action');
+  });
+
+  it('needs the map made with the server’s own rules, which may come as JSON in any key order (990 A)', () => {
+    const starting = play(fresh(), [andrei, act.start()]);
+    expect(() => startGame(starting, { ...map, ruleset: DEFAULT_RULESET }, map.ruleset)).toThrow(/this page is out of date/);
+    const sent = JSON.parse(JSON.stringify(map.ruleset)) as typeof map.ruleset;
+    const reordered = Object.fromEntries(Object.entries(sent).reverse()) as typeof map.ruleset;
+    expect(startGame(starting, { ...map, ruleset: reordered }, map.ruleset).setup.phase).toBe('started');
   });
 });
 
@@ -455,7 +463,7 @@ describe('Shuffle seats (Q165)', () => {
       [3, 'seat-3', 'Andrei'],
     ]);
     expect(drawn.gameMaster).toBe(andrei);
-    const { game } = startGame(drawn, map);
+    const { game } = startGame(drawn, map, map.ruleset);
     expect(game.players.map((player) => [player.seat, player.name, player.stats.stamina])).toEqual([
       [1, 'Bea', 30],
       [2, 'Computer 1', 35],

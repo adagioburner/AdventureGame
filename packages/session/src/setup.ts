@@ -415,13 +415,36 @@ export function drawSeats(state: SetupState, pick: (count: number) => number): S
 /**
  * The game as it starts, from a setup in `starting` and the map the GM's
  * browser generated from its seed (§12.1). The server takes the map on trust
- * (`docs/STACK.md` §5) beyond checking it is the map for this seed.
+ * (`docs/STACK.md` §5) beyond checking it is the map for this seed, made with
+ * `rules`, the server's own rules for this many players.
+ *
+ * [990 A] A page loaded before an update makes its map with the rules from
+ * before it, which today's pages may not be able to draw (Andrei's game of
+ * 2026-10-05, with mountains speed in the forest). Its map is refused, and the
+ * game waits for a page that is up to date, as it waits for an absent game
+ * master: `GameSession.connected` asks the game master's next page again.
  */
-export function startGame(state: SetupState, map: GameMap): { readonly setup: SetupState; readonly game: GameState } {
+export function startGame(state: SetupState, map: GameMap, rules: Ruleset): { readonly setup: SetupState; readonly game: GameState } {
   if (state.phase !== 'starting') throw new SetupError('invalid_action', 'the game is not starting');
   if (map.seed !== state.mapSeed) throw new SetupError('invalid_action', 'that map is for another seed');
+  if (!sameRules(map.ruleset, rules)) {
+    throw new SetupError('invalid_action', 'this page is out of date. Reload it to start the game');
+  }
   const setup: SetupState = { ...state, phase: 'started', pending: [] };
   return { setup, game: openingStateOf(setup, map) };
+}
+
+/** Whether two rulesets say the same, however their keys are ordered; one may have come as JSON. */
+function sameRules(left: Ruleset, right: Ruleset): boolean {
+  return canonical(left) === canonical(right);
+}
+
+function canonical(value: unknown): string {
+  return JSON.stringify(value, (_key, inner: unknown) =>
+    inner !== null && typeof inner === 'object' && !Array.isArray(inner)
+      ? Object.fromEntries(Object.entries(inner).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
+      : inner,
+  );
 }
 
 /* --------------------------------- seats --------------------------------- */
