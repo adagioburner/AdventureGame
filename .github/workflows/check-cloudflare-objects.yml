@@ -1,0 +1,57 @@
+name: Check Cloudflare objects
+
+# A read-only look at the Durable Objects behind the live site and the
+# preview: which game objects hold stored data, how often they were woken
+# lately, and two minutes of live events. It deploys and changes nothing.
+# It runs only on pull requests that change this check itself.
+#
+# The repository is public, so the log shows counts and times only: no game
+# ids, no login tokens, no account id, no full object ids.
+on:
+  pull_request:
+    paths:
+      - .github/workflows/check-cloudflare-objects.yml
+      - .github/cloudflare-check/**
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check Cloudflare objects
+    runs-on: ubuntu-latest
+    env:
+      CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      WRANGLER_SEND_METRICS: 'false'
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+
+      - name: Objects and analytics
+        run: node .github/cloudflare-check/check.mjs
+
+      - name: Two minutes of live events
+        run: |
+          mkdir -p "$RUNNER_TEMP/tail" && cd "$RUNNER_TEMP/tail"
+          npx --yes wrangler@4.138.0 --version > /dev/null
+          date -u +"tail started %Y-%m-%dT%H:%M:%SZ"
+          for worker in adventure adventure-preview; do
+            (timeout 120 npx --yes wrangler@4.138.0 tail "$worker" --format json > "$worker.json" 2> "$worker.err" || true) &
+          done
+          wait
+          date -u +"tail ended %Y-%m-%dT%H:%M:%SZ"
+          # Anything wrangler says, without tokens, email addresses or long ids.
+          clean() { sed -E -e 's/token=[^ &"]+/token=…/g' -e 's/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+/<email>/g' -e 's/[0-9a-f]{32}/<id>/g'; }
+          for worker in adventure adventure-preview; do
+            echo "## wrangler's messages for $worker"
+            clean < "$worker.err" | grep -v '^\s*$' | head -40 || true
+            echo "## other lines on stdout for $worker"
+            grep -v '^[][ {}]' "$worker.json" | clean | head -20 || true
+            node "$GITHUB_WORKSPACE/.github/cloudflare-check/tail-summary.mjs" "$worker.json"
+          done
