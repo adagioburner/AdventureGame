@@ -64,8 +64,6 @@ describe('the art catalog built from Art/', () => {
       for (const row of DEFAULT_RULESET.content.REWARD_TABLE[terrain]) {
         cases.push([terrain, row.kind, row.guard]);
         if (row.guard !== null) cases.push([terrain, row.kind, null]);
-        // Q115: a row whose guards a coin flip can turn to magic.
-        if ((row.magicGuardChance ?? 0) > 0) cases.push([terrain, row.kind, 'magic']);
       }
       cases.push([terrain, 'stamina', null]);
     }

@@ -156,9 +156,7 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 [SOURCE §1.1, chat] In v1, only gold rewards are guarded — every gold POI on every terrain is guarded, none are exempt. Guard type by terrain (per §4.2): plains' 2 gold POIs are all fighting-guarded; mountain's 15 gold POIs split 10 fighting-guarded / 5 magic-guarded. [Q250] Since the rewards moved, the plains' 7 gold POIs split 2 fighting-guarded (the fortresses) / 5 magic-guarded, and the forest has no gold. The engine should not hard-code "gold only" — guarding should work on any reward kind — this is a v1 content choice, not an engine constraint.
 
-[SOURCE §4.4, chat] Forest's 4 gold POIs are each guarded by magic with chance `FOREST_MAGIC_GUARD_CHANCE` and by fighting otherwise, a coin flip for each POI on its own, so a map carries anywhere from none to all four magic-guarded (Q115). Andrei, 2026-09-30: "Magic doesn't play an important enough role. Can you make it so the forest POI are assigned randomly either magic or combat guards?" The POIs stay one §4.2 row (fighting), so its POI count and units are unchanged, and §5.2's strength never reads the guard type. The flips are the map's last draws, after every POI's picture, so on any seed only these guards differ from the map before the change.
-
-[SOURCE §4.4, chat] Since Q185 the chance is 1: every forest gold POI is magic-guarded. Andrei, 2026-10-01: "After playing some more I think we need to make all gold in the forests guarded by magic. Otherwise magic plays too little role", and "it's a good idea to keep the logic that says forest magic is decided by chance, just turn this chance all the way to 100%". [Q250] Since the rewards moved terrain the forest holds no gold, so the chance only reaches maps from before; the magic-guarded gold on the plains has its own row, guarded by magic outright.
+[SOURCE §4.4, chat] Forest gold was guarded by magic by chance: a coin flip for each POI from 2026-09-30 (Q115), always from 2026-10-01 (Q185). Since the rewards moved (Q250) the forest holds no gold, and the plains' magic gold has its own row, guarded by magic outright; the chance setting was removed on 2026-10-05 (953). Its decisions stay in docs/OPEN_QUESTIONS.md.
 
 ### 4.5 Consumption
 
@@ -384,7 +382,6 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `REWARD_SWAP_PASSES` | 5 | tunable (play-test) — reward/remoteness agreement, §4.3 step 4 [SOURCE §4.3, review] |
 | `FORTRESS_MIN_ROAD_STEPS` | 12 | tunable — the fewest road steps between any two of the plains' fortresses, over any terrain, §4.3 step 1b (Q255, 931) |
 | `FORTRESS_MIN_LINE_SPACES` | 5 | tunable — the fewest spaces between any two of the plains' fortresses in a straight line, one space the map's median road length, §4.3 step 1b (Q255, 930 B) |
-| `FOREST_MAGIC_GUARD_CHANCE` | 1 | tunable — chance each forest gold POI is magic-guarded rather than fighting-guarded, §4.4; 0.5 from Q115, 1 since Q185; since Q250 it reaches only maps from before the rewards moved, the forest having no gold |
 | `FOREST_STAMINA_UNITS` | 12 | tunable — the hearts on the forest's 6 stamina POIs, §4.2 (Q260) |
 | `LARGER_MAP_FOREST_STAMINA_UNITS` | 17 | tunable — the same on the larger map's 9, §4.2 (Q260, 940 A) |
 | `BUY_GOLD_PER_UNIT` | 1 | tunable — the gold one bought unit of a skill costs, §7 (Q190: "1 to 1") |

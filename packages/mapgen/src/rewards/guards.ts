@@ -1,5 +1,5 @@
-import type { GameConfig, GuardType, RewardTable } from '@adventure/config';
-import type { NodeId, Rng } from '@adventure/core';
+import type { GameConfig } from '@adventure/config';
+import type { NodeId } from '@adventure/core';
 import type { PoiAssignment } from '../types.ts';
 
 /**
@@ -67,33 +67,4 @@ export function assignGuardStrengths(
     }
     assignment.guardStrength = guardStrengthFor(assignment, score, config);
   }
-}
-
-/**
- * [Q115] The guard each POI is sealed with: its §4.2 row's guard, or magic by
- * the row's `magicGuardChance`, one draw for each POI of such a row on its own
- * (Andrei's 451 A, a coin flip per POI rather than a fixed share per map).
- *
- * Only the guard *type* is drawn here. Strength is §5.2's, which never looks at
- * the type, so a flipped POI keeps the strength its gold and remoteness gave it.
- * A POI whose strength capped at 0 still takes its draw, so which POIs turn to
- * magic never depends on strengths; it is sealed unguarded either way.
- *
- * A POI with no row (the surplus-leaf stamina of §3) or a row without the
- * chance draws nothing, which is what lets `sealMap` call this last without
- * moving any other draw on a map whose table has no chance in it.
- */
-export function drawGuardTypes(
-  assignments: readonly PoiAssignment[],
-  table: RewardTable,
-  rng: Rng,
-): (GuardType | null)[] {
-  return assignments.map((assignment) => {
-    const row = table[assignment.terrain].find(
-      (candidate) => candidate.kind === assignment.kind && candidate.guard === assignment.guardType,
-    );
-    const chance = row?.magicGuardChance ?? 0;
-    if (chance === 0) return assignment.guardType;
-    return rng.nextFloat() < chance ? 'magic' : assignment.guardType;
-  });
 }

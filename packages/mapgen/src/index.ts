@@ -12,4 +12,4 @@ export * from './pipeline.ts';
 export * from './steps/index.ts';
 export { distributionWeight, partitionPoisIntoGroups, distributeGroupUnits, assignRewards } from './rewards/assign.ts';
 export { meetsCompactness } from './steps/5-smooth.ts';
-export { guardStrengthFor, assignGuardStrengths, drawGuardTypes } from './rewards/guards.ts';
+export { guardStrengthFor, assignGuardStrengths } from './rewards/guards.ts';

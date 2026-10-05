@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
 import {
-  COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE,
   DEFAULT_RULESET,
   FORTRESS_MIN_LINE_SPACES,
   FORTRESS_MIN_ROAD_STEPS,
@@ -9,8 +8,6 @@ import {
   REWARD_KINDS,
   SKILL_KINDS,
   TERRAINS,
-  withMagicGuardChance,
-  withRewardsBeforeMove,
   type Ruleset,
   type Terrain,
 } from '@adventure/config';
@@ -321,76 +318,6 @@ describe('§5.2 — guard strengths', () => {
     const unguarded = gold.filter((poi) => poi.guard === null);
     expect(unguarded.length / gold.length).toBeLessThan(0.02);
   }, 30000);
-});
-
-describe('Q115, Q185 — forest gold guarded by magic by chance, always until the rewards moved (Q250)', () => {
-  // [Q250] Only maps from before the rewards moved terrain have forest gold.
-  const before = withRewardsBeforeMove(DEFAULT_RULESET);
-  const beforeMaps = new Map<string, GameMap>();
-  const beforeOf = (seed: string): GameMap => {
-    const held = beforeMaps.get(seed) ?? generateMap({ seed, ruleset: before, remotenessScorer: defaultRemotenessScorer });
-    beforeMaps.set(seed, held);
-    return held;
-  };
-  const withoutForestMagic: Ruleset = {
-    ...before,
-    content: {
-      ...before.content,
-      REWARD_TABLE: {
-        ...before.content.REWARD_TABLE,
-        forest: before.content.REWARD_TABLE.forest.map(({ magicGuardChance: _chance, ...row }) => row),
-      },
-    },
-  };
-  const isForestGold = (poi: GameMap['pois'][number]): boolean => poi.terrain === 'forest' && poi.reward.kind === 'gold';
-
-  it('guards every forest gold POI by magic, keeping it in its §4.2 row (Q185)', () => {
-    let guarded = 0;
-    for (const seed of SEEDS) {
-      for (const poi of beforeOf(seed).pois.filter(isForestGold)) {
-        expect(poi.group).toEqual({ kind: 'gold', guard: 'fighting' });
-        if (poi.guard === null) continue;
-        expect(poi.guard.type).toBe('magic');
-        guarded += 1;
-      }
-    }
-    expect(guarded).toBeGreaterThan(0);
-  }, 30000);
-
-  it('guards forest gold with both fighting and magic at the coin flip a kept game may have begun with (Q115, 730)', () => {
-    const coinFlip = withMagicGuardChance(before, COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE);
-    const types = new Set<string>();
-    for (const seed of SEEDS) {
-      for (const poi of mapOf(seed, coinFlip).pois.filter(isForestGold)) if (poi.guard !== null) types.add(poi.guard.type);
-    }
-    expect([...types].sort()).toEqual(['fighting', 'magic']);
-  }, 30000);
-
-  it('leaves plains gold fighting-guarded and mountain gold split by row', () => {
-    for (const seed of SEEDS) {
-      for (const poi of beforeOf(seed).pois) {
-        if (poi.guard === null || isForestGold(poi)) continue;
-        expect(poi.guard.type).toBe(poi.group.guard);
-      }
-    }
-  }, 30000);
-
-  // The coin flips are the map's last draws, so turning them on moved nothing
-  // else on any seed: every road, reward, strength and picture is as it was.
-  it('changes nothing on a map but the guard type of some forest gold', () => {
-    for (const seed of SEEDS) {
-      const without = mapOf(seed, withoutForestMagic);
-      const after = beforeOf(seed);
-      expect(after.graph).toEqual(without.graph);
-      expect(after.attempts).toBe(without.attempts);
-      expect(after.pois.map(({ guard, ...poi }) => ({ ...poi, strength: guard?.strength ?? 0 }))).toEqual(
-        without.pois.map(({ guard, ...poi }) => ({ ...poi, strength: guard?.strength ?? 0 })),
-      );
-      after.pois.forEach((poi, index) => {
-        if (!isForestGold(poi)) expect(poi.guard).toEqual(without.pois[index]?.guard);
-      });
-    }
-  }, 60000);
 });
 
 describe('Q250 — the rewards by terrain since they moved', () => {

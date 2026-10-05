@@ -479,18 +479,6 @@ export interface RewardGroupSpec {
   /** §4.2 "POIs of this kind" — group size; these must sum to `POI_COUNT`. */
   readonly poiCount: number;
   /**
-   * [Q115] The chance, from 0 to 1, that a POI of this group is guarded by
-   * magic instead of by `guard`, flipped for each POI on its own, so a map
-   * carries anywhere from none to all of the group's POIs magic-guarded.
-   * Absent means never. Only a fighting-guarded row may carry it.
-   *
-   * The POI stays in this group whichever guard it gets (`Poi.group` keeps
-   * `guard`), so the row's POI count and units reconcile as before; only the
-   * guard a player rolls against changes. Andrei, 2026-09-30: "make it so the
-   * forest POI are assigned randomly either magic or combat guards".
-   */
-  readonly magicGuardChance?: number;
-  /**
    * [Q255] How far apart this group's POIs must be from one another, every
    * pair of them: §4.3 step 1b. Absent means anywhere.
    */

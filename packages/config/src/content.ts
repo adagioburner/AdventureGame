@@ -24,16 +24,6 @@ import type { GameContent, RewardTable, SitesApart } from './types.ts';
  * `STAMINA_PER_UNIT` in defaults.ts. Since [Q250] the row is the forest's.
  */
 /**
- * [Q115] The chance that a forest gold POI is guarded by magic instead of by
- * fighting, drawn for each POI on its own (450 A, 451 A). It was 0.5, a coin
- * flip, from 2026-09-30; [Q185] it is 1 since Andrei, 2026-10-01: "make all
- * gold in the forests guarded by magic. Otherwise magic plays too little
- * role". Kept as a chance so a coin flip is this one number away. [Q250]
- * Since the rewards moved terrain the forest has no gold, so no row uses it.
- */
-export const FOREST_MAGIC_GUARD_CHANCE = 1;
-
-/**
  * [Q255] Andrei, 2026-10-04: "make sure that two large gold prises guarded by
  * combat on plains are well separated from each other". The fortresses, the
  * plains' gold guarded by combat, are drawn at least this many road steps
