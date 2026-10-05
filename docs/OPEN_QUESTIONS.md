@@ -3940,6 +3940,43 @@ back. `ai.BUY_SKIP_STAMINA` is gone.
 
 ---
 
+### Q285. ~~What happens when a page from before an update starts a game, or a game cannot be drawn?~~ — **answered 2026-10-05: the server refuses a map made with other rules than its own, and the game waits for an up-to-date page; a game that cannot be shown says so with Games and Reload instead of going dark; the broken game is left to expire (990 A, 991 A, 992 A)**
+
+Andrei, 2026-10-05 at 16:57: *"I started a new game and maps don't load. I am
+staring at the dark screen."* His online 3-player game showed "Loading the
+art…" and then a dark page, every time, in every browser. His console:
+`ArtError: manifest.json has no POI row for mountain_move on forest`. The
+game's map had the rewards from before Q250 (mountains speed in the forest),
+whose pictures went with Q265. Online maps are made in the game master's
+browser at Start and the server took them on trust beyond the seed, so a page
+still running code from before an update could start a game with old rules;
+how one did here is not known (he had no old tab open that he remembers, and
+accepted "assume a stale page until it happens again"). Today's map maker
+cannot make such a map: 600 maps checked in Node and 325 drawn in a browser.
+Nothing caught the drawing error, so the whole page went dark.
+
+990. **A page from before an update starting a game.** A: the server refuses a
+     map made with other rules than its own; B: a version check when a page
+     connects, with a reload message; C: leave it. Andrei: *"if 990 A is easy
+     to do, it is a good thing to implement. We'll have this situation sooner
+     or later."*
+991. **A game that cannot be drawn.** A: keep the top bar with Games and show
+     "This game could not be shown. Reload the page to try again." with
+     Reload where the map goes; B: leave it. A.
+992. **The broken game.** A: leave it to expire; B: bring back the old
+     pictures so it can be played. A.
+
+Built: `startGame` in `packages/session/src/setup.ts` takes the server's own
+ruleset for the game's number of players and refuses a map whose ruleset
+differs (key order aside), with "this page is out of date. Reload it to start
+the game". The game stays in `starting`, as it does while a game master is
+away, and the game master's next page is asked for the map again. Online, a
+game page that fails to draw shows the message of 991 A
+(`apps/web/src/online/GameTrouble.tsx`); the hot seat page is unchanged. No
+rule, number, map or picture changed, and the rulebook needs no change.
+
+---
+
 ## C. Decisions I made that are *implementation*, not design
 
 Listed so you can veto any that read as design to you.

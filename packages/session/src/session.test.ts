@@ -9,6 +9,8 @@ import { GameSession } from './session.ts';
 import { setupLimitsFor } from './setup.ts';
 
 const G = asGameId('g1');
+/** The rules the fixture maps are made with, which the server here takes as its own. */
+const FIXTURE_RULES = fixtureMap({ terrains: ['plains'], edges: [] }).ruleset;
 const andrei = asUserId('andrei');
 const bea = asUserId('bea');
 
@@ -65,6 +67,7 @@ function harness(rolls: readonly number[] = [], picks: readonly number[] = []) {
       },
     },
     setupLimitsFor(DEFAULT_RULESET, ['f1', 'f2', 'f3', 'f4', 'f5', 'f6']),
+    () => FIXTURE_RULES,
   );
   const take = () => sent.splice(0);
   return {
@@ -150,6 +153,16 @@ describe('GameSession in setup', () => {
     const map = fixtureMap({ terrains: ['plains', 'plains'], edges: [[0, 1]] });
     await send(session, bea, { type: 'gm.mapGenerated', gameId: G, map });
     expect(take()[0]?.message).toMatchObject({ type: 'error', code: 'not_game_master' });
+
+    // [990 A] A page from before an update makes its map with other rules: it is
+    // told to reload, and the game waits for the game master's next page.
+    await send(session, andrei, { type: 'gm.mapGenerated', gameId: G, map: { ...map, ruleset: DEFAULT_RULESET } });
+    expect(take().map(({ to, message }) => [to, message])).toEqual([
+      ['andrei', { type: 'error', code: 'invalid_action', message: 'this page is out of date. Reload it to start the game' }],
+    ]);
+    expect(setup()?.phase).toBe('starting');
+    await session.connected(andrei);
+    expect(take().map(({ message }) => message.type)).toEqual(['setup.state', 'gm.requestMapGeneration']);
 
     await send(session, andrei, { type: 'gm.mapGenerated', gameId: G, map });
     expect(take().map(({ to, message }) => [to, message.type])).toEqual([
