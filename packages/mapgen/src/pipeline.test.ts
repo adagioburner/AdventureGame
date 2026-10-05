@@ -5,15 +5,11 @@ import {
   DEFAULT_RULESET,
   FORTRESS_MIN_LINE_SPACES,
   FORTRESS_MIN_ROAD_STEPS,
-  fortressesApartOf,
   LARGER_MAP_RULESET,
   REWARD_KINDS,
   SKILL_KINDS,
   TERRAINS,
   withMagicGuardChance,
-  withoutDeepStart,
-  withoutFortressesApart,
-  withoutSeparateAreas,
   withRewardsBeforeMove,
   type Ruleset,
   type Terrain,
@@ -232,7 +228,7 @@ describe('Q227 — the start, deep in the plains where the sites nearby are not 
   it('starts on the deepest plains space whose sites within 5 steps average below 0.1, the least remote of equally deep ones', () => {
     for (const seed of SEEDS) {
       const map = mapOf(seed);
-      const { NEARBY_STEPS, MAX_REMOTENESS } = map.ruleset.config.start ?? { NEARBY_STEPS: -1, MAX_REMOTENESS: -1 };
+      const { NEARBY_STEPS, MAX_REMOTENESS } = map.ruleset.config.start;
       expect([NEARBY_STEPS, MAX_REMOTENESS]).toEqual([5, 0.1]);
       const start = startingNodeFor(map);
       const depth = stepsFromForestAndMountains(map.graph);
@@ -246,18 +242,6 @@ describe('Q227 — the start, deep in the plains where the sites nearby are not 
         expect(depth[node] as number).toBeLessThanOrEqual(depth[start] as number);
         if (depth[node] === depth[start]) expect(remoteness).toBeGreaterThanOrEqual(own as number);
       }
-    }
-  }, 30000);
-
-  // Remoteness is not touched: a map from before differs in its ruleset alone,
-  // and its start is drawn at random as it was.
-  it('changes nothing on a map but the start, which a map from before still draws at random', () => {
-    for (const seed of SEEDS) {
-      const before = mapOf(seed, withoutDeepStart(DEFAULT_RULESET));
-      const after = mapOf(seed);
-      expect(after.graph).toEqual(before.graph);
-      expect(after.pois).toEqual(before.pois);
-      expect(startingNodeFor(before)).toBe(createRng(seed).fork('starting-node').pick(spacesOf(before)));
     }
   }, 30000);
 
@@ -302,15 +286,14 @@ describe('§5.2 — guard strengths', () => {
     // gold POIs at 0 passes to 0.2% at the default 5, and 58 of those 60 maps
     // have none at all — so asking the default seeds for one is asking for a
     // coincidence. The sealing path still has to work when it does happen.
-    // [Q250] Drawn with the rewards from before they moved terrain: the
-    // forest's small remote gold piles were where the cap was met, and on the
-    // plains, the least remote terrain, these seeds no longer meet it.
-    const before = withRewardsBeforeMove(DEFAULT_RULESET);
+    // [Q250] Since the rewards moved terrain the small gold piles are on the
+    // plains, the least remote terrain, and these seeds no longer meet the cap
+    // at today's weights, so remoteness weighs more here.
     const noSwaps: Ruleset = {
-      ...before,
+      ...DEFAULT_RULESET,
       config: {
-        ...before.config,
-        balancing: { ...before.config.balancing, REWARD_SWAP_PASSES: 0 },
+        ...DEFAULT_RULESET.config,
+        balancing: { ...DEFAULT_RULESET.config.balancing, REWARD_SWAP_PASSES: 0, REMOTENESS_WEIGHT: 12 },
       },
     };
     const unguardedGold = SEEDS.flatMap((seed) =>
@@ -320,8 +303,8 @@ describe('§5.2 — guard strengths', () => {
     for (const poi of unguardedGold) {
       expect(poi.group.guard).not.toBeNull();
       const raw =
-        poi.reward.units * DEFAULT_RULESET.config.balancing.GOLD_WEIGHT -
-        poi.remoteness * DEFAULT_RULESET.config.balancing.REMOTENESS_WEIGHT;
+        poi.reward.units * noSwaps.config.balancing.GOLD_WEIGHT -
+        poi.remoteness * noSwaps.config.balancing.REMOTENESS_WEIGHT;
       expect(Math.ceil(raw)).toBeLessThanOrEqual(0);
     }
   }, 30000);
@@ -491,6 +474,16 @@ describe('Q255 — the fortresses kept apart, by road and on the map', () => {
   const farEnough = ({ steps, line }: { steps: number; line: number }): boolean =>
     steps >= FORTRESS_MIN_ROAD_STEPS && line >= FORTRESS_MIN_LINE_SPACES;
 
+  /** `ruleset` with no row kept apart: the fortresses wherever step 1 drew them. */
+  function withoutApart(ruleset: Ruleset): Ruleset {
+    const anywhere = (rows: Ruleset['content']['REWARD_TABLE'][Terrain]) => rows.map(({ apart: _apart, ...row }) => row);
+    const table = ruleset.content.REWARD_TABLE;
+    return {
+      ...ruleset,
+      content: { ...ruleset.content, REWARD_TABLE: { plains: anywhere(table.plains), forest: anywhere(table.forest), mountain: anywhere(table.mountain) } },
+    };
+  }
+
   it('keeps every pair 12 road steps and 5 spaces in a line apart, two on the standard map and three on the larger', () => {
     expect([FORTRESS_MIN_ROAD_STEPS, FORTRESS_MIN_LINE_SPACES]).toEqual([12, 5]);
     for (const [ruleset, count] of [[DEFAULT_RULESET, 2], [LARGER_MAP_RULESET, 3]] as const) {
@@ -505,7 +498,7 @@ describe('Q255 — the fortresses kept apart, by road and on the map', () => {
   it('leaves a map whose fortresses were drawn far enough apart exactly as it was', () => {
     let unchanged = 0;
     for (const seed of SEEDS) {
-      const before = mapOf(seed, withoutFortressesApart(DEFAULT_RULESET));
+      const before = mapOf(seed, withoutApart(DEFAULT_RULESET));
       if (!pairsOf(before).every(farEnough)) continue;
       unchanged++;
       const after = mapOf(seed);
@@ -516,7 +509,7 @@ describe('Q255 — the fortresses kept apart, by road and on the map', () => {
   }, 30000);
 
   it("moves one of adventure's fortresses, and changes nothing but the sites it swapped and their rows' gold", () => {
-    const before = mapOf('adventure', withoutFortressesApart(DEFAULT_RULESET));
+    const before = mapOf('adventure', withoutApart(DEFAULT_RULESET));
     const after = mapOf('adventure');
     expect(pairsOf(before).every(farEnough)).toBe(false);
     expect(after.graph).toEqual(before.graph);
@@ -531,13 +524,6 @@ describe('Q255 — the fortresses kept apart, by road and on the map', () => {
       expect(poi.terrain).toBe('plains');
       expect([poi.reward.kind, was.reward.kind]).toEqual(['gold', 'gold']);
     });
-  }, 30000);
-
-  it("draws a game's map from before with its fortresses where they were drawn", () => {
-    expect(fortressesApartOf(DEFAULT_RULESET)).toBe(true);
-    expect(fortressesApartOf(LARGER_MAP_RULESET)).toBe(true);
-    expect(fortressesApartOf(withoutFortressesApart(LARGER_MAP_RULESET))).toBe(false);
-    expect(pairsOf(mapOf('adventure', withoutFortressesApart(DEFAULT_RULESET))).every(farEnough)).toBe(false);
   }, 30000);
 });
 
@@ -746,10 +732,14 @@ describe('Q245 — the forest and mountains in separate areas, no valleys', () =
     return [...sizes.values()].sort((a, b) => b - a);
   }
 
-  it('carves no valleys, while a map from before still carves them', () => {
+  it('carves no valleys, while VALLEY_COUNT above 0 still carves them', () => {
+    const valleys: Ruleset = {
+      ...DEFAULT_RULESET,
+      config: { ...DEFAULT_RULESET.config, map: { ...DEFAULT_RULESET.config.map, VALLEY_COUNT: { min: 2, max: 4 } } },
+    };
     for (const seed of SEEDS) {
       expect(drafted(seed, DEFAULT_RULESET).draft.valleyNodes.size).toBe(0);
-      expect(drafted(seed, withoutSeparateAreas(DEFAULT_RULESET)).draft.valleyNodes.size).toBeGreaterThan(0);
+      expect(drafted(seed, valleys).draft.valleyNodes.size).toBeGreaterThan(0);
     }
   }, 30000);
 
@@ -770,10 +760,9 @@ describe('Q245 — the forest and mountains in separate areas, no valleys', () =
     expect(two).toBeGreaterThan(cases / 2);
   }, 60000);
 
-  it("draws every space's gap within KEPT_APART.GAP, and none on a map from before (917)", () => {
+  it("draws every space's gap within KEPT_APART.GAP (917)", () => {
     const { draft } = drafted('adventure', DEFAULT_RULESET);
     expect(draft.apartGaps).toHaveLength(draft.terrain.length);
     expect(new Set(draft.apartGaps)).toEqual(new Set([1, 2, 3]));
-    expect(drafted('adventure', withoutSeparateAreas(DEFAULT_RULESET)).draft.apartGaps).toEqual([]);
   }, 30000);
 });

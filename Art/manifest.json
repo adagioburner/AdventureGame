@@ -37,7 +37,6 @@
   "pois": [
     { "terrain": "plains", "reward": "plains_move", "guard": null, "sheet": "Plains_PlainsMovement", "size": 0.5 },
     { "terrain": "plains", "reward": "forest_move", "guard": null, "sheet": "Plains_ForestMovement", "size": 0.5 },
-    { "terrain": "plains", "reward": "magic", "guard": null, "sheet": "Plains_Magic", "size": 0.5 },
     { "terrain": "plains", "reward": "gold", "guard": "fighting", "sheet": "Plains_GoldGuardedByFighting", "size": 0.58 },
     {
       "terrain": "plains",
@@ -56,7 +55,6 @@
       "on_node": true,
       "borrowed": "Q250: the forest's magic-guarded gold moved to the plains and keeps the magic guardians it borrowed from mountain gold (922 A)."
     },
-    { "terrain": "forest", "reward": "mountain_move", "guard": null, "sheet": "Forest_MountainMovement", "size": 0.5 },
     { "terrain": "forest", "reward": "fighting", "guard": null, "sheet": "Forest_Fighting", "size": 0.5 },
     {
       "terrain": "forest",
@@ -65,24 +63,6 @@
       "sheet": "Plains_Magic",
       "size": 0.5,
       "borrowed": "Q250: magic moved from the plains to the forest and keeps the houses drawn for it on the plains (922 A)."
-    },
-    {
-      "terrain": "forest",
-      "reward": "gold",
-      "guard": "fighting",
-      "sheet": "Mountains_GoldGuardedByFighting",
-      "size": 0.6,
-      "on_node": true,
-      "borrowed": "Q20: forest gold has no sheet of its own yet, so it borrows mountain gold's fighting guardians. Since Q250 only maps from before the rewards moved have forest gold."
-    },
-    {
-      "terrain": "forest",
-      "reward": "gold",
-      "guard": "magic",
-      "sheet": "Mountains_GoldGuardedByMagic",
-      "size": 0.6,
-      "on_node": true,
-      "borrowed": "Q115: forest gold's magic guards (a coin flip since 451) have no sheet of their own, so they borrow mountain gold's magic guardians, as its fighting guards borrow the fighting ones (452). Since Q250 only maps from before the rewards moved have forest gold."
     },
     { "terrain": "mountain", "reward": "gold", "guard": "fighting", "sheet": "Mountains_GoldGuardedByFighting", "size": 0.6, "on_node": true },
     { "terrain": "mountain", "reward": "gold", "guard": "magic", "sheet": "Mountains_GoldGuardedByMagic", "size": 0.6, "on_node": true },

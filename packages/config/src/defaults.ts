@@ -1,5 +1,4 @@
 import type { EngineeringConfig, GameConfig, RespawnConfig } from './types.ts';
-import type { IntRange, PerTerrain } from './vocabulary.ts';
 import { SKILL_KINDS } from './vocabulary.ts';
 
 /**
@@ -113,20 +112,6 @@ export const RESPAWN_RULES: RespawnConfig = {
   FAR_SHARE: 0.5,
   MAX_UNITS: 1,
 };
-
-/**
- * [Q245] The seeds every terrain grew from before `TERRAIN_SEEDS`, 1 or 2 at
- * random (§2.1 step 4 as first written): the maps of games started before
- * keep growing from these, so they come back as they began (913).
- */
-export const EARLIER_TERRAIN_SEEDS: PerTerrain<IntRange> = {
-  plains: { min: 1, max: 2 },
-  forest: { min: 1, max: 2 },
-  mountain: { min: 1, max: 2 },
-};
-
-/** [Q245] The valleys carved before `VALLEY_COUNT` went to none, kept by the maps of games started before. */
-export const EARLIER_VALLEY_COUNT: IntRange = { min: 2, max: 4 };
 
 /**
  * [Q160] Andrei, 2026-10-01: "for four and five player games we need larger

@@ -48,10 +48,10 @@ export interface MapSpec {
  * a scenario sets the stats it is about, so the only gold in it is what the
  * test hands out.
  */
-const NO_STARTING_GOLD: Ruleset = (() => {
-  const { STARTING_GOLD: _gold, ...players } = DEFAULT_RULESET.config.players;
-  return { ...DEFAULT_RULESET, config: { ...DEFAULT_RULESET.config, players } };
-})();
+const NO_STARTING_GOLD: Ruleset = {
+  ...DEFAULT_RULESET,
+  config: { ...DEFAULT_RULESET.config, players: { ...DEFAULT_RULESET.config.players, STARTING_GOLD: 0 } },
+};
 
 export function fixtureMap(spec: MapSpec): GameMap {
   const adjacency: NodeId[][] = spec.terrains.map(() => []);

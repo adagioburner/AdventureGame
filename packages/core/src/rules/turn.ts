@@ -290,7 +290,6 @@ export function applyCountedTurn(state: GameState, turn: CountedTurn, dice: Dice
 function applyBuy(state: GameState, action: BuyAction): ActionOutcome {
   const player = requireActivePlayer(state, action.player);
   const buying = state.map.ruleset.config.buying;
-  if (buying === undefined) throw new RuleViolationError('nothing can be bought in this game');
   if (action.skills.length === 0) throw new RuleViolationError('a purchase buys at least one unit');
   for (const skill of action.skills) {
     if (!buying.KINDS.includes(skill)) throw new RuleViolationError(`${skill} cannot be bought`);
@@ -322,7 +321,7 @@ function applyBuy(state: GameState, action: BuyAction): ActionOutcome {
  */
 export function buyableNow(state: GameState, playerId: PlayerId): { readonly kinds: readonly RewardKind[]; readonly price: number } {
   const buying = state.map.ruleset.config.buying;
-  if (buying === undefined || state.status !== 'in_progress' || activePlayer(state).id !== playerId) return { kinds: [], price: 0 };
+  if (state.status !== 'in_progress' || activePlayer(state).id !== playerId) return { kinds: [], price: 0 };
   const gold = playerById(state, playerId).stats.gold;
   return { kinds: gold >= buying.GOLD_PER_UNIT ? buying.KINDS : [], price: buying.GOLD_PER_UNIT };
 }

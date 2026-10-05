@@ -1,17 +1,3 @@
-import {
-  COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE,
-  RESPAWN_RULES,
-  deepStartOf,
-  fortressesApartOf,
-  magicGuardChanceOf,
-  mapSizeOfRuleset,
-  moreStaminaUnitsOf,
-  rewardsMovedOf,
-  separateAreasOf,
-  staminaSitesOf,
-  startingGoldOf,
-  type MapSize,
-} from '@adventure/config';
 import type { BuyAction, GameMap, TurnAction } from '@adventure/core';
 import { inOrder, toHotseatSeats, type LocalSetup } from '../setup/local.ts';
 import { HotseatGame } from './hotseat.ts';
@@ -35,77 +21,6 @@ export interface KeptGame {
   readonly diceSeed: string;
   /** Every turn played, and [Q190] every purchase, in order. */
   readonly actions: readonly (TurnAction | BuyAction)[];
-  /**
-   * [Q190] Whether speeds and skills can be bought in this game. Absent on a
-   * game kept before they could, which goes on by the rules it began with.
-   */
-  readonly buying?: boolean;
-  /**
-   * [Q135] Whether speeds and skills come back in this game. Absent on a game
-   * kept before they did, which replays, and goes on, by the rules it began with.
-   */
-  readonly respawn?: boolean;
-  /**
-   * [Q135] The most units a site that comes back offers in this game. Absent
-   * on a game kept before the cap, whose sites come back with everything
-   * they started with.
-   */
-  readonly respawnMaxUnits?: number;
-  /**
-   * [Q160] The size of map the game is played on, larger from 4 players.
-   * Absent on a game kept before maps grew, which goes on on the map it began
-   * on: today's size, whatever its number of players.
-   */
-  readonly mapSize?: MapSize;
-  /**
-   * [Q185, 730 A] The chance its forest gold sites were magic-guarded when the
-   * game began. Absent on a game kept before every forest gold site was magic,
-   * which goes on with the coin-flip guards it began with.
-   */
-  readonly magicGuardChance?: number;
-  /**
-   * [Q200] The gold every player started with. Absent on a game kept before
-   * players started with gold, whose players started with none (790).
-   */
-  readonly startingGold?: number;
-  /**
-   * [Q227] Whether the game's map started the figures deep in the plains.
-   * Absent on a game kept before it did, whose map is made again with the
-   * start it began on.
-   */
-  readonly deepStart?: boolean;
-  /**
-   * [Q240] Whether the game's map has the plains' stamina sites, each unit
-   * worth 5 stamina. Absent on a game kept before they came, whose map is made
-   * again as it began, its stamina units worth 1.
-   */
-  readonly staminaSites?: boolean;
-  /**
-   * [Q245] Whether the game's map grew its terrain from `TERRAIN_SEEDS` with
-   * the forest's and the mountains' areas kept apart and no valleys. Absent on
-   * a game kept before, whose map is made again as it began, from 1 or 2 seeds
-   * a terrain and with valleys (913).
-   */
-  readonly separateAreas?: boolean;
-  /**
-   * [Q250] Whether the game's map has the rewards on the terrains they moved
-   * to: the speeds and the magic-guarded gold on the plains, magic, combat and
-   * stamina in the forest. Absent on a game kept before they moved, whose map
-   * is made again as it began.
-   */
-  readonly rewardsMoved?: boolean;
-  /**
-   * [Q255] Whether the game's map keeps the plains' fortresses apart. Absent
-   * on a game kept before, whose map is made again with its fortresses where
-   * they were drawn (933 A).
-   */
-  readonly fortressesApart?: boolean;
-  /**
-   * [Q260] Whether the game's map has the forest stamina sites' hearts as
-   * raised to 12 (17 on the larger map). Absent on a game kept before, whose
-   * map is made again with the 10 (14) it began with (941 A).
-   */
-  readonly moreStaminaUnits?: boolean;
 }
 
 const KEY = 'adventure.hotseat';
@@ -134,25 +49,12 @@ export function readKept(): KeptGame | null {
  * `order` (`null`: as set); without storage, nothing is kept.
  */
 export function keep(seed: string, setup: LocalSetup, order: readonly string[] | null, game: HotseatGame): void {
-  const { respawn, buying } = game.setup.map.ruleset.config;
   const kept: KeptGame = {
     seed,
     setup,
     ...(order === null ? {} : { order }),
     diceSeed: game.setup.diceSeed,
     actions: game.actions,
-    buying: buying !== undefined,
-    respawn: respawn !== undefined,
-    ...(respawn?.MAX_UNITS === undefined ? {} : { respawnMaxUnits: respawn.MAX_UNITS }),
-    mapSize: mapSizeOfRuleset(game.setup.map.ruleset),
-    magicGuardChance: magicGuardChanceOf(game.setup.map.ruleset),
-    startingGold: startingGoldOf(game.setup.map.ruleset),
-    deepStart: deepStartOf(game.setup.map.ruleset),
-    staminaSites: staminaSitesOf(game.setup.map.ruleset),
-    separateAreas: separateAreasOf(game.setup.map.ruleset),
-    rewardsMoved: rewardsMovedOf(game.setup.map.ruleset),
-    fortressesApart: fortressesApartOf(game.setup.map.ruleset),
-    moreStaminaUnits: moreStaminaUnitsOf(game.setup.map.ruleset),
   };
   try {
     window.localStorage.setItem(KEY, JSON.stringify(kept));
@@ -169,54 +71,10 @@ export function forgetKept(): void {
   }
 }
 
-/** The size of the map `kept` is played on: see `KeptGame.mapSize`. */
-export function keptMapSize(kept: KeptGame): MapSize {
-  return kept.mapSize === 'larger' ? 'larger' : 'standard';
-}
-
-/** The chance `kept`'s forest gold sites are magic-guarded at: see `KeptGame.magicGuardChance`. */
-export function keptMagicGuardChance(kept: KeptGame): number {
-  return typeof kept.magicGuardChance === 'number' ? kept.magicGuardChance : COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE;
-}
-
-/** Whether `kept`'s map starts deep in the plains: see `KeptGame.deepStart`. */
-export function keptDeepStart(kept: KeptGame): boolean {
-  return kept.deepStart === true;
-}
-
-/** Whether `kept`'s map has the plains' stamina sites: see `KeptGame.staminaSites`. */
-export function keptStaminaSites(kept: KeptGame): boolean {
-  return kept.staminaSites === true;
-}
-
-/** Whether `kept`'s map grew its areas apart, without valleys: see `KeptGame.separateAreas`. */
-export function keptSeparateAreas(kept: KeptGame): boolean {
-  return kept.separateAreas === true;
-}
-
-/** Whether `kept`'s map has the rewards where they moved to: see `KeptGame.rewardsMoved`. */
-export function keptRewardsMoved(kept: KeptGame): boolean {
-  return kept.rewardsMoved === true;
-}
-
-/** Whether `kept`'s map keeps the fortresses apart: see `KeptGame.fortressesApart`. */
-export function keptFortressesApart(kept: KeptGame): boolean {
-  return kept.fortressesApart === true;
-}
-
-/** Whether `kept`'s map has the forest stamina sites' hearts as raised: see `KeptGame.moreStaminaUnits`. */
-export function keptMoreStaminaUnits(kept: KeptGame): boolean {
-  return kept.moreStaminaUnits === true;
-}
-
 /** The kept game played again on `map`; `null` if its turns no longer replay. */
 export function replayKept(kept: KeptGame, map: GameMap): HotseatGame | null {
   try {
-    const rules = withStartingGold(
-      kept.buying === true ? map : startedBeforeBuying(map, kept.respawn === true, kept.respawnMaxUnits),
-      typeof kept.startingGold === 'number' ? kept.startingGold : 0,
-    );
-    const game = new HotseatGame({ map: rules, seats: toHotseatSeats(inOrder(kept.setup, kept.order ?? null)), diceSeed: kept.diceSeed });
+    const game = new HotseatGame({ map, seats: toHotseatSeats(inOrder(kept.setup, kept.order ?? null)), diceSeed: kept.diceSeed });
     for (const action of kept.actions) {
       if (action.kind === 'buy') game.buy(action);
       else game.play(action);
@@ -225,25 +83,4 @@ export function replayKept(kept: KeptGame, map: GameMap): HotseatGame | null {
   } catch {
     return null;
   }
-}
-
-/**
- * `map` under the rules a game kept before buying began with (Q190, 758): no
- * buying, and speeds and skills coming back if they did then (Q135), at most
- * `max` units a site, or everything it started with when `max` is absent.
- */
-function startedBeforeBuying(map: GameMap, respawn: boolean, max: number | undefined): GameMap {
-  const { buying: _buying, respawn: _respawn, ...config } = map.ruleset.config;
-  if (!respawn) return { ...map, ruleset: { ...map.ruleset, config } };
-  const { MAX_UNITS: _max, ...uncapped } = RESPAWN_RULES;
-  const rules = max === undefined ? uncapped : { ...uncapped, MAX_UNITS: max };
-  return { ...map, ruleset: { ...map.ruleset, config: { ...config, respawn: rules } } };
-}
-
-/** `map` with its players starting on `gold` (Q200): none for a game kept before they started with any. */
-function withStartingGold(map: GameMap, gold: number): GameMap {
-  if (startingGoldOf(map.ruleset) === gold) return map;
-  const { STARTING_GOLD: _gold, ...players } = map.ruleset.config.players;
-  const config = { ...map.ruleset.config, players: gold === 0 ? players : { ...players, STARTING_GOLD: gold } };
-  return { ...map, ruleset: { ...map.ruleset, config } };
 }

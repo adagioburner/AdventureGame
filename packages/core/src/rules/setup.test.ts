@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_RULESET, startingGoldOf, startingStaminaForSeat } from '@adventure/config';
+import { DEFAULT_RULESET, startingStaminaForSeat } from '@adventure/config';
 import { RuleViolationError } from '../errors.ts';
 import { asGameId, asPlayerId } from '../ids.ts';
 import { createGameState } from './setup.ts';
@@ -30,20 +30,15 @@ describe('createGameState', () => {
     expect(state.players.map((current) => current.position)).toEqual([n(0), n(0), n(0)]);
   });
 
-  it('gives every seat the same starting gold, 5, in a game started since players began with gold (Q200)', () => {
+  it('gives every seat the same starting gold, 5 (Q200)', () => {
     const started = createGameState({
       id: asGameId('gold'),
       map: { ...map, ruleset: DEFAULT_RULESET },
       players: ['one', 'two', 'three'].map((name) => ({ id: asPlayerId(name), name, avatarId: `avatar-${name}`, control: 'human' as const })),
       startingNode: n(0),
     });
-    expect(startingGoldOf(DEFAULT_RULESET)).toBe(5);
+    expect(DEFAULT_RULESET.config.players.STARTING_GOLD).toBe(5);
     expect(started.players.map((current) => current.stats.gold)).toEqual([5, 5, 5]);
-  });
-
-  it('gives no gold in a game whose map has no starting gold, one started before (Q200, 790)', () => {
-    expect(map.ruleset.config.players.STARTING_GOLD).toBeUndefined();
-    expect(state.players.map((current) => current.stats.gold)).toEqual([0, 0, 0]);
   });
 
   it('gives a later seat more starting stamina, and every other stat zero', () => {

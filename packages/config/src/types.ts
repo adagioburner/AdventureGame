@@ -38,7 +38,7 @@ export interface MapConfig {
   /**
    * §11 `VALLEY_COUNT` — 2–4 valleys carved per map until Q245, none since:
    * "stop making valleys, because now we are getting them for free" (Andrei,
-   * 2026-10-04). The maps of games started before keep `EARLIER_VALLEY_COUNT`.
+   * 2026-10-04).
    */
   readonly VALLEY_COUNT: IntRange;
   /** §11 `VALLEY_WIDTH` — fixed, 1 node wide. */
@@ -104,17 +104,13 @@ export interface MapConfig {
    * mountains, and don't let them merge"; "We can do 2 seeds for plains but we
    * don't care if they merge or not. This applies to all map sizes". Which
    * terrains are kept apart is `KEPT_APART`.
-   *
-   * Absent on the maps of games started before, which grew every terrain from
-   * `EARLIER_TERRAIN_SEEDS`, kept nothing apart and carved valleys (913).
    */
-  readonly TERRAIN_SEEDS?: PerTerrain<IntRange>;
+  readonly TERRAIN_SEEDS: PerTerrain<IntRange>;
   /**
    * [Q245] Terrains whose separate areas never grow into each other, in step
-   * 4's fill and in the share balancing of steps 4 and 6. Absent on the maps
-   * of games started before, like `TERRAIN_SEEDS`.
+   * 4's fill and in the share balancing of steps 4 and 6.
    */
-  readonly KEPT_APART?: KeptApartConfig;
+  readonly KEPT_APART: KeptApartConfig;
 }
 
 /**
@@ -171,11 +167,8 @@ export interface PoiConfig {
    * [Q240] `STAMINA_PER_UNIT` — the stamina one unit of a stamina reward gives
    * when it is claimed, on every stamina site, the spare dead ends' included
    * (903 A). Andrei, 2026-10-03: "each stamina unit adds 5 stamina".
-   *
-   * Absent on the maps of games started before stamina sites came to the
-   * plains, whose stamina units give 1 stamina each, as they began with.
    */
-  readonly STAMINA_PER_UNIT?: number;
+  readonly STAMINA_PER_UNIT: number;
   /**
    * §11 `GUARD_STRENGTH_MIN` / `MAX`. §11's table says 2–10, but [SOURCE §5.2,
    * chat] superseded the minimum: the guard-strength formula is "capped between
@@ -297,12 +290,8 @@ export interface PlayerConfig {
    * §11 `STARTING_GOLD` — tunable (5). [Q200] Andrei, 2026-10-02: "Now that
    * players can buy skills for gold, it makes sense to starts them with 5
    * gold to enable a variety of strategies". The same for every seat.
-   *
-   * Absent on the maps of games started before it (790), whose players
-   * started with none: an online game carries the config its map was made
-   * with. Read it through `startingGoldOf`.
    */
-  readonly STARTING_GOLD?: number;
+  readonly STARTING_GOLD: number;
 }
 
 /** A dice specification. §11 `GUARD_DIE` is fixed at 1d6 (§8). */
@@ -494,19 +483,10 @@ export interface GameConfig {
    * games keep the rules they started with to the end.
    */
   readonly respawn?: RespawnConfig;
-  /**
-   * [Q190] Absent on the maps of games started before speeds and skills could
-   * be bought, which keep the rules they started with (758), speeds and skills
-   * coming back included; present on every game started since, which have no
-   * `respawn` (757).
-   */
-  readonly buying?: BuyingConfig;
-  /**
-   * [Q227] Absent on the maps of games started before the start moved deep
-   * into the plains, which keep the start they began on: a random plains
-   * space that is not a site.
-   */
-  readonly start?: StartConfig;
+  /** [Q190] Buying speeds and skills with gold. */
+  readonly buying: BuyingConfig;
+  /** [Q227] Where the figures start. */
+  readonly start: StartConfig;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -556,8 +536,7 @@ export interface RewardGroupSpec {
   readonly magicGuardChance?: number;
   /**
    * [Q255] How far apart this group's POIs must be from one another, every
-   * pair of them: §4.3 step 1b. Absent means anywhere, as every group was
-   * before; a map made before keeps its fortresses where they were drawn.
+   * pair of them: §4.3 step 1b. Absent means anywhere.
    */
   readonly apart?: SitesApart;
 }

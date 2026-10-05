@@ -36,23 +36,22 @@ export interface KeptApart {
 }
 
 /**
- * Each space's gap, drawn from `KEPT_APART.GAP` once per map, by step 4; empty
- * on maps without `KEPT_APART`, which draw nothing, so the maps of games
- * started before are unchanged.
+ * Each space's gap, drawn from `KEPT_APART.GAP` once per map, by step 4; empty,
+ * with nothing drawn, when `KEPT_APART` names no terrain.
  */
 export function drawApartGaps(map: MapConfig, nodeCount: number, rng: GenerationContext['rng']): number[] {
   const config = map.KEPT_APART;
-  if (config === undefined || config.TERRAINS.length === 0) return [];
+  if (config.TERRAINS.length === 0) return [];
   return Array.from({ length: nodeCount }, () => rng.nextIntInclusive(config.GAP.min, config.GAP.max));
 }
 
 /**
  * `KEPT_APART` for a draft with this triangulation and the `gaps` step 4 drew;
- * `null` on maps without it, and on a draft step 4 drew no gaps for.
+ * `null` when it names no terrain, and on a draft step 4 drew no gaps for.
  */
 export function keptApartOf(map: MapConfig, triangulation: readonly MapEdge[], gaps: readonly number[]): KeptApart | null {
   const config = map.KEPT_APART;
-  if (config === undefined || config.TERRAINS.length === 0 || gaps.length === 0) return null;
+  if (config.TERRAINS.length === 0 || gaps.length === 0) return null;
   const ground: NodeId[][] = Array.from({ length: gaps.length }, () => []);
   for (const edge of triangulation) {
     (ground[edge.a] as NodeId[]).push(edge.b);

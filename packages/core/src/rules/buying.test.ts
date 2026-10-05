@@ -83,14 +83,6 @@ describe('buying a speed or skill (Q190)', () => {
     expect(buyableNow(rich, two).kinds).toEqual([]);
   });
 
-  it('is refused in a game started before buying (758)', () => {
-    const { buying: _buying, ...config } = DEFAULT_RULESET.config;
-    const before: GameMap = { ...map, ruleset: { ...DEFAULT_RULESET, config } };
-    const state = withStats(fixtureGame(before, 0), one, { gold: 2 });
-    expect(() => applyAction(state, { kind: 'buy', player: one, skills: ['fighting'] }, noDice)).toThrow(RuleViolationError);
-    expect(buyableNow(state, one).kinds).toEqual([]);
-  });
-
   it('lists the five skills while the buyer has the gold for one', () => {
     expect(buyableNow(game(1), one)).toEqual({ kinds: ['plains_move', 'forest_move', 'mountain_move', 'fighting', 'magic'], price: 1 });
     expect(buyableNow(game(0), one).kinds).toEqual([]);

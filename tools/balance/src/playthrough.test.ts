@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_RULESET, startingGoldOf } from '@adventure/config';
+import { DEFAULT_RULESET } from '@adventure/config';
 import { previewPath, rewardAmount, totalGoldUnits } from '@adventure/core';
 import { formatPlaythrough, playGame } from './playthrough.ts';
 
@@ -42,7 +42,7 @@ describe('a full game', () => {
     );
     // [Q190] Spent gold leaves the game; [Q200] each player started with some.
     const spent = run.turns.flatMap((turn) => turn.events).reduce((sum, event) => sum + (event.type === 'bought' ? event.gold : 0), 0);
-    const started = startingGoldOf(run.map.ruleset) * run.finalState.players.length;
+    const started = run.map.ruleset.config.players.STARTING_GOLD * run.finalState.players.length;
     expect(started).toBe(10);
     expect(held + left + spent).toBe(totalGoldUnits(run.map) + started);
   });

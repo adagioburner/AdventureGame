@@ -27,8 +27,7 @@ mountain moving skill, fighting, magic, gold and stamina. Claiming a reward of
 kind K with N units simply adds N to stat K — the stat block is typed as
 `Record<RewardKind, number>` so the two lists cannot drift apart
 (`packages/core/src/player.ts`) — except stamina, whose units are worth
-`pois.STAMINA_PER_UNIT` (5) stamina each since the plains have stamina sites
-(§4.2, Q240), or 1 on a map made before (`rewardAmount`,
+`pois.STAMINA_PER_UNIT` (5) stamina each (§4.2, Q240; `rewardAmount`,
 `packages/core/src/reward.ts`).
 
 **Setup.** Seats are allocated in the order the game master accepts join
@@ -42,9 +41,7 @@ node that is not a POI (`chooseStartingNode`, `packages/core/src/gamemap.ts`).
 Stamina and gold are the stats that do not start at zero — seat *n* starts with
 `STARTING_STAMINA_BASE + (n − 1) × STARTING_STAMINA_INCREMENT`, i.e. 30, 35, 40…
 (`startingStaminaForSeat`, `packages/config/src/index.ts`), and every seat with
-`STARTING_GOLD` gold, 5 (`startingGoldOf`; Q200). A map whose config has no
-`STARTING_GOLD` (a game started before it, online or kept on a device) starts
-everyone on none. `createGameState`
+`players.STARTING_GOLD` gold, 5 (Q200). `createGameState`
 (`packages/core/src/rules/setup.ts`) builds that opening position, and is the
 only function other than `applyAction` that produces a `GameState`.
 

@@ -14,8 +14,7 @@ import type { GenerationContext, GenerationStep, MapDraft } from '../types.ts';
  * [Q245] `VALLEY_COUNT` is 0 on maps made since the forest and mountains grew
  * in separate areas kept apart: "stop making valleys, because now we are
  * getting them for free". The step then carves nothing and only balances the
- * shares, keeping those areas apart as step 4 does. The maps of games started
- * before still carve 2 to 4 (`EARLIER_VALLEY_COUNT`).
+ * shares, keeping those areas apart as step 4 does.
  * Carved nodes are recorded in `draft.valleyNodes`; see the note on that field
  * for why the exemption is currently satisfied by ordering alone.
  *

@@ -1,4 +1,4 @@
-import { startingGoldOf, startingStaminaForSeat } from '@adventure/config';
+import { startingStaminaForSeat } from '@adventure/config';
 import { RuleViolationError } from '../errors.ts';
 import type { GameMap } from '../gamemap.ts';
 import type { GameId, NodeId, PlayerId } from '../ids.ts';
@@ -65,7 +65,7 @@ export function createGameState(game: NewGame): GameState {
       // [SOURCE §2, chat] Every stat starts at zero except stamina, which is
       // higher the later you move — the compensation for seat order — and
       // [Q200] gold, the same for everyone.
-      stats: initialStats(startingStaminaForSeat(seat, game.map.ruleset), startingGoldOf(game.map.ruleset)),
+      stats: initialStats(startingStaminaForSeat(seat, game.map.ruleset), game.map.ruleset.config.players.STARTING_GOLD),
       position: game.startingNode,
       plannedPath: null,
     };

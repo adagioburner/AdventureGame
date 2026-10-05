@@ -468,8 +468,5 @@ describe('Shuffle seats (Q165)', () => {
     expect(drawSeats(off, picks())).toBe(off);
     const notYet = play(fresh(), [andrei, act.shuffle(true)]);
     expect(drawSeats(notYet, picks())).toBe(notYet);
-    // A game set up before the switch has no setting, and keeps its order.
-    const { shuffleSeats: _shuffle, ...older } = play(fresh(), [andrei, act.start()]);
-    expect(drawSeats(older, picks())).toBe(older);
   });
 });

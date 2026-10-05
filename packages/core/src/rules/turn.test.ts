@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_RULESET, withoutStaminaSites } from '@adventure/config';
+import { DEFAULT_RULESET } from '@adventure/config';
 
 import { RuleViolationError } from '../errors.ts';
 import type { GameAction } from '../action.ts';
@@ -199,12 +199,6 @@ describe('applyAction — a stamina site (Q240)', () => {
   it('gives STAMINA_PER_UNIT, 5 stamina, for each unit', () => {
     expect(staminaMap.ruleset.config.pois.STAMINA_PER_UNIT).toBe(5);
     expect(staminaAfterClaiming(fixtureGame(staminaMap, 0))).toBe(2 * 5);
-  });
-
-  it('gives 1 stamina for each unit on a map from before the plains had stamina sites', () => {
-    const before = { ...staminaMap, ruleset: withoutStaminaSites(staminaMap.ruleset) };
-    expect(before.ruleset.config.pois.STAMINA_PER_UNIT).toBeUndefined();
-    expect(staminaAfterClaiming(fixtureGame(before, 0))).toBe(2);
   });
 });
 

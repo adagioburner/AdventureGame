@@ -1,36 +1,11 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import {
-  DEFAULT_RULESET,
-  deepStartOf,
-  fortressesApartOf,
-  magicGuardChanceOf,
-  mapSizeForPlayers,
-  mapSizeOfRuleset,
-  moreStaminaUnitsOf,
-  rewardsMovedOf,
-  separateAreasOf,
-  staminaSitesOf,
-  type MapSize,
-} from '@adventure/config';
+import { DEFAULT_RULESET, mapSizeForPlayers, mapSizeOfRuleset, type MapSize } from '@adventure/config';
 import { startingNodeFor, type GameMap } from '@adventure/core';
 import { atlasOf, buildArtCatalog, type ArtCatalog } from '../art/catalog.ts';
 import { ART_FILES } from '../art/files.ts';
 import { workOutRouteLists } from '../modes/computer.ts';
 import { HotseatGame, newDiceSeed } from '../modes/hotseat.ts';
-import {
-  forgetKept,
-  keep,
-  keptDeepStart,
-  keptFortressesApart,
-  keptMagicGuardChance,
-  keptMapSize,
-  keptMoreStaminaUnits,
-  keptRewardsMoved,
-  keptSeparateAreas,
-  keptStaminaSites,
-  readKept,
-  replayKept,
-} from '../modes/kept.ts';
+import { forgetKept, keep, readKept, replayKept } from '../modes/kept.ts';
 import { hotseatPlay } from '../modes/play.ts';
 import { loadArt, type LoadedArt } from '../render/pixi/textures.ts';
 import { buildMapScene, type MapScene } from '../render/sceneModel.ts';
@@ -112,38 +87,10 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
     game !== null
       ? mapSizeOfRuleset(game.setup.map.ruleset)
       : resuming && kept !== null
-        ? keptMapSize(kept)
+        ? mapSizeForPlayers(kept.setup.seats.length)
         : setup === null
           ? null
           : mapSizeForPlayers(setup.seats.length);
-  // [Q185, 730 A] Likewise the chance its forest gold is magic-guarded at: a
-  // kept game's own, which may be the coin flip it began with; otherwise
-  // today's (undefined), which since Q250 has no forest gold at all.
-  const magicChance =
-    game !== null
-      ? magicGuardChanceOf(game.setup.map.ruleset)
-      : resuming && kept !== null
-        ? keptMagicGuardChance(kept)
-        : undefined;
-  // [Q227] And whether it starts deep in the plains: a kept game's own,
-  // which may be from before it did; otherwise today's.
-  const deepStart =
-    game !== null ? deepStartOf(game.setup.map.ruleset) : resuming && kept !== null ? keptDeepStart(kept) : true;
-  // [Q240] And whether its plains have stamina sites, likewise.
-  const staminaSites =
-    game !== null ? staminaSitesOf(game.setup.map.ruleset) : resuming && kept !== null ? keptStaminaSites(kept) : true;
-  // [Q245] And whether its forest and mountains grew in separate areas, likewise.
-  const separateAreas =
-    game !== null ? separateAreasOf(game.setup.map.ruleset) : resuming && kept !== null ? keptSeparateAreas(kept) : true;
-  // [Q250] And whether its rewards are on the terrains they moved to, likewise.
-  const rewardsMoved =
-    game !== null ? rewardsMovedOf(game.setup.map.ruleset) : resuming && kept !== null ? keptRewardsMoved(kept) : true;
-  // [Q255] And whether its fortresses are kept apart, likewise.
-  const fortressesApart =
-    game !== null ? fortressesApartOf(game.setup.map.ruleset) : resuming && kept !== null ? keptFortressesApart(kept) : true;
-  // [Q260] And whether its forest stamina sites hold the raised hearts, likewise.
-  const moreStaminaUnits =
-    game !== null ? moreStaminaUnitsOf(game.setup.map.ruleset) : resuming && kept !== null ? keptMoreStaminaUnits(kept) : true;
 
   useEffect(() => {
     if (size === null) return;
@@ -155,13 +102,13 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
     // Let "Drawing the map" paint before generation takes the main thread.
     const timer = window.setTimeout(() => {
       try {
-        setMap(mapFor(seed, size, magicChance, deepStart, staminaSites, separateAreas, rewardsMoved, fortressesApart, moreStaminaUnits));
+        setMap(mapFor(seed, size));
       } catch (error) {
         setProblem(error instanceof Error ? error.message : String(error));
       }
     }, 30);
     return () => window.clearTimeout(timer);
-  }, [seed, size, magicChance, deepStart, staminaSites, separateAreas, rewardsMoved, fortressesApart, moreStaminaUnits]);
+  }, [seed, size]);
 
   // [Q56, 66] Once its map is drawn, the kept game is played again to where it was.
   useEffect(() => {
@@ -170,14 +117,7 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
       !resuming ||
       map === null ||
       map.seed !== kept.seed ||
-      mapSizeOfRuleset(map.ruleset) !== keptMapSize(kept) ||
-      magicGuardChanceOf(map.ruleset) !== keptMagicGuardChance(kept) ||
-      deepStartOf(map.ruleset) !== keptDeepStart(kept) ||
-      staminaSitesOf(map.ruleset) !== keptStaminaSites(kept) ||
-      separateAreasOf(map.ruleset) !== keptSeparateAreas(kept) ||
-      rewardsMovedOf(map.ruleset) !== keptRewardsMoved(kept) ||
-      fortressesApartOf(map.ruleset) !== keptFortressesApart(kept) ||
-      moreStaminaUnitsOf(map.ruleset) !== keptMoreStaminaUnits(kept)
+      mapSizeOfRuleset(map.ruleset) !== mapSizeForPlayers(kept.setup.seats.length)
     ) {
       return;
     }
@@ -228,20 +168,7 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
 
   const start = (): void => {
     // Never on the map of the number of players before, while the new one is drawn.
-    // Nor on a kept game's map from before the rewards moved terrain (Q250),
-    // as every kept map from before is, its forest guards among them (Q185),
-    // or from before the fortresses were kept apart (Q255), or from before the
-    // stamina sites held more hearts (Q260).
-    if (
-      map === null ||
-      setup === null ||
-      mapSizeOfRuleset(map.ruleset) !== mapSizeForPlayers(setup.seats.length) ||
-      !rewardsMovedOf(map.ruleset) ||
-      !fortressesApartOf(map.ruleset) ||
-      !moreStaminaUnitsOf(map.ruleset)
-    ) {
-      return;
-    }
+    if (map === null || setup === null || mapSizeOfRuleset(map.ruleset) !== mapSizeForPlayers(setup.seats.length)) return;
     setLogOpen(false);
     // [Q165, 650] With Shuffle seats on, the seats are drawn now.
     const drawn = setup.shuffleSeats === true ? startingOrder(setup) : null;

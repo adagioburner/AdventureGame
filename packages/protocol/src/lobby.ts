@@ -147,8 +147,7 @@ export interface SetupState {
   readonly mapSeed: string;
   /**
    * [Q165, 650] "Shuffle seats": the seats, the game master's too, are drawn
-   * at random when the game starts. Absent on a game set up before the
-   * switch, which keeps its seats in order.
+   * at random when the game starts.
    */
-  readonly shuffleSeats?: boolean;
+  readonly shuffleSeats: boolean;
 }
