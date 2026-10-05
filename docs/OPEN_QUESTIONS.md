@@ -2983,7 +2983,9 @@ some stamina."* Answered between 02:17 and 02:50.
 759. **When the computer considers a purchase:** not while a site offering the
      skill is within this turn's free steps; nor within them plus 5 stamina,
      capped by the stamina it holds (recommended, `BUY_SKIP_STAMINA`); or plus
-     all its stamina. **Answered:** plus 5 stamina.
+     all its stamina. **Answered:** plus 5 stamina. *Replaced by
+     [Q280](#q280): the computer buys only what a move this turn uses up, and
+     the skip is gone (983 A).*
 760. **The players the computer imagines:** never buy, as they never rest by
      choice (recommended). **Answered:** off.
 761. **The computer's turn:** it thinks once, then buys and moves
@@ -3883,6 +3885,58 @@ player map 24% of fortresses, on 68% of maps, and 2 mountain guards of 7000.
 The rulebook's "up to 10" now reads "up to 10. A combat guard on 6 gold or more
 can reach 12." The golden map's and game's one fortress, 7 gold, is guarded 12
 instead of 10; the game's winner still takes it with 2 + combat 13.
+
+### Q280. ~~When does the computer buy?~~ — **answered 2026-10-05: only what a move this turn uses up, his own rule; the within-reach skip is gone (983 A), and the players it imagines still never buy**
+
+Andrei, 2026-10-05 at 14:39: *"could you run simulations of computer players
+as today vs computer players for whom buying skills is always an option (not
+only when such skill is not within reach), to see if latter by any chance
+yields stronger play"*. 120 two-player games at 3 s a move on 60 maps, each
+played twice with the seats swapped: buying at any time won 58, today's
+computer 59, 3 shared, with 0.75 ± 1.0 less gold a game. It bought 5.9 units a
+game against 3.8, and both used only about a third of them on the turn they
+bought them (29% and 37%).
+
+At 15:46: *"in reality it makes no sense to buy a skill without using it
+immediately"*, and at 16:09 his rule: *"After a computer buys (or makes a
+sequence of purchases; so what was purchased before becomes a property of a
+MCTS node) it should only make moves that utilize the bought skills to the
+fullest. That is, if a movement skill was bought, the path should use it up,
+and if a fighting skill was bought, it should arrive to face a strong enough
+foe. If there are no such moves, it's a dead end, and such purchase should not
+be considered."* Read as: a bought speed is used up when this turn's walk spends
+every free step on its terrain; bought combat or magic is used when the walk
+arrives this turn at an unclaimed guard of that kind which could beat the
+player on some roll before buying, and no unit takes the skill past the
+guard's strength; resting is never a move below a purchase. 980-982 (an
+earlier "buy, then go" reading) were withdrawn for it.
+
+983. **Today's within-reach skip (759) under the new rule?** A: drop it
+     (recommended); B: keep it on top. **Answered:** A.
+984. **How the players it imagines buy:** **Answered** at 18:18: *"Deciding
+     when imagined players can buy is much harder, if they buy with any
+     significant probability they will likely waste all their gold (being as
+     dumb as they are) and we wont get any signal by the end of the game."*
+     They still never buy (760).
+985. **Run it in two steps or one?** A: two steps (recommended), first the
+     rule in the computer's own choices. **Answered:** A. The first step, the
+     same 60 maps and method against today's computer: the rule won 76, today's
+     computer 38, 6 shared (a split that uneven about 1 time in 2,000 between
+     equal players), with 2.2 ± 0.9 more gold a game. It bought 8.6 units a
+     game and used every one on the turn it bought them; it fought for gold
+     piles more often (1,405 fights against 1,220) and won more of them (86%
+     against 82%). At 18:18: *"Let us check in the step 1, since it makes
+     computer players stronger and more pleasant to play with (no one likes it
+     when a computer makes a seemingly stupid move)"*.
+
+Built in `packages/ai/src/policies/tree.ts`: the search carries what it bought
+this turn down its tree (`enumerate`'s `bought`), `buyBranches` offers a unit
+only when one of the closest sites after it is a move that `usesFully`
+everything bought, and below a purchase only such moves are branches.
+`usesFully` walks the route the move walks (`previewPath` along the best route
+for its speeds). An enumerator remembers the branches of a position it has
+worked out, since every pass through a node near the root brings the same one
+back. `ai.BUY_SKIP_STAMINA` is gone.
 
 ---
 

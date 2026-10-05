@@ -101,7 +101,12 @@ export interface TreePolicy {
  */
 export interface ActionEnumerator {
   readonly name: string;
-  enumerate(state: GameState, subject: PlayerId): readonly MctsBranch[];
+  /**
+   * [Q280] `bought` is what the subject has bought so far this turn on the
+   * line to this position, none when absent: below a purchase only the moves
+   * that use it up are branches.
+   */
+  enumerate(state: GameState, subject: PlayerId, bought?: readonly RewardKind[]): readonly MctsBranch[];
 }
 
 /**
@@ -192,4 +197,6 @@ export interface MctsOptions {
    * (`bestRouteForSpeeds`); the other seats' turns walk the rollout's.
    */
   readonly edgeRoute?: RouteChoice;
+  /** [Q280] What the subject has already bought this turn at the root; nothing when absent. */
+  readonly rootBought?: readonly RewardKind[];
 }

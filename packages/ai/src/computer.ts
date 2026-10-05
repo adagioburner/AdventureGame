@@ -4,7 +4,6 @@ import {
   bestRouteForSpeeds,
   bestRouteStepsFor,
   cheapestRoute,
-  cheapestRouteSteps,
   closestByBestRoute,
   closestBySpeeds,
   goldExhaustedTermination,
@@ -79,7 +78,7 @@ export function computerEvaluator(): NodeEvaluator {
 /**
  * §9's computer player with the v1 setup: UCT with `MCTS_EXPLORATION_CONSTANT`
  * over the `CLOSE_CANDIDATE_COUNT` closest unclaimed POIs plus rest and the
- * purchases worth weighing (Q190, `buyBranches`), closest
+ * purchases a move this turn would use up (Q190, Q280, `buyBranches`), closest
  * by the player's own speeds along the best route for them (Q112, Q210 stage
  * 2: `closestByBestRoute`), its resting and buying checks and its own walk
  * along that route too, the §9 rollout policy ranking by the speeds along the
@@ -95,19 +94,19 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
   const restRule = restWhenStuck();
   const closest = settings.closest ?? closestBySpeeds;
   const cheapest = settings.searchRoutes === 'cheapest';
-  const stepsTo = cheapest ? cheapestRouteSteps : bestRouteStepsFor;
+  const edgeRoute = cheapest ? cheapestRoute : bestRouteForSpeeds;
   return {
     subject,
     config,
     treePolicy: uctTreePolicy(config.ai.MCTS_EXPLORATION_CONSTANT),
     actions: closestUnclaimedPoiEnumerator(
       config,
-      cheapest ? previewReachability() : stepsReachability(stepsTo),
+      cheapest ? previewReachability() : stepsReachability(bestRouteStepsFor),
       settings.targets,
       settings.closest ?? (cheapest ? closestBySpeeds : closestByBestRoute),
-      stepsTo,
+      edgeRoute,
     ),
-    edgeRoute: cheapest ? cheapestRoute : bestRouteForSpeeds,
+    edgeRoute,
     rollout: closestPoiRolloutPolicy({
       config,
       termination,

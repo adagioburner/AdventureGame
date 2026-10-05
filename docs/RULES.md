@@ -154,9 +154,12 @@ the gold left. `buyableNow` lists what the player can afford now.
 
 The computer (`packages/ai/src/policies/tree.ts`, `buyBranches`) adds a
 `{ kind: 'buy', skill }` branch per kind it can afford at every node of its own
-tree, except a kind an unclaimed site offers within `ai.BUY_SKIP_STAMINA`
-stamina this turn, capped by the stamina it holds; a buy branch stays in the
-same turn. `planTurn` (`packages/ai/src/mcts.ts`) follows the best line through
+tree when a move this turn would use up everything bought so far with it; a buy
+branch stays in the same turn, and below it the only branches are such moves
+(`usesFully`, Q280): this turn's walk spends every free step on a bought
+speed's terrain, and bought combat or magic reaches an unclaimed guard of that
+kind this turn that could beat it before buying, with no unit past its
+strength. `planTurn` (`packages/ai/src/mcts.ts`) follows the best line through
 the buys, merges them into one `BuyAction`, and plays the move after them. The
 rollout's players never buy.
 

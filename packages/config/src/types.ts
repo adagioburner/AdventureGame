@@ -399,17 +399,6 @@ export interface AiConfig {
    */
   readonly STAMINA_PER_SKILL_POINT: number;
   /**
-   * `BUY_SKIP_STAMINA` — 5. [Q190] Andrei, 2026-10-02: "buying a skill is not
-   * available to a computer player if that skill is within 1 turn reach from
-   * them [...] or 1 turn reach plus some stamina"; 759 B, plus 5 stamina.
-   *
-   * The computer's search has no branch for buying a skill while an unclaimed
-   * site offering it can be reached this turn for at most this much stamina
-   * past its free steps, and no more than it holds. 5 is what his distance
-   * formula (Q65) counts a turn as.
-   */
-  readonly BUY_SKIP_STAMINA: number;
-  /**
    * The thinking time a computer seat can be given on the start game panel, in
    * whole seconds. Not in §11; the designer's, 2026-09-24 (Q41): 1 to 60, the
    * box starting at `MCTS_TIME_BUDGET_PER_MOVE_MS`.

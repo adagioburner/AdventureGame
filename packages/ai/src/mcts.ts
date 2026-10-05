@@ -1,3 +1,4 @@
+import type { RewardKind } from '@adventure/config';
 import { activePlayer, applyAction, type BuyAction, type GameState, type TurnAction } from '@adventure/core';
 import {
   bestRouteForSpeeds,
@@ -134,9 +135,11 @@ function iterate(tree: MctsNode, root: GameState, options: MctsOptions): void {
   const rules = rolloutOptions(options);
   let cursor = rolloutCursor(root, options.subject);
   let node = tree;
+  // [Q280] The purchases on the line so far this turn, which the moves below them must use up.
+  let bought: readonly RewardKind[] = options.rootBought ?? [];
 
   while (!options.termination.isTerminal(cursor, 0)) {
-    const branches = options.actions.enumerate(cursor.state, options.subject);
+    const branches = options.actions.enumerate(cursor.state, options.subject, bought);
     const available: MctsNode[] = [];
     const untried: MctsBranch[] = [];
     for (const branch of branches) {
@@ -155,7 +158,9 @@ function iterate(tree: MctsNode, root: GameState, options: MctsOptions): void {
     }
     if (available.length === 0) break;
     node = options.treePolicy.select(node, available, options.rng);
-    cursor = realise(cursor, node.action as MctsBranch, options, rules);
+    const branch = node.action as MctsBranch;
+    cursor = realise(cursor, branch, options, rules);
+    bought = branch.kind === 'buy' ? [...bought, branch.skill] : [];
   }
 
   const rolledOut = options.evaluator.readsRollout ? options.rollout.run(cursor, options.rng, options.dice) : cursor;
@@ -245,7 +250,7 @@ export function planTurn(root: GameState, result: SearchResult, options: MctsOpt
     state = applyAction(state, buyOf(node.action, options), options.dice).state;
     skills.push(node.action.skill);
     if (state.status !== 'in_progress') return { buy: bought(), action: null, branch: null };
-    node = node.children.length > 0 ? options.treePolicy.bestChild(node) : searchTree(state, { ...options, timeBudgetMs: 0 }).best;
+    node = node.children.length > 0 ? options.treePolicy.bestChild(node) : searchTree(state, { ...options, timeBudgetMs: 0, rootBought: [...skills] }).best;
   }
   const branch = node.action;
   if (branch === null) throw new RangeError('the search found no branch to take');
