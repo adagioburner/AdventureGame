@@ -38,8 +38,9 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     // [Q240] Plains 25 → 30 for the 5 stamina sites, which follow the same
     // rules as every other reward (900 A). [Q250] Plains 30 → 32 and forest
     // 20 once rewards moved terrain and the magic gold and stamina grew a
-    // site each: the sums of the `poiCount` columns in content.ts.
-    POI_COUNT: { plains: 32, forest: 20, mountain: 15 },
+    // site each: the sums of the `poiCount` columns in content.ts. [Q270]
+    // Forest 20 → 18 for 4 stamina sites instead of 6 (961).
+    POI_COUNT: { plains: 32, forest: 18, mountain: 15 },
     OVERFLOW_LEAF_STAMINA_UNITS: 1,
     // [Q240] Andrei, 2026-10-03: "each stamina unit adds 5 stamina".
     STAMINA_PER_UNIT: 5,
@@ -104,7 +105,8 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
  *  - `MAP_NODE_COUNT` 240 → 336; the terrain shares stay 45/30/25, so each
  *    terrain gets 1.4 × its spaces too (about 151/101/84);
  *  - `POI_COUNT` 25/20/15 → 35/28/21 ([Q240] plains 30 → 42 since the
- *    stamina sites came, 902 A; [Q250] 45/28/21 since rewards moved terrain);
+ *    stamina sites came, 902 A; [Q250] 45/28/21 since rewards moved terrain;
+ *    [Q270] 45/25/21 since the forest's stamina went to 6 sites);
  *  - 631 A: roads 300 → 420 (300 cannot join 336 spaces at all) and dead ends
  *    30–45 → 42–63. Valleys stay as they are.
  *
@@ -123,8 +125,9 @@ export const LARGER_MAP_GAME_CONFIG: GameConfig = {
     ...DEFAULT_GAME_CONFIG.pois,
     // [Q240, 902 A] 35 → 42 for the 7 stamina sites of the larger map;
     // [Q250] 42 → 45 once rewards moved terrain and the magic gold grew to 7
-    // sites (926 A); the forest keeps 28 with 9 stamina sites (925 A).
-    POI_COUNT: { plains: 45, forest: 28, mountain: 21 },
+    // sites (926 A); the forest kept 28 with 9 stamina sites (925 A), and has
+    // 25 with 6 since [Q270] (960, 961).
+    POI_COUNT: { plains: 45, forest: 25, mountain: 21 },
   },
 };
 

@@ -48,21 +48,19 @@ describe('the larger map for 4 and 5 players (Q160)', () => {
         const before = today[index];
         if (before === undefined) throw new Error('rows differ');
         expect(row.totalUnits).toBe(Math.round(before.totalUnits * SCALE));
-        // [Q250, 925 A] Except the forest stamina, 9 sites rather than 8, so the forest keeps its 28.
-        const sites = terrain === 'forest' && row.kind === 'stamina' ? 9 : Math.round(before.poiCount * SCALE);
-        expect(row.poiCount).toBe(sites);
+        expect(row.poiCount).toBe(Math.round(before.poiCount * SCALE));
       });
     }
   });
 
-  it('carries 67 gold, 105 speed and skill units and 17 stamina units, against 48, 75 and 12 (Q240, 902 A, Q250, Q260)', () => {
+  it('carries 67 gold, 105 speed and skill units and 11 stamina units, against 48, 75 and 8 (Q240, 902 A, Q250, Q270)', () => {
     const units = (ruleset: Ruleset, kind: 'gold' | 'stamina' | 'skills'): number =>
       TERRAINS.flatMap((terrain) => ruleset.content.REWARD_TABLE[terrain])
         .filter((row) => (kind === 'skills' ? row.kind !== 'gold' && row.kind !== 'stamina' : row.kind === kind))
         .reduce((sum, row) => sum + row.totalUnits, 0);
     const all = (ruleset: Ruleset): number[] => [units(ruleset, 'gold'), units(ruleset, 'skills'), units(ruleset, 'stamina')];
-    expect(all(DEFAULT_RULESET)).toEqual([48, 75, 12]);
-    expect(all(LARGER_MAP_RULESET)).toEqual([67, 105, 17]);
+    expect(all(DEFAULT_RULESET)).toEqual([48, 75, 8]);
+    expect(all(LARGER_MAP_RULESET)).toEqual([67, 105, 11]);
   });
 
   it('changes nothing else (633)', () => {
