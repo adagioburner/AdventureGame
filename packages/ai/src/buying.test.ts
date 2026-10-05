@@ -1,23 +1,22 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_GAME_CONFIG } from '@adventure/config';
+import { DEFAULT_GAME_CONFIG, type RewardKind } from '@adventure/config';
 import { activePlayer, applyAction, createDiceSource, createRng, playerById, type GameState } from '@adventure/core';
 import { fixtureGame, fixtureMap, player, withStats } from '../../core/src/rules/scenario.fixture.ts';
 import { computerSearchOptions, type ComputerSettings } from './computer.ts';
 import { planTurn, searchTree, type SearchResult } from './mcts.ts';
-import { buyBranches } from './policies/tree.ts';
 import type { MctsBranch, MctsNode, NodeEvaluator } from './types.ts';
 
 /**
- * [Q190] The computer buys a speed or skill for gold, 1 to 1, but not one a
- * site offers within this turn's reach plus 5 stamina (759 B).
+ * [Q190, Q280] The computer buys a speed or skill for gold, 1 to 1, only when
+ * a move this turn uses up what it bought.
  *
  *   0(p) ── 1(p) ── 2(f) ── 3(m) ── 4(p)
- *           combat  forest  magic   gold 3
+ *           combat  forest  magic   gold 3, combat guard 4
  *                   speed
  *
  * From 0 with no speeds, combat costs 1 stamina to reach, forest speed 1 + 2,
- * magic 1 + 2 + 3.
+ * magic 1 + 2 + 3, the gold 1 + 2 + 3 + 1.
  */
 const ridge = fixtureMap({
   terrains: ['plains', 'plains', 'forest', 'mountain', 'plains'],
@@ -31,7 +30,7 @@ const ridge = fixtureMap({
     { node: 1, kind: 'fighting', units: 1, guard: null },
     { node: 2, kind: 'forest_move', units: 1, guard: null },
     { node: 3, kind: 'magic', units: 1, guard: null },
-    { node: 4, kind: 'gold', units: 3, guard: null },
+    { node: 4, kind: 'gold', units: 3, guard: { type: 'fighting', strength: 4 } },
   ],
 });
 
@@ -43,41 +42,62 @@ function settings(thinkingMs = 100): ComputerSettings {
   return { config: DEFAULT_GAME_CONFIG, thinkingMs, rng, dice: createDiceSource(rng.fork('dice'), DEFAULT_GAME_CONFIG), now: () => tick++ };
 }
 
-function bought(state: GameState): readonly string[] {
-  return buyBranches(state, playerById(state, one), DEFAULT_GAME_CONFIG).flatMap((branch) => (branch.kind === 'buy' ? [branch.skill] : []));
+function enumerate(state: GameState, bought: readonly RewardKind[] = []): readonly MctsBranch[] {
+  return computerSearchOptions(state, one, settings()).actions.enumerate(state, one, bought);
 }
 
-describe('which purchases the computer weighs (Q190, 759)', () => {
-  it('skips a kind a site offers within 5 stamina beyond its free steps', () => {
+function purchases(state: GameState, bought: readonly RewardKind[] = []): readonly string[] {
+  return enumerate(state, bought).flatMap((branch) => (branch.kind === 'buy' ? [branch.skill] : []));
+}
+
+function buy(state: GameState, ...skills: RewardKind[]): GameState {
+  return applyAction(state, { kind: 'buy', player: one, skills }, createDiceSource(createRng('unused'), DEFAULT_GAME_CONFIG)).state;
+}
+
+describe('which purchases the computer weighs (Q280)', () => {
+  it('weighs every speed this turn’s walk can use up, and combat for a guard it could lose to', () => {
     const state = withStats(fixtureGame(ridge, 0), one, { gold: 2 });
-    expect(bought(state)).toEqual(['plains_move', 'mountain_move', 'magic']);
+    expect(purchases(state)).toEqual(['plains_move', 'forest_move', 'mountain_move', 'fighting']);
   });
 
-  it('counts free steps first: a plains speed brings magic within 5', () => {
-    const state = withStats(fixtureGame(ridge, 0), one, { gold: 2, plains_move: 1 });
-    expect(bought(state)).toEqual(['plains_move', 'mountain_move']);
+  it('weighs a speed only where this turn’s walk reaches its terrain', () => {
+    // With no stamina the walk takes no step past node 1's plains, whatever it heads for.
+    const state = withStats(fixtureGame(ridge, 0), one, { gold: 2, stamina: 0 });
+    expect(purchases(state)).toEqual(['plains_move']);
   });
 
-  it('never counts on more stamina than the player has', () => {
-    const state = withStats(fixtureGame(ridge, 0), one, { gold: 2, stamina: 2 });
-    expect(bought(state)).toEqual(['plains_move', 'forest_move', 'mountain_move', 'magic']);
+  it('weighs combat or magic only for a guard reached this turn that could beat it before buying', () => {
+    expect(purchases(withStats(fixtureGame(ridge, 0), one, { gold: 2, stamina: 6 }))).not.toContain('fighting');
+    expect(purchases(withStats(fixtureGame(ridge, 0), one, { gold: 2, fighting: 4 }))).not.toContain('fighting');
+    expect(purchases(withStats(fixtureGame(ridge, 0), one, { gold: 2, fighting: 3 }))).toContain('fighting');
+  });
+
+  it('buys no unit past a certain win', () => {
+    const state = buy(withStats(fixtureGame(ridge, 0), one, { gold: 2, fighting: 3 }), 'fighting');
+    expect(purchases(state, ['fighting'])).not.toContain('fighting');
   });
 
   it('counts only sites still unclaimed', () => {
     const state = withStats(fixtureGame(ridge, 0), one, { gold: 2 });
-    const claimed: GameState = { ...state, poiRuntime: state.poiRuntime.map((runtime, index) => (index === 0 ? { claimedBy: player('two'), claimedOnTurn: 1 } : runtime)) };
-    expect(bought(claimed)).toEqual(['plains_move', 'mountain_move', 'fighting', 'magic']);
+    const claimed: GameState = { ...state, poiRuntime: state.poiRuntime.map((runtime, index) => (index === 3 ? { claimedBy: player('two'), claimedOnTurn: 1 } : runtime)) };
+    expect(purchases(claimed)).not.toContain('fighting');
   });
 
   it('weighs nothing without the gold for one', () => {
-    expect(bought(fixtureGame(ridge, 0))).toEqual([]);
+    expect(purchases(withStats(fixtureGame(ridge, 0), one, { gold: 0 }))).toEqual([]);
   });
 
-  it('offers them from every position it searches, beside the targets and rest', () => {
+  it('offers only the moves that use up a purchase below it, and no rest', () => {
+    const state = buy(withStats(fixtureGame(ridge, 0), one, { gold: 2 }), 'forest_move');
+    const branches = enumerate(state, ['forest_move']);
+    expect(branches.flatMap((branch) => (branch.kind === 'target' ? [branch.target.node] : []))).toEqual([2, 3, 4]);
+    expect(branches.some((branch) => branch.kind === 'rest')).toBe(false);
+  });
+
+  it('offers targets and rest as before where nothing was bought', () => {
     const state = withStats(fixtureGame(ridge, 0), one, { gold: 2 });
-    const branches = computerSearchOptions(state, one, settings()).actions.enumerate(state, one);
-    expect(branches.filter((branch) => branch.kind === 'buy')).toHaveLength(3);
-    expect(branches.some((branch) => branch.kind === 'target')).toBe(true);
+    const targets = enumerate(state).filter((branch) => branch.kind === 'target');
+    expect(targets).toHaveLength(4);
   });
 });
 
@@ -124,8 +144,8 @@ describe('the turn the computer plays (761)', () => {
   });
 
   it('searches once more after a purchase nothing was tried below', () => {
-    const plan = planTurn(state, result(node({ kind: 'buy', skill: 'magic' }, 1)), options);
-    expect(plan.buy?.skills[0]).toBe('magic');
+    const plan = planTurn(state, result(node({ kind: 'buy', skill: 'forest_move' }, 1)), options);
+    expect(plan.buy?.skills[0]).toBe('forest_move');
     if (plan.action === null || plan.buy === null) throw new Error('no move');
     const after = applyAction(state, plan.buy, options.dice).state;
     expect(() => applyAction(after, plan.action as NonNullable<typeof plan.action>, options.dice)).not.toThrow();

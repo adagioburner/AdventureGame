@@ -80,7 +80,6 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     MIN_REACHABLE_NODES_FOR_REST: 3,
     SIMULATION_TURN_CAP: 250,
     STAMINA_PER_SKILL_POINT: 5,
-    BUY_SKIP_STAMINA: 5,
     THINKING_TIME_SECONDS: { min: 1, max: 60 },
   },
   // [Q190] Andrei, 2026-10-02: "allow players buy skills for gold, 1 to 1. We

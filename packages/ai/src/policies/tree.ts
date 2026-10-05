@@ -1,9 +1,12 @@
-import { TERRAINS, type GameConfig, type PerTerrain, type RewardKind } from '@adventure/config';
+import { TERRAINS, type GameConfig, type PerTerrain, type RewardKind, type Terrain } from '@adventure/config';
 import {
+  applyAction,
   buyableNow,
   playerById,
+  poiAt,
   previewPath,
   routeTable,
+  type DiceSource,
   type GameState,
   type NodeId,
   type PlayerId,
@@ -11,11 +14,12 @@ import {
   type Rng,
 } from '@adventure/core';
 import {
-  cheapestRouteSteps,
+  cheapestRoute,
   closestPoiCandidates,
   unclaimedPoiNodes,
   type ClosestFinder,
   type PoiCandidate,
+  type RouteChoice,
   type RouteStepsFinder,
   type TargetFilter,
 } from '@adventure/sim';
@@ -128,8 +132,9 @@ function argMaxWithRandomTieBreak<T>(items: readonly T[], score: (item: T) => nu
  * counting it would let rest be pruned on the strength of a target the search
  * cannot take.
  *
- * [Q190] Then a buy branch for each speed or skill the player may buy, pruned
- * as `buyBranches` says, along the routes `stepsTo` counts.
+ * [Q190, Q280] Then a buy branch for each speed or skill the player may buy
+ * that a move this turn would use up (`buyBranches`). Below a purchase only
+ * such moves are branches, and resting is not one (`usesFully`).
  */
 export function closestUnclaimedPoiEnumerator(
   config: GameConfig,
@@ -138,88 +143,172 @@ export function closestUnclaimedPoiEnumerator(
   allowed?: TargetFilter,
   /** Which of those count as closest; by weighted terrain cost when absent. The game passes `closestByBestRoute` (Q210). */
   closest?: ClosestFinder,
-  /** The steps per terrain the buy branches are pruned by; along the cheapest route when absent. */
-  stepsTo: RouteStepsFinder = cheapestRouteSteps,
+  /** The route a move walks, which `usesFully` checks; the cheapest when absent. The game passes `bestRouteForSpeeds` (Q210, 820 A). */
+  walkRoute: RouteChoice = cheapestRoute,
 ): ActionEnumerator {
+  const closestTo = (state: GameState, player: PlayerState): readonly PoiCandidate[] => {
+    // `closestPoiCandidates` already returns at most `CLOSE_CANDIDATE_COUNT`,
+    // so this *is* the pruned target list; there is no second cap to apply.
+    const eligible = allowed === undefined ? unclaimedPoiNodesOf(state) : allowed(state, player);
+    return closest === undefined
+      ? closestPoiCandidates(
+          state.map.graph,
+          player.position,
+          eligible,
+          config.balancing.CLOSE_CANDIDATE_COUNT,
+          config,
+          routeTable(state.map.graph, config),
+        )
+      : closest(state, player, eligible, config.balancing.CLOSE_CANDIDATE_COUNT);
+  };
+  // Every pass through a node near the root brings back the same position, so
+  // its branches are worked out once; the buy checks trace routes.
+  const known = new Map<string, readonly MctsBranch[]>();
+
   return {
     name: 'closest-unclaimed-pois+rest+buy',
-    enumerate(state: GameState, subject: PlayerId): readonly MctsBranch[] {
+    enumerate(state: GameState, subject: PlayerId, bought: readonly RewardKind[] = []): readonly MctsBranch[] {
       const player = state.players.find((candidate) => candidate.id === subject);
       if (player === undefined) throw new RangeError(`no such player ${subject}`);
+      const key = positionKey(state, player, bought);
+      const remembered = known.get(key);
+      if (remembered !== undefined) return remembered;
 
-      // `closestPoiCandidates` already returns at most `CLOSE_CANDIDATE_COUNT`,
-      // so this *is* the pruned target list; there is no second cap to apply.
-      const eligible = allowed === undefined ? unclaimedPoiNodesOf(state) : allowed(state, player);
-      const targets =
-        closest === undefined
-          ? closestPoiCandidates(
-              state.map.graph,
-              player.position,
-              eligible,
-              config.balancing.CLOSE_CANDIDATE_COUNT,
-              config,
-              routeTable(state.map.graph, config),
-            )
-          : closest(state, player, eligible, config.balancing.CLOSE_CANDIDATE_COUNT);
-
-      const branches: MctsBranch[] = targets.map((target) => ({ kind: 'target', target }));
-
-      const reachable = targets.filter((target) =>
-        reachability.isReachableThisTurn(state, subject, target),
-      ).length;
-      if (reachable < config.ai.MIN_REACHABLE_NODES_FOR_REST) {
-        branches.push({ kind: 'rest' });
+      const targets = closestTo(state, player);
+      const branches: MctsBranch[] = [];
+      if (bought.length === 0) {
+        for (const target of targets) branches.push({ kind: 'target', target });
+        const reachable = targets.filter((target) => reachability.isReachableThisTurn(state, subject, target)).length;
+        if (reachable < config.ai.MIN_REACHABLE_NODES_FOR_REST) branches.push({ kind: 'rest' });
+      } else {
+        for (const target of targets) {
+          if (usesFully(state, player, target.node, bought, walkRoute)) branches.push({ kind: 'target', target });
+        }
       }
-      branches.push(...buyBranches(state, player, config, stepsTo));
+      branches.push(...buyBranches(state, player, bought, closestTo, walkRoute));
+
+      if (known.size >= KNOWN_POSITIONS) known.clear();
+      known.set(key, branches);
       return branches;
     },
   };
 }
 
+/** How many positions an enumerator remembers before it starts again; a few thousand nodes are searched a move. */
+const KNOWN_POSITIONS = 20_000;
+
+/** Everything the branches at a position depend on: the subject's place, stats and free steps, what it bought this turn, and which sites are claimed. */
+function positionKey(state: GameState, player: PlayerState, bought: readonly RewardKind[]): string {
+  const { stats } = player;
+  const free = state.turn.allowance;
+  let claimed = '';
+  state.poiRuntime.forEach((runtime, index) => {
+    if (runtime.claimedBy !== null) claimed += `${index},`;
+  });
+  return (
+    `${state.turn.number}|${player.position}|${stats.plains_move},${stats.forest_move},${stats.mountain_move},` +
+    `${stats.fighting},${stats.magic},${stats.gold},${stats.stamina}|${free.plains},${free.forest},${free.mountain}|${bought.join()}|${claimed}`
+  );
+}
+
 /**
- * [Q190] Andrei, 2026-10-02: "Similar to resting, it seems prudent to
- * introduce some pruning here, e.g. buying a skill is not available to a
- * computer player if that skill is within 1 turn reach from them (cached
- * distances to the skill site less or equal current speed), or 1 turn reach
- * plus some stamina." 759 B: plus `BUY_SKIP_STAMINA` stamina, and never more
- * than the player has.
+ * [Q280] Andrei, 2026-10-05: "After a computer buys (or makes a sequence of
+ * purchases; so what was purchased before becomes a property of a MCTS node)
+ * it should only make moves that utilize the bought skills to the fullest.
+ * [...] If there are no such moves, it's a dead end, and such purchase should
+ * not be considered." 983 A: the skip for a kind a site offers within reach
+ * (759) is gone with it.
  *
  * One branch for each kind the player could buy now (`buyableNow`), a unit
- * each, except a kind some unclaimed site offers within that reach: walking
- * the route `stepsTo` counts there (Q65's steps per terrain, cached; the
- * cheapest route when absent, the best for the player's speeds in the game,
- * Q210 820 A) costs no more stamina beyond this turn's free steps than that.
- * The stamina is Q65's stamina(1), `staminaBeyondThisTurn`. Every site
- * offering the kind counts, not only the closest few.
+ * each, after `bought` earlier this turn, when one of the closest sites after
+ * that purchase is a move that `usesFully` all of it. More units never make a
+ * move easier to use up, so a purchase without such a move is a dead end
+ * whatever follows it.
  */
 export function buyBranches(
   state: GameState,
   player: PlayerState,
-  config: GameConfig,
-  stepsTo: RouteStepsFinder = cheapestRouteSteps,
+  bought: readonly RewardKind[],
+  closestTo: (state: GameState, player: PlayerState) => readonly PoiCandidate[],
+  walkRoute: RouteChoice = cheapestRoute,
 ): readonly MctsBranch[] {
-  const { kinds } = buyableNow(state, player.id);
-  if (kinds.length === 0) return [];
-  const spare = Math.min(config.ai.BUY_SKIP_STAMINA, player.stats.stamina);
-  const near = kindsWithinReach(state, player, spare, config, stepsTo);
-  return kinds.filter((kind) => !near.has(kind)).map((skill) => ({ kind: 'buy', skill }));
+  const branches: MctsBranch[] = [];
+  for (const skill of buyableNow(state, player.id).kinds) {
+    const after = applyAction(state, { kind: 'buy', player: player.id, skills: [skill] }, NO_DICE).state;
+    if (after.status !== 'in_progress') continue;
+    const buyer = playerById(after, player.id);
+    const all = [...bought, skill];
+    if (closestTo(after, buyer).some((target) => usesFully(after, buyer, target.node, all, walkRoute))) {
+      branches.push({ kind: 'buy', skill });
+    }
+  }
+  return branches;
 }
 
-/** The kinds unclaimed sites offer that `player` can reach this turn for at most `spare` stamina. */
-function kindsWithinReach(
+/** A purchase rolls nothing; a die asked for here is a bug. */
+const NO_DICE: DiceSource = {
+  roll() {
+    throw new RangeError('a purchase rolls no die');
+  },
+  pick() {
+    throw new RangeError('a purchase draws nothing');
+  },
+};
+
+/**
+ * [Q280] Whether heading for `target` uses up everything `bought` this turn,
+ * on this turn's walk along the route `walkRoute` picks, as the move walks it:
+ *  - a speed: "if a movement skill was bought, the path should use it up", so
+ *    the walk spends every free step on that terrain;
+ *  - combat or magic: "it should arrive to face a strong enough foe", so the
+ *    walk arrives this turn at an unclaimed site guarded by that skill which
+ *    could beat the player on some roll before the purchase (§8: the roll
+ *    plus the skill must be above the guard), and no unit bought takes the
+ *    skill past the guard's strength, where every roll already wins.
+ */
+export function usesFully(
   state: GameState,
   player: PlayerState,
-  spare: number,
-  config: GameConfig,
-  stepsTo: RouteStepsFinder,
-): ReadonlySet<RewardKind> {
-  const near = new Set<RewardKind>();
-  state.map.pois.forEach((poi, index) => {
-    if (state.poiRuntime[index]?.claimedBy !== null || near.has(poi.reward.kind)) return;
-    const steps = stepsTo(state, player, poi.node);
-    if (steps !== null && staminaBeyondThisTurn(steps, state.turn.allowance, config) <= spare) near.add(poi.reward.kind);
-  });
-  return near;
+  target: NodeId,
+  bought: readonly RewardKind[],
+  walkRoute: RouteChoice = cheapestRoute,
+): boolean {
+  const units = new Map<RewardKind, number>();
+  for (const kind of bought) units.set(kind, (units.get(kind) ?? 0) + 1);
+  const poi = poiAt(state.map, target);
+  for (const kind of units.keys()) {
+    if (SPEED_TERRAIN[kind] !== undefined) continue;
+    if (poi?.guard?.type !== kind) return false;
+  }
+
+  const route = walkRoute(state, player, target);
+  if (route === null) return false;
+  const preview = previewPath(state.map.graph, player.position, route, state.turn.allowance, player.stats.stamina, state.map.ruleset.config);
+  const freeSteps: Record<Terrain, number> = { plains: 0, forest: 0, mountain: 0 };
+  for (const step of preview.steps) {
+    if (step.color === 'free') freeSteps[terrainAt(state, step.node)]++;
+  }
+
+  for (const [kind, count] of units) {
+    const terrain = SPEED_TERRAIN[kind];
+    if (terrain !== undefined) {
+      if (freeSteps[terrain] < state.turn.allowance[terrain]) return false;
+      continue;
+    }
+    if (!preview.destinationReachable || poi?.guard == null) return false;
+    if (state.poiRuntime[state.map.poiByNode.get(target) ?? -1]?.claimedBy !== null) return false;
+    const skill = player.stats[poi.guard.type];
+    if (skill - count >= poi.guard.strength || skill > poi.guard.strength) return false;
+  }
+  return true;
+}
+
+const SPEED_TERRAIN: Partial<Record<RewardKind, Terrain>> = { plains_move: 'plains', forest_move: 'forest', mountain_move: 'mountain' };
+
+function terrainAt(state: GameState, node: NodeId): Terrain {
+  const at = state.map.graph.nodes[node];
+  if (at === undefined) throw new RangeError(`no node ${node}`);
+  return at.terrain;
 }
 
 /**

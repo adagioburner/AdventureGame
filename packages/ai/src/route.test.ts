@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_GAME_CONFIG } from '@adventure/config';
-import { asNodeId, createDiceSource, createRng, playerById, poiRuntimeAt } from '@adventure/core';
+import { applyAction, asNodeId, createDiceSource, createRng, playerById, poiRuntimeAt } from '@adventure/core';
 import {
   bestRouteForSpeeds,
   bestRouteStepsFor,
@@ -16,7 +16,7 @@ import {
 import { fixtureGame, fixtureMap, player, withStats } from '../../core/src/rules/scenario.fixture.ts';
 import { computerSearchOptions, type ComputerSettings } from './computer.ts';
 import { firstTurnOf } from './mcts.ts';
-import { buyBranches, previewReachability, stepsReachability } from './policies/tree.ts';
+import { previewReachability, stepsReachability, usesFully } from './policies/tree.ts';
 
 /**
  * [Q210] Stage 1: the computer's real move walks the best route for its
@@ -141,12 +141,12 @@ describe('the computer search’s own choices (Q210, stage 2, 820 A)', () => {
     }
   });
 
-  it('skips buying a kind a site offers within reach along the best route', () => {
-    const state = withStats(fixtureGame(sites, 0), one, { forest_move: 3, stamina: 1, gold: 1 });
-    const kinds = (stepsTo?: typeof bestRouteStepsFor) =>
-      buyBranches(state, playerById(state, one), DEFAULT_GAME_CONFIG, stepsTo).flatMap((branch) => (branch.kind === 'buy' ? [branch.skill] : []));
-    expect(kinds(bestRouteStepsFor)).not.toContain('magic');
-    expect(kinds()).toContain('magic');
+  it('checks a purchase against the route the move walks (Q280)', () => {
+    // Bought forest speed 3 is used up through the forest, the best route for it; the plains route walks none of it.
+    const state = withStats(fixtureGame(sites, 0), one, { forest_move: 2, stamina: 0, gold: 1 });
+    const after = applyAction(state, { kind: 'buy', player: one, skills: ['forest_move'] }, settings().dice).state;
+    expect(usesFully(after, playerById(after, one), n(5), ['forest_move'], bestRouteForSpeeds)).toBe(true);
+    expect(usesFully(after, playerById(after, one), n(5), ['forest_move'], cheapestRoute)).toBe(false);
   });
 
   it('walks a choice along the best route for its speeds, and the cheapest as before with searchRoutes cheapest', () => {
