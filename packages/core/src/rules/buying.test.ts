@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_RULESET } from '@adventure/config';
-import type { GameMap } from '../gamemap.ts';
 import { RuleViolationError } from '../errors.ts';
 import { playerById, type GameState } from '../state.ts';
 import { applyAction, buyableNow } from './turn.ts';

@@ -15,7 +15,6 @@ import {
   type Terrain,
 } from '@adventure/config';
 import {
-  createRng,
   leafNodes,
   poiAt,
   rewardGroupKeyOf,
