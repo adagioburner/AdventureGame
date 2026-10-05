@@ -375,7 +375,7 @@ export function formatPlaythrough(run: Playthrough): string {
     `meta rest_stamina_gain=${config.movement.REST_STAMINA_GAIN} guard_die=${config.combat.GUARD_DIE.count}d${config.combat.GUARD_DIE.sides}` +
       (config.respawn === undefined ? '' : ` respawn_short_below_sites=${config.respawn.SHORT_BELOW_SITES} respawn_far_share=${config.respawn.FAR_SHARE}`) +
       (config.respawn?.MAX_UNITS === undefined ? '' : ` respawn_max_units=${config.respawn.MAX_UNITS}`) +
-      (config.buying === undefined ? '' : ` buy_gold_per_unit=${config.buying.GOLD_PER_UNIT}`),
+      ` buy_gold_per_unit=${config.buying.GOLD_PER_UNIT}`,
   );
   for (const player of run.finalState.players) {
     lines.push(
