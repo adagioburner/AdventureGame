@@ -72,7 +72,6 @@ const TABLE: SoundTable = {
   battle_lost: { urls: ['lost'], volume: 1 },
   rest: { urls: ['rest'], volume: 1 },
   message: { urls: ['message'], volume: 1 },
-  respawn: { urls: ['respawn'], volume: 1 },
   purchase: { urls: ['purchase'], volume: 1 },
 };
 

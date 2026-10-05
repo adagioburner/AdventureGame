@@ -42,8 +42,8 @@ export interface MapDraft {
   /**
    * [Q245, 917] Indexed by node id: how many spaces apart a `KEPT_APART`
    * terrain keeps two of its areas when it takes that node. Drawn by step 4,
-   * read again by step 6's share balancing; empty on maps without
-   * `KEPT_APART`.
+   * read again by step 6's share balancing; empty when `KEPT_APART` names no
+   * terrain.
    */
   apartGaps: number[];
   /** Assigned by step 7; parallel to `poiNodes` only after reward assignment. */

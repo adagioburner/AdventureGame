@@ -35,6 +35,7 @@ const setup: SetupState = {
   nextSeatId: 2,
   pending: [],
   mapSeed: map.seed,
+  shuffleSeats: false,
   endsAt: 1,
   closedAt: null,
 };

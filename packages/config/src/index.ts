@@ -11,19 +11,12 @@ export * from './types.ts';
 export {
   DEFAULT_GAME_CONFIG,
   DEFAULT_ENGINEERING_CONFIG,
-  EARLIER_TERRAIN_SEEDS,
-  EARLIER_VALLEY_COUNT,
   LARGER_MAP_GAME_CONFIG,
   LARGER_MAP_ENGINEERING_CONFIG,
-  RESPAWN_RULES,
 } from './defaults.ts';
 export {
   DEFAULT_GAME_CONTENT,
   DEFAULT_REWARD_TABLE,
-  COIN_FLIP_FOREST_MAGIC_GUARD_CHANCE,
-  EARLIER_FOREST_STAMINA_UNITS,
-  EARLIER_LARGER_MAP_FOREST_STAMINA_UNITS,
-  FOREST_MAGIC_GUARD_CHANCE,
   FOREST_STAMINA_UNITS,
   FORTRESS_MIN_LINE_SPACES,
   FORTRESS_MIN_ROAD_STEPS,
@@ -31,28 +24,17 @@ export {
   LARGER_MAP_FOREST_STAMINA_UNITS,
   LARGER_MAP_GAME_CONTENT,
   LARGER_MAP_REWARD_TABLE,
-  LARGER_MAP_REWARD_TABLE_BEFORE_MOVE,
-  REWARD_TABLE_BEFORE_MOVE,
 } from './content.ts';
 export { validateRuleset, resolvePending, RulesetError, UnresolvedDesignError } from './validate.ts';
 
 import {
   DEFAULT_ENGINEERING_CONFIG,
   DEFAULT_GAME_CONFIG,
-  EARLIER_VALLEY_COUNT,
   LARGER_MAP_ENGINEERING_CONFIG,
   LARGER_MAP_GAME_CONFIG,
 } from './defaults.ts';
-import {
-  DEFAULT_GAME_CONTENT,
-  EARLIER_FOREST_STAMINA_UNITS,
-  EARLIER_LARGER_MAP_FOREST_STAMINA_UNITS,
-  LARGER_MAP_GAME_CONTENT,
-  LARGER_MAP_REWARD_TABLE_BEFORE_MOVE,
-  REWARD_TABLE_BEFORE_MOVE,
-} from './content.ts';
-import type { RewardTable, Ruleset } from './types.ts';
-import { TERRAINS, type PerTerrain, type Terrain } from './vocabulary.ts';
+import { DEFAULT_GAME_CONTENT, LARGER_MAP_GAME_CONTENT } from './content.ts';
+import type { Ruleset } from './types.ts';
 
 /** The v1 ruleset: GDD.md §11 defaults + §4.2 content + engineering knobs. */
 export const DEFAULT_RULESET: Ruleset = {
@@ -98,192 +80,6 @@ export function mapSizeOfRuleset(ruleset: Ruleset): MapSize {
 }
 
 /**
- * [Q185] The chance a forest gold site is magic-guarded under `ruleset`: the
- * `magicGuardChance` of its forest gold row, 0 when it has none.
- */
-export function magicGuardChanceOf(ruleset: Ruleset): number {
-  const row = ruleset.content.REWARD_TABLE.forest.find((candidate) => candidate.kind === 'gold');
-  return row?.magicGuardChance ?? 0;
-}
-
-/**
- * [Q185, 730 A] `ruleset` with its forest gold sites magic-guarded at `chance`,
- * for a hot seat game kept from before the chance changed, so its map comes
- * back with the guards it began with. `ruleset` itself when that is its chance.
- */
-export function withMagicGuardChance(ruleset: Ruleset, chance: number): Ruleset {
-  if (magicGuardChanceOf(ruleset) === chance) return ruleset;
-  const forest = ruleset.content.REWARD_TABLE.forest.map((row) =>
-    row.kind === 'gold' ? { ...row, magicGuardChance: chance } : row,
-  );
-  return {
-    ...ruleset,
-    content: { ...ruleset.content, REWARD_TABLE: { ...ruleset.content.REWARD_TABLE, forest } },
-  };
-}
-
-/**
- * [Q250] Whether maps made with `ruleset` have the rewards as they moved
- * terrain on 2026-10-04: the three speeds and the magic-guarded gold on the
- * plains, magic, combat and stamina in the forest, and so no gold in the
- * forest. False for a map made before, online or kept on one device, which
- * keeps the rewards it began with.
- */
-export function rewardsMovedOf(ruleset: Ruleset): boolean {
-  return !ruleset.content.REWARD_TABLE.forest.some((row) => row.kind === 'gold');
-}
-
-/**
- * [Q250] `ruleset` with the rewards by terrain as they were before they moved,
- * and each terrain's sites with them, so a hot seat game kept from before gets
- * back the map it began on. `ruleset` itself when it already has them. Apply
- * it before `withMagicGuardChance` and `withoutStaminaSites`, which change the
- * table it puts back.
- */
-export function withRewardsBeforeMove(ruleset: Ruleset): Ruleset {
-  if (!rewardsMovedOf(ruleset)) return ruleset;
-  const table = mapSizeOfRuleset(ruleset) === 'larger' ? LARGER_MAP_REWARD_TABLE_BEFORE_MOVE : REWARD_TABLE_BEFORE_MOVE;
-  const pois = ruleset.config.pois;
-  return {
-    ...ruleset,
-    config: { ...ruleset.config, pois: { ...pois, POI_COUNT: sitesOf(table) } },
-    content: { ...ruleset.content, REWARD_TABLE: table },
-  };
-}
-
-/** Each terrain's sites under `table`: the sum of its rows' sites, as `POI_COUNT` must be. */
-function sitesOf(table: RewardTable): PerTerrain<number> {
-  const sites = (terrain: Terrain): number => table[terrain].reduce((sum, row) => sum + row.poiCount, 0);
-  return { plains: sites('plains'), forest: sites('forest'), mountain: sites('mountain') };
-}
-
-/**
- * [Q227] Whether maps made with `ruleset` start the figures deep in the plains
- * where the sites nearby are not remote. False for a hot seat game kept from
- * before they did, whose start is made again as it was.
- */
-export function deepStartOf(ruleset: Ruleset): boolean {
-  return ruleset.config.start !== undefined;
-}
-
-/**
- * [Q227] `ruleset` as it was before the start moved deep into the plains, so a
- * hot seat game kept from before gets back the start it began on. `ruleset`
- * itself when it already is.
- */
-export function withoutDeepStart(ruleset: Ruleset): Ruleset {
-  if (!deepStartOf(ruleset)) return ruleset;
-  const { start: _start, ...config } = ruleset.config;
-  return { ...ruleset, config };
-}
-
-/**
- * [Q240] Whether maps made with `ruleset` have the plains' stamina sites, each
- * unit giving `STAMINA_PER_UNIT`. False for a hot seat game kept from before
- * they came, whose map is made again as it was.
- */
-export function staminaSitesOf(ruleset: Ruleset): boolean {
-  return ruleset.config.pois.STAMINA_PER_UNIT !== undefined;
-}
-
-/**
- * [Q240] `ruleset` as it was before the plains had stamina sites: no stamina
- * row, the plains' sites fewer by its sites, and a stamina unit worth 1, so a
- * hot seat game kept from before gets back the map it began on. `ruleset`
- * itself when it already is.
- */
-export function withoutStaminaSites(ruleset: Ruleset): Ruleset {
-  if (!staminaSitesOf(ruleset)) return ruleset;
-  const table = ruleset.content.REWARD_TABLE;
-  const sites = table.plains.filter((row) => row.kind === 'stamina').reduce((sum, row) => sum + row.poiCount, 0);
-  const { STAMINA_PER_UNIT: _perUnit, ...pois } = ruleset.config.pois;
-  return {
-    ...ruleset,
-    config: { ...ruleset.config, pois: { ...pois, POI_COUNT: { ...pois.POI_COUNT, plains: pois.POI_COUNT.plains - sites } } },
-    content: { ...ruleset.content, REWARD_TABLE: { ...table, plains: table.plains.filter((row) => row.kind !== 'stamina') } },
-  };
-}
-
-/**
- * [Q245] Whether maps made with `ruleset` grow their terrain from
- * `TERRAIN_SEEDS`, keep the `KEPT_APART` terrains' areas apart and carve no
- * valleys. False for a hot seat game kept from before, whose map is made again
- * as it began, from 1 or 2 seeds a terrain and with valleys.
- */
-export function separateAreasOf(ruleset: Ruleset): boolean {
-  return ruleset.config.map.TERRAIN_SEEDS !== undefined;
-}
-
-/**
- * [Q245] `ruleset` as it was before: no `TERRAIN_SEEDS`, nothing kept apart and
- * `EARLIER_VALLEY_COUNT` valleys, so a hot seat game kept from before gets back
- * the map it began on (913). `ruleset` itself when it already is.
- */
-export function withoutSeparateAreas(ruleset: Ruleset): Ruleset {
-  if (!separateAreasOf(ruleset)) return ruleset;
-  const { TERRAIN_SEEDS: _seeds, KEPT_APART: _apart, ...map } = ruleset.config.map;
-  return { ...ruleset, config: { ...ruleset.config, map: { ...map, VALLEY_COUNT: EARLIER_VALLEY_COUNT } } };
-}
-
-/**
- * [Q255] Whether maps made with `ruleset` keep the fortresses apart: whether
- * any row of its table has `apart`. False for a map made before, online or
- * kept on one device, which keeps its fortresses where they were drawn (933 A).
- */
-export function fortressesApartOf(ruleset: Ruleset): boolean {
-  return TERRAINS.some((terrain) => ruleset.content.REWARD_TABLE[terrain].some((row) => row.apart !== undefined));
-}
-
-/**
- * [Q255] `ruleset` as it was before the fortresses were kept apart, so a hot
- * seat game kept from before gets back the map it began on. `ruleset` itself
- * when it already is.
- */
-export function withoutFortressesApart(ruleset: Ruleset): Ruleset {
-  if (!fortressesApartOf(ruleset)) return ruleset;
-  const anywhere = (rows: RewardTable[Terrain]): RewardTable[Terrain] =>
-    rows.map(({ apart: _apart, ...row }) => row);
-  const table = ruleset.content.REWARD_TABLE;
-  return {
-    ...ruleset,
-    content: {
-      ...ruleset.content,
-      REWARD_TABLE: { plains: anywhere(table.plains), forest: anywhere(table.forest), mountain: anywhere(table.mountain) },
-    },
-  };
-}
-
-/** [Q260] The hearts a map made with `ruleset` had on its forest stamina sites before Q260: 10, or 14 on the larger map. */
-function earlierForestStaminaUnits(ruleset: Ruleset): number {
-  return mapSizeOfRuleset(ruleset) === 'larger' ? EARLIER_LARGER_MAP_FOREST_STAMINA_UNITS : EARLIER_FOREST_STAMINA_UNITS;
-}
-
-/**
- * [Q260] Whether maps made with `ruleset` have the forest stamina sites' hearts
- * as raised on 2026-10-05, 12 (17 on the larger map) rather than 10 (14).
- * False for a map made before, online or kept on one device, which keeps the
- * hearts it began with (941 A), and for a table from before the rewards moved,
- * whose stamina is on the plains.
- */
-export function moreStaminaUnitsOf(ruleset: Ruleset): boolean {
-  const row = ruleset.content.REWARD_TABLE.forest.find((candidate) => candidate.kind === 'stamina');
-  return row !== undefined && row.totalUnits !== earlierForestStaminaUnits(ruleset);
-}
-
-/**
- * [Q260] `ruleset` with the forest stamina sites' hearts as they were before,
- * so a hot seat game kept from before gets back the map it began on (941 A).
- * `ruleset` itself when it already has them.
- */
-export function withEarlierStaminaUnits(ruleset: Ruleset): Ruleset {
-  if (!moreStaminaUnitsOf(ruleset)) return ruleset;
-  const units = earlierForestStaminaUnits(ruleset);
-  const table = ruleset.content.REWARD_TABLE;
-  const forest = table.forest.map((row) => (row.kind === 'stamina' ? { ...row, totalUnits: units } : row));
-  return { ...ruleset, content: { ...ruleset.content, REWARD_TABLE: { ...table, forest } } };
-}
-
-/**
  * [SOURCE §2, chat] Starting stamina for a 1-based seat:
  * `STARTING_STAMINA_BASE + (seat − 1) × STARTING_STAMINA_INCREMENT`.
  *
@@ -293,13 +89,4 @@ export function withEarlierStaminaUnits(ruleset: Ruleset): Ruleset {
 export function startingStaminaForSeat(seat: number, ruleset: Ruleset): number {
   const { STARTING_STAMINA_BASE, STARTING_STAMINA_INCREMENT } = ruleset.config.players;
   return STARTING_STAMINA_BASE + (seat - 1) * STARTING_STAMINA_INCREMENT;
-}
-
-/**
- * [Q200] The gold every player starts with: `STARTING_GOLD`, the same for
- * every seat, or none in a game started before players started with gold
- * (790), whose map has no `STARTING_GOLD`.
- */
-export function startingGoldOf(ruleset: Ruleset): number {
-  return ruleset.config.players.STARTING_GOLD ?? 0;
 }

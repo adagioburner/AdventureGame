@@ -4,10 +4,9 @@ import { chooseStartingNode, spaceRemoteness, startingNodeFor, stepsFromForestAn
 import { createRng } from './rng.ts';
 import { fixtureMap, n } from './rules/scenario.fixture.ts';
 
-/** `map` with the start rule set to `start`, or with none, as a game kept from before has. */
-function withStart(map: GameMap, start: StartConfig | undefined): GameMap {
-  const { start: _start, ...config } = map.ruleset.config;
-  return { ...map, ruleset: { ...map.ruleset, config: start === undefined ? config : { ...config, start } } };
+/** `map` with the start rule set to `start`. */
+function withStart(map: GameMap, start: StartConfig): GameMap {
+  return { ...map, ruleset: { ...map.ruleset, config: { ...map.ruleset.config, start } } };
 }
 
 const ONE_STEP: StartConfig = { NEARBY_STEPS: 1, MAX_REMOTENESS: 0.1 };
@@ -84,11 +83,11 @@ describe('where the figures start (Q227)', () => {
     expect(startingNodeFor(withStart(line, { NEARBY_STEPS: 3, MAX_REMOTENESS: 0.1 }))).toBe(n(2));
   });
 
-  it('is drawn at random from the plains spaces that are not sites, as before, on a map from before', () => {
-    const before = withStart(line, undefined);
-    const spaces = [1, 2, 4, 5, 6].map(n);
+  it('is drawn at random from the plains spaces on a map with no site near any of them', () => {
+    const bare = withStart(fixtureMap({ terrains: ['forest', 'plains', 'plains', 'plains'], edges: [[0, 1], [1, 2], [2, 3]] }), ONE_STEP);
+    const spaces = [1, 2, 3].map(n);
     for (const seed of ['a', 'b', 'c', 'd']) {
-      expect(chooseStartingNode(before, createRng(seed).fork('starting-node'))).toBe(createRng(seed).fork('starting-node').pick(spaces));
+      expect(chooseStartingNode(bare, createRng(seed).fork('starting-node'))).toBe(createRng(seed).fork('starting-node').pick(spaces));
     }
   });
 });

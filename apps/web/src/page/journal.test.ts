@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_RULESET, RESPAWN_RULES, type RewardKind, type Terrain } from '@adventure/config';
+import { DEFAULT_RULESET, type RewardKind, type Terrain } from '@adventure/config';
 import {
   applyAction,
   asGameId,
@@ -39,10 +39,9 @@ function lineMap(terrains: readonly Terrain[], pois: readonly { node: number; ki
     artVariant: 0,
   }));
   // Players start on no gold here, as in §8's example (Q200 gives them 5): a test's gold is what it hands out.
-  const { STARTING_GOLD: _gold, ...players } = DEFAULT_RULESET.config.players;
   return {
     seed: 'journal',
-    ruleset: { ...DEFAULT_RULESET, config: { ...DEFAULT_RULESET.config, players } },
+    ruleset: { ...DEFAULT_RULESET, config: { ...DEFAULT_RULESET.config, players: { ...DEFAULT_RULESET.config.players, STARTING_GOLD: 0 } } },
     graph: {
       nodes: terrains.map((terrain, index) => ({ id: n(index), position: { x: index, y: 0 }, terrain })),
       edges,
@@ -174,30 +173,6 @@ describe('the turn log, in words that can be checked by hand', () => {
     expect(entry.details[0]).toBe('Heading for the 10 stamina site (plains).');
     expect(entry.headline).toBe('Walked 1 step, took 10 stamina');
     expect(entry.details.at(-1)).toBe('Took 10 stamina: the site was unguarded.');
-  });
-
-  it('says where a skill came back, by its site’s terrain (Q135, 536)', () => {
-    // Combat on nodes 2 and 5; Ada takes node 2's, the last left, and node 5,
-    // taken earlier, comes back: with 1 of its 3, all a site comes back with.
-    // Only games started before buying (Q190, 757) bring skills back.
-    const { buying: _buying, ...config } = DEFAULT_RULESET.config;
-    const today = lineMap(
-      ['plains', 'plains', 'plains', 'plains', 'plains', 'forest', 'mountain'],
-      [
-        { node: 2, kind: 'fighting', units: 1, guard: null },
-        { node: 5, kind: 'fighting', units: 3, guard: null },
-      ],
-    );
-    const skills: GameMap = { ...today, ruleset: { ...today.ruleset, config: { ...config, respawn: RESPAWN_RULES } } };
-    const fresh = createGameState({
-      id: asGameId('journal'),
-      map: skills,
-      players: ['Ada', 'Bram'].map((name) => ({ id: asPlayerId(name), name, avatarId: name, control: 'human' as const })),
-      startingNode: asNodeId(0),
-    });
-    const before = { ...fresh, poiRuntime: [fresh.poiRuntime[0]!, { claimedBy: asPlayerId('Bram'), claimedOnTurn: 1 }] };
-    const entry = describeTurn(before, { kind: 'move', path: path(1, 2) });
-    expect(entry.details.at(-1)).toBe('1 combat came back at a forest site.');
   });
 
   it('gives each Done in the buy panel a line, before the move (Q190, 769)', () => {

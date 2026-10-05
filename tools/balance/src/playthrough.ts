@@ -6,10 +6,8 @@ import {
   createRng,
   chooseStartingNode,
   dijkstra,
-  offeredReward,
   previewPath,
   poiAt,
-  poiRuntimeAt,
   shortestPath,
   asGameId,
   asPlayerId,
@@ -24,7 +22,6 @@ import {
   type NodeId,
   type PlayerId,
   type PlayerStats,
-  type Reward,
   type Seed,
   type TurnAction,
 } from '@adventure/core';
@@ -114,12 +111,6 @@ export interface PlayedTurn {
    * walk cannot be judged without knowing where it was going.
    */
   readonly heading: Heading | null;
-  /**
-   * [Q135] What the POI `heading` names offered as the turn began, `null`
-   * without a heading: one that came back may offer fewer units than the map
-   * gave it.
-   */
-  readonly offered: Reward | null;
   /** The driver's reasons, printed under the plan. */
   readonly why: readonly string[];
 }
@@ -205,9 +196,6 @@ export function playGame(
     }
     const allowanceBefore = state.turn.allowance;
     const statsBefore = playerById(state, player.id).stats;
-    const target = chosen?.heading?.target;
-    const targetPoi = target === undefined ? undefined : poiAt(state.map, target);
-    const offered = target === undefined || targetPoi === undefined ? null : offeredReward(targetPoi, poiRuntimeAt(state, target));
     if (action !== null && state.status === 'in_progress') {
       const outcome = applyAction(state, action, dice);
       state = outcome.state;
@@ -224,7 +212,6 @@ export function playGame(
       statsBefore,
       standings: state.players.map((current) => ({ name: current.name, stats: current.stats })),
       heading: chosen?.heading ?? null,
-      offered,
       why: chosen?.why ?? [],
     });
   }
@@ -373,9 +360,7 @@ export function formatPlaythrough(run: Playthrough): string {
   );
   lines.push(
     `meta rest_stamina_gain=${config.movement.REST_STAMINA_GAIN} guard_die=${config.combat.GUARD_DIE.count}d${config.combat.GUARD_DIE.sides}` +
-      (config.respawn === undefined ? '' : ` respawn_short_below_sites=${config.respawn.SHORT_BELOW_SITES} respawn_far_share=${config.respawn.FAR_SHARE}`) +
-      (config.respawn?.MAX_UNITS === undefined ? '' : ` respawn_max_units=${config.respawn.MAX_UNITS}`) +
-      (config.buying === undefined ? '' : ` buy_gold_per_unit=${config.buying.GOLD_PER_UNIT}`),
+      ` buy_gold_per_unit=${config.buying.GOLD_PER_UNIT}`,
   );
   for (const player of run.finalState.players) {
     lines.push(
@@ -419,14 +404,6 @@ function turnLines(turn: PlayedTurn, run: Playthrough): string[] {
       case 'interacted':
         lines.push(...interactionLines(event.resolution, turn, run));
         break;
-      case 'reward_returned': {
-        const below = run.map.ruleset.config.respawn?.SHORT_BELOW_SITES;
-        lines.push(
-          `  back    ${event.reward.kind} x${event.reward.units} back on node ${event.node} (${terrainOf(run, event.node)}):` +
-            ` fewer than ${below} sites with ${event.reward.kind} left on the map, drawn from the empty ones farthest from every figure (Q135)`,
-        );
-        break;
-      }
       case 'game_won':
         lines.push(`  won     ${event.winners.join(' ')} — lead exceeds the gold still on the map (§1)`);
         break;
@@ -454,7 +431,7 @@ function headingLines(turn: PlayedTurn, run: Playthrough): string[] {
     return ['  plan    nothing left on the map this player could take, so rests'];
   }
 
-  const what = describePoi(run, heading.target, turn.offered);
+  const what = describePoi(run, heading.target);
   if (heading.route.length === 0) {
     return [`  plan    already on node ${heading.target} (${what}), attacks it again`, ...why];
   }
@@ -471,10 +448,10 @@ function headingLines(turn: PlayedTurn, run: Playthrough): string[] {
   return lines;
 }
 
-function describePoi(run: Playthrough, node: NodeId, offered: Reward | null): string {
+function describePoi(run: Playthrough, node: NodeId): string {
   const poi = poiAt(run.map, node);
   if (poi === undefined) throw new Error(`no POI at node ${node}`);
-  const { kind, units } = offered ?? poi.reward;
+  const { kind, units } = poi.reward;
   const reward = `${kind} x${units}`;
   return poi.guard === null ? `${reward}, unguarded` : `${reward}, guarded ${poi.guard.type} ${poi.guard.strength}`;
 }

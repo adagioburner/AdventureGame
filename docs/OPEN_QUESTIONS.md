@@ -3769,6 +3769,48 @@ main's. The rulebook gives no number of hearts and is unchanged.
 
 ---
 
+### Q265. ~~Can the code that kept old games on their old rules go?~~ — **answered 2026-10-05: yes, all of it; hot seat games saved before are dropped, the preview's old online games are left to expire, and speeds and skills coming back and the forest gold's magic guard chance go too (950 A, 951 A, 952 A, 953 A)**
+
+Andrei, 2026-10-05 at 03:31: *"It looks like no one is playing right now and i
+don't believe there are old games worth saving. Can we clean up all code that
+was taking care of preserving old behavior for existing maps? I believe we've
+made quite a few changes and there's a lot of clutter accunulated"*
+
+Removed: the notes a hot seat save carried to redraw its map as it began (12 of
+them); the recipes that redrew old maps (rewards on their old terrains, 1-2
+terrain seeds with 2-4 valleys, fortresses anywhere, 10 and 14 hearts, plains
+without stamina sites, a random start, the coin-flip forest gold); the rules
+of games started before a change (no starting gold, no buying, a heart worth
+1 stamina); the four manifest rows only old maps drew; the tests of old games
+and the snapshot of the old adventure map. A setting a map from before lacked
+is now required. Kept: `VALLEY_COUNT` (0, a setting rather than an old rule),
+the server giving games from before lifetimes their 3 days (it is what removes
+them), and accounts. The rulebook never mentioned older games and is
+unchanged.
+
+950. **Hot seat games saved before the cleanup:** dropped, the page opening on
+     a fresh New game screen, saves being kept under a new name (recommended);
+     or carried on today's map, its turns replayed, and dropped if they no
+     longer fit.
+951. **The preview's old online games** (started before 4 October, test games,
+     gone by 25 October): left as they are, an old one perhaps failing to open
+     (recommended); or closed when opened, as if their time ran out.
+952. **Speeds and skills coming back** (Q135), used only by games started before
+     buying: removed with its sound, map glide and log line (recommended); or
+     kept, used by no new game.
+953. **The forest gold's magic guard chance** (Q115, Q185), on no row since
+     Q250: removed (recommended); or kept at 1.
+
+**Answered**, 2026-10-05 by card: 950 A, *"Drop them"*; 951 A, *"Leave
+them"*; 952 A, *"Remove"*; 953 A, *"Remove"*.
+
+Checked against main 9364f92: 200 maps and 30 test-driver games per map
+size come out identical (every road, site, guard, picture and start, and every
+turn of every game), and the golden map and game are unchanged. The dice keep
+their `pick`, which draws the seats online with Shuffle seats on.
+
+---
+
 ## C. Decisions I made that are *implementation*, not design
 
 Listed so you can veto any that read as design to you.

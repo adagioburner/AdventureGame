@@ -1,6 +1,5 @@
 import type { GuardType, RewardKind, Terrain } from '@adventure/config';
 import {
-  offeredReward,
   poiAt,
   previewPath,
   rewardAmount,
@@ -119,12 +118,6 @@ export function journalEntry(turn: PlayedTurn, before: GameState, movedOn = fals
       details.push(poi.detail);
       tone = interacted.resolution.claimed ? 'took' : 'missed';
     }
-  }
-
-  // [Q135, 536 A] A speed or skill that ran short came back to an empty site.
-  for (const event of turn.events) {
-    if (event.type !== 'reward_returned') continue;
-    details.push(`${event.reward.units} ${STAT_LABEL[event.reward.kind]} came back at a ${terrainOf(map, event.node)} site.`);
   }
 
   if (won !== undefined) {
@@ -323,7 +316,7 @@ export function describeNode(state: GameState, node: NodeId): string {
   const runtime = index === undefined ? undefined : state.poiRuntime[index];
   const taken = index !== undefined && runtime?.claimedBy !== null;
   if (poi === undefined || taken) return `a ${terrain} space`;
-  const reward = offeredReward(poi, runtime);
+  const reward = poi.reward;
   const what = `${rewardAmount(reward, map.ruleset.config)} ${STAT_LABEL[reward.kind]}`;
   if (poi.guard === null) return `the ${what} site (${terrain})`;
   return `the ${what} site (${terrain}, ${GUARD_LABEL[poi.guard.type]} guard ${poi.guard.strength})`;

@@ -21,7 +21,6 @@ import { rewardAmount } from '../reward.ts';
 import { activePlayer, playerById, playerBySeat, poiRuntimeAt, type GameState } from '../state.ts';
 import { assertWalkable, refreshAllowance, resolveMovement } from './movement.ts';
 import { resolveInteraction } from './interaction.ts';
-import { respawnShortRewards } from './respawn.ts';
 import { checkVictory, mostGold } from './victory.ts';
 
 /**
@@ -33,9 +32,9 @@ import { checkVictory, mostGold } from './victory.ts';
 export interface DiceSource {
   roll(): DieRoll;
   /**
-   * [Q135] A uniform whole number from 0 to `count - 1`: which of the far
-   * empty sites a short skill comes back to. Drawn from the same stream as the
-   * die, so it is as unpredictable online and replays with it on one device.
+   * A uniform whole number from 0 to `count - 1`, from the same stream as the
+   * die: online, the seats Shuffle seats draws as the game starts (Q165, 650).
+   * No rule draws one.
    */
   pick(count: number): number;
 }
@@ -55,9 +54,8 @@ export interface ActionOutcome {
  *
  * Sequence for a turn action (§7, §8): resolve movement → if the turn ends on
  * an unclaimed POI, interact automatically → if a gold reward was claimed,
- * re-evaluate the win condition (§1) → bring back any speed or skill that has
- * run short (Q135) → end the turn and advance to the next seat, refreshing
- * that player's allowance (§7).
+ * re-evaluate the win condition (§1) → end the turn and advance to the next
+ * seat, refreshing that player's allowance (§7).
  *
  * The input state is never mutated. `map` is carried across by reference — it
  * never changes during play — so a new state copies only the small mutable
@@ -140,8 +138,6 @@ function finishTurn(state: GameState, playerId: PlayerId, moved: boolean, dice: 
   // walked over on the way is not interacted with, and resting on one is not
   // either — [SOURCE §7, chat] rest is "no movement/interaction".
   if (moved) next = applyArrival(next, playerId, dice, events);
-  // [Q135] Once the turn's claim is made, and only while the game goes on.
-  if (next.status === 'in_progress') next = respawnShortRewards(next, dice, events);
   return endTurn(next, playerId, events);
 }
 
@@ -254,7 +250,7 @@ export type CountedTurn =
  * so counted: the active player rests, or stands on `to` with
  * `staminaSpent` less stamina, and the turn ends as `applyAction`'s would:
  * §8 on an unclaimed site where a walk ends, §1's win check after a gold
- * claim, any short speed or skill brought back (Q135), and the hand-over.
+ * claim, and the hand-over.
  *
  * The walk itself is the caller's to count, by §7's rules (`countWalk`),
  * and is not checked again here; no events are kept, and the saved route is
@@ -290,7 +286,6 @@ export function applyCountedTurn(state: GameState, turn: CountedTurn, dice: Dice
 function applyBuy(state: GameState, action: BuyAction): ActionOutcome {
   const player = requireActivePlayer(state, action.player);
   const buying = state.map.ruleset.config.buying;
-  if (buying === undefined) throw new RuleViolationError('nothing can be bought in this game');
   if (action.skills.length === 0) throw new RuleViolationError('a purchase buys at least one unit');
   for (const skill of action.skills) {
     if (!buying.KINDS.includes(skill)) throw new RuleViolationError(`${skill} cannot be bought`);
@@ -322,7 +317,7 @@ function applyBuy(state: GameState, action: BuyAction): ActionOutcome {
  */
 export function buyableNow(state: GameState, playerId: PlayerId): { readonly kinds: readonly RewardKind[]; readonly price: number } {
   const buying = state.map.ruleset.config.buying;
-  if (buying === undefined || state.status !== 'in_progress' || activePlayer(state).id !== playerId) return { kinds: [], price: 0 };
+  if (state.status !== 'in_progress' || activePlayer(state).id !== playerId) return { kinds: [], price: 0 };
   const gold = playerById(state, playerId).stats.gold;
   return { kinds: gold >= buying.GOLD_PER_UNIT ? buying.KINDS : [], price: buying.GOLD_PER_UNIT };
 }

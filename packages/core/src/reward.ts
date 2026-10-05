@@ -19,12 +19,12 @@ export interface Reward {
 
 /**
  * [Q240] How much `reward` adds to its stat when it is claimed: one point a
- * unit, except stamina, whose units give `STAMINA_PER_UNIT` each (1 on the
- * maps of games started before it, which have none). What a player reads as a
- * site's prize is this too (906 A): "10 stamina", not its 2 units.
+ * unit, except stamina, whose units give `STAMINA_PER_UNIT` each. What a
+ * player reads as a site's prize is this too (906 A): "10 stamina", not its 2
+ * units.
  */
 export function rewardAmount(reward: Reward, config: GameConfig): number {
-  return reward.kind === 'stamina' ? reward.units * (config.pois.STAMINA_PER_UNIT ?? 1) : reward.units;
+  return reward.kind === 'stamina' ? reward.units * config.pois.STAMINA_PER_UNIT : reward.units;
 }
 
 /**

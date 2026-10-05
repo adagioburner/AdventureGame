@@ -122,10 +122,9 @@ there for people and ignored by the game.
   `terrain` is the POI's own or `any`, and a row naming the POI's guard type
   beats one that doesn't. The red or purple on a guarded POI's node always
   comes from the POI's actual guard, never from the row. Rows with a
-  `borrowed` note have no sheet of their own yet: forest gold, whichever its
-  guard (Q20, Q115), and since the rewards moved terrain (Q250) mountains
-  speed and magic gold on the plains and magic in the forest, which keep the
-  pictures they had (922 A). Stamina sites have their own since Q240, the spare dead
+  `borrowed` note have no sheet of their own yet: since the rewards moved
+  terrain (Q250), mountains speed and magic gold on the plains and magic in
+  the forest, which keep the pictures they had (922 A). Stamina sites have their own since Q240, the spare dead
   ends in forest and mountains included (903 A). A row with `"on_node": true` (the guardians)
   stands its picture on the POI's node, feet across the back of it; every
   other picture stands beside its node, touching it (Q35).
@@ -176,9 +175,8 @@ there for people and ignored by the game.
   played each time a walking figure reaches a node; `pickup` a reward taken
   from an unguarded POI; `battle_won` and `battle_lost` a guard beaten or
   not, as the die stops; `rest` a rest as it is shown; `message`, online, a
-  message someone else posts; `respawn` a speed or skill coming back to a
-  site (Q135); `purchase` a speed or skill bought, Andrei's own cash register
-  (Q190). A sound with several files uses them in turn,
+  message someone else posts; `purchase` a speed or skill bought, Andrei's
+  own cash register (Q190). A sound with several files uses them in turn,
   so a walk's footsteps are not all alike.
 
 ## Swapping the island's rock or sky

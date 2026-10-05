@@ -63,21 +63,6 @@ export function validateRuleset(ruleset: Ruleset): void {
       if (row.poiCount < 0 || row.totalUnits < 0) {
         problems.push(`§4.2: ${terrain} group ${row.kind} has a negative count.`);
       }
-      // Q115: a chance, and only on a row whose guard it can turn to magic.
-      if (row.magicGuardChance !== undefined) {
-        if (!(row.magicGuardChance >= 0 && row.magicGuardChance <= 1)) {
-          problems.push(
-            `Q115: ${terrain} group ${row.kind}/${row.guard ?? 'unguarded'} has magicGuardChance ` +
-              `${row.magicGuardChance}; a chance runs from 0 to 1.`,
-          );
-        }
-        if (row.guard !== 'fighting') {
-          problems.push(
-            `Q115: ${terrain} group ${row.kind}/${row.guard ?? 'unguarded'} has a magicGuardChance, ` +
-              `but only a fighting-guarded group can have its guard turned to magic.`,
-          );
-        }
-      }
       // Q255: road steps are whole steps; a straight line can be any length.
       if (row.apart !== undefined) {
         if (!(Number.isInteger(row.apart.roadSteps) && row.apart.roadSteps >= 0)) {
@@ -157,73 +142,52 @@ export function validateRuleset(ruleset: Ruleset): void {
     problems.push('§4.3: REWARD_SWAP_PASSES must be a non-negative integer.');
   }
 
-  // Q135: a whole number of sites, a share of the empty POIs, and only kinds a player can
-  // run short of without the game's end moving: gold decides the winner.
-  const respawn = config.respawn;
-  if (respawn !== undefined) {
-    if (!Number.isInteger(respawn.SHORT_BELOW_SITES) || respawn.SHORT_BELOW_SITES < 1) {
-      problems.push('Q135: respawn.SHORT_BELOW_SITES must be a positive integer.');
-    }
-    if (!(respawn.FAR_SHARE > 0 && respawn.FAR_SHARE <= 1)) {
-      problems.push('Q135: respawn.FAR_SHARE must be above 0 and at most 1.');
-    }
-    if (respawn.MAX_UNITS !== undefined && (!Number.isInteger(respawn.MAX_UNITS) || respawn.MAX_UNITS < 1)) {
-      problems.push('Q135: respawn.MAX_UNITS must be a positive integer.');
-    }
-    if (respawn.KINDS.includes('gold')) problems.push('Q135: gold never comes back.');
-  }
-
   // Q190: a whole number of gold for a unit, and only kinds gold may buy: never
   // gold itself, and never stamina (753).
   const buying = config.buying;
-  if (buying !== undefined) {
-    if (!Number.isInteger(buying.GOLD_PER_UNIT) || buying.GOLD_PER_UNIT < 1) {
-      problems.push('Q190: buying.GOLD_PER_UNIT must be a positive integer.');
-    }
-    if (buying.KINDS.includes('gold') || buying.KINDS.includes('stamina')) problems.push('Q190: gold buys neither gold nor stamina.');
+  if (!Number.isInteger(buying.GOLD_PER_UNIT) || buying.GOLD_PER_UNIT < 1) {
+    problems.push('Q190: buying.GOLD_PER_UNIT must be a positive integer.');
   }
+  if (buying.KINDS.includes('gold') || buying.KINDS.includes('stamina')) problems.push('Q190: gold buys neither gold nor stamina.');
   if (!Number.isFinite(config.ai.BUY_SKIP_STAMINA) || config.ai.BUY_SKIP_STAMINA < 0) {
     problems.push('Q190: ai.BUY_SKIP_STAMINA must be a non-negative number.');
   }
   // Q227: whole steps, and a limit remoteness can be below.
   const start = config.start;
-  if (start !== undefined && (!Number.isInteger(start.NEARBY_STEPS) || start.NEARBY_STEPS < 0)) {
+  if (!Number.isInteger(start.NEARBY_STEPS) || start.NEARBY_STEPS < 0) {
     problems.push('Q227: start.NEARBY_STEPS must be a non-negative integer.');
   }
-  if (start !== undefined && !(start.MAX_REMOTENESS > 0)) {
+  if (!(start.MAX_REMOTENESS > 0)) {
     problems.push('Q227: start.MAX_REMOTENESS must be a positive number.');
   }
   // Q245: whole seeds, at least 1 a terrain, which step 4 needs to grow it at all.
   const seeds = config.map.TERRAIN_SEEDS;
   for (const terrain of TERRAINS) {
-    const range = seeds?.[terrain];
-    if (range === undefined) continue;
+    const range = seeds[terrain];
     if (!Number.isInteger(range.min) || !Number.isInteger(range.max) || range.min < 1) {
       problems.push(`Q245: map.TERRAIN_SEEDS.${terrain} must be whole numbers of at least 1.`);
     }
     assertRange(problems, `TERRAIN_SEEDS.${terrain}`, range);
   }
   const apart = config.map.KEPT_APART;
-  if (apart !== undefined) {
-    if (!Number.isInteger(apart.GAP.min) || !Number.isInteger(apart.GAP.max) || apart.GAP.min < 1) {
-      problems.push('Q245: map.KEPT_APART.GAP must be whole numbers of at least 1.');
-    }
-    assertRange(problems, 'KEPT_APART.GAP', apart.GAP);
-    if (apart.TERRAINS.some((terrain) => !TERRAINS.includes(terrain)) || new Set(apart.TERRAINS).size !== apart.TERRAINS.length) {
-      problems.push('Q245: map.KEPT_APART.TERRAINS must name each terrain at most once.');
-    }
+  if (!Number.isInteger(apart.GAP.min) || !Number.isInteger(apart.GAP.max) || apart.GAP.min < 1) {
+    problems.push('Q245: map.KEPT_APART.GAP must be whole numbers of at least 1.');
+  }
+  assertRange(problems, 'KEPT_APART.GAP', apart.GAP);
+  if (apart.TERRAINS.some((terrain) => !TERRAINS.includes(terrain)) || new Set(apart.TERRAINS).size !== apart.TERRAINS.length) {
+    problems.push('Q245: map.KEPT_APART.TERRAINS must name each terrain at most once.');
   }
   if (!Number.isInteger(config.map.VALLEY_COUNT.min) || config.map.VALLEY_COUNT.min < 0) {
     problems.push('§11: VALLEY_COUNT.min must be a whole number, 0 or more.');
   }
   // Q200: whole gold, none at the least.
   const gold = config.players.STARTING_GOLD;
-  if (gold !== undefined && (!Number.isInteger(gold) || gold < 0)) {
+  if (!Number.isInteger(gold) || gold < 0) {
     problems.push('Q200: players.STARTING_GOLD must be a non-negative integer.');
   }
-  // Q240: whole stamina for a unit, at least 1, as a unit was worth before.
+  // Q240: whole stamina for a unit, at least 1.
   const perUnit = config.pois.STAMINA_PER_UNIT;
-  if (perUnit !== undefined && (!Number.isInteger(perUnit) || perUnit < 1)) {
+  if (!Number.isInteger(perUnit) || perUnit < 1) {
     problems.push('Q240: pois.STAMINA_PER_UNIT must be a positive integer.');
   }
 

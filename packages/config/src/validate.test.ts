@@ -1,19 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  DEFAULT_RULESET,
-  FORTRESSES_APART,
-  fortressesApartOf,
-  LARGER_MAP_RULESET,
-  moreStaminaUnitsOf,
-  rewardsMovedOf,
-  withEarlierStaminaUnits,
-  withoutFortressesApart,
-  withoutSeparateAreas,
-  withoutStaminaSites,
-  withRewardsBeforeMove,
-} from './index.ts';
-import { LARGER_MAP_REWARD_TABLE_BEFORE_MOVE, REWARD_TABLE_BEFORE_MOVE } from './content.ts';
+import { DEFAULT_RULESET, FORTRESSES_APART, LARGER_MAP_RULESET } from './index.ts';
 import type { PendingValue, RewardGroupSpec, Ruleset } from './types.ts';
 import { RulesetError, UnresolvedDesignError, resolvePending, validateRuleset } from './validate.ts';
 import type { Terrain } from './vocabulary.ts';
@@ -70,20 +57,6 @@ describe('validateRuleset', () => {
     const row = firstPlainsRow(ruleset);
     rows.push({ ...row, poiCount: 0, totalUnits: 0 });
     expect(() => validateRuleset(ruleset)).toThrow(/lists the reward group plains_move\/none twice/);
-  });
-
-  it('rejects a magicGuardChance outside 0 to 1 (Q115)', () => {
-    const ruleset = clone();
-    const rows = plainsRows(ruleset);
-    const gold = rows.findIndex((row) => row.kind === 'gold');
-    rows[gold] = { ...(rows[gold] as RewardGroupSpec), magicGuardChance: 1.5 };
-    expect(() => validateRuleset(ruleset)).toThrow(/Q115: plains group gold\/fighting has magicGuardChance 1.5/);
-  });
-
-  it('rejects a magicGuardChance on a group that is not fighting-guarded (Q115)', () => {
-    const ruleset = clone();
-    plainsRows(ruleset)[0] = { ...firstPlainsRow(ruleset), magicGuardChance: 0.5 };
-    expect(() => validateRuleset(ruleset)).toThrow(/only a fighting-guarded group can have its guard turned to magic/);
   });
 
   it('rejects terrain area shares that do not sum to 1', () => {
@@ -153,24 +126,20 @@ describe('validateRuleset', () => {
     expect(() => validateRuleset(limit)).toThrow(/start\.MAX_REMOTENESS must be a positive number/);
   });
 
-  it('rejects a STAMINA_PER_UNIT below 1 or not a whole number, and accepts a ruleset from before the stamina sites (Q240)', () => {
+  it('rejects a STAMINA_PER_UNIT below 1 or not a whole number (Q240)', () => {
     for (const perUnit of [0, 2.5]) {
       const ruleset = clone();
       (ruleset.config.pois as { STAMINA_PER_UNIT: number }).STAMINA_PER_UNIT = perUnit;
       expect(() => validateRuleset(ruleset)).toThrow(/pois\.STAMINA_PER_UNIT must be a positive integer/);
     }
-    expect(() => validateRuleset(withoutStaminaSites(DEFAULT_RULESET))).not.toThrow();
-    expect(() => validateRuleset(withoutStaminaSites(LARGER_MAP_RULESET))).not.toThrow();
   });
 
-  it('rejects terrain seeds below 1, not whole, or with min above max, and accepts a ruleset from before them (Q245)', () => {
+  it('rejects terrain seeds below 1, not whole, or with min above max (Q245)', () => {
     for (const range of [{ min: 0, max: 3 }, { min: 1.5, max: 3 }, { min: 3, max: 2 }]) {
       const ruleset = clone();
       (ruleset.config.map as { TERRAIN_SEEDS: unknown }).TERRAIN_SEEDS = { ...ruleset.config.map.TERRAIN_SEEDS, forest: range };
       expect(() => validateRuleset(ruleset)).toThrow(/TERRAIN_SEEDS\.forest/);
     }
-    expect(() => validateRuleset(withoutSeparateAreas(DEFAULT_RULESET))).not.toThrow();
-    expect(() => validateRuleset(withoutSeparateAreas(LARGER_MAP_RULESET))).not.toThrow();
   });
 
   it('rejects a kept-apart gap below 1 or out of order and a terrain named twice, and accepts no valleys (Q245)', () => {
@@ -179,7 +148,7 @@ describe('validateRuleset', () => {
       (gap.config.map as { KEPT_APART: unknown }).KEPT_APART = { ...gap.config.map.KEPT_APART, GAP: range };
       expect(() => validateRuleset(gap)).toThrow(/KEPT_APART\.GAP/);
     }
-    expect(DEFAULT_RULESET.config.map.KEPT_APART?.GAP).toEqual({ min: 1, max: 3 });
+    expect(DEFAULT_RULESET.config.map.KEPT_APART.GAP).toEqual({ min: 1, max: 3 });
     const twice = clone();
     (twice.config.map as { KEPT_APART: unknown }).KEPT_APART = { ...twice.config.map.KEPT_APART, TERRAINS: ['forest', 'forest'] };
     expect(() => validateRuleset(twice)).toThrow(/KEPT_APART\.TERRAINS/);
@@ -187,35 +156,13 @@ describe('validateRuleset', () => {
     expect(() => validateRuleset(DEFAULT_RULESET)).not.toThrow();
   });
 
-  it('puts back the rewards by terrain from before they moved, with each terrain\'s sites (Q250)', () => {
-    expect(rewardsMovedOf(DEFAULT_RULESET)).toBe(true);
-    expect(rewardsMovedOf(LARGER_MAP_RULESET)).toBe(true);
-    const before = withRewardsBeforeMove(DEFAULT_RULESET);
-    const largerBefore = withRewardsBeforeMove(LARGER_MAP_RULESET);
-    expect(rewardsMovedOf(before)).toBe(false);
-    expect(before.content.REWARD_TABLE).toBe(REWARD_TABLE_BEFORE_MOVE);
-    expect(largerBefore.content.REWARD_TABLE).toBe(LARGER_MAP_REWARD_TABLE_BEFORE_MOVE);
-    expect(before.config.pois.POI_COUNT).toEqual({ plains: 30, forest: 20, mountain: 15 });
-    expect(largerBefore.config.pois.POI_COUNT).toEqual({ plains: 42, forest: 28, mountain: 21 });
-    expect(withRewardsBeforeMove(before)).toBe(before);
-    for (const ruleset of [before, largerBefore, withoutStaminaSites(before), withoutStaminaSites(largerBefore)]) {
-      expect(() => validateRuleset(ruleset)).not.toThrow();
-    }
-  });
-
-  it('keeps the plains fortresses 12 road steps and 5 spaces apart, and takes that away for a map from before (Q255)', () => {
+  it('keeps the plains fortresses 12 road steps and 5 spaces apart (Q255)', () => {
     expect(FORTRESSES_APART).toEqual({ roadSteps: 12, lineSpaces: 5 });
     for (const ruleset of [DEFAULT_RULESET, LARGER_MAP_RULESET]) {
-      expect(fortressesApartOf(ruleset)).toBe(true);
       const kept = (['plains', 'forest', 'mountain'] as const).flatMap((terrain) =>
         ruleset.content.REWARD_TABLE[terrain].filter((row) => row.apart !== undefined).map((row) => ({ terrain, row })),
       );
       expect(kept.map(({ terrain, row }) => `${terrain} ${row.kind}/${row.guard}`)).toEqual(['plains gold/fighting']);
-      const before = withoutFortressesApart(ruleset);
-      expect(fortressesApartOf(before)).toBe(false);
-      expect(withoutFortressesApart(before)).toBe(before);
-      expect(before.content.REWARD_TABLE.plains.map(({ apart: _apart, ...row }) => row)).toEqual(before.content.REWARD_TABLE.plains);
-      expect(() => validateRuleset(before)).not.toThrow();
     }
     for (const apart of [{ roadSteps: -1, lineSpaces: 5 }, { roadSteps: 12.5, lineSpaces: 5 }, { roadSteps: 12, lineSpaces: -1 }]) {
       const ruleset = clone();
@@ -239,27 +186,11 @@ describe('validateRuleset', () => {
     }
   });
 
-  it('puts 12 hearts on the forest stamina sites, 17 on the larger map, and the 10 and 14 back for a map from before (Q260)', () => {
+  it('puts 12 hearts on the forest stamina sites, 17 on the larger map (Q260)', () => {
     const forestStamina = (ruleset: Ruleset): RewardGroupSpec | undefined =>
       ruleset.content.REWARD_TABLE.forest.find((row) => row.kind === 'stamina');
-    for (const [ruleset, units, earlier] of [
-      [DEFAULT_RULESET, 12, 10],
-      [LARGER_MAP_RULESET, 17, 14],
-    ] as const) {
-      expect(forestStamina(ruleset)?.totalUnits).toBe(units);
-      expect(moreStaminaUnitsOf(ruleset)).toBe(true);
-      const before = withEarlierStaminaUnits(ruleset);
-      expect(forestStamina(before)).toEqual({ ...forestStamina(ruleset), totalUnits: earlier });
-      expect(moreStaminaUnitsOf(before)).toBe(false);
-      expect(withEarlierStaminaUnits(before)).toBe(before);
-      expect(before.content.REWARD_TABLE.plains).toBe(ruleset.content.REWARD_TABLE.plains);
-      expect(before.content.REWARD_TABLE.mountain).toBe(ruleset.content.REWARD_TABLE.mountain);
-      expect(() => validateRuleset(before)).not.toThrow();
-      // A table from before the rewards moved has its stamina on the plains, as it began.
-      const unmoved = withRewardsBeforeMove(ruleset);
-      expect(moreStaminaUnitsOf(unmoved)).toBe(false);
-      expect(withEarlierStaminaUnits(unmoved)).toBe(unmoved);
-    }
+    expect(forestStamina(DEFAULT_RULESET)?.totalUnits).toBe(12);
+    expect(forestStamina(LARGER_MAP_RULESET)?.totalUnits).toBe(17);
   });
 });
 

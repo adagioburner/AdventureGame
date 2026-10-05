@@ -51,7 +51,6 @@ describe('the larger map for 4 and 5 players (Q160)', () => {
         // [Q250, 925 A] Except the forest stamina, 9 sites rather than 8, so the forest keeps its 28.
         const sites = terrain === 'forest' && row.kind === 'stamina' ? 9 : Math.round(before.poiCount * SCALE);
         expect(row.poiCount).toBe(sites);
-        expect(row.magicGuardChance).toBe(before.magicGuardChance);
       });
     }
   });

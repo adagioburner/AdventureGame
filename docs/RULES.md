@@ -27,8 +27,7 @@ mountain moving skill, fighting, magic, gold and stamina. Claiming a reward of
 kind K with N units simply adds N to stat K — the stat block is typed as
 `Record<RewardKind, number>` so the two lists cannot drift apart
 (`packages/core/src/player.ts`) — except stamina, whose units are worth
-`pois.STAMINA_PER_UNIT` (5) stamina each since the plains have stamina sites
-(§4.2, Q240), or 1 on a map made before (`rewardAmount`,
+`pois.STAMINA_PER_UNIT` (5) stamina each (§4.2, Q240; `rewardAmount`,
 `packages/core/src/reward.ts`).
 
 **Setup.** Seats are allocated in the order the game master accepts join
@@ -42,9 +41,7 @@ node that is not a POI (`chooseStartingNode`, `packages/core/src/gamemap.ts`).
 Stamina and gold are the stats that do not start at zero — seat *n* starts with
 `STARTING_STAMINA_BASE + (n − 1) × STARTING_STAMINA_INCREMENT`, i.e. 30, 35, 40…
 (`startingStaminaForSeat`, `packages/config/src/index.ts`), and every seat with
-`STARTING_GOLD` gold, 5 (`startingGoldOf`; Q200). A map whose config has no
-`STARTING_GOLD` (a game started before it, online or kept on a device) starts
-everyone on none. `createGameState`
+`players.STARTING_GOLD` gold, 5 (Q200). `createGameState`
 (`packages/core/src/rules/setup.ts`) builds that opening position, and is the
 only function other than `applyAction` that produces a `GameState`.
 
@@ -63,8 +60,8 @@ A player does exactly one of two things (`TurnAction`,
 - **Rest**, gaining `REST_STAMINA_GAIN` (5) stamina, with no movement and no
   interaction.
 
-Then any speed or skill that has run short comes back (below), the turn ends
-and play passes to the next seat, whose allowance refreshes.
+Then the turn ends and play passes to the next seat, whose allowance
+refreshes.
 Resigned players are not skipped — an AI takes over their seat and keeps playing
 (§7.3). A game that has just been won hands over to nobody: the turn does not
 advance, and `game_won` is the last event instead of `turn_ended`.
@@ -141,7 +138,7 @@ Interaction is automatic on arrival (§8,
 
 Either outcome ends the turn. A claimed reward is consumed and the node
 thereafter behaves like any ordinary node of its terrain (§4.5) for the rest
-of the game, or, in a game started before buying, until its reward comes back.
+of the game.
 
 ### Buying speeds and skills (Q190)
 
@@ -153,9 +150,7 @@ and is all or nothing: refused unless the player holds `buying.GOLD_PER_UNIT`
 gold for each. The gold leaves the game, each skill goes up by one, and a speed
 also adds its free step to this turn's allowance. The `bought` event follows,
 then the victory check, since the spent gold can put another player's lead past
-the gold left. `buyableNow` lists what the player can afford now. A map whose
-config has no `buying` (a game started before it) refuses purchases and keeps
-its `respawn`; one that has it has no `respawn`.
+the gold left. `buyableNow` lists what the player can afford now.
 
 The computer (`packages/ai/src/policies/tree.ts`, `buyBranches`) adds a
 `{ kind: 'buy', skill }` branch per kind it can afford at every node of its own
@@ -164,27 +159,6 @@ stamina this turn, capped by the stamina it holds; a buy branch stays in the
 same turn. `planTurn` (`packages/ai/src/mcts.ts`) follows the best line through
 the buys, merges them into one `BuyAction`, and plays the move after them. The
 rollout's players never buy.
-
-### Speeds and skills coming back (Q135)
-
-Only in games started before buying (Q190). At the end of every turn that did not win the game, after its claim,
-`respawnShortRewards` (`packages/core/src/rules/respawn.ts`) counts each kind in
-`respawn.KINDS` (the five skills: three speeds, fighting, magic) on its own.
-While fewer than `respawn.SHORT_BELOW_SITES` (2) unclaimed POIs offer a kind,
-whatever their units, one claimed POI that held that kind gets its reward back,
-one per kind per turn, but no more than `respawn.MAX_UNITS` (1) units of it: the
-POI's runtime then carries `units`, which `offeredReward` reads wherever what it
-offers is shown or claimed. The POI is drawn with the `DiceSource`'s `pick` from the
-`respawn.FAR_SHARE` (half, rounded up) of the candidates farthest from their
-nearest figure, by the cheapest route's stamina cost from the figure (the
-`routeTable` costs); a POI a figure stands on is never a candidate, and ties
-break by node id so every replay orders them alike. A POI can come back any
-number of times. Gold and stamina never come back, so the win condition is
-untouched. A map whose config has no `respawn` (a game started before this
-rule, online or kept on a device) plays as before, and one whose `respawn` has
-no `MAX_UNITS` (started before the cap) brings whole rewards back; one started
-while the cap was 2 keeps 2. The event is
-`reward_returned`.
 
 Three things the engine deliberately does *not* track: any player may attempt a
 guarded POI on their turn, not just whoever failed first; players may leave and
@@ -196,9 +170,8 @@ so the session layer supplies an authoritative server-side stream (kept separate
 from the public map seed, so clients cannot precompute rolls) and MCTS supplies
 its own. It is drawn **once per guard actually faced** and never otherwise, so
 replaying a game's rolls needs only the stream and not a count of how many turns
-happened to end on nothing. The same source's `pick` chooses where a short skill
-comes back, and is drawn only when one does; the server records its picks with
-its rolls (`GameRecord.picks`). `createDiceSource`
+happened to end on nothing. The same source's `pick` draws the seats online when
+Shuffle seats is on (Q165); no rule draws one. `createDiceSource`
 (`packages/core/src/rules/dice.ts`) is the one implementation; what its
 consumers vary is the `Rng`, never the die.
 
@@ -308,7 +281,6 @@ a time; the rest of the macro-action is re-derived next turn
 | Allowance, stamina, path walking | `packages/core/src/rules/movement.ts` |
 | Automatic interaction, guard rolls | `packages/core/src/rules/interaction.ts` |
 | Victory and unclaimed gold | `packages/core/src/rules/victory.ts` |
-| Speeds and skills coming back | `packages/core/src/rules/respawn.ts` |
 | Buying speeds and skills | `packages/core/src/rules/turn.ts` (`applyBuy`) |
 | The `GUARD_DIE` stream | `packages/core/src/rules/dice.ts` |
 | The action space | `packages/core/src/action.ts` |

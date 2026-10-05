@@ -439,7 +439,6 @@ export class GameSession {
   private async play(setup: SetupState, game: GameState, action: GameAction, by: UserId | null): Promise<void> {
     const dice = await this.ports.dice.forGame(this.gameId);
     const rolls: DieRoll[] = [];
-    const picks: number[] = [];
     let outcome: ActionOutcome;
     try {
       outcome = applyAction(game, action, {
@@ -448,18 +447,14 @@ export class GameSession {
           rolls.push(roll);
           return roll;
         },
-        pick: (count) => {
-          const pick = dice.pick(count);
-          picks.push(pick);
-          return pick;
-        },
+        pick: (count) => dice.pick(count),
       });
     } catch (error) {
       if (error instanceof RuleViolationError) throw new SetupError('invalid_action', error.message);
       throw error;
     }
     const now = this.ports.clock.now();
-    const record: GameRecord = await this.ports.games.appendRecord(this.gameId, { action, rolls, ...(picks.length > 0 ? { picks } : {}), at: now, by });
+    const record: GameRecord = await this.ports.games.appendRecord(this.gameId, { action, rolls, at: now, by });
     await this.ports.games.save(outcome.state);
 
     let current = setup;

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_RULESET, withoutSeparateAreas } from '@adventure/config';
+import { DEFAULT_RULESET, type Ruleset } from '@adventure/config';
 import { isLeaf } from '@adventure/core';
 import { generateAndReport } from './index.ts';
 import { formatBatchReport, formatMapReport, formatMapSummary } from './report.ts';
@@ -47,8 +47,12 @@ describe('renderMapSvg', () => {
   });
 
   it('marks every node carved into a plains valley', () => {
-    // New maps carve no valleys since Q245; the maps of games started before do.
-    const earlier = generateAndReport('adventure', withoutSeparateAreas(DEFAULT_RULESET));
+    // New maps carve no valleys since Q245, so this one is drawn with some.
+    const valleys: Ruleset = {
+      ...DEFAULT_RULESET,
+      config: { ...DEFAULT_RULESET.config, map: { ...DEFAULT_RULESET.config.map, VALLEY_COUNT: { min: 2, max: 4 } } },
+    };
+    const earlier = generateAndReport('adventure', valleys);
     expect(earlier.report.valleyNodes.length).toBeGreaterThan(0);
     const drawn = renderMapSvg(earlier.map, { valleyNodes: earlier.report.valleyNodes });
     expect(count(drawn, /stroke-dasharray=/g)).toBe(earlier.report.valleyNodes.length);

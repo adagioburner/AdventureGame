@@ -19,11 +19,10 @@ import { ArtError, array, finite, nonNegative, positive, record, string } from '
  * that size. So a replacement sheet drawn at any resolution, with any amount
  * of padding in its cells, drops in without a second number changing.
  *
- * Five POI rows borrow another row's sheet: forest gold guarded by fighting
- * (Q20) and by magic (Q115), on maps from before the rewards moved terrain;
- * and since then (Q250) mountains speed and magic gold on the plains and
- * magic in the forest, each keeping the pictures it had (922 A). Stamina
- * borrowed one too until it had its own (Q240). They carry a
+ * Three POI rows borrow a sheet named for another terrain or reward: since
+ * the rewards moved terrain (Q250), mountains speed and magic gold on the
+ * plains and magic in the forest, each keeping the pictures it had (922 A).
+ * Stamina borrowed one too until it had its own (Q240). They carry a
  * `borrowed` note saying why, which is what makes them easy to find and a
  * one-line edit to undo.
  */
@@ -171,7 +170,7 @@ export interface IslandCorners {
  * [Q190, 777] Andrei, 2026-10-02: "It also would be nice if a purchase got
  * completed with some sound, e.g. a cash register sound", and he supplied it.
  */
-export const SOUND_NAMES = ['step', 'pickup', 'battle_won', 'battle_lost', 'rest', 'message', 'respawn', 'purchase'] as const;
+export const SOUND_NAMES = ['step', 'pickup', 'battle_won', 'battle_lost', 'rest', 'message', 'purchase'] as const;
 export type SoundName = (typeof SOUND_NAMES)[number];
 
 export interface SoundArt {

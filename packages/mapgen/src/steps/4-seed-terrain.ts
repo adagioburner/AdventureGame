@@ -1,4 +1,4 @@
-import { EARLIER_TERRAIN_SEEDS, TERRAINS, type Terrain } from '@adventure/config';
+import { TERRAINS, type Terrain } from '@adventure/config';
 import { asNodeId, degree, type NodeId } from '@adventure/core';
 import { draftAsGraph } from '../graphops.ts';
 import {
@@ -17,8 +17,7 @@ import { GenerationRejected, type GenerationContext, type GenerationStep, type M
 /**
  * §2.1 step 4 — "Seed terrain regions: `TERRAIN_SEEDS` seeds per terrain, 2
  * each for plains, forest and mountain, the forest's and the mountains' areas
- * kept apart (Q245; 1 or 2 at random, nothing kept apart, on the maps of games
- * started before); grow by flood fill biased toward nodes with more
+ * kept apart (Q245); grow by flood fill biased toward nodes with more
  * same-terrain neighbours, until area shares are approximately 45% plains /
  * 30% forest / 25% mountain."
  *
@@ -27,8 +26,7 @@ import { GenerationRejected, type GenerationContext, type GenerationStep, type M
  * the share balancing that finishes the step. Every node draws its gap from
  * `GAP`, 1 to 3 spaces, before the fill (917), so the plains left between two
  * areas winds instead of running straight. Without it, areas of one
- * terrain grew until they touched and read as one. The maps of games started
- * before have no `TERRAIN_SEEDS` and grow from `EARLIER_TERRAIN_SEEDS`.
+ * terrain grew until they touched and read as one.
  *
  * The bias toward same-terrain neighbours is what produces §1's "generally
  * rounded" regions before Smooth ever runs. Targets come from
@@ -78,7 +76,7 @@ export const seedTerrainStep: GenerationStep = {
   gdd: 'GDD.md §2.1 step 4',
   run(draft: MapDraft, context: GenerationContext): void {
     const { rng } = context;
-    const { TERRAIN_AREA_SHARE, TERRAIN_SEEDS = EARLIER_TERRAIN_SEEDS } = context.ruleset.config.map;
+    const { TERRAIN_AREA_SHARE, TERRAIN_SEEDS } = context.ruleset.config.map;
     const nodeCount = draft.positions.length;
 
     const assigned = new Array<Terrain | null>(nodeCount).fill(null);

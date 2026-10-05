@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_RULESET, TERRAINS, withoutSeparateAreas, type Terrain } from '@adventure/config';
+import { DEFAULT_RULESET, TERRAINS, type Terrain } from '@adventure/config';
 import { asNodeId, createRng, type NodeId } from '@adventure/core';
 import {
   areaLabels,
@@ -155,14 +155,14 @@ describe('keeping areas apart (Q245)', () => {
     expect(left).toEqual(['forest', 'forest', 'plains', 'plains', 'forest']);
   });
 
-  it('draws one gap per space within KEPT_APART.GAP, and nothing at all on a map without it', () => {
+  it('draws one gap per space within KEPT_APART.GAP, and nothing at all when it names no terrain', () => {
     const map = DEFAULT_RULESET.config.map;
     const gaps = drawApartGaps(map, 240, createRng('draw'));
     expect(gaps).toHaveLength(240);
     expect(new Set(gaps)).toEqual(new Set([1, 2, 3]));
 
     const rng = createRng('draw');
-    expect(drawApartGaps(withoutSeparateAreas(DEFAULT_RULESET).config.map, 240, rng)).toEqual([]);
+    expect(drawApartGaps({ ...map, KEPT_APART: { ...map.KEPT_APART, TERRAINS: [] } }, 240, rng)).toEqual([]);
     expect(rng.nextUint32()).toBe(createRng('draw').nextUint32());
   });
 

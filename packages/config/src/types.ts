@@ -38,7 +38,7 @@ export interface MapConfig {
   /**
    * §11 `VALLEY_COUNT` — 2–4 valleys carved per map until Q245, none since:
    * "stop making valleys, because now we are getting them for free" (Andrei,
-   * 2026-10-04). The maps of games started before keep `EARLIER_VALLEY_COUNT`.
+   * 2026-10-04).
    */
   readonly VALLEY_COUNT: IntRange;
   /** §11 `VALLEY_WIDTH` — fixed, 1 node wide. */
@@ -104,17 +104,13 @@ export interface MapConfig {
    * mountains, and don't let them merge"; "We can do 2 seeds for plains but we
    * don't care if they merge or not. This applies to all map sizes". Which
    * terrains are kept apart is `KEPT_APART`.
-   *
-   * Absent on the maps of games started before, which grew every terrain from
-   * `EARLIER_TERRAIN_SEEDS`, kept nothing apart and carved valleys (913).
    */
-  readonly TERRAIN_SEEDS?: PerTerrain<IntRange>;
+  readonly TERRAIN_SEEDS: PerTerrain<IntRange>;
   /**
    * [Q245] Terrains whose separate areas never grow into each other, in step
-   * 4's fill and in the share balancing of steps 4 and 6. Absent on the maps
-   * of games started before, like `TERRAIN_SEEDS`.
+   * 4's fill and in the share balancing of steps 4 and 6.
    */
-  readonly KEPT_APART?: KeptApartConfig;
+  readonly KEPT_APART: KeptApartConfig;
 }
 
 /**
@@ -171,11 +167,8 @@ export interface PoiConfig {
    * [Q240] `STAMINA_PER_UNIT` — the stamina one unit of a stamina reward gives
    * when it is claimed, on every stamina site, the spare dead ends' included
    * (903 A). Andrei, 2026-10-03: "each stamina unit adds 5 stamina".
-   *
-   * Absent on the maps of games started before stamina sites came to the
-   * plains, whose stamina units give 1 stamina each, as they began with.
    */
-  readonly STAMINA_PER_UNIT?: number;
+  readonly STAMINA_PER_UNIT: number;
   /**
    * §11 `GUARD_STRENGTH_MIN` / `MAX`. §11's table says 2–10, but [SOURCE §5.2,
    * chat] superseded the minimum: the guard-strength formula is "capped between
@@ -297,12 +290,8 @@ export interface PlayerConfig {
    * §11 `STARTING_GOLD` — tunable (5). [Q200] Andrei, 2026-10-02: "Now that
    * players can buy skills for gold, it makes sense to starts them with 5
    * gold to enable a variety of strategies". The same for every seat.
-   *
-   * Absent on the maps of games started before it (790), whose players
-   * started with none: an online game carries the config its map was made
-   * with. Read it through `startingGoldOf`.
    */
-  readonly STARTING_GOLD?: number;
+  readonly STARTING_GOLD: number;
 }
 
 /** A dice specification. §11 `GUARD_DIE` is fixed at 1d6 (§8). */
@@ -403,44 +392,6 @@ export interface AiConfig {
 }
 
 /**
- * [Q135] Speeds and skills coming back to empty sites once they run short.
- *
- * Andrei, 2026-09-30: "Skills need to respawn where there are too few of it
- * left, randomly at POIs that were offering this skill before and are far from
- * all players." At the end of every turn each kind in `KINDS` is counted on its
- * own; while fewer than `SHORT_BELOW_SITES` unclaimed POIs offer it, one
- * claimed POI that held it gets its reward back each turn (532 A), at most
- * `MAX_UNITS` of it, picked
- * at random from the `FAR_SHARE` of them farthest from the nearest figure
- * (533 A), by the cheapest route's stamina cost (534 A), never one a figure
- * stands on. A POI can come back any number of times (535 A).
- */
-export interface RespawnConfig {
-  /** 530 A: the five skills, the three speeds with combat and magic. Never gold or stamina. */
-  readonly KINDS: readonly RewardKind[];
-  /**
-   * 531 C: a kind is short while fewer than this many unclaimed POIs offer it,
-   * whatever the player count or their units. 2 (Andrei, 2026-10-01: "We need
-   * two *sites* with the skill at any time, not two units of skill on the map").
-   */
-  readonly SHORT_BELOW_SITES: number;
-  /** 533 A: the share of the empty POIs, farthest first and rounded up, the pick is made from. 0.5. */
-  readonly FAR_SHARE: number;
-  /**
-   * The most units a POI that comes back offers; one that held fewer gets
-   * those back. 1 (Andrei, 2026-10-01: "let us cap the skills to 2 units when
-   * they respawn. The idea is to provide a player who was late to the party
-   * with something to do, not to create a cornucopia"; then, having played,
-   * "even capping regrown skills by 2 is too much. It's not supposed to be
-   * easy when skills run out. Starving your opponents of some skill should be
-   * one of the strategies. Let's change that cap to one."). Games keep the cap
-   * they started with: 2 for those started under it, and absent on games
-   * started before the cap, which bring back the whole reward (532 A).
-   */
-  readonly MAX_UNITS?: number;
-}
-
-/**
  * [Q190] Buying speeds and skills with gold.
  *
  * Andrei, 2026-10-02: "allow players buy skills for gold, 1 to 1. We won't
@@ -488,25 +439,10 @@ export interface GameConfig {
   readonly players: PlayerConfig;
   readonly combat: CombatConfig;
   readonly ai: AiConfig;
-  /**
-   * [Q135] Absent on the maps of games started before speeds and skills came
-   * back: an online game carries the config its map was made with, and those
-   * games keep the rules they started with to the end.
-   */
-  readonly respawn?: RespawnConfig;
-  /**
-   * [Q190] Absent on the maps of games started before speeds and skills could
-   * be bought, which keep the rules they started with (758), speeds and skills
-   * coming back included; present on every game started since, which have no
-   * `respawn` (757).
-   */
-  readonly buying?: BuyingConfig;
-  /**
-   * [Q227] Absent on the maps of games started before the start moved deep
-   * into the plains, which keep the start they began on: a random plains
-   * space that is not a site.
-   */
-  readonly start?: StartConfig;
+  /** [Q190] Buying speeds and skills with gold. */
+  readonly buying: BuyingConfig;
+  /** [Q227] Where the figures start. */
+  readonly start: StartConfig;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -543,21 +479,8 @@ export interface RewardGroupSpec {
   /** §4.2 "POIs of this kind" — group size; these must sum to `POI_COUNT`. */
   readonly poiCount: number;
   /**
-   * [Q115] The chance, from 0 to 1, that a POI of this group is guarded by
-   * magic instead of by `guard`, flipped for each POI on its own, so a map
-   * carries anywhere from none to all of the group's POIs magic-guarded.
-   * Absent means never. Only a fighting-guarded row may carry it.
-   *
-   * The POI stays in this group whichever guard it gets (`Poi.group` keeps
-   * `guard`), so the row's POI count and units reconcile as before; only the
-   * guard a player rolls against changes. Andrei, 2026-09-30: "make it so the
-   * forest POI are assigned randomly either magic or combat guards".
-   */
-  readonly magicGuardChance?: number;
-  /**
    * [Q255] How far apart this group's POIs must be from one another, every
-   * pair of them: §4.3 step 1b. Absent means anywhere, as every group was
-   * before; a map made before keeps its fortresses where they were drawn.
+   * pair of them: §4.3 step 1b. Absent means anywhere.
    */
   readonly apart?: SitesApart;
 }

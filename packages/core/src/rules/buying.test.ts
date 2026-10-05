@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_RULESET } from '@adventure/config';
-import type { GameMap } from '../gamemap.ts';
 import { RuleViolationError } from '../errors.ts';
 import { playerById, type GameState } from '../state.ts';
 import { applyAction, buyableNow } from './turn.ts';
@@ -81,14 +79,6 @@ describe('buying a speed or skill (Q190)', () => {
     const rich = withStats(game(), two, { gold: 3 });
     expect(() => applyAction(rich, { kind: 'buy', player: two, skills: ['fighting'] }, noDice)).toThrow(RuleViolationError);
     expect(buyableNow(rich, two).kinds).toEqual([]);
-  });
-
-  it('is refused in a game started before buying (758)', () => {
-    const { buying: _buying, ...config } = DEFAULT_RULESET.config;
-    const before: GameMap = { ...map, ruleset: { ...DEFAULT_RULESET, config } };
-    const state = withStats(fixtureGame(before, 0), one, { gold: 2 });
-    expect(() => applyAction(state, { kind: 'buy', player: one, skills: ['fighting'] }, noDice)).toThrow(RuleViolationError);
-    expect(buyableNow(state, one).kinds).toEqual([]);
   });
 
   it('lists the five skills while the buyer has the gold for one', () => {
