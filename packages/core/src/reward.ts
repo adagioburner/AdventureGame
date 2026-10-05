@@ -40,7 +40,7 @@ export function rewardAmount(reward: Reward, config: GameConfig): number {
  */
 export interface Guard {
   readonly type: GuardType;
-  /** Within `GUARD_STRENGTH` (§11): 2–10. */
+  /** Within `GUARD_STRENGTH` (§11): 2–10, or up to `BIG_PILE_GUARD.MAX` (12) on a big pile (Q275). */
   readonly strength: number;
 }
 

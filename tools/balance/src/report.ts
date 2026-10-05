@@ -1,6 +1,6 @@
 import { TERRAINS, type Ruleset, type Terrain } from '@adventure/config';
 import type { GameMap } from '@adventure/core';
-import type { MapGenerationReport } from './index.ts';
+import { strongestGuard, type MapGenerationReport } from './index.ts';
 
 /**
  * The stdout half of `pnpm map` and `pnpm map:batch` — the same numbers §11
@@ -34,7 +34,7 @@ export function formatMapReport(report: MapGenerationReport, ruleset: Ruleset): 
   lines.push(`  after valleys       ${TERRAINS.map((t) => fixed(report.compactnessAfterValleys[t])).join(' / ')}  (expected to be worse)`);
   lines.push('');
   lines.push(`remoteness [0,1] per POI   ${bars(report.remotenessHistogram)}`);
-  lines.push(`guard strength 0-${pois.GUARD_STRENGTH.max}         ${bars(report.guardStrengthHistogram)}`);
+  lines.push(`guard strength 0-${strongestGuard(ruleset)}         ${bars(report.guardStrengthHistogram)}`);
   lines.push(`gold units            ${report.goldUnitsTotal}`);
 
   return lines.join('\n');
@@ -90,7 +90,7 @@ export function formatBatchReport(reports: readonly MapGenerationReport[], rules
   }
   lines.push('');
   lines.push(`remoteness [0,1] over ${count} maps  ${bars(sum(reports.map((r) => r.remotenessHistogram)))}`);
-  lines.push(`guard strength 0-${pois.GUARD_STRENGTH.max}             ${bars(sum(reports.map((r) => r.guardStrengthHistogram)))}`);
+  lines.push(`guard strength 0-${strongestGuard(ruleset)}             ${bars(sum(reports.map((r) => r.guardStrengthHistogram)))}`);
 
   return lines.join('\n');
 }

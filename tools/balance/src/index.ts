@@ -107,7 +107,7 @@ export function generateAndReport(seed: Seed, ruleset: Ruleset): GeneratedMapWit
   const guards = map.pois.flatMap((poi) =>
     poi.group.guard === null ? [] : [poi.guard === null ? 0 : poi.guard.strength],
   );
-  const guardMax = ruleset.config.pois.GUARD_STRENGTH.max;
+  const guardMax = strongestGuard(ruleset);
 
   return {
     map,
@@ -143,6 +143,12 @@ export interface BatchOptions {
 /** Generate many maps and report the distributions above. */
 export function runMapBatch(options: BatchOptions): readonly MapGenerationReport[] {
   return options.seeds.map((seed) => generateAndReport(seed, options.ruleset).report);
+}
+
+/** [Q275] The highest guard strength a map can hold: the guard histogram's top. */
+export function strongestGuard(ruleset: Ruleset): number {
+  const { GUARD_STRENGTH, BIG_PILE_GUARD } = ruleset.config.pois;
+  return Math.max(GUARD_STRENGTH.max, BIG_PILE_GUARD.MAX);
 }
 
 /** Counts per bucket over `[low, high]`; the top bucket is closed at `high`. */

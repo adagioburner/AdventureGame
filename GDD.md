@@ -158,6 +158,8 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 [SOURCE §1] A reward may (not must) be guarded: shown as a red number (fighting-gated) or purple number (magic-gated) beside the node, indicating guard strength, range **2–10**.
 
+[SOURCE §4.4, chat, Q275] A fighting guard on a pile of 6 gold or more can reach **12** since 2026-10-05 (§5.2).
+
 [SOURCE §1.1, chat] In v1, only gold rewards are guarded — every gold POI on every terrain is guarded, none are exempt. Guard type by terrain (per §4.2): plains' 2 gold POIs are all fighting-guarded; mountain's 15 gold POIs split 10 fighting-guarded / 5 magic-guarded. [Q250] Since the rewards moved, the plains' 7 gold POIs split 2 fighting-guarded (the fortresses) / 5 magic-guarded, and the forest has no gold. The engine should not hard-code "gold only" — guarding should work on any reward kind — this is a v1 content choice, not an engine constraint.
 
 [SOURCE §4.4, chat] Forest gold was guarded by magic by chance: a coin flip for each POI from 2026-09-30 (Q115), always from 2026-10-01 (Q185). Since the rewards moved (Q250) the forest holds no gold, and the plains' magic gold has its own row, guarded by magic outright; the chance setting was removed on 2026-10-05 (953). Its decisions stay in docs/OPEN_QUESTIONS.md.
@@ -187,6 +189,8 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 [SOURCE §1.2, chat] `guard_strength + remoteness × REMOTENESS_WEIGHT ∝ reward`, where `reward` is the gold amount being protected (v1 guards gold only, §4.4).
 
 `REMOTENESS_WEIGHT` starting value: **4** (anchor: 1 gold unguarded at max mountain remoteness ≈1, vs. guard 4 on plains at min remoteness ≈0 — both config values, tuned later by play-testing).
+
+[SOURCE §5.2, chat, Q275] **Big piles guarded by combat go up to 12.** Andrei, 2026-10-05: "It's ridiculous when a 6 gold reward is guarded only by a strength 10 guard." Raising every combat guard's cap to 12 took most 4-gold fortresses to 12 as well, and of lowering `GOLD_WEIGHT` to bring them back he said: "I am generally happy with gold guards in the mountains, I don't want to make them weaker. Can we selectively rise the cap to 12 on 5+gold piles?", for combat guards only (971 A); then, the same morning: "It was the 6 gold pile that felt unbalancing. So let us raise the cap to 12 for 6+ gold piles only. We can always bring it down to 5+ when needed." So the formula is unchanged and the cap stays 10, except that a pile of 6 gold or more guarded by combat is capped at 12 (`BIG_PILE_GUARD`), on both map sizes; such a pile always gets 12. Measured over 500 maps a size against the cap of 10, everything on the map is the same except those guards. On the standard map a fortress holds 6 gold or more on 63% of maps (never both, their 10 gold being split), and its guard is now 12; the other fortresses keep their guards; in the mountains 1 fighting guard of 5000 got stronger. On the larger map 68% of maps have one or two such fortresses (24% of fortresses), and 2 mountain guards of 7000 got stronger. Magic guards are unchanged.
 
 ---
 
@@ -381,6 +385,7 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `KEPT_APART` | forest, mountain; `GAP` 1–3 nodes, drawn per node; `JOIN_FOR_SHARES` on (916 A) | tunable — terrains whose areas never grow within a node's gap of each other on the ground, §2.1 step 4 (Q245, 914, 917 D); `JOIN_FOR_SHARES` lets two join only when the shares need it |
 | `POI_COUNT` (plains/forest/mountain) | 32 / 18 / 15 | fixed target; plains 25 until its 5 stamina POIs (Q240), then 30 / 20 / 15 until the rewards moved terrain (Q250), then 32 / 20 / 15 until the forest's stamina went to 4 POIs (Q270) |
 | `GUARD_STRENGTH_MIN` / `MAX` | 2 / 10 | fixed (revisit later) |
+| `BIG_PILE_GUARD` | 6+ units, up to 12, fighting guards | tunable — a higher cap for big piles, §5.2 (Q275, 971 A) |
 | `REMOTENESS_WEIGHT` | 4 | tunable (play-test) — guard/remoteness balance, §5.2 |
 | `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` | 2 | tunable (play-test) — reward stacking, §4.3 |
 | `REWARD_SWAP_PASSES` | 5 | tunable (play-test) — reward/remoteness agreement, §4.3 step 4 [SOURCE §4.3, review] |

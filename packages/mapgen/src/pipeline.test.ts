@@ -258,11 +258,14 @@ describe('§5.2 — guard strengths', () => {
     }
   }, 30000);
 
-  it('keeps every strength a whole number inside GUARD_STRENGTH', () => {
-    const { min, max } = DEFAULT_RULESET.config.pois.GUARD_STRENGTH;
+  it('keeps every strength a whole number inside GUARD_STRENGTH, or BIG_PILE_GUARD on a big pile', () => {
+    const { min } = DEFAULT_RULESET.config.pois.GUARD_STRENGTH;
+    const bigPile = DEFAULT_RULESET.config.pois.BIG_PILE_GUARD;
     for (const seed of SEEDS) {
       for (const poi of mapOf(seed).pois) {
         if (poi.guard === null) continue;
+        const isBig = bigPile.TYPES.includes(poi.guard.type) && poi.reward.units >= bigPile.FROM_UNITS;
+        const max = isBig ? bigPile.MAX : DEFAULT_RULESET.config.pois.GUARD_STRENGTH.max;
         expect(Number.isInteger(poi.guard.strength)).toBe(true);
         expect(poi.guard.strength).toBeGreaterThan(min);
         expect(poi.guard.strength).toBeLessThanOrEqual(max);

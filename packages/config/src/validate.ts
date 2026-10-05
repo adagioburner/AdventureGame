@@ -1,4 +1,4 @@
-import { TERRAINS } from './vocabulary.ts';
+import { GUARD_TYPES, TERRAINS } from './vocabulary.ts';
 import type { PendingValue, Ruleset } from './types.ts';
 
 export class RulesetError extends Error {
@@ -105,6 +105,16 @@ export function validateRuleset(ruleset: Ruleset): void {
   assertRange(problems, 'VALLEY_COUNT', config.map.VALLEY_COUNT);
   assertRange(problems, 'VALLEY_LENGTH', config.map.VALLEY_LENGTH);
   assertRange(problems, 'GUARD_STRENGTH', config.pois.GUARD_STRENGTH);
+  const bigPile = config.pois.BIG_PILE_GUARD;
+  if (!Number.isInteger(bigPile.FROM_UNITS) || bigPile.FROM_UNITS < 1) {
+    problems.push('Q275: pois.BIG_PILE_GUARD.FROM_UNITS must be a whole number of at least 1.');
+  }
+  if (!Number.isInteger(bigPile.MAX) || bigPile.MAX < config.pois.GUARD_STRENGTH.min) {
+    problems.push('Q275: pois.BIG_PILE_GUARD.MAX must be a whole number no lower than GUARD_STRENGTH.min.');
+  }
+  if (bigPile.TYPES.some((type) => !GUARD_TYPES.includes(type))) {
+    problems.push('Q275: pois.BIG_PILE_GUARD.TYPES must name guard types.');
+  }
   assertRange(problems, 'PLAYER_COUNT', config.players.PLAYER_COUNT);
 
   // §2.1 step 6b: counts of places and roads, so whole numbers; 0 turns that
