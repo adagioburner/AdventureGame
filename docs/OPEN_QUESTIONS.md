@@ -3767,6 +3767,8 @@ out differently, and 11 of 200 standard seeds (1 of 200 larger) draw a
 different map altogether; drawn the way before, 40 maps per size are exactly
 main's. The rulebook gives no number of hearts and is unchanged.
 
+Changed the same day by Q270: 8 hearts on 4 sites, 11 on 6 on the 4-5 player map.
+
 ---
 
 ### Q265. ~~Can the code that kept old games on their old rules go?~~ — **answered 2026-10-05: yes, all of it; hot seat games saved before are dropped, the preview's old online games are left to expire, and speeds and skills coming back and the forest gold's magic guard chance go too (950 A, 951 A, 952 A, 953 A)**
@@ -3808,6 +3810,38 @@ Checked against main 9364f92: 200 maps and 30 test-driver games per map
 size come out identical (every road, site, guard, picture and start, and every
 turn of every game), and the golden map and game are unchanged. The dice keep
 their `pick`, which draws the seats online with Shuffle seats on.
+
+---
+
+### Q270. ~~How many forest stamina sites and hearts?~~ — **answered 2026-10-05: 8 hearts on 4 sites, 11 on 6 on 4-5 player maps, and the forest has 2 fewer sites, 18 (25), his own numbers (960, 961)**
+
+Andrei, 2026-10-05 at 09:09: *"No, 12 stamina hearts in the firest make
+acquiring forest speed unattractive. We need to change that to 8 hearts on 4
+sites. Don't worry about old maps, no one is playing yet. Simply update the
+number."* The forest's stamina held 12 hearts on 6 sites (Q260), 17 on 9 on
+the 4-5 player map.
+
+960. **4-5 player maps:** Andrei, 09:11: *"The 4-5 player map should get 1.4
+     times as many hearts and sites."* 1.4 × 8 = 11.2 and 1.4 × 4 = 5.6,
+     rounded to the nearest like every larger-map row (630): 11 hearts on 6
+     sites.
+961. **The 2 forest sites no longer stamina:** Andrei, 09:12: *"There will be
+     fewer sites in the forest."* The forest has 18 sites, the map 65; on the
+     4-5 player map 25 and 91.
+
+Built as `FOREST_STAMINA_UNITS` 8 and `LARGER_MAP_FOREST_STAMINA_UNITS` 11 in
+`packages/config/src/content.ts`, the stamina rows on 4 and 6 sites, and
+`POI_COUNT` forest 18 and 25 in `defaults.ts`; every other row is as it was,
+and the 4-5 player map's sites are now exactly 1.4 × the standard map's,
+rounded, with no exception. Nothing keeps old games on 12 hearts (Q265). A seed
+draws a different map than before: the same roads and terrain, but 2 fewer
+forest sites, so the rewards land differently. Measured on the build, 200 maps
+per size: on the standard map 1.0 one-heart site a map, mostly 3-2-2-1 (67%)
+or 2-2-2-2 (17%), the biggest stack 3 on 75% of maps and at most 5; on the 4-5
+player map 2.0, mostly 3-2-2-2-1-1 (55%), the biggest at most 4. A forest
+dead end beyond its 18 sites, which §3 already makes a one-heart stamina site,
+came up on 2 of 400 standard maps and 1 of 400 larger ones. The rulebook gives
+no number of sites or hearts and is unchanged.
 
 ---
 

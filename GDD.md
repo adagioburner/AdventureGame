@@ -70,6 +70,8 @@ Status: v1 design, consolidated from `Annotated_Design_Document.md` (the traceab
 
 [SOURCE §3, chat, Q250] Since the rewards moved terrain (§4.2), **32 on plains, 20 in forests, 15 in mountains** (67): each reward kept its sites (920 A), then the forest's stamina grew to 6 POIs and the plains' magic-guarded gold to 5; 45 / 28 / 21 on the larger map.
 
+[SOURCE §3, chat, Q270] Since the forest's stamina went to 4 POIs, **18 in forests** (65): "There will be fewer sites in the forest" (961); 45 / 25 / 21 on the larger map.
+
 [SOURCE §1.1, chat] **A POI's reward is always exactly one kind** — reward kinds (§4.1) are never mixed on the same POI. A POI can still hold multiple *units* of its one kind (a stack, e.g. "plains movement +3").
 
 ---
@@ -107,13 +109,13 @@ Three things per kind, all needed by the assignment algorithm in §4.3: the tota
 | | Mountain moving skill (Q250) | none | 15 | 8 |
 | | Gold (informally "cities", Andrei's "fortresses") | fighting | 10 | 2 |
 | | Gold (Q250, the forest's until then) | magic | 8 | 5 |
-| Forest (20 POIs) | Magic skill (Q250) | none | 10 | 6 |
+| Forest (18 POIs, Q270) | Magic skill (Q250) | none | 10 | 6 |
 | | Fighting skill | none | 15 | 8 |
-| | Stamina (Q240, Q250, Q260) | none | 12 | 6 |
+| | Stamina (Q240, Q250, Q260, Q270) | none | 8 | 4 |
 | Mountain (15 POIs) | Gold | fighting | 20 | 10 |
 | | Gold | magic | 10 | 5 |
 
-[SOURCE §4.2, chat, Q160, Q250] With 4 or 5 players the map is 40% larger (§11's larger map): every row's units are 1.4 × the above (the stamina's 16.8 rounded to 17, Q260, 940 A), and its POIs 1.4 × rounded to the nearest whole number (630), except the forest's stamina, 9 POIs rather than 8 so the forest keeps its 28 (925 A); so the map has exactly 1.4 × the POIs, 45 / 28 / 21 by terrain.
+[SOURCE §4.2, chat, Q160, Q250] With 4 or 5 players the map is 40% larger (§11's larger map): every row's units are 1.4 × the above (the stamina's 11.2 rounded to 11, Q270), and its POIs 1.4 × rounded to the nearest whole number (630), the stamina's 5.6 to 6: "The 4-5 player map should get 1.4 times as many hearts and sites" (960). So the map has 45 / 25 / 21 POIs by terrain. (From Q250 until Q270 the forest's stamina had 9 POIs rather than 8, so the forest kept its 28, 925 A.)
 
 | Terrain | Kind | Guard | Total units | POIs of this kind |
 |---|---|---|---|---|
@@ -122,9 +124,9 @@ Three things per kind, all needed by the assignment algorithm in §4.3: the tota
 | | Mountain moving skill | none | 21 | 11 |
 | | Gold | fighting | 14 | 3 |
 | | Gold | magic | 11 | 7 |
-| Forest (28 POIs) | Magic skill | none | 14 | 8 |
+| Forest (25 POIs) | Magic skill | none | 14 | 8 |
 | | Fighting skill | none | 21 | 11 |
-| | Stamina (Q260) | none | 17 | 9 |
+| | Stamina (Q270) | none | 11 | 6 |
 | Mountain (21 POIs) | Gold | fighting | 28 | 14 |
 | | Gold | magic | 14 | 7 |
 
@@ -133,6 +135,8 @@ Three things per kind, all needed by the assignment algorithm in §4.3: the tota
 [SOURCE §4.2, chat, Q240] **Stamina sites on the plains** (in the forest since Q250). Andrei, 2026-10-03: "I'd like to add stamina rewarding sites to plains. [...] I am thinking of adding 5 sites, rewarding 10 stamina units total (and each stamina unit adds 5 stamina). [...] Stamina sites follow the same rules any other reward type does." Until then stamina had no row here, and the only stamina on a map came from surplus leaves (§3). The plains' stamina row is placed and filled by the same steps as every other row: its 5 POIs are drawn among the plains' 30 (900 A); they are unguarded, each gets 1 unit and the other 5 lean toward the more remote ones by §4.3, usually 3-2-2-2-1 or 3-3-2-1-1; and each shows one of the 12 pictures of the `Plains_Stamina` sheet, drawn from the seed, so two can share one (901 A), at 0.45 of a road's length, a tenth smaller than the houses' 0.5: "slightly smaller, so a bench or a campfire doesn't look as big as a house" (904 B). The larger map has 7 with 14 units, the usual 1.4 × (902 A). Each unit claimed gives `STAMINA_PER_UNIT` (5) stamina. The map shows one white heart per unit (905 A), and the words players read say the stamina a site gives: "took 10 stamina", "the 10 stamina site (plains)" (906 A). The stamina POIs surplus leaves make (`OVERFLOW_LEAF_STAMINA_UNITS`, 1 unit each) are stamina sites in every way, in any terrain: 5 stamina a unit and the same pictures (903 A). The computer takes them by the same rules; how it thinks does not change. With 5 more plains POIs a seed draws a different map than before.
 
 [SOURCE §4.2, chat, Q260] **More hearts on the stamina sites.** Andrei, 2026-10-05: "Stamina sites with just one heart are not very attractive. I'd like to increase the # of stamina units offered in forests to 12 but I'm afraid its going to be unbalancing. Can you run some simulations with that number and see if computers take them and if that helps them win?" Three computers played 60 standard maps twice at 3 s a move, once with 10 hearts and once with 12, the same maps, seats and dice, the 2 extra hearts added to the same 6 POIs by §4.3. They took 4.0 of 10 hearts a game and 6.6 of 12; the player who took the most hearts won 35% and 36% of the games, where chance alone gives 33%; seat wins, the winner's gold and the game's length stayed within luck. Then: "let's change the total stamina units to 12" (`FOREST_STAMINA_UNITS`), on the same 6 POIs. The larger map has 17 on its 9 (`LARGER_MAP_FOREST_STAMINA_UNITS`, 1.4 × 12 rounded, 940 A). The hearts are spread by §4.3 like every reward (942 A); since the stamina row is drawn before the mountain's, a seed draws its mountain gold differently than before, and 11 of 200 standard seeds (1 of 200 larger ones) draw a different map altogether: their first attempt is rejected as before, and the next starts from a different point of the stream. Measured over 200 maps per size: one-heart POIs per map 2.7 → 1.7, mostly 3-3-2-2-1-1 or 3-2-2-2-2-1, and on the larger map 4.7 → 3.1, mostly 3-3-2-2-2-2-1-1-1; the biggest stack is 6 on either. The rulebook gives no number of hearts and is unchanged.
+
+[SOURCE §4.2, chat, Q270] **Fewer hearts and fewer stamina sites.** Andrei, later on 2026-10-05: "No, 12 stamina hearts in the [forest] make acquiring forest speed unattractive. We need to change that to 8 hearts on 4 sites. Don't worry about old maps, no one is playing yet. Simply update the number." So `FOREST_STAMINA_UNITS` is 8 on 4 POIs, and the larger map has 1.4 × both, 11 on 6 (`LARGER_MAP_FOREST_STAMINA_UNITS`, 960). The 2 POIs that are no longer stamina are gone, not given to another reward: the forest has 18 POIs, 25 on the larger map (961), and every other row is as it was. Measured over 200 maps per size: one-heart POIs per map 1.0, mostly 3-2-2-1 (67%) or 2-2-2-2 (17%), the biggest stack 3 on three maps in four and never over 5; on the larger map 2.0, mostly 3-2-2-2-1-1 (55%), never over 4. A forest dead end beyond the 18, which §3 makes a one-unit stamina POI, came up on 2 of 400 standard maps and 1 of 400 larger ones. The rulebook gives no number of POIs or hearts and is unchanged.
 
 ### 4.3 Reward assignment algorithm
 
@@ -375,15 +379,15 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `JOINED_PIECE_ROADS` | 1 | tunable — step 6b, pieces of one terrain (Q105, 394) |
 | `TERRAIN_SEEDS` (plains/forest/mountain) | 2 / 2 / 2 | tunable — seeds each terrain grows from, §2.1 step 4, drawn per map between a min and a max (Q245) |
 | `KEPT_APART` | forest, mountain; `GAP` 1–3 nodes, drawn per node; `JOIN_FOR_SHARES` on (916 A) | tunable — terrains whose areas never grow within a node's gap of each other on the ground, §2.1 step 4 (Q245, 914, 917 D); `JOIN_FOR_SHARES` lets two join only when the shares need it |
-| `POI_COUNT` (plains/forest/mountain) | 32 / 20 / 15 | fixed target; plains 25 until its 5 stamina POIs (Q240), then 30 / 20 / 15 until the rewards moved terrain (Q250) |
+| `POI_COUNT` (plains/forest/mountain) | 32 / 18 / 15 | fixed target; plains 25 until its 5 stamina POIs (Q240), then 30 / 20 / 15 until the rewards moved terrain (Q250), then 32 / 20 / 15 until the forest's stamina went to 4 POIs (Q270) |
 | `GUARD_STRENGTH_MIN` / `MAX` | 2 / 10 | fixed (revisit later) |
 | `REMOTENESS_WEIGHT` | 4 | tunable (play-test) — guard/remoteness balance, §5.2 |
 | `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` | 2 | tunable (play-test) — reward stacking, §4.3 |
 | `REWARD_SWAP_PASSES` | 5 | tunable (play-test) — reward/remoteness agreement, §4.3 step 4 [SOURCE §4.3, review] |
 | `FORTRESS_MIN_ROAD_STEPS` | 12 | tunable — the fewest road steps between any two of the plains' fortresses, over any terrain, §4.3 step 1b (Q255, 931) |
 | `FORTRESS_MIN_LINE_SPACES` | 5 | tunable — the fewest spaces between any two of the plains' fortresses in a straight line, one space the map's median road length, §4.3 step 1b (Q255, 930 B) |
-| `FOREST_STAMINA_UNITS` | 12 | tunable — the hearts on the forest's 6 stamina POIs, §4.2 (Q260) |
-| `LARGER_MAP_FOREST_STAMINA_UNITS` | 17 | tunable — the same on the larger map's 9, §4.2 (Q260, 940 A) |
+| `FOREST_STAMINA_UNITS` | 8 | tunable — the hearts on the forest's 4 stamina POIs, §4.2 (Q260, Q270) |
+| `LARGER_MAP_FOREST_STAMINA_UNITS` | 11 | tunable — the same on the larger map's 6, §4.2 (Q270, 960) |
 | `BUY_GOLD_PER_UNIT` | 1 | tunable — the gold one bought unit of a skill costs, §7 (Q190: "1 to 1") |
 | `CLOSE_CANDIDATE_COUNT` | 10 | tunable — the computer player's K, for §9's rollout and §9's tree |
 | `REMOTENESS_CANDIDATE_COUNT` | 10 | tunable — §5.1's walk, while a map is generated (Q66) |
@@ -404,7 +408,7 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `BUY_SKIP_STAMINA` | 5 | tunable — the computer has no buy branch for a skill a site offers within this much stamina past its free steps this turn, capped by the stamina it holds, §9 (Q190, 759) |
 | MCTS tree/selection policy, exploration constant | — | **OPEN**, unspecified |
 
-[SOURCE §11, Q160] **The larger map, for 4 and 5 players** (`LARGER_MAP_FROM_PLAYERS` 4): `MAP_NODE_COUNT` ~336, `MAP_EDGE_COUNT` ~420, `LEAF_COUNT_MIN` / `MAX` 42 / 63 and `POI_COUNT` 45 / 28 / 21 (42 / 28 / 21 before the rewards moved, Q250; plains 35 before Q240's 7 stamina POIs), each 1.4 × the above (631), with §4.2's larger table. Every other parameter is the same on both maps (633), the valleys included.
+[SOURCE §11, Q160] **The larger map, for 4 and 5 players** (`LARGER_MAP_FROM_PLAYERS` 4): `MAP_NODE_COUNT` ~336, `MAP_EDGE_COUNT` ~420, `LEAF_COUNT_MIN` / `MAX` 42 / 63 and `POI_COUNT` 45 / 25 / 21 (45 / 28 / 21 before Q270, 42 / 28 / 21 before the rewards moved, Q250; plains 35 before Q240's 7 stamina POIs), each 1.4 × the above (631), with §4.2's larger table. Every other parameter is the same on both maps (633), the valleys included.
 
 ---
 

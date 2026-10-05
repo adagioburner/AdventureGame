@@ -156,11 +156,11 @@ describe('§4.2 — the reward table reconciles exactly', () => {
   it('accounts for every POI: table rows plus surplus-leaf stamina, nothing else', () => {
     const rows = TERRAINS.flatMap((terrain) => DEFAULT_RULESET.content.REWARD_TABLE[terrain]);
     const tabled = rows.reduce((sum, row) => sum + row.poiCount, 0);
-    // [Q240] The stamina row: in the forest on 6 sites since Q250, with 12 units since Q260.
+    // [Q240] The stamina row: in the forest since Q250, 8 units on 4 sites since Q270.
     const staminaRows = rows.filter((row) => row.kind === 'stamina');
     const tabledStamina = staminaRows.reduce((sum, row) => sum + row.poiCount, 0);
     const tabledStaminaUnits = staminaRows.reduce((sum, row) => sum + row.totalUnits, 0);
-    expect([tabledStamina, tabledStaminaUnits]).toEqual([6, 12]);
+    expect([tabledStamina, tabledStaminaUnits]).toEqual([4, 8]);
     for (const seed of SEEDS) {
       const map = mapOf(seed);
       const stamina = map.pois.filter((poi) => poi.reward.kind === 'stamina');
@@ -423,7 +423,8 @@ describe('Q255 — the fortresses kept apart, by road and on the map', () => {
 
   it('leaves a map whose fortresses were drawn far enough apart exactly as it was', () => {
     let unchanged = 0;
-    for (const seed of SEEDS) {
+    // [Q270] Since the forest has 18 sites, none of SEEDS draws them far enough apart; zeta and eta do.
+    for (const seed of [...SEEDS, 'zeta', 'eta']) {
       const before = mapOf(seed, withoutApart(DEFAULT_RULESET));
       if (!pairsOf(before).every(farEnough)) continue;
       unchanged++;
@@ -434,9 +435,11 @@ describe('Q255 — the fortresses kept apart, by road and on the map', () => {
     expect(unchanged).toBeGreaterThan(0);
   }, 30000);
 
-  it("moves one of adventure's fortresses, and changes nothing but the sites it swapped and their rows' gold", () => {
-    const before = mapOf('adventure', withoutApart(DEFAULT_RULESET));
-    const after = mapOf('adventure');
+  // [Q270] delta, not adventure: since the forest has 18 sites adventure's fortress swaps with a
+  // mountain speed site, whose row's units are spread again too; delta's swaps with magic gold.
+  it("moves one of delta's fortresses, and changes nothing but the sites it swapped and their rows' gold", () => {
+    const before = mapOf('delta', withoutApart(DEFAULT_RULESET));
+    const after = mapOf('delta');
     expect(pairsOf(before).every(farEnough)).toBe(false);
     expect(after.graph).toEqual(before.graph);
     const changed = after.pois.filter((poi, index) => JSON.stringify(poi) !== JSON.stringify(before.pois[index]));

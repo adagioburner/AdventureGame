@@ -68,7 +68,7 @@ describe('validateRuleset', () => {
   it('rejects more POIs than the map has nodes', () => {
     const ruleset = clone();
     (ruleset.config.map as { MAP_NODE_COUNT: number }).MAP_NODE_COUNT = 10;
-    expect(() => validateRuleset(ruleset)).toThrow(/67 POIs requested but only 10 nodes/);
+    expect(() => validateRuleset(ruleset)).toThrow(/65 POIs requested but only 10 nodes/);
   });
 
   it('rejects an inverted MIN/MAX range', () => {
@@ -186,11 +186,12 @@ describe('validateRuleset', () => {
     }
   });
 
-  it('puts 12 hearts on the forest stamina sites, 17 on the larger map (Q260)', () => {
+  it('puts 8 hearts on 4 forest stamina sites, 11 on 6 on the larger map, and the forest has 18 and 25 sites (Q270)', () => {
     const forestStamina = (ruleset: Ruleset): RewardGroupSpec | undefined =>
       ruleset.content.REWARD_TABLE.forest.find((row) => row.kind === 'stamina');
-    expect(forestStamina(DEFAULT_RULESET)?.totalUnits).toBe(12);
-    expect(forestStamina(LARGER_MAP_RULESET)?.totalUnits).toBe(17);
+    expect([forestStamina(DEFAULT_RULESET)?.totalUnits, forestStamina(DEFAULT_RULESET)?.poiCount]).toEqual([8, 4]);
+    expect([forestStamina(LARGER_MAP_RULESET)?.totalUnits, forestStamina(LARGER_MAP_RULESET)?.poiCount]).toEqual([11, 6]);
+    expect([DEFAULT_RULESET.config.pois.POI_COUNT.forest, LARGER_MAP_RULESET.config.pois.POI_COUNT.forest]).toEqual([18, 25]);
   });
 });
 
