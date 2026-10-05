@@ -164,11 +164,11 @@ describe('§4.2 — the reward table reconciles exactly', () => {
   it('accounts for every POI: table rows plus surplus-leaf stamina, nothing else', () => {
     const rows = TERRAINS.flatMap((terrain) => DEFAULT_RULESET.content.REWARD_TABLE[terrain]);
     const tabled = rows.reduce((sum, row) => sum + row.poiCount, 0);
-    // [Q240] The stamina row: 10 units, in the forest on 6 sites since Q250.
+    // [Q240] The stamina row: in the forest on 6 sites since Q250, with 12 units since Q260.
     const staminaRows = rows.filter((row) => row.kind === 'stamina');
     const tabledStamina = staminaRows.reduce((sum, row) => sum + row.poiCount, 0);
     const tabledStaminaUnits = staminaRows.reduce((sum, row) => sum + row.totalUnits, 0);
-    expect([tabledStamina, tabledStaminaUnits]).toEqual([6, 10]);
+    expect([tabledStamina, tabledStaminaUnits]).toEqual([6, 12]);
     for (const seed of SEEDS) {
       const map = mapOf(seed);
       const stamina = map.pois.filter((poi) => poi.reward.kind === 'stamina');

@@ -3721,6 +3721,52 @@ the map and put the fortress on the farthest site left even if it is under 12
 steps. Answered by card 2026-10-04: A, *"Draw again"*. It never happened on
 the 400 measured maps; players see only the map that comes out.
 
+### Q260. ~~How many hearts do the forest stamina sites hold?~~ — **answered 2026-10-05: 12 on the 6 sites, 17 on the 4-5 player map's 9, drawn like every reward; games already started keep theirs (940 A, 941 A, 942 A)**
+
+Andrei, 2026-10-04 at 21:25: *"Stamina sites with just one heart are not very
+attractive. I'd like to increase the # of stamina units offered in forests to
+12 but I'm afraid its going to be unbalancing. Can you run some simulations
+with that number and see if computers take them and if that helps them
+win?"* The forest's 6 stamina sites held 10 hearts (14 on 9 sites on the 4-5
+player map), usually 3-2-2-1-1-1 or 2-2-2-2-1-1, 2.7 one-heart sites a map.
+
+Measured with three computers at 3 s a move on 60 standard maps, each played
+with 10 hearts and with 12, the same map, seats, start and dice, the 2 extra
+hearts added to the same 6 sites by §4.3's rule (files in the project's
+stamina-12-sims folder): the computers took 4.0 of 10 hearts a game and 6.6 of
+12 (+2.6 ± 0.4 on the same map), stacks of 4 or more 14 times in 15, and left
+59% of the one-heart sites; the player who took the most hearts won 35% of the
+games with 10 and 36% with 12, against the 33% chance gives three players;
+the same seat taking more hearts on the same map did not end with more gold;
+seat wins, the winner's gold and lead stayed within luck, and games ran 0.9 ±
+0.5 rounds shorter. Players' stamina first drops under 5 around round 11 of 27,
+and they almost never rest. Nothing was changed for the study.
+
+Andrei, 2026-10-05 at 00:13: *"Very nice. let's change the total stamina units
+to 12."*
+
+940. **4-5 player maps:** 17 hearts, 1.4 × 12 rounded like every larger-map
+     reward (recommended); 16; or 14 as before.
+941. **Games already started:** keep the map they began with (recommended), or
+     get the extra hearts mid-game.
+942. **How new maps place the 12:** the usual draw, like every reward
+     (recommended), the same stack shapes as the study but a seed's mountain
+     gold drawn differently; or as in the study, the 10 first and then 2 more.
+
+**Answered**, 2026-10-05 by card: 940 A, *"17 hearts"*; 941 A, *"Keep
+today's"*; 942 A, *"Usual draw"*.
+
+Built as `FOREST_STAMINA_UNITS` 12 and `LARGER_MAP_FOREST_STAMINA_UNITS` 17 in
+`packages/config/src/content.ts`, with `EARLIER_FOREST_STAMINA_UNITS` 10 and
+`EARLIER_LARGER_MAP_FOREST_STAMINA_UNITS` 14 for a hot seat game kept from
+before (`withEarlierStaminaUnits`, `KeptGame.moreStaminaUnits`); online games
+carry their table. Measured on the build, 200 maps per size: one-heart sites a
+map 1.7 (mostly 3-3-2-2-1-1 or 3-2-2-2-2-1) and 3.1 on the 4-5 player map
+(mostly 3-3-2-2-2-2-1-1-1), the biggest stack 6; a seed's mountain gold comes
+out differently, and 11 of 200 standard seeds (1 of 200 larger) draw a
+different map altogether; drawn the way before, 40 maps per size are exactly
+main's. The rulebook gives no number of hearts and is unchanged.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design

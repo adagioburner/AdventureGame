@@ -58,6 +58,24 @@ export const FORTRESSES_APART: SitesApart = {
 };
 
 /**
+ * [Q260] Andrei, 2026-10-05, after computer games on 60 maps with 10 and with
+ * 12: "Stamina sites with just one heart are not very attractive [...] let's
+ * change the total stamina units to 12." The hearts on the forest's 6 stamina
+ * sites, drawn by §4.3 like every reward (942 A)...
+ */
+export const FOREST_STAMINA_UNITS = 12;
+
+/** [Q260, 940 A] ...and on the 4-5 player map's 9: 1.4 × 12 = 16.8, rounded. */
+export const LARGER_MAP_FOREST_STAMINA_UNITS = 17;
+
+/**
+ * [Q260, 941 A] The hearts before, 10 and 14, which games started before keep:
+ * `withEarlierStaminaUnits` in index.ts.
+ */
+export const EARLIER_FOREST_STAMINA_UNITS = 10;
+export const EARLIER_LARGER_MAP_FOREST_STAMINA_UNITS = 14;
+
+/**
  * [Q250] Andrei, 2026-10-04: "we seem to have found a simple super strategy:
  * buy forest speed +4 and go to the forest. We need to change the allocation
  * of resources between terrains." The plains get the three speeds, "the gold
@@ -67,7 +85,7 @@ export const FORTRESSES_APART: SitesApart = {
  * (920 A), and then, the same day: "we can fill forests up to their usual 20
  * sites, by changing stamina to 6/10. And on plains, gold with magic guards
  * can grow to 5/8". So the forest has 20 sites and the plains 32, and the map
- * 48 gold. The magic gold's guards follow §5.2 as all gold does (921 A). The
+ * 48 gold. [Q260] The stamina sites hold 12 hearts since 2026-10-05. The magic gold's guards follow §5.2 as all gold does (921 A). The
  * table before is `REWARD_TABLE_BEFORE_MOVE`, which games started before keep.
  */
 export const DEFAULT_REWARD_TABLE: RewardTable = {
@@ -83,8 +101,8 @@ export const DEFAULT_REWARD_TABLE: RewardTable = {
   forest: [
     { kind: 'magic', guard: null, totalUnits: 10, poiCount: 6 },
     { kind: 'fighting', guard: null, totalUnits: 15, poiCount: 8 },
-    // [Q240] The stamina sites, moved here by [Q250], 6 of them instead of 5.
-    { kind: 'stamina', guard: null, totalUnits: 10, poiCount: 6 },
+    // [Q240] The stamina sites, moved here by [Q250], 6 of them instead of 5; [Q260] 12 hearts, 10 before.
+    { kind: 'stamina', guard: null, totalUnits: FOREST_STAMINA_UNITS, poiCount: 6 },
   ],
   mountain: [
     // Mountain gold is split by guard type. Both rows are `kind: 'gold'`:
@@ -135,7 +153,7 @@ export const DEFAULT_GAME_CONTENT: GameContent = {
  * 1.4 × today's sites, 35 / 28 / 21. [Q250] Its rows moved terrain with the
  * standard map's, each keeping its sites (920 A); the magic gold is 1.4 × its
  * 8 gold on 5 sites, 11 on 7 (926 A), and the stamina 14 units on 9 sites, so
- * the forest keeps its 28 (925 A). The plains have 45 sites and the map 67 gold.
+ * the forest keeps its 28 (925 A), 17 units since [Q260] (940 A). The plains have 45 sites and the map 67 gold.
  */
 export const LARGER_MAP_REWARD_TABLE: RewardTable = {
   plains: [
@@ -150,8 +168,8 @@ export const LARGER_MAP_REWARD_TABLE: RewardTable = {
   forest: [
     { kind: 'magic', guard: null, totalUnits: 14, poiCount: 8 },
     { kind: 'fighting', guard: null, totalUnits: 21, poiCount: 11 },
-    // [Q240, 902 A] 1.4 × the stamina units, 14; [Q250, 925 A] on 9 sites, not 8, so the forest keeps its 28.
-    { kind: 'stamina', guard: null, totalUnits: 14, poiCount: 9 },
+    // [Q240, 902 A] 1.4 × the stamina units, 14 before [Q260] and 17 since (940 A); [Q250, 925 A] on 9 sites, not 8, so the forest keeps its 28.
+    { kind: 'stamina', guard: null, totalUnits: LARGER_MAP_FOREST_STAMINA_UNITS, poiCount: 9 },
   ],
   mountain: [
     { kind: 'gold', guard: 'fighting', totalUnits: 28, poiCount: 14 },

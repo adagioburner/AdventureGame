@@ -5,7 +5,9 @@ import {
   FORTRESSES_APART,
   fortressesApartOf,
   LARGER_MAP_RULESET,
+  moreStaminaUnitsOf,
   rewardsMovedOf,
+  withEarlierStaminaUnits,
   withoutFortressesApart,
   withoutSeparateAreas,
   withoutStaminaSites,
@@ -234,6 +236,29 @@ describe('validateRuleset', () => {
       expect(error).toBeInstanceOf(RulesetError);
       expect((error as RulesetError).message).toMatch(/CLOSE_CANDIDATE_COUNT/);
       expect((error as RulesetError).message).toMatch(/REMOTENESS_SIMULATION_RUNS/);
+    }
+  });
+
+  it('puts 12 hearts on the forest stamina sites, 17 on the larger map, and the 10 and 14 back for a map from before (Q260)', () => {
+    const forestStamina = (ruleset: Ruleset): RewardGroupSpec | undefined =>
+      ruleset.content.REWARD_TABLE.forest.find((row) => row.kind === 'stamina');
+    for (const [ruleset, units, earlier] of [
+      [DEFAULT_RULESET, 12, 10],
+      [LARGER_MAP_RULESET, 17, 14],
+    ] as const) {
+      expect(forestStamina(ruleset)?.totalUnits).toBe(units);
+      expect(moreStaminaUnitsOf(ruleset)).toBe(true);
+      const before = withEarlierStaminaUnits(ruleset);
+      expect(forestStamina(before)).toEqual({ ...forestStamina(ruleset), totalUnits: earlier });
+      expect(moreStaminaUnitsOf(before)).toBe(false);
+      expect(withEarlierStaminaUnits(before)).toBe(before);
+      expect(before.content.REWARD_TABLE.plains).toBe(ruleset.content.REWARD_TABLE.plains);
+      expect(before.content.REWARD_TABLE.mountain).toBe(ruleset.content.REWARD_TABLE.mountain);
+      expect(() => validateRuleset(before)).not.toThrow();
+      // A table from before the rewards moved has its stamina on the plains, as it began.
+      const unmoved = withRewardsBeforeMove(ruleset);
+      expect(moreStaminaUnitsOf(unmoved)).toBe(false);
+      expect(withEarlierStaminaUnits(unmoved)).toBe(unmoved);
     }
   });
 });

@@ -6,6 +6,7 @@ import {
   magicGuardChanceOf,
   mapSizeForPlayers,
   mapSizeOfRuleset,
+  moreStaminaUnitsOf,
   rewardsMovedOf,
   separateAreasOf,
   staminaSitesOf,
@@ -23,6 +24,7 @@ import {
   keptFortressesApart,
   keptMagicGuardChance,
   keptMapSize,
+  keptMoreStaminaUnits,
   keptRewardsMoved,
   keptSeparateAreas,
   keptStaminaSites,
@@ -139,6 +141,9 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
   // [Q255] And whether its fortresses are kept apart, likewise.
   const fortressesApart =
     game !== null ? fortressesApartOf(game.setup.map.ruleset) : resuming && kept !== null ? keptFortressesApart(kept) : true;
+  // [Q260] And whether its forest stamina sites hold the raised hearts, likewise.
+  const moreStaminaUnits =
+    game !== null ? moreStaminaUnitsOf(game.setup.map.ruleset) : resuming && kept !== null ? keptMoreStaminaUnits(kept) : true;
 
   useEffect(() => {
     if (size === null) return;
@@ -150,13 +155,13 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
     // Let "Drawing the map" paint before generation takes the main thread.
     const timer = window.setTimeout(() => {
       try {
-        setMap(mapFor(seed, size, magicChance, deepStart, staminaSites, separateAreas, rewardsMoved, fortressesApart));
+        setMap(mapFor(seed, size, magicChance, deepStart, staminaSites, separateAreas, rewardsMoved, fortressesApart, moreStaminaUnits));
       } catch (error) {
         setProblem(error instanceof Error ? error.message : String(error));
       }
     }, 30);
     return () => window.clearTimeout(timer);
-  }, [seed, size, magicChance, deepStart, staminaSites, separateAreas, rewardsMoved, fortressesApart]);
+  }, [seed, size, magicChance, deepStart, staminaSites, separateAreas, rewardsMoved, fortressesApart, moreStaminaUnits]);
 
   // [Q56, 66] Once its map is drawn, the kept game is played again to where it was.
   useEffect(() => {
@@ -171,7 +176,8 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
       staminaSitesOf(map.ruleset) !== keptStaminaSites(kept) ||
       separateAreasOf(map.ruleset) !== keptSeparateAreas(kept) ||
       rewardsMovedOf(map.ruleset) !== keptRewardsMoved(kept) ||
-      fortressesApartOf(map.ruleset) !== keptFortressesApart(kept)
+      fortressesApartOf(map.ruleset) !== keptFortressesApart(kept) ||
+      moreStaminaUnitsOf(map.ruleset) !== keptMoreStaminaUnits(kept)
     ) {
       return;
     }
@@ -224,13 +230,15 @@ export function App({ playOnline, carried, barExtra }: AppProps = {}) {
     // Never on the map of the number of players before, while the new one is drawn.
     // Nor on a kept game's map from before the rewards moved terrain (Q250),
     // as every kept map from before is, its forest guards among them (Q185),
-    // or from before the fortresses were kept apart (Q255).
+    // or from before the fortresses were kept apart (Q255), or from before the
+    // stamina sites held more hearts (Q260).
     if (
       map === null ||
       setup === null ||
       mapSizeOfRuleset(map.ruleset) !== mapSizeForPlayers(setup.seats.length) ||
       !rewardsMovedOf(map.ruleset) ||
-      !fortressesApartOf(map.ruleset)
+      !fortressesApartOf(map.ruleset) ||
+      !moreStaminaUnitsOf(map.ruleset)
     ) {
       return;
     }

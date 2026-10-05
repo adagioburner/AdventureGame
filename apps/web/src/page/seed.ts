@@ -1,5 +1,6 @@
 import {
   rulesetForMapSize,
+  withEarlierStaminaUnits,
   withMagicGuardChance,
   withoutDeepStart,
   withoutFortressesApart,
@@ -27,7 +28,9 @@ import { defaultRemotenessScorer } from '@adventure/sim';
  * valleys, likewise. [Q250] `rewardsMoved` false draws it with the rewards on
  * the terrains they had before they moved, likewise; every older difference
  * above is drawn on top of that. [Q255] `fortressesApart` false draws it with
- * the fortresses where they were drawn, not kept apart, likewise.
+ * the fortresses where they were drawn, not kept apart, likewise. [Q260]
+ * `moreStaminaUnits` false draws it with the forest stamina sites' hearts as
+ * they were before, 10 (14 on the larger map), likewise.
  */
 export function mapFor(
   seed: Seed,
@@ -38,6 +41,7 @@ export function mapFor(
   separateAreas = true,
   rewardsMoved = true,
   fortressesApart = true,
+  moreStaminaUnits = true,
 ): GameMap {
   const latest = rulesetForMapSize(size);
   const today = rewardsMoved ? latest : withRewardsBeforeMove(latest);
@@ -45,7 +49,8 @@ export function mapFor(
   const start = deepStart ? chance : withoutDeepStart(chance);
   const stamina = staminaSites ? start : withoutStaminaSites(start);
   const areas = separateAreas ? stamina : withoutSeparateAreas(stamina);
-  const ruleset = fortressesApart ? areas : withoutFortressesApart(areas);
+  const apart = fortressesApart ? areas : withoutFortressesApart(areas);
+  const ruleset = moreStaminaUnits ? apart : withEarlierStaminaUnits(apart);
   return generateMap({ seed, ruleset, remotenessScorer: defaultRemotenessScorer });
 }
 
