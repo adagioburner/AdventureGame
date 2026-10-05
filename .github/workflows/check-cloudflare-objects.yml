@@ -36,6 +36,10 @@ jobs:
       - name: Objects and analytics
         run: node .github/cloudflare-check/check.mjs
 
+      # wrangler prints nothing until an event arrives, so halfway through the
+      # watch the check sends each site one request of its own: an address the
+      # Worker answers with "nothing here" without waking any game or the lobby.
+      # Seeing that request in the summary proves the watch was listening.
       - name: Two minutes of live events
         run: |
           mkdir -p "$RUNNER_TEMP/tail" && cd "$RUNNER_TEMP/tail"
@@ -43,6 +47,10 @@ jobs:
           date -u +"tail started %Y-%m-%dT%H:%M:%SZ"
           for worker in adventure adventure-preview; do
             (timeout 120 npx --yes wrangler@4.138.0 tail "$worker" --format json > "$worker.json" 2> "$worker.err" || true) &
+          done
+          sleep 45
+          for worker in adventure adventure-preview; do
+            curl -s -o /dev/null -w "test request to $worker at %{time_total}s: HTTP %{http_code}\n" "https://$worker.aburago.workers.dev/api/cloudflare-check" || echo "test request to $worker failed"
           done
           wait
           date -u +"tail ended %Y-%m-%dT%H:%M:%SZ"
