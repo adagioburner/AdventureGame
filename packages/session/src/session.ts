@@ -1,3 +1,4 @@
+import { rulesetForPlayers, type Ruleset } from '@adventure/config';
 import {
   activePlayer,
   applyAction,
@@ -57,10 +58,15 @@ import { applySetupAction, createSetup, drawSeats, SetupError, startGame, type N
  * `setup.ts`'s.
  */
 export class GameSession {
+  /**
+   * `rulesFor` is the server's own ruleset for a game of so many players,
+   * which a game master's map must be made with ([990 A], `startGame`).
+   */
   constructor(
     readonly gameId: GameId,
     private readonly ports: SessionPorts,
     private readonly limits: SetupLimits,
+    private readonly rulesFor: (players: number) => Ruleset = rulesetForPlayers,
   ) {}
 
   /** Creates the game in setup. Called once, by whoever made the `gameId`. */
@@ -165,7 +171,7 @@ export class GameSession {
       case 'gm.mapGenerated': {
         if (from !== setup.gameMaster) throw new SetupError('not_game_master', 'only the game master sends the map');
         if (!looksLikeAMap(message.map)) throw new SetupError('invalid_action', 'that is not a map');
-        const started = startGame(setup, message.map);
+        const started = startGame(setup, message.map, this.rulesFor(setup.playerCount));
         await this.ports.games.save(started.game);
         await this.ports.games.saveSetup(started.setup);
         await this.ports.broadcaster.broadcast(this.gameId, { type: 'setup.state', setup: started.setup });

@@ -181,6 +181,8 @@ not go to a second service, it goes to the game master's browser.
   decide.
 - **Trust.** The GM's client computes AI moves and the map; the DO takes them on
   faith. Fine for a friendly game, worth knowing before any competitive use.
+  One check since Q285: a map must be for the game's seed and made with the
+  server's own rules, so a page from before an update cannot start a game.
 
 ### If DO turns out not to fit
 
