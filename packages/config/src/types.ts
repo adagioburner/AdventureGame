@@ -1,4 +1,4 @@
-import type { GuardType, IntRange, PerGuardType, PerTerrain, RewardKind, Terrain } from './vocabulary.ts';
+import type { GuardType, IntRange, PerTerrain, RewardKind, Terrain } from './vocabulary.ts';
 
 /* -------------------------------------------------------------------------- */
 /*  GDD.md §11 — Configuration Parameters                                      */
@@ -180,13 +180,32 @@ export interface PoiConfig {
    * terrain is guarded, none are exempt" no longer holds for low-gold,
    * high-remoteness POIs. The data model already allows `guard: null`, so
    * nothing structural changes.
-   *
-   * [Q275] One range per guard type. Andrei, 2026-10-05: "I would like to
-   * experiment with raising the cap for combat guards to 12. It's ridiculous
-   * when a 6 gold reward is guarded only by a strength 10 guard." So the
-   * fighting guards' range is 0–12 and the magic guards' stays 0–10.
    */
-  readonly GUARD_STRENGTH: PerGuardType<IntRange>;
+  readonly GUARD_STRENGTH: IntRange;
+  /**
+   * [Q275] A higher cap for big piles. Andrei, 2026-10-05: "It's ridiculous
+   * when a 6 gold reward is guarded only by a strength 10 guard", then "I am
+   * generally happy with gold guards in the mountains, I don't want to make
+   * them weaker. Can we selectively rise the cap to 12 on 5+gold piles?", for
+   * combat guards only (971 A), and then "It was the 6 gold pile that felt
+   * unbalancing. So let us raise the cap to 12 for 6+ gold piles only. We can
+   * always bring it down to 5+ when needed."
+   *
+   * A POI holding `FROM_UNITS` or more, guarded by one of `TYPES`, is capped at
+   * `MAX` instead of `GUARD_STRENGTH.max`; every other POI keeps that cap. The
+   * formula is the same for both.
+   */
+  readonly BIG_PILE_GUARD: BigPileGuard;
+}
+
+/** [Q275] See `PoiConfig.BIG_PILE_GUARD`. */
+export interface BigPileGuard {
+  /** The fewest reward units a pile needs for the higher cap. */
+  readonly FROM_UNITS: number;
+  /** The higher cap. */
+  readonly MAX: number;
+  /** The guard types it applies to. */
+  readonly TYPES: readonly GuardType[];
 }
 
 /** §11 rows covering the balancing model (§4.3, §5). */
@@ -205,15 +224,15 @@ export interface BalancingConfig {
    * formula:
    *
    *   `guard_strength = gold × GOLD_WEIGHT − remoteness × REMOTENESS_WEIGHT`,
-   *   capped to the guard type's `GUARD_STRENGTH`.
+   *   capped to `GUARD_STRENGTH` (or `BIG_PILE_GUARD.MAX`, Q275).
    *
    * Default 3. Note what the current pair of constants implies: with
-   * `GOLD_WEIGHT = 3` and `REMOTENESS_WEIGHT = 4`, any magic-guarded POI
-   * holding 5 or more gold caps at 10 for every remoteness value
-   * (5 × 3 − 4 = 11 > 10), and any fighting-guarded one holding 6 or more caps
-   * at 12 (6 × 3 − 4 = 14 > 12), so remoteness stops discounting the guard
-   * once a stack gets that large. Stated as an observation for tuning, not a
-   * recommendation.
+   * `GOLD_WEIGHT = 3` and `REMOTENESS_WEIGHT = 4`, any POI holding 5 or more
+   * gold caps at 10 for every remoteness value (5 × 3 − 4 = 11 > 10), so
+   * remoteness stops discounting the guard once a stack gets that large.
+   * Stated as an observation for tuning, not a recommendation. [Q275] Under
+   * `BIG_PILE_GUARD`, a fighting-guarded POI of 6 or more always gets 12
+   * (6 × 3 − 4 = 14 > 12).
    */
   readonly GOLD_WEIGHT: number;
   /**

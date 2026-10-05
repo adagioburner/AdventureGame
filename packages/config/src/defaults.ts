@@ -45,8 +45,10 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     // [Q240] Andrei, 2026-10-03: "each stamina unit adds 5 stamina".
     STAMINA_PER_UNIT: 5,
     // §11 says 2; [SOURCE §5.2, chat] caps the formula at 0, where 0 = unguarded.
-    // [Q275] Andrei, 2026-10-05: "raising the cap for combat guards to 12".
-    GUARD_STRENGTH: { fighting: { min: 0, max: 12 }, magic: { min: 0, max: 10 } },
+    GUARD_STRENGTH: { min: 0, max: 10 },
+    // [Q275] Andrei, 2026-10-05: "raise the cap to 12 for 6+ gold piles only.
+    // We can always bring it down to 5+ when needed", combat guards only (971 A).
+    BIG_PILE_GUARD: { FROM_UNITS: 6, MAX: 12, TYPES: ['fighting'] },
   },
   balancing: {
     REMOTENESS_WEIGHT: 4,

@@ -11,9 +11,10 @@ import type { PoiAssignment } from '../types.ts';
  *   `guard_strength = amount_of_gold × GOLD_WEIGHT − remoteness × REMOTENESS_WEIGHT`
  *
  * capped between 0 and 10 (`GUARD_STRENGTH`), with `GOLD_WEIGHT = 3` to be
- * fine-tuned later. [Q275] The cap is per guard type since 2026-10-05:
- * fighting guards 12, magic guards 10. Direction of the derivation is forced by the pipeline: §4.3
- * has already fixed each POI's gold amount, so guard strength is the unknown.
+ * fine-tuned later. [Q275] A pile of 6 gold or more guarded by combat is
+ * capped at 12 instead (`BIG_PILE_GUARD`). Direction of the derivation is
+ * forced by the pipeline: §4.3 has already fixed each POI's gold amount, so
+ * guard strength is the unknown.
  *
  * Two things this function deliberately does *not* do:
  *
@@ -33,12 +34,19 @@ import type { PoiAssignment } from '../types.ts';
  * exactly `1 × 3 − 1 × 4 = −1`, capped to 0.
  */
 export function guardStrengthFor(assignment: PoiAssignment, remoteness: number, config: GameConfig): number {
-  if (assignment.guardType === null) {
-    throw new RangeError(`POI node ${assignment.node} has no guard to give a strength`);
-  }
   const raw = assignment.units * config.balancing.GOLD_WEIGHT - remoteness * config.balancing.REMOTENESS_WEIGHT;
-  const { min, max } = config.pois.GUARD_STRENGTH[assignment.guardType];
-  return Math.min(max, Math.max(min, Math.ceil(raw)));
+  const { min } = config.pois.GUARD_STRENGTH;
+  return Math.min(guardCapFor(assignment, config), Math.max(min, Math.ceil(raw)));
+}
+
+/** [Q275] `BIG_PILE_GUARD.MAX` for a big enough pile with one of its guard types, else `GUARD_STRENGTH.max`. */
+function guardCapFor(assignment: PoiAssignment, config: GameConfig): number {
+  const bigPile = config.pois.BIG_PILE_GUARD;
+  const isBig =
+    assignment.guardType !== null &&
+    bigPile.TYPES.includes(assignment.guardType) &&
+    assignment.units >= bigPile.FROM_UNITS;
+  return isBig ? bigPile.MAX : config.pois.GUARD_STRENGTH.max;
 }
 
 /**

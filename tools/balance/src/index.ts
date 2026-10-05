@@ -1,4 +1,4 @@
-import { GUARD_TYPES, TERRAINS, type Ruleset, type Terrain } from '@adventure/config';
+import { TERRAINS, type Ruleset, type Terrain } from '@adventure/config';
 import {
   leafNodes,
   terrainCompactness,
@@ -145,9 +145,10 @@ export function runMapBatch(options: BatchOptions): readonly MapGenerationReport
   return options.seeds.map((seed) => generateAndReport(seed, options.ruleset).report);
 }
 
-/** [Q275] The highest guard strength any guard type can reach: the guard histogram's top. */
+/** [Q275] The highest guard strength a map can hold: the guard histogram's top. */
 export function strongestGuard(ruleset: Ruleset): number {
-  return Math.max(...GUARD_TYPES.map((type) => ruleset.config.pois.GUARD_STRENGTH[type].max));
+  const { GUARD_STRENGTH, BIG_PILE_GUARD } = ruleset.config.pois;
+  return Math.max(GUARD_STRENGTH.max, BIG_PILE_GUARD.MAX);
 }
 
 /** Counts per bucket over `[low, high]`; the top bucket is closed at `high`. */

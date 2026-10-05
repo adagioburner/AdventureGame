@@ -109,8 +109,8 @@ re-decided:
 
 - **`GUARD_STRENGTH` is now 0–10, not §11's 2–10.** The cap was given as "0 and
   10", and 0 is meaningful: it is what "1 gold with maximum remoteness is
-  unguarded" produces (`1×3 − 1×4 = −1`, capped to 0). *Since Q275 the
-  fighting guards' cap is 12; magic guards keep 10.*
+  unguarded" produces (`1×3 − 1×4 = −1`, capped to 0). *Since Q275 a pile of
+  6 gold or more guarded by combat is capped at 12.*
 - **§4.4's "every gold POI is guarded, none are exempt" no longer holds.** Any
   POI whose formula result caps at 0 is unguarded. The data model already allows
   `guard: null`, so nothing structural changes.
@@ -3846,30 +3846,43 @@ no number of sites or hearts and is unchanged.
 
 ---
 
-### Q275. ~~How strong can a combat guard be?~~ — **answered 2026-10-05: up to 12; magic guards stay at 10, his own number**
+### Q275. ~~How strong can a combat guard be?~~ — **answered 2026-10-05: up to 12 on piles of 6 gold or more, up to 10 otherwise; magic guards stay at 10 (970, 971 A)**
 
 Andrei, 2026-10-05 at 09:54: *"I would like to experiment with raising the cap
 for combat guards to 12. It's ridiculous when a 6 gold reward is guarded only
 by a strength 10 guard. again, don't worry about old maps, just update the
 number."* The guard-strength formula (Q2) was capped at 10 for both guard
-types.
+types. Then, at 09:57 and 10:00: *"I think 4 gold on the plains guarded by a
+strength 10 guard is fine, but when it's 6 gold, the guard should be
+stronger"*, *"For a 5 gold pile in a far corner 10 is alright, but if it's in
+the plains close to everything, maybe the guard should be stronger as well"*.
 
-Built as `GUARD_STRENGTH` per guard type in `packages/config/src/defaults.ts`:
-`fighting` 0–12, `magic` 0–10, the same on both map sizes. The formula is
-unchanged. Nothing keeps old games on 10 (Q265); a seed draws the same map as
-before but for the fighting guards' numbers. Measured on the build against
-main ed1c75d, 500 maps per size: every site, reward, pile and remoteness is the
-same, and every guard number is what the formula gives under the new caps. On
-the standard map the fortresses' guards were 10 on 93% of them and are now 12
-on 90%, 11 on 2.5% and 10 on 0.3%; the 7% holding 2 or 3 gold keep 6 to 9. In
-the mountains 18 fighting guards of 5000 got stronger (5 or 6 gold to 11 or 12,
-two of 4 gold to 11). On the 4-5 player map the fortresses' guards were 10 on
-85% and are now 12 on 83% and 11 on 1.9%; in the mountains 41 of 7000 got
-stronger. Magic guards are unchanged: 41 at 10 on the 500 standard maps, 62 on
-the larger ones. The rulebook's "up to 10" now reads "up to 12 for combat
-guards and 10 for magic guards". The golden map's and game's one fortress, 7
-gold, is guarded 12 instead of 10; the game's winner still takes it with 2 +
-combat 13.
+970. **A cap of 12 for every combat guard took most 4-gold fortresses to 12
+     too** (89% of them over 500 maps: the formula gives a 4-gold fortress
+     about 11.5). Asked: keep that, or lower `GOLD_WEIGHT` 3 → 2.5, which
+     brings them to 10 but weakens every smaller guard by about 1. Andrei,
+     10:29: *"I am generally happy with gold guards in the mountains, I don't
+     want to make them weaker. Can we selectively rise the cap to 12 on 5+gold
+     piles?"*, and at 10:36: *"i am reconsidering it. It was the 6 gold pile
+     that felt unbalancing. So let us raise the cap to 12 for 6+ gold piles
+     only. We can always bring it down to 5+ when needed."*
+971. **Magic guards too?** A: combat only. Magic piles never held 6 gold over
+     500 maps a size, and those of 5 come up only deep in the mountains.
+
+Built as `BIG_PILE_GUARD` in `packages/config/src/defaults.ts`:
+`{ FROM_UNITS: 6, MAX: 12, TYPES: ['fighting'] }`; 5+ is `FROM_UNITS: 5`.
+`GUARD_STRENGTH` stays 0–10 and the formula is unchanged; a pile of 6 gold or
+more guarded by combat is capped at 12 instead, and always gets it, on both map
+sizes. Nothing keeps old games on 10 (Q265); a seed draws the same map as
+before but for those guards' numbers. Measured on the build against main
+ed1c75d, 500 maps per size: every site, reward, pile and remoteness is the
+same, and only combat guards on 6 gold or more changed, from 10 to 12. On the
+standard map one fortress holds 6 gold or more on 63% of maps (both never can:
+they share 10 gold), and in the mountains 1 guard of 5000 changed. On the 4-5
+player map 24% of fortresses, on 68% of maps, and 2 mountain guards of 7000.
+The rulebook's "up to 10" now reads "up to 10. A combat guard on 6 gold or more
+can reach 12." The golden map's and game's one fortress, 7 gold, is guarded 12
+instead of 10; the game's winner still takes it with 2 + combat 13.
 
 ---
 

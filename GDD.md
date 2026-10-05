@@ -158,7 +158,7 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 [SOURCE §1] A reward may (not must) be guarded: shown as a red number (fighting-gated) or purple number (magic-gated) beside the node, indicating guard strength, range **2–10**.
 
-[SOURCE §4.4, chat, Q275] Fighting guards go up to **12** and magic guards up to 10 since 2026-10-05 (§5.2).
+[SOURCE §4.4, chat, Q275] A fighting guard on a pile of 6 gold or more can reach **12** since 2026-10-05 (§5.2).
 
 [SOURCE §1.1, chat] In v1, only gold rewards are guarded — every gold POI on every terrain is guarded, none are exempt. Guard type by terrain (per §4.2): plains' 2 gold POIs are all fighting-guarded; mountain's 15 gold POIs split 10 fighting-guarded / 5 magic-guarded. [Q250] Since the rewards moved, the plains' 7 gold POIs split 2 fighting-guarded (the fortresses) / 5 magic-guarded, and the forest has no gold. The engine should not hard-code "gold only" — guarding should work on any reward kind — this is a v1 content choice, not an engine constraint.
 
@@ -190,7 +190,7 @@ Since remoteness ∈ [0,1], `(remoteness − 1) ∈ [−1, 0]`, so step 3's deno
 
 `REMOTENESS_WEIGHT` starting value: **4** (anchor: 1 gold unguarded at max mountain remoteness ≈1, vs. guard 4 on plains at min remoteness ≈0 — both config values, tuned later by play-testing).
 
-[SOURCE §5.2, chat, Q275] **Combat guards go up to 12.** Andrei, 2026-10-05: "I would like to experiment with raising the cap for combat guards to 12. It's ridiculous when a 6 gold reward is guarded only by a strength 10 guard." The formula is unchanged; the cap is now one per guard type, `GUARD_STRENGTH` 0–12 for fighting guards and 0–10 for magic guards, on both map sizes. Measured over 500 maps a size, everything on the map is the same as before except the fighting guards' numbers. On the standard map the fortresses' guards were 10 on 93% of them and are now 12 on 90%, 11 on 2.5% and 10 on 0.3%; the 7% holding 2 or 3 gold keep 6 to 9; every map has at least one fortress with a stronger guard. In the mountains 18 fighting guards of 5000 got stronger, on 18 maps: the piles of 5 or 6 gold go to 11 or 12, and two of 4 gold to 11; the other 4-gold piles stay at 10, since 4 × 3 − 4 × remoteness reaches 11 only at remoteness 0.25 or less. On the larger map the fortresses' guards were 10 on 85% and are now 12 on 83%, 11 on 1.9%; in the mountains 41 of 7000 got stronger, on 41 maps. Magic guards are unchanged: 41 stood at 10 on 40 standard maps of 500 (4 or 5 gold) and 62 on 60 larger maps.
+[SOURCE §5.2, chat, Q275] **Big piles guarded by combat go up to 12.** Andrei, 2026-10-05: "It's ridiculous when a 6 gold reward is guarded only by a strength 10 guard." Raising every combat guard's cap to 12 took most 4-gold fortresses to 12 as well, and of lowering `GOLD_WEIGHT` to bring them back he said: "I am generally happy with gold guards in the mountains, I don't want to make them weaker. Can we selectively rise the cap to 12 on 5+gold piles?", for combat guards only (971 A); then, the same morning: "It was the 6 gold pile that felt unbalancing. So let us raise the cap to 12 for 6+ gold piles only. We can always bring it down to 5+ when needed." So the formula is unchanged and the cap stays 10, except that a pile of 6 gold or more guarded by combat is capped at 12 (`BIG_PILE_GUARD`), on both map sizes; such a pile always gets 12. Measured over 500 maps a size against the cap of 10, everything on the map is the same except those guards. On the standard map a fortress holds 6 gold or more on 63% of maps (never both, their 10 gold being split), and its guard is now 12; the other fortresses keep their guards; in the mountains 1 fighting guard of 5000 got stronger. On the larger map 68% of maps have one or two such fortresses (24% of fortresses), and 2 mountain guards of 7000 got stronger. Magic guards are unchanged.
 
 ---
 
@@ -384,7 +384,8 @@ Every constant below must live in a config file/module, not be hard-coded.
 | `TERRAIN_SEEDS` (plains/forest/mountain) | 2 / 2 / 2 | tunable — seeds each terrain grows from, §2.1 step 4, drawn per map between a min and a max (Q245) |
 | `KEPT_APART` | forest, mountain; `GAP` 1–3 nodes, drawn per node; `JOIN_FOR_SHARES` on (916 A) | tunable — terrains whose areas never grow within a node's gap of each other on the ground, §2.1 step 4 (Q245, 914, 917 D); `JOIN_FOR_SHARES` lets two join only when the shares need it |
 | `POI_COUNT` (plains/forest/mountain) | 32 / 18 / 15 | fixed target; plains 25 until its 5 stamina POIs (Q240), then 30 / 20 / 15 until the rewards moved terrain (Q250), then 32 / 20 / 15 until the forest's stamina went to 4 POIs (Q270) |
-| `GUARD_STRENGTH_MIN` / `MAX` | 0 / 12 fighting, 0 / 10 magic | tunable — one range per guard type, §5.2; 2 / 10 in the first draft, the minimum 0 since Q2, the fighting guards' maximum 12 since Q275 |
+| `GUARD_STRENGTH_MIN` / `MAX` | 2 / 10 | fixed (revisit later) |
+| `BIG_PILE_GUARD` | 6+ units, up to 12, fighting guards | tunable — a higher cap for big piles, §5.2 (Q275, 971 A) |
 | `REMOTENESS_WEIGHT` | 4 | tunable (play-test) — guard/remoteness balance, §5.2 |
 | `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` | 2 | tunable (play-test) — reward stacking, §4.3 |
 | `REWARD_SWAP_PASSES` | 5 | tunable (play-test) — reward/remoteness agreement, §4.3 step 4 [SOURCE §4.3, review] |
