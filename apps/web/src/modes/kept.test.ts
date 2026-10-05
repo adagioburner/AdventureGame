@@ -97,6 +97,12 @@ describe('a game on one device kept in the browser (Q56, 66)', () => {
     expect(readKept()?.order).toBeUndefined();
   });
 
+  it('never reads a game kept before the old games were dropped (950 A)', () => {
+    const before = { seed: 'adventure', setup, diceSeed: 'kept', actions: [], rewardsMoved: false };
+    window.localStorage.setItem('adventure.hotseat', JSON.stringify(before));
+    expect(readKept()).toBeNull();
+  });
+
   it('is forgotten by New game, and a store that cannot be read keeps nothing', () => {
     keep('adventure', setup, null, new HotseatGame({ map, seats: toHotseatSeats(setup), diceSeed: 'kept' }));
     forgetKept();

@@ -23,7 +23,9 @@ export interface KeptGame {
   readonly actions: readonly (TurnAction | BuyAction)[];
 }
 
-const KEY = 'adventure.hotseat';
+// [950 A] A new name since 2026-10-05: games kept under 'adventure.hotseat',
+// before the old games' rules were removed, are never read.
+const KEY = 'adventure.hotseat.2';
 
 /** The game kept in this browser, or `null` when there is none or it cannot be read. */
 export function readKept(): KeptGame | null {
