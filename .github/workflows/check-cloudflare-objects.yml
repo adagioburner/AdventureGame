@@ -3,11 +3,13 @@ name: Check Cloudflare objects
 # A read-only look at the Durable Objects behind the live site and the
 # preview: which game objects hold stored data, how often they were woken
 # lately, and two minutes of live events. It deploys and changes nothing.
-# It runs only on pull requests that change this check itself.
+# It runs from the "Run workflow" button on the Actions tab, and on pull
+# requests that change this check itself.
 #
 # The repository is public, so the log shows counts and times only: no game
 # ids, no login tokens, no account id, no full object ids.
 on:
+  workflow_dispatch:
   pull_request:
     paths:
       - .github/workflows/check-cloudflare-objects.yml
