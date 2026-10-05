@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DEFAULT_GAME_CONFIG } from '@adventure/config';
+import { DEFAULT_GAME_CONFIG, GUARD_TYPES } from '@adventure/config';
 import { asNodeId, type NodeId } from '@adventure/core';
 
 import type { PoiAssignment } from '../types.ts';
@@ -40,25 +40,42 @@ describe('guardStrengthFor', () => {
     expect(guardStrengthFor(assignment({ units: 1 }), 0.4, config)).toBe(2);
   });
 
-  it('caps at GUARD_STRENGTH.max', () => {
-    const { max } = config.pois.GUARD_STRENGTH;
-    expect(guardStrengthFor(assignment({ units: 100 }), 0, config)).toBe(max);
+  it("caps at its guard type's GUARD_STRENGTH.max", () => {
+    for (const guardType of GUARD_TYPES) {
+      const { max } = config.pois.GUARD_STRENGTH[guardType];
+      expect(guardStrengthFor(assignment({ guardType, units: 100 }), 0, config)).toBe(max);
+    }
+  });
+
+  it('caps fighting guards at 12 and magic guards at 10', () => {
+    // [Q275] "raising the cap for combat guards to 12. It's ridiculous when a
+    // 6 gold reward is guarded only by a strength 10 guard."
+    expect(guardStrengthFor(assignment({ guardType: 'fighting', units: 6 }), 0, config)).toBe(12);
+    expect(guardStrengthFor(assignment({ guardType: 'magic', units: 6 }), 0, config)).toBe(10);
   });
 
   it('never returns below GUARD_STRENGTH.min', () => {
-    const { min } = config.pois.GUARD_STRENGTH;
-    expect(guardStrengthFor(assignment({ units: 0 }), 1, config)).toBe(min);
+    for (const guardType of GUARD_TYPES) {
+      const { min } = config.pois.GUARD_STRENGTH[guardType];
+      expect(guardStrengthFor(assignment({ guardType, units: 0 }), 1, config)).toBe(min);
+    }
   });
 
   it('stops discounting for remoteness once a stack is large enough to cap', () => {
     // Documented in BalancingConfig.GOLD_WEIGHT: with GOLD_WEIGHT 3 and
-    // REMOTENESS_WEIGHT 4, any POI holding 5+ gold caps at 10 for every
+    // REMOTENESS_WEIGHT 4, any magic-guarded POI holding 5+ gold caps at 10
+    // and any fighting-guarded one holding 6+ caps at 12, for every
     // remoteness value. Stated there as a tuning observation, so this test
     // pins the behaviour of today's constants rather than a design rule.
-    const strengths = [0, 0.25, 0.5, 0.75, 1].map((remoteness) =>
-      guardStrengthFor(assignment({ units: 5 }), remoteness, config),
-    );
-    expect(new Set(strengths)).toEqual(new Set([config.pois.GUARD_STRENGTH.max]));
+    const remoteness = [0, 0.25, 0.5, 0.75, 1];
+    const magic = remoteness.map((score) => guardStrengthFor(assignment({ guardType: 'magic', units: 5 }), score, config));
+    const fighting = remoteness.map((score) => guardStrengthFor(assignment({ guardType: 'fighting', units: 6 }), score, config));
+    expect(new Set(magic)).toEqual(new Set([config.pois.GUARD_STRENGTH.magic.max]));
+    expect(new Set(fighting)).toEqual(new Set([config.pois.GUARD_STRENGTH.fighting.max]));
+  });
+
+  it('refuses a POI with no guard', () => {
+    expect(() => guardStrengthFor(assignment({ guardType: null }), 0.5, config)).toThrow(RangeError);
   });
 
   it('ignores the reward kind', () => {

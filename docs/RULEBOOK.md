@@ -91,7 +91,7 @@ If you cannot pay for the next step, your walk stops there. Stamina only comes b
 
 Stop on an unguarded site and you claim its whole reward. Stop on a guarded one and you fight: roll one six-sided die and add your skill: combat against a combat guard, magic against a magic guard. If the total is **greater than** the guard's strength, you claim the reward. If not, the reward stays and the failed roll costs nothing else. Either way, your turn ends.
 
-Bigger gold stacks have stronger guards, up to 10.
+Bigger gold stacks have stronger guards, up to 12 for combat guards and 10 for magic guards.
 
 There is no gold in forests. On the plains and in the mountains, gold is guarded by combat or magic.
 

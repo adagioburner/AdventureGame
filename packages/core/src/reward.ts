@@ -40,7 +40,7 @@ export function rewardAmount(reward: Reward, config: GameConfig): number {
  */
 export interface Guard {
   readonly type: GuardType;
-  /** Within `GUARD_STRENGTH` (§11): 2–10. */
+  /** Within its type's `GUARD_STRENGTH` (§11, Q275): at most 12 for fighting, 10 for magic. */
   readonly strength: number;
 }
 

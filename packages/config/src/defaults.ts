@@ -45,7 +45,8 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     // [Q240] Andrei, 2026-10-03: "each stamina unit adds 5 stamina".
     STAMINA_PER_UNIT: 5,
     // §11 says 2; [SOURCE §5.2, chat] caps the formula at 0, where 0 = unguarded.
-    GUARD_STRENGTH: { min: 0, max: 10 },
+    // [Q275] Andrei, 2026-10-05: "raising the cap for combat guards to 12".
+    GUARD_STRENGTH: { fighting: { min: 0, max: 12 }, magic: { min: 0, max: 10 } },
   },
   balancing: {
     REMOTENESS_WEIGHT: 4,

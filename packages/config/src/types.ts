@@ -1,4 +1,4 @@
-import type { GuardType, IntRange, PerTerrain, RewardKind, Terrain } from './vocabulary.ts';
+import type { GuardType, IntRange, PerGuardType, PerTerrain, RewardKind, Terrain } from './vocabulary.ts';
 
 /* -------------------------------------------------------------------------- */
 /*  GDD.md §11 — Configuration Parameters                                      */
@@ -180,8 +180,13 @@ export interface PoiConfig {
    * terrain is guarded, none are exempt" no longer holds for low-gold,
    * high-remoteness POIs. The data model already allows `guard: null`, so
    * nothing structural changes.
+   *
+   * [Q275] One range per guard type. Andrei, 2026-10-05: "I would like to
+   * experiment with raising the cap for combat guards to 12. It's ridiculous
+   * when a 6 gold reward is guarded only by a strength 10 guard." So the
+   * fighting guards' range is 0–12 and the magic guards' stays 0–10.
    */
-  readonly GUARD_STRENGTH: IntRange;
+  readonly GUARD_STRENGTH: PerGuardType<IntRange>;
 }
 
 /** §11 rows covering the balancing model (§4.3, §5). */
@@ -200,13 +205,15 @@ export interface BalancingConfig {
    * formula:
    *
    *   `guard_strength = gold × GOLD_WEIGHT − remoteness × REMOTENESS_WEIGHT`,
-   *   capped to `GUARD_STRENGTH`.
+   *   capped to the guard type's `GUARD_STRENGTH`.
    *
    * Default 3. Note what the current pair of constants implies: with
-   * `GOLD_WEIGHT = 3` and `REMOTENESS_WEIGHT = 4`, any POI holding 5 or more
-   * gold caps at 10 for every remoteness value (5 × 3 − 4 = 11 > 10), so
-   * remoteness stops discounting the guard once a stack gets that large.
-   * Stated as an observation for tuning, not a recommendation.
+   * `GOLD_WEIGHT = 3` and `REMOTENESS_WEIGHT = 4`, any magic-guarded POI
+   * holding 5 or more gold caps at 10 for every remoteness value
+   * (5 × 3 − 4 = 11 > 10), and any fighting-guarded one holding 6 or more caps
+   * at 12 (6 × 3 − 4 = 14 > 12), so remoteness stops discounting the guard
+   * once a stack gets that large. Stated as an observation for tuning, not a
+   * recommendation.
    */
   readonly GOLD_WEIGHT: number;
   /**

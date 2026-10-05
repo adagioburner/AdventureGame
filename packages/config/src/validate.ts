@@ -1,4 +1,4 @@
-import { TERRAINS } from './vocabulary.ts';
+import { GUARD_TYPES, TERRAINS } from './vocabulary.ts';
 import type { PendingValue, Ruleset } from './types.ts';
 
 export class RulesetError extends Error {
@@ -104,7 +104,9 @@ export function validateRuleset(ruleset: Ruleset): void {
   assertRange(problems, 'LEAF_COUNT', config.map.LEAF_COUNT);
   assertRange(problems, 'VALLEY_COUNT', config.map.VALLEY_COUNT);
   assertRange(problems, 'VALLEY_LENGTH', config.map.VALLEY_LENGTH);
-  assertRange(problems, 'GUARD_STRENGTH', config.pois.GUARD_STRENGTH);
+  for (const type of GUARD_TYPES) {
+    assertRange(problems, `GUARD_STRENGTH.${type}`, config.pois.GUARD_STRENGTH[type]);
+  }
   assertRange(problems, 'PLAYER_COUNT', config.players.PLAYER_COUNT);
 
   // §2.1 step 6b: counts of places and roads, so whole numbers; 0 turns that

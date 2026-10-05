@@ -544,7 +544,7 @@ edge 229 230
 edge 229 237
 edge 232 235
 edge 233 235
-poi 0 plains gold units=7 group=gold/fighting guard=fighting:10 remoteness=0.288866
+poi 0 plains gold units=7 group=gold/fighting guard=fighting:12 remoteness=0.288866
 poi 8 forest fighting units=3 group=fighting/unguarded guard=none remoteness=0.648262
 poi 11 forest magic units=3 group=magic/unguarded guard=none remoteness=0.646776
 poi 12 forest fighting units=2 group=fighting/unguarded guard=none remoteness=0.575446

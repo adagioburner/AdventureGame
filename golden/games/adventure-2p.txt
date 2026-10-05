@@ -688,14 +688,14 @@ turn  53  p1 (seat 1)  at node 130  allowance plains 8 / forest 8 / mountain 6  
   stats p2  stamina  10  gold  8  plains_move 12  forest_move 7  mountain_move 6  fighting 13  magic 3
 
 turn  54  p2 (seat 2)  at node 15  allowance plains 12 / forest 7 / mountain 6  stamina 10
-  plan    heading for node 0 (gold x7, guarded fighting 10), the nearest POI p2 could take
+  plan    heading for node 0 (gold x7, guarded fighting 12), the nearest POI p2 could take
           route 15 -> 26 -> 10 -> 2 -> 0
   step     15 ->  26  plains   free (plains_move allowance 12 -> 11)
   step     26 ->  10  plains   free (plains_move allowance 11 -> 10)
   step     10 ->   2  plains   free (plains_move allowance 10 -> 9)
   step      2 ->   0  plains   free (plains_move allowance 9 -> 8)
-  poi     node 0 holds gold x7, guarded fighting 10
-  roll    2 + fighting 13 = 15 vs 10 — taken
+  poi     node 0 holds gold x7, guarded fighting 12
+  roll    2 + fighting 13 = 15 vs 12 — taken
   stats p1  stamina   3  gold 11  plains_move 8  forest_move 8  mountain_move 6  fighting 2  magic 7
   stats p2  stamina  10  gold 15  plains_move 12  forest_move 7  mountain_move 6  fighting 13  magic 3
 

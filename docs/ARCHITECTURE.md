@@ -255,8 +255,9 @@ leaves guard strength as the unknown:
 guard_strength = ceil(units × GOLD_WEIGHT − remoteness × REMOTENESS_WEIGHT),  capped to GUARD_STRENGTH
 ```
 
-`GOLD_WEIGHT` (default 3) is a designer-added config row. The cap is 0–10, which
-supersedes §11's `GUARD_STRENGTH_MIN` of 2 — a capped result of 0 means the POI
+`GOLD_WEIGHT` (default 3) is a designer-added config row. The cap is 0–10 for
+magic guards and 0–12 for fighting guards (Q275), which supersedes §11's
+`GUARD_STRENGTH_MIN` of 2 — a capped result of 0 means the POI
 is unguarded, so §4.4's "none are exempt" no longer holds. It very nearly does
 again since step 4 landed: reaching the cap needs a 1-unit stack at remoteness
 ≥ 0.5, which is exactly what step 4 moves, and unguarded gold fell from 3.3%

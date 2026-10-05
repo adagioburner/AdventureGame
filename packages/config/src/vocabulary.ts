@@ -59,6 +59,9 @@ export type GuardType = (typeof GUARD_TYPES)[number];
 /** A closed record over every terrain. */
 export type PerTerrain<T> = Readonly<Record<Terrain, T>>;
 
+/** A closed record over every guard type. */
+export type PerGuardType<T> = Readonly<Record<GuardType, T>>;
+
 /** An inclusive integer range, used for the several `MIN`/`MAX` rows of §11. */
 export interface IntRange {
   readonly min: number;
