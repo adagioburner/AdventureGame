@@ -30,12 +30,6 @@ export interface GameRecord {
   readonly action: GameAction;
   /** The `GUARD_DIE` rolls the action drew, in order; empty for most. */
   readonly rolls: readonly DieRoll[];
-  /**
-   * [Q135] Which far empty site each skill that ran short came back to, as
-   * the action drew them, in order. Absent on records from before skills came
-   * back, and on most records since.
-   */
-  readonly picks?: readonly number[];
   /** When the server applied it, milliseconds since 1970. */
   readonly at: number;
   /**
@@ -49,23 +43,20 @@ export interface GameRecord {
 
 /** Applies a record to the state before it, rolling exactly the rolls it recorded. */
 export function replayRecord(state: GameState, record: GameRecord): ActionOutcome {
-  return applyAction(state, record.action, recordedDice(record.rolls, record.picks));
+  return applyAction(state, record.action, recordedDice(record.rolls));
 }
 
-/** A `DiceSource` that gives back recorded rolls and picks, and refuses to invent another. */
-export function recordedDice(rolls: readonly DieRoll[], picks: readonly number[] = []): DiceSource {
+/** A `DiceSource` that gives back recorded rolls, and refuses to invent another. */
+export function recordedDice(rolls: readonly DieRoll[]): DiceSource {
   let next = 0;
-  let nextPick = 0;
   return {
     roll: () => {
       const roll = rolls[next++];
       if (roll === undefined) throw new RuleViolationError('the record has no roll left for this action');
       return roll;
     },
-    pick: (count) => {
-      const pick = picks[nextPick++];
-      if (pick === undefined || pick >= count) throw new RuleViolationError('the record has no pick left for this action');
-      return pick;
+    pick: () => {
+      throw new RuleViolationError('no action draws a pick');
     },
   };
 }

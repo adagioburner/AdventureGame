@@ -175,9 +175,8 @@ there for people and ignored by the game.
   played each time a walking figure reaches a node; `pickup` a reward taken
   from an unguarded POI; `battle_won` and `battle_lost` a guard beaten or
   not, as the die stops; `rest` a rest as it is shown; `message`, online, a
-  message someone else posts; `respawn` a speed or skill coming back to a
-  site (Q135); `purchase` a speed or skill bought, Andrei's own cash register
-  (Q190). A sound with several files uses them in turn,
+  message someone else posts; `purchase` a speed or skill bought, Andrei's
+  own cash register (Q190). A sound with several files uses them in turn,
   so a walk's footsteps are not all alike.
 
 ## Swapping the island's rock or sky

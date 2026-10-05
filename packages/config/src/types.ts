@@ -392,44 +392,6 @@ export interface AiConfig {
 }
 
 /**
- * [Q135] Speeds and skills coming back to empty sites once they run short.
- *
- * Andrei, 2026-09-30: "Skills need to respawn where there are too few of it
- * left, randomly at POIs that were offering this skill before and are far from
- * all players." At the end of every turn each kind in `KINDS` is counted on its
- * own; while fewer than `SHORT_BELOW_SITES` unclaimed POIs offer it, one
- * claimed POI that held it gets its reward back each turn (532 A), at most
- * `MAX_UNITS` of it, picked
- * at random from the `FAR_SHARE` of them farthest from the nearest figure
- * (533 A), by the cheapest route's stamina cost (534 A), never one a figure
- * stands on. A POI can come back any number of times (535 A).
- */
-export interface RespawnConfig {
-  /** 530 A: the five skills, the three speeds with combat and magic. Never gold or stamina. */
-  readonly KINDS: readonly RewardKind[];
-  /**
-   * 531 C: a kind is short while fewer than this many unclaimed POIs offer it,
-   * whatever the player count or their units. 2 (Andrei, 2026-10-01: "We need
-   * two *sites* with the skill at any time, not two units of skill on the map").
-   */
-  readonly SHORT_BELOW_SITES: number;
-  /** 533 A: the share of the empty POIs, farthest first and rounded up, the pick is made from. 0.5. */
-  readonly FAR_SHARE: number;
-  /**
-   * The most units a POI that comes back offers; one that held fewer gets
-   * those back. 1 (Andrei, 2026-10-01: "let us cap the skills to 2 units when
-   * they respawn. The idea is to provide a player who was late to the party
-   * with something to do, not to create a cornucopia"; then, having played,
-   * "even capping regrown skills by 2 is too much. It's not supposed to be
-   * easy when skills run out. Starving your opponents of some skill should be
-   * one of the strategies. Let's change that cap to one."). Games keep the cap
-   * they started with: 2 for those started under it, and absent on games
-   * started before the cap, which bring back the whole reward (532 A).
-   */
-  readonly MAX_UNITS?: number;
-}
-
-/**
  * [Q190] Buying speeds and skills with gold.
  *
  * Andrei, 2026-10-02: "allow players buy skills for gold, 1 to 1. We won't
@@ -477,12 +439,6 @@ export interface GameConfig {
   readonly players: PlayerConfig;
   readonly combat: CombatConfig;
   readonly ai: AiConfig;
-  /**
-   * [Q135] Absent on the maps of games started before speeds and skills came
-   * back: an online game carries the config its map was made with, and those
-   * games keep the rules they started with to the end.
-   */
-  readonly respawn?: RespawnConfig;
   /** [Q190] Buying speeds and skills with gold. */
   readonly buying: BuyingConfig;
   /** [Q227] Where the figures start. */

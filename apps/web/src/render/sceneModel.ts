@@ -272,21 +272,6 @@ function poiLabel(
   };
 }
 
-/**
- * [Q135] `label` showing `units` icons instead of the map's count, still
- * centred under its node with its guard's number: a POI that came back with
- * fewer units than it started with.
- */
-export function withUnits(label: PoiLabel, units: number): PoiLabel {
-  const { icons, guard } = label;
-  const shift = (icons.step * (icons.count - units)) / 2;
-  return {
-    ...label,
-    icons: { ...icons, count: units, first: { x: icons.first.x + shift, y: icons.first.y } },
-    guard: guard === null ? null : { ...guard, at: { x: guard.at.x - shift, y: guard.at.y } },
-  };
-}
-
 /** Where an icon's centre sits below its node's oval, as a share of its size: just under a half, so the two touch. */
 export const ICON_TOUCH = 0.45;
 
@@ -307,8 +292,6 @@ function backToFront(p: Billboard, q: Billboard): number {
 export interface StateScene {
   /** POIs whose reward is gone (§4.5): their picture unchanged, without icons or a number. */
   readonly claimed: ReadonlySet<NodeId>;
-  /** [Q135] POIs that came back offering fewer units than the map gave them, and how many. */
-  readonly units: ReadonlyMap<NodeId, number>;
   /**
    * Every node as it is drawn now. [SOURCE §4.5] A claimed POI "behaves like
    * an ordinary node", so its node loses its guard's colour and (Q80) its dot.
@@ -358,18 +341,16 @@ export function buildStateScene(
   found: PlayerId | null = null,
 ): StateScene {
   const claimed = new Set<NodeId>();
-  const units = new Map<NodeId, number>();
   state.map.pois.forEach((poi, index) => {
     const runtime = state.poiRuntime[index];
     if (runtime !== undefined && isClaimed(runtime)) claimed.add(poi.node);
-    else if (runtime?.units !== undefined) units.set(poi.node, runtime.units);
   });
   const nodes = scene.nodes.map((mark) =>
     mark.site && claimed.has(mark.node)
       ? nodeMark(catalog, scene.spacing, { id: mark.node, position: mark.at, terrain: mark.terrain }, null, false)
       : mark,
   );
-  return { claimed, units, nodes, ...buildCharacters(scene, state, catalog, walker, planner, found) };
+  return { claimed, nodes, ...buildCharacters(scene, state, catalog, walker, planner, found) };
 }
 
 /**

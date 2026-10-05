@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { RESPAWN_RULES } from '@adventure/config';
-import { applyAction, asGameId, asNodeId, asPlayerId, asUserId, shortestPath, type GameAction, type GameMap, type GameState } from '@adventure/core';
+import { applyAction, asGameId, asNodeId, asPlayerId, asUserId, shortestPath, type GameAction, type GameState } from '@adventure/core';
 import { openingStateOf, type GameRecord, type SetupState } from '@adventure/protocol';
 import { fixtureMap, scriptedDice } from '../../../../packages/core/src/rules/scenario.fixture.ts';
 import { MissedRecords, OnlineGame } from './online.ts';
@@ -44,20 +43,18 @@ const setup: SetupState = {
 function serverPlays(
   actions: readonly GameAction[],
   rolls: readonly number[],
-  picks: readonly number[] = [],
   on = map,
 ): { state: GameState; records: GameRecord[] } {
-  const dice = scriptedDice(rolls, 6, picks);
+  const dice = scriptedDice(rolls, 6);
   let state = openingStateOf(setup, on);
   const records: GameRecord[] = [];
   for (const action of actions) {
     const drawn: GameRecord['rolls'][number][] = [];
-    const picked: number[] = [];
     state = applyAction(state, action, {
       roll: () => (drawn.push(dice.roll()), drawn[drawn.length - 1]!),
-      pick: (count) => (picked.push(dice.pick(count)), picked[picked.length - 1]!),
+      pick: (count) => dice.pick(count),
     }).state;
-    records.push({ seq: records.length + 1, action, rolls: drawn, ...(picked.length > 0 ? { picks: picked } : {}), at: records.length, by: null });
+    records.push({ seq: records.length + 1, action, rolls: drawn, at: records.length, by: null });
   }
   return { state, records };
 }
@@ -127,50 +124,14 @@ describe('OnlineGame', () => {
       { kind: 'buy', player: one, skills: ['magic'] },
       { kind: 'rest', player: one },
     ];
-    const { state, records } = serverPlays(played, [], [], rich);
+    const { state, records } = serverPlays(played, [], rich);
     const { applied } = OnlineGame.open(setup, state, records);
     expect(applied[2]).toMatchObject({ turn: null, purchase: { name: 'Andrei', skills: ['magic'], gold: 1 } });
     expect(applied[3]?.turn?.bought.map((purchase) => purchase.skills)).toEqual([['magic']]);
 
     // Opened just after the purchase, the turn played next still carries it.
-    const midway = serverPlays(played.slice(0, 3), [], [], rich);
+    const midway = serverPlays(played.slice(0, 3), [], rich);
     const { game } = OnlineGame.open(setup, midway.state, midway.records);
     expect(game.apply(records[3]!).turn?.bought.map((purchase) => purchase.skills)).toEqual([['magic']]);
-  });
-
-  it('replays a skill coming back to the site the server drew (Q135)', () => {
-    // 0 ── 1 ── 2 ── 3 ── 4, one combat on 1 and on 4. Taking the second
-    // leaves none, and node 1, empty with nobody on it, comes back, in a
-    // game started before buying (Q190, 758).
-    const today = fixtureMap({
-      terrains: ['plains', 'plains', 'plains', 'plains', 'plains'],
-      edges: [
-        [0, 1],
-        [1, 2],
-        [2, 3],
-        [3, 4],
-      ],
-      pois: [
-        { node: 1, kind: 'fighting', units: 1, guard: null },
-        { node: 4, kind: 'fighting', units: 1, guard: null },
-      ],
-    });
-    const { buying: _buying, ...config } = today.ruleset.config;
-    const skills: GameMap = { ...today, ruleset: { ...today.ruleset, config: { ...config, respawn: RESPAWN_RULES } } };
-    const start = openingStateOf(setup, skills).players[0]!.position;
-    const route = (from: number, to: number) => shortestPath(skills.graph, n(from), n(to), skills.ruleset.config) ?? [];
-    const played: GameAction[] = [
-      { kind: 'move', player: one, path: route(start, 1), waypoint: null },
-      { kind: 'rest', player: two },
-      { kind: 'move', player: one, path: route(1, 4), waypoint: null },
-    ];
-    const { state, records } = serverPlays(played, [], [0], skills);
-    expect(records.map((record) => record.picks ?? [])).toEqual([[], [], [0]]);
-    const { game, applied } = OnlineGame.open(setup, state, records);
-    expect(applied[2]?.turn?.events.filter((event) => event.type === 'reward_returned')).toEqual([
-      { type: 'reward_returned', node: n(1), reward: { kind: 'fighting', units: 1 } },
-    ]);
-    expect(applied[2]?.after.poiRuntime).toEqual(state.poiRuntime);
-    expect(game.state).toBe(state);
   });
 });

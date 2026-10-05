@@ -255,7 +255,5 @@ export type GameEvent =
   | { readonly type: 'planned'; readonly player: PlayerId; readonly plan: PlannedPath | null }
   /** [Q190] A player bought a unit of each of `skills` for `gold` gold in all, during their turn. */
   | { readonly type: 'bought'; readonly player: PlayerId; readonly skills: readonly RewardKind[]; readonly gold: number }
-  /** [Q135] A speed or skill ran short and came back to an empty site, far from every figure. */
-  | { readonly type: 'reward_returned'; readonly node: NodeId; readonly reward: Reward }
   | { readonly type: 'game_won'; readonly winners: readonly PlayerId[] }
   | { readonly type: 'game_ended'; readonly reason: GameEndReason; readonly winners: readonly PlayerId[] };

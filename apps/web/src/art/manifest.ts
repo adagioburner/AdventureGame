@@ -170,7 +170,7 @@ export interface IslandCorners {
  * [Q190, 777] Andrei, 2026-10-02: "It also would be nice if a purchase got
  * completed with some sound, e.g. a cash register sound", and he supplied it.
  */
-export const SOUND_NAMES = ['step', 'pickup', 'battle_won', 'battle_lost', 'rest', 'message', 'respawn', 'purchase'] as const;
+export const SOUND_NAMES = ['step', 'pickup', 'battle_won', 'battle_lost', 'rest', 'message', 'purchase'] as const;
 export type SoundName = (typeof SOUND_NAMES)[number];
 
 export interface SoundArt {

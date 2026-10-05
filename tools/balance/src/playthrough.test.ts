@@ -111,17 +111,9 @@ describe('a full game', () => {
 describe('games on other seeds', () => {
   // Three more maps, so the engine is not shown terminating on one lucky
   // layout. Kept small: each one generates a map (§2.1) before it plays.
-  //
-  // [Q135] Under the rules from before speeds and skills came back: this
-  // driver always takes the nearest site it can, never turning down a skill
-  // for gold, so once skills come back it can collect them for ever (on
-  // thornfell it did, 2,000 turns). The computer's games in
-  // aiPlaythrough.test.ts are the ones that show a game ending with them.
-  const { respawn: _respawn, ...config } = DEFAULT_RULESET.config;
-  const withoutRespawn = { ...DEFAULT_RULESET, config };
   for (const seed of ['blackmere', 'ravenmoor', 'thornfell']) {
     it(`terminates with a winner on seed "${seed}"`, () => {
-      const run = playGame({ seed, diceSeed: `dice-${seed}`, playerCount: 2, maxTurns: 2000 }, withoutRespawn);
+      const run = playGame({ seed, diceSeed: `dice-${seed}`, playerCount: 2, maxTurns: 2000 }, DEFAULT_RULESET);
       expect(run.endedBy).toBe('victory');
       expect(run.finalState.winners.length).toBeGreaterThan(0);
       // Turn numbers are 1-based and advance by exactly one per turn played.

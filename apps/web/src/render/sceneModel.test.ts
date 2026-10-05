@@ -19,7 +19,6 @@ import {
   nodeOutlineWidth,
   siteDot,
   SPACING_PX,
-  withUnits,
   type MapScene,
 } from './sceneModel.ts';
 
@@ -477,25 +476,6 @@ describe('what changes during play', () => {
     expect(state.nodes[target.node]).toMatchObject({ guard: null, site: false });
     expect(siteDot(catalog, state.nodes[target.node] ?? scene.nodes[0]!)).toBeNull();
     expect(state.nodes.filter((mark, at) => mark !== scene.nodes[at]).map((mark) => mark.node)).toEqual([target.node]);
-  });
-
-  it('draws a site that came back with fewer units than it started with with that many icons, still centred (Q135)', () => {
-    const index = game.map.pois.findIndex((poi) => poi.reward.units === 3);
-    const target = game.map.pois[index];
-    const label = scene.labels.find((candidate) => candidate.node === target?.node);
-    if (target === undefined || label === undefined) throw new Error('the map has no 3-unit site');
-    const back: GameState = {
-      ...game.state,
-      poiRuntime: game.state.poiRuntime.map((runtime, at) => (at === index ? { claimedBy: null, claimedOnTurn: null, units: 2 } : runtime)),
-    };
-    const state = buildStateScene(scene, back, catalog);
-    expect([...state.units]).toEqual([[target.node, 2]]);
-    expect(buildStateScene(scene, game.state, catalog).units.size).toBe(0);
-
-    const two = withUnits(label, 2);
-    expect(two.icons.count).toBe(2);
-    const middle = (box: { minX: number; maxX: number }): number => (box.minX + box.maxX) / 2;
-    expect(middle(labelBox(two))).toBeCloseTo(middle(labelBox(label)));
   });
 
   it('draws a walking figure where End Turn has got it to, alone, with its ring', () => {

@@ -141,7 +141,6 @@
     "battle_lost": { "files": ["Sounds/battle_lost.wav"], "volume": 1, "placeholder": true },
     "rest": { "files": ["Sounds/rest.wav"], "volume": 1, "placeholder": true },
     "message": { "files": ["Sounds/message.wav"], "volume": 1, "placeholder": true },
-    "respawn": { "files": ["Sounds/respawn.wav"], "volume": 1, "placeholder": true },
     "purchase": { "files": ["Sounds/purchase.mp3"], "volume": 1, "placeholder": false }
   },
   "shadows": {

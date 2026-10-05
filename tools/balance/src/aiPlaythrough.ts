@@ -5,9 +5,7 @@ import {
   bestRoute,
   createDiceSource,
   createRng,
-  offeredReward,
   poiAt,
-  poiRuntimeAt,
   totalGoldUnits,
   workOutAllRoutes,
   type GameState,
@@ -180,7 +178,6 @@ function label(state: GameState, node: MctsNode): string {
 function poiText(state: GameState, node: NodeId): string {
   const poi = poiAt(state.map, node);
   if (poi === undefined) return '?';
-  const offered = offeredReward(poi, poiRuntimeAt(state, node));
-  const reward = `${offered.kind} x${offered.units}`;
+  const reward = `${poi.reward.kind} x${poi.reward.units}`;
   return poi.guard === null ? reward : `${reward}, ${poi.guard.type} ${poi.guard.strength}`;
 }
