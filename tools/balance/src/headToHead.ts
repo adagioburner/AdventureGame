@@ -20,11 +20,8 @@ import { playGame, type Playthrough, type PlaythroughDriver, type PlaythroughEnd
  */
 export const EVALUATORS = {
   simulated: simulatedRolloutEvaluator,
-  estimated: () => estimatedGoldAndSkillsEvaluator('units-claimed'),
-  hybrid: () => hybridGoldAndSkillsEvaluator('units-claimed'),
-  // Progress as the larger of the gold and the skill shares claimed.
-  'estimated-max': () => estimatedGoldAndSkillsEvaluator('larger-share'),
-  'hybrid-max': () => hybridGoldAndSkillsEvaluator('larger-share'),
+  estimated: () => estimatedGoldAndSkillsEvaluator(),
+  hybrid: () => hybridGoldAndSkillsEvaluator(),
   // Today's imagined games, scored by the gold lead over the richest opponent (detail 417).
   lead: () => simulatedLeadEvaluator('margin'),
   'lead-win': () => simulatedLeadEvaluator('win'),
@@ -43,7 +40,8 @@ export function isEvaluatorName(name: string): name is EvaluatorName {
  * What a seat may change about where it goes, each for comparison only:
  *  - `winnable`: only sites it could win now are choices (detail 419).
  *  - `gold-later`: its imagined players head for gold more often as the
- *    rewards are claimed (idea 1, 421 A).
+ *    sites are claimed (idea 1, 421 A). The game's own pick since Q290, so
+ *    this changes nothing; kept so earlier runs' commands still read the same.
  *  - `speeds`: closest by its own speeds, Q65's effective distance over the
  *    steps per terrain of the cheapest route (idea 2, 422-424 A). The game's
  *    own ranking since Q112, so this changes nothing; kept so earlier runs'
@@ -158,16 +156,15 @@ export function playHeadToHead(options: HeadToHeadOptions): { readonly game: Hea
       `# Seats by node evaluation (GDD §9): ${options.seats.map((spec, index) => `seat ${index + 1} ${seatLabel(spec)}`).join(', ')}.`,
       '# A number after @ is that seat\'s own exploration constant; the others use MCTS_EXPLORATION_CONSTANT.',
       '# simulated = share of the gold it ends with in a random game played to the end;',
-      '# estimated = gold and skills it holds at the searched position, weighted by the gold claimed so far, no game played;',
-      '# hybrid = the average of the two. -max: the progress weighing them is the larger of the gold',
-      '# share and the skill share claimed, instead of all skill and gold units claimed.',
+      '# estimated = gold and skills it holds at the searched position, weighted by the share of sites claimed so far,',
+      '# no game played; hybrid = the average of the two.',
       '# lead = today\'s imagined games, scored by the gold lead over the richest other player:',
       '# (lead / total gold + 1) / 2; lead-win: 1 ahead, 0.5 level, 0 behind; lead-win-margin: their average;',
       '# lead-soft: (lead / (|lead| + 1) + 1) / 2 with the lead in gold.',
       '# +winnable: only sites it could win now are choices, for itself and for everyone in its imagined',
       '# games (gold whose guard a 6 plus the skill does not beat is left out, unless nothing else is left).',
-      '# +gold-later: in its imagined games a player heads for a gold site among its 10 closest with chance',
-      '# p = share of the gold and skill units claimed, otherwise for any of the 10 as today.',
+      '# In its imagined games a player heads for a gold site among its 10 closest with chance p = share of',
+      '# the map\'s sites claimed, otherwise for any of the 10 (Q290; +gold-later says so explicitly).',
       '# Every seat ranks its 10 closest, for itself and in its imagined games, by the least over n turns of',
       '# 5n + the stamina still needed after n turns of free steps, from the steps per terrain of the cheapest route',
       '# (Q112; +speeds says so explicitly). +fixed: ranked by weighted terrain cost alone, as before Q112.',

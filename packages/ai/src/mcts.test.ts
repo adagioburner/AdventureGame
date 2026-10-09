@@ -144,21 +144,17 @@ describe('evaluators', () => {
 });
 
 describe('estimated evaluation', () => {
-  it('counts skill and gold units claimed as progress, and stamina as skill points (Q110, Q111)', () => {
-    // The star holds 5 gold and 3 skill units; its 3 stamina units are not
-    // counted. Taking the plains_move site is 1 of those 8 units.
+  it('counts sites claimed as progress, and stamina as skill points (Q110, Q291)', () => {
+    // The star holds 6 sites, its stamina site among them. Taking the
+    // plains_move site is 1 of those 6.
     const state = withStats(fixtureGame(star, 0), player('one'), { stamina: 1 });
     const took = applyAction(state, { kind: 'move', player: player('one'), path: [n(2)] }, createDiceSource(createRng('x'), DEFAULT_GAME_CONFIG)).state;
     const value = estimatedGoldAndSkillsEvaluator().evaluate(rolloutCursor(took, player('one')), rolloutCursor(took, player('one')), player('one'));
-    expect(value).toBeCloseTo((1 / 3) * (1 - 1 / 8));
+    expect(value).toBeCloseTo((1 / 3) * (1 - 1 / 6));
 
     const rested = withStats(took, player('one'), { stamina: 5 });
     const withStamina = estimatedGoldAndSkillsEvaluator().evaluate(rolloutCursor(rested, player('one')), rolloutCursor(rested, player('one')), player('one'));
-    expect(withStamina).toBeCloseTo((2 / 3) * (1 - 1 / 8));
-
-    // The larger share instead: 1 of 3 skill units against 0 of 5 gold.
-    const larger = estimatedGoldAndSkillsEvaluator('larger-share').evaluate(rolloutCursor(took, player('one')), rolloutCursor(took, player('one')), player('one'));
-    expect(larger).toBeCloseTo((1 / 3) * (1 - 1 / 3));
+    expect(withStamina).toBeCloseTo((2 / 3) * (1 - 1 / 6));
   });
 });
 

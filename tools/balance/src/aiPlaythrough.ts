@@ -35,7 +35,7 @@ export interface ComputerSettings {
   readonly targets?: TargetFilter;
   /** Which sites count as closest; by the player's own speeds when absent, as the game plays (Q112). */
   readonly closest?: ClosestFinder;
-  /** Which of the closest a player in an imagined game heads for; uniformly when absent. */
+  /** Which of the closest a player in an imagined game heads for; gold more often as the sites are claimed when absent, as the game plays (Q290). */
   readonly pick?: TargetPicker;
   /** [Q210] Which routes the search's own choices count; the best for the player's speeds when absent, as the game plays. */
   readonly searchRoutes?: 'best' | 'cheapest';

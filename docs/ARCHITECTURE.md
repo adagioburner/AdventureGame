@@ -411,7 +411,10 @@ the tree's own constant into it (Q19); the remoteness walk has its own,
 `REMOTENESS_CANDIDATE_COUNT` = 10, since he split the map's from the computer
 player's (Q66). They differ only in what they do with the ranked list: the tree
 makes every candidate a branch, the rollout picks one uniformly, remoteness
-walks to its pick.
+walks to its pick. Since [Q290](./OPEN_QUESTIONS.md#q290) the game's computer
+passes the rollout `goldByProgressPicker` (`packages/sim/src/goldByProgress.ts`)
+instead: a gold POI among the K with chance equal to the share of POIs claimed
+(Q291), any of the K otherwise.
 
 **Since Q112 the computer ranks by its own speeds.** The tree and the rollout
 pass `closestBySpeeds` (`packages/sim/src/speeds.ts`) in place of
@@ -523,10 +526,10 @@ important at the beginning of the game, and are worthless at the end":
 
 ```
 value = gold/total_gold × progress + (skills + stamina/5)/total_skills × (1 − progress)
-        progress = skill and gold units claimed by all players / (total_skills + total_gold)
+        progress = sites claimed by all players / all the map's sites
 ```
 
-At the opening almost no gold is claimed, so `progress` ≈ 0 and the skill term
+At the opening almost nothing is claimed, so `progress` ≈ 0 and the skill term
 carries the value; by the end `progress` ≈ 1 and only gold counts. Every
 quantity is read from the node, which is what makes `progress` meaningful here:
 it moves across the tree, whereas a rollout by definition ends with no
@@ -534,7 +537,9 @@ unclaimed gold left (Q6). [Q11](./OPEN_QUESTIONS.md#q11) still decides the skill
 numerator — the sum of all five skill levels, not a count of skills held — and
 [Q110](./OPEN_QUESTIONS.md#q110) adds stamina to it, `STAMINA_PER_SKILL_POINT`
 (5) stamina to a skill point, with the term stopping at 1. Since
-[Q111](./OPEN_QUESTIONS.md#q111) `progress` counts claimed skill units as well as gold.
+[Q111](./OPEN_QUESTIONS.md#q111) `progress` counted claimed skill units as well as gold;
+since [Q291](./OPEN_QUESTIONS.md#q291) it is the share of sites claimed, every
+site counting alike (`sitesClaimedShare`).
 
 Two properties fall out of the shape rather than out of a constant. The estimate
 is in [0, 1], because both its terms are and its two weights sum to 1; the

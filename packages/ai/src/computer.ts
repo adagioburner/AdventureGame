@@ -6,6 +6,7 @@ import {
   cheapestRoute,
   closestByBestRoute,
   closestBySpeeds,
+  goldByProgressPicker,
   goldExhaustedTermination,
   restWhenStuck,
   turnCapTermination,
@@ -46,7 +47,11 @@ export interface ComputerSettings {
    * balancing harness passes `closestByTerrainCost` to compare with before.
    */
   readonly closest?: ClosestFinder;
-  /** Which of the closest a player in an imagined game heads for; uniformly at random when absent. */
+  /**
+   * Which of the closest a player in an imagined game heads for. The game
+   * leaves it out and gets `goldByProgressPicker`: gold more often as the
+   * sites are claimed (Q290).
+   */
   readonly pick?: TargetPicker;
   /**
    * [Q210] Which routes the search's own choices count: which sites are
@@ -83,7 +88,8 @@ export function computerEvaluator(): NodeEvaluator {
  * 2: `closestByBestRoute`), its resting and buying checks and its own walk
  * along that route too, the §9 rollout policy ranking by the speeds along the
  * cheapest route (`closestBySpeeds`, 822 B) and walking the best route for
- * them, counted (Q210 stage 3, 823 A), and the lead score (Q113,
+ * them, counted (Q210 stage 3, 823 A), heading for gold more often as the
+ * sites are claimed (Q290, `goldByProgressPicker`), and the lead score (Q113,
  * `computerEvaluator`). The games it plays in
  * its head rest when stuck (Q43) and stop when the gold is gone, the game is
  * won, or `SIMULATION_TURN_CAP` turns have passed since `state` (Q44).
@@ -113,7 +119,7 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
       restRule,
       closest,
       ...(settings.targets === undefined ? {} : { targets: settings.targets }),
-      ...(settings.pick === undefined ? {} : { pick: settings.pick }),
+      pick: settings.pick ?? goldByProgressPicker(),
       ...(settings.imaginedWalks === undefined ? {} : { walks: settings.imaginedWalks }),
     }),
     evaluator: settings.evaluator ?? computerEvaluator(),

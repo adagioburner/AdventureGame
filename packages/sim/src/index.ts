@@ -12,4 +12,5 @@ export * from './walk.ts';
 export * from './remoteness.ts';
 export * from './rollout.ts';
 export * from './speeds.ts';
+export * from './goldByProgress.ts';
 export * from './experiments.ts';
