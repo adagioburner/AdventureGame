@@ -268,5 +268,6 @@ function rolloutOptions(options: MctsOptions): RolloutOptions {
     restRule: options.restRule,
     dice: options.dice,
     rng: options.rng,
+    ...(options.imaginedTargets === undefined ? {} : { targets: options.imaginedTargets }),
   };
 }

@@ -158,3 +158,76 @@ describe('the turn the computer plays (761)', () => {
     expect(plan).toEqual({ buy: { kind: 'buy', player: one, skills: ['magic'] }, action: null, branch: null });
   });
 });
+
+/**
+ * [Q295] Andrei's "buy, then go": guarded gold the computer cannot win is
+ * skipped, unless the units its gold buys could win it, and a guard it
+ * reaches this turn is a choice only once the skill it holds could.
+ *
+ *   0(p) ── 1(p) ── 2(p) ── 3(p)
+ *           gold 2  magic   gold 2
+ *           combat  skill   combat
+ *           guard 8         guard 8
+ *
+ * With 1 stamina and no speeds, only 1 is reached this turn.
+ */
+describe('guarded gold it cannot win (Q295)', () => {
+  const pass = fixtureMap({
+    terrains: ['plains', 'plains', 'plains', 'plains'],
+    edges: [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+    ],
+    pois: [
+      { node: 1, kind: 'gold', units: 2, guard: { type: 'fighting', strength: 8 } },
+      { node: 2, kind: 'magic', units: 1, guard: null },
+      { node: 3, kind: 'gold', units: 2, guard: { type: 'fighting', strength: 8 } },
+    ],
+  });
+  const at = (stats: Parameters<typeof withStats>[2]) => withStats(fixtureGame(pass, 0), one, { stamina: 1, ...stats });
+  const skipping = (config = DEFAULT_GAME_CONFIG): ComputerSettings => ({ ...settings(), config, unwinnableGuards: 'skipped' });
+  const branchesAt = (state: GameState, bought: readonly RewardKind[] = [], config = DEFAULT_GAME_CONFIG) =>
+    computerSearchOptions(state, one, skipping(config)).actions.enumerate(state, one, bought);
+  const targetsOf = (branches: readonly MctsBranch[]) => branches.flatMap((branch) => (branch.kind === 'target' ? [branch.target.node] : [])).sort((a, b) => a - b);
+  const buysOf = (branches: readonly MctsBranch[]) => branches.flatMap((branch) => (branch.kind === 'buy' ? [branch.skill] : []));
+
+  it('buys before it goes to a guard it reaches this turn, and heads for a farther one its gold could win', () => {
+    // A 6 plus fighting 1 does not beat 8; with the 2 units its gold buys, it does.
+    const state = at({ fighting: 1, gold: 2 });
+    const root = branchesAt(state);
+    expect(targetsOf(root)).toEqual([2, 3]);
+    expect(buysOf(root)).toContain('fighting');
+
+    const once = buy(state, 'fighting');
+    expect(targetsOf(branchesAt(once, ['fighting']))).toEqual([]);
+    expect(buysOf(branchesAt(once, ['fighting']))).toContain('fighting');
+
+    const twice = buy(once, 'fighting');
+    expect(targetsOf(branchesAt(twice, ['fighting', 'fighting']))).toEqual([1]);
+  });
+
+  it('weighs every unclaimed site as before when the guards are weighed', () => {
+    expect(targetsOf(enumerate(at({ fighting: 1, gold: 2 })))).toEqual([1, 2, 3]);
+  });
+
+  it('skips gold its gold could not buy the win of, and buys nothing for it', () => {
+    const state = at({ fighting: 1, gold: 1 });
+    const root = branchesAt(state);
+    expect(targetsOf(root)).toEqual([2]);
+    expect(buysOf(root)).not.toContain('fighting');
+  });
+
+  it('fills its choices from the next closest site', () => {
+    const one10 = { ...DEFAULT_GAME_CONFIG, balancing: { ...DEFAULT_GAME_CONFIG.balancing, CLOSE_CANDIDATE_COUNT: 1 } };
+    const root = branchesAt(at({ fighting: 1, gold: 2 }), [], one10);
+    expect(targetsOf(root)).toEqual([2]);
+    expect(buysOf(root)).toContain('fighting');
+  });
+
+  it('rests when nothing is left it could win', () => {
+    const state = at({ fighting: 1, gold: 0 });
+    const claimed: GameState = { ...state, poiRuntime: state.poiRuntime.map((runtime, index) => (index === 1 ? { claimedBy: player('two'), claimedOnTurn: 1 } : runtime)) };
+    expect(branchesAt(claimed)).toEqual([{ kind: 'rest' }]);
+  });
+});

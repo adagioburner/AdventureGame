@@ -17,6 +17,8 @@ import {
   cheapestRoute,
   closestPoiCandidates,
   unclaimedPoiNodes,
+  winnablePoiNodesWith,
+  winsOnSomeRoll,
   type ClosestFinder,
   type PoiCandidate,
   type RouteChoice,
@@ -145,21 +147,44 @@ export function closestUnclaimedPoiEnumerator(
   closest?: ClosestFinder,
   /** The route a move walks, which `usesFully` checks; the cheapest when absent. The game passes `bestRouteForSpeeds` (Q210, 820 A). */
   walkRoute: RouteChoice = cheapestRoute,
+  /** [Q295] Whether guarded gold it cannot win is weighed, as before, or skipped (`choicesAt`). */
+  unwinnable: 'weighed' | 'skipped' = 'weighed',
 ): ActionEnumerator {
-  const closestTo = (state: GameState, player: PlayerState): readonly PoiCandidate[] => {
-    // `closestPoiCandidates` already returns at most `CLOSE_CANDIDATE_COUNT`,
-    // so this *is* the pruned target list; there is no second cap to apply.
-    const eligible = allowed === undefined ? unclaimedPoiNodesOf(state) : allowed(state, player);
-    return closest === undefined
-      ? closestPoiCandidates(
-          state.map.graph,
-          player.position,
-          eligible,
-          config.balancing.CLOSE_CANDIDATE_COUNT,
-          config,
-          routeTable(state.map.graph, config),
-        )
-      : closest(state, player, eligible, config.balancing.CLOSE_CANDIDATE_COUNT);
+  const count = config.balancing.CLOSE_CANDIDATE_COUNT;
+  const skips = unwinnable === 'skipped';
+  const eligibleFor = (state: GameState, player: PlayerState): ReadonlySet<NodeId> => {
+    if (allowed !== undefined) return allowed(state, player);
+    return skips ? winnablePoiNodesWith(state, player, affordableUnits(state, player)) : unclaimedPoiNodesOf(state);
+  };
+  const rank = (state: GameState, player: PlayerState, eligible: ReadonlySet<NodeId>, upTo: number): readonly PoiCandidate[] =>
+    closest === undefined
+      ? closestPoiCandidates(state.map.graph, player.position, eligible, upTo, config, routeTable(state.map.graph, config))
+      : closest(state, player, eligible, upTo);
+  // The ranking already returns at most `CLOSE_CANDIDATE_COUNT`, so this *is*
+  // the pruned list; there is no second cap to apply. Purchases are weighed
+  // against it (`buyBranches`).
+  const closestTo = (state: GameState, player: PlayerState): readonly PoiCandidate[] => rank(state, player, eligibleFor(state, player), count);
+  /**
+   * [Q295] The sites the subject may head for. Weighing unwinnable guards,
+   * `closestTo`. Skipping them, Andrei's "buy, then go", 2026-10-09: a site
+   * is a choice when the units its gold buys could win it, but a guard it
+   * reaches this turn only when the skill it holds now, after this turn's
+   * purchases, could; the next closest take the places of those it leaves out
+   * ("fill up to 10"). Buying stays weighed against `closestTo`, which counts
+   * the gold, so a unit is still tried towards a guard it will reach once the
+   * units are bought.
+   */
+  const choicesAt = (state: GameState, player: PlayerState): readonly PoiCandidate[] => {
+    if (!skips) return closestTo(state, player);
+    const eligible = eligibleFor(state, player);
+    const choices: PoiCandidate[] = [];
+    for (const candidate of rank(state, player, eligible, eligible.size)) {
+      if (choices.length >= count) break;
+      const guard = poiAt(state.map, candidate.node)?.guard ?? null;
+      if (!winsOnSomeRoll(state, player, guard) && reachability.isReachableThisTurn(state, player.id, candidate)) continue;
+      choices.push(candidate);
+    }
+    return choices;
   };
   // Every pass through a node near the root brings back the same position, so
   // its branches are worked out once; the buy checks trace routes.
@@ -174,7 +199,7 @@ export function closestUnclaimedPoiEnumerator(
       const remembered = known.get(key);
       if (remembered !== undefined) return remembered;
 
-      const targets = closestTo(state, player);
+      const targets = choicesAt(state, player);
       const branches: MctsBranch[] = [];
       if (bought.length === 0) {
         for (const target of targets) branches.push({ kind: 'target', target });
@@ -192,6 +217,11 @@ export function closestUnclaimedPoiEnumerator(
       return branches;
     },
   };
+}
+
+/** [Q295] How many units of a skill `player` could buy with its gold now. */
+function affordableUnits(state: GameState, player: PlayerState): number {
+  return Math.floor(player.stats.gold / state.map.ruleset.config.buying.GOLD_PER_UNIT);
 }
 
 /** How many positions an enumerator remembers before it starts again; a few thousand nodes are searched a move. */

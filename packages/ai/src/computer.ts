@@ -10,6 +10,7 @@ import {
   goldExhaustedTermination,
   restWhenStuck,
   turnCapTermination,
+  winnableBySkill,
   type ClosestFinder,
   type TargetFilter,
   type TargetPicker,
@@ -68,6 +69,16 @@ export interface ComputerSettings {
    * turn by turn, to compare with the computer before.
    */
   readonly imaginedWalks?: 'counted' | 'replayed';
+  /**
+   * [Q295] Guarded gold a player cannot win. The game leaves it out and its
+   * computer weighs such gold as before; the balancing harness passes
+   * `'skipped'` to compare: the search's own choices skip a guard it reaches
+   * this turn unless the skill it holds could win, and any its gold could not
+   * buy the win of either, the next closest taking their places; the players
+   * in its imagined games skip what their skill cannot win (`winnableBySkill`);
+   * with nothing left either rests.
+   */
+  readonly unwinnableGuards?: 'weighed' | 'skipped';
 }
 
 /**
@@ -101,6 +112,8 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
   const closest = settings.closest ?? closestBySpeeds;
   const cheapest = settings.searchRoutes === 'cheapest';
   const edgeRoute = cheapest ? cheapestRoute : bestRouteForSpeeds;
+  const unwinnable = settings.unwinnableGuards ?? 'weighed';
+  const imaginedTargets = unwinnable === 'skipped' ? (settings.targets ?? winnableBySkill) : settings.targets;
   return {
     subject,
     config,
@@ -111,6 +124,7 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
       settings.targets,
       settings.closest ?? (cheapest ? closestBySpeeds : closestByBestRoute),
       edgeRoute,
+      unwinnable,
     ),
     edgeRoute,
     rollout: closestPoiRolloutPolicy({
@@ -118,7 +132,7 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
       termination,
       restRule,
       closest,
-      ...(settings.targets === undefined ? {} : { targets: settings.targets }),
+      ...(imaginedTargets === undefined ? {} : { targets: imaginedTargets }),
       pick: settings.pick ?? goldByProgressPicker(),
       ...(settings.imaginedWalks === undefined ? {} : { walks: settings.imaginedWalks }),
     }),
@@ -129,6 +143,7 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
     rng: settings.rng,
     timeBudgetMs: settings.thinkingMs,
     now: settings.now,
+    ...(unwinnable === 'skipped' && imaginedTargets !== undefined ? { imaginedTargets } : {}),
   };
 }
 

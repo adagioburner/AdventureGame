@@ -23,6 +23,7 @@ import {
   turnCapTermination,
   turnTowards,
   unclaimedPoiNodes,
+  winnableBySkill,
   winnablePoiNodes,
   type RestRule,
   type RolloutOptions,
@@ -115,6 +116,45 @@ describe('winnablePoiNodes (detail 419, comparison only)', () => {
     const state = fixtureGame(guarded, 0);
     const claimed = applyAction(state, { kind: 'move', player: player('one'), path: [n(1)] }, scriptedDice([])).state;
     expect([...winnablePoiNodes(claimed, claimed.players[1]!)]).toEqual([n(2), n(3)]);
+  });
+});
+
+describe('winnableBySkill (Q295: the sites imagined players head for)', () => {
+  const guarded = fixtureMap({
+    terrains: ['plains', 'plains', 'plains', 'plains'],
+    edges: [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+    ],
+    pois: [
+      { node: 1, kind: 'fighting', units: 1, guard: null },
+      { node: 2, kind: 'gold', units: 2, guard: { type: 'fighting', strength: 6 } },
+      { node: 3, kind: 'gold', units: 3, guard: { type: 'magic', strength: 7 } },
+    ],
+  });
+  const seatOne = (state: GameState) => state.players[0]!;
+
+  it('leaves out gold whose guard a 6 plus the skill does not beat, whatever gold the player holds', () => {
+    const state = withStats(fixtureGame(guarded, 0), player('one'), { gold: 9 });
+    expect([...winnableBySkill(state, seatOne(state))]).toEqual([n(1)]);
+    const fighter = withStats(state, player('one'), { fighting: 1 });
+    expect([...winnableBySkill(fighter, seatOne(fighter))]).toEqual([n(1), n(2)]);
+  });
+
+  it('leaves nothing when nothing is winnable, and the player rests', () => {
+    const state = fixtureGame(guarded, 0);
+    const claimed = applyAction(state, { kind: 'move', player: player('one'), path: [n(1)] }, scriptedDice([])).state;
+    const two = claimed.players[1]!;
+    expect([...winnableBySkill(claimed, two)]).toEqual([]);
+
+    for (const walks of ['counted', 'replayed'] as const) {
+      const after = playRolloutTurn(rolloutCursor(claimed, player('one')), options({ targets: winnableBySkill, walks }));
+      expect(after.state.players[1]?.position).toBe(two.position);
+      expect(after.state.players[1]?.stats.stamina).toBe(two.stats.stamina + DEFAULT_GAME_CONFIG.movement.REST_STAMINA_GAIN);
+      expect(after.state.turn.activeSeat).toBe(1);
+      expect(after.targets).toEqual([null, null]);
+    }
   });
 });
 
