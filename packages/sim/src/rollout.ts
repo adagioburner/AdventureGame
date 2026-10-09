@@ -11,6 +11,7 @@ import {
   unclaimedGoldUnits,
   type DiceSource,
   type GameState,
+  type Guard,
   type NodeId,
   type PlayerId,
   type PlayerState,
@@ -184,7 +185,7 @@ export interface RolloutOptions {
   readonly restRule: RestRule;
   readonly dice: DiceSource;
   readonly rng: Rng;
-  /** Which POIs a player may head for; every unclaimed one when absent, as the game plays. */
+  /** Which POIs a player may head for; every unclaimed one when absent. The game's computer passes `winnableBySkill` (Q295). */
   readonly targets?: TargetFilter;
   /** Which of those count as closest; by weighted terrain cost when absent (the computer player passes `closestBySpeeds`, Q112). */
   readonly closest?: ClosestFinder;
@@ -215,6 +216,40 @@ export function unclaimedPoiNodes(state: GameState): ReadonlySet<NodeId> {
 }
 
 /**
+ * [Q295] Whether `player` could beat `guard` on some roll with `units` more of
+ * its skill: the die's best roll plus the skill and the units is above the
+ * guard's strength (§8: the roll plus the skill must be above the guard). An
+ * unguarded site is always won.
+ */
+export function winsOnSomeRoll(state: GameState, player: PlayerState, guard: Guard | null, units = 0): boolean {
+  if (guard === null) return true;
+  const { count, sides } = state.map.ruleset.config.combat.GUARD_DIE;
+  return count * sides + player.stats[guard.type] + units > guard.strength;
+}
+
+/** [Q295] Unclaimed POIs `player` could win on some roll with `units` more of the guard's skill (`winsOnSomeRoll`). */
+export function winnablePoiNodesWith(state: GameState, player: PlayerState, units: number): ReadonlySet<NodeId> {
+  const nodes = new Set<NodeId>();
+  for (let index = 0; index < state.map.pois.length; index++) {
+    const poi = state.map.pois[index];
+    if (poi === undefined || state.poiRuntime[index]?.claimedBy !== null) continue;
+    if (winsOnSomeRoll(state, player, poi.guard, units)) nodes.add(poi.node);
+  }
+  return nodes;
+}
+
+/**
+ * [Q295] Which sites the players in the computer's imagined games head for:
+ * those they could win with the skill they hold, since they never buy (Q280,
+ * 984). With none left they rest (`playRolloutTurn`).
+ *
+ * [SOURCE §9, chat] Andrei, 2026-10-09: "if skipping in imagined games
+ * actually speeds them up, let us use it in all games, computer's and
+ * imagined", with the skill alone, and rest when nothing is left to win.
+ */
+export const winnableBySkill: TargetFilter = (state, player) => winnablePoiNodesWith(state, player, 0);
+
+/**
  * Unclaimed POIs `player` could win now: every unguarded one, and guarded gold
  * whose guard the die's best roll plus the player's skill beats (§8: roll +
  * skill > strength). When that leaves nothing, every unclaimed POI, so a
@@ -222,18 +257,11 @@ export function unclaimedPoiNodes(state: GameState): ReadonlySet<NodeId> {
  *
  * For comparison only (detail 419, Andrei 2026-09-30: leave gold nobody can win
  * yet out of the computer's choices, tested on its own). The game's computer
- * players use `unclaimedPoiNodes`.
+ * players skip such gold by Q295's rules instead: `winnableBySkill` in the
+ * games they imagine, and `closestUnclaimedPoiEnumerator`'s in their own choices.
  */
 export function winnablePoiNodes(state: GameState, player: PlayerState): ReadonlySet<NodeId> {
-  const { count, sides } = state.map.ruleset.config.combat.GUARD_DIE;
-  const nodes = new Set<NodeId>();
-  for (let index = 0; index < state.map.pois.length; index++) {
-    const poi = state.map.pois[index];
-    if (poi === undefined || state.poiRuntime[index]?.claimedBy !== null) continue;
-    const guard = poi.guard;
-    const skill = guard === null ? 0 : guard.type === 'fighting' ? player.stats.fighting : player.stats.magic;
-    if (guard === null || count * sides + skill > guard.strength) nodes.add(poi.node);
-  }
+  const nodes = winnablePoiNodesWith(state, player, 0);
   return nodes.size > 0 ? nodes : unclaimedPoiNodes(state);
 }
 
@@ -300,7 +328,9 @@ function comparedTarget(
  * A seat with no commitment picks one uniformly among the K closest unclaimed
  * POIs (`chooseWalkTarget`, shared with §5.1), or as `pick` picks among them;
  * the game's computer favours gold as the game goes on (Q290,
- * `goldByProgressPicker`). After the turn, a commitment
+ * `goldByProgressPicker`). With `targets`, it picks among those, and rests
+ * when they leave it none: the game's computer leaves out the guards its skill
+ * cannot beat (Q295, `winnableBySkill`). After the turn, a commitment
  * lapses for whoever has arrived at theirs and for anyone whose target someone
  * has just claimed; everyone else keeps theirs.
  *
@@ -311,16 +341,22 @@ function comparedTarget(
 export function playRolloutTurn(cursor: RolloutCursor, options: RolloutOptions): RolloutCursor {
   if (options.walks === 'replayed') return playWalkedTurn(cursor, options, cheapestRoute);
   const player = activePlayer(cursor.state);
-  return playCountedTurn(cursor, options, player.seat - 1, committedTarget(cursor, player, options));
+  const target = committedTarget(cursor, player, options);
+  if (target === null) return restedTurn(cursor, player.seat - 1, applyCountedTurn(cursor.state, { kind: 'rest' }, options.dice));
+  return playCountedTurn(cursor, options, player.seat - 1, target);
 }
 
-/** The active seat's target: the one it is committed to, or one it picks now. */
-function committedTarget(cursor: RolloutCursor, player: PlayerState, options: RolloutOptions): NodeId {
+/**
+ * The active seat's target: the one it is committed to, or one it picks now;
+ * `null` when `options.targets` leaves it nowhere to go (Q295), and it rests.
+ */
+function committedTarget(cursor: RolloutCursor, player: PlayerState, options: RolloutOptions): NodeId | null {
   const committed = cursor.targets[player.seat - 1] ?? null;
   if (committed !== null) return committed;
 
   const state = cursor.state;
   const eligible = options.targets === undefined ? unclaimedPoiNodes(state) : options.targets(state, player);
+  if (eligible.size === 0) return null;
   const count = options.config.balancing.CLOSE_CANDIDATE_COUNT;
   const choice =
     options.closest === undefined && options.pick === undefined
@@ -334,10 +370,15 @@ function committedTarget(cursor: RolloutCursor, player: PlayerState, options: Ro
           routeTable(state.map.graph, options.config),
         )
       : comparedTarget(state, player, eligible, count, options);
-  // No unclaimed POI means no unclaimed gold, which every termination stops
-  // on first; reaching here is a caller bug, not a position.
-  if (choice === null) throw new RangeError('a rollout turn with no unclaimed POI left to head for');
+  // Some POI is eligible, and every one is on the map's one connected graph;
+  // reaching here is a caller bug, not a position.
+  if (choice === null) throw new RangeError('a rollout turn with no eligible POI to head for');
   return choice.node;
+}
+
+/** [Q295] The cursor after a seat with nowhere to go rested: nothing was claimed, so every other seat keeps its target. */
+function restedTurn(cursor: RolloutCursor, index: number, next: GameState): RolloutCursor {
+  return { state: next, subject: cursor.subject, targets: cursor.targets, walks: cursor.walks.map((walk, at) => (at === index ? null : walk)) };
 }
 
 /**
@@ -350,6 +391,7 @@ function playWalkedTurn(cursor: RolloutCursor, options: RolloutOptions, routeOf:
   const player = activePlayer(state);
   const index = player.seat - 1;
   const target = committedTarget(cursor, player, options);
+  if (target === null) return restedTurn(cursor, index, applyAction(state, { kind: 'rest', player: player.id }, options.dice).state);
 
   const action = turnTowards(state, target, options.restRule, routeOf);
   const next = applyAction(state, action, options.dice).state;

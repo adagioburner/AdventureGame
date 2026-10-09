@@ -212,7 +212,8 @@ uniformly at random.** Ranking is by the weighted terrain cost above, and the
 whole thing — rank, then pick uniformly among the nearest K — is written once in
 `packages/sim/src/candidates.ts` and shared by three callers: the remoteness
 walk (§5.1, over *unvisited* POIs), the rollout policy (§9, over *unclaimed*
-POIs) and tree expansion (also unclaimed). The rollout and the tree share the
+POIs) and tree expansion (also unclaimed; the game's computer leaves out
+guarded gold it cannot win, Q295). The rollout and the tree share the
 one K, so tuning `CLOSE_CANDIDATE_COUNT` moves both together; the remoteness
 walk has its own, `REMOTENESS_CANDIDATE_COUNT` (Q66), so the computer player
 tunes without moving the maps. What differs is eligibility, and what each does
@@ -226,6 +227,19 @@ of the map's POIs anyone has claimed, every POI counting alike
 (`sitesClaimedShare`, Q291), so a rollout from the opening picks almost
 uniformly and one near the end goes almost only for gold. The remoteness walk
 still picks uniformly.
+
+**The game's computer skips guarded gold it cannot win** (Q295). A guard can
+be won when the die's best roll plus the matching skill is above its strength.
+Its simulated players head only for POIs their skill could win
+(`winnableBySkill` in `packages/sim/src/rollout.ts`), the other seats' turns
+inside a tree edge included (`MctsOptions.imaginedTargets`), and one with
+nothing left to win rests. The tree's own choices (`closestUnclaimedPoiEnumerator`)
+count the units the subject's gold could buy: a guard it could not win even
+with them is never a choice, and one it reaches this turn is a choice only
+once the skill it holds, after this turn's purchases, could win; the next
+closest POIs fill the K. Purchases are weighed against the POIs its gold could
+win, so a line can buy the units for a guard and then fight it. With nothing
+left it could win, rest is its only branch.
 
 **A rollout stops when no gold rewards are left on the map.** That is the rule,
 and it is specifically *not* "all POIs claimed": a rollout ends with skill and
