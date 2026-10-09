@@ -18,7 +18,7 @@ import {
   type TurnAction,
 } from '@adventure/core';
 import { chooseWalkTarget, closestPoiCandidates, type PoiCandidate } from './candidates.ts';
-import type { TargetPicker } from './experiments.ts';
+import type { TargetPicker } from './goldByProgress.ts';
 import type { ClosestFinder } from './speeds.ts';
 
 /**
@@ -188,7 +188,7 @@ export interface RolloutOptions {
   readonly targets?: TargetFilter;
   /** Which of those count as closest; by weighted terrain cost when absent (the computer player passes `closestBySpeeds`, Q112). */
   readonly closest?: ClosestFinder;
-  /** Which of the closest a player heads for; uniformly at random when absent, as the game plays. */
+  /** Which of the closest a player heads for; uniformly at random when absent. The game's computer passes `goldByProgressPicker` (Q290). */
   readonly pick?: TargetPicker;
   /**
    * [Q210] How a player walks to its target: counted along its route, as the
@@ -298,7 +298,9 @@ function comparedTarget(
  * after it.
  *
  * A seat with no commitment picks one uniformly among the K closest unclaimed
- * POIs (`chooseWalkTarget`, shared with §5.1). After the turn, a commitment
+ * POIs (`chooseWalkTarget`, shared with §5.1), or as `pick` picks among them;
+ * the game's computer favours gold as the game goes on (Q290,
+ * `goldByProgressPicker`). After the turn, a commitment
  * lapses for whoever has arrived at theirs and for anyone whose target someone
  * has just claimed; everyone else keeps theirs.
  *

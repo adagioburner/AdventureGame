@@ -2386,6 +2386,9 @@ over the 120 on a v1 map (75 skill, 45 gold). Stamina rewards are not counted;
 a v1 map has none. Only the estimated evaluation reads it (and the hybrid
 through it); the game's computer players still use the simulated one.
 
+*Since [Q291](#q291) (2026-10-09) the estimate's progress is the sites claimed
+over all the map's sites, and this count of units is gone.*
+
 ### Q112. ~~How far does the computer count a site?~~ — **answered 2026-09-30: by its own speeds, from the steps per terrain on the cheapest route (422-424 A, 426)**
 
 [SOURCE §9, chat] Andrei, 2026-09-30: "go back to caching three numbers (# of
@@ -3974,6 +3977,70 @@ away, and the game master's next page is asked for the map again. Online, a
 game page that fails to draw shows the message of 991 A
 (`apps/web/src/online/GameTrouble.tsx`); the hot seat page is unchanged. No
 rule, number, map or picture changed, and the rulebook needs no change.
+
+---
+
+### Q290. ~~Should the players the computer imagines favour gold as the game goes on?~~ — **answered 2026-10-09: yes; with chance equal to the game's progress a player in an imagined game heads for a random gold site among its 10 closest, otherwise any of the 10 (A); against the computer before, 71 wins to 46**
+
+Andrei, 2026-10-09 at 05:55: *"when the computer players play imaginary games
+let us make them favor gold sites versus others based on the game progress
+calculated as the number of gold and skills taken as the proportion of all gold
+and skills. let us run a quick simulation and see if this idea has any merit"*.
+It is his idea 1 of 2026-09-30 (421 A), which then came out level over 20
+games against the computer of that day.
+
+How progress turns into a preference for gold: A, with chance = progress a
+random gold site among the 10 closest, otherwise any of the 10, any of them
+when none is gold (recommended); B, a weight on each gold site of
+1 + GOLD_PROGRESS_WEIGHT × progress; C, something else. At 06:03: *"for 290 I
+imagine that the result would be roughly the same so let's stick with a"*.
+
+Measured against today's computer, 60 maps each played twice with the seats
+swapped, 120 two-player games a run:
+
+| Progress counted by | Move | Wins (it, today's, shared) | Gold lead a game | By luck (wins / gold) |
+|---|---|---|---|---|
+| gold and skill units | 3 s | 65, 49, 6 | +2.42 ± 0.83 | 0.160 / 0.005 |
+| gold and skill units | 10 s | 64, 55, 1 | +1.94 ± 0.77 | 0.463 / 0.016 |
+| sites (Q291) | 3 s | 71, 46, 3 | +1.68 ± 0.80 | 0.026 / 0.041 |
+
+It takes about 3 fewer skill units a game and more gold, its first gold a few
+turns earlier. At 14:47: *"it's a strategy that makes more sense, so a human
+player will be less annoyed with the computer making seemingly random moves.
+And 65 to 55 is better than losing"*. At 17:01: *"Yes let us put the "sites
+version" into the game."*
+
+Built: `goldByProgressPicker` in `packages/sim/src/goldByProgress.ts`, which
+`computerSearchOptions` passes to its imagined games unless a caller gives
+another. The computer's own choices, its buying and its lead score are
+unchanged, and so is the remoteness walk (§5.1). The balancing tool's
+`+gold-later` now changes nothing, like `+speeds`. No rule, number, map or
+picture changed, and the rulebook needs no change.
+
+### Q291. ~~What counts as the game's progress?~~ — **answered 2026-10-09: the sites anyone has claimed over all the map's sites, every site alike; the count of gold and skill units claimed is gone, from the estimated evaluation too, and its larger-share variant with it**
+
+Asked with Q290: A, the gold and skill units claimed over all of them, Q111's
+progress (recommended); B, the same with the stamina sites' units; C, sites
+claimed instead of units. At 06:00: *"it could be the proportion of claimed
+sites of all sides if this is easier to calculate"*; both were as easy, so the
+first runs kept A. At 14:49: *"can you run a quick simulation eith progress
+measured by the number of sites? I expect the result to be similar, but it's a
+simpler model so it will be better for further development"*: all 65 sites of a
+two-player map counted alike, its 4 stamina sites included (the third row of
+Q290's table). At 17:01: *"You can completely erase the code the hooks game
+progress to the number of skills and gold acquired, the number of sites
+claimed is a good enough indicator."*
+
+The estimated evaluation (§9, Q111) counted the same units, so: switch it to
+sites claimed too, and drop the two `-max` variants that compare the gold and
+skill shares (recommended); leave it; or delete the estimated and hybrid
+evaluations. Answered: sites too.
+
+Built: `sitesClaimedShare` in `packages/sim/src/goldByProgress.ts`, read by
+`goldByProgressPicker` and by `estimatedGoldAndSkillsEvaluator`.
+`rewardUnitsClaimedShare`, the estimate's `claimedProgress` and
+`ProgressMeasure` are gone, and with them the balancing tool's `estimated-max`
+and `hybrid-max` seats. The game's computer players never read the estimate.
 
 ---
 

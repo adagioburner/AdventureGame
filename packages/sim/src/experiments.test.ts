@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_GAME_CONFIG, type PerTerrain } from '@adventure/config';
 import { createRng, routeTable, type GameState, type PlayerStats } from '@adventure/core';
 import { fixtureGame, fixtureMap, n, player, withStats } from '../../core/src/rules/scenario.fixture.ts';
-import { closestByTerrainCost, goldByProgressPicker, rewardUnitsClaimedShare } from './experiments.ts';
+import { closestByTerrainCost } from './experiments.ts';
 import { closestBySpeeds, effectiveDistance } from './speeds.ts';
 
 const config = DEFAULT_GAME_CONFIG;
@@ -106,34 +106,5 @@ describe('closestBySpeeds (Q112, 424 A)', () => {
   it('ranks by weighted terrain cost alone in the comparison ranking', () => {
     const state = withStats(fixtureGame(fork, 0), player('one'), { mountain_move: 2 });
     expect(closestByTerrainCost(state, seatOne(state), eligible, 2).map((candidate) => candidate.node)).toEqual([n(7), n(2)]);
-  });
-});
-
-describe('goldByProgressPicker (421 A)', () => {
-  const candidates = [
-    { node: n(2), cost: 6 },
-    { node: n(7), cost: 5 },
-  ];
-
-  it('picks among all the closest before anything is claimed', () => {
-    const state = fixtureGame(fork, 0);
-    expect(rewardUnitsClaimedShare(state)).toBe(0);
-    const picker = goldByProgressPicker();
-    const rng = createRng('picks');
-    const picked = new Set<number>();
-    for (let draw = 0; draw < 50; draw++) picked.add(picker(state, state.players[0]!, candidates, rng).node);
-    expect([...picked].sort((a, b) => a - b)).toEqual([n(2), n(7)]);
-  });
-
-  it('always picks gold once every reward is claimed', () => {
-    const fresh = fixtureGame(fork, 0);
-    const state: GameState = {
-      ...fresh,
-      poiRuntime: fresh.poiRuntime.map(() => ({ claimedBy: player('two'), claimedOnTurn: 1 })),
-    };
-    expect(rewardUnitsClaimedShare(state)).toBe(1);
-    const picker = goldByProgressPicker();
-    const rng = createRng('picks');
-    for (let draw = 0; draw < 50; draw++) expect(picker(state, state.players[0]!, candidates, rng).node).toBe(n(7));
   });
 });

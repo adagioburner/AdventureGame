@@ -32,7 +32,9 @@ export interface ClosestPoiRolloutSettings {
  *
  * The body is a thin wrapper over `@adventure/sim`'s `runRollout`; the target
  * choosing itself is `chooseWalkTarget`, shared verbatim with remoteness
- * scoring. Nothing is reimplemented here.
+ * scoring. Nothing is reimplemented here. The game's computer passes `pick`,
+ * so the players it imagines favour gold as the game goes on (Q290,
+ * `goldByProgressPicker`).
  */
 export function closestPoiRolloutPolicy(settings: ClosestPoiRolloutSettings): RolloutPolicy {
   return {

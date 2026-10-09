@@ -218,6 +218,15 @@ walk has its own, `REMOTENESS_CANDIDATE_COUNT` (Q66), so the computer player
 tunes without moving the maps. What differs is eligibility, and what each does
 with the ranked list.
 
+**The game's computer has its simulated players favour gold as the game goes
+on** (Q290, `goldByProgressPicker` in `packages/sim/src/goldByProgress.ts`).
+With chance p a simulated player picks a random gold POI among its K closest,
+otherwise any of the K; with no gold among them, any of them. p is the share
+of the map's POIs anyone has claimed, every POI counting alike
+(`sitesClaimedShare`, Q291), so a rollout from the opening picks almost
+uniformly and one near the end goes almost only for gold. The remoteness walk
+still picks uniformly.
+
 **A rollout stops when no gold rewards are left on the map.** That is the rule,
 and it is specifically *not* "all POIs claimed": a rollout ends with skill and
 stamina POIs still sitting on the map, which is the point — gold is the only
@@ -246,8 +255,9 @@ worth keeping apart (`packages/ai/src/policies/evaluators.ts`):
   being the subject's gold minus the richest other player's
   (`simulatedLeadEvaluator('soft')`, which `computerEvaluator()` returns).
 - **estimated** — no rollout at all: the subject's gold and skills as they stand
-  at the node being evaluated, weighted by how far the game has run, so skills
-  count for most at the opening and gold for everything at the end.
+  at the node being evaluated, weighted by how far the game has run (the share
+  of POIs claimed, `sitesClaimedShare`, Q291), so skills count for most at the
+  opening and gold for everything at the end.
   `estimatedGoldAndSkillsEvaluator()`; the formula is in the register.
 - **hybrid** — the average of the two, composed from them rather than
   reimplementing either. `hybridGoldAndSkillsEvaluator()`.
