@@ -54,7 +54,9 @@ export function isEvaluatorName(name: string): name is EvaluatorName {
  *  - `replayed-walks`: the players in its imagined games walk the cheapest
  *    route turn by turn, as before Q210's stage 3.
  *  - `skip-unwinnable`: guarded gold it cannot win is skipped, by its own
- *    choices and by everyone in its imagined games (Q295).
+ *    choices and by everyone in its imagined games (Q295). The game's own
+ *    since then, so this changes nothing; kept so the run's command still
+ *    reads the same.
  */
 export const SEAT_FLAGS = ['winnable', 'gold-later', 'speeds', 'fixed', 'cheapest-search', 'replayed-walks', 'skip-unwinnable'] as const;
 export type SeatFlag = (typeof SEAT_FLAGS)[number];
@@ -176,9 +178,10 @@ export function playHeadToHead(options: HeadToHeadOptions): { readonly game: Hea
       '# +cheapest-search: they count the cheapest route, as before stage 2.',
       '# Players in its imagined games walk the best route for their speeds, traced once when they pick a site',
       '# and counted turn by turn along it (Q210 stage 3). +replayed-walks: they walk the cheapest route, as before.',
-      '# +skip-unwinnable (Q295): its own choices skip a guard it reaches this turn unless the skill it holds after',
-      '# buying could win, and any guard the units its gold buys could not win either, the next closest taking their',
-      '# places; its imagined players skip guards their skill cannot win; with nothing left to win, either rests.',
+      '# Its own choices skip a guard it reaches this turn unless the skill it holds after buying could win, and any',
+      '# guard the units its gold buys could not win either, the next closest taking their places; its imagined',
+      '# players skip guards their skill cannot win; with nothing left to win, either rests (Q295; +skip-unwinnable',
+      '# says so explicitly).',
       ...(drivers[0]?.describe ?? []),
     ],
     choose(state, playerId) {

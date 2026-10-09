@@ -207,8 +207,14 @@ describe('guarded gold it cannot win (Q295)', () => {
     expect(targetsOf(branchesAt(twice, ['fighting', 'fighting']))).toEqual([1]);
   });
 
-  it('weighs every unclaimed site as before when the guards are weighed', () => {
-    expect(targetsOf(enumerate(at({ fighting: 1, gold: 2 })))).toEqual([1, 2, 3]);
+  it('weighs every unclaimed site, as before, when the guards are weighed', () => {
+    const state = at({ fighting: 1, gold: 2 });
+    const weighing: ComputerSettings = { ...settings(), unwinnableGuards: 'weighed' };
+    expect(targetsOf(computerSearchOptions(state, one, weighing).actions.enumerate(state, one))).toEqual([1, 2, 3]);
+  });
+
+  it('skips them in the game', () => {
+    expect(targetsOf(enumerate(at({ fighting: 1, gold: 2 })))).toEqual([2, 3]);
   });
 
   it('skips gold its gold could not buy the win of, and buys nothing for it', () => {

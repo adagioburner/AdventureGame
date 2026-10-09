@@ -4042,6 +4042,65 @@ Built: `sitesClaimedShare` in `packages/sim/src/goldByProgress.ts`, read by
 `ProgressMeasure` are gone, and with them the balancing tool's `estimated-max`
 and `hybrid-max` seats. The game's computer players never read the estimate.
 
+### Q295. ~~Should the computer skip guarded gold it cannot win?~~ — **answered 2026-10-09: yes, in its own choices and in its imagined games; it buys before it goes to a guard, its 10 choices are filled from the next closest, imagined players go by their skill alone, and with nothing left to win it rests; against the computer before, 70 wins to 46**
+
+Andrei, 2026-10-09 at 17:16: *"I think the computer player today still
+considers guarded POIs that it cannot win. I just saw it do that. This needs
+to stop."* Its choices were its 10 closest unclaimed sites whatever the guard,
+and its imagined players' too. Detail 419 (2026-09-30) had left such gold out
+of both, with the skill alone and every site when none was left; it won 4 of
+20 against the computer of that day, and the game kept every site.
+
+A guard can be won when the die's best roll, 6, plus the matching skill is
+above its strength (§8). What was decided:
+
+- **Its own choices: "buy, then go"** (17:36, confirmed at 17:40, *"OK, that
+  makes sense"*). Counting the gold it could spend on skill was recommended
+  first; at 17:34 he asked *"With the "count its gold" option, will the
+  computer still be able to go to sites it cannot win? It may have enough gold
+  to buy the fighting skill, so the site is there to choose, but it is likely
+  not to buy the skill and still may go"*. So a guard it reaches this turn is
+  a choice only when the skill it holds, after anything it bought this turn,
+  could win; one further away when the units its gold could buy would let it
+  win, since it can buy on the turn it gets there; and gold it could not win
+  even then is never a choice. The other options were the skill alone (it
+  could then never buy a win needing two units, since the search buys one at
+  a time) and counting the gold for every choice.
+- **Fill up to 10** (17:41). At 17:40: *"do we want to add more site options
+  if after not buying, or not buying enough, many sites are rules out"*. The
+  next closest sites take the places of those left out. Purchases are still
+  weighed against the sites its gold could win, so a unit is tried towards a
+  guard it will reach once the units are bought.
+- **Imagined games too** (17:28): *"if skipping in imagined games actually
+  speeds them up, let us use it in all games, computer's and imagined"*. At
+  17:23 he had asked whether it would add time: over 5,100 imagined games from
+  each of 17 positions, the check costs nothing measurable (1.3 µs a pick
+  against 1.45 µs for today's list), and an imagined game took 0.52 ms and 81
+  turns against 0.71 ms and 104. The other seats' turns inside a tree edge
+  skip too.
+- **Imagined players by their skill alone** (17:37, confirmed at 17:42): they
+  never buy (984), and counting their gold took 0.69 ms and 103 turns a game.
+- **Rest when nothing is left to win**, for the computer (17:24) and for its
+  imagined players (17:37). In imagined games this came up about once in 50
+  games.
+
+At 17:41: *"we'll need to test this version of a computer player against the
+current version"*. 120 two-player games at 3 s a move on 60 maps, each played
+twice with the seats swapped: 70 wins to 46, 4 shared (a split that uneven
+about 1 time in 30 between equal players), +1.88 ± 0.91 gold a game; it won
+both games on 20 maps and lost both on 8. It fought 1,370 times and won 86%,
+none of them at a guard no roll could win; the computer before fought 1,249
+times, 27 of them at such guards. At 19:16: put it in.
+
+Built: `winsOnSomeRoll`, `winnablePoiNodesWith` and `winnableBySkill` in
+`packages/sim/src/rollout.ts`, where a player with no eligible site rests;
+`closestUnclaimedPoiEnumerator`'s `choicesAt` in
+`packages/ai/src/policies/tree.ts`; `MctsOptions.imaginedTargets` for the
+other seats along a tree edge. `ComputerSettings.unwinnableGuards` is
+`'skipped'` in the game; `'weighed'` is the computer before. The balancing
+tool's `+skip-unwinnable` now changes nothing. No rule, number, map or picture
+changed, and the rulebook needs no change.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design

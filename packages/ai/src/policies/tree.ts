@@ -137,17 +137,22 @@ function argMaxWithRandomTieBreak<T>(items: readonly T[], score: (item: T) => nu
  * [Q190, Q280] Then a buy branch for each speed or skill the player may buy
  * that a move this turn would use up (`buyBranches`). Below a purchase only
  * such moves are branches, and resting is not one (`usesFully`).
+ *
+ * [Q295] The game's computer skips guarded gold it cannot win (`choicesAt`):
+ * "I think the computer player today still considers guarded POIs that it
+ * cannot win. [...] This needs to stop." With nothing left it could win, rest
+ * is its only branch.
  */
 export function closestUnclaimedPoiEnumerator(
   config: GameConfig,
   reachability: TurnReachability,
-  /** Which POIs may be targets; every unclaimed one when absent, as the game plays. */
+  /** Which POIs may be targets in place of `unwinnable`'s; every unclaimed one, or those its gold could win, when absent. */
   allowed?: TargetFilter,
   /** Which of those count as closest; by weighted terrain cost when absent. The game passes `closestByBestRoute` (Q210). */
   closest?: ClosestFinder,
   /** The route a move walks, which `usesFully` checks; the cheapest when absent. The game passes `bestRouteForSpeeds` (Q210, 820 A). */
   walkRoute: RouteChoice = cheapestRoute,
-  /** [Q295] Whether guarded gold it cannot win is weighed, as before, or skipped (`choicesAt`). */
+  /** [Q295] Whether guarded gold it cannot win is weighed, as before, or skipped (`choicesAt`), as the game passes. */
   unwinnable: 'weighed' | 'skipped' = 'weighed',
 ): ActionEnumerator {
   const count = config.balancing.CLOSE_CANDIDATE_COUNT;

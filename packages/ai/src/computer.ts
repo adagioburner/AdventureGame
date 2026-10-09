@@ -38,8 +38,9 @@ export interface ComputerSettings {
   readonly evaluator?: NodeEvaluator;
   /**
    * Which sites a player may head for, in the search's choices and in the
-   * games it plays in its head. The game leaves it out and gets every
-   * unclaimed site; the balancing harness passes `winnablePoiNodes` to compare.
+   * games it plays in its head. The game leaves it out and gets Q295's
+   * (`unwinnableGuards`); the balancing harness passes `winnablePoiNodes` to
+   * compare with detail 419's.
    */
   readonly targets?: TargetFilter;
   /**
@@ -70,13 +71,12 @@ export interface ComputerSettings {
    */
   readonly imaginedWalks?: 'counted' | 'replayed';
   /**
-   * [Q295] Guarded gold a player cannot win. The game leaves it out and its
-   * computer weighs such gold as before; the balancing harness passes
-   * `'skipped'` to compare: the search's own choices skip a guard it reaches
-   * this turn unless the skill it holds could win, and any its gold could not
-   * buy the win of either, the next closest taking their places; the players
-   * in its imagined games skip what their skill cannot win (`winnableBySkill`);
-   * with nothing left either rests.
+   * [Q295] Guarded gold a player cannot win. The game leaves it out and gets
+   * `'skipped'`: the search's own choices skip a guard it reaches this turn
+   * unless the skill it holds could win, and any its gold could not buy the
+   * win of either, the next closest taking their places; the players in its
+   * imagined games skip what their skill cannot win (`winnableBySkill`); with
+   * nothing left either rests. `'weighed'` is the computer before.
    */
   readonly unwinnableGuards?: 'weighed' | 'skipped';
 }
@@ -101,8 +101,9 @@ export function computerEvaluator(): NodeEvaluator {
  * cheapest route (`closestBySpeeds`, 822 B) and walking the best route for
  * them, counted (Q210 stage 3, 823 A), heading for gold more often as the
  * sites are claimed (Q290, `goldByProgressPicker`), and the lead score (Q113,
- * `computerEvaluator`). The games it plays in
- * its head rest when stuck (Q43) and stop when the gold is gone, the game is
+ * `computerEvaluator`). Guarded gold it cannot win is skipped, by its own
+ * choices and by the players it imagines (Q295, `unwinnableGuards`). The
+ * games it plays in its head rest when stuck (Q43) and stop when the gold is gone, the game is
  * won, or `SIMULATION_TURN_CAP` turns have passed since `state` (Q44).
  */
 export function computerSearchOptions(state: GameState, subject: PlayerId, settings: ComputerSettings): MctsOptions {
@@ -112,7 +113,7 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
   const closest = settings.closest ?? closestBySpeeds;
   const cheapest = settings.searchRoutes === 'cheapest';
   const edgeRoute = cheapest ? cheapestRoute : bestRouteForSpeeds;
-  const unwinnable = settings.unwinnableGuards ?? 'weighed';
+  const unwinnable = settings.unwinnableGuards ?? 'skipped';
   const imaginedTargets = unwinnable === 'skipped' ? (settings.targets ?? winnableBySkill) : settings.targets;
   return {
     subject,

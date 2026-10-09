@@ -185,7 +185,7 @@ export interface RolloutOptions {
   readonly restRule: RestRule;
   readonly dice: DiceSource;
   readonly rng: Rng;
-  /** Which POIs a player may head for; every unclaimed one when absent, as the game plays. */
+  /** Which POIs a player may head for; every unclaimed one when absent. The game's computer passes `winnableBySkill` (Q295). */
   readonly targets?: TargetFilter;
   /** Which of those count as closest; by weighted terrain cost when absent (the computer player passes `closestBySpeeds`, Q112). */
   readonly closest?: ClosestFinder;
@@ -257,7 +257,8 @@ export const winnableBySkill: TargetFilter = (state, player) => winnablePoiNodes
  *
  * For comparison only (detail 419, Andrei 2026-09-30: leave gold nobody can win
  * yet out of the computer's choices, tested on its own). The game's computer
- * players use `unclaimedPoiNodes`.
+ * players skip such gold by Q295's rules instead: `winnableBySkill` in the
+ * games they imagine, and `closestUnclaimedPoiEnumerator`'s in their own choices.
  */
 export function winnablePoiNodes(state: GameState, player: PlayerState): ReadonlySet<NodeId> {
   const nodes = winnablePoiNodesWith(state, player, 0);
@@ -327,7 +328,9 @@ function comparedTarget(
  * A seat with no commitment picks one uniformly among the K closest unclaimed
  * POIs (`chooseWalkTarget`, shared with §5.1), or as `pick` picks among them;
  * the game's computer favours gold as the game goes on (Q290,
- * `goldByProgressPicker`). After the turn, a commitment
+ * `goldByProgressPicker`). With `targets`, it picks among those, and rests
+ * when they leave it none: the game's computer leaves out the guards its skill
+ * cannot beat (Q295, `winnableBySkill`). After the turn, a commitment
  * lapses for whoever has arrived at theirs and for anyone whose target someone
  * has just claimed; everyone else keeps theirs.
  *

@@ -41,7 +41,7 @@ export interface ComputerSettings {
   readonly searchRoutes?: 'best' | 'cheapest';
   /** [Q210] How the players in its imagined games walk; counted along the best route for their speeds when absent, as the game plays. */
   readonly imaginedWalks?: 'counted' | 'replayed';
-  /** [Q295] Guarded gold a player cannot win; weighed, as the game plays, when absent. */
+  /** [Q295] Guarded gold a player cannot win; skipped, as the game plays, when absent. */
   readonly unwinnableGuards?: 'weighed' | 'skipped';
   /** Told after every move how many iterations the search ran in how long. */
   readonly onSearch?: (iterations: number, took: number) => void;
