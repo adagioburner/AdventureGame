@@ -185,3 +185,53 @@ export function hybridGoldAndSkillsEvaluator(): NodeEvaluator {
     },
   };
 }
+
+/**
+ * How the hybrid-by-the-lead's estimate puts the gold lead at the node in
+ * [0, 1], for comparison:
+ *
+ *  - `share`: (lead / total gold + 1) / 2, so a gold of lead counts about as
+ *    much as a skill unit does in the skill term.
+ *  - `soft`: (lead / (|lead| + 1) + 1) / 2, the lead score's own form.
+ */
+export type LeadScale = 'share' | 'soft';
+
+/**
+ * **Hybrid by the lead.** Andrei, 2026-10-10: the average of today's
+ * evaluation (the imagined game scored by the lead, Q113) and an estimate
+ * that reads the lead instead of the subject's own gold:
+ *
+ *   estimate = lead at the node × progress
+ *            + (skills + stamina/STAMINA_PER_SKILL_POINT)/total_skills × (1 − progress)
+ *
+ * with `progress` the sites claimed, as in the estimated evaluation, and the
+ * lead put in [0, 1] by `scale`. For the balancing tool only; the game's
+ * computer players do not use it.
+ */
+export function hybridLeadEvaluator(scale: LeadScale): NodeEvaluator {
+  const simulated = simulatedLeadEvaluator('soft');
+
+  return {
+    name: `hybrid-lead-${scale}`,
+    readsRollout: true,
+    evaluate(atNode: RolloutCursor, rolledOut: RolloutCursor, subject: PlayerId): number {
+      const state = atNode.state;
+      const own = playerById(state, subject).stats.gold;
+      let best = Number.NEGATIVE_INFINITY;
+      for (const player of state.players) {
+        if (player.id !== subject && player.stats.gold > best) best = player.stats.gold;
+      }
+      const lead = best === Number.NEGATIVE_INFINITY ? own : own - best;
+      const total = totalGoldUnits(state.map);
+      const leadValue =
+        scale === 'soft'
+          ? (lead / (Math.abs(lead) + 1) + 1) / 2
+          : total === 0
+            ? 0.5
+            : Math.min(1, Math.max(0, (lead / total + 1) / 2));
+      const progress = sitesClaimedShare(state);
+      const estimate = leadValue * progress + normalisedSkills(state, subject) * (1 - progress);
+      return (simulated.evaluate(atNode, rolledOut, subject) + estimate) / 2;
+    },
+  };
+}

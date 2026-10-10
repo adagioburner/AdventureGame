@@ -15,6 +15,7 @@ import { search, searchTree, startSearch } from './mcts.ts';
 import {
   estimatedGoldAndSkillsEvaluator,
   hybridGoldAndSkillsEvaluator,
+  hybridLeadEvaluator,
   simulatedLeadEvaluator,
   simulatedRolloutEvaluator,
 } from './policies/evaluators.ts';
@@ -121,7 +122,13 @@ describe('previewReachability', () => {
 
 describe('evaluators', () => {
   it('all stay inside [0, 1] over whole rollouts', () => {
-    const evaluators = [simulatedRolloutEvaluator(), estimatedGoldAndSkillsEvaluator(), hybridGoldAndSkillsEvaluator()];
+    const evaluators = [
+      simulatedRolloutEvaluator(),
+      estimatedGoldAndSkillsEvaluator(),
+      hybridGoldAndSkillsEvaluator(),
+      hybridLeadEvaluator('share'),
+      hybridLeadEvaluator('soft'),
+    ];
     for (const seed of ['a', 'b', 'c', 'd', 'e', 'f']) {
       const state = fixtureGame(star, 0);
       const atNode = rolloutCursor(state, player('one'));
@@ -155,6 +162,19 @@ describe('estimated evaluation', () => {
     const rested = withStats(took, player('one'), { stamina: 5 });
     const withStamina = estimatedGoldAndSkillsEvaluator().evaluate(rolloutCursor(rested, player('one')), rolloutCursor(rested, player('one')), player('one'));
     expect(withStamina).toBeCloseTo((2 / 3) * (1 - 1 / 6));
+  });
+});
+
+describe('hybrid by the lead', () => {
+  it('averages the lead score and an estimate by the lead at the node', () => {
+    // The star holds 5 gold and 6 sites; player one takes the 2 gold next
+    // door, so it leads by 2 with 1 of the 6 sites claimed and no skills.
+    const state = withStats(fixtureGame(star, 0), player('one'), { stamina: 1 });
+    const took = applyAction(state, { kind: 'move', player: player('one'), path: [n(1)] }, createDiceSource(createRng('x'), DEFAULT_GAME_CONFIG)).state;
+    const at = rolloutCursor(took, player('one'));
+    const leadSoft = (2 / 3 + 1) / 2;
+    expect(hybridLeadEvaluator('share').evaluate(at, at, player('one'))).toBeCloseTo((leadSoft + ((2 / 5 + 1) / 2) * (1 / 6)) / 2);
+    expect(hybridLeadEvaluator('soft').evaluate(at, at, player('one'))).toBeCloseTo((leadSoft + leadSoft * (1 / 6)) / 2);
   });
 });
 
