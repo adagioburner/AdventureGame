@@ -29,3 +29,13 @@ export const ACCOUNT_RULES: AccountRules = {
   },
   loginLifetimeMs: THIRTY_DAYS_MS,
 };
+
+/**
+ * [Q300, 6] The accounts given the moderator flag, by username. They delete
+ * posts on the site's board and stop accounts from posting. Andrei: "my
+ * username is Andrei, we can add a "moderator" flag for accounts, to have a
+ * more developed moderation scheme later if needed". The flag is kept on the
+ * account; the lobby gives it to these whenever it starts and when one of them
+ * registers, and taking it away again is left to that later scheme.
+ */
+export const SITE_MODERATORS: readonly string[] = ['Andrei'];

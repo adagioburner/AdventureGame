@@ -4103,6 +4103,82 @@ changed, and the rulebook needs no change.
 
 ---
 
+### Q300. ~~Can the site have a message board that keeps trolls out?~~ — **answered 2026-10-10: yes, on the game list page, beside the lists or below them, for logged-in players; Llama Guard on Cloudflare checks every post first, a flagged post is refused and so is every post while the check cannot run; Andrei's account has a moderator flag, deletes posts and stops accounts from posting; posts go after 14 days (1-13)**
+
+Andrei, 2026-10-10 at 17:24: *"I would like to add a message board to the main
+game site but I'm afraid that some trolls may post offensive content into it. is
+there a free service that would allow me to vet the content people post on this
+message board"*. Offered: OpenAI's moderation check (recommended: free, 5,000
+checks a day, flags harassment but not swearing, needs an OpenAI account);
+Google Cloud's text moderation (flags swearing and insults, the first 50,000
+units of 100 characters a month free); Llama Guard on Cloudflare's Workers AI,
+where the site already runs (no new account, 10,000 free neurons a day, but its
+list has no insults or swearing); Disqus (free with ads, its own logins) and
+giscus (GitHub logins, no filter); and not Perspective API, which shuts down on
+31 December 2026. At 20:13: *"i like llama guard, it would be nice to keep
+everything under one roof"*. Cloudflare's Llama Guard takes only the post and
+checks it against its own list; no documented way to add to the list was found.
+
+1. **Where.** A: a Board button in the game list's top bar, opening a board
+   that works like a game's (500 characters, oldest at the top, no editing); B:
+   its own page. At 21:10: *"I would prefer to see the board right there on the
+   same page as the game lists, o[n] the side if space permits or below them"*.
+2. **Who.** A: logged-in players read and post; B: anyone reads. A.
+3. **A post Llama Guard flags.** A: refused, and its writer told; B: held until
+   Andrei approves it. A.
+4. **When the check cannot run.** A: refused with "try again later"; B: posted
+   unchecked. A.
+5. **Insults and swearing.** A: Llama Guard alone, deleted by hand; B: also ask
+   one of Cloudflare's general models. *"5A to start, keep B as an option"*.
+6. **Deleting.** Only a moderator. A: the post keeps its place and reads
+   "Deleted by the moderator.", as in a game; B: it disappears. A, and *"my
+   username is Andrei, we can add a "moderator" flag for accounts, to have a
+   mo[re] developed moderation scheme later if needed"*.
+7. **Stopping an account from posting.** *"yes, hopefully the UI will not grow
+   too bulky"*.
+
+At 21:28, *"all as recommended"*:
+
+8. **Layout.** Beside the lists on a window at least 980 wide, the window's
+   height; below them on a narrower one, half a window tall; its posts scroll
+   inside it, the newest at the bottom with the box under it.
+9. **A flagged post.** The words stay in the box, and "Not posted: it may be
+   offensive." stands over it.
+10. **No check.** The words stay, under "Not posted: messages can't be checked
+    right now. Try again later."
+11. **Stopping.** Beside the trash bin on each of other people's posts, a
+    circle with a line through it, which asks first; on a stopped writer's
+    posts it is red and lets them post again. The stopped player reads "You
+    can't post on the board." where the box was; nobody else sees a difference.
+12. **A post** shows its writer's username and time, and no figure, since
+    accounts have none.
+
+13. At 21:29: *"please also make messages expire in 14 days. The purpose of this
+    board is to coordinate games, so 14 days should be enough"*. Each post goes
+    14 days after it was put on the board, deleted or not; a page left open
+    hides it then too.
+
+Built: the board is kept by the lobby object (`apps/server/src/board.ts`,
+`SiteBoard` and its SQLite table) and travels on the game list's socket
+(`lobby.post`, `lobby.deletePost`, `lobby.blockPoster`, `lobby.board`,
+`lobby.posted`, `lobby.postRefused` in `packages/protocol`); the page is
+`apps/web/src/online/SiteBoard.tsx`. The check is
+`apps/server/src/adapters/llama-guard.ts`: `@cf/meta/llama-guard-3-8b` through
+the Worker's new `AI` binding, on the live and the preview Worker, with no
+answer in 10 seconds or any error counting as no check. The moderator and
+stopped flags are two columns of the accounts table, every existing account
+with both off; `SITE_MODERATORS` in `apps/server/src/auth/rules.ts` names
+Andrei, whose account gets the flag when the lobby starts or when it is
+registered; taking the flag away is left to the later scheme. Workers AI only
+runs on Cloudflare, so the tests start the Worker with it off and a post there
+is refused as unchecked. Each check uses some of the account's 10,000 free
+neurons a day; someone posting a great deal could use them up, and then every
+post is refused until 00:00 UTC (4 A) unless the moderator stops them. The
+game's own boards are unchanged. No rule, number, map or picture changed, and
+the rulebook needs no change.
+
+---
+
 ## C. Decisions I made that are *implementation*, not design
 
 Listed so you can veto any that read as design to you.

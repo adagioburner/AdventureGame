@@ -21,7 +21,8 @@ import type { PasswordHash } from '../auth/password.ts';
  *   - `Clock`       → `systemClock` from `memory.ts`, which is `Date.now()`;
  *   - the accounts behind `PasswordAccounts` → SQLite in the one lobby
  *     object, which also keeps the list of games (one index across all the
- *     game objects, `docs/IMPLEMENTATION_PLAN.md` phase 6 item 5);
+ *     game objects, `docs/IMPLEMENTATION_PLAN.md` phase 6 item 5), and since
+ *     Q300 the site's board and each account's moderator and blocked flags;
  *   - `MapService` and `AiService` → round trips to the game master's browser
  *     (phase 8 for the AI; the map at Start), never computed here.
  *
@@ -234,5 +235,60 @@ export function createSqlAccountStore(sql: SqlLike): AccountStore {
     deleteLogin: async (tokenHash) => {
       sql.exec('DELETE FROM logins WHERE token_hash = ?', tokenHash);
     },
+  };
+}
+
+/** [Q300, 6 and 7] What an account may do on the site's board beyond reading and posting. */
+export interface AccountFlags {
+  /** [Q300, 6] Deletes posts and stops accounts from posting. */
+  readonly moderator: boolean;
+  /** [Q300, 7] A moderator stopped this account from posting. */
+  readonly postingBlocked: boolean;
+}
+
+export interface AccountFlagStore {
+  /** An account's flags; both off for an account that does not exist. */
+  flagsOf(userId: UserId): AccountFlags;
+  /** Gives the moderator flag to the account with this `AccountRecord.key`, if there is one. */
+  grantModerator(key: string): void;
+  /** Says whether the account exists. */
+  setPostingBlocked(userId: UserId, blocked: boolean): boolean;
+  /** The accounts stopped from posting. */
+  blockedAccounts(): UserId[];
+}
+
+/**
+ * [Q300, 6 and 7] The flags are two columns of the accounts table, added to a
+ * table made before them, every existing account with both off. Opened after
+ * `createSqlAccountStore`, which makes the table.
+ */
+export function createSqlAccountFlags(sql: SqlLike): AccountFlagStore {
+  const columns = new Set(
+    sql
+      .exec('PRAGMA table_info(accounts)')
+      .toArray()
+      .map((row) => String(row['name'])),
+  );
+  if (!columns.has('moderator')) sql.exec('ALTER TABLE accounts ADD COLUMN moderator INTEGER NOT NULL DEFAULT 0');
+  if (!columns.has('posting_blocked')) sql.exec('ALTER TABLE accounts ADD COLUMN posting_blocked INTEGER NOT NULL DEFAULT 0');
+
+  return {
+    flagsOf: (userId) => {
+      const row = sql.exec('SELECT moderator, posting_blocked FROM accounts WHERE user_id = ?', userId).toArray()[0];
+      return { moderator: Number(row?.['moderator'] ?? 0) === 1, postingBlocked: Number(row?.['posting_blocked'] ?? 0) === 1 };
+    },
+    grantModerator: (key) => {
+      sql.exec('UPDATE accounts SET moderator = 1 WHERE key = ?', key);
+    },
+    setPostingBlocked: (userId, blocked) => {
+      if (sql.exec('SELECT 1 FROM accounts WHERE user_id = ?', userId).toArray().length === 0) return false;
+      sql.exec('UPDATE accounts SET posting_blocked = ? WHERE user_id = ?', blocked ? 1 : 0, userId);
+      return true;
+    },
+    blockedAccounts: () =>
+      sql
+        .exec('SELECT user_id FROM accounts WHERE posting_blocked = 1')
+        .toArray()
+        .map((row) => asUserId(String(row['user_id']))),
   };
 }

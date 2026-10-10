@@ -6,10 +6,12 @@ import type { Lobby } from './lobby.ts';
 export interface Env {
   /** One object per game, named by its `gameId`. */
   readonly GAMES: DurableObjectNamespace<GameRoom>;
-  /** One object for the whole site: accounts, logins and the game list. */
+  /** One object for the whole site: accounts, logins, the game list and the site's board. */
   readonly LOBBY: DurableObjectNamespace<Lobby>;
   /** The built site (`apps/web`, `pnpm build:site`). */
   readonly ASSETS: Fetcher;
+  /** [Q300, 3] Workers AI, for Llama Guard's check of each post on the site's board. */
+  readonly AI: Ai;
 }
 
 /**
