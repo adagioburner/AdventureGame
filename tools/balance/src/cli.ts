@@ -141,7 +141,7 @@ function headToHead(args: readonly string[]): number {
   const seatsOption = args.find((argument) => argument.startsWith('--seats='));
   const seats = (seatsOption?.slice('--seats='.length).split(',') ?? []).map(parseSeatSpec);
   if (seed === undefined || seats.length < 2 || seats.some((spec) => spec === null)) {
-    process.stderr.write('h2h needs a seed and --seats= with two or more of simulated, estimated, hybrid, lead, lead-win, lead-win-margin, lead-soft, hybrid-lead-share, hybrid-lead-soft, hybrid-lead-soft-50, each optionally with +winnable, +gold-later, +speeds, +fixed, +cheapest-search, +replayed-walks, +skip-unwinnable and @<exploration>\n');
+    process.stderr.write('h2h needs a seed and --seats= with two or more of simulated, estimated, hybrid, lead, lead-win, lead-win-margin, lead-soft, each optionally with +winnable, +gold-later, +speeds, +fixed, +cheapest-search, +replayed-walks, +skip-unwinnable and @<exploration>\n');
     return 2;
   }
   const seconds = secondsOption(args);

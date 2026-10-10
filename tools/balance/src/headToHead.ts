@@ -3,7 +3,6 @@ import type { PlayerStats, Seed } from '@adventure/core';
 import {
   estimatedGoldAndSkillsEvaluator,
   hybridGoldAndSkillsEvaluator,
-  hybridLeadEvaluator,
   simulatedLeadEvaluator,
   simulatedRolloutEvaluator,
   type NodeEvaluator,
@@ -29,11 +28,6 @@ export const EVALUATORS = {
   'lead-win-margin': () => simulatedLeadEvaluator('win-and-margin'),
   // Andrei's form, 2026-09-30 11:43; the game's own since Q113.
   'lead-soft': () => simulatedLeadEvaluator('soft'),
-  // Andrei, 2026-10-10: the average of lead-soft and an estimate by the lead at the node.
-  'hybrid-lead-share': () => hybridLeadEvaluator('share'),
-  'hybrid-lead-soft': () => hybridLeadEvaluator('soft'),
-  // Andrei, 2026-10-10 14:18: the same with stamina / 10 and the skills out of 50, capped at 1.
-  'hybrid-lead-soft-50': () => hybridLeadEvaluator('soft', { staminaPerSkillPoint: 10, skillUnits: 50 }),
 } as const satisfies Record<string, () => NodeEvaluator>;
 
 export type EvaluatorName = keyof typeof EVALUATORS;
@@ -172,10 +166,6 @@ export function playHeadToHead(options: HeadToHeadOptions): { readonly game: Hea
       '# lead = today\'s imagined games, scored by the gold lead over the richest other player:',
       '# (lead / total gold + 1) / 2; lead-win: 1 ahead, 0.5 level, 0 behind; lead-win-margin: their average;',
       '# lead-soft: (lead / (|lead| + 1) + 1) / 2 with the lead in gold.',
-      '# hybrid-lead-share / hybrid-lead-soft: the average of lead-soft and an estimate at the searched position,',
-      '# the lead there x p + (skills + stamina / 5) / the map\'s skill units x (1 - p), p = share of sites claimed;',
-      '# the lead put between 0 and 1 as (lead / total gold + 1) / 2 (share) or as lead-soft does (soft).',
-      '# hybrid-lead-soft-50: hybrid-lead-soft with (skills + stamina / 10) / 50, at most 1, as the skill term.',
       '# +winnable: only sites it could win now are choices, for itself and for everyone in its imagined',
       '# games (gold whose guard a 6 plus the skill does not beat is left out, unless nothing else is left).',
       '# In its imagined games a player heads for a gold site among its 10 closest with chance p = share of',
