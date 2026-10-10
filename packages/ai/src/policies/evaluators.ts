@@ -46,6 +46,16 @@ function normalisedGold(state: GameState, gold: number): number {
 }
 
 /**
+ * The skill term's two divisors, when an evaluation sets its own: stamina
+ * per skill point (`STAMINA_PER_SKILL_POINT` when absent) and what the
+ * skills are counted out of (the map's skill units when absent).
+ */
+export interface SkillScale {
+  readonly staminaPerSkillPoint?: number;
+  readonly skillUnits?: number;
+}
+
+/**
  * The subject's summed skill levels, plus its stamina in skill points, over
  * the skill units the map holds.
  *
@@ -54,12 +64,12 @@ function normalisedGold(state: GameState, gold: number): number {
  * adds stamina to it: "(total skill points + stamina / 5)", the 5 being
  * `STAMINA_PER_SKILL_POINT`, and the whole "/ total_skills_in_the_game".
  */
-function normalisedSkills(state: GameState, subject: PlayerId): number {
-  const total = totalSkillUnits(state.map);
+function normalisedSkills(state: GameState, subject: PlayerId, scale: SkillScale = {}): number {
+  const total = scale.skillUnits ?? totalSkillUnits(state.map);
   if (total === 0) return 0;
   const player = playerById(state, subject);
   const skills = SKILL_KINDS.reduce((sum, kind) => sum + player.stats[kind], 0);
-  const stamina = player.stats.stamina / state.map.ruleset.config.ai.STAMINA_PER_SKILL_POINT;
+  const stamina = player.stats.stamina / (scale.staminaPerSkillPoint ?? state.map.ruleset.config.ai.STAMINA_PER_SKILL_POINT);
   // "Between 0 and 1" (Andrei, 2026-09-30): stamina can in principle lift the
   // sum past every skill unit on the map, so the term stops at 1. On a real
   // map that takes holding nearly all 75 skill points.
@@ -207,8 +217,12 @@ export type LeadScale = 'share' | 'soft';
  * with `progress` the sites claimed, as in the estimated evaluation, and the
  * lead put in [0, 1] by `scale`. For the balancing tool only; the game's
  * computer players do not use it.
+ *
+ * `skills` sets the skill term's divisors; Andrei, 2026-10-10: stamina / 10
+ * rather than / 5, and the skills out of 50, "realistically total skills
+ * never reach 75", the term still stopping at 1.
  */
-export function hybridLeadEvaluator(scale: LeadScale): NodeEvaluator {
+export function hybridLeadEvaluator(scale: LeadScale, skills: SkillScale = {}): NodeEvaluator {
   const simulated = simulatedLeadEvaluator('soft');
 
   return {
@@ -230,7 +244,7 @@ export function hybridLeadEvaluator(scale: LeadScale): NodeEvaluator {
             ? 0.5
             : Math.min(1, Math.max(0, (lead / total + 1) / 2));
       const progress = sitesClaimedShare(state);
-      const estimate = leadValue * progress + normalisedSkills(state, subject) * (1 - progress);
+      const estimate = leadValue * progress + normalisedSkills(state, subject, skills) * (1 - progress);
       return (simulated.evaluate(atNode, rolledOut, subject) + estimate) / 2;
     },
   };

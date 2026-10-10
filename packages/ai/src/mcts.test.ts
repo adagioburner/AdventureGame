@@ -176,6 +176,15 @@ describe('hybrid by the lead', () => {
     expect(hybridLeadEvaluator('share').evaluate(at, at, player('one'))).toBeCloseTo((leadSoft + ((2 / 5 + 1) / 2) * (1 / 6)) / 2);
     expect(hybridLeadEvaluator('soft').evaluate(at, at, player('one'))).toBeCloseTo((leadSoft + leadSoft * (1 / 6)) / 2);
   });
+
+  it('can count stamina and skills out of its own divisors, the term stopping at 1', () => {
+    const state = fixtureGame(star, 0);
+    const at = (stats: { magic: number; stamina: number }) => rolloutCursor(withStats(state, player('one'), stats), player('one'));
+    const evaluator = hybridLeadEvaluator('soft', { staminaPerSkillPoint: 10, skillUnits: 4 });
+    // Nothing claimed and nobody ahead: the lead score is 0.5 and p is 0.
+    expect(evaluator.evaluate(at({ magic: 1, stamina: 10 }), at({ magic: 1, stamina: 10 }), player('one'))).toBeCloseTo((0.5 + 2 / 4) / 2);
+    expect(evaluator.evaluate(at({ magic: 3, stamina: 30 }), at({ magic: 3, stamina: 30 }), player('one'))).toBeCloseTo((0.5 + 1) / 2);
+  });
 });
 
 describe('lead evaluation', () => {
