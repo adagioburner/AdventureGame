@@ -4103,7 +4103,7 @@ changed, and the rulebook needs no change.
 
 ---
 
-### Q300. ~~Can the site have a message board that keeps trolls out?~~ — **answered 2026-10-10: yes, on the game list page, beside the lists or below them, for logged-in players; Llama Guard and a check for slurs and insults, both on Cloudflare, see every post first, a flagged post is refused and so is every post while a check cannot run; Andrei's account has a moderator flag, deletes posts and stops accounts from posting; posts go after 14 days (1-14)**
+### Q300. ~~Can the site have a message board that keeps trolls out?~~ — **answered 2026-10-10: yes, on the game list page, beside the lists or below them, for logged-in players; Llama Guard and a check for slurs and insults, both on Cloudflare, see every post first, a flagged post is refused and so is every post while a check cannot run; Andrei's account has a moderator flag, deletes posts and stops accounts from posting; posts go after 14 days (1-15)**
 
 Andrei, 2026-10-10 at 17:24: *"I would like to add a message board to the main
 game site but I'm afraid that some trolls may post offensive content into it. is
@@ -4164,6 +4164,16 @@ At 21:28, *"all as recommended"*:
     refused too; C, Llama Guard alone. At 22:20, A (*"Slurs and insults"*):
     5 B, for slurs and insults only. A post either check flags is refused as in
     9; one neither flags is refused as in 10 when either could not run.
+15. **Teasing.** At 23:49 the second check refused even *"addressing my
+    potential opponents as chicken"*. Offered: keep it strict, or tell the
+    check that friendly game banter is fine. At 23:51: *"let us allow
+    teasing"*. Shown the full wording, at 23:53: *"please remove the phrase
+    about calling opponents chicken, but the rest looks good"*. The check is
+    told: "Answer "offensive" if the post contains a slur, or insults a person
+    or a group: their intelligence, looks, family, or who they are. Friendly
+    teasing about the game is fine, like saying opponents will lose, or
+    boasting that nobody can beat you." With the example gone, "saying they
+    will lose" became "saying opponents will lose".
 
 Built: the board is kept by the lobby object (`apps/server/src/board.ts`,
 `SiteBoard` and its SQLite table) and travels on the game list's socket
@@ -4174,8 +4184,8 @@ Built: the board is kept by the lobby object (`apps/server/src/board.ts`,
 binding, on the live and the preview Worker: `llama-guard.ts` asks
 `@cf/meta/llama-guard-3-8b`, and `insult-check.ts` (14) tells
 `@cf/meta/llama-3.3-70b-instruct-fp8-fast` to answer "offensive" for a slur or
-an insult aimed at anyone and "fine" otherwise, swearing aimed at no one being
-fine. For either, no answer in 10 seconds, any error or any other answer counts
+an insult to a person or a group and "fine" otherwise, teasing about the game
+and swearing aimed at no one being fine (15). For either, no answer in 10 seconds, any error or any other answer counts
 as no check. The moderator and
 stopped flags are two columns of the accounts table, every existing account
 with both off; `SITE_MODERATORS` in `apps/server/src/auth/rules.ts` names
