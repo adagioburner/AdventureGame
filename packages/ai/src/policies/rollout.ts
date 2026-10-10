@@ -2,6 +2,7 @@ import type { GameConfig } from '@adventure/config';
 import type { DiceSource, Rng } from '@adventure/core';
 import {
   runRollout,
+  type CandidateFinder,
   type ClosestFinder,
   type RestRule,
   type RolloutCursor,
@@ -19,6 +20,8 @@ export interface ClosestPoiRolloutSettings {
   readonly targets?: TargetFilter;
   /** Which of those count as closest; by weighted terrain cost when absent. */
   readonly closest?: ClosestFinder;
+  /** Both of those as one pass, when given (`closestWinnableBySpeeds` in the game). */
+  readonly candidates?: CandidateFinder;
   /** Which of the closest a player heads for; uniformly at random when absent. */
   readonly pick?: TargetPicker;
   /** [Q210] How a player walks: counted along the best route for its speeds when absent (stage 3). */

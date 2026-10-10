@@ -240,9 +240,14 @@ function tablesOf(graph: MapGraph): WeakMap<GameConfig, RouteTable> {
 
 /** The one `RouteTable` for `graph` under `config`'s step costs. */
 export function routeTable(graph: MapGraph, config: GameConfig): RouteTable {
+  // The computer's searches ask for one game's table many times a turn.
+  if (graph === lastGraph && config === lastConfig) return lastTable as RouteTable;
   const byConfig = tablesOf(graph);
   const known = byConfig.get(config);
-  if (known !== undefined) return known;
+  if (known !== undefined) {
+    remember(graph, config, known);
+    return known;
+  }
 
   const searches = graph.nodes.map((_node, from) => dijkstra(graph, asNodeId(from), config));
   const steps: (TerrainSteps | undefined)[] = new Array(graph.nodes.length);
@@ -276,7 +281,18 @@ export function routeTable(graph: MapGraph, config: GameConfig): RouteTable {
     },
   };
   byConfig.set(config, table);
+  remember(graph, config, table);
   return table;
+}
+
+let lastGraph: MapGraph | null = null;
+let lastConfig: GameConfig | null = null;
+let lastTable: RouteTable | null = null;
+
+function remember(graph: MapGraph, config: GameConfig, table: RouteTable): void {
+  lastGraph = graph;
+  lastConfig = config;
+  lastTable = table;
 }
 
 /**

@@ -131,8 +131,12 @@ function applyTurnAction(state: GameState, action: TurnAction, dice: DiceSource)
   return { state: finishTurn(next, player.id, action.kind === 'move', dice, events), events };
 }
 
-/** A turn once its walk or rest is done: what happens where it ends, then the hand-over. */
-function finishTurn(state: GameState, playerId: PlayerId, moved: boolean, dice: DiceSource, events: GameEvent[]): GameState {
+/**
+ * A turn once its walk or rest is done: what happens where it ends, then the
+ * hand-over. `events` is `null` for a turn whose events nobody reads, the
+ * games the computer imagines (`applyCountedTurn`), which then makes none.
+ */
+function finishTurn(state: GameState, playerId: PlayerId, moved: boolean, dice: DiceSource, events: GameEvent[] | null): GameState {
   let next = state;
   // §7/§8: the interaction is a property of where the *turn* ends, so a POI
   // walked over on the way is not interacted with, and resting on one is not
@@ -199,7 +203,7 @@ function applyRest(state: GameState, player: PlayerState, action: RestAction, ev
  * advances once per guard attempt and not once per turn — which is what lets a
  * replay of a game reproduce its rolls from the stream alone.
  */
-function applyArrival(state: GameState, playerId: PlayerId, dice: DiceSource, events: GameEvent[]): GameState {
+function applyArrival(state: GameState, playerId: PlayerId, dice: DiceSource, events: GameEvent[] | null): GameState {
   const player = playerById(state, playerId);
   const node = player.position;
   const poi = poiAt(state.map, node);
@@ -207,7 +211,7 @@ function applyArrival(state: GameState, playerId: PlayerId, dice: DiceSource, ev
   if (poi === undefined || runtime === undefined || isClaimed(runtime)) return state;
 
   const resolution = resolveInteraction(state, node, player.stats, poi.guard === null ? null : dice.roll());
-  events.push({ type: 'interacted', player: playerId, resolution });
+  if (events !== null) events.push({ type: 'interacted', player: playerId, resolution });
   if (!resolution.claimed || resolution.reward === null) return state;
 
   const reward = resolution.reward;
@@ -230,7 +234,7 @@ function applyArrival(state: GameState, playerId: PlayerId, dice: DiceSource, ev
   const winners = checkVictory(claimed);
   if (winners.length === 0) return claimed;
 
-  events.push({ type: 'game_won', winners });
+  if (events !== null) events.push({ type: 'game_won', winners });
   return { ...claimed, status: 'finished', winners, ending: 'won' };
 }
 
@@ -271,7 +275,7 @@ export function applyCountedTurn(state: GameState, turn: CountedTurn, dice: Dice
           position: turn.to,
           stats: { ...current.stats, stamina: current.stats.stamina - turn.staminaSpent },
         }));
-  return finishTurn(next, player.id, turn.kind === 'walk', dice, []);
+  return finishTurn(next, player.id, turn.kind === 'walk', dice, null);
 }
 
 /**
@@ -333,11 +337,11 @@ const SPEED_TERRAIN: Partial<Record<keyof PlayerStats, Terrain>> = {
  * End the turn and hand over (§7). A finished game hands over to nobody, so
  * `game_won` is the last event of the game and no `turn_ended` follows it.
  */
-function endTurn(state: GameState, playerId: PlayerId, events: GameEvent[]): GameState {
+function endTurn(state: GameState, playerId: PlayerId, events: GameEvent[] | null): GameState {
   if (state.status === 'finished') return state;
 
   const seat = nextSeat(state);
-  events.push({ type: 'turn_ended', player: playerId, nextSeat: seat });
+  if (events !== null) events.push({ type: 'turn_ended', player: playerId, nextSeat: seat });
   return {
     ...state,
     turn: {
@@ -539,20 +543,23 @@ function withPlayer(
   playerId: PlayerId,
   change: (player: PlayerState) => PlayerState,
 ): GameState {
-  let found = false;
-  const players = state.players.map((player) => {
-    if (player.id !== playerId) return player;
-    found = true;
-    return change(player);
-  });
-  if (!found) throw new RuleViolationError(`no such player ${playerId}`);
-  return { ...state, players };
+  // Copied by hand rather than mapped: the games the computer imagines play
+  // hundreds of thousands of turns a move through here.
+  const players = state.players.slice();
+  for (let at = 0; at < players.length; at++) {
+    const player = players[at] as PlayerState;
+    if (player.id !== playerId) continue;
+    players[at] = change(player);
+    return { ...state, players };
+  }
+  throw new RuleViolationError(`no such player ${playerId}`);
 }
 
 function withPoiRuntime(state: GameState, node: NodeId, runtime: PoiRuntimeState): GameState {
   const index = state.map.poiByNode.get(node);
   if (index === undefined) throw new RuleViolationError(`node ${node} holds no POI`);
-  const poiRuntime = state.poiRuntime.map((current, at) => (at === index ? runtime : current));
+  const poiRuntime = state.poiRuntime.slice();
+  poiRuntime[index] = runtime;
   return { ...state, poiRuntime };
 }
 

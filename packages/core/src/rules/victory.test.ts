@@ -69,6 +69,24 @@ describe('checkVictory', () => {
     // more gold left on the map".
     expect(checkVictory(scoreboard([2, 2], [true, false]))).toEqual([]);
   });
+
+  it('measures the lead against the richest of the others, whichever seats they sit in', () => {
+    const three = player('three');
+    const seats = (gold: readonly number[], claimed: readonly boolean[]): GameState => {
+      let state = fixtureGame(map, 0, ['one', 'two', 'three']);
+      state.players.forEach((current, index) => {
+        state = withStats(state, current.id, { gold: gold[index] ?? 0 });
+      });
+      return { ...state, poiRuntime: state.poiRuntime.map((runtime, index) => (claimed[index] === true ? { claimedBy: one, claimedOnTurn: 1 } : runtime)) };
+    };
+    // 5 against 4 and 1 with 1 unit out there: 5 − 4 is not above 1.
+    expect(checkVictory(seats([5, 1, 4], [true, false]))).toEqual([]);
+    expect(checkVictory(seats([5, 1, 3], [true, false]))).toEqual([one]);
+    expect(checkVictory(seats([1, 3, 5], [true, false]))).toEqual([three]);
+    expect(checkVictory(seats([3, 5, 1], [true, false]))).toEqual([two]);
+    expect(checkVictory(seats([4, 1, 4], [true, true]))).toEqual([one, three]);
+    expect(checkVictory(seats([4, 1, 4], [true, false]))).toEqual([]);
+  });
 });
 
 describe('victory through applyAction', () => {
