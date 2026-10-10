@@ -9,7 +9,7 @@ import {
 } from '@adventure/protocol';
 import type { Clock } from '@adventure/session';
 import type { AccountFlagStore, SqlLike } from './adapters/durable-object.ts';
-import type { PostCheck } from './adapters/llama-guard.ts';
+import type { PostCheck } from './adapters/post-check.ts';
 
 /**
  * [Q300] The site's message board, kept by the lobby object: who may post,
@@ -59,8 +59,9 @@ export class SiteBoard {
 
   /**
    * [Q300, 1 to 4] Up to `BOARD_POST_MAX` characters, as on a game's board.
-   * Llama Guard sees the words first: a post it flags is refused (3), and so
-   * is every post while it cannot be asked (4).
+   * Llama Guard and the check for slurs and insults see the words first: a
+   * post either flags is refused (3, 5 B), and so is every post while one of
+   * them cannot be asked (4).
    */
   async post(author: Author, body: unknown): Promise<BoardOutcome> {
     if (typeof body !== 'string') return error('invalid_action', 'a post needs some words');

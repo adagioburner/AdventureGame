@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { asUserId, type UserId } from '@adventure/core';
 import { BOARD_POST_MAX, SITE_POST_KEPT_MS, type SitePost } from '@adventure/protocol';
 import type { AccountFlags, AccountFlagStore } from './adapters/durable-object.ts';
-import type { PostVerdict } from './adapters/llama-guard.ts';
+import type { PostVerdict } from './adapters/post-check.ts';
 import { SiteBoard, type SiteBoardStore } from './board.ts';
 
 const andrei = { userId: asUserId('andrei'), displayName: 'Andrei' };

@@ -10,7 +10,7 @@ export interface Env {
   readonly LOBBY: DurableObjectNamespace<Lobby>;
   /** The built site (`apps/web`, `pnpm build:site`). */
   readonly ASSETS: Fetcher;
-  /** [Q300, 3] Workers AI, for Llama Guard's check of each post on the site's board. */
+  /** [Q300, 3 and 5 B] Workers AI, for the checks of each post on the site's board: Llama Guard, and slurs and insults. */
   readonly AI: Ai;
 }
 

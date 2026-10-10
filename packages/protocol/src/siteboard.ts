@@ -5,12 +5,13 @@ import type { UserId } from '@adventure/core';
  * lists (1). Unlike a game's board (`messageboard.ts`), it belongs to no game:
  * the lobby object keeps it, and it travels on the game list's socket.
  *
- * Only logged-in players read and post (2). Every post is checked by Llama
- * Guard on Cloudflare before anyone sees it: one it flags is refused and its
- * writer told so (3), and while the check cannot run every post is refused
- * with "try again later" (4). An account with the moderator flag (6) deletes
- * posts, which keep their place, and stops accounts from posting (7). Each
- * post goes 14 days after it was put on the board (13).
+ * Only logged-in players read and post (2). Every post is checked on
+ * Cloudflare before anyone sees it, by Llama Guard and for slurs and insults:
+ * one either flags is refused and its writer told so (3, 5 B), and while a
+ * check cannot run every post is refused with "try again later" (4). An
+ * account with the moderator flag (6) deletes posts, which keep their place,
+ * and stops accounts from posting (7). Each post goes 14 days after it was
+ * put on the board (13).
  */
 export interface SitePost {
   readonly id: string;
@@ -26,7 +27,7 @@ export interface SitePost {
 
 /** [Q300, 3 and 4] Why a post was not put on the board; the words stay in the writer's box. */
 export type SitePostRefusal =
-  /** Llama Guard flagged it (3). */
+  /** Llama Guard flagged it (3), or the check for slurs and insults did (5 B). */
   | 'offensive'
   /** The check could not run: the day's free allowance is used up, or Cloudflare did not answer (4). */
   | 'unchecked';

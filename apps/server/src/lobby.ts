@@ -14,8 +14,10 @@ import {
 } from '@adventure/protocol';
 import type { GameListing } from '@adventure/session';
 import { createSqlAccountFlags, createSqlAccountStore, userSocketTag, type AccountFlagStore } from './adapters/durable-object.ts';
+import { insultCheck } from './adapters/insult-check.ts';
 import { llamaGuardCheck } from './adapters/llama-guard.ts';
 import { systemClock } from './adapters/memory.ts';
+import { everyCheck } from './adapters/post-check.ts';
 import { AccountError, PasswordAccounts } from './auth/accounts.ts';
 import { ACCOUNT_RULES, SITE_MODERATORS } from './auth/rules.ts';
 import { createSqlSiteBoardStore, SiteBoard, type BoardOutcome } from './board.ts';
@@ -49,7 +51,12 @@ export class Lobby extends DurableObject<Env> {
     this.accounts = new PasswordAccounts(createSqlAccountStore(ctx.storage.sql), ACCOUNT_RULES, systemClock);
     this.listings = createSqlListingStore(ctx.storage.sql);
     this.flags = createSqlAccountFlags(ctx.storage.sql);
-    this.board = new SiteBoard(createSqlSiteBoardStore(ctx.storage.sql), this.flags, llamaGuardCheck(env.AI), systemClock);
+    this.board = new SiteBoard(
+      createSqlSiteBoardStore(ctx.storage.sql),
+      this.flags,
+      everyCheck(llamaGuardCheck(env.AI), insultCheck(env.AI)),
+      systemClock,
+    );
     this.grantModerators();
     // [Q54, 31] Pages ping every socket they keep open; answered here without waking the lobby.
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair(HEARTBEAT_PING, HEARTBEAT_PONG));

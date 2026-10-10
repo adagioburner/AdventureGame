@@ -4103,7 +4103,7 @@ changed, and the rulebook needs no change.
 
 ---
 
-### Q300. ~~Can the site have a message board that keeps trolls out?~~ — **answered 2026-10-10: yes, on the game list page, beside the lists or below them, for logged-in players; Llama Guard on Cloudflare checks every post first, a flagged post is refused and so is every post while the check cannot run; Andrei's account has a moderator flag, deletes posts and stops accounts from posting; posts go after 14 days (1-13)**
+### Q300. ~~Can the site have a message board that keeps trolls out?~~ — **answered 2026-10-10: yes, on the game list page, beside the lists or below them, for logged-in players; Llama Guard and a check for slurs and insults, both on Cloudflare, see every post first, a flagged post is refused and so is every post while a check cannot run; Andrei's account has a moderator flag, deletes posts and stops accounts from posting; posts go after 14 days (1-14)**
 
 Andrei, 2026-10-10 at 17:24: *"I would like to add a message board to the main
 game site but I'm afraid that some trolls may post offensive content into it. is
@@ -4157,22 +4157,34 @@ At 21:28, *"all as recommended"*:
     board is to coordinate games, so 14 days should be enough"*. Each post goes
     14 days after it was put on the board, deleted or not; a page left open
     hides it then too.
+14. **Slurs.** At 22:16, trying the preview, Andrei's test post with a
+    homophobic slur aimed at the other players was put on the board: Llama
+    Guard answered safe. Offered: A, a second check for slurs and insults, with
+    swearing in passing, like "damn, I lost", still posting; B, swearing
+    refused too; C, Llama Guard alone. At 22:20, A (*"Slurs and insults"*):
+    5 B, for slurs and insults only. A post either check flags is refused as in
+    9; one neither flags is refused as in 10 when either could not run.
 
 Built: the board is kept by the lobby object (`apps/server/src/board.ts`,
 `SiteBoard` and its SQLite table) and travels on the game list's socket
 (`lobby.post`, `lobby.deletePost`, `lobby.blockPoster`, `lobby.board`,
 `lobby.posted`, `lobby.postRefused` in `packages/protocol`); the page is
-`apps/web/src/online/SiteBoard.tsx`. The check is
-`apps/server/src/adapters/llama-guard.ts`: `@cf/meta/llama-guard-3-8b` through
-the Worker's new `AI` binding, on the live and the preview Worker, with no
-answer in 10 seconds or any error counting as no check. The moderator and
+`apps/web/src/online/SiteBoard.tsx`. The checks run together
+(`apps/server/src/adapters/post-check.ts`) through the Worker's new `AI`
+binding, on the live and the preview Worker: `llama-guard.ts` asks
+`@cf/meta/llama-guard-3-8b`, and `insult-check.ts` (14) tells
+`@cf/meta/llama-3.3-70b-instruct-fp8-fast` to answer "offensive" for a slur or
+an insult aimed at anyone and "fine" otherwise, swearing aimed at no one being
+fine. For either, no answer in 10 seconds, any error or any other answer counts
+as no check. The moderator and
 stopped flags are two columns of the accounts table, every existing account
 with both off; `SITE_MODERATORS` in `apps/server/src/auth/rules.ts` names
 Andrei, whose account gets the flag when the lobby starts or when it is
 registered; taking the flag away is left to the later scheme. Workers AI only
 runs on Cloudflare, so the tests start the Worker with it off and a post there
 is refused as unchecked. Each check uses some of the account's 10,000 free
-neurons a day; someone posting a great deal could use them up, and then every
+neurons a day, by an estimate from Cloudflare's prices about 30 a post for the
+two, so a few hundred posts a day; someone posting a great deal could use them up, and then every
 post is refused until 00:00 UTC (4 A) unless the moderator stops them. The
 game's own boards are unchanged. No rule, number, map or picture changed, and
 the rulebook needs no change.
