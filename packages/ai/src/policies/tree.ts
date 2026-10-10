@@ -169,6 +169,11 @@ export function closestUnclaimedPoiEnumerator(
   // the pruned list; there is no second cap to apply. Purchases are weighed
   // against it (`buyBranches`).
   const closestTo = (state: GameState, player: PlayerState): readonly PoiCandidate[] => rank(state, player, eligibleFor(state, player), count);
+  /** [Q295] A guard reached this turn that the skill held now could not win, which `choicesAt` leaves out. */
+  const leavesOut = (state: GameState, player: PlayerState, candidate: PoiCandidate): boolean => {
+    const guard = poiAt(state.map, candidate.node)?.guard ?? null;
+    return !winsOnSomeRoll(state, player, guard) && reachability.isReachableThisTurn(state, player.id, candidate);
+  };
   /**
    * [Q295] The sites the subject may head for. Weighing unwinnable guards,
    * `closestTo`. Skipping them, Andrei's "buy, then go", 2026-10-09: a site
@@ -185,8 +190,7 @@ export function closestUnclaimedPoiEnumerator(
     const choices: PoiCandidate[] = [];
     for (const candidate of rank(state, player, eligible, eligible.size)) {
       if (choices.length >= count) break;
-      const guard = poiAt(state.map, candidate.node)?.guard ?? null;
-      if (!winsOnSomeRoll(state, player, guard) && reachability.isReachableThisTurn(state, player.id, candidate)) continue;
+      if (leavesOut(state, player, candidate)) continue;
       choices.push(candidate);
     }
     return choices;
@@ -194,8 +198,38 @@ export function closestUnclaimedPoiEnumerator(
   // Every pass through a node near the root brings back the same position, so
   // its branches are worked out once; the buy checks trace routes.
   const known = new Map<string, readonly MctsBranch[]>();
+  const followed = new Map<string, boolean>();
+  /**
+   * Whether anything can follow purchases used up at `target` (Q280,
+   * 2026-10-10): `target` itself when it is one of the choices there, else
+   * any branch at all. Before every branch below is worked out, one more unit
+   * for `target`'s guard is tried, the usual way on from a guard it cannot win
+   * yet; the answer is the same, found sooner.
+   */
+  const leadsOn = (after: GameState, buyer: PlayerState, all: readonly RewardKind[], target: PoiCandidate): boolean => {
+    if (!skips || !leavesOut(after, buyer, target)) return true;
+    const key = `${positionKey(after, buyer, all)}|${target.node}`;
+    const remembered = followed.get(key);
+    if (remembered !== undefined) return remembered;
+    let follows = false;
+    const kind = poiAt(after.map, target.node)?.guard?.type;
+    if (kind !== undefined && buyableNow(after, buyer.id).kinds.includes(kind)) {
+      const next = applyAction(after, { kind: 'buy', player: buyer.id, skills: [kind] }, NO_DICE).state;
+      const nextBuyer = playerById(next, buyer.id);
+      const more = [...all, kind];
+      follows =
+        next.status === 'in_progress' &&
+        closestTo(next, nextBuyer).some((candidate) => candidate.node === target.node) &&
+        usesFully(next, nextBuyer, target.node, more, walkRoute) &&
+        leadsOn(next, nextBuyer, more, target);
+    }
+    if (!follows) follows = enumerator.enumerate(after, buyer.id, all).length > 0;
+    if (followed.size >= KNOWN_POSITIONS) followed.clear();
+    followed.set(key, follows);
+    return follows;
+  };
 
-  return {
+  const enumerator: ActionEnumerator = {
     name: 'closest-unclaimed-pois+rest+buy',
     enumerate(state: GameState, subject: PlayerId, bought: readonly RewardKind[] = []): readonly MctsBranch[] {
       const player = state.players.find((candidate) => candidate.id === subject);
@@ -215,13 +249,14 @@ export function closestUnclaimedPoiEnumerator(
           if (usesFully(state, player, target.node, bought, walkRoute)) branches.push({ kind: 'target', target });
         }
       }
-      branches.push(...buyBranches(state, player, bought, closestTo, walkRoute));
+      branches.push(...buyBranches(state, player, bought, closestTo, walkRoute, leadsOn));
 
       if (known.size >= KNOWN_POSITIONS) known.clear();
       known.set(key, branches);
       return branches;
     },
   };
+  return enumerator;
 }
 
 /** [Q295] How many units of a skill `player` could buy with its gold now. */
@@ -259,6 +294,15 @@ function positionKey(state: GameState, player: PlayerState, bought: readonly Rew
  * that purchase is a move that `usesFully` all of it. More units never make a
  * move easier to use up, so a purchase without such a move is a dead end
  * whatever follows it.
+ *
+ * That site may still need more units first: guarded gold its skill cannot
+ * win yet, which its gold could. When buying them would end the game (the
+ * buyer's gold falls far enough behind for the leader's win to be certain,
+ * and a purchase that ends the game is never weighed), nothing can follow
+ * and the purchase is a dead end after all; Andrei, 2026-10-10, to make the
+ * search stop weighing purchases that lead nowhere. `leadsOn` says whether
+ * anything follows a purchase used up at `target`, a move or a purchase that
+ * leads on in turn; the enumerator passes its own.
  */
 export function buyBranches(
   state: GameState,
@@ -266,6 +310,7 @@ export function buyBranches(
   bought: readonly RewardKind[],
   closestTo: (state: GameState, player: PlayerState) => readonly PoiCandidate[],
   walkRoute: RouteChoice = cheapestRoute,
+  leadsOn: (after: GameState, buyer: PlayerState, all: readonly RewardKind[], target: PoiCandidate) => boolean = () => true,
 ): readonly MctsBranch[] {
   const branches: MctsBranch[] = [];
   for (const skill of buyableNow(state, player.id).kinds) {
@@ -273,7 +318,7 @@ export function buyBranches(
     if (after.status !== 'in_progress') continue;
     const buyer = playerById(after, player.id);
     const all = [...bought, skill];
-    if (closestTo(after, buyer).some((target) => usesFully(after, buyer, target.node, all, walkRoute))) {
+    if (closestTo(after, buyer).some((target) => usesFully(after, buyer, target.node, all, walkRoute) && leadsOn(after, buyer, all, target))) {
       branches.push({ kind: 'buy', skill });
     }
   }

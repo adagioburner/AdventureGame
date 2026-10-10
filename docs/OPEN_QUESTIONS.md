@@ -3941,6 +3941,20 @@ for its speeds). An enumerator remembers the branches of a position it has
 worked out, since every pass through a node near the root brings the same one
 back. `ai.BUY_SKIP_STAMINA` is gone.
 
+**2026-10-10, purchases that lead nowhere.** Twice in the 600 games at 3 s of
+the exploration and hybrid tests, the computer's search picked a purchase
+after which it had no move, and failed. A site may use up a unit and still
+need another before it can be won (guarded gold its skill cannot win yet);
+when buying that one would end the game, the buyer's gold falling far enough
+behind for the leader's win to be certain, nothing can follow the first.
+Andrei chose to stop the computer weighing such purchases: one counts only
+when a move, or another purchase that leads on in turn, can follow it
+(`buyBranches`' `leadsOn`). Nothing else changed. Checked on 600 quick games
+of the computer against itself, replayed exactly: at 24 of their 40,614 turns
+it now leaves out 128 purchases, each of which led nowhere, and everything
+else it weighs, along every chain of up to three purchases, is as before. It
+thinks about 1% slower.
+
 ---
 
 ### Q285. ~~What happens when a page from before an update starts a game, or a game cannot be drawn?~~ — **answered 2026-10-05: the server refuses a map made with other rules than its own, and the game waits for an up-to-date page; a game that cannot be shown says so with Games and Reload instead of going dark; the broken game is left to expire (990 A, 991 A, 992 A)**
