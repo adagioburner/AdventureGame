@@ -4215,7 +4215,7 @@ the rulebook needs no change.
 
 ---
 
-### Q305. ~~How do the players stand out on the map?~~ — **answered 2026-10-11: one see-through gold ring on the ground under every figure, with no dark edge, 0.6 of a node spacing across and 0.8 with the whole map in view, under the roads and spaces so it hides nothing; it pulses on your turn and gets a thick yellow outline when selected, in place of the gold rings and the ripple (1-14); and now and then each figure drawn at least 24 px tall plays its idle animation once (15-18)**
+### Q305. ~~How do the players stand out on the map?~~ — **answered 2026-10-11: one see-through gold ring on the ground under every figure, with no dark edge, 0.6 of a node spacing across and 0.8 with the whole map in view, under the roads and spaces so it hides nothing; it pulses on your turn and gets a thick yellow outline when selected, in place of the gold rings and the ripple (1-14); and now and then each figure drawn at least 24 px tall plays its idle animation once (15-19)**
 
 Andrei, 2026-10-11 at 05:53: *"we need to highlight the players on the map
 better. One can click on the cards to see their locations, but it's important
@@ -4341,6 +4341,18 @@ history as they were.
     *"it makes no sense to animate a blinking figure. the rest is as
     recommended"*, so the player on turn's figure stands still while it
     blinks too.
+19. **Between plays.** The frames are a different drawing from the still
+    figurines (another pose, the backpack showing). A: on the map a figure
+    always stands in its loop's first frame, so a play starts and ends
+    without a jump, while the cards and New game keep the figurines; B: the
+    figurine between plays, the frames only while playing. At 23:09: *"yes,
+    let's go with A"*.
+
+Built: `Figure.loop` and `Figure.walking`, `IDLE_WAIT_MS`, `ANIMATE_FROM_PX`,
+`figuresAnimate`, `nextIdlePlay` and `playFrame` in
+`apps/web/src/render/sceneModel.ts`; `apps/web/src/render/pixi/renderer.ts`
+keeps each player's next play and swaps the frames in `playIdle`. No rule,
+number or map changed.
 
 ---
 
