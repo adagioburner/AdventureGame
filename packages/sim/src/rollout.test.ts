@@ -1,7 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_GAME_CONFIG, type GameConfig } from '@adventure/config';
-import { applyAction, createDiceSource, createRng, poiRuntimeAt, unclaimedGoldUnits, type GameMap, type GameState } from '@adventure/core';
+import {
+  applyAction,
+  createDiceSource,
+  createRng,
+  poiRuntimeAt,
+  unclaimedGoldUnits,
+  type GameMap,
+  type GameState,
+  type PlayerState,
+  type PlayerStats,
+} from '@adventure/core';
 import {
   fixtureGame,
   fixtureMap,
@@ -13,6 +23,7 @@ import {
 } from '../../core/src/rules/scenario.fixture.ts';
 import {
   cheapestRoute,
+  closestWinnableBySpeeds,
   goldExhaustedTermination,
   macroAdvanceToTarget,
   playRolloutTurn,
@@ -28,6 +39,7 @@ import {
   type RestRule,
   type RolloutOptions,
 } from './rollout.ts';
+import { closestBySpeeds } from './speeds.ts';
 
 const restRule = restWhenStuck();
 const neverRest: RestRule = { name: 'test: never rest', restsInstead: () => false };
@@ -410,5 +422,122 @@ describe('counted walks in imagined games (Q210, stage 3, 823 A)', () => {
         expect(board(play('counted'))).toEqual(board(play('replayed')));
       }
     }
+  });
+});
+
+describe('closestWinnableBySpeeds (winnableBySkill and closestBySpeeds in one pass)', () => {
+  /**
+   * 0(p) ─ 1(f) ─ 2(p) ─ 3(m) ─ 4(p) ─ 5(f) ─ 6(p) ─ 7(p): a fighting skill
+   * on 1; gold on 2 behind fighting 6 (won with fighting 1), on 3 behind
+   * magic 9 (won with magic 4), on 6 behind fighting 5 (won by anyone) and
+   * on 7 unguarded; a stamina site on 5.
+   */
+  const guards = fixtureMap({
+    terrains: ['plains', 'forest', 'plains', 'mountain', 'plains', 'forest', 'plains', 'plains'],
+    edges: [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [4, 5],
+      [5, 6],
+      [6, 7],
+    ],
+    pois: [
+      { node: 1, kind: 'fighting', units: 1, guard: null },
+      { node: 2, kind: 'gold', units: 2, guard: { type: 'fighting', strength: 6 } },
+      { node: 3, kind: 'gold', units: 3, guard: { type: 'magic', strength: 9 } },
+      { node: 5, kind: 'stamina', units: 2, guard: null },
+      { node: 6, kind: 'gold', units: 1, guard: { type: 'fighting', strength: 5 } },
+      { node: 7, kind: 'gold', units: 2, guard: null },
+    ],
+  });
+
+  /** `claimed` sites of `guards` taken by seat two, seat one standing on `from` with the stats given. */
+  function scene(from: number, stats: Partial<PlayerStats>, claimed: readonly number[] = []): { state: GameState; player: PlayerState } {
+    let state = withStats(withPosition(fixtureGame(guards, 0), player('one'), from), player('one'), stats);
+    state = { ...state, poiRuntime: state.poiRuntime.map((runtime, index) => (claimed.includes(index) ? { claimedBy: player('two'), claimedOnTurn: 1 } : runtime)) };
+    return { state, player: state.players[0] as PlayerState };
+  }
+
+  it('finds the sites the two find, in their order, from every space and at every skill, with claims', () => {
+    const rng = createRng('fused');
+    const skills = [{}, { fighting: 1 }, { magic: 4 }, { fighting: 2, magic: 4 }];
+    const claims: readonly (readonly number[])[] = [[], [0], [3, 5], [0, 3, 4, 5], [0, 1, 2, 3, 4, 5]];
+    for (let from = 0; from < 8; from++) {
+      for (const skill of skills) {
+        for (const claimed of claims) {
+          const speeds = { plains_move: rng.nextInt(3), forest_move: rng.nextInt(3), mountain_move: rng.nextInt(3) };
+          const { state, player: seatOne } = scene(from, { ...skill, ...speeds }, claimed);
+          for (const count of [1, 2, 6, 10]) {
+            expect(closestWinnableBySpeeds(state, seatOne, count)).toEqual(closestBySpeeds(state, seatOne, winnableBySkill(state, seatOne), count));
+          }
+        }
+      }
+    }
+  });
+
+  it('counts guarded gold winnable by the skill alone, on the best roll', () => {
+    // From 4 with no speed: 5 is 5 + 2 = 7 away, 6 is 8, 7 is 9 and 1 is 11;
+    // 2 is 9 at cost 4 like 7, and 3 is 8 at cost 3 like 6, so each goes first.
+    const nobody = scene(4, {});
+    expect(closestWinnableBySpeeds(nobody.state, nobody.player, 10).map((candidate) => candidate.node)).toEqual([n(5), n(6), n(7), n(1)]);
+    const fighter = scene(4, { fighting: 1 });
+    expect(closestWinnableBySpeeds(fighter.state, fighter.player, 10).map((candidate) => candidate.node)).toEqual([n(5), n(6), n(2), n(7), n(1)]);
+    const mage = scene(4, { magic: 4 });
+    expect(closestWinnableBySpeeds(mage.state, mage.player, 10).map((candidate) => candidate.node)).toEqual([n(5), n(3), n(6), n(7), n(1)]);
+    expect(closestWinnableBySpeeds(mage.state, mage.player, 2).map((candidate) => candidate.node)).toEqual([n(5), n(3)]);
+  });
+
+  it('finds nothing where nothing is winnable, and the player rests', () => {
+    const { state, player: seatOne } = scene(4, {}, [0, 3, 4, 5]);
+    expect(closestWinnableBySpeeds(state, seatOne, 10)).toEqual([]);
+    expect([...winnableBySkill(state, seatOne)]).toEqual([]);
+    const after = playRolloutTurn(rolloutCursor(state, player('one')), options({ candidates: closestWinnableBySpeeds }));
+    expect(after.state.players[0]?.position).toBe(n(4));
+    expect(after.state.players[0]?.stats.stamina).toBe(seatOne.stats.stamina + DEFAULT_GAME_CONFIG.movement.REST_STAMINA_GAIN);
+    expect(after.targets).toEqual([null, null]);
+  });
+
+  it('plays the very games that targets and closest apart play', () => {
+    for (const seed of ['a', 'b', 'c', 'd', 'e']) {
+      const play = (overrides: Partial<RolloutOptions>) =>
+        runRollout(
+          rolloutCursor(fixtureGame(guards, 0), player('one')),
+          options({
+            config: DEFAULT_GAME_CONFIG,
+            termination: turnCapTermination(goldExhaustedTermination(), 1, 60),
+            rng: createRng(seed),
+            dice: createDiceSource(createRng(seed), DEFAULT_GAME_CONFIG),
+            ...overrides,
+          }),
+        );
+      const apart = play({ targets: winnableBySkill, closest: closestBySpeeds });
+      const fused = play({ candidates: closestWinnableBySpeeds });
+      expect(fused.state).toEqual(apart.state);
+      expect(fused.targets).toEqual(apart.targets);
+      expect(apart.state.turn.number).toBeGreaterThan(5);
+    }
+  });
+});
+
+describe('goldExhaustedTermination', () => {
+  it('reads each state it is asked about, however many times and whichever game', () => {
+    const termination = goldExhaustedTermination();
+    const start = fixtureGame(line, 4);
+    const claimed = (state: GameState, indices: readonly number[]): GameState => ({
+      ...state,
+      poiRuntime: state.poiRuntime.map((runtime, index) => (indices.includes(index) ? { claimedBy: player('one'), claimedOnTurn: 1 } : runtime)),
+    });
+    const oneLeft = claimed(start, [2]);
+    const none = claimed(start, [2, 3]);
+    expect(termination.isTerminal(rolloutCursor(start, player('one')), 0)).toBe(false);
+    expect(termination.isTerminal(rolloutCursor(start, player('one')), 0)).toBe(false);
+    expect(termination.isTerminal(rolloutCursor(oneLeft, player('one')), 0)).toBe(false);
+    expect(termination.isTerminal(rolloutCursor(none, player('one')), 0)).toBe(true);
+    expect(termination.isTerminal(rolloutCursor(oneLeft, player('one')), 0)).toBe(false);
+    expect(termination.isTerminal(rolloutCursor(none, player('one')), 0)).toBe(true);
+    expect(termination.isTerminal(rolloutCursor({ ...start, status: 'finished' }, player('one')), 0)).toBe(true);
+    expect(termination.isTerminal(rolloutCursor(start, player('one')), 0)).toBe(false);
   });
 });

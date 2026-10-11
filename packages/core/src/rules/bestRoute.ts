@@ -25,11 +25,15 @@ import { refreshAllowance } from './movement.ts';
  */
 export function effectiveDistance(steps: PerTerrain<number>, stats: PlayerStats, config: GameConfig): number {
   if (!TERRAINS.every((terrain) => Number.isFinite(steps[terrain]))) return Number.POSITIVE_INFINITY;
-  return distanceOf(steps.plains, steps.forest, steps.mountain, refreshAllowance(stats), config);
+  return effectiveDistanceFor(steps.plains, steps.forest, steps.mountain, refreshAllowance(stats), config);
 }
 
-/** `effectiveDistance` of finite steps, for speeds already read off the player. */
-function distanceOf(plains: number, forest: number, mountain: number, speeds: PerTerrain<number>, config: GameConfig): number {
+/**
+ * `effectiveDistance` of finite steps, for speeds already read off the player
+ * (`refreshAllowance`), with nothing allocated: the computer's searches ask
+ * it for every site of the map at once (`@adventure/sim`'s `closestBySpeeds`).
+ */
+export function effectiveDistanceFor(plains: number, forest: number, mountain: number, speeds: PerTerrain<number>, config: GameConfig): number {
   const perTurn = config.movement.REST_STAMINA_GAIN;
   const cost = config.movement.STAMINA_COST;
 
@@ -107,7 +111,7 @@ function pickBestRoute(routes: RouteTable, from: NodeId, to: NodeId, speeds: Per
   const counts = routes.stepsFrom(from);
   const cheapest = { plains: counts.plains[to] as number, forest: counts.forest[to] as number, mountain: counts.mountain[to] as number };
   if (!Number.isFinite(cheapest.plains)) return null;
-  const today = distanceOf(cheapest.plains, cheapest.forest, cheapest.mountain, speeds, config);
+  const today = effectiveDistanceFor(cheapest.plains, cheapest.forest, cheapest.mountain, speeds, config);
   if (from === to) return { steps: cheapest, distance: today, entry: -1 };
 
   const front = routes.routesFrom(from);
@@ -123,7 +127,7 @@ function pickBestRoute(routes: RouteTable, from: NodeId, to: NodeId, speeds: Per
     const plains = front.plains[entry] as number;
     const forest = front.forest[entry] as number;
     const mountain = front.mountain[entry] as number;
-    const candidate = distanceOf(plains, forest, mountain, speeds, config);
+    const candidate = effectiveDistanceFor(plains, forest, mountain, speeds, config);
     if (candidate > distance) continue;
     const entryWeight = cost.plains * plains + cost.forest * forest + cost.mountain * mountain;
     if (candidate === distance && (chosen === -1 || entryWeight >= weight)) continue;

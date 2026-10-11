@@ -1,5 +1,6 @@
 import { NotImplementedError } from '../errors.ts';
 import type { PlayerId } from '../ids.ts';
+import type { PlayerState } from '../player.ts';
 import type { GameState } from '../state.ts';
 
 /**
@@ -37,23 +38,37 @@ export function unclaimedGoldUnits(state: GameState): number {
  * nobody has won yet.
  */
 export function checkVictory(state: GameState): readonly PlayerId[] {
+  // The most gold anyone holds, the most anyone else holds, and how many
+  // hold the most; found in one pass, since the games the computer imagines
+  // ask after every gold claim.
+  let most = Number.NEGATIVE_INFINITY;
+  let runnerUp = Number.NEGATIVE_INFINITY;
+  let leaders = 0;
+  for (const player of state.players) {
+    const gold = player.stats.gold;
+    if (gold > most) {
+      runnerUp = most;
+      most = gold;
+      leaders = 1;
+    } else if (gold === most) {
+      leaders += 1;
+    } else if (gold > runnerUp) {
+      runnerUp = gold;
+    }
+  }
+  if (leaders === 0) return [];
+
   const unclaimed = unclaimedGoldUnits(state);
-  const byGoldDescending = [...state.players].sort((a, b) => b.stats.gold - a.stats.gold);
-
-  const leader = byGoldDescending[0];
-  if (leader === undefined) return [];
-
-  const leaders = state.players.filter((player) => player.stats.gold === leader.stats.gold);
-  if (leaders.length > 1) {
+  if (leaders > 1) {
     // Tied at the top: a win only once nothing is left to break the tie.
-    return unclaimed === 0 ? leaders.map((player) => player.id) : [];
+    return unclaimed === 0 ? state.players.filter((player) => player.stats.gold === most).map((player) => player.id) : [];
   }
 
-  const runnerUp = byGoldDescending[1];
+  const leader = state.players.find((player) => player.stats.gold === most) as PlayerState;
   // A lone player has no one to lead; `PLAYER_COUNT.min` is 2, so this is defensive.
-  if (runnerUp === undefined) return [leader.id];
+  if (runnerUp === Number.NEGATIVE_INFINITY) return [leader.id];
 
-  return leader.stats.gold - runnerUp.stats.gold > unclaimed ? [leader.id] : [];
+  return most - runnerUp > unclaimed ? [leader.id] : [];
 }
 
 /**

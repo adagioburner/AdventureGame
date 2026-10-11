@@ -15,12 +15,15 @@ import {
   type NodeId,
   type PlayerId,
   type PlayerState,
+  type PlayerStats,
+  type Poi,
+  type PoiRuntimeState,
   type Rng,
   type TurnAction,
 } from '@adventure/core';
 import { chooseWalkTarget, closestPoiCandidates, type PoiCandidate } from './candidates.ts';
 import type { TargetPicker } from './goldByProgress.ts';
-import type { ClosestFinder } from './speeds.ts';
+import { siteOrderBySpeeds, type ClosestFinder } from './speeds.ts';
 
 /**
  * [SOURCE §5, chat] §9's rollout policy: "choose a random target among the
@@ -126,10 +129,22 @@ export interface RolloutTermination {
 
 /** The specified terminal test: no unclaimed gold left, or the game is over. */
 export function goldExhaustedTermination(): RolloutTermination {
+  // Asked after every imagined turn, and the sites change only when one is
+  // claimed (`poiRuntime` is replaced then and never altered), so the answer
+  // is kept until they do.
+  let sites: GameState['poiRuntime'] | null = null;
+  let map: GameState['map'] | null = null;
+  let exhausted = false;
   return {
     isTerminal(cursor: RolloutCursor): boolean {
-      if (cursor.state.status === 'finished') return true;
-      return unclaimedGoldUnits(cursor.state) === 0;
+      const state = cursor.state;
+      if (state.status === 'finished') return true;
+      if (state.poiRuntime !== sites || state.map !== map) {
+        sites = state.poiRuntime;
+        map = state.map;
+        exhausted = unclaimedGoldUnits(state) === 0;
+      }
+      return exhausted;
     },
   };
 }
@@ -189,6 +204,13 @@ export interface RolloutOptions {
   readonly targets?: TargetFilter;
   /** Which of those count as closest; by weighted terrain cost when absent (the computer player passes `closestBySpeeds`, Q112). */
   readonly closest?: ClosestFinder;
+  /**
+   * `targets` and `closest` as one pass, when given, in place of both: the
+   * game's computer passes `closestWinnableBySpeeds`, which finds what
+   * `winnableBySkill` and `closestBySpeeds` find without listing every site
+   * first. A player it finds no site for rests.
+   */
+  readonly candidates?: CandidateFinder;
   /** Which of the closest a player heads for; uniformly at random when absent. The game's computer passes `goldByProgressPicker` (Q290). */
   readonly pick?: TargetPicker;
   /**
@@ -203,6 +225,9 @@ export interface RolloutOptions {
 
 /** Which POIs `player` may head for in `state`. */
 export type TargetFilter = (state: GameState, player: PlayerState) => ReadonlySet<NodeId>;
+
+/** The `count` closest of the POIs `player` may head for in `state`, nearest first: a `TargetFilter` and a `ClosestFinder` in one. */
+export type CandidateFinder = (state: GameState, player: PlayerState, count: number) => readonly PoiCandidate[];
 
 /** Which POIs a rollout may target: those whose reward is still unclaimed (§4.5). */
 export function unclaimedPoiNodes(state: GameState): ReadonlySet<NodeId> {
@@ -222,9 +247,18 @@ export function unclaimedPoiNodes(state: GameState): ReadonlySet<NodeId> {
  * unguarded site is always won.
  */
 export function winsOnSomeRoll(state: GameState, player: PlayerState, guard: Guard | null, units = 0): boolean {
-  if (guard === null) return true;
+  return winsWithRoll(bestRoll(state), player.stats, guard, units);
+}
+
+/** The die's best roll (§8's `GUARD_DIE`): every pip on every die. */
+function bestRoll(state: GameState): number {
   const { count, sides } = state.map.ruleset.config.combat.GUARD_DIE;
-  return count * sides + player.stats[guard.type] + units > guard.strength;
+  return count * sides;
+}
+
+/** `winsOnSomeRoll` with the best roll in hand: the roll plus the skill and the units is above the guard's strength (§8), or there is no guard. */
+function winsWithRoll(roll: number, stats: PlayerStats, guard: Guard | null, units: number): boolean {
+  return guard === null || roll + stats[guard.type] + units > guard.strength;
 }
 
 /** [Q295] Unclaimed POIs `player` could win on some roll with `units` more of the guard's skill (`winsOnSomeRoll`). */
@@ -248,6 +282,32 @@ export function winnablePoiNodesWith(state: GameState, player: PlayerState, unit
  * imagined", with the skill alone, and rest when nothing is left to win.
  */
 export const winnableBySkill: TargetFilter = (state, player) => winnablePoiNodesWith(state, player, 0);
+
+/**
+ * `closestBySpeeds` over `winnableBySkill`'s sites, in one pass over the
+ * map's sites: exactly the candidates those two find, the same sites in the
+ * same order, without the set of every winnable site built first. The
+ * players in the games the computer imagines pick a site tens of thousands
+ * of times a move, so the game's computer passes it as `candidates`.
+ */
+export const closestWinnableBySpeeds: CandidateFinder = (state, player, count) => {
+  if (count <= 0) return [];
+  const map = state.map;
+  const pois = map.pois;
+  const sites = state.poiRuntime;
+  const stats = player.stats;
+  const roll = bestRoll(state);
+  const { order, start, end } = siteOrderBySpeeds(map, player.position, stats);
+  const costs = routeTable(map.graph, map.ruleset.config).from(player.position).costs;
+  const found: PoiCandidate[] = [];
+  for (let at = start; at < end && found.length < count; at++) {
+    const index = order[at] as number;
+    if ((sites[index] as PoiRuntimeState).claimedBy !== null) continue;
+    const poi = pois[index] as Poi;
+    if (winsWithRoll(roll, stats, poi.guard, 0)) found.push({ node: poi.node, cost: costs[poi.node] as number });
+  }
+  return found;
+};
 
 /**
  * Unclaimed POIs `player` could win now: every unguarded one, and guarded gold
@@ -318,6 +378,11 @@ function comparedTarget(
       ? closestPoiCandidates(state.map.graph, player.position, eligible, count, options.config, routeTable(state.map.graph, options.config))
       : options.closest(state, player, eligible, count);
   if (candidates.length === 0) return null;
+  return pickAmong(state, player, candidates, options);
+}
+
+/** Which of `candidates` the player heads for: `pick`'s choice, or one uniformly at random. */
+function pickAmong(state: GameState, player: PlayerState, candidates: readonly PoiCandidate[], options: RolloutOptions): PoiCandidate {
   return options.pick === undefined ? options.rng.pick(candidates) : options.pick(state, player, candidates, options.rng);
 }
 
@@ -355,9 +420,13 @@ function committedTarget(cursor: RolloutCursor, player: PlayerState, options: Ro
   if (committed !== null) return committed;
 
   const state = cursor.state;
+  const count = options.config.balancing.CLOSE_CANDIDATE_COUNT;
+  if (options.candidates !== undefined) {
+    const candidates = options.candidates(state, player, count);
+    return candidates.length === 0 ? null : pickAmong(state, player, candidates, options).node;
+  }
   const eligible = options.targets === undefined ? unclaimedPoiNodes(state) : options.targets(state, player);
   if (eligible.size === 0) return null;
-  const count = options.config.balancing.CLOSE_CANDIDATE_COUNT;
   const choice =
     options.closest === undefined && options.pick === undefined
       ? chooseWalkTarget(

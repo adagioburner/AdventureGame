@@ -6,6 +6,7 @@ import {
   cheapestRoute,
   closestByBestRoute,
   closestBySpeeds,
+  closestWinnableBySpeeds,
   goldByProgressPicker,
   goldExhaustedTermination,
   restWhenStuck,
@@ -115,6 +116,8 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
   const edgeRoute = cheapest ? cheapestRoute : bestRouteForSpeeds;
   const unwinnable = settings.unwinnableGuards ?? 'skipped';
   const imaginedTargets = unwinnable === 'skipped' ? (settings.targets ?? winnableBySkill) : settings.targets;
+  // With the game's own targets and ranking, the imagined players find both in one pass.
+  const candidates = imaginedTargets === winnableBySkill && closest === closestBySpeeds ? closestWinnableBySpeeds : undefined;
   return {
     subject,
     config,
@@ -134,6 +137,7 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
       restRule,
       closest,
       ...(imaginedTargets === undefined ? {} : { targets: imaginedTargets }),
+      ...(candidates === undefined ? {} : { candidates }),
       pick: settings.pick ?? goldByProgressPicker(),
       ...(settings.imaginedWalks === undefined ? {} : { walks: settings.imaginedWalks }),
     }),

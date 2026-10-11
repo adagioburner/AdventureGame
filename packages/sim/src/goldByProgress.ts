@@ -1,4 +1,4 @@
-import type { GameState, NodeId, PlayerState, Rng } from '@adventure/core';
+import type { GameMap, GameState, PlayerState, Rng } from '@adventure/core';
 import type { PoiCandidate } from './candidates.ts';
 
 /** Which of `candidates` a player in an imagined game heads for. */
@@ -15,12 +15,22 @@ export type TargetPicker = (state: GameState, player: PlayerState, candidates: r
  * It replaced the gold and skill units claimed (Q111's progress).
  */
 export function sitesClaimedShare(state: GameState): number {
+  // Asked whenever a player in an imagined game picks a site, and the sites
+  // change only when one is claimed (`poiRuntime` is replaced then and never
+  // altered), so the last answer is kept until they do.
+  if (state.poiRuntime === shareSites && state.map === shareMap) return shareKnown;
   const total = state.map.pois.length;
-  if (total === 0) return 1;
   let claimed = 0;
   for (let index = 0; index < total; index++) if (state.poiRuntime[index]?.claimedBy !== null) claimed += 1;
-  return claimed / total;
+  shareSites = state.poiRuntime;
+  shareMap = state.map;
+  shareKnown = total === 0 ? 1 : claimed / total;
+  return shareKnown;
 }
+
+let shareSites: GameState['poiRuntime'] | null = null;
+let shareMap: GameState['map'] | null = null;
+let shareKnown = 1;
 
 /**
  * The game's computer: the players in the games it imagines head for gold
@@ -38,14 +48,28 @@ export function sitesClaimedShare(state: GameState): number {
 export function goldByProgressPicker(): TargetPicker {
   return (state, _player, candidates, rng) => {
     if (rng.nextFloat() < sitesClaimedShare(state)) {
-      const gold = candidates.filter((candidate) => poiKindAt(state, candidate.node) === 'gold');
+      const golden = goldSites(state.map);
+      const gold = candidates.filter((candidate) => golden[candidate.node] === 1);
       if (gold.length > 0) return rng.pick(gold);
     }
     return rng.pick(candidates);
   };
 }
 
-function poiKindAt(state: GameState, node: NodeId): string | undefined {
-  const index = state.map.poiByNode.get(node);
-  return index === undefined ? undefined : state.map.pois[index]?.reward.kind;
+/** Which spaces hold a gold site, 1 by node id, worked out once per map: asked for every pick. */
+function goldSites(map: GameMap): Uint8Array {
+  if (map === goldMap) return goldKnown as Uint8Array;
+  let golden = goldByMap.get(map);
+  if (golden === undefined) {
+    golden = new Uint8Array(map.graph.nodes.length);
+    for (const poi of map.pois) if (poi.reward.kind === 'gold') golden[poi.node] = 1;
+    goldByMap.set(map, golden);
+  }
+  goldMap = map;
+  goldKnown = golden;
+  return golden;
 }
+
+const goldByMap = new WeakMap<GameMap, Uint8Array>();
+let goldMap: GameMap | null = null;
+let goldKnown: Uint8Array | null = null;
