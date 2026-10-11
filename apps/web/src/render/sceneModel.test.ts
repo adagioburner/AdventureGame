@@ -11,7 +11,9 @@ import {
   buildMapScene,
   buildPathScene,
   buildStateScene,
+  BLINK_BELOW_PX,
   buildWaypoint,
+  figuresBlink,
   guardRing,
   ICON_TOUCH,
   labelBox,
@@ -558,6 +560,17 @@ describe("the figures' idle loops (Q305)", () => {
     // Before the loop's start too: a page's clock starts near nought.
     expect(at(-1)).toBe(7);
     expect(at(-1700)).toBe(0);
+  });
+
+  it('has every figure blink instead once figures are drawn under 24 px tall, all at the same zoom (11)', () => {
+    expect(BLINK_BELOW_PX).toBe(24);
+    const figures = buildStateScene(scene, game.state, catalog).characters;
+    const size = catalog.manifest.figurines.size * SPACING_PX;
+    expect(figures.every((figure) => figure.size === size)).toBe(true);
+    const switching = BLINK_BELOW_PX / size;
+    expect(figuresBlink(size, switching * 0.999)).toBe(true);
+    expect(figuresBlink(size, switching)).toBe(false);
+    expect(figuresBlink(size, switching * 4)).toBe(false);
   });
 
   it('draws the figures still, from the figurine sheet, when the manifest has no animation', () => {

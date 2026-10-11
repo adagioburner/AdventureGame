@@ -448,6 +448,21 @@ export function buildCharacters(
 }
 
 /**
+ * [Q305, 11] Figures drawn smaller than this on screen, in CSS pixels, are too
+ * small for their idle loop's movements to be seen, so every figure blinks
+ * instead. Andrei: "let us do animation up close, and as you zoom out
+ * substitute it with blinking figures"; "we may need to fine tune the
+ * constant 24 px later". A figure is its sheet's typical height, the
+ * figurines' manifest size, so all of them switch at once.
+ */
+export const BLINK_BELOW_PX = 24;
+
+/** [Q305] Whether figures `size` tall on the map, at `zoom`, blink rather than play their idle loops. */
+export function figuresBlink(size: number, zoom: number): boolean {
+  return size * zoom < BLINK_BELOW_PX;
+}
+
+/**
  * [Q305] The frame of `loop` showing at `nowMs` on the page's clock: frame
  * `k` for `durationsMs[k]`, round and round from `startMs`.
  */

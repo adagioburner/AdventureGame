@@ -4215,7 +4215,7 @@ the rulebook needs no change.
 
 ---
 
-### Q305. ~~How do the players stand out on the map?~~ — **answered 2026-10-11: a pin with the player's portrait over every figure, the same size at any zoom, and every figure playing Andrei's idle animation, which one manifest entry turns off (1-10)**
+### Q305. ~~How do the players stand out on the map?~~ — **answered 2026-10-11: up close every figure plays Andrei's idle animation; zoomed out, once a figure is drawn under 24 pixels tall, every figure blinks instead. The portrait pins first chosen were built and dropped (7-16)**
 
 Andrei, 2026-10-11 at 05:53: *"we need to highlight the players on the map
 better. One can click on the cards to see their locations, but it's important
@@ -4235,6 +4235,8 @@ figures: *"The pins look good, we should do them. I also have the animated
 versions for motion; they are clearly not enough on their own but may help as
 well. [...] Let us try pins + animation from the provided art, with the idea
 that we may throw the art away if it doesn't work out visually."*
+
+Items 1 to 6, the pins, were dropped that afternoon (below).
 
 1. **Pin size.** 34 CSS pixels across on every screen and at every zoom, as in
    the mockup. A.
@@ -4261,19 +4263,56 @@ that we may throw the art away if it doesn't work out visually."*
     keep the figurine sheet's pictures, so dropping the animation touches
     nothing else. A.
 
-At 07:09, *"the rest are as recommended"*. Built: `PIN`, `buildPins` and
-`pinLayout` in `apps/web/src/render/sceneModel.ts`, drawn by
-`apps/web/src/render/pixi/renderer.ts` in a layer over the labels, scaled
-against the zoom. Pins are not picked: taps are matched to the ground and the
-figures in `apps/web/src/interaction/picking.ts`, which never sees them. The
-figures play `figurines.animation` in `Art/manifest.json`:
+At 07:09, *"the rest are as recommended"*, and the pins were built. At 07:19:
+*"I am still worried that pins will cover important information"*. Side by
+side with and without pins at playing zoom, a pin hid only bits of road on a
+laptop but about one space on a phone, a guard with its number and gold
+included; see-through pins left what was under them unreadable, and drawing
+the numbers, rewards and route over the pins, or making them 26 pixels, still
+left spaces covered. At 08:30: *"even on a laptop pins can easily hide the next
+node. I don't see a good solution"*. A bright ring painted on the ground round
+each figure, under everything, was mocked up next. At 14:07: *"rings are ugly
+and pins hide important details, even more so as you zoom out. let us do
+animation up close, and as you zoom out substitute it with blinking figures"*.
+Until then only the player on turn's figure blinked (Q34): it fades out and
+back once a second with its yellow ring, while a ripple spreads from its feet.
+A figure is about 35 pixels tall at playing zoom on a laptop and about 14 on a
+phone.
+
+11. **Where it switches.** A: when a figure is drawn smaller than about 24
+    pixels tall, so a laptop animates at playing zoom and blinks on the whole
+    map, and a phone blinks at playing zoom until zoomed in two or three steps;
+    B: at playing zoom itself, where on a phone the movement comes to about a
+    pixel. A. At 14:31: *"we may need to fine tune the constant 24 px later"*.
+12. **Who blinks.** Every player's figure. A.
+13. **How.** A: the same fade as the player on turn's, in step with it; B: each
+    at its own moment, like the animation. A. The player on turn keeps their
+    ring and ripple, so they still stand out, and a figure picked up to plan a
+    move stays steady on its highlight, as before. A.
+14. **Walking.** A figure walking at End turn does not blink: its movement
+    already shows it. A.
+15. **The final map.** After the game ends the figures still animate up close
+    and blink zoomed out. A.
+16. **Without the animation.** If the art goes, the figures stand still up
+    close and still blink zoomed out. A. At 14:31: *"if the approach we try now
+    doesn't work visually we'll have to throw everything out, and think of
+    something else (outlines perhaps). Let's not worry about that now.
+    Everything as recommended works"*.
+
+Built: `BLINK_BELOW_PX` and `figuresBlink` in
+`apps/web/src/render/sceneModel.ts` decide from the figurines' manifest size
+times the zoom, so every figure switches at once;
+`apps/web/src/render/pixi/renderer.ts` swaps the frames or blinks them every
+frame, sharing `blinkAlpha` with the player on turn's blink. The pins are gone.
+The figures play `figurines.animation` in `Art/manifest.json`:
 `Art/tools/pack_animation.py` packs Andrei's six strips, kept as supplied in
 `Art/originals/player_avatars_animated/`, into
 `player_avatars_animated_sheet.png`, each frame where it was drawn and its
 shadow made dark and see-through by `pack_sheets.py`'s own code; the loop's
 start is spread over the players by seat order. Deleting that manifest entry
-draws the figures still from `player_avatars` again, as before. No rule,
-number or map changed, and the rulebook needs no change.
+draws the figures still from `player_avatars` up close again, as before, and
+they still blink zoomed out (16). No rule, number or map changed, and the
+rulebook needs no change.
 
 ---
 

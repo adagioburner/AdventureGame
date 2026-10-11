@@ -51,7 +51,7 @@ export interface ArtManifest {
   readonly figurines: {
     readonly sheet: string;
     readonly size: number;
-    /** [Q305] The figures' idle loop on the map; `null` draws them still, from `sheet`. */
+    /** [Q305] The figures' idle loop on the map, up close; `null` draws them still, from `sheet`. */
     readonly animation: FigureAnimationArt | null;
   };
   readonly portraits: string;
