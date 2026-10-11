@@ -327,12 +327,13 @@ export interface PlayerRing {
 export const PLAYER_RING_ACROSS = 0.6;
 
 /**
- * [Q305, 8, 13] How wide the ring is with the whole map in view, in node
+ * [Q305, 8, 13, 14] How wide the ring is with the whole map in view, in node
  * spacings: it never gets smaller on screen than that. Andrei: "cap their
  * absolute size from below so on the whole map their actual size is 1.2x",
- * then "1.2 -> 1.0".
+ * then "1.2 -> 1.0", then "please make them 0.8 across the whole map, maybe
+ * that's visible enough".
  */
-export const PLAYER_RING_ACROSS_WHOLE_MAP = 1.0;
+export const PLAYER_RING_ACROSS_WHOLE_MAP = 0.8;
 
 /**
  * [Q305, 8] How wide a ring `size` across is drawn at `zoom`, when the

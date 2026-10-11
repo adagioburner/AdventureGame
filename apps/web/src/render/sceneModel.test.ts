@@ -561,18 +561,18 @@ describe("the rings under the players' figures (Q305)", () => {
     expect(over.rings).toHaveLength(game.state.players.length);
   });
 
-  it('is 1.0 spacing across with the whole map in view, and no smaller on screen zoomed further out (8, 13)', () => {
+  it('is 0.8 spacings across with the whole map in view, and no smaller on screen zoomed further out (8, 13, 14)', () => {
     const spacing = scene.spacing;
     const size = PLAYER_RING_ACROSS * spacing;
     const whole = 0.3;
-    expect(PLAYER_RING_ACROSS_WHOLE_MAP).toBe(1.0);
-    expect(playerRingSize(size, spacing, whole, whole)).toBeCloseTo(spacing);
-    // From 1.0 / 0.6 times the whole map's zoom in, it scales with the map again.
-    expect(playerRingSize(size, spacing, (whole * 1.0) / 0.6, whole)).toBeCloseTo(size);
+    expect(PLAYER_RING_ACROSS_WHOLE_MAP).toBe(0.8);
+    expect(playerRingSize(size, spacing, whole, whole)).toBeCloseTo(0.8 * spacing);
+    // From 0.8 / 0.6 times the whole map's zoom in, it scales with the map again.
+    expect(playerRingSize(size, spacing, (whole * 0.8) / 0.6, whole)).toBeCloseTo(size);
     expect(playerRingSize(size, spacing, whole * 3, whole)).toBe(size);
     // In between, and zoomed out past the whole map, it keeps its size on screen.
-    for (const zoom of [whole * 0.8, whole * 1.4]) {
-      expect(playerRingSize(size, spacing, zoom, whole) * zoom).toBeCloseTo(spacing * whole);
+    for (const zoom of [whole * 0.8, whole * 1.2]) {
+      expect(playerRingSize(size, spacing, zoom, whole) * zoom).toBeCloseTo(0.8 * spacing * whole);
     }
   });
 });
