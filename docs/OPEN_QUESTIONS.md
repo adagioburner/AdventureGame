@@ -4215,7 +4215,7 @@ the rulebook needs no change.
 
 ---
 
-### Q305. ~~How do the players stand out on the map?~~ — **answered 2026-10-11: one see-through gold ring on the ground under every figure, with no dark edge, 0.6 of a node spacing across and 0.8 with the whole map in view, under the roads and spaces so it hides nothing; it pulses on your turn and gets a thick yellow outline when selected, in place of the gold rings and the ripple (1-14)**
+### Q305. ~~How do the players stand out on the map?~~ — **answered 2026-10-11: one see-through gold ring on the ground under every figure, with no dark edge, 0.6 of a node spacing across and 0.8 with the whole map in view, under the roads and spaces so it hides nothing; it pulses on your turn and gets a thick yellow outline when selected, in place of the gold rings and the ripple (1-14); and now and then each figure drawn at least 24 px tall plays its idle animation once (15-19)**
 
 Andrei, 2026-10-11 at 05:53: *"we need to highlight the players on the map
 better. One can click on the cards to see their locations, but it's important
@@ -4322,6 +4322,37 @@ and nodes, their look in `PLAYER_RING` and `CUE`, and `setCamera` is handed
 the whole map's camera for the floor. `move_prospect.active` and
 `active_size` in `Art/manifest.json` are no longer drawn and are left as they
 were. No rule, number or map changed, and the rulebook needs no change.
+
+At 21:10, after this was shipped: *"since we have the animations now let us
+make the characters perform them from time to time randomly if they are
+rendered big enough"*. Andrei's eight-frame strips, their sheet and atlas,
+`Art/tools/pack_animation.py` and `figurines.animation` came back from
+history as they were.
+
+15. **How often.** A: each figure on its own waits a random 5 to 15 seconds
+    between plays; B: 15 to 45, rarer. A.
+16. **Each time.** A: it plays its loop once, about 1.7 seconds, then stands
+    still again; B: twice through. A.
+17. **Big enough.** A: drawn at least 24 pixels tall, the number used for
+    the animation before: on a laptop at playing zoom but not on the whole
+    map, on a phone only zoomed in past playing zoom; B: another number. A.
+18. **Exceptions.** A figure picked up to plan, on its turn or out of it, and
+    one walking at End turn stand still; the final map animates. At 23:04:
+    *"it makes no sense to animate a blinking figure. the rest is as
+    recommended"*, so the player on turn's figure stands still while it
+    blinks too.
+19. **Between plays.** The frames are a different drawing from the still
+    figurines (another pose, the backpack showing). A: on the map a figure
+    always stands in its loop's first frame, so a play starts and ends
+    without a jump, while the cards and New game keep the figurines; B: the
+    figurine between plays, the frames only while playing. At 23:09: *"yes,
+    let's go with A"*.
+
+Built: `Figure.loop` and `Figure.walking`, `IDLE_WAIT_MS`, `ANIMATE_FROM_PX`,
+`figuresAnimate`, `nextIdlePlay` and `playFrame` in
+`apps/web/src/render/sceneModel.ts`; `apps/web/src/render/pixi/renderer.ts`
+keeps each player's next play and swaps the frames in `playIdle`. No rule,
+number or map changed.
 
 ---
 

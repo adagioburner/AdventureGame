@@ -1,6 +1,6 @@
 import { TERRAINS } from '@adventure/config';
 import type { GameMap, GameState, NodeId, PathPreview, PlayerId, Point } from '@adventure/core';
-import { Container, Graphics, Matrix, Sprite, Text, TilingSprite } from 'pixi.js';
+import { Container, Graphics, Matrix, Sprite, Text, TilingSprite, type Texture } from 'pixi.js';
 import { spriteIndex } from '../../art/atlas.ts';
 import { atlasOf } from '../../art/catalog.ts';
 import type { Camera, Projection } from '../isometric.ts';
@@ -10,9 +10,12 @@ import {
   buildPathScene,
   buildStateScene,
   buildWaypoint,
+  figuresAnimate,
   guardRing,
   nodeOutlineWidth,
+  nextIdlePlay,
   playerRingSize,
+  playFrame,
   siteDot,
   type Billboard,
   type FigureCue,
@@ -84,6 +87,13 @@ export class PixiMapRenderer implements MapRenderer {
   /** What the blink animates: the current player's figure, and (Q305, 11) its ring. */
   private blinking: Sprite | null = null;
   private pulsing: Graphics | null = null;
+  /**
+   * [Q305, 15-18] The figures drawn now that have an idle loop: its frames,
+   * the one showing, and whether the figure stands still whatever the zoom.
+   */
+  private figures: { sprite: Sprite; player: PlayerId; size: number; frames: readonly Texture[]; durationsMs: readonly number[]; still: boolean; shown: number }[] = [];
+  /** [Q305, 15] Each player's idle loop: when it next plays, and when the one playing started. */
+  private readonly idle = new Map<PlayerId, { next: number; start: number | null }>();
 
   private state: GameState | null = null;
   private stateScene: StateScene | null = null;
@@ -197,14 +207,50 @@ export class PixiMapRenderer implements MapRenderer {
     this.invalidate('characters');
   }
 
-  /** Advance the blink; call once a frame. */
+  /** Advance the figures' idle loops and the blink; call once a frame. */
   tick(now: number): void {
+    this.playIdle(now);
     if (this.cue !== 'blink') return;
     const phase = (now % CUE.blinkMs) / CUE.blinkMs;
     if (this.blinking !== null) this.blinking.alpha = CUE.dimAlpha + (1 - CUE.dimAlpha) * (0.5 + 0.5 * Math.cos(phase * 2 * Math.PI));
     if (this.pulsing !== null) {
       this.pulsing.scale.set(1 + (CUE.pulseGrow - 1) * phase);
       this.pulsing.alpha = 1 - phase;
+    }
+  }
+
+  /**
+   * [Q305, 15-18] Now and then each figure plays its idle loop once, when it
+   * is drawn big enough, and stands in its first frame the rest of the time.
+   */
+  private playIdle(now: number): void {
+    for (const figure of this.figures) {
+      let idle = this.idle.get(figure.player);
+      if (idle === undefined) {
+        idle = { next: nextIdlePlay(now, Math.random()), start: null };
+        this.idle.set(figure.player, idle);
+      }
+      if (figure.still || !figuresAnimate(figure.size, this.zoom)) {
+        // A play due while it cannot be seen is skipped, not saved up.
+        idle.start = null;
+        if (now >= idle.next) idle.next = nextIdlePlay(now, Math.random());
+      } else if (idle.start === null && now >= idle.next) {
+        idle.start = now;
+      }
+      let frame = 0;
+      if (idle.start !== null) {
+        const playing = playFrame(figure.durationsMs, idle.start, now);
+        if (playing === null) {
+          idle.start = null;
+          idle.next = nextIdlePlay(now, Math.random());
+        } else {
+          frame = playing;
+        }
+      }
+      if (frame !== figure.shown) {
+        figure.shown = frame;
+        figure.sprite.texture = figure.frames[frame] ?? figure.sprite.texture;
+      }
     }
   }
 
@@ -356,6 +402,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.waypointSprite?.destroy();
     this.waypointSprite = null;
     this.blinking = null;
+    this.figures = [];
     this.drawPlayerRings();
 
     const state = this.state;
@@ -363,7 +410,22 @@ export class PixiMapRenderer implements MapRenderer {
     for (const item of this.stateScene?.characters ?? []) {
       const sprite = this.stand(item, 1);
       this.characterSprites.push(sprite);
-      if (item.player === current && this.cue === 'blink') this.blinking = sprite;
+      const blinking = item.player === current && this.cue === 'blink';
+      if (blinking) this.blinking = sprite;
+      if (item.loop !== null) {
+        // [Q305, 18] A figure walking at End turn, picked up to plan (on its
+        // turn or out of it, Q56) or blinking stands still.
+        const pickedUp = (item.player === current && this.cue === 'selected') || item.player === this.planner;
+        this.figures.push({
+          sprite,
+          player: item.player,
+          size: item.size,
+          frames: item.loop.frames.map((ref) => this.art.frame(ref)),
+          durationsMs: item.loop.durationsMs,
+          still: item.walking || pickedUp || blinking,
+          shown: 0,
+        });
+      }
     }
     if (this.waypoint !== null) {
       this.waypointSprite = this.stand(buildWaypoint(this.scene, this.map, this.waypoint, this.art.catalog), 1);

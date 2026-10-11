@@ -15,6 +15,7 @@ manifest, and never a code change.
 | Reward icon | `Icons/<reward kind>.png` | One icon per reward unit under a POI |
 | Portrait crops | `player_avatars_portraits.json` | Head-and-shoulders boxes on the figurine sheet (temporary, Q26) |
 | Artist's sheets | `originals/<Name>.png` | Nothing directly: `tools/pack_sheets.py` packs each into `<Name>_sheet.png` and its atlas |
+| Figure animations | `originals/player_avatars_animated/<figure>-strip.png` | Nothing directly: `tools/pack_animation.py` packs them into `player_avatars_animated_sheet.png` and its atlas, the idle loop each figure plays on the map now and then (Q305) |
 | Island | `Island/underside.png`, `Island/sky.png` | The rock hanging under the map's two front edges, and the sky behind the map (Q170) |
 | Sound effect | `Sounds/<name>.wav` | A footstep, a reward picked up, a battle won or lost, a rest, a new message (Q63), a speed or skill coming back (Q135) |
 
@@ -148,7 +149,13 @@ there for people and ignored by the game.
 - `move_prospect`: which marker sprites draw §7.1's dots, crosses, waypoint
   flag and active-player ring, and their sizes.
 - `figurines`, `portraits`, `dice`: the player figures, their portrait crops
-  and the die sheet.
+  and the die sheet. `figurines.animation` has each figure on the map play
+  its idle loop once now and then, when it is drawn big enough (Q305): its
+  `sheet` holds frame `k` of the figurine `<id>` as the sprite
+  `<id>_frame<k>`, shown for the `k`th entry of `durations_ms`, and a figure
+  stands in its first frame between plays. Delete it and the figures stand
+  still, drawn from `figurines.sheet` as before; the player cards and the New
+  game figures always use `figurines.sheet`.
 - `island`: the map as a floating island (Q170). `underside` is the rock
   under the map's two front edges: a picture, and the three points in its
   pixels (`left`, `bottom`, `right`) where the map's left, bottom and right
@@ -178,6 +185,20 @@ there for people and ignored by the game.
   message someone else posts; `purchase` a speed or skill bought, Andrei's
   own cash register (Q190). A sound with several files uses them in turn,
   so a walk's footsteps are not all alike.
+
+## Swapping a figure's animation
+
+Andrei's animations arrive as one strip per figure, kept as supplied in
+`originals/player_avatars_animated/`: eight frames left to right, each 256 by
+320 pixels, with the figure standing on the same spot, (128, 288), in every
+frame. `python3 Art/tools/pack_animation.py` lays the strips one under
+another into `player_avatars_animated_sheet.png`, each frame where it was
+drawn so the figure does not shift between frames, makes their shadows dark
+and see-through as `pack_sheets.py` does (Q305), and writes the atlas. A
+new version of a strip goes in by replacing it and running the tool again. A
+strip with a different number of frames needs the tool's `FRAMES` and the
+manifest's `durations_ms` changed with it; `pnpm test` reports any figurine
+left without all its frames.
 
 ## Swapping the island's rock or sky
 
@@ -217,5 +238,6 @@ writes the same bytes every run, so rerunning it after editing it changes only
 what was edited. `tools/make_sounds.py` makes the nine sound files flagged `"placeholder": true`
 under `sounds`, from the samples Andrei picked by ear, the same bytes every
 run. `tools/make_portrait_crops.py` rederives the portrait boxes,
-and `tools/pack_sheets.py` repacks the artist's sheets; both do the same
+`tools/pack_sheets.py` repacks the artist's sheets, and
+`tools/pack_animation.py` the figures' animations; all three do the same
 every run too.
