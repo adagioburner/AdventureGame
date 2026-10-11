@@ -237,7 +237,7 @@ export function MapView({
       };
       const apply = (): void => {
         map.setViewport(viewport());
-        map.setCamera(camera.camera);
+        map.setCamera(camera.camera, fit());
         placeSky();
       };
       apply();

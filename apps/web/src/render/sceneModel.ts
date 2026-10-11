@@ -298,19 +298,51 @@ export interface StateScene {
    */
   readonly nodes: readonly NodeMark[];
   readonly characters: readonly Billboard[];
-  /** [SOURCE §7.2] The current player's character is highlighted on the map. */
-  readonly active: { readonly at: Point; readonly size: number; readonly sprite: SpriteRef } | null;
+  /** [Q305] The ring on the ground under every player's figure, one per figure, in the figures' order. */
+  readonly rings: readonly PlayerRing[];
+}
+
+/** [Q305] The ring under one figure, `size` across, where the figure stands now. */
+export interface PlayerRing {
+  readonly at: Point;
+  readonly size: number;
   /**
-   * [Q56, 49] Online, the figure of a player planning out of turn, highlighted
-   * as their own would be on their turn; `null` when nobody is.
+   * Whose ring calls attention to itself:
+   * - `turn`: [SOURCE §7.2] "the current player's character is highlighted on
+   *   the map"; it pulses or is outlined as the figure's cue says;
+   * - `planning`: [Q56, 49] online, a player planning out of turn, outlined as
+   *   their own would be on their turn;
+   * - `found`: [Andrei, 2026-09-30] Q120, 471: a player whose card was just
+   *   clicked, outlined the same way; never the player on turn, whose figure
+   *   has its own cue;
+   * - `null`: everyone else.
    */
-  readonly planning: { readonly at: Point; readonly size: number; readonly sprite: SpriteRef } | null;
-  /**
-   * [Andrei, 2026-09-30] Q120, 471: the figure of a player whose card was
-   * just clicked, on the same ring as `planning`; `null` when there is none,
-   * and for the player on turn, whose figure has its own cue.
-   */
-  readonly found: { readonly at: Point; readonly size: number; readonly sprite: SpriteRef } | null;
+  readonly mark: 'turn' | 'planning' | 'found' | null;
+}
+
+/**
+ * [Q305, 13] How wide the ring under every figure is, in node spacings.
+ * Andrei: "make everything a bit smaller, 0.8 -> 0.6, 1.2 -> 1.0".
+ */
+export const PLAYER_RING_ACROSS = 0.6;
+
+/**
+ * [Q305, 8, 13, 14] How wide the ring is with the whole map in view, in node
+ * spacings: it never gets smaller on screen than that. Andrei: "cap their
+ * absolute size from below so on the whole map their actual size is 1.2x",
+ * then "1.2 -> 1.0", then "please make them 0.8 across the whole map, maybe
+ * that's visible enough".
+ */
+export const PLAYER_RING_ACROSS_WHOLE_MAP = 0.8;
+
+/**
+ * [Q305, 8] How wide a ring `size` across is drawn at `zoom`, when the
+ * whole map shows at `wholeZoom`: `size`, scaling with the map, until that
+ * would be smaller on screen than `PLAYER_RING_ACROSS_WHOLE_MAP` spacings are
+ * at `wholeZoom`, and from there on that size on screen.
+ */
+export function playerRingSize(size: number, spacing: number, zoom: number, wholeZoom: number): number {
+  return Math.max(size, (PLAYER_RING_ACROSS_WHOLE_MAP * spacing * wholeZoom) / zoom);
 }
 
 /**
@@ -354,9 +386,9 @@ export function buildStateScene(
 }
 
 /**
- * The figures, and the highlight under the current player's (§7.2), a player
- * planning out of turn's and a player just found's. Split out so a walking
- * figure redraws only these.
+ * The figures and the ring under each, marking the current player's (§7.2), a
+ * player planning out of turn's and a player just found's. Split out so a
+ * walking figure redraws only these.
  */
 export function buildCharacters(
   scene: MapScene,
@@ -365,7 +397,7 @@ export function buildCharacters(
   walker: Walker | null = null,
   planner: PlayerId | null = null,
   found: PlayerId | null = null,
-): Pick<StateScene, 'characters' | 'active' | 'planning' | 'found'> {
+): Pick<StateScene, 'characters' | 'rings'> {
   const { manifest } = catalog;
   const figurines = atlasOf(catalog, manifest.figurines.sheet);
   const size = manifest.figurines.size * SPACING_PX;
@@ -377,10 +409,7 @@ export function buildCharacters(
   });
 
   const characters: Billboard[] = [];
-  let active: StateScene['active'] = null;
-  let planning: StateScene['planning'] = null;
-  let spotted: StateScene['found'] = null;
-  const ring = { sheet: manifest.moveProspect.sheet, index: spriteIndex(atlasOf(catalog, manifest.moveProspect.sheet), manifest.moveProspect.active) };
+  const rings: PlayerRing[] = [];
   state.players.forEach((player, index) => {
     const walking = player.id === walker?.player;
     const together = walking ? [index] : (byNode.get(player.position) ?? [index]);
@@ -400,17 +429,24 @@ export function buildCharacters(
       depth: foot.y + 0.5,
       player: player.id,
     });
-    const under = { at: scene.projection.toWorld(foot), size: manifest.moveProspect.activeSize * scene.spacing, sprite: ring };
-    if (player.seat === state.turn.activeSeat && state.status !== 'finished') {
-      active = under;
-    } else if (player.id === planner && state.status !== 'finished') {
-      planning = under;
-    } else if (player.id === found) {
-      // [Q120, 474] Cards find players on the final map too.
-      spotted = under;
-    }
+    const playing = state.status !== 'finished';
+    // [Q305, 5-7] Under each figure, two on one node overlapping, walking with
+    // a walking figure, and on the final map too, where [Q120, 474] cards
+    // still find players.
+    rings.push({
+      at: scene.projection.toWorld(foot),
+      size: PLAYER_RING_ACROSS * scene.spacing,
+      mark:
+        player.seat === state.turn.activeSeat && playing
+          ? 'turn'
+          : player.id === planner && playing
+            ? 'planning'
+            : player.id === found
+              ? 'found'
+              : null,
+    });
   });
-  return { characters, active, planning, found: spotted };
+  return { characters, rings };
 }
 
 // --- a prospective move ------------------------------------------------------

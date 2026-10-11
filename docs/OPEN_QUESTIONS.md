@@ -4215,6 +4215,116 @@ the rulebook needs no change.
 
 ---
 
+### Q305. ~~How do the players stand out on the map?~~ — **answered 2026-10-11: one see-through gold ring on the ground under every figure, with no dark edge, 0.6 of a node spacing across and 0.8 with the whole map in view, under the roads and spaces so it hides nothing; it pulses on your turn and gets a thick yellow outline when selected, in place of the gold rings and the ripple (1-14)**
+
+Andrei, 2026-10-11 at 05:53: *"we need to highlight the players on the map
+better. One can click on the cards to see their locations, but it's important
+to be able to glance at the map and see the players positions right away"*.
+Measured on a 4-player game after five rounds, a figure on the whole map is
+about 14 pixels tall on a laptop and about 6 on a phone, and at playing zoom
+about 35 on a laptop and 15 on a phone, smaller than most sites.
+
+Three designs were built or mocked up and dropped the same day:
+
+- **Portrait pins.** A pin with the player's portrait over every figure, 34
+  pixels across at any zoom, chosen at 07:00 together with Andrei's 8-frame
+  idle animations for the six figures (*"Let us try pins + animation from the
+  provided art, with the idea that we may throw the art away if it doesn't work
+  out visually"*), and built. At 07:19: *"I am still worried that pins will
+  cover important information"*: at playing zoom a pin hid about one space on a
+  phone, guard number and gold included. At 08:30: *"even on a laptop pins can
+  easily hide the next node. I don't see a good solution"*.
+- **Large rings.** A white ring on the ground round each figure, never under
+  34 pixels across. At 14:07: *"rings are ugly and pins hide important details,
+  even more so as you zoom out. let us do animation up close, and as you zoom
+  out substitute it with blinking figures"*.
+- **Animation up close, blinking zoomed out.** Built: the figures played their
+  idle loops while drawn at least 24 pixels tall and all blinked in step with
+  the player on turn's below that. At 15:14: *"honestly, the blinking snd
+  animation don't work. We need to completely scrape that idea"*. The animated
+  art, its packing tool and all of that code were removed; the player on
+  turn's own blink (Q34) is as it was.
+
+At 15:14: *"Let us try rings under, but much smaller ones, similar to those
+that appear when you select your figure. Maybe the rings that stay on are white
+similar to what you drew, about twice the size of the selection rings, and the
+selection rings appear on top of them"*. Mocked up at two sizes on a laptop and
+a phone.
+
+1. **Size.** A: 0.8 of a node spacing across, twice the gold ring under the
+   player on turn; B: 1.2, twice the larger ring of a figure picked up. Both
+   scale with the map, like the gold rings. A.
+2. **Look.** A see-through white disc with a white rim and a thin dark edge,
+   as in the mockup. A.
+3. **Layer.** Painted on the ground under the roads, spaces and sites, so it
+   hides nothing; the gold rings are drawn over it. A.
+4. **Who.** Every player's figure, the player on turn's included. A.
+5. **Two players on one space.** A: a ring under each figure, overlapping;
+   B: one ring round both. A.
+6. **Walking.** The ring moves with a figure walking at End turn. A.
+7. **The final map.** The rings stay. A.
+
+At 15:33: *"all as recommended"*. At 15:36: *"zoomed out, 1.2 rings look much
+more prominent. Perhaps we can go with 0.8 but cap their absolute size from
+below so on the whole map their actual size is 1.2x"*:
+
+8. **Zoomed out.** The ring is never smaller on screen than 1.2 spacings are
+   with the whole map in view, on whatever screen the map is shown: on the
+   whole map it is 1.2 across, and from 1.5 times that zoom in it is 0.8 across
+   and scales with the map. Its rim and dark edge stay as thick as in the
+   mockup.
+
+At 15:53, on the preview: *"the rings work on their own, but in conjunction
+with the selection mean and the pulsing yellow rings they create too much
+visual clutter"*, and at 16:01: *"the rings simply needs to be made more
+similar to The selection ring. when I figure is selected the ring solidifies
+and gets more prominent outline and when pulsing starts it starts pulsing"*.
+At 16:09: *"so that will be only one ring I actually want it not white but a
+shade of gold, semi transparent as today. when the figure is selected that
+ring gets a thick yellow outline. on your turn the ripple is made by growing
+this circle and fading it at the same time"*. So the ring is the only one
+under a figure: the gold ring under the player on turn, the larger
+yellow-edged one of a figure being planned or found (Q56, Q120, Q145) and the
+yellow ripple (Q34) are gone. It is the same size in every state, plain while
+a turn plays out, and the whole-map floor (8) holds throughout.
+
+9. **Look.** A: the ring of 2 in the gold of the ring that was under the
+   player on turn (`Prospect_ActiveRing`), with the same see-through disc, rim
+   and thin dark edge; B: that ring's picture, enlarged. A.
+10. **Selected** (the player on turn planning, a player planning out of turn,
+    or one just found from their card). A: the selection ring's thick yellow
+    outline replaces the thin dark edge; B: it is added outside it. A.
+11. **Pulsing** (the player on turn before they pick their figure up). A: the
+    ring grows to twice its size as it fades out, then starts again at its
+    own size, once a second; B: it stays put and a copy grows and fades. A.
+12. **The figure's own blink.** A: it fades out and back as before; B: it
+    stops. A.
+
+At 16:22: *"all as recommended. I'm sure we'll need to fine tune the looks,
+but it's a good start"*.
+
+13. **Smaller, no dark edge.** At 16:50, on the preview: *"let us try it
+    without the black outlines, I'd like to see how it looks. And make
+    everything a bit smaller, 0.8 -> 0.6, 1.2 -> 1.0"*. The ring is 0.6
+    spacings across up close and 1.0 on the whole map (1 and 8), scaling with
+    the map again from 1.0 / 0.6 times the whole map's zoom in, and its thin
+    dark edge is gone; a selected ring's yellow outline is as in 10.
+14. **Whole map.** At 17:08: *"please make them 0.8 across the whole map,
+    maybe that's visible enough"*. On the whole map the ring is 0.8 spacings
+    across (8), and 0.6 up close as in 13; it scales with the map again from
+    0.8 / 0.6 times the whole map's zoom in.
+
+Built: `PLAYER_RING_ACROSS`, `PLAYER_RING_ACROSS_WHOLE_MAP`, `playerRingSize`
+and `StateScene.rings` in `apps/web/src/render/sceneModel.ts`, one ring per
+figure where it stands, each marked `turn`, `planning`, `found` or `null`;
+`apps/web/src/render/pixi/renderer.ts` draws them in a layer under the roads
+and nodes, their look in `PLAYER_RING` and `CUE`, and `setCamera` is handed
+the whole map's camera for the floor. `move_prospect.active` and
+`active_size` in `Art/manifest.json` are no longer drawn and are left as they
+were. No rule, number or map changed, and the rulebook needs no change.
+
+---
+
 ## C. Decisions I made that are *implementation*, not design
 
 Listed so you can veto any that read as design to you.

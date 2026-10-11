@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_RULESET } from '@adventure/config';
-import { asNodeId, isClaimed, type GameMap, type GameState, type PathPreview } from '@adventure/core';
+import { asNodeId, isClaimed, type GameMap, type GameState, type PathPreview, type PlayerId } from '@adventure/core';
 import { atlasOf, buildArtCatalog, poiArt } from '../art/catalog.ts';
 import { ART_FILES } from '../art/files.ts';
 import { previewGame, SAMPLE_ALLOWANCE, SAMPLE_STAMINA } from './scene.fixture.ts';
@@ -17,6 +17,9 @@ import {
   labelBox,
   nodeOval,
   nodeOutlineWidth,
+  PLAYER_RING_ACROSS,
+  PLAYER_RING_ACROSS_WHOLE_MAP,
+  playerRingSize,
   siteDot,
   SPACING_PX,
   type MapScene,
@@ -435,7 +438,7 @@ describe('what changes during play', () => {
     expect(first?.foot.x).toBeLessThan(second?.foot.x ?? -Infinity);
     expect(first?.sprite.index).toBe(0);
     expect(second?.sprite.index).toBe(1);
-    expect(state.active).not.toBeNull();
+    expect(state.rings.map((ring) => ring.mark)).toEqual(['turn', null]);
     expect(state.claimed.size).toBe(0);
   });
 
@@ -497,26 +500,80 @@ describe('what changes during play', () => {
     expect(other?.foot.x).toBeCloseTo(scene.projection.toScreen(from).x, 9);
     expect(other?.foot.x).not.toBe(still.characters[1]?.foot.x);
     // The ring follows the player whose turn it is.
-    expect(moving.active?.at.x).toBeCloseTo(scene.projection.toWorld(mover?.foot ?? foot).x, 9);
+    expect(moving.rings.find((ring) => ring.mark === 'turn')?.at.x).toBeCloseTo(scene.projection.toWorld(mover?.foot ?? foot).x, 9);
     expect(moving.nodes).toEqual(still.nodes);
   });
 
-  it('shows no active ring once the game is over', () => {
-    expect(buildStateScene(scene, { ...game.state, status: 'finished' }, catalog).active).toBeNull();
+  it("marks no one's ring as on turn once the game is over", () => {
+    expect(buildStateScene(scene, { ...game.state, status: 'finished' }, catalog).rings.map((ring) => ring.mark)).toEqual([null, null]);
   });
 
   it('rings a player found from their card, the player on turn aside, during the game and after it (Q120)', () => {
     const [onTurn, other] = game.state.players;
     if (onTurn === undefined || other === undefined) throw new Error('two players needed');
-    const found = buildStateScene(scene, game.state, catalog, null, null, other.id);
-    const figure = found.characters.find((item) => item.player === other.id);
-    expect(found.found?.at.x).toBeCloseTo(scene.projection.toWorld(figure?.foot ?? { x: 0, y: 0 }).x, 9);
-    expect(found.found?.size).toBe(found.active?.size);
+    const marks = (...args: [PlayerId | null, PlayerId | null]) =>
+      buildStateScene(scene, game.state, catalog, null, ...args).rings.map((ring) => ring.mark);
+    expect(marks(null, other.id)).toEqual(['turn', 'found']);
     // The figure on turn keeps its own cue and gets nothing more.
-    expect(buildStateScene(scene, game.state, catalog, null, null, onTurn.id).found).toBeNull();
-    expect(buildStateScene(scene, game.state, catalog).found).toBeNull();
+    expect(marks(null, onTurn.id)).toEqual(['turn', null]);
+    expect(marks(null, null)).toEqual(['turn', null]);
     const over = buildStateScene(scene, { ...game.state, status: 'finished' }, catalog, null, null, onTurn.id);
-    expect(over.found).not.toBeNull();
+    expect(over.rings.map((ring) => ring.mark)).toEqual(['found', null]);
+  });
+
+  it('marks the ring of a player planning out of turn (Q56)', () => {
+    const [, other] = game.state.players;
+    if (other === undefined) throw new Error('two players needed');
+    const state = buildStateScene(scene, game.state, catalog, null, other.id, other.id);
+    expect(state.rings.map((ring) => ring.mark)).toEqual(['turn', 'planning']);
+  });
+});
+
+describe("the rings under the players' figures (Q305)", () => {
+  const under = (state: ReturnType<typeof buildStateScene>) =>
+    state.characters.map((figure) => scene.projection.toWorld(figure.foot));
+
+  it('puts one under every figure, 0.6 spacings across (1, 4, 13)', () => {
+    const state = buildStateScene(scene, game.state, catalog);
+    expect(PLAYER_RING_ACROSS).toBe(0.6);
+    expect(state.rings).toHaveLength(game.state.players.length);
+    expect(state.rings.map((ring) => ring.at)).toEqual(under(state));
+    for (const ring of state.rings) expect(ring.size).toBeCloseTo(0.6 * scene.spacing, 9);
+  });
+
+  it('puts one under each of two players on one node, overlapping (5)', () => {
+    const [left, right] = buildStateScene(scene, game.state, catalog).rings;
+    if (left === undefined || right === undefined) throw new Error('two rings needed');
+    const apart = Math.hypot(right.at.x - left.at.x, right.at.y - left.at.y);
+    expect(apart).toBeGreaterThan(0);
+    expect(apart).toBeLessThan(left.size);
+  });
+
+  it('walks with a walking figure, and stays on the final map (6, 7)', () => {
+    const walking = game.state.players[0];
+    const neighbour = game.map.graph.adjacency[walking?.position ?? 0]?.[0];
+    if (walking === undefined || neighbour === undefined) throw new Error('no one to walk');
+    const from = position(game.map.graph, walking.position);
+    const to = position(game.map.graph, neighbour);
+    const moving = buildStateScene(scene, game.state, catalog, { player: walking.id, at: { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 } });
+    expect(moving.rings.map((ring) => ring.at)).toEqual(under(moving));
+    const over = buildStateScene(scene, { ...game.state, status: 'finished' }, catalog);
+    expect(over.rings).toHaveLength(game.state.players.length);
+  });
+
+  it('is 0.8 spacings across with the whole map in view, and no smaller on screen zoomed further out (8, 13, 14)', () => {
+    const spacing = scene.spacing;
+    const size = PLAYER_RING_ACROSS * spacing;
+    const whole = 0.3;
+    expect(PLAYER_RING_ACROSS_WHOLE_MAP).toBe(0.8);
+    expect(playerRingSize(size, spacing, whole, whole)).toBeCloseTo(0.8 * spacing);
+    // From 0.8 / 0.6 times the whole map's zoom in, it scales with the map again.
+    expect(playerRingSize(size, spacing, (whole * 0.8) / 0.6, whole)).toBeCloseTo(size);
+    expect(playerRingSize(size, spacing, whole * 3, whole)).toBe(size);
+    // In between, and zoomed out past the whole map, it keeps its size on screen.
+    for (const zoom of [whole * 0.8, whole * 1.2]) {
+      expect(playerRingSize(size, spacing, zoom, whole) * zoom).toBeCloseTo(0.8 * spacing * whole);
+    }
   });
 });
 
