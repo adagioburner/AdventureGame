@@ -48,7 +48,12 @@ export interface ArtManifest {
     readonly siteDot: { readonly size: number; readonly color: string };
   };
   readonly moveProspect: MoveProspectArt;
-  readonly figurines: { readonly sheet: string; readonly size: number };
+  readonly figurines: {
+    readonly sheet: string;
+    readonly size: number;
+    /** [Q305] The figures' idle loop on the map, up close; `null` draws them still, from `sheet`. */
+    readonly animation: FigureAnimationArt | null;
+  };
   readonly portraits: string;
   readonly dice: { readonly sheet: string };
   /** [Q170] The rock under the map's front edges and the sky behind it. */
@@ -104,6 +109,15 @@ export interface SheetOutline {
  * this extension to the bottom to create a Laputa-style floating island?"
  * (Q170): his rock under the map's two front edges, and his sky behind it.
  */
+/**
+ * [Q305] Every figure's idle loop: frame `k` (from 1) of a figurine `<id>` is
+ * the sprite `<id>_frame<k>` on `sheet`, shown for `durationsMs[k - 1]`.
+ */
+export interface FigureAnimationArt {
+  readonly sheet: string;
+  readonly durationsMs: readonly number[];
+}
+
 export interface IslandArt {
   readonly underside: {
     /** A picture under `Art/`. */
@@ -325,6 +339,7 @@ export function parseManifest(json: unknown): ArtManifest {
     figurines: {
       sheet: string(figurines['sheet'], 'manifest.json: figurines.sheet'),
       size: positive(figurines['size'], 'manifest.json: figurines.size'),
+      animation: figurines['animation'] === undefined ? null : parseFigureAnimation(figurines['animation'], 'manifest.json: figurines.animation'),
     },
     portraits: string(root['portraits'], 'manifest.json: portraits'),
     dice: { sheet: string(dice['sheet'], 'manifest.json: dice.sheet') },
@@ -394,8 +409,16 @@ export function sheetsNamed(manifest: ArtManifest): string[] {
   names.add(manifest.roads.sheet);
   names.add(manifest.moveProspect.sheet);
   names.add(manifest.figurines.sheet);
+  if (manifest.figurines.animation !== null) names.add(manifest.figurines.animation.sheet);
   names.add(manifest.dice.sheet);
   return [...names].sort();
+}
+
+function parseFigureAnimation(json: unknown, where: string): FigureAnimationArt {
+  const entry = record(json, where);
+  const durations = array(entry['durations_ms'], `${where}.durations_ms`).map((ms, k) => positive(ms, `${where}.durations_ms[${k}]`));
+  if (durations.length === 0) throw new ArtError(`${where}.durations_ms: expected at least one frame`);
+  return { sheet: string(entry['sheet'], `${where}.sheet`), durationsMs: durations };
 }
 
 function parseIsland(island: Readonly<Record<string, unknown>>, where: string): IslandArt {

@@ -161,6 +161,15 @@ export function buildArtCatalog(files: ArtFiles): ArtCatalog {
   if (figurines !== undefined) {
     for (const portrait of portraits) check(() => spriteIndex(figurines, portrait.id));
   }
+  // [Q305] Every figure moves, or none does: a figurine left without its
+  // frames would stand still among the others.
+  const animation = manifest.figurines.animation;
+  const frames = animation === null ? undefined : atlas(animation.sheet);
+  if (figurines !== undefined && animation !== null && frames !== undefined) {
+    for (const figurine of figurines.sprites) {
+      animation.durationsMs.forEach((_, k) => check(() => spriteIndex(frames, frameId(figurine.id, k))));
+    }
+  }
 
   if (problems.length > 0) {
     throw new ArtError(`Art/ does not match Art/manifest.json:\n  ${problems.join('\n  ')}`);
@@ -223,6 +232,25 @@ export function poiArt(catalog: ArtCatalog, poi: Poi): PoiArt {
 
 export function wrapIndex(variant: number, count: number): number {
   return ((Math.trunc(variant) % count) + count) % count;
+}
+
+/** [Q305] The sprite holding frame `k` (from 0) of the figurine `id`'s idle loop. */
+export function frameId(id: string, k: number): string {
+  return `${id}_frame${k + 1}`;
+}
+
+/**
+ * [Q305] The frames of a figurine's idle loop, in order, or `null` when the
+ * manifest has the figures stand still. The first is the still pose a figure
+ * holds while it walks, and while the map is zoomed out (Q305, 8, 11).
+ */
+export function figureFrames(catalog: ArtCatalog, figurine: SpriteRef): readonly SpriteRef[] | null {
+  const animation = catalog.manifest.figurines.animation;
+  if (animation === null) return null;
+  const id = atlasOf(catalog, figurine.sheet).sprites[figurine.index]?.id;
+  if (id === undefined) return null;
+  const frames = atlasOf(catalog, animation.sheet);
+  return animation.durationsMs.map((_, k) => ({ sheet: frames.name, index: spriteIndex(frames, frameId(id, k)) }));
 }
 
 function parsePortraits(json: unknown, file: string): Portrait[] {
