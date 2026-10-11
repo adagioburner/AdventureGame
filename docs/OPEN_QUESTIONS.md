@@ -4215,104 +4215,71 @@ the rulebook needs no change.
 
 ---
 
-### Q305. ~~How do the players stand out on the map?~~ — **answered 2026-10-11: up close every figure plays Andrei's idle animation; zoomed out, once a figure is drawn under 24 pixels tall, every figure blinks instead. The portrait pins first chosen were built and dropped (7-16)**
+### Q305. ~~How do the players stand out on the map?~~ — **answered 2026-10-11: a white ring on the ground under every figure, twice as wide as the gold ring under the player on turn, under the roads and spaces so it hides nothing, with the gold rings drawn over it, and 1.2 spacings across with the whole map in view (1-8)**
 
 Andrei, 2026-10-11 at 05:53: *"we need to highlight the players on the map
 better. One can click on the cards to see their locations, but it's important
-to be able to glance at the map and see the players positions right away"*. At
-05:54: *"i really wonder if we should simply animate them. Then they will be
-easy to spot"*. Measured on a 4-player game after five rounds, a figure on the
-whole map is about 12 pixels tall on a laptop and about 7 on a phone, and about
-30 at playing zoom on a laptop, smaller than most sites. Offered with pictures
-and videos: a pin with the player's portrait over each figure, the same size on
-screen at any zoom (recommended); figures never drawn smaller than about 44
-pixels; and the figures moving, gently or with a small hop, which on a phone's
-whole map comes to about a pixel. At 06:23: *"I think at a small size
-animations may still work towards visibility as long as there is a small
-movement, and human eye shoud immediately pick that up"*. At 07:00, with
-`player-travelers-animated-v2.zip`, an 8-frame idle loop for each of the six
-figures: *"The pins look good, we should do them. I also have the animated
-versions for motion; they are clearly not enough on their own but may help as
-well. [...] Let us try pins + animation from the provided art, with the idea
-that we may throw the art away if it doesn't work out visually."*
+to be able to glance at the map and see the players positions right away"*.
+Measured on a 4-player game after five rounds, a figure on the whole map is
+about 14 pixels tall on a laptop and about 6 on a phone, and at playing zoom
+about 35 on a laptop and 15 on a phone, smaller than most sites.
 
-Items 1 to 6, the pins, were dropped that afternoon (below).
+Three designs were built or mocked up and dropped the same day:
 
-1. **Pin size.** 34 CSS pixels across on every screen and at every zoom, as in
-   the mockup. A.
-2. **Two players on one node.** A: their pins side by side, each pointing to
-   its own figure; B: overlapping. A.
-3. **Tapping a pin.** At 07:08: *"what if the pin covers a node on the map that
-   needs to be tapped?"* The recommendation changed from the pin acting as its
-   figure to the tap going through the pin to the map underneath, so a pin
-   never hides a space from a tap; a figure is still picked up by tapping the
-   figure, and on your own turn a tap on a space already plans (Q145). At 07:09,
-   *"alright"*.
-4. **The player on turn.** Their pin stays steady while their figure blinks. A.
-5. **Over everything.** Pins are drawn over everything on the map, site icons,
-   numbers and the route included. A.
-6. **After the game ends.** The pins stay on the final map. A.
-7. **Timing.** The frames' own durations, a 1.7-second loop, and each figure
-   starts its loop at a different moment so they do not all move in step. A.
-8. **Walking.** A figure walking at End turn holds the still pose, the loop's
-   first frame, since the art is idle loops. A.
-9. **Shadows.** Made black and see-through like every other picture on the
-   map, rather than each figure's own grey. A.
-10. **Size, and where the animation goes.** The figures stand on the map the
-    same size as before; the cards, the pins and the New game figure pickers
-    keep the figurine sheet's pictures, so dropping the animation touches
-    nothing else. A.
+- **Portrait pins.** A pin with the player's portrait over every figure, 34
+  pixels across at any zoom, chosen at 07:00 together with Andrei's 8-frame
+  idle animations for the six figures (*"Let us try pins + animation from the
+  provided art, with the idea that we may throw the art away if it doesn't work
+  out visually"*), and built. At 07:19: *"I am still worried that pins will
+  cover important information"*: at playing zoom a pin hid about one space on a
+  phone, guard number and gold included. At 08:30: *"even on a laptop pins can
+  easily hide the next node. I don't see a good solution"*.
+- **Large rings.** A white ring on the ground round each figure, never under
+  34 pixels across. At 14:07: *"rings are ugly and pins hide important details,
+  even more so as you zoom out. let us do animation up close, and as you zoom
+  out substitute it with blinking figures"*.
+- **Animation up close, blinking zoomed out.** Built: the figures played their
+  idle loops while drawn at least 24 pixels tall and all blinked in step with
+  the player on turn's below that. At 15:14: *"honestly, the blinking snd
+  animation don't work. We need to completely scrape that idea"*. The animated
+  art, its packing tool and all of that code were removed; the player on
+  turn's own blink (Q34) is as it was.
 
-At 07:09, *"the rest are as recommended"*, and the pins were built. At 07:19:
-*"I am still worried that pins will cover important information"*. Side by
-side with and without pins at playing zoom, a pin hid only bits of road on a
-laptop but about one space on a phone, a guard with its number and gold
-included; see-through pins left what was under them unreadable, and drawing
-the numbers, rewards and route over the pins, or making them 26 pixels, still
-left spaces covered. At 08:30: *"even on a laptop pins can easily hide the next
-node. I don't see a good solution"*. A bright ring painted on the ground round
-each figure, under everything, was mocked up next. At 14:07: *"rings are ugly
-and pins hide important details, even more so as you zoom out. let us do
-animation up close, and as you zoom out substitute it with blinking figures"*.
-Until then only the player on turn's figure blinked (Q34): it fades out and
-back once a second with its yellow ring, while a ripple spreads from its feet.
-A figure is about 35 pixels tall at playing zoom on a laptop and about 14 on a
-phone.
+At 15:14: *"Let us try rings under, but much smaller ones, similar to those
+that appear when you select your figure. Maybe the rings that stay on are white
+similar to what you drew, about twice the size of the selection rings, and the
+selection rings appear on top of them"*. Mocked up at two sizes on a laptop and
+a phone.
 
-11. **Where it switches.** A: when a figure is drawn smaller than about 24
-    pixels tall, so a laptop animates at playing zoom and blinks on the whole
-    map, and a phone blinks at playing zoom until zoomed in two or three steps;
-    B: at playing zoom itself, where on a phone the movement comes to about a
-    pixel. A. At 14:31: *"we may need to fine tune the constant 24 px later"*.
-12. **Who blinks.** Every player's figure. A.
-13. **How.** A: the same fade as the player on turn's, in step with it; B: each
-    at its own moment, like the animation. A. The player on turn keeps their
-    ring and ripple, so they still stand out, and a figure picked up to plan a
-    move stays steady on its highlight, as before. A.
-14. **Walking.** A figure walking at End turn does not blink: its movement
-    already shows it. A.
-15. **The final map.** After the game ends the figures still animate up close
-    and blink zoomed out. A.
-16. **Without the animation.** If the art goes, the figures stand still up
-    close and still blink zoomed out. A. At 14:31: *"if the approach we try now
-    doesn't work visually we'll have to throw everything out, and think of
-    something else (outlines perhaps). Let's not worry about that now.
-    Everything as recommended works"*.
+1. **Size.** A: 0.8 of a node spacing across, twice the gold ring under the
+   player on turn; B: 1.2, twice the larger ring of a figure picked up. Both
+   scale with the map, like the gold rings. A.
+2. **Look.** A see-through white disc with a white rim and a thin dark edge,
+   as in the mockup. A.
+3. **Layer.** Painted on the ground under the roads, spaces and sites, so it
+   hides nothing; the gold rings are drawn over it. A.
+4. **Who.** Every player's figure, the player on turn's included. A.
+5. **Two players on one space.** A: a ring under each figure, overlapping;
+   B: one ring round both. A.
+6. **Walking.** The ring moves with a figure walking at End turn. A.
+7. **The final map.** The rings stay. A.
 
-Built: `BLINK_BELOW_PX` and `figuresBlink` in
-`apps/web/src/render/sceneModel.ts` decide from the figurines' manifest size
-times the zoom, so every figure switches at once;
-`apps/web/src/render/pixi/renderer.ts` swaps the frames or blinks them every
-frame, sharing `blinkAlpha` with the player on turn's blink. The pins are gone.
-The figures play `figurines.animation` in `Art/manifest.json`:
-`Art/tools/pack_animation.py` packs Andrei's six strips, kept as supplied in
-`Art/originals/player_avatars_animated/`, into
-`player_avatars_animated_sheet.png`, each frame where it was drawn and its
-shadow made dark and see-through by `pack_sheets.py`'s own code; the loop's
-start is spread over the players by seat order. Deleting that manifest entry
-draws the figures still from `player_avatars` up close again, as before, and
-they still blink zoomed out (16). No rule, number or map changed, and the
-rulebook needs no change.
+At 15:33: *"all as recommended"*. At 15:36: *"zoomed out, 1.2 rings look much
+more prominent. Perhaps we can go with 0.8 but cap their absolute size from
+below so on the whole map their actual size is 1.2x"*:
+
+8. **Zoomed out.** The ring is never smaller on screen than 1.2 spacings are
+   with the whole map in view, on whatever screen the map is shown: on the
+   whole map it is 1.2 across, and from 1.5 times that zoom in it is 0.8 across
+   and scales with the map. Its rim and dark edge stay as thick as in the
+   mockup.
+
+Built: `PLAYER_RING_ACROSS`, `PLAYER_RING_ACROSS_WHOLE_MAP`, `playerRingSize`
+and `StateScene.rings` in `apps/web/src/render/sceneModel.ts`, one ring per
+figure where it stands, drawn by `apps/web/src/render/pixi/renderer.ts` in a
+layer under the roads and nodes, its look in `PLAYER_RING`; `setCamera` is
+handed the whole map's camera for the floor. No rule, number or map changed,
+and the rulebook needs no change.
 
 ---
 

@@ -19,7 +19,9 @@ import type { FigureCue } from './sceneModel.ts';
  *      so the roads and nodes can cross it, then the rock hanging under the
  *      map's front edges (Q170), drawn once with the `terrain`, its stone tops
  *      fading into the ground's edge (679);
- *   3. the rest of the ground — `edges`, `nodes` — laid through the projection;
+ *   3. the white ring under every figure (Q305), then the rest of the ground
+ *      — `edges`, `nodes` — laid through the projection, so the rings hide
+ *      nothing;
  *   4. everything standing — the rest of `dressing`, `pois`, `characters` —
  *      sorted by depth;
  *   5. the `path-overlay`, on the ground but drawn over what stands on it, so
@@ -35,7 +37,8 @@ export type SceneLayer = 'terrain' | 'dressing' | 'edges' | 'nodes' | 'pois' | '
 
 export interface MapRenderer {
   readonly projection: Projection;
-  setCamera(camera: Camera): void;
+  /** `whole`, the camera that shows the whole map, sets how small the white rings under the figures may get (Q305, 8). */
+  setCamera(camera: Camera, whole: Camera): void;
   /** Full redraw source of truth; no rendering state is derived from events. */
   setState(state: GameState): void;
   /**

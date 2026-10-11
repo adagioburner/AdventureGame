@@ -12,6 +12,7 @@ import {
   buildWaypoint,
   guardRing,
   nodeOutlineWidth,
+  playerRingSize,
   siteDot,
   type Billboard,
   type FigureCue,
@@ -40,6 +41,13 @@ const CUE = {
 } as const;
 
 /**
+ * [Q305, 2] The white ring under every figure, in node spacings: a see-through
+ * white disc with a white rim `rim` wide, and round it, `gap` out, a thin dark
+ * edge `edge` wide, so it shows on light ground too.
+ */
+const PLAYER_RING = { fillAlpha: 0.5, rim: 0.06, gap: 0.035, edge: 0.02, edgeColor: 0x2b2419, edgeAlpha: 0.9 } as const;
+
+/**
  * `MapRenderer` on PixiJS (docs/STACK.md §3). Everything it draws comes out
  * of `sceneModel.ts`; this file decides only how a scene item becomes a
  * PixiJS object, which is why it has no tests of its own and the scene model
@@ -57,6 +65,8 @@ export class PixiMapRenderer implements MapRenderer {
   /** The backdrop's own terrain, laid through the projection: the backdrop is clipped to it. */
   private readonly backdropGround = new Container();
   private readonly groundBelow = new Container();
+  /** [Q305, 3] The white rings under the figures, under the roads and nodes so they hide nothing. */
+  private readonly ringsLayer = new Container();
   private readonly edgesLayer = new Container();
   private readonly nodesLayer = new Container();
   private readonly activeLayer = new Container();
@@ -82,6 +92,9 @@ export class PixiMapRenderer implements MapRenderer {
   private waypoint: NodeId | null = null;
   private walker: Walker | null = null;
   private viewport: Point = { x: 1, y: 1 };
+  /** [Q305, 8] The map's zoom, and the zoom that shows it whole, which keep the white rings from getting too small. */
+  private zoom = 1;
+  private wholeZoom = 0;
 
   constructor(
     private readonly art: LoadedArt,
@@ -93,7 +106,7 @@ export class PixiMapRenderer implements MapRenderer {
     for (const ground of [this.terrainLayer, this.backdropGround, this.groundBelow, this.groundAbove]) {
       ground.setFromMatrix(new Matrix(m.a, m.b, m.c, m.d, m.tx, m.ty));
     }
-    this.groundBelow.addChild(this.edgesLayer, this.nodesLayer, this.activeLayer);
+    this.groundBelow.addChild(this.ringsLayer, this.edgesLayer, this.nodesLayer, this.activeLayer);
     this.ui.addChild(this.labelsLayer);
     // The backdrop is painted on the ground, under the roads and nodes;
     // `scene.billboards` already lists it back to front.
@@ -116,12 +129,17 @@ export class PixiMapRenderer implements MapRenderer {
     this.viewport = viewport;
   }
 
-  setCamera(camera: Camera): void {
+  setCamera(camera: Camera, whole: Camera): void {
     this.root.scale.set(camera.zoom);
     this.root.position.set(
       this.viewport.x / 2 - camera.center.x * camera.zoom,
       this.viewport.y / 2 - camera.center.y * camera.zoom,
     );
+    if (camera.zoom !== this.zoom || whole.zoom !== this.wholeZoom) {
+      this.zoom = camera.zoom;
+      this.wholeZoom = whole.zoom;
+      this.drawPlayerRings();
+    }
   }
 
   setState(state: GameState): void {
@@ -344,6 +362,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.waypointSprite = null;
     this.activeLayer.removeChildren().forEach((child) => child.destroy());
     this.cued = null;
+    this.drawPlayerRings();
 
     const state = this.state;
     const current = state === null ? undefined : state.players[state.turn.activeSeat - 1]?.id;
@@ -371,6 +390,26 @@ export class PixiMapRenderer implements MapRenderer {
     }
     if (this.waypoint !== null) {
       this.waypointSprite = this.stand(buildWaypoint(this.scene, this.map, this.waypoint, this.art.catalog), 1);
+    }
+  }
+
+  /**
+   * [Q305] A white ring under every figure, the gold rings drawn over it (3),
+   * no smaller on screen than it is with the whole map in view (8).
+   */
+  private drawPlayerRings(): void {
+    this.ringsLayer.removeChildren().forEach((child) => child.destroy());
+    const { spacing } = this.scene;
+    for (const { at, size } of this.stateScene?.rings ?? []) {
+      const radius = playerRingSize(size, spacing, this.zoom, this.wholeZoom) / 2;
+      this.ringsLayer.addChild(
+        new Graphics()
+          .circle(at.x, at.y, radius)
+          .fill({ color: 0xffffff, alpha: PLAYER_RING.fillAlpha })
+          .stroke({ color: 0xffffff, width: PLAYER_RING.rim * spacing })
+          .circle(at.x, at.y, radius + PLAYER_RING.gap * spacing)
+          .stroke({ color: PLAYER_RING.edgeColor, width: PLAYER_RING.edge * spacing, alpha: PLAYER_RING.edgeAlpha }),
+      );
     }
   }
 

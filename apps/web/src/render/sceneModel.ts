@@ -311,6 +311,40 @@ export interface StateScene {
    * and for the player on turn, whose figure has its own cue.
    */
   readonly found: { readonly at: Point; readonly size: number; readonly sprite: SpriteRef } | null;
+  /**
+   * [Q305] The white ring on the ground under every player's figure, one per
+   * figure, `size` across, where it stands now; the gold rings above are
+   * drawn over it.
+   */
+  readonly rings: readonly { readonly at: Point; readonly size: number }[];
+}
+
+/**
+ * [Q305] How wide the white ring under every figure is, in node spacings:
+ * twice the gold ring under the player on turn (`move_prospect.active_size`).
+ * Andrei: "Let us try rings under, but much smaller ones, similar to those that
+ * appear when you select your figure. Maybe the rings that stay on are white
+ * [...] about twice the size of the selection rings, and the selection rings
+ * appear on top of them".
+ */
+export const PLAYER_RING_ACROSS = 0.8;
+
+/**
+ * [Q305, 8] How wide the white ring is with the whole map in view, in node
+ * spacings: it never gets smaller on screen than that. Andrei: "zoomed out, 1.2
+ * rings look much more prominent. Perhaps we can go with 0.8 but cap their
+ * absolute size from below so on the whole map their actual size is 1.2x".
+ */
+export const PLAYER_RING_ACROSS_WHOLE_MAP = 1.2;
+
+/**
+ * [Q305, 8] How wide a white ring `size` across is drawn at `zoom`, when the
+ * whole map shows at `wholeZoom`: `size`, scaling with the map, until that
+ * would be smaller on screen than `PLAYER_RING_ACROSS_WHOLE_MAP` spacings are
+ * at `wholeZoom`, and from there on that size on screen.
+ */
+export function playerRingSize(size: number, spacing: number, zoom: number, wholeZoom: number): number {
+  return Math.max(size, (PLAYER_RING_ACROSS_WHOLE_MAP * spacing * wholeZoom) / zoom);
 }
 
 /**
@@ -365,7 +399,7 @@ export function buildCharacters(
   walker: Walker | null = null,
   planner: PlayerId | null = null,
   found: PlayerId | null = null,
-): Pick<StateScene, 'characters' | 'active' | 'planning' | 'found'> {
+): Pick<StateScene, 'characters' | 'active' | 'planning' | 'found' | 'rings'> {
   const { manifest } = catalog;
   const figurines = atlasOf(catalog, manifest.figurines.sheet);
   const size = manifest.figurines.size * SPACING_PX;
@@ -377,6 +411,7 @@ export function buildCharacters(
   });
 
   const characters: Billboard[] = [];
+  const rings: { at: Point; size: number }[] = [];
   let active: StateScene['active'] = null;
   let planning: StateScene['planning'] = null;
   let spotted: StateScene['found'] = null;
@@ -401,6 +436,9 @@ export function buildCharacters(
       player: player.id,
     });
     const under = { at: scene.projection.toWorld(foot), size: manifest.moveProspect.activeSize * scene.spacing, sprite: ring };
+    // [Q305, 5-7] Under each figure, two on one node overlapping, walking with
+    // a walking figure, and on the final map too.
+    rings.push({ at: under.at, size: PLAYER_RING_ACROSS * scene.spacing });
     if (player.seat === state.turn.activeSeat && state.status !== 'finished') {
       active = under;
     } else if (player.id === planner && state.status !== 'finished') {
@@ -410,7 +448,7 @@ export function buildCharacters(
       spotted = under;
     }
   });
-  return { characters, active, planning, found: spotted };
+  return { characters, active, planning, found: spotted, rings };
 }
 
 // --- a prospective move ------------------------------------------------------
