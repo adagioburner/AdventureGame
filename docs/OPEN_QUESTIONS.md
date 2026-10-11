@@ -4215,7 +4215,7 @@ the rulebook needs no change.
 
 ---
 
-### Q305. ~~How do the players stand out on the map?~~ — **answered 2026-10-11: one see-through gold ring on the ground under every figure, 0.8 of a node spacing across and 1.2 with the whole map in view, under the roads and spaces so it hides nothing; it pulses on your turn and gets a thick yellow outline when selected, in place of the gold rings and the ripple (1-12)**
+### Q305. ~~How do the players stand out on the map?~~ — **answered 2026-10-11: one see-through gold ring on the ground under every figure, with no dark edge, 0.6 of a node spacing across and 1.0 with the whole map in view, under the roads and spaces so it hides nothing; it pulses on your turn and gets a thick yellow outline when selected, in place of the gold rings and the ripple (1-13)**
 
 Andrei, 2026-10-11 at 05:53: *"we need to highlight the players on the map
 better. One can click on the cards to see their locations, but it's important
@@ -4302,6 +4302,13 @@ a turn plays out, and the whole-map floor (8) holds throughout.
 
 At 16:22: *"all as recommended. I'm sure we'll need to fine tune the looks,
 but it's a good start"*.
+
+13. **Smaller, no dark edge.** At 16:50, on the preview: *"let us try it
+    without the black outlines, I'd like to see how it looks. And make
+    everything a bit smaller, 0.8 -> 0.6, 1.2 -> 1.0"*. The ring is 0.6
+    spacings across up close and 1.0 on the whole map (1 and 8), scaling with
+    the map again from 1.0 / 0.6 times the whole map's zoom in, and its thin
+    dark edge is gone; a selected ring's yellow outline is as in 10.
 
 Built: `PLAYER_RING_ACROSS`, `PLAYER_RING_ACROSS_WHOLE_MAP`, `playerRingSize`
 and `StateScene.rings` in `apps/web/src/render/sceneModel.ts`, one ring per

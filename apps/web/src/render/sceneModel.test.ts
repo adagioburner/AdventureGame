@@ -533,12 +533,12 @@ describe("the rings under the players' figures (Q305)", () => {
   const under = (state: ReturnType<typeof buildStateScene>) =>
     state.characters.map((figure) => scene.projection.toWorld(figure.foot));
 
-  it('puts one under every figure, twice as wide as the gold ring that was under the player on turn (1, 4)', () => {
+  it('puts one under every figure, 0.6 spacings across (1, 4, 13)', () => {
     const state = buildStateScene(scene, game.state, catalog);
-    expect(PLAYER_RING_ACROSS).toBe(0.8);
+    expect(PLAYER_RING_ACROSS).toBe(0.6);
     expect(state.rings).toHaveLength(game.state.players.length);
     expect(state.rings.map((ring) => ring.at)).toEqual(under(state));
-    for (const ring of state.rings) expect(ring.size).toBeCloseTo(2 * catalog.manifest.moveProspect.activeSize * scene.spacing, 9);
+    for (const ring of state.rings) expect(ring.size).toBeCloseTo(0.6 * scene.spacing, 9);
   });
 
   it('puts one under each of two players on one node, overlapping (5)', () => {
@@ -561,18 +561,18 @@ describe("the rings under the players' figures (Q305)", () => {
     expect(over.rings).toHaveLength(game.state.players.length);
   });
 
-  it('is 1.2 spacings across with the whole map in view, and no smaller on screen zoomed further out (8)', () => {
+  it('is 1.0 spacing across with the whole map in view, and no smaller on screen zoomed further out (8, 13)', () => {
     const spacing = scene.spacing;
     const size = PLAYER_RING_ACROSS * spacing;
     const whole = 0.3;
-    expect(PLAYER_RING_ACROSS_WHOLE_MAP).toBe(1.2);
-    expect(playerRingSize(size, spacing, whole, whole)).toBeCloseTo(1.2 * spacing);
-    // From 1.5 times the whole map's zoom in, it scales with the map again.
-    expect(playerRingSize(size, spacing, whole * 1.5, whole)).toBeCloseTo(size);
+    expect(PLAYER_RING_ACROSS_WHOLE_MAP).toBe(1.0);
+    expect(playerRingSize(size, spacing, whole, whole)).toBeCloseTo(spacing);
+    // From 1.0 / 0.6 times the whole map's zoom in, it scales with the map again.
+    expect(playerRingSize(size, spacing, (whole * 1.0) / 0.6, whole)).toBeCloseTo(size);
     expect(playerRingSize(size, spacing, whole * 3, whole)).toBe(size);
     // In between, and zoomed out past the whole map, it keeps its size on screen.
-    for (const zoom of [whole * 0.8, whole * 1.2]) {
-      expect(playerRingSize(size, spacing, zoom, whole) * zoom).toBeCloseTo(1.2 * spacing * whole);
+    for (const zoom of [whole * 0.8, whole * 1.4]) {
+      expect(playerRingSize(size, spacing, zoom, whole) * zoom).toBeCloseTo(spacing * whole);
     }
   });
 });

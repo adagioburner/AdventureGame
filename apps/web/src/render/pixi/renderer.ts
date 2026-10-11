@@ -39,12 +39,13 @@ const CUE = {
 } as const;
 
 /**
- * [Q305, 9] The ring under every figure, in node spacings: a see-through disc
- * in the gold of the ring that was under the player on turn
- * (`Prospect_ActiveRing`), with a rim of it `rim` wide, and round it, `gap`
- * out, a thin dark edge `edge` wide, so it shows on light ground too.
+ * [Q305, 9, 13] The ring under every figure, in node spacings: a see-through
+ * disc in the gold of the ring that was under the player on turn
+ * (`Prospect_ActiveRing`), with a rim of it `rim` wide; a selected one's
+ * outline goes round it `gap` out. Andrei: "let us try it without the black
+ * outlines".
  */
-const PLAYER_RING = { color: 0xffe878, fillAlpha: 0.5, rim: 0.06, gap: 0.035, edge: 0.02, edgeColor: 0x2b2419, edgeAlpha: 0.9 } as const;
+const PLAYER_RING = { color: 0xffe878, fillAlpha: 0.5, rim: 0.06, gap: 0.035 } as const;
 
 /**
  * `MapRenderer` on PixiJS (docs/STACK.md §3). Everything it draws comes out
@@ -387,13 +388,8 @@ export class PixiMapRenderer implements MapRenderer {
       const ring = new Graphics()
         .circle(0, 0, radius)
         .fill({ color: PLAYER_RING.color, alpha: PLAYER_RING.fillAlpha })
-        .stroke({ color: PLAYER_RING.color, width: PLAYER_RING.rim * spacing })
-        .circle(0, 0, radius + PLAYER_RING.gap * spacing)
-        .stroke(
-          outlined
-            ? { color: CUE.color, width: CUE.outline * spacing }
-            : { color: PLAYER_RING.edgeColor, width: PLAYER_RING.edge * spacing, alpha: PLAYER_RING.edgeAlpha },
-        );
+        .stroke({ color: PLAYER_RING.color, width: PLAYER_RING.rim * spacing });
+      if (outlined) ring.circle(0, 0, radius + PLAYER_RING.gap * spacing).stroke({ color: CUE.color, width: CUE.outline * spacing });
       ring.position.set(at.x, at.y);
       this.ringsLayer.addChild(ring);
       if (mark === 'turn' && this.cue === 'blink') this.pulsing = ring;

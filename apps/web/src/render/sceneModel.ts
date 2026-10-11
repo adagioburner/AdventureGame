@@ -321,22 +321,18 @@ export interface PlayerRing {
 }
 
 /**
- * [Q305] How wide the ring under every figure is, in node spacings: twice the
- * gold ring that was under the player on turn before it
- * (`move_prospect.active_size`). Andrei: "Let us try rings under, but much smaller ones, similar to those that
- * appear when you select your figure. Maybe the rings that stay on are white
- * [...] about twice the size of the selection rings, and the selection rings
- * appear on top of them".
+ * [Q305, 13] How wide the ring under every figure is, in node spacings.
+ * Andrei: "make everything a bit smaller, 0.8 -> 0.6, 1.2 -> 1.0".
  */
-export const PLAYER_RING_ACROSS = 0.8;
+export const PLAYER_RING_ACROSS = 0.6;
 
 /**
- * [Q305, 8] How wide the ring is with the whole map in view, in node
- * spacings: it never gets smaller on screen than that. Andrei: "zoomed out, 1.2
- * rings look much more prominent. Perhaps we can go with 0.8 but cap their
- * absolute size from below so on the whole map their actual size is 1.2x".
+ * [Q305, 8, 13] How wide the ring is with the whole map in view, in node
+ * spacings: it never gets smaller on screen than that. Andrei: "cap their
+ * absolute size from below so on the whole map their actual size is 1.2x",
+ * then "1.2 -> 1.0".
  */
-export const PLAYER_RING_ACROSS_WHOLE_MAP = 1.2;
+export const PLAYER_RING_ACROSS_WHOLE_MAP = 1.0;
 
 /**
  * [Q305, 8] How wide a ring `size` across is drawn at `zoom`, when the
