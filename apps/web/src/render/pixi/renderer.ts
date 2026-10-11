@@ -2,7 +2,7 @@ import { TERRAINS } from '@adventure/config';
 import type { GameMap, GameState, NodeId, PathPreview, PlayerId, Point } from '@adventure/core';
 import { Container, Graphics, Matrix, Sprite, Text, TilingSprite } from 'pixi.js';
 import { spriteIndex } from '../../art/atlas.ts';
-import { atlasOf, type SpriteRef } from '../../art/catalog.ts';
+import { atlasOf } from '../../art/catalog.ts';
 import type { Camera, Projection } from '../isometric.ts';
 import type { MapRenderer, SceneLayer } from '../scene.ts';
 import {
@@ -25,27 +25,26 @@ import type { LoadedArt } from './textures.ts';
 
 /**
  * The current player's cue, in node spacings and milliseconds. Blinking fades
- * the figure and its ring out and back once a period while a ripple spreads
- * from its feet, so it can be found even with the whole map in view; planning
- * holds it steady on a larger ring with a bright edge.
+ * the figure out and back once a period while its ring (Q305, 11) grows to
+ * `pulseGrow` times its size as it fades out, then starts again at its own,
+ * so it can be found even with the whole map in view; planning holds it
+ * steady with a thick `color` outline `outline` wide round its ring (Q305, 10).
  */
 const CUE = {
   blinkMs: 1000,
   dimAlpha: 0.15,
-  rippleFrom: 0.2,
-  rippleTo: 1.4,
-  rippleWidth: 0.06,
-  highlightScale: 1.5,
-  highlightWidth: 0.05,
+  pulseGrow: 2,
+  outline: 0.05,
   color: 0xffd84a,
 } as const;
 
 /**
- * [Q305, 2] The white ring under every figure, in node spacings: a see-through
- * white disc with a white rim `rim` wide, and round it, `gap` out, a thin dark
- * edge `edge` wide, so it shows on light ground too.
+ * [Q305, 9] The ring under every figure, in node spacings: a see-through disc
+ * in the gold of the ring that was under the player on turn
+ * (`Prospect_ActiveRing`), with a rim of it `rim` wide, and round it, `gap`
+ * out, a thin dark edge `edge` wide, so it shows on light ground too.
  */
-const PLAYER_RING = { fillAlpha: 0.5, rim: 0.06, gap: 0.035, edge: 0.02, edgeColor: 0x2b2419, edgeAlpha: 0.9 } as const;
+const PLAYER_RING = { color: 0xffe878, fillAlpha: 0.5, rim: 0.06, gap: 0.035, edge: 0.02, edgeColor: 0x2b2419, edgeAlpha: 0.9 } as const;
 
 /**
  * `MapRenderer` on PixiJS (docs/STACK.md §3). Everything it draws comes out
@@ -65,11 +64,10 @@ export class PixiMapRenderer implements MapRenderer {
   /** The backdrop's own terrain, laid through the projection: the backdrop is clipped to it. */
   private readonly backdropGround = new Container();
   private readonly groundBelow = new Container();
-  /** [Q305, 3] The white rings under the figures, under the roads and nodes so they hide nothing. */
+  /** [Q305, 3] The rings under the figures, under the roads and nodes so they hide nothing. */
   private readonly ringsLayer = new Container();
   private readonly edgesLayer = new Container();
   private readonly nodesLayer = new Container();
-  private readonly activeLayer = new Container();
   private readonly standing = new Container({ sortableChildren: true });
   private readonly groundAbove = new Container();
   private readonly ui = new Container();
@@ -82,8 +80,9 @@ export class PixiMapRenderer implements MapRenderer {
   private cue: FigureCue = 'none';
   private planner: PlayerId | null = null;
   private found: PlayerId | null = null;
-  /** What the blink animates: the current player's figure, its ring and the ripple. */
-  private cued: { figure: Sprite | null; ring: Sprite | null; ripple: Graphics; at: Point } | null = null;
+  /** What the blink animates: the current player's figure, and (Q305, 11) its ring. */
+  private blinking: Sprite | null = null;
+  private pulsing: Graphics | null = null;
 
   private state: GameState | null = null;
   private stateScene: StateScene | null = null;
@@ -92,7 +91,7 @@ export class PixiMapRenderer implements MapRenderer {
   private waypoint: NodeId | null = null;
   private walker: Walker | null = null;
   private viewport: Point = { x: 1, y: 1 };
-  /** [Q305, 8] The map's zoom, and the zoom that shows it whole, which keep the white rings from getting too small. */
+  /** [Q305, 8] The map's zoom, and the zoom that shows it whole, which keep the rings under the figures from getting too small. */
   private zoom = 1;
   private wholeZoom = 0;
 
@@ -106,7 +105,7 @@ export class PixiMapRenderer implements MapRenderer {
     for (const ground of [this.terrainLayer, this.backdropGround, this.groundBelow, this.groundAbove]) {
       ground.setFromMatrix(new Matrix(m.a, m.b, m.c, m.d, m.tx, m.ty));
     }
-    this.groundBelow.addChild(this.ringsLayer, this.edgesLayer, this.nodesLayer, this.activeLayer);
+    this.groundBelow.addChild(this.ringsLayer, this.edgesLayer, this.nodesLayer);
     this.ui.addChild(this.labelsLayer);
     // The backdrop is painted on the ground, under the roads and nodes;
     // `scene.billboards` already lists it back to front.
@@ -199,18 +198,13 @@ export class PixiMapRenderer implements MapRenderer {
 
   /** Advance the blink; call once a frame. */
   tick(now: number): void {
-    const cued = this.cued;
-    if (this.cue !== 'blink' || cued === null) return;
+    if (this.cue !== 'blink') return;
     const phase = (now % CUE.blinkMs) / CUE.blinkMs;
-    const alpha = CUE.dimAlpha + (1 - CUE.dimAlpha) * (0.5 + 0.5 * Math.cos(phase * 2 * Math.PI));
-    if (cued.figure !== null) cued.figure.alpha = alpha;
-    if (cued.ring !== null) cued.ring.alpha = alpha;
-    const { spacing } = this.scene;
-    const radius = (CUE.rippleFrom + (CUE.rippleTo - CUE.rippleFrom) * phase) * spacing;
-    cued.ripple
-      .clear()
-      .circle(cued.at.x, cued.at.y, radius)
-      .stroke({ color: CUE.color, width: CUE.rippleWidth * spacing, alpha: 1 - phase });
+    if (this.blinking !== null) this.blinking.alpha = CUE.dimAlpha + (1 - CUE.dimAlpha) * (0.5 + 0.5 * Math.cos(phase * 2 * Math.PI));
+    if (this.pulsing !== null) {
+      this.pulsing.scale.set(1 + (CUE.pulseGrow - 1) * phase);
+      this.pulsing.alpha = 1 - phase;
+    }
   }
 
   invalidate(layer: SceneLayer): void {
@@ -360,33 +354,15 @@ export class PixiMapRenderer implements MapRenderer {
     this.characterSprites = [];
     this.waypointSprite?.destroy();
     this.waypointSprite = null;
-    this.activeLayer.removeChildren().forEach((child) => child.destroy());
-    this.cued = null;
+    this.blinking = null;
     this.drawPlayerRings();
 
     const state = this.state;
     const current = state === null ? undefined : state.players[state.turn.activeSeat - 1]?.id;
-    let figure: Sprite | null = null;
     for (const item of this.stateScene?.characters ?? []) {
       const sprite = this.stand(item, 1);
       this.characterSprites.push(sprite);
-      if (item.player === current) figure = sprite;
-    }
-    const active = this.stateScene?.active ?? null;
-    const planning = this.stateScene?.planning ?? null;
-    // [Q56, 49] A player planning out of turn has their figure highlighted as
-    // on their own turn, while the figure on turn keeps its own cue.
-    if (planning !== null) this.drawRing(planning, true);
-    // [Q120, 471] So does a player whose card was just clicked, for a moment.
-    const found = this.stateScene?.found ?? null;
-    if (found !== null) this.drawRing(found, true);
-    if (active !== null) {
-      const ring = this.drawRing(active, this.cue === 'selected');
-      if (this.cue === 'blink') {
-        const ripple = new Graphics();
-        this.activeLayer.addChild(ripple);
-        this.cued = { figure, ring, ripple, at: active.at };
-      }
+      if (item.player === current && this.cue === 'blink') this.blinking = sprite;
     }
     if (this.waypoint !== null) {
       this.waypointSprite = this.stand(buildWaypoint(this.scene, this.map, this.waypoint, this.art.catalog), 1);
@@ -394,39 +370,34 @@ export class PixiMapRenderer implements MapRenderer {
   }
 
   /**
-   * [Q305] A white ring under every figure, the gold rings drawn over it (3),
-   * no smaller on screen than it is with the whole map in view (8).
+   * [Q305] The one ring under every figure (1), no smaller on screen than it
+   * is with the whole map in view (8). The player on turn's pulses while their
+   * figure blinks, and is outlined while they plan (10, 11), as is the ring of
+   * a player planning out of turn [Q56, 49] or just found from their card
+   * [Q120, 471]; while a turn plays out it is plain like the rest.
    */
   private drawPlayerRings(): void {
     this.ringsLayer.removeChildren().forEach((child) => child.destroy());
+    this.pulsing = null;
     const { spacing } = this.scene;
-    for (const { at, size } of this.stateScene?.rings ?? []) {
+    for (const { at, size, mark } of this.stateScene?.rings ?? []) {
       const radius = playerRingSize(size, spacing, this.zoom, this.wholeZoom) / 2;
-      this.ringsLayer.addChild(
-        new Graphics()
-          .circle(at.x, at.y, radius)
-          .fill({ color: 0xffffff, alpha: PLAYER_RING.fillAlpha })
-          .stroke({ color: 0xffffff, width: PLAYER_RING.rim * spacing })
-          .circle(at.x, at.y, radius + PLAYER_RING.gap * spacing)
-          .stroke({ color: PLAYER_RING.edgeColor, width: PLAYER_RING.edge * spacing, alpha: PLAYER_RING.edgeAlpha }),
-      );
+      const outlined = mark === 'planning' || mark === 'found' || (mark === 'turn' && this.cue === 'selected');
+      // Drawn round its own origin, so a pulse grows it from its middle.
+      const ring = new Graphics()
+        .circle(0, 0, radius)
+        .fill({ color: PLAYER_RING.color, alpha: PLAYER_RING.fillAlpha })
+        .stroke({ color: PLAYER_RING.color, width: PLAYER_RING.rim * spacing })
+        .circle(0, 0, radius + PLAYER_RING.gap * spacing)
+        .stroke(
+          outlined
+            ? { color: CUE.color, width: CUE.outline * spacing }
+            : { color: PLAYER_RING.edgeColor, width: PLAYER_RING.edge * spacing, alpha: PLAYER_RING.edgeAlpha },
+        );
+      ring.position.set(at.x, at.y);
+      this.ringsLayer.addChild(ring);
+      if (mark === 'turn' && this.cue === 'blink') this.pulsing = ring;
     }
-  }
-
-  /** The ring under a figure, larger and with a bright edge when `selected`. */
-  private drawRing(at: { readonly at: Point; readonly size: number; readonly sprite: SpriteRef }, selected: boolean): Sprite {
-    const ring = new Sprite(this.art.frame(at.sprite));
-    ring.anchor.set(0.5);
-    ring.scale.set((at.size * (selected ? CUE.highlightScale : 1)) / ring.texture.width);
-    ring.position.set(at.at.x, at.at.y);
-    this.activeLayer.addChild(ring);
-    if (selected) {
-      const edge = new Graphics()
-        .circle(at.at.x, at.at.y, (at.size * CUE.highlightScale) / 2)
-        .stroke({ color: CUE.color, width: CUE.highlightWidth * this.scene.spacing });
-      this.activeLayer.addChild(edge);
-    }
-    return ring;
   }
 
   private stand(item: Billboard, alpha: number, parent: Container = this.standing): Sprite {

@@ -4215,7 +4215,7 @@ the rulebook needs no change.
 
 ---
 
-### Q305. ~~How do the players stand out on the map?~~ — **answered 2026-10-11: a white ring on the ground under every figure, twice as wide as the gold ring under the player on turn, under the roads and spaces so it hides nothing, with the gold rings drawn over it, and 1.2 spacings across with the whole map in view (1-8)**
+### Q305. ~~How do the players stand out on the map?~~ — **answered 2026-10-11: one see-through gold ring on the ground under every figure, 0.8 of a node spacing across and 1.2 with the whole map in view, under the roads and spaces so it hides nothing; it pulses on your turn and gets a thick yellow outline when selected, in place of the gold rings and the ripple (1-12)**
 
 Andrei, 2026-10-11 at 05:53: *"we need to highlight the players on the map
 better. One can click on the cards to see their locations, but it's important
@@ -4274,12 +4274,43 @@ below so on the whole map their actual size is 1.2x"*:
    and scales with the map. Its rim and dark edge stay as thick as in the
    mockup.
 
+At 15:53, on the preview: *"the rings work on their own, but in conjunction
+with the selection mean and the pulsing yellow rings they create too much
+visual clutter"*, and at 16:01: *"the rings simply needs to be made more
+similar to The selection ring. when I figure is selected the ring solidifies
+and gets more prominent outline and when pulsing starts it starts pulsing"*.
+At 16:09: *"so that will be only one ring I actually want it not white but a
+shade of gold, semi transparent as today. when the figure is selected that
+ring gets a thick yellow outline. on your turn the ripple is made by growing
+this circle and fading it at the same time"*. So the ring is the only one
+under a figure: the gold ring under the player on turn, the larger
+yellow-edged one of a figure being planned or found (Q56, Q120, Q145) and the
+yellow ripple (Q34) are gone. It is the same size in every state, plain while
+a turn plays out, and the whole-map floor (8) holds throughout.
+
+9. **Look.** A: the ring of 2 in the gold of the ring that was under the
+   player on turn (`Prospect_ActiveRing`), with the same see-through disc, rim
+   and thin dark edge; B: that ring's picture, enlarged. A.
+10. **Selected** (the player on turn planning, a player planning out of turn,
+    or one just found from their card). A: the selection ring's thick yellow
+    outline replaces the thin dark edge; B: it is added outside it. A.
+11. **Pulsing** (the player on turn before they pick their figure up). A: the
+    ring grows to twice its size as it fades out, then starts again at its
+    own size, once a second; B: it stays put and a copy grows and fades. A.
+12. **The figure's own blink.** A: it fades out and back as before; B: it
+    stops. A.
+
+At 16:22: *"all as recommended. I'm sure we'll need to fine tune the looks,
+but it's a good start"*.
+
 Built: `PLAYER_RING_ACROSS`, `PLAYER_RING_ACROSS_WHOLE_MAP`, `playerRingSize`
 and `StateScene.rings` in `apps/web/src/render/sceneModel.ts`, one ring per
-figure where it stands, drawn by `apps/web/src/render/pixi/renderer.ts` in a
-layer under the roads and nodes, its look in `PLAYER_RING`; `setCamera` is
-handed the whole map's camera for the floor. No rule, number or map changed,
-and the rulebook needs no change.
+figure where it stands, each marked `turn`, `planning`, `found` or `null`;
+`apps/web/src/render/pixi/renderer.ts` draws them in a layer under the roads
+and nodes, their look in `PLAYER_RING` and `CUE`, and `setCamera` is handed
+the whole map's camera for the floor. `move_prospect.active` and
+`active_size` in `Art/manifest.json` are no longer drawn and are left as they
+were. No rule, number or map changed, and the rulebook needs no change.
 
 ---
 

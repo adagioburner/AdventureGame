@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_RULESET } from '@adventure/config';
-import { asNodeId, isClaimed, type GameMap, type GameState, type PathPreview } from '@adventure/core';
+import { asNodeId, isClaimed, type GameMap, type GameState, type PathPreview, type PlayerId } from '@adventure/core';
 import { atlasOf, buildArtCatalog, poiArt } from '../art/catalog.ts';
 import { ART_FILES } from '../art/files.ts';
 import { previewGame, SAMPLE_ALLOWANCE, SAMPLE_STAMINA } from './scene.fixture.ts';
@@ -438,7 +438,7 @@ describe('what changes during play', () => {
     expect(first?.foot.x).toBeLessThan(second?.foot.x ?? -Infinity);
     expect(first?.sprite.index).toBe(0);
     expect(second?.sprite.index).toBe(1);
-    expect(state.active).not.toBeNull();
+    expect(state.rings.map((ring) => ring.mark)).toEqual(['turn', null]);
     expect(state.claimed.size).toBe(0);
   });
 
@@ -500,40 +500,45 @@ describe('what changes during play', () => {
     expect(other?.foot.x).toBeCloseTo(scene.projection.toScreen(from).x, 9);
     expect(other?.foot.x).not.toBe(still.characters[1]?.foot.x);
     // The ring follows the player whose turn it is.
-    expect(moving.active?.at.x).toBeCloseTo(scene.projection.toWorld(mover?.foot ?? foot).x, 9);
+    expect(moving.rings.find((ring) => ring.mark === 'turn')?.at.x).toBeCloseTo(scene.projection.toWorld(mover?.foot ?? foot).x, 9);
     expect(moving.nodes).toEqual(still.nodes);
   });
 
-  it('shows no active ring once the game is over', () => {
-    expect(buildStateScene(scene, { ...game.state, status: 'finished' }, catalog).active).toBeNull();
+  it("marks no one's ring as on turn once the game is over", () => {
+    expect(buildStateScene(scene, { ...game.state, status: 'finished' }, catalog).rings.map((ring) => ring.mark)).toEqual([null, null]);
   });
 
   it('rings a player found from their card, the player on turn aside, during the game and after it (Q120)', () => {
     const [onTurn, other] = game.state.players;
     if (onTurn === undefined || other === undefined) throw new Error('two players needed');
-    const found = buildStateScene(scene, game.state, catalog, null, null, other.id);
-    const figure = found.characters.find((item) => item.player === other.id);
-    expect(found.found?.at.x).toBeCloseTo(scene.projection.toWorld(figure?.foot ?? { x: 0, y: 0 }).x, 9);
-    expect(found.found?.size).toBe(found.active?.size);
+    const marks = (...args: [PlayerId | null, PlayerId | null]) =>
+      buildStateScene(scene, game.state, catalog, null, ...args).rings.map((ring) => ring.mark);
+    expect(marks(null, other.id)).toEqual(['turn', 'found']);
     // The figure on turn keeps its own cue and gets nothing more.
-    expect(buildStateScene(scene, game.state, catalog, null, null, onTurn.id).found).toBeNull();
-    expect(buildStateScene(scene, game.state, catalog).found).toBeNull();
+    expect(marks(null, onTurn.id)).toEqual(['turn', null]);
+    expect(marks(null, null)).toEqual(['turn', null]);
     const over = buildStateScene(scene, { ...game.state, status: 'finished' }, catalog, null, null, onTurn.id);
-    expect(over.found).not.toBeNull();
+    expect(over.rings.map((ring) => ring.mark)).toEqual(['found', null]);
+  });
+
+  it('marks the ring of a player planning out of turn (Q56)', () => {
+    const [, other] = game.state.players;
+    if (other === undefined) throw new Error('two players needed');
+    const state = buildStateScene(scene, game.state, catalog, null, other.id, other.id);
+    expect(state.rings.map((ring) => ring.mark)).toEqual(['turn', 'planning']);
   });
 });
 
-describe("the white rings under the players' figures (Q305)", () => {
+describe("the rings under the players' figures (Q305)", () => {
   const under = (state: ReturnType<typeof buildStateScene>) =>
     state.characters.map((figure) => scene.projection.toWorld(figure.foot));
 
-  it('puts one under every figure, twice as wide as the gold ring under the player on turn (1, 4)', () => {
+  it('puts one under every figure, twice as wide as the gold ring that was under the player on turn (1, 4)', () => {
     const state = buildStateScene(scene, game.state, catalog);
     expect(PLAYER_RING_ACROSS).toBe(0.8);
     expect(state.rings).toHaveLength(game.state.players.length);
     expect(state.rings.map((ring) => ring.at)).toEqual(under(state));
     for (const ring of state.rings) expect(ring.size).toBeCloseTo(2 * catalog.manifest.moveProspect.activeSize * scene.spacing, 9);
-    expect(state.rings[0]?.size).toBeCloseTo((state.active?.size ?? 0) * 2, 9);
   });
 
   it('puts one under each of two players on one node, overlapping (5)', () => {
