@@ -10,7 +10,7 @@ import {
   type Point,
 } from '@adventure/core';
 import { spriteIndex } from '../art/atlas.ts';
-import { atlasOf, poiArt, wrapIndex, type ArtCatalog, type SpriteRef } from '../art/catalog.ts';
+import { atlasOf, figureFrames, poiArt, wrapIndex, type ArtCatalog, type SpriteRef } from '../art/catalog.ts';
 import { placeBackdrop, placeDressing } from './dressing.ts';
 import { distance, nodeBounds, nodeSpacing, position, voronoiCells } from './geometry.ts';
 import { undersideMatrix } from './island.ts';
@@ -297,9 +297,25 @@ export interface StateScene {
    * an ordinary node", so its node loses its guard's colour and (Q80) its dot.
    */
   readonly nodes: readonly NodeMark[];
-  readonly characters: readonly Billboard[];
+  readonly characters: readonly Figure[];
   /** [Q305] The ring on the ground under every player's figure, one per figure, in the figures' order. */
   readonly rings: readonly PlayerRing[];
+}
+
+/** A player's figure on the map. */
+export interface Figure extends Billboard {
+  readonly layer: 'characters';
+  readonly player: PlayerId;
+  /** [Q305, 15] Their idle loop, played now and then; `null` when the manifest has the figures stand still. */
+  readonly loop: FigureLoop | null;
+  /** Walking at End turn: [Q305, 18] it stands still. */
+  readonly walking: boolean;
+}
+
+/** [Q305, 15] A figure's idle loop: its frames, each shown for its duration. */
+export interface FigureLoop {
+  readonly frames: readonly SpriteRef[];
+  readonly durationsMs: readonly number[];
 }
 
 /** [Q305] The ring under one figure, `size` across, where the figure stands now. */
@@ -408,7 +424,8 @@ export function buildCharacters(
     byNode.set(player.position, [...(byNode.get(player.position) ?? []), index]);
   });
 
-  const characters: Billboard[] = [];
+  const animation = manifest.figurines.animation;
+  const characters: Figure[] = [];
   const rings: PlayerRing[] = [];
   state.players.forEach((player, index) => {
     const walking = player.id === walker?.player;
@@ -419,15 +436,19 @@ export function buildCharacters(
     // stands on.
     const foot = { x: base.x + (slot - (together.length - 1) / 2) * size * 0.45, y: base.y + SPACING_PX * 0.12 };
     const figurine = figurines.sprites.findIndex((sprite) => sprite.id === player.avatarId);
-    const sprite = { sheet: figurines.name, index: figurine >= 0 ? figurine : wrapIndex(player.seat - 1, figurines.sprites.length) };
+    const picture = { sheet: figurines.name, index: figurine >= 0 ? figurine : wrapIndex(player.seat - 1, figurines.sprites.length) };
+    const frames = figureFrames(catalog, picture);
     characters.push({
       layer: 'characters',
-      sprite,
+      // [Q305, 19] Between plays a figure stands in its loop's first frame.
+      sprite: frames?.[0] ?? picture,
       foot,
       size,
       node: player.position,
       depth: foot.y + 0.5,
       player: player.id,
+      loop: frames === null || animation === null ? null : { frames, durationsMs: animation.durationsMs },
+      walking,
     });
     const playing = state.status !== 'finished';
     // [Q305, 5-7] Under each figure, two on one node overlapping, walking with
@@ -447,6 +468,48 @@ export function buildCharacters(
     });
   });
   return { characters, rings };
+}
+
+/**
+ * [Q305, 15-18] Andrei: "since we have the animations now let us make the
+ * characters perform them from time to time randomly if they are rendered big
+ * enough". Each figure on its own plays its idle loop once (16), then waits
+ * between `min` and `max` milliseconds, at random, before the next (15).
+ */
+export const IDLE_WAIT_MS = { min: 5000, max: 15000 } as const;
+
+/**
+ * [Q305, 17] Figures drawn smaller than this on screen, in CSS pixels, stand
+ * still: their movements would be too small to see. Andrei, of the same
+ * number before: "we may need to fine tune the constant 24 px later". A figure
+ * is its sheet's typical height, the figurines' manifest size, so all of them
+ * start or stop at once.
+ */
+export const ANIMATE_FROM_PX = 24;
+
+/** [Q305, 17] Whether figures `size` tall on the map, at `zoom`, are big enough to play their idle loops. */
+export function figuresAnimate(size: number, zoom: number): boolean {
+  return size * zoom >= ANIMATE_FROM_PX;
+}
+
+/** [Q305, 15] When a figure that finished its loop, or saw none, at `fromMs` next plays it, for `random` in [0, 1). */
+export function nextIdlePlay(fromMs: number, random: number): number {
+  return fromMs + IDLE_WAIT_MS.min + (IDLE_WAIT_MS.max - IDLE_WAIT_MS.min) * random;
+}
+
+/**
+ * [Q305, 16] The frame of a loop played once from `startMs` showing at
+ * `nowMs`, frame `k` for `durationsMs[k]`; `null` once it has finished.
+ */
+export function playFrame(durationsMs: readonly number[], startMs: number, nowMs: number): number | null {
+  let t = nowMs - startMs;
+  if (t < 0) return null;
+  for (let k = 0; k < durationsMs.length; k++) {
+    const ms = durationsMs[k] as number;
+    if (t < ms) return k;
+    t -= ms;
+  }
+  return null;
 }
 
 // --- a prospective move ------------------------------------------------------

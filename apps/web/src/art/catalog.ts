@@ -242,7 +242,7 @@ export function frameId(id: string, k: number): string {
 /**
  * [Q305] The frames of a figurine's idle loop, in order, or `null` when the
  * manifest has the figures stand still. The first is the still pose a figure
- * holds while it walks, and while the map is zoomed out (Q305, 8, 11).
+ * stands in between plays (Q305, 19).
  */
 export function figureFrames(catalog: ArtCatalog, figurine: SpriteRef): readonly SpriteRef[] | null {
   const animation = catalog.manifest.figurines.animation;

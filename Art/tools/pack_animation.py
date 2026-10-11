@@ -14,8 +14,8 @@ under another, in the figurine sheet's order, and writes:
 
 Each frame keeps its place in its cell exactly as drawn, so the figure does not
 shift from frame to frame, and its atlas anchor is PIVOT. Its shadow is made
-dark and see-through as pack_sheets.py makes every other sheet's (Q59; Q305,
-9), each figure's shadow on its own since each strip draws its shadow a
+dark and see-through as pack_sheets.py makes every other sheet's (Q59; Q305),
+each figure's shadow on its own since each strip draws its shadow a
 different grey. A frame's sprite is named for the figure it animates:
 `player_avatars_01_frame1` is the first frame of the figurine sheet's
 `player_avatars_01`. The strips stay in Art/originals/ unchanged, and the same
