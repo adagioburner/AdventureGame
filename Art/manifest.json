@@ -129,7 +129,7 @@
     "sheet": "player_avatars",
     "size": 0.45,
     "animation": {
-      "notes": "[Q305] On the map each figure plays its idle loop from `sheet`: frame k of the figurine `<id>` is the sprite `<id>_frame<k>`, shown for durations_ms[k - 1], as Andrei's animations were drawn. Each figure starts its loop at a different moment, and a figure walking at End turn holds its first frame, the still pose. Delete this entry and the figures stand still again, drawn from `sheet` as before; the cards, the portrait pins and the New game figures always use `sheet`.",
+      "notes": "[Q305] On the map each figure plays its idle loop from `sheet`: frame k of the figurine `<id>` is the sprite `<id>_frame<k>`, shown for durations_ms[k - 1], as Andrei's animations were drawn. Each figure starts its loop at a different moment, and a figure walking at End turn holds its first frame, the still pose. Delete this entry and the figures stand still again, drawn from `sheet` as before; the cards and the New game figures always use `sheet`.",
       "sheet": "player_avatars_animated",
       "durations_ms": [450, 120, 120, 180, 400, 120, 120, 190]
     }

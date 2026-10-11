@@ -153,8 +153,8 @@ there for people and ignored by the game.
   their idle loop (Q305): its `sheet` holds frame `k` of the figurine `<id>`
   as the sprite `<id>_frame<k>`, shown for the `k`th entry of
   `durations_ms`. Delete it and the figures stand still, drawn from
-  `figurines.sheet` as before; the player cards, the pins over the figures
-  and the New game figures always use `figurines.sheet`.
+  `figurines.sheet` as before; the player cards and the New game figures
+  always use `figurines.sheet`.
 - `island`: the map as a floating island (Q170). `underside` is the rock
   under the map's two front edges: a picture, and the three points in its
   pixels (`left`, `bottom`, `right`) where the map's left, bottom and right

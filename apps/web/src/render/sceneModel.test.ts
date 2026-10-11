@@ -10,7 +10,6 @@ import { boxTouchesOval, grow, lengthInBox, ON_NODE_REACH, overlapArea, pictureB
 import {
   buildMapScene,
   buildPathScene,
-  buildPins,
   buildStateScene,
   buildWaypoint,
   guardRing,
@@ -19,8 +18,6 @@ import {
   loopFrame,
   nodeOval,
   nodeOutlineWidth,
-  PIN,
-  pinLayout,
   siteDot,
   SPACING_PX,
   type FigureLoop,
@@ -573,70 +570,6 @@ describe("the figures' idle loops (Q305)", () => {
     expect(first?.sprite).toEqual({ sheet: 'player_avatars', index: 0 });
     expect(second?.sprite).toEqual({ sheet: 'player_avatars', index: 1 });
     expect(figureFrames(still, first?.figurine ?? { sheet: 'player_avatars', index: 0 })).toBeNull();
-  });
-});
-
-describe("the players' pins (Q305)", () => {
-  const state = buildStateScene(scene, game.state, catalog);
-  const pins = buildPins(state.characters, ROUGH_SHAPE);
-
-  it("gives every figure a pin with its player's portrait, the figure on the figurine sheet, as on the cards (10)", () => {
-    expect(pins.map((pin) => pin.player)).toEqual(game.state.players.map((player) => player.id));
-    expect(pins.map((pin) => pin.figurine)).toEqual(state.characters.map((figure) => figure.figurine));
-    expect(pins.every((pin) => pin.figurine.sheet === catalog.manifest.figurines.sheet)).toBe(true);
-  });
-
-  it('points at the top of its own figure and is the same size on screen at any zoom (1)', () => {
-    const [first] = pins;
-    if (first === undefined) throw new Error('no pin');
-    for (const zoom of [0.05, 0.3, 1, 2.5]) {
-      const layout = pinLayout(first, zoom);
-      expect(layout.radius).toBe(PIN.size / 2);
-      expect(layout.point[2]).toEqual({ x: 0, y: -1 });
-      // The circle sits above the point, the point's base inside the circle.
-      expect(layout.center.y).toBeLessThan(-PIN.point);
-      for (const corner of layout.point.slice(0, 2)) {
-        expect(Math.hypot(corner.x - layout.center.x, corner.y - layout.center.y)).toBeLessThan(layout.radius);
-      }
-    }
-    const figure = state.characters[0];
-    if (figure === undefined) throw new Error('no figure');
-    expect(first.head.y).toBeCloseTo(figure.foot.y + ROUGH_SHAPE(figure.sprite).top * figure.size, 9);
-  });
-
-  it('stands the pins of players on one node side by side at every zoom, each pointing to its own figure (2)', () => {
-    const [left, right] = pins;
-    if (left === undefined || right === undefined) throw new Error('two pins needed');
-    expect(left.group).toEqual({ count: 2, slot: 0 });
-    expect(right.group).toEqual({ count: 2, slot: 1 });
-    for (const zoom of [0.05, 0.3, 1, 2.5]) {
-      // Where each circle lands on screen, from its own figure's head.
-      const onScreen = [left, right].map((pin) => {
-        const { center } = pinLayout(pin, zoom);
-        return { x: pin.head.x * zoom + center.x, y: pin.head.y * zoom + center.y };
-      });
-      expect(onScreen[1]!.x - onScreen[0]!.x).toBeCloseTo(PIN.size + PIN.gap, 9);
-      expect(onScreen[1]!.y).toBeCloseTo(onScreen[0]!.y, 9);
-    }
-  });
-
-  it("stands a walking figure's pin over it alone", () => {
-    const walking = game.state.players[0];
-    const neighbour = game.map.graph.adjacency[walking?.position ?? 0]?.[0];
-    if (walking === undefined || neighbour === undefined) throw new Error('no one to walk');
-    const from = position(game.map.graph, walking.position);
-    const to = position(game.map.graph, neighbour);
-    const moving = buildStateScene(scene, game.state, catalog, { player: walking.id, at: { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 } });
-    for (const pin of buildPins(moving.characters, ROUGH_SHAPE)) {
-      expect(pin.group.count).toBe(1);
-      expect(pinLayout(pin, 0.4).center.x).toBeCloseTo(0, 9);
-      expect(pin.row.top).toBe(pin.head.y);
-    }
-  });
-
-  it('keeps every pin on the final map (6)', () => {
-    const over = buildStateScene(scene, { ...game.state, status: 'finished' }, catalog);
-    expect(buildPins(over.characters, ROUGH_SHAPE)).toHaveLength(game.state.players.length);
   });
 });
 

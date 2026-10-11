@@ -61,8 +61,6 @@ export interface LoadedArt {
   shape(ref: SpriteRef): SpriteShape;
   /** A reward icon, trimmed to its picture so its size is the size it looks. */
   icon(kind: RewardKind): Texture;
-  /** A figurine's head and shoulders, as its player's card shows them; `null` for one with no portrait box. */
-  portrait(figurine: SpriteRef): Texture | null;
   /** A sprite cut out on its own at full resolution, for repeating: terrain textures, the road brush. */
   tile(ref: SpriteRef): Texture;
   /** [Q170] The rock under the map's front edges, as supplied. */
@@ -113,7 +111,6 @@ export async function loadArt(catalog: ArtCatalog): Promise<LoadedArt> {
   const undersideSolid = solidBounds(undersidePixels.data, undersideCanvas.width, undersideWhole) ?? undersideWhole;
   const underside = mipmapped(undersideCanvas);
 
-  const portraits = new Map<string, Texture>();
   const sheetOf = (name: string): SheetTextures => {
     const sheet = sheets.get(name);
     if (sheet === undefined) throw new Error(`no textures for ${name}`);
@@ -139,24 +136,6 @@ export async function loadArt(catalog: ArtCatalog): Promise<LoadedArt> {
       const icon = icons.get(kind);
       if (icon === undefined) throw new Error(`no icon for ${kind}`);
       return icon;
-    },
-    portrait: (figurine) => {
-      const key = `${figurine.sheet}#${figurine.index}`;
-      const cached = portraits.get(key);
-      if (cached !== undefined) return cached;
-      const sheet = sheetOf(figurine.sheet);
-      const sprite = sheet.atlas.sprites[figurine.index];
-      const frame = sheet.frames[figurine.index];
-      const box = catalog.portraits.find((candidate) => candidate.id === sprite?.id);
-      if (sprite === undefined || frame === undefined || box === undefined) return null;
-      // The box is cell-relative, in the sheet's own pixels, as on the cards (Sprites.tsx).
-      const k = sheet.scale;
-      const texture = new Texture({
-        source: frame.source,
-        frame: new Rectangle((sprite.x + box.x) * k, (sprite.y + box.y) * k, box.width * k, box.height * k),
-      });
-      portraits.set(key, texture);
-      return texture;
     },
     tile: (ref) => {
       const key = `${ref.sheet}#${ref.index}`;
