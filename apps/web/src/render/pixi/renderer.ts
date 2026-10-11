@@ -1,6 +1,6 @@
 import { TERRAINS } from '@adventure/config';
 import type { GameMap, GameState, NodeId, PathPreview, PlayerId, Point } from '@adventure/core';
-import { Container, Graphics, Matrix, Sprite, Text, TilingSprite } from 'pixi.js';
+import { Container, Graphics, Matrix, Sprite, Text, TilingSprite, type Texture } from 'pixi.js';
 import { spriteIndex } from '../../art/atlas.ts';
 import { atlasOf, type SpriteRef } from '../../art/catalog.ts';
 import type { Camera, Projection } from '../isometric.ts';
@@ -8,14 +8,20 @@ import type { MapRenderer, SceneLayer } from '../scene.ts';
 import {
   buildCharacters,
   buildPathScene,
+  buildPins,
   buildStateScene,
   buildWaypoint,
   guardRing,
+  loopFrame,
   nodeOutlineWidth,
+  PIN,
+  pinLayout,
   siteDot,
   type Billboard,
   type FigureCue,
+  type FigureLoop,
   type MapScene,
+  type Pin,
   type StateScene,
   type Walker,
 } from '../sceneModel.ts';
@@ -64,10 +70,16 @@ export class PixiMapRenderer implements MapRenderer {
   private readonly groundAbove = new Container();
   private readonly ui = new Container();
   private readonly labelsLayer = new Container();
+  /** [Q305, 5] The players' pins, over everything else on the map. */
+  private readonly pinsLayer = new Container();
 
   private readonly dressingSprites: Sprite[] = [];
   private poiSprites: Sprite[] = [];
   private characterSprites: Sprite[] = [];
+  /** [Q305] The figures playing their idle loop, and the frame each shows. */
+  private looping: { sprite: Sprite; loop: FigureLoop; frames: readonly Texture[]; shown: number }[] = [];
+  private pins: { pin: Pin; box: Container; outline: Graphics; window: Graphics; portrait: Sprite | null }[] = [];
+  private zoom = 1;
   private waypointSprite: Sprite | null = null;
   private cue: FigureCue = 'none';
   private planner: PlayerId | null = null;
@@ -106,6 +118,7 @@ export class PixiMapRenderer implements MapRenderer {
       this.standing,
       this.groundAbove,
       this.ui,
+      this.pinsLayer,
     );
     this.clipBackdrop();
     this.drawUnderside();
@@ -117,6 +130,10 @@ export class PixiMapRenderer implements MapRenderer {
   }
 
   setCamera(camera: Camera): void {
+    if (camera.zoom !== this.zoom) {
+      this.zoom = camera.zoom;
+      this.layoutPins();
+    }
     this.root.scale.set(camera.zoom);
     this.root.position.set(
       this.viewport.x / 2 - camera.center.x * camera.zoom,
@@ -179,8 +196,14 @@ export class PixiMapRenderer implements MapRenderer {
     this.invalidate('characters');
   }
 
-  /** Advance the blink; call once a frame. */
+  /** Advance the figures' idle loops and the blink; call once a frame. */
   tick(now: number): void {
+    for (const figure of this.looping) {
+      const frame = loopFrame(figure.loop, now);
+      if (frame === figure.shown) continue;
+      figure.shown = frame;
+      figure.sprite.texture = figure.frames[frame] ?? figure.sprite.texture;
+    }
     const cued = this.cued;
     if (this.cue !== 'blink' || cued === null) return;
     const phase = (now % CUE.blinkMs) / CUE.blinkMs;
@@ -348,11 +371,17 @@ export class PixiMapRenderer implements MapRenderer {
     const state = this.state;
     const current = state === null ? undefined : state.players[state.turn.activeSeat - 1]?.id;
     let figure: Sprite | null = null;
+    this.looping = [];
     for (const item of this.stateScene?.characters ?? []) {
       const sprite = this.stand(item, 1);
       this.characterSprites.push(sprite);
       if (item.player === current) figure = sprite;
+      // [Q305, 8] A walking figure holds its still pose, the loop's first frame.
+      if (item.loop !== null && !item.walking) {
+        this.looping.push({ sprite, loop: item.loop, frames: item.loop.frames.map((ref) => this.art.frame(ref)), shown: 0 });
+      }
     }
+    this.drawPins();
     const active = this.stateScene?.active ?? null;
     const planning = this.stateScene?.planning ?? null;
     // [Q56, 49] A player planning out of turn has their figure highlighted as
@@ -371,6 +400,57 @@ export class PixiMapRenderer implements MapRenderer {
     }
     if (this.waypoint !== null) {
       this.waypointSprite = this.stand(buildWaypoint(this.scene, this.map, this.waypoint, this.art.catalog), 1);
+    }
+  }
+
+  /**
+   * [Q305] A pin over every figure, for the player on turn too, steady while
+   * their figure blinks (4), during the game and on the final map (6). Taps
+   * go through it to the map underneath (3): the map is picked from the
+   * ground and the figures (`picking.ts`), never from what is drawn here.
+   */
+  private drawPins(): void {
+    this.pinsLayer.removeChildren().forEach((child) => child.destroy({ children: true }));
+    this.pins = buildPins(this.stateScene?.characters ?? [], (ref) => this.art.shape(ref)).map((pin) => {
+      const box = new Container();
+      box.position.set(pin.head.x, pin.head.y);
+      const outline = new Graphics();
+      box.addChild(outline);
+      const texture = this.art.portrait(pin.figurine);
+      const window = new Graphics();
+      let portrait: Sprite | null = null;
+      if (texture !== null) {
+        portrait = new Sprite(texture);
+        portrait.anchor.set(0.5);
+        portrait.mask = window;
+        box.addChild(window, portrait);
+      }
+      this.pinsLayer.addChild(box);
+      return { pin, box, outline, window, portrait };
+    });
+    this.layoutPins();
+  }
+
+  /** Keeps every pin the same size on screen, and pins sharing a node side by side, at the zoom the map has. */
+  private layoutPins(): void {
+    const white = 0xffffff;
+    for (const { pin, box, outline, window, portrait } of this.pins) {
+      const { center, radius, point } = pinLayout(pin, this.zoom);
+      box.scale.set(1 / this.zoom);
+      outline
+        .clear()
+        .poly(point.flatMap((corner) => [corner.x, corner.y]))
+        .fill(white)
+        .stroke({ color: PIN.edgeColor, width: PIN.edge, join: 'round' })
+        .circle(center.x, center.y, radius)
+        .fill(white)
+        .stroke({ color: PIN.edgeColor, width: PIN.edge });
+      const inner = radius - PIN.rim;
+      window.clear().circle(center.x, center.y, inner).fill(white);
+      if (portrait !== null) {
+        portrait.scale.set((inner * 2) / portrait.texture.width);
+        portrait.position.set(center.x, center.y);
+      }
     }
   }
 

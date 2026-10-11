@@ -4215,6 +4215,68 @@ the rulebook needs no change.
 
 ---
 
+### Q305. ~~How do the players stand out on the map?~~ — **answered 2026-10-11: a pin with the player's portrait over every figure, the same size at any zoom, and every figure playing Andrei's idle animation, which one manifest entry turns off (1-10)**
+
+Andrei, 2026-10-11 at 05:53: *"we need to highlight the players on the map
+better. One can click on the cards to see their locations, but it's important
+to be able to glance at the map and see the players positions right away"*. At
+05:54: *"i really wonder if we should simply animate them. Then they will be
+easy to spot"*. Measured on a 4-player game after five rounds, a figure on the
+whole map is about 12 pixels tall on a laptop and about 7 on a phone, and about
+30 at playing zoom on a laptop, smaller than most sites. Offered with pictures
+and videos: a pin with the player's portrait over each figure, the same size on
+screen at any zoom (recommended); figures never drawn smaller than about 44
+pixels; and the figures moving, gently or with a small hop, which on a phone's
+whole map comes to about a pixel. At 06:23: *"I think at a small size
+animations may still work towards visibility as long as there is a small
+movement, and human eye shoud immediately pick that up"*. At 07:00, with
+`player-travelers-animated-v2.zip`, an 8-frame idle loop for each of the six
+figures: *"The pins look good, we should do them. I also have the animated
+versions for motion; they are clearly not enough on their own but may help as
+well. [...] Let us try pins + animation from the provided art, with the idea
+that we may throw the art away if it doesn't work out visually."*
+
+1. **Pin size.** 34 CSS pixels across on every screen and at every zoom, as in
+   the mockup. A.
+2. **Two players on one node.** A: their pins side by side, each pointing to
+   its own figure; B: overlapping. A.
+3. **Tapping a pin.** At 07:08: *"what if the pin covers a node on the map that
+   needs to be tapped?"* The recommendation changed from the pin acting as its
+   figure to the tap going through the pin to the map underneath, so a pin
+   never hides a space from a tap; a figure is still picked up by tapping the
+   figure, and on your own turn a tap on a space already plans (Q145). At 07:09,
+   *"alright"*.
+4. **The player on turn.** Their pin stays steady while their figure blinks. A.
+5. **Over everything.** Pins are drawn over everything on the map, site icons,
+   numbers and the route included. A.
+6. **After the game ends.** The pins stay on the final map. A.
+7. **Timing.** The frames' own durations, a 1.7-second loop, and each figure
+   starts its loop at a different moment so they do not all move in step. A.
+8. **Walking.** A figure walking at End turn holds the still pose, the loop's
+   first frame, since the art is idle loops. A.
+9. **Shadows.** Made black and see-through like every other picture on the
+   map, rather than each figure's own grey. A.
+10. **Size, and where the animation goes.** The figures stand on the map the
+    same size as before; the cards, the pins and the New game figure pickers
+    keep the figurine sheet's pictures, so dropping the animation touches
+    nothing else. A.
+
+At 07:09, *"the rest are as recommended"*. Built: `PIN`, `buildPins` and
+`pinLayout` in `apps/web/src/render/sceneModel.ts`, drawn by
+`apps/web/src/render/pixi/renderer.ts` in a layer over the labels, scaled
+against the zoom. Pins are not picked: taps are matched to the ground and the
+figures in `apps/web/src/interaction/picking.ts`, which never sees them. The
+figures play `figurines.animation` in `Art/manifest.json`:
+`Art/tools/pack_animation.py` packs Andrei's six strips, kept as supplied in
+`Art/originals/player_avatars_animated/`, into
+`player_avatars_animated_sheet.png`, each frame where it was drawn and its
+shadow made dark and see-through by `pack_sheets.py`'s own code; the loop's
+start is spread over the players by seat order. Deleting that manifest entry
+draws the figures still from `player_avatars` again, as before. No rule,
+number or map changed, and the rulebook needs no change.
+
+---
+
 ## C. Decisions I made that are *implementation*, not design
 
 Listed so you can veto any that read as design to you.

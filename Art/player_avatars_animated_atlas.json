@@ -1,0 +1,584 @@
+{
+  "sheet": "player_avatars_animated_sheet.png",
+  "cell_width": 256,
+  "cell_height": 320,
+  "notes": "Packed by Art/tools/pack_animation.py from Art/originals/player_avatars_animated/, one row per figure, each frame where it was drawn, with each figure's grey shadow made black and see-through. Do not edit by hand: replace a strip and run the tool again.",
+  "sprites": [
+    {
+      "id": "player_avatars_01_frame1",
+      "x": 0,
+      "y": 0,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/cartographer-strip.png"
+    },
+    {
+      "id": "player_avatars_01_frame2",
+      "x": 256,
+      "y": 0,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/cartographer-strip.png"
+    },
+    {
+      "id": "player_avatars_01_frame3",
+      "x": 512,
+      "y": 0,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/cartographer-strip.png"
+    },
+    {
+      "id": "player_avatars_01_frame4",
+      "x": 768,
+      "y": 0,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/cartographer-strip.png"
+    },
+    {
+      "id": "player_avatars_01_frame5",
+      "x": 1024,
+      "y": 0,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/cartographer-strip.png"
+    },
+    {
+      "id": "player_avatars_01_frame6",
+      "x": 1280,
+      "y": 0,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/cartographer-strip.png"
+    },
+    {
+      "id": "player_avatars_01_frame7",
+      "x": 1536,
+      "y": 0,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/cartographer-strip.png"
+    },
+    {
+      "id": "player_avatars_01_frame8",
+      "x": 1792,
+      "y": 0,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/cartographer-strip.png"
+    },
+    {
+      "id": "player_avatars_02_frame1",
+      "x": 0,
+      "y": 320,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/mechanic-strip.png"
+    },
+    {
+      "id": "player_avatars_02_frame2",
+      "x": 256,
+      "y": 320,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/mechanic-strip.png"
+    },
+    {
+      "id": "player_avatars_02_frame3",
+      "x": 512,
+      "y": 320,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/mechanic-strip.png"
+    },
+    {
+      "id": "player_avatars_02_frame4",
+      "x": 768,
+      "y": 320,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/mechanic-strip.png"
+    },
+    {
+      "id": "player_avatars_02_frame5",
+      "x": 1024,
+      "y": 320,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/mechanic-strip.png"
+    },
+    {
+      "id": "player_avatars_02_frame6",
+      "x": 1280,
+      "y": 320,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/mechanic-strip.png"
+    },
+    {
+      "id": "player_avatars_02_frame7",
+      "x": 1536,
+      "y": 320,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/mechanic-strip.png"
+    },
+    {
+      "id": "player_avatars_02_frame8",
+      "x": 1792,
+      "y": 320,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/mechanic-strip.png"
+    },
+    {
+      "id": "player_avatars_03_frame1",
+      "x": 0,
+      "y": 640,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/botanist-strip.png"
+    },
+    {
+      "id": "player_avatars_03_frame2",
+      "x": 256,
+      "y": 640,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/botanist-strip.png"
+    },
+    {
+      "id": "player_avatars_03_frame3",
+      "x": 512,
+      "y": 640,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/botanist-strip.png"
+    },
+    {
+      "id": "player_avatars_03_frame4",
+      "x": 768,
+      "y": 640,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/botanist-strip.png"
+    },
+    {
+      "id": "player_avatars_03_frame5",
+      "x": 1024,
+      "y": 640,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/botanist-strip.png"
+    },
+    {
+      "id": "player_avatars_03_frame6",
+      "x": 1280,
+      "y": 640,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/botanist-strip.png"
+    },
+    {
+      "id": "player_avatars_03_frame7",
+      "x": 1536,
+      "y": 640,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/botanist-strip.png"
+    },
+    {
+      "id": "player_avatars_03_frame8",
+      "x": 1792,
+      "y": 640,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/botanist-strip.png"
+    },
+    {
+      "id": "player_avatars_04_frame1",
+      "x": 0,
+      "y": 960,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/fox-musician-strip.png"
+    },
+    {
+      "id": "player_avatars_04_frame2",
+      "x": 256,
+      "y": 960,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/fox-musician-strip.png"
+    },
+    {
+      "id": "player_avatars_04_frame3",
+      "x": 512,
+      "y": 960,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/fox-musician-strip.png"
+    },
+    {
+      "id": "player_avatars_04_frame4",
+      "x": 768,
+      "y": 960,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/fox-musician-strip.png"
+    },
+    {
+      "id": "player_avatars_04_frame5",
+      "x": 1024,
+      "y": 960,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/fox-musician-strip.png"
+    },
+    {
+      "id": "player_avatars_04_frame6",
+      "x": 1280,
+      "y": 960,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/fox-musician-strip.png"
+    },
+    {
+      "id": "player_avatars_04_frame7",
+      "x": 1536,
+      "y": 960,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/fox-musician-strip.png"
+    },
+    {
+      "id": "player_avatars_04_frame8",
+      "x": 1792,
+      "y": 960,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/fox-musician-strip.png"
+    },
+    {
+      "id": "player_avatars_05_frame1",
+      "x": 0,
+      "y": 1280,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/tortoise-traveler-strip.png"
+    },
+    {
+      "id": "player_avatars_05_frame2",
+      "x": 256,
+      "y": 1280,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/tortoise-traveler-strip.png"
+    },
+    {
+      "id": "player_avatars_05_frame3",
+      "x": 512,
+      "y": 1280,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/tortoise-traveler-strip.png"
+    },
+    {
+      "id": "player_avatars_05_frame4",
+      "x": 768,
+      "y": 1280,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/tortoise-traveler-strip.png"
+    },
+    {
+      "id": "player_avatars_05_frame5",
+      "x": 1024,
+      "y": 1280,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/tortoise-traveler-strip.png"
+    },
+    {
+      "id": "player_avatars_05_frame6",
+      "x": 1280,
+      "y": 1280,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/tortoise-traveler-strip.png"
+    },
+    {
+      "id": "player_avatars_05_frame7",
+      "x": 1536,
+      "y": 1280,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/tortoise-traveler-strip.png"
+    },
+    {
+      "id": "player_avatars_05_frame8",
+      "x": 1792,
+      "y": 1280,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/tortoise-traveler-strip.png"
+    },
+    {
+      "id": "player_avatars_06_frame1",
+      "x": 0,
+      "y": 1600,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/goblin-courier-strip.png"
+    },
+    {
+      "id": "player_avatars_06_frame2",
+      "x": 256,
+      "y": 1600,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/goblin-courier-strip.png"
+    },
+    {
+      "id": "player_avatars_06_frame3",
+      "x": 512,
+      "y": 1600,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/goblin-courier-strip.png"
+    },
+    {
+      "id": "player_avatars_06_frame4",
+      "x": 768,
+      "y": 1600,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/goblin-courier-strip.png"
+    },
+    {
+      "id": "player_avatars_06_frame5",
+      "x": 1024,
+      "y": 1600,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/goblin-courier-strip.png"
+    },
+    {
+      "id": "player_avatars_06_frame6",
+      "x": 1280,
+      "y": 1600,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/goblin-courier-strip.png"
+    },
+    {
+      "id": "player_avatars_06_frame7",
+      "x": 1536,
+      "y": 1600,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/goblin-courier-strip.png"
+    },
+    {
+      "id": "player_avatars_06_frame8",
+      "x": 1792,
+      "y": 1600,
+      "width": 256,
+      "height": 320,
+      "anchor": {
+        "x": 128,
+        "y": 288
+      },
+      "original": "player_avatars_animated/goblin-courier-strip.png"
+    }
+  ]
+}

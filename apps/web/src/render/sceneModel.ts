@@ -10,12 +10,12 @@ import {
   type Point,
 } from '@adventure/core';
 import { spriteIndex } from '../art/atlas.ts';
-import { atlasOf, poiArt, wrapIndex, type ArtCatalog, type SpriteRef } from '../art/catalog.ts';
+import { atlasOf, figureFrames, poiArt, wrapIndex, type ArtCatalog, type SpriteRef } from '../art/catalog.ts';
 import { placeBackdrop, placeDressing } from './dressing.ts';
 import { distance, nodeBounds, nodeSpacing, position, voronoiCells } from './geometry.ts';
 import { undersideMatrix } from './island.ts';
 import { isometricProjection, type Affine, type Bounds, type Projection } from './isometric.ts';
-import { pictureBands, placePoiPictures, ROUGH_SHAPE, type Box, type Oval, type PoiPicture, type ShapeOf } from './placement.ts';
+import { pictureBands, pictureBox, placePoiPictures, ROUGH_SHAPE, type Box, type Oval, type PoiPicture, type ShapeOf } from './placement.ts';
 
 /**
  * The map as a player sees it, as plain data: what to draw, where, and how
@@ -289,6 +289,35 @@ function backToFront(p: Billboard, q: Billboard): number {
 
 // --- what changes during play ------------------------------------------------
 
+/** A player's figure on the map. */
+export interface Figure extends Billboard {
+  readonly layer: 'characters';
+  readonly player: PlayerId;
+  /** Their picture on the figurine sheet, which the cards and their pin show. */
+  readonly figurine: SpriteRef;
+  /** [Q305] Their idle loop, `null` when the manifest has the figures stand still. */
+  readonly loop: FigureLoop | null;
+  /** Walking at End turn: [Q305, 8] it holds its still pose. */
+  readonly walking: boolean;
+  /**
+   * The figures standing on one node, side by side (§8 allows any number):
+   * how many there are and which this one is from the left. A walking figure
+   * is alone.
+   */
+  readonly group: { readonly count: number; readonly slot: number };
+}
+
+/**
+ * [Q305] A figure's idle loop: its frames, each shown for its duration, the
+ * loop starting at `startMs` on the page's clock so that the figures do not
+ * all move in step (7).
+ */
+export interface FigureLoop {
+  readonly frames: readonly SpriteRef[];
+  readonly durationsMs: readonly number[];
+  readonly startMs: number;
+}
+
 export interface StateScene {
   /** POIs whose reward is gone (§4.5): their picture unchanged, without icons or a number. */
   readonly claimed: ReadonlySet<NodeId>;
@@ -297,7 +326,7 @@ export interface StateScene {
    * an ordinary node", so its node loses its guard's colour and (Q80) its dot.
    */
   readonly nodes: readonly NodeMark[];
-  readonly characters: readonly Billboard[];
+  readonly characters: readonly Figure[];
   /** [SOURCE §7.2] The current player's character is highlighted on the map. */
   readonly active: { readonly at: Point; readonly size: number; readonly sprite: SpriteRef } | null;
   /**
@@ -376,7 +405,9 @@ export function buildCharacters(
     byNode.set(player.position, [...(byNode.get(player.position) ?? []), index]);
   });
 
-  const characters: Billboard[] = [];
+  const animated = manifest.figurines.animation;
+  const loopMs = animated === null ? 0 : animated.durationsMs.reduce((sum, ms) => sum + ms, 0);
+  const characters: Figure[] = [];
   let active: StateScene['active'] = null;
   let planning: StateScene['planning'] = null;
   let spotted: StateScene['found'] = null;
@@ -390,15 +421,25 @@ export function buildCharacters(
     // stands on.
     const foot = { x: base.x + (slot - (together.length - 1) / 2) * size * 0.45, y: base.y + SPACING_PX * 0.12 };
     const figurine = figurines.sprites.findIndex((sprite) => sprite.id === player.avatarId);
-    const sprite = { sheet: figurines.name, index: figurine >= 0 ? figurine : wrapIndex(player.seat - 1, figurines.sprites.length) };
+    const picture = { sheet: figurines.name, index: figurine >= 0 ? figurine : wrapIndex(player.seat - 1, figurines.sprites.length) };
+    const frames = figureFrames(catalog, picture);
     characters.push({
       layer: 'characters',
-      sprite,
+      // [Q305, 8] A walking figure, or one whose loop is not running, shows
+      // the loop's first frame: the still pose.
+      sprite: frames?.[0] ?? picture,
       foot,
       size,
       node: player.position,
       depth: foot.y + 0.5,
       player: player.id,
+      figurine: picture,
+      loop:
+        frames === null || animated === null
+          ? null
+          : { frames, durationsMs: animated.durationsMs, startMs: (index * loopMs) / state.players.length },
+      walking,
+      group: { count: together.length, slot },
     });
     const under = { at: scene.projection.toWorld(foot), size: manifest.moveProspect.activeSize * scene.spacing, sprite: ring };
     if (player.seat === state.turn.activeSeat && state.status !== 'finished') {
@@ -411,6 +452,95 @@ export function buildCharacters(
     }
   });
   return { characters, active, planning, found: spotted };
+}
+
+/**
+ * [Q305] The frame of `loop` showing at `nowMs` on the page's clock: frame
+ * `k` for `durationsMs[k]`, round and round from `startMs`.
+ */
+export function loopFrame(loop: FigureLoop, nowMs: number): number {
+  const total = loop.durationsMs.reduce((sum, ms) => sum + ms, 0);
+  let t = (((nowMs - loop.startMs) % total) + total) % total;
+  for (let k = 0; k < loop.durationsMs.length; k++) {
+    const ms = loop.durationsMs[k] as number;
+    if (t < ms) return k;
+    t -= ms;
+  }
+  return loop.durationsMs.length - 1;
+}
+
+// --- the players' pins -------------------------------------------------------
+
+/**
+ * [Q305] The pin above every figure, so that every player can be seen at a
+ * glance, however far out the map is: the player's portrait, as on their card,
+ * in a white circle with a point down to the top of their figure. It is the
+ * same size on every screen and at every zoom, in CSS pixels: `size` across,
+ * its point `point` long, its white rim `rim` wide and its dark edge `edge`
+ * wide, in `edgeColor`. Pins of players on one node stand side by side, `gap`
+ * apart (2), each pointing to its own figure.
+ */
+export const PIN = { size: 34, point: 9, rim: 2.6, edge: 1.2, edgeColor: 0x2b2419, gap: 4 } as const;
+
+export interface Pin {
+  readonly player: PlayerId;
+  /** The figurine whose portrait it shows. */
+  readonly figurine: SpriteRef;
+  /** Screen pixels at zoom 1: the middle of the top of the figure, the highest it reaches in any frame. */
+  readonly head: Point;
+  /**
+   * Screen pixels at zoom 1: the row of pins over the figures on its node,
+   * above the highest of their heads and centred over them.
+   */
+  readonly row: { readonly top: number; readonly middle: number };
+  readonly group: Figure['group'];
+}
+
+/** One pin for every figure. */
+export function buildPins(characters: readonly Figure[], shapeOf: ShapeOf): Pin[] {
+  const heads = characters.map((figure) => {
+    const pictures = figure.loop?.frames ?? [figure.sprite];
+    const boxes = pictures.map((picture) => pictureBox(figure.foot, figure.size, shapeOf(picture)));
+    const top = boxes.reduce((box, other) => (other.minY < box.minY ? other : box));
+    return { x: (top.minX + top.maxX) / 2, y: top.minY };
+  });
+  return characters.map((figure, at) => {
+    const head = heads[at] as Point;
+    const beside = heads.filter((_, k) => k === at || (!figure.walking && !characters[k]?.walking && characters[k]?.node === figure.node));
+    const row = {
+      top: Math.min(...beside.map((other) => other.y)),
+      middle: beside.reduce((sum, other) => sum + other.x, 0) / beside.length,
+    };
+    return { player: figure.player, figurine: figure.figurine, head, row, group: figure.group };
+  });
+}
+
+/**
+ * Where a pin's circle and point go at `zoom`, in CSS pixels from the top of
+ * its figure: the circle's middle, its radius, and the point's three corners,
+ * the last of them on the figure.
+ */
+export function pinLayout(pin: Pin, zoom: number): { readonly center: Point; readonly radius: number; readonly point: readonly [Point, Point, Point] } {
+  const radius = PIN.size / 2;
+  const across = (pin.group.slot - (pin.group.count - 1) / 2) * (PIN.size + PIN.gap);
+  const center = {
+    x: (pin.row.middle - pin.head.x) * zoom + across,
+    y: (pin.row.top - pin.head.y) * zoom - PIN.point - radius,
+  };
+  const tip = { x: 0, y: -1 };
+  const length = Math.hypot(tip.x - center.x, tip.y - center.y) || 1;
+  const down = { x: (tip.x - center.x) / length, y: (tip.y - center.y) / length };
+  const base = { x: center.x + down.x * radius * 0.8, y: center.y + down.y * radius * 0.8 };
+  const half = radius * 0.42;
+  return {
+    center,
+    radius,
+    point: [
+      { x: base.x - down.y * half, y: base.y + down.x * half },
+      { x: base.x + down.y * half, y: base.y - down.x * half },
+      tip,
+    ],
+  };
 }
 
 // --- a prospective move ------------------------------------------------------
