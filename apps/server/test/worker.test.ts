@@ -35,9 +35,11 @@ beforeAll(async () => {
     mkdirSync(site, { recursive: true });
     writeFileSync(resolve(site, 'index.html'), '<!doctype html><title>stub</title>');
   }
+  // [Q300] Remote bindings off: Workers AI only runs on Cloudflare, so here
+  // the site board's check cannot run, and every post is refused unchecked.
   worker = await unstable_startWorker({
     config: resolve(here, '../wrangler.jsonc'),
-    dev: { server: { port: 0 }, inspector: false, persist: false },
+    dev: { server: { port: 0 }, inspector: false, persist: false, remote: false },
   });
   base = await worker.url;
 }, 60_000);
@@ -426,6 +428,49 @@ describe('the server, in the local Workers runtime', () => {
     expect(gmList.heard.slice(again).some((m) => m.type === 'error')).toBe(false);
 
     for (const client of [gmList, beaList, gmGame, beaGame, reopened]) client.close();
+  }, 60_000);
+
+  it('sends the site’s board, refuses a post it cannot check, and lets only the moderator stop someone from posting (Q300)', async () => {
+    // [Q300, 6] Andrei's account has the moderator flag. The first test may have made it already.
+    const made = await post('/api/register', { username: 'Andrei', password: 'password1' });
+    const andrei = (await (made.ok ? made : await post('/api/login', { username: 'Andrei', password: 'password1' })).json()) as LoginResponse;
+    const bea = await register('Board_bea');
+    const andreiList = await Client.open('/api/lobby', andrei.token);
+    const beaList = await Client.open('/api/lobby', bea.token);
+
+    type Board = Extract<ServerMessage, { type: 'lobby.board' }>;
+    const isBoard = (m: ServerMessage): m is Board => m.type === 'lobby.board';
+    const isError = (m: ServerMessage): m is Extract<ServerMessage, { type: 'error' }> => m.type === 'error';
+    expect(await andreiList.next(isBoard)).toMatchObject({ posts: [], canPost: true, moderator: true, blocked: [] });
+    expect(await beaList.next(isBoard)).toMatchObject({ posts: [], canPost: true, moderator: false, blocked: [] });
+
+    // [Q300, 4] No check, no post.
+    beaList.send({ type: 'lobby.post', body: 'Hello, everyone' });
+    expect(await beaList.next((m): m is Extract<ServerMessage, { type: 'lobby.postRefused' }> => m.type === 'lobby.postRefused')).toEqual({
+      type: 'lobby.postRefused',
+      reason: 'unchecked',
+    });
+
+    // [Q300, 7] Only a moderator stops someone from posting.
+    beaList.send({ type: 'lobby.blockPoster', userId: andrei.user.userId, blocked: true });
+    expect((await beaList.next(isError)).code).toBe('not_moderator');
+
+    const beaMark = beaList.heard.length;
+    andreiList.send({ type: 'lobby.blockPoster', userId: bea.user.userId, blocked: true });
+    expect(await beaList.next((m): m is Board => isBoard(m) && !m.canPost, beaMark)).toMatchObject({ blocked: [] });
+    expect(await andreiList.next((m): m is Board => isBoard(m) && m.blocked.includes(bea.user.userId))).toMatchObject({ canPost: true });
+    beaList.send({ type: 'lobby.post', body: 'Still here' });
+    expect((await beaList.next(isError, beaMark)).message).toBe('you can’t post on the board');
+
+    const again = beaList.heard.length;
+    andreiList.send({ type: 'lobby.blockPoster', userId: bea.user.userId, blocked: false });
+    await beaList.next((m): m is Board => isBoard(m) && m.canPost, again);
+
+    // A reopened page gets the board as it is.
+    const reopened = await Client.open('/api/lobby', bea.token);
+    expect(await reopened.next(isBoard)).toMatchObject({ canPost: true, moderator: false });
+
+    for (const client of [andreiList, beaList, reopened]) client.close();
   }, 60_000);
 
   it('answers a game that does not exist', async () => {

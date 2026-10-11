@@ -17,6 +17,10 @@
       { "name": "LOBBY", "class_name": "Lobby" }
     ]
   },
+  // [Q300, 3] Workers AI, for Llama Guard's check of each post on the site's
+  // board. It always runs on Cloudflare, so `wrangler dev` asks for a
+  // Cloudflare login; the tests start the Worker with it off.
+  "ai": { "binding": "AI" },
   // The free plan runs only SQLite-backed Durable Objects.
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GameRoom", "Lobby"] }],
   "observability": { "enabled": true },
@@ -25,6 +29,7 @@
     // preview address for a Worker with Durable Objects.
     "preview": {
       "name": "adventure-preview",
+      "ai": { "binding": "AI" },
       "durable_objects": {
         "bindings": [
           { "name": "GAMES", "class_name": "GameRoom" },

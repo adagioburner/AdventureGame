@@ -13,10 +13,14 @@ import {
   type ServerMessage,
 } from '@adventure/protocol';
 import type { GameListing } from '@adventure/session';
-import { createSqlAccountStore, userSocketTag } from './adapters/durable-object.ts';
+import { createSqlAccountFlags, createSqlAccountStore, userSocketTag, type AccountFlagStore } from './adapters/durable-object.ts';
+import { insultCheck } from './adapters/insult-check.ts';
+import { llamaGuardCheck } from './adapters/llama-guard.ts';
 import { systemClock } from './adapters/memory.ts';
+import { everyCheck } from './adapters/post-check.ts';
 import { AccountError, PasswordAccounts } from './auth/accounts.ts';
-import { ACCOUNT_RULES } from './auth/rules.ts';
+import { ACCOUNT_RULES, SITE_MODERATORS } from './auth/rules.ts';
+import { createSqlSiteBoardStore, SiteBoard, type BoardOutcome } from './board.ts';
 import { NAME_HEADER, USER_HEADER, roomOf, type Env } from './env.ts';
 import { createSqlListingStore, gameListFor, type ListingStore } from './games.ts';
 
@@ -28,14 +32,17 @@ interface LobbySocket {
 }
 
 /**
- * The one object for the whole site: accounts and logins (§6.1, Q48 2 to 4)
- * and the list of games (Q48 5), kept in its SQLite. Games report their rows
- * here as they change (`updateGame`), and every open game-list page is sent
- * its user's list again.
+ * The one object for the whole site: accounts and logins (§6.1, Q48 2 to 4),
+ * the list of games (Q48 5) and the site's board (Q300), kept in its SQLite.
+ * Games report their rows here as they change (`updateGame`), and every open
+ * game-list page is sent its user's list again; the board is sent to every
+ * page whenever it changes.
  */
 export class Lobby extends DurableObject<Env> {
   private readonly accounts: PasswordAccounts;
   private readonly listings: ListingStore;
+  private readonly flags: AccountFlagStore;
+  private readonly board: SiteBoard;
   /** Set once the games listed before lifetimes have been asked to take one ([Q56, 64]). */
   private adopting = false;
 
@@ -43,12 +50,23 @@ export class Lobby extends DurableObject<Env> {
     super(ctx, env);
     this.accounts = new PasswordAccounts(createSqlAccountStore(ctx.storage.sql), ACCOUNT_RULES, systemClock);
     this.listings = createSqlListingStore(ctx.storage.sql);
+    this.flags = createSqlAccountFlags(ctx.storage.sql);
+    this.board = new SiteBoard(
+      createSqlSiteBoardStore(ctx.storage.sql),
+      this.flags,
+      everyCheck(llamaGuardCheck(env.AI), insultCheck(env.AI)),
+      systemClock,
+    );
+    this.grantModerators();
     // [Q54, 31] Pages ping every socket they keep open; answered here without waking the lobby.
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair(HEARTBEAT_PING, HEARTBEAT_PONG));
   }
 
-  register(username: string, password: string): Promise<AccountOutcome> {
-    return this.account(() => this.accounts.register({ method: 'password', username, password }));
+  async register(username: string, password: string): Promise<AccountOutcome> {
+    const outcome = await this.account(() => this.accounts.register({ method: 'password', username, password }));
+    // [Q300, 6] A moderator's account made after the lobby started.
+    if (outcome.ok) this.grantModerators();
+    return outcome;
   }
 
   logIn(username: string, password: string): Promise<AccountOutcome> {
@@ -83,6 +101,7 @@ export class Lobby extends DurableObject<Env> {
     const who: LobbySocket = { userId: asUserId(userId), displayName: request.headers.get(NAME_HEADER) ?? '' };
     server.serializeAttachment(who);
     server.send(encodeMessage(this.listFor(who.userId)));
+    server.send(encodeMessage(this.board.viewFor(who.userId)));
     return new Response(null, { status: 101, webSocket: client });
   }
 
@@ -100,8 +119,23 @@ export class Lobby extends DurableObject<Env> {
       await this.deleteGame(who.userId, message.gameId, reply);
       return;
     }
+    // [Q300] The site's board.
+    if (message.type === 'lobby.post') {
+      const outcome = await this.board.post(who, message.body);
+      if (outcome.kind === 'changed') reply({ type: 'lobby.posted' });
+      this.answerBoard(outcome, reply);
+      return;
+    }
+    if (message.type === 'lobby.deletePost') {
+      this.answerBoard(this.board.deletePost(who.userId, message.postId), reply);
+      return;
+    }
+    if (message.type === 'lobby.blockPoster') {
+      this.answerBoard(this.board.blockPoster(who.userId, message.userId, message.blocked), reply);
+      return;
+    }
     if (message.type !== 'lobby.create') {
-      reply({ type: 'error', code: 'invalid_action', message: 'the game list only creates and deletes games' });
+      reply({ type: 'error', code: 'invalid_action', message: 'the game list only creates and deletes games and holds the board' });
       return;
     }
     const gameId = newGameId();
@@ -172,6 +206,29 @@ export class Lobby extends DurableObject<Env> {
       roomOf(this.env, listing.gameId)
         .adoptLifetime()
         .catch((error: unknown) => console.error('a game could not take its lifetime', listing.gameId, error));
+    }
+  }
+
+  /** [Q300, 6] Gives the moderator flag to `SITE_MODERATORS`' accounts that exist. */
+  private grantModerators(): void {
+    for (const username of SITE_MODERATORS) this.flags.grantModerator(ACCOUNT_RULES.canonicalUsername(username));
+  }
+
+  /** [Q300] A changed board goes to every page; a refusal or an error to the sender alone. */
+  private answerBoard(outcome: BoardOutcome, reply: (message: ServerMessage) => void): void {
+    if (outcome.kind === 'changed') this.sendBoards();
+    else if (outcome.kind === 'refused') reply({ type: 'lobby.postRefused', reason: outcome.reason });
+    else reply({ type: 'error', code: outcome.code, message: outcome.message });
+  }
+
+  private sendBoards(): void {
+    for (const ws of this.ctx.getWebSockets()) {
+      const who = ws.deserializeAttachment() as LobbySocket;
+      try {
+        ws.send(encodeMessage(this.board.viewFor(who.userId)));
+      } catch {
+        // A closing socket; its page is sent the board when it reconnects.
+      }
     }
   }
 

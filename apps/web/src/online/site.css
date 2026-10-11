@@ -225,3 +225,58 @@
   background: var(--panel);
   box-shadow: var(--shadow);
 }
+
+/* [Q300, 1 and 8] The site's board on the game list page: below the lists on
+   a window narrower than 980, half a window tall, and beside them from 980,
+   the window's height; either way its posts scroll inside it. The page is the
+   container its height is measured against. */
+.site-page.with-board {
+  container-type: size;
+}
+.site-lists {
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 16px;
+  width: min(460px, 100%);
+}
+.card.site-card.site-board {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  height: max(320px, 50cqh);
+}
+.site-board .posts {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+.site-board .compose {
+  position: static;
+  padding-top: 0;
+}
+.site-board .compose .problem {
+  font-size: 12.5px;
+}
+/* [Q300, 11] The moderator's stop, red while its writer is stopped. */
+.btn.block-poster.on {
+  color: var(--missed);
+}
+@media (min-width: 980px) {
+  .site-page.with-board {
+    grid-template-columns: repeat(2, 460px);
+    justify-content: center;
+    align-items: start;
+  }
+  .card.site-card.site-board {
+    position: sticky;
+    top: 0;
+    height: 100cqh;
+  }
+}
