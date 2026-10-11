@@ -1,6 +1,6 @@
 import { TERRAINS } from '@adventure/config';
 import type { GameMap, GameState, NodeId, PathPreview, PlayerId, Point } from '@adventure/core';
-import { Container, Graphics, Matrix, Sprite, Text, TilingSprite, type Texture } from 'pixi.js';
+import { Container, Graphics, Matrix, Sprite, Text, TilingSprite } from 'pixi.js';
 import { spriteIndex } from '../../art/atlas.ts';
 import { atlasOf, type SpriteRef } from '../../art/catalog.ts';
 import type { Camera, Projection } from '../isometric.ts';
@@ -10,14 +10,11 @@ import {
   buildPathScene,
   buildStateScene,
   buildWaypoint,
-  figuresBlink,
   guardRing,
-  loopFrame,
   nodeOutlineWidth,
   siteDot,
   type Billboard,
   type FigureCue,
-  type FigureLoop,
   type MapScene,
   type StateScene,
   type Walker,
@@ -41,16 +38,6 @@ const CUE = {
   highlightWidth: 0.05,
   color: 0xffd84a,
 } as const;
-
-/**
- * How far a blinking figure has faded at `now`: out and back once every
- * `CUE.blinkMs`. The player on turn's figure and, zoomed out, every figure
- * (Q305, 13) share it, so they all blink in step.
- */
-function blinkAlpha(now: number): number {
-  const phase = (now % CUE.blinkMs) / CUE.blinkMs;
-  return CUE.dimAlpha + (1 - CUE.dimAlpha) * (0.5 + 0.5 * Math.cos(phase * 2 * Math.PI));
-}
 
 /**
  * `MapRenderer` on PixiJS (docs/STACK.md §3). Everything it draws comes out
@@ -81,12 +68,6 @@ export class PixiMapRenderer implements MapRenderer {
   private readonly dressingSprites: Sprite[] = [];
   private poiSprites: Sprite[] = [];
   private characterSprites: Sprite[] = [];
-  /**
-   * [Q305] Every figure: its idle loop and the frame it shows (`loop` null
-   * when it stands still), and whether it blinks when the map is zoomed out.
-   */
-  private figures: { sprite: Sprite; size: number; loop: { frames: readonly Texture[]; timing: FigureLoop } | null; shown: number; blinks: boolean }[] = [];
-  private zoom = 1;
   private waypointSprite: Sprite | null = null;
   private cue: FigureCue = 'none';
   private planner: PlayerId | null = null;
@@ -136,7 +117,6 @@ export class PixiMapRenderer implements MapRenderer {
   }
 
   setCamera(camera: Camera): void {
-    this.zoom = camera.zoom;
     this.root.scale.set(camera.zoom);
     this.root.position.set(
       this.viewport.x / 2 - camera.center.x * camera.zoom,
@@ -199,25 +179,12 @@ export class PixiMapRenderer implements MapRenderer {
     this.invalidate('characters');
   }
 
-  /** Advance the figures' idle loops and the blinking; call once a frame. */
+  /** Advance the blink; call once a frame. */
   tick(now: number): void {
-    const alpha = blinkAlpha(now);
-    for (const figure of this.figures) {
-      // [Q305, 11] Up close a figure plays its idle loop. Zoomed out, where
-      // its movements are too small to see, it holds its still pose and
-      // blinks instead, every figure in step (12, 13), unless it is walking
-      // (14) or picked up (13); on the final map too (15).
-      const far = figuresBlink(figure.size, this.zoom);
-      const frame = figure.loop === null || far ? 0 : loopFrame(figure.loop.timing, now);
-      if (figure.loop !== null && frame !== figure.shown) {
-        figure.shown = frame;
-        figure.sprite.texture = figure.loop.frames[frame] ?? figure.sprite.texture;
-      }
-      figure.sprite.alpha = far && figure.blinks ? alpha : 1;
-    }
     const cued = this.cued;
     if (this.cue !== 'blink' || cued === null) return;
     const phase = (now % CUE.blinkMs) / CUE.blinkMs;
+    const alpha = CUE.dimAlpha + (1 - CUE.dimAlpha) * (0.5 + 0.5 * Math.cos(phase * 2 * Math.PI));
     if (cued.figure !== null) cued.figure.alpha = alpha;
     if (cued.ring !== null) cued.ring.alpha = alpha;
     const { spacing } = this.scene;
@@ -380,27 +347,14 @@ export class PixiMapRenderer implements MapRenderer {
 
     const state = this.state;
     const current = state === null ? undefined : state.players[state.turn.activeSeat - 1]?.id;
-    const active = this.stateScene?.active ?? null;
-    const planning = this.stateScene?.planning ?? null;
-    // [Q305, 13] A figure picked up stays steady on its highlight, even zoomed out.
-    const pickedUp = new Set<PlayerId>();
-    if (this.cue === 'selected' && current !== undefined) pickedUp.add(current);
-    if (planning !== null && this.planner !== null) pickedUp.add(this.planner);
     let figure: Sprite | null = null;
-    this.figures = [];
     for (const item of this.stateScene?.characters ?? []) {
       const sprite = this.stand(item, 1);
       this.characterSprites.push(sprite);
       if (item.player === current) figure = sprite;
-      this.figures.push({
-        sprite,
-        size: item.size,
-        // [Q305, 8] A walking figure holds its still pose, the loop's first frame.
-        loop: item.loop === null || item.walking ? null : { frames: item.loop.frames.map((ref) => this.art.frame(ref)), timing: item.loop },
-        shown: 0,
-        blinks: !item.walking && !pickedUp.has(item.player),
-      });
     }
+    const active = this.stateScene?.active ?? null;
+    const planning = this.stateScene?.planning ?? null;
     // [Q56, 49] A player planning out of turn has their figure highlighted as
     // on their own turn, while the figure on turn keeps its own cue.
     if (planning !== null) this.drawRing(planning, true);

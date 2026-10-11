@@ -9,7 +9,7 @@ import {
 } from '@adventure/config';
 import { asNodeId, type Poi } from '@adventure/core';
 import { ArtError, atlasExtent } from './atlas.ts';
-import { atlasOf, buildArtCatalog, figureFrames, poiArt, sheetFile, wrapIndex, type ArtFiles } from './catalog.ts';
+import { atlasOf, buildArtCatalog, poiArt, sheetFile, wrapIndex, type ArtFiles } from './catalog.ts';
 import { ART_FILES } from './files.ts';
 import { SOUND_NAMES, parseManifest, poiArtRow, sheetsNamed } from './manifest.ts';
 
@@ -242,45 +242,6 @@ describe('a bad art drop', () => {
     );
     const all = atlasOf(catalog, 'Plains_Dressing').sprites.map((sprite) => sprite.id);
     expect(() => buildArtCatalog(leaving(all))).toThrow(/leaves out every sprite of Plains_Dressing/);
-  });
-
-  it("animates every figure from Andrei's frames, and draws them still without the manifest's animation (Q305)", () => {
-    const catalog = buildArtCatalog(ART_FILES);
-    expect(catalog.manifest.figurines.animation).toEqual({
-      sheet: 'player_avatars_animated',
-      durationsMs: [450, 120, 120, 180, 400, 120, 120, 190],
-    });
-    const figurines = atlasOf(catalog, 'player_avatars');
-    const frames = atlasOf(catalog, 'player_avatars_animated');
-    figurines.sprites.forEach((figurine, index) => {
-      const loop = figureFrames(catalog, { sheet: 'player_avatars', index });
-      expect(loop?.map((ref) => frames.sprites[ref.index]?.id)).toEqual(
-        [1, 2, 3, 4, 5, 6, 7, 8].map((k) => `${figurine.id}_frame${k}`),
-      );
-    });
-    // Every frame stands on the point the figure was drawn standing on.
-    expect(new Set(frames.sprites.map((sprite) => `${sprite.anchor.x},${sprite.anchor.y}`))).toEqual(new Set(['128,288']));
-
-    const manifest = ART_FILES.json.get('manifest.json') as { figurines: Record<string, unknown> };
-    const { animation: _animation, ...still } = manifest.figurines;
-    const files = (figurines: object): ArtFiles => ({
-      json: new Map([...ART_FILES.json, ['manifest.json', { ...manifest, figurines }]]),
-      urls: ART_FILES.urls,
-    });
-    const without = buildArtCatalog(files(still));
-    expect(without.manifest.figurines.animation).toBeNull();
-    expect(figureFrames(without, { sheet: 'player_avatars', index: 0 })).toBeNull();
-    expect(sheetsNamed(without.manifest)).not.toContain('player_avatars_animated');
-
-    expect(() => buildArtCatalog(files({ ...still, animation: { sheet: 'player_avatars_animated', durations_ms: [450, 120, 120, 180, 400, 120, 120, 190, 100] } }))).toThrow(
-      /player_avatars_animated_atlas\.json has no sprite player_avatars_01_frame9/,
-    );
-    expect(() => parseManifest({ ...manifest, figurines: { ...still, animation: { sheet: 'player_avatars_animated', durations_ms: [] } } })).toThrow(
-      /figurines\.animation\.durations_ms: expected at least one frame/,
-    );
-    expect(() => parseManifest({ ...manifest, figurines: { ...still, animation: { sheet: 'player_avatars_animated', durations_ms: [450, 0] } } })).toThrow(
-      /figurines\.animation\.durations_ms\[1\]/,
-    );
   });
 
   it('rejects an adjustment for a sheet nothing draws, and a malformed one', () => {

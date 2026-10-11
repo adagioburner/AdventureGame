@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_RULESET } from '@adventure/config';
 import { asNodeId, isClaimed, type GameMap, type GameState, type PathPreview } from '@adventure/core';
-import { atlasOf, buildArtCatalog, figureFrames, poiArt, type ArtFiles } from '../art/catalog.ts';
+import { atlasOf, buildArtCatalog, poiArt } from '../art/catalog.ts';
 import { ART_FILES } from '../art/files.ts';
 import { previewGame, SAMPLE_ALLOWANCE, SAMPLE_STAMINA } from './scene.fixture.ts';
 import { distance, distanceToSegment, polygonArea, position } from './geometry.ts';
@@ -11,18 +11,14 @@ import {
   buildMapScene,
   buildPathScene,
   buildStateScene,
-  BLINK_BELOW_PX,
   buildWaypoint,
-  figuresBlink,
   guardRing,
   ICON_TOUCH,
   labelBox,
-  loopFrame,
   nodeOval,
   nodeOutlineWidth,
   siteDot,
   SPACING_PX,
-  type FigureLoop,
   type MapScene,
 } from './sceneModel.ts';
 
@@ -437,8 +433,8 @@ describe('what changes during play', () => {
     expect(second?.node).toBe(game.state.players[1]?.position);
     expect(first?.foot.y).toBe(second?.foot.y);
     expect(first?.foot.x).toBeLessThan(second?.foot.x ?? -Infinity);
-    expect(first?.figurine).toEqual({ sheet: 'player_avatars', index: 0 });
-    expect(second?.figurine).toEqual({ sheet: 'player_avatars', index: 1 });
+    expect(first?.sprite.index).toBe(0);
+    expect(second?.sprite.index).toBe(1);
     expect(state.active).not.toBeNull();
     expect(state.claimed.size).toBe(0);
   });
@@ -521,68 +517,6 @@ describe('what changes during play', () => {
     expect(buildStateScene(scene, game.state, catalog).found).toBeNull();
     const over = buildStateScene(scene, { ...game.state, status: 'finished' }, catalog, null, null, onTurn.id);
     expect(over.found).not.toBeNull();
-  });
-});
-
-describe("the figures' idle loops (Q305)", () => {
-  const frameIds = (sprites: readonly { index: number }[] | undefined) =>
-    sprites?.map((ref) => atlasOf(catalog, 'player_avatars_animated').sprites[ref.index]?.id);
-
-  it("plays each figure's own frames, standing on its first, each figure starting at a different moment (7)", () => {
-    const [first, second] = buildStateScene(scene, game.state, catalog).characters;
-    expect(frameIds(first?.loop?.frames)).toEqual([1, 2, 3, 4, 5, 6, 7, 8].map((k) => `player_avatars_01_frame${k}`));
-    expect(frameIds(second?.loop?.frames)).toEqual([1, 2, 3, 4, 5, 6, 7, 8].map((k) => `player_avatars_02_frame${k}`));
-    expect(first?.sprite).toEqual(first?.loop?.frames[0]);
-    expect(first?.loop?.durationsMs).toEqual([450, 120, 120, 180, 400, 120, 120, 190]);
-    expect(first?.loop?.startMs).not.toBe(second?.loop?.startMs);
-    expect(first?.walking).toBe(false);
-  });
-
-  it('holds a walking figure in its still pose, the first frame (8)', () => {
-    const walking = game.state.players[0];
-    const neighbour = game.map.graph.adjacency[walking?.position ?? 0]?.[0];
-    if (walking === undefined || neighbour === undefined) throw new Error('no one to walk');
-    const from = position(game.map.graph, walking.position);
-    const to = position(game.map.graph, neighbour);
-    const [mover] = buildStateScene(scene, game.state, catalog, { player: walking.id, at: { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 } }).characters;
-    expect(mover?.walking).toBe(true);
-    expect(frameIds([mover?.sprite ?? { index: -1 }])).toEqual(['player_avatars_01_frame1']);
-  });
-
-  it('shows each frame for its own time, round and round from where the loop starts', () => {
-    const loop: FigureLoop = { frames: [], durationsMs: [450, 120, 120, 180, 400, 120, 120, 190], startMs: 1000 };
-    const at = (ms: number) => loopFrame(loop, 1000 + ms);
-    expect([0, 449, 450, 569, 570, 690, 869, 870, 1269, 1270, 1389, 1390, 1509, 1510, 1699].map(at)).toEqual([
-      0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7,
-    ]);
-    expect(at(1700)).toBe(0);
-    expect(at(1700 * 3 + 450)).toBe(1);
-    // Before the loop's start too: a page's clock starts near nought.
-    expect(at(-1)).toBe(7);
-    expect(at(-1700)).toBe(0);
-  });
-
-  it('has every figure blink instead once figures are drawn under 24 px tall, all at the same zoom (11)', () => {
-    expect(BLINK_BELOW_PX).toBe(24);
-    const figures = buildStateScene(scene, game.state, catalog).characters;
-    const size = catalog.manifest.figurines.size * SPACING_PX;
-    expect(figures.every((figure) => figure.size === size)).toBe(true);
-    const switching = BLINK_BELOW_PX / size;
-    expect(figuresBlink(size, switching * 0.999)).toBe(true);
-    expect(figuresBlink(size, switching)).toBe(false);
-    expect(figuresBlink(size, switching * 4)).toBe(false);
-  });
-
-  it('draws the figures still, from the figurine sheet, when the manifest has no animation', () => {
-    const manifest = ART_FILES.json.get('manifest.json') as { figurines: Record<string, unknown> };
-    const { animation: _animation, ...figurines } = manifest.figurines;
-    const files: ArtFiles = { json: new Map([...ART_FILES.json, ['manifest.json', { ...manifest, figurines }]]), urls: ART_FILES.urls };
-    const still = buildArtCatalog(files);
-    const [first, second] = buildStateScene(buildMapScene(game.map, still), game.state, still).characters;
-    expect(first?.loop).toBeNull();
-    expect(first?.sprite).toEqual({ sheet: 'player_avatars', index: 0 });
-    expect(second?.sprite).toEqual({ sheet: 'player_avatars', index: 1 });
-    expect(figureFrames(still, first?.figurine ?? { sheet: 'player_avatars', index: 0 })).toBeNull();
   });
 });
 

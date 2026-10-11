@@ -10,7 +10,7 @@ import {
   type Point,
 } from '@adventure/core';
 import { spriteIndex } from '../art/atlas.ts';
-import { atlasOf, figureFrames, poiArt, wrapIndex, type ArtCatalog, type SpriteRef } from '../art/catalog.ts';
+import { atlasOf, poiArt, wrapIndex, type ArtCatalog, type SpriteRef } from '../art/catalog.ts';
 import { placeBackdrop, placeDressing } from './dressing.ts';
 import { distance, nodeBounds, nodeSpacing, position, voronoiCells } from './geometry.ts';
 import { undersideMatrix } from './island.ts';
@@ -289,29 +289,6 @@ function backToFront(p: Billboard, q: Billboard): number {
 
 // --- what changes during play ------------------------------------------------
 
-/** A player's figure on the map. */
-export interface Figure extends Billboard {
-  readonly layer: 'characters';
-  readonly player: PlayerId;
-  /** Their picture on the figurine sheet, as their card shows it. */
-  readonly figurine: SpriteRef;
-  /** [Q305] Their idle loop, `null` when the manifest has the figures stand still. */
-  readonly loop: FigureLoop | null;
-  /** Walking at End turn: [Q305, 8] it holds its still pose. */
-  readonly walking: boolean;
-}
-
-/**
- * [Q305] A figure's idle loop: its frames, each shown for its duration, the
- * loop starting at `startMs` on the page's clock so that the figures do not
- * all move in step (7).
- */
-export interface FigureLoop {
-  readonly frames: readonly SpriteRef[];
-  readonly durationsMs: readonly number[];
-  readonly startMs: number;
-}
-
 export interface StateScene {
   /** POIs whose reward is gone (§4.5): their picture unchanged, without icons or a number. */
   readonly claimed: ReadonlySet<NodeId>;
@@ -320,7 +297,7 @@ export interface StateScene {
    * an ordinary node", so its node loses its guard's colour and (Q80) its dot.
    */
   readonly nodes: readonly NodeMark[];
-  readonly characters: readonly Figure[];
+  readonly characters: readonly Billboard[];
   /** [SOURCE §7.2] The current player's character is highlighted on the map. */
   readonly active: { readonly at: Point; readonly size: number; readonly sprite: SpriteRef } | null;
   /**
@@ -399,9 +376,7 @@ export function buildCharacters(
     byNode.set(player.position, [...(byNode.get(player.position) ?? []), index]);
   });
 
-  const animated = manifest.figurines.animation;
-  const loopMs = animated === null ? 0 : animated.durationsMs.reduce((sum, ms) => sum + ms, 0);
-  const characters: Figure[] = [];
+  const characters: Billboard[] = [];
   let active: StateScene['active'] = null;
   let planning: StateScene['planning'] = null;
   let spotted: StateScene['found'] = null;
@@ -415,24 +390,15 @@ export function buildCharacters(
     // stands on.
     const foot = { x: base.x + (slot - (together.length - 1) / 2) * size * 0.45, y: base.y + SPACING_PX * 0.12 };
     const figurine = figurines.sprites.findIndex((sprite) => sprite.id === player.avatarId);
-    const picture = { sheet: figurines.name, index: figurine >= 0 ? figurine : wrapIndex(player.seat - 1, figurines.sprites.length) };
-    const frames = figureFrames(catalog, picture);
+    const sprite = { sheet: figurines.name, index: figurine >= 0 ? figurine : wrapIndex(player.seat - 1, figurines.sprites.length) };
     characters.push({
       layer: 'characters',
-      // [Q305, 8] A walking figure, or one whose loop is not running, shows
-      // the loop's first frame: the still pose.
-      sprite: frames?.[0] ?? picture,
+      sprite,
       foot,
       size,
       node: player.position,
       depth: foot.y + 0.5,
       player: player.id,
-      figurine: picture,
-      loop:
-        frames === null || animated === null
-          ? null
-          : { frames, durationsMs: animated.durationsMs, startMs: (index * loopMs) / state.players.length },
-      walking,
     });
     const under = { at: scene.projection.toWorld(foot), size: manifest.moveProspect.activeSize * scene.spacing, sprite: ring };
     if (player.seat === state.turn.activeSeat && state.status !== 'finished') {
@@ -445,36 +411,6 @@ export function buildCharacters(
     }
   });
   return { characters, active, planning, found: spotted };
-}
-
-/**
- * [Q305, 11] Figures drawn smaller than this on screen, in CSS pixels, are too
- * small for their idle loop's movements to be seen, so every figure blinks
- * instead. Andrei: "let us do animation up close, and as you zoom out
- * substitute it with blinking figures"; "we may need to fine tune the
- * constant 24 px later". A figure is its sheet's typical height, the
- * figurines' manifest size, so all of them switch at once.
- */
-export const BLINK_BELOW_PX = 24;
-
-/** [Q305] Whether figures `size` tall on the map, at `zoom`, blink rather than play their idle loops. */
-export function figuresBlink(size: number, zoom: number): boolean {
-  return size * zoom < BLINK_BELOW_PX;
-}
-
-/**
- * [Q305] The frame of `loop` showing at `nowMs` on the page's clock: frame
- * `k` for `durationsMs[k]`, round and round from `startMs`.
- */
-export function loopFrame(loop: FigureLoop, nowMs: number): number {
-  const total = loop.durationsMs.reduce((sum, ms) => sum + ms, 0);
-  let t = (((nowMs - loop.startMs) % total) + total) % total;
-  for (let k = 0; k < loop.durationsMs.length; k++) {
-    const ms = loop.durationsMs[k] as number;
-    if (t < ms) return k;
-    t -= ms;
-  }
-  return loop.durationsMs.length - 1;
 }
 
 // --- a prospective move ------------------------------------------------------
