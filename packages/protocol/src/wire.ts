@@ -39,6 +39,9 @@ export function encodeMessage(message: ClientMessage | ServerMessage): string {
 const CLIENT_MESSAGE_TYPE_RECORD: Record<ClientMessage['type'], true> = {
   'lobby.create': true,
   'lobby.deleteGame': true,
+  'lobby.post': true,
+  'lobby.deletePost': true,
+  'lobby.blockPoster': true,
   'setup.requestJoin': true,
   'setup.updateRequest': true,
   'setup.withdraw': true,

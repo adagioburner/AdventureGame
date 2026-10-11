@@ -207,6 +207,19 @@ describe('guarded gold it cannot win (Q295)', () => {
     expect(targetsOf(branchesAt(twice, ['fighting', 'fighting']))).toEqual([1]);
   });
 
+  it('weighs no purchase that leads nowhere: the unit after it would end the game (2026-10-10)', () => {
+    // 4 gold unclaimed. Two on 5 leads by 4 after one unit and by 5, a certain win, after the second.
+    const state = withStats(at({ fighting: 1, gold: 2 }), player('two'), { gold: 5 });
+    const once = buy(state, 'fighting');
+    expect(once.status).toBe('in_progress');
+    expect(branchesAt(once, ['fighting'])).toEqual([]);
+    expect(buysOf(branchesAt(state))).not.toContain('fighting');
+    expect(targetsOf(branchesAt(state))).toEqual([2, 3]);
+
+    // On 4, the second unit leaves two 4 ahead, which does not end the game.
+    expect(buysOf(branchesAt(withStats(at({ fighting: 1, gold: 2 }), player('two'), { gold: 4 })))).toContain('fighting');
+  });
+
   it('weighs every unclaimed site, as before, when the guards are weighed', () => {
     const state = at({ fighting: 1, gold: 2 });
     const weighing: ComputerSettings = { ...settings(), unwinnableGuards: 'weighed' };

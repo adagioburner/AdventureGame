@@ -159,7 +159,10 @@ branch stays in the same turn, and below it the only branches are such moves
 (`usesFully`, Q280): this turn's walk spends every free step on a bought
 speed's terrain, and bought combat or magic reaches an unclaimed guard of that
 kind this turn that could beat it before buying, with no unit past its
-strength. `planTurn` (`packages/ai/src/mcts.ts`) follows the best line through
+strength. A purchase counts only when something can follow it, a move or
+another purchase that leads on in turn: when the next unit a site needs would
+end the game, the purchase before it leads nowhere and is not weighed
+(2026-10-10). `planTurn` (`packages/ai/src/mcts.ts`) follows the best line through
 the buys, merges them into one `BuyAction`, and plays the move after them. The
 rollout's players never buy.
 

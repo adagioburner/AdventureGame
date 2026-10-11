@@ -132,6 +132,9 @@ export class GameSession {
     if (message.type === 'lobby.deleteGame') {
       throw new SetupError('invalid_action', 'games are deleted from the game list');
     }
+    if (message.type === 'lobby.post' || message.type === 'lobby.deletePost' || message.type === 'lobby.blockPoster') {
+      throw new SetupError('invalid_action', 'the site’s board is on the game list');
+    }
     if (message.gameId !== this.gameId) throw new SetupError('game_not_found', 'that message is for another game');
     const setup = await this.ports.games.loadSetup(this.gameId);
     if (setup === null) throw new SetupError('game_not_found', `there is no game ${this.gameId}`);

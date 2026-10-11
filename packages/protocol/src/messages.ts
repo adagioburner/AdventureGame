@@ -12,6 +12,7 @@ import type {
 } from '@adventure/core';
 import type { GameSummary, SetupState } from './lobby.ts';
 import type { GameRecord } from './records.ts';
+import type { SitePost, SitePostRefusal } from './siteboard.ts';
 
 /**
  * The client↔server contract.
@@ -43,6 +44,15 @@ export type ClientMessage =
    * is removed for everyone at once, as it otherwise is 7 days after it ends.
    */
   | { readonly type: 'lobby.deleteGame'; readonly gameId: GameId }
+  /**
+   * [Q300] A post on the site's board, up to `BOARD_POST_MAX` characters.
+   * The sender is answered `lobby.posted` or `lobby.postRefused`.
+   */
+  | { readonly type: 'lobby.post'; readonly body: string }
+  /** [Q300, 6] A moderator deletes a post: it keeps its place, and its words are erased. */
+  | { readonly type: 'lobby.deletePost'; readonly postId: string }
+  /** [Q300, 7] A moderator stops an account from posting, or lets it post again. */
+  | { readonly type: 'lobby.blockPoster'; readonly userId: UserId; readonly blocked: boolean }
   /* ---- a game's socket, before the start (§6.1, Q48) ---- */
   /** Ask to join with the name and figure to play as. Asking twice changes the request. */
   | { readonly type: 'setup.requestJoin'; readonly gameId: GameId; readonly name: string; readonly avatarId: string }
@@ -203,6 +213,24 @@ export type ServerMessage =
   | { readonly type: 'lobby.games'; readonly games: readonly GameSummary[] }
   /** The answer to `lobby.create`, to the creator only. */
   | { readonly type: 'lobby.created'; readonly gameId: GameId }
+  /**
+   * [Q300] The site's board, oldest post first, sent on connect and again
+   * whenever it changes, to each page as its user sees it.
+   */
+  | {
+      readonly type: 'lobby.board';
+      readonly posts: readonly SitePost[];
+      /** [Q300, 7] `false` for an account a moderator stopped from posting. */
+      readonly canPost: boolean;
+      /** [Q300, 6] Whether this user's account has the moderator flag. */
+      readonly moderator: boolean;
+      /** [Q300, 7] The accounts stopped from posting; sent to moderators only, empty for everyone else. */
+      readonly blocked: readonly UserId[];
+    }
+  /** [Q300] The sender's post is on the board; their box can be emptied. */
+  | { readonly type: 'lobby.posted' }
+  /** [Q300, 3 and 4] The sender's post was not put on the board. */
+  | { readonly type: 'lobby.postRefused'; readonly reason: SitePostRefusal }
   | { readonly type: 'setup.state'; readonly setup: SetupState }
   /** [Q48, 11] To a declined user only. They may ask again. */
   | { readonly type: 'setup.declined'; readonly gameId: GameId }
@@ -250,6 +278,8 @@ export type ServerMessage =
 export type ProtocolErrorCode =
   | 'unauthenticated'
   | 'not_game_master'
+  /** [Q300, 6 and 7] Deleting a post on the site's board, or stopping an account, is a moderator's alone. */
+  | 'not_moderator'
   | 'not_your_turn'
   /**
    * [Q54, 35; Q56, 55] The turn a message named is over: someone else acted
@@ -274,7 +304,7 @@ export type ProtocolErrorCode =
   /** Raised when a request needs a decision GDD.md has not made yet. */
   | 'unresolved_design_item';
 
-/** [Q56, 59] The longest post on a game's board, in characters. */
+/** [Q56, 59] The longest post on a game's board, in characters; [Q300, 1] on the site's board too. */
 export const BOARD_POST_MAX = 500;
 
 /** [Q56, 57] How long the computer thinks for a seat whose player resigned, in seconds. */
