@@ -44,7 +44,8 @@ export function Site() {
   }, []);
 
   useEffect(() => {
-    document.title = route.page === 'hotseat' ? `${GAME_NAME} Hot Seat` : GAME_NAME;
+    // [Q306] The one-device page is named as the others are: solo games are played there too.
+    document.title = GAME_NAME;
   }, [route]);
 
   const go = useCallback((path: string): void => {
