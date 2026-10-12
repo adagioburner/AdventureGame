@@ -2879,6 +2879,8 @@ Answered 21:30, and 692 at 22:04.
 691. **Browser tab titles:** the full name, "Skyholm Adventures", "Skyholm
      Adventures Hot Seat" and "Your turn · Skyholm Adventures" (recommended);
      or Skyholm. **Answered:** the full name.
+     *Since [Q306](#q306) the one-device page's tab reads "Skyholm Adventures"
+     too.*
 692. **The documents' titles:** "Skyholm Adventures — Rulebook", the README's
      "Skyholm Adventures" and "Game Design Document — Skyholm Adventures"
      (recommended); or the design document keeps "Multiplayer Turn-Based
@@ -4353,6 +4355,41 @@ Built: `Figure.loop` and `Figure.walking`, `IDLE_WAIT_MS`, `ANIMATE_FROM_PX`,
 `apps/web/src/render/sceneModel.ts`; `apps/web/src/render/pixi/renderer.ts`
 keeps each player's next play and swaps the frames in `playIdle`. No rule,
 number or map changed.
+
+### Q306. ~~What does the site call itself, and what is its icon?~~ — **answered 2026-10-12: every browser tab reads Skyholm Adventures, the one-device page's included; the tab's icon is the cartographer from his hat to his waist, map and all, unframed; "hot seat" stays where it describes playing on one device (1-6)**
+
+Andrei, 2026-10-11 at 23:59: *"the site still advertises itself as "hot
+seat". We need to drop hot seat and add some icon, e.g. the mechanic's
+headshot"*. Players read "hot seat" in three places: the page's own title,
+"Skyholm Adventures Hot Seat" ([Q175](#q175) 691), which every page of the site
+shows while it loads and which link previews and bookmarks take; the tab of
+the one-device page, set to the same; and, on that page, the notice "It is
+X's turn. In hot seat nobody plans out of turn." The one-device page's address
+is /hotseat. The site had no icon. At 2026-10-12 00:12: *"actually it's better
+to use the cartographer's headshot"*. At 00:14: *"i don't mind the words hot
+seat. I don't want the main ern site for the game to say hot seat as it is
+also a solo and a multiplayer game"*.
+
+1. **The page's own title.** "Skyholm Adventures". Answered at 00:14.
+2. **The notice and the /hotseat address.** They stay. Answered at 00:14.
+3. **The one-device page's tab.** A: "Skyholm Adventures", since solo games
+   against the computer start there too; B: it keeps "Skyholm Adventures Hot
+   Seat". A, at 00:17.
+4. **Where the icon goes.** A: the browser tab only; B: the tab and the top
+   bar; C: those and a phone's home screen. A, at 00:17.
+5. **The crop.** Two headshots of the cartographer were mocked up in round
+   frames: head and shoulders, as on the player cards, and face and hat. At
+   00:17: *"I'd prefer to see more than just the head. If it is clear that he
+   is reading a map that would make it much more thematic"*. C: head and the
+   top of the map; D: head and the whole map, to the waist; E: the whole
+   figure. At 00:19: *"D please"*.
+6. **A frame.** None, since a circle would cut off the ends of the map; or
+   round. D was mocked up unframed and chosen as it was.
+
+Built: the title and the icon's `<link>` in `apps/web/index.html`; the icon,
+`apps/web/icon.png`, the figurine sheet's 290 px square at (16, 8) scaled to
+64 px; and the tab's title in `apps/web/src/online/Site.tsx`. No rule, number
+or map changed.
 
 ---
 
