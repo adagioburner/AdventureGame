@@ -232,14 +232,15 @@ With chance p a simulated player picks a random gold POI among its K closest,
 otherwise any of the K; with no gold among them, any of them. p is the share
 of the map's POIs anyone has claimed, every POI counting alike
 (`sitesClaimedShare`, Q291), so a rollout from the opening picks almost
-uniformly and one near the end goes almost only for gold. The remoteness walk
-still picks uniformly.
+uniformly and one near the end goes almost only for gold. The other seats'
+turns along the computer's tree edges pick the same way (Q307). The remoteness
+walk still picks uniformly.
 
 **The game's computer skips guarded gold it cannot win** (Q295). A guard can
 be won when the die's best roll plus the matching skill is above its strength.
 Its simulated players head only for POIs their skill could win
 (`winnableBySkill` in `packages/sim/src/rollout.ts`), the other seats' turns
-inside a tree edge included (`MctsOptions.imaginedTargets`), and one with
+inside a tree edge included (`MctsOptions.imaginedPlayers`), and one with
 nothing left to win rests. The tree's own choices (`closestUnclaimedPoiEnumerator`)
 count the units the subject's gold could buy: a guard it could not win even
 with them is never a choice, and one it reaches this turn is a choice only

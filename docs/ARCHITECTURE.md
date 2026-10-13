@@ -395,7 +395,9 @@ the tree makes every candidate a branch, the rollout picks one, remoteness
 walks to its pick. The game's computer passes the rollout
 `goldByProgressPicker` (`packages/sim/src/goldByProgress.ts`,
 [Q290](./OPEN_QUESTIONS.md#q290)) for its pick: a gold POI among the K with
-chance equal to the share of POIs claimed (Q291), any of the K otherwise.
+chance equal to the share of POIs claimed (Q291), any of the K otherwise. The
+other seats' turns along its tree's edges get the same pick, ranking and
+eligibility (`MctsOptions.imaginedPlayers`, [Q307](./OPEN_QUESTIONS.md#q307)).
 
 **The computer ranks by its own speeds** (Q112). `closestBySpeeds`
 (`packages/sim/src/speeds.ts`) takes the place of `closestPoiCandidates`:

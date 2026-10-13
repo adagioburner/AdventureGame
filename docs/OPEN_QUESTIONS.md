@@ -2860,8 +2860,9 @@ gold a game for stage 2, within luck. Games imagined per move 5,647 against
 5,322, so counting the best route did not slow the search.
 
 Stage 3, as built: the players in the games the computer imagines, the other
-seats inside its own tree edges included, still pick among the 10 closest along
-the cheapest route (`closestBySpeeds`, 822 B) and walk the best route for their
+seats inside its own tree edges included (there only since [Q307](#q307)),
+still pick among the 10 closest along the cheapest route (`closestBySpeeds`,
+822 B) and walk the best route for their
 speeds, traced once when they pick (`bestRoute`). Each turn is counted along it
 by §7's rules (`countWalk`) and played with `applyCountedTurn`, which places
 the figure where the count ends and then does what a played turn does there:
@@ -3840,6 +3841,41 @@ Built: the title and the icon's `<link>` in `apps/web/index.html`; the icon,
 `apps/web/icon.png`, the figurine sheet's 290 px square at (16, 8) scaled to
 64 px; and the tab's title in `apps/web/src/online/Site.tsx`. No rule, number
 or map changed.
+
+### Q307. ~~Should the other seats along the computer's tree edges choose their sites as its imagined players do?~~ — **answered 2026-10-13: yes; they rank by their own speeds, skip guards they cannot win and favour gold as the game goes on, as in the games it plays out; against the computer before, 69 wins to 51 (1-2)**
+
+Found while clearing out dead code. When the computer follows a branch of its
+search tree, it walks to that branch's site over one or more turns, and the
+other seats take their turns in between; at the branch's end it plays the game
+out. Q112 (424 A) ranks "every player in its imagined games" by their own
+speeds and Q290 has them favour gold as the game goes on, but since Q112 was
+built on 2026-09-30 only the games played out did. On the other seats' turns
+along a tree edge, only Q295's skip reached them (`MctsOptions.imaginedTargets`):
+they ranked their 10 closest by weighted terrain cost and picked at random. A
+seat keeps the site it picked until it gets there or the site is claimed, so
+that pick often carried into the game played out. Q210's stage 3 note said
+those turns ranked by `closestBySpeeds`, which was not so until now.
+
+1. **Look into it.** Andrei chose to have it looked into, then (A) to test the
+   fix first.
+2. **Put it in.** 120 two-player games at 3 s a move, 60 maps (seeds edge-0 to
+   edge-59) each played twice with the seats swapped, against the computer as
+   it was:
+
+   | Wins (it, the computer before, shared) | Gold lead a game | By luck (wins / gold) | Maps won both games |
+   |---|---|---|---|
+   | 69, 51, 0 | +1.61 ± 0.86 | 0.12 / 0.06 | 18 against 9 |
+
+   It imagined 16,338 games a move against 10,537, since finding a site in one
+   pass costs less than ranking every site by terrain cost. Put in: (A), at
+   16:51.
+
+Built: `MctsOptions.imaginedPlayers` in `packages/ai/src/types.ts`, in place of
+`imaginedTargets`; `computerSearchOptions` passes the same choices to the games
+it plays out and to the other seats' turns along its tree's edges. On the
+eight-space test map in `packages/ai/src/mcts.test.ts` the computer's first
+move changes from the 2 gold next door to the guarded 3. No rule, number, map
+or picture changed, and the rulebook needs no change.
 
 ---
 
