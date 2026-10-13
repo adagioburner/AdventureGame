@@ -10,7 +10,7 @@ carries a provenance tag — `[SOURCE §x]`, `[SOURCE §x, chat]`,
 applies to this repo:
 
 - If GDD.md doesn't say it, it isn't decided. That covers gameplay rules,
-  balancing numbers and UI behaviour, not just the items listed in §12.
+  balancing numbers and UI behaviour.
 - `[OPEN]` items are not resolved by picking something reasonable. They are
   either clearly-marked swappable seams with no default, or questions put to the
   designer. All of them are registered in
@@ -23,18 +23,19 @@ applies to this repo:
 
 ## Status
 
-**Map generation, the rules engine, the map a player sees, a hot seat game
-and the computer player work.** `generateMap(seed, ruleset)` runs GDD.md
+**Map generation, the rules engine, the map a player sees, hot seat and online
+play, and the computer player work.** `generateMap(seed, ruleset)` runs GDD.md
 §2.1's eight steps end to end and returns a sealed `GameMap`,
 `applyAction(state, action, dice)` plays §7 and §8's turns on it, and
 `apps/web` draws it isometrically from the art in `Art/` and lets 2 to 5 seats,
 each a person or §9's MCTS computer player, take turns on one screen until the
 engine declares a winner — `pnpm map <seed>` draws the generator's diagnostic
 view, `pnpm game <seed>` plays a game to a winner and prints it turn by turn,
-and `pnpm dev` opens the hot seat game. That is phases 1 to 5 of
-[`docs/IMPLEMENTATION_PLAN.md`](./docs/IMPLEMENTATION_PLAN.md), on top of phase
-0's test harness, with phase 5's balancing pass still to come. The server
-(§6.1) and online play are still seams.
+and `pnpm dev` opens the hot seat game. `apps/server` holds the stored games,
+the accounts and the game list (§6.1), and online play runs through it. That
+is phases 0 to 7 of
+[`docs/IMPLEMENTATION_PLAN.md`](./docs/IMPLEMENTATION_PLAN.md), with phase 5's
+balancing pass and phase 8 still to come.
 
 Two design questions are open, neither blocking: [Q27](./docs/OPEN_QUESTIONS.md)
 — `COMPACTNESS_MAX` never binds on a graph this sparse, so §2.1's Smooth step
@@ -45,16 +46,15 @@ config's `pending` block is empty. The §12 decisions: Durable Objects for the
 session layer with map generation and AI on the game master's machine (§12.1),
 UCT over the 10 closest unclaimed POIs (§12.2), the message board as ordinary
 game state (§12.3), and no fallback for a disconnected game master — the game
-stalls (§12.4). Unfinished seams throw `NotImplementedError` carrying the GDD
-section to implement against; unmade *design* decisions throw
-`UnresolvedDesignError` instead, and have no defaults to fall back on.
+stalls (§12.4). Unmade *design* decisions throw `UnresolvedDesignError`, and
+have no defaults to fall back on.
 
 ## Documents
 
 | Document | Contents |
 |---|---|
 | [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md) | Component breakdown, data models, layering |
-| [`docs/STACK.md`](./docs/STACK.md) | Tech-stack recommendation (unconfirmed), incl. a verdict on Durable Objects |
+| [`docs/STACK.md`](./docs/STACK.md) | Tech-stack decisions, incl. Durable Objects, and what they cost |
 | [`docs/OPEN_QUESTIONS.md`](./docs/OPEN_QUESTIONS.md) | Every open item, how it was routed around, and the questions outstanding |
 | [`docs/IMPLEMENTATION_PLAN.md`](./docs/IMPLEMENTATION_PLAN.md) | The phased build order, what lands in each phase, and how each is tested |
 
@@ -65,10 +65,10 @@ packages/
   config/     GDD §11 parameters, §4.2 content tables, engineering knobs. No deps.
   core/       Domain model + rules engine. Pure; no I/O, clock or Math.random.
   mapgen/     GDD §2.1's eight-step pipeline, §4.3 assignment, §5.2 guards.
-  sim/        The one random-walk implementation, shared by §5.1 and §9.
+  sim/        §5.1's remoteness walk and §9's rollouts, sharing the target chooser.
   ai/         MCTS. Rollout, evaluator and tree policy are seams, all decided.
   protocol/   Client/server wire contract and the auth port. Plain data.
-  session/    Turn sequencing, authority, setup flow. Eight ports, no runtime deps.
+  session/    Turn sequencing, authority, setup flow. Five ports, no runtime deps.
 apps/
   web/        Client: isometric renderer (Vite, React, PixiJS), interaction,
               online + hotseat modes.
@@ -93,7 +93,7 @@ Art/          Art, its atlases, and `manifest.json`, the one table that says
 
 ```sh
 pnpm install              # once; installs the pinned TypeScript and Vitest
-pnpm run typecheck        # tsc --noEmit: packages + server, the web app, tools
+pnpm run typecheck        # tsc --noEmit: packages, the web app, the server and its tests, tools
 pnpm test                 # vitest run
 pnpm run test:watch       # the same, watching
 pnpm run test:update-golden
@@ -124,11 +124,12 @@ pull request and on every push to `main`. It installs with `--frozen-lockfile`,
 so a dependency change that isn't reflected in the lockfile fails the build
 rather than being silently applied.
 
-`pnpm run typecheck` is two programs, not one: `tsconfig.json` covers
-`packages/` and `apps/`, and `tools/tsconfig.json` covers `tools/`. Only the
-second has Node's globals (`process`, `console`, `node:fs`), because only
-`tools/` runs on Node and nowhere else — the engine packages run in a browser
-too, and nothing in them may quietly depend on a Node API.
+`pnpm run typecheck` is five programs, not one: `tsconfig.json` covers
+`packages/`, and `apps/web`, `apps/server`, `apps/server/test` and `tools/`
+each have their own. Only `tools/` and the server's tests have Node's globals
+(`process`, `console`, `node:fs`), because only they run on Node — the engine
+packages run in a browser too, and nothing in them may quietly depend on a Node
+API.
 
 The engine packages have one *runtime* dependency: `delaunator`, for §2.1 step
 2's triangulation, in `@adventure/mapgen` alone. Everything else is still
@@ -166,7 +167,7 @@ follow every turn. Node ids are the ones `pnpm map adventure` labels every node
 with, so the log and the drawing read together. Without a clone,
 `golden/games/adventure-2p.txt` is the same thing, committed, so it renders on
 GitHub. The players are driven by a deliberately dumb rule (walk to the nearest
-POI you could take), not by an AI: §9's player is phase 5.
+POI you could take), not by an AI.
 
 That map drawing is a **developer diagnostic and never becomes the game's map**. It
 is top-down, and it deliberately shows the generator's internals — remoteness

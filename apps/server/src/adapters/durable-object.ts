@@ -23,8 +23,8 @@ import type { PasswordHash } from '../auth/password.ts';
  *     object, which also keeps the list of games (one index across all the
  *     game objects, `docs/IMPLEMENTATION_PLAN.md` phase 6 item 5), and since
  *     Q300 the site's board and each account's moderator and blocked flags;
- *   - `MapService` and `AiService` → round trips to the game master's browser
- *     (phase 8 for the AI; the map at Start), never computed here.
+ *   - the map and the computer's moves → messages to the game master's
+ *     browser, never computed here.
  *
  * These functions take the two slices of the Durable Object they use rather
  * than the object itself, so the Workers types stay in `room.ts` and the

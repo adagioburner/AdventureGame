@@ -17,9 +17,10 @@
       { "name": "LOBBY", "class_name": "Lobby" }
     ]
   },
-  // [Q300, 3] Workers AI, for Llama Guard's check of each post on the site's
-  // board. It always runs on Cloudflare, so `wrangler dev` asks for a
-  // Cloudflare login; the tests start the Worker with it off.
+  // [Q300, 3 and 5 B] Workers AI, for the checks of each post on the site's
+  // board: Llama Guard, and slurs and insults. It always runs on Cloudflare,
+  // so `wrangler dev` asks for a Cloudflare login; the tests start the Worker
+  // with it off.
   "ai": { "binding": "AI" },
   // The free plan runs only SQLite-backed Durable Objects.
   "migrations": [{ "tag": "v1", "new_sqlite_classes": ["GameRoom", "Lobby"] }],

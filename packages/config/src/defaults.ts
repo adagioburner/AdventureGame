@@ -21,7 +21,7 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     VALLEY_WIDTH: 1,
     VALLEY_LENGTH: { min: 5, max: 12 },
     EDGE_PRUNE_JITTER: 10,
-    // Started at 2 (Q105, 391); Andrei asked for 1 after looking at maps with 2 (Q105, 398).
+    // Andrei asked for 1 after looking at maps with 2 (Q105, 398).
     BORDER_ROAD_PLACES: 1,
     BORDER_AREA_MIN_SIZE: 5,
     BORDER_ROAD_MAX_LENGTH: 1.3,
@@ -35,11 +35,7 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     KEPT_APART: { TERRAINS: ['forest', 'mountain'], GAP: { min: 1, max: 3 }, JOIN_FOR_SHARES: true },
   },
   pois: {
-    // [Q240] Plains 25 → 30 for the 5 stamina sites, which follow the same
-    // rules as every other reward (900 A). [Q250] Plains 30 → 32 and forest
-    // 20 once rewards moved terrain and the magic gold and stamina grew a
-    // site each: the sums of the `poiCount` columns in content.ts. [Q270]
-    // Forest 20 → 18 for 4 stamina sites instead of 6 (961).
+    // The sums of the `poiCount` columns in content.ts (Q240, Q250, Q270).
     POI_COUNT: { plains: 32, forest: 18, mountain: 15 },
     OVERFLOW_LEAF_STAMINA_UNITS: 1,
     // [Q240] Andrei, 2026-10-03: "each stamina unit adds 5 stamina".
@@ -82,9 +78,8 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     STAMINA_PER_SKILL_POINT: 5,
     THINKING_TIME_SECONDS: { min: 1, max: 60 },
   },
-  // [Q190] Andrei, 2026-10-02: "allow players buy skills for gold, 1 to 1. We
-  // won't need respawning skills then"; 753 the five skills, never stamina.
-  // Speeds and skills no longer come back (757).
+  // [Q190] Andrei, 2026-10-02: "allow players buy skills for gold, 1 to 1";
+  // 753 the five skills, never stamina.
   buying: {
     KINDS: SKILL_KINDS,
     GOLD_PER_UNIT: 1,
@@ -102,18 +97,17 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
  * [Q160] Andrei, 2026-10-01: "for four and five player games we need larger
  * maps. let's make them 40% larger [...] the number of [spaces] for each
  * terrain, number of [sites] and number of skill units and the gold offered
- * should all scale by 40%." Each number below is 1.4 × today's:
+ * should all scale by 40%." Each number below is 1.4 × the standard map's:
  *
  *  - `MAP_NODE_COUNT` 240 → 336; the terrain shares stay 45/30/25, so each
  *    terrain gets 1.4 × its spaces too (about 151/101/84);
- *  - `POI_COUNT` 25/20/15 → 35/28/21 ([Q240] plains 30 → 42 since the
- *    stamina sites came, 902 A; [Q250] 45/28/21 since rewards moved terrain;
- *    [Q270] 45/25/21 since the forest's stamina went to 6 sites);
+ *  - `POI_COUNT` 32/18/15 → 45/25/21, the sums of `LARGER_MAP_REWARD_TABLE`'s
+ *    columns;
  *  - 631 A: roads 300 → 420 (300 cannot join 336 spaces at all) and dead ends
  *    30–45 → 42–63. Valleys stay as they are.
  *
  * The rewards are `LARGER_MAP_REWARD_TABLE` in content.ts. Everything else is
- * today's (633 A).
+ * the standard map's (633 A).
  */
 export const LARGER_MAP_GAME_CONFIG: GameConfig = {
   ...DEFAULT_GAME_CONFIG,
@@ -125,10 +119,8 @@ export const LARGER_MAP_GAME_CONFIG: GameConfig = {
   },
   pois: {
     ...DEFAULT_GAME_CONFIG.pois,
-    // [Q240, 902 A] 35 → 42 for the 7 stamina sites of the larger map;
-    // [Q250] 42 → 45 once rewards moved terrain and the magic gold grew to 7
-    // sites (926 A); the forest kept 28 with 9 stamina sites (925 A), and has
-    // 25 with 6 since [Q270] (960, 961).
+    // The sums of the larger table's `poiCount` columns in content.ts (Q250,
+    // 926 A; Q270, 960).
     POI_COUNT: { plains: 45, forest: 25, mountain: 21 },
   },
 };

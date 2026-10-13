@@ -4,17 +4,16 @@ import { keptApartOf, rebalanceTerrainShares, terrainTargets } from '../terraing
 import type { GenerationContext, GenerationStep, MapDraft } from '../types.ts';
 
 /**
- * §2.1 step 6 — "Carve valleys: convert 2–4 narrow (1-node-wide) fingers of
- * 5–12 nodes from the plains boundary into neighbouring regions; these nodes
- * are exempted from the Smooth step (there is only the one Smooth pass, above —
- * Carve Valleys runs once, after it)."
+ * §2.1 step 6 — "Carve valleys: convert `VALLEY_COUNT` narrow (1-node-wide)
+ * fingers of 5–12 nodes from the plains boundary into neighbouring regions;
+ * these nodes are exempted from the Smooth step (there is only the one Smooth
+ * pass, above — Carve Valleys runs once, after it)."
  *
  * Counts and lengths come from `VALLEY_COUNT`, `VALLEY_WIDTH`, `VALLEY_LENGTH`.
  *
- * [Q245] `VALLEY_COUNT` is 0 on maps made since the forest and mountains grew
- * in separate areas kept apart: "stop making valleys, because now we are
- * getting them for free". The step then carves nothing and only balances the
- * shares, keeping those areas apart as step 4 does.
+ * [Q245] `VALLEY_COUNT` is 0: "stop making valleys, because now we are getting
+ * them for free". The step then carves nothing and only balances the shares,
+ * keeping the forest's and the mountains' areas apart as step 4 does.
  * Carved nodes are recorded in `draft.valleyNodes`; see the note on that field
  * for why the exemption is currently satisfied by ordering alone.
  *
@@ -32,11 +31,8 @@ import type { GenerationContext, GenerationStep, MapDraft } from '../types.ts';
  * of an intermediate draft, so carving ends by growing the terrains that are
  * now short back into plains until the shares hold again. Without it a valley
  * is a permanent donation to plains, and because §4.2 fixes the POI count per
- * terrain — 25 plains, 20 forest, 15 mountain, whatever the node counts —
- * every node the valleys take out of mountain also crowds mountain's POIs
- * closer together. Measured before this was added, `adventure` finished 65 / 26
- * / 9 against 45 / 30 / 25, with two thirds of every mountain node carrying a
- * POI and one plains POI per 6.2 nodes.
+ * terrain, whatever the node counts, every node the valleys take out of
+ * mountain also crowds mountain's POIs closer together.
  *
  * The regrowth is the same flood fill as step 4 (`bestGrowthCandidate`), with
  * two differences that matter. It takes nodes from a terrain that is *over* its
@@ -44,7 +40,7 @@ import type { GenerationContext, GenerationStep, MapDraft } from '../types.ts';
  * sealed off — plains is everywhere by now. And it never takes a valley node or
  * the plains node a valley opens out of, so a corridor keeps both its shape and
  * its mouth. Between them, that is also what fixes step 4's own overshoot,
- * which is why the shares land closer now than the growth alone ever managed.
+ * which is why the shares land closer than the growth alone manages.
  */
 export const carveValleysStep: GenerationStep = {
   id: '6-carve-valleys',

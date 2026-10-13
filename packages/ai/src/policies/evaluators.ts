@@ -26,12 +26,12 @@ import type { NodeEvaluator } from '../types.ts';
  * `MCTS_EXPLORATION_CONSTANT`: the first two by construction, and the average
  * of two such values trivially.
  *
- * [SOURCE §9, review] **v1 used the simulated one.** It is §9's specified
- * default; the estimated and hybrid evaluators exist to be experimented with,
- * which is why `SearchOptions.evaluator` is injected rather than defaulted.
- * [SOURCE §9, chat, 2026-09-30] Since Q113 the game's computer players score
- * the simulated game by the lead instead, `simulatedLeadEvaluator('soft')`
- * (`computerEvaluator()` in `../computer.ts`).
+ * [SOURCE §9, review] The simulated one is §9's specified default; the
+ * estimated and hybrid evaluators exist to be experimented with, which is why
+ * `SearchOptions.evaluator` is injected rather than defaulted. [SOURCE §9,
+ * chat, 2026-09-30] The game's computer players score the simulated game by
+ * the lead (Q113), `simulatedLeadEvaluator('soft')` (`computerEvaluator()` in
+ * `../computer.ts`).
  */
 
 /**
@@ -142,13 +142,9 @@ export function simulatedLeadEvaluator(form: LeadScore = 'margin'): NodeEvaluato
  * rollout's end there is by definition no unclaimed gold left (Q6), and
  * usually few skills.
  *
- * This is where the `balancingConstant` of the earlier design went: what it
- * tuned by hand is now `progress`, which the state supplies.
- *
  * [SOURCE §9, chat] `progress` is `sitesClaimedShare`, the same as the
  * players the computer imagines go by (Q291): Andrei, 2026-10-09, "the number
- * of sites claimed is a good enough indicator". It was the skill and gold
- * units claimed (Q111), and gold alone before that (Q18).
+ * of sites claimed is a good enough indicator".
  */
 export function estimatedGoldAndSkillsEvaluator(): NodeEvaluator {
   return {

@@ -98,8 +98,9 @@ const PLAY_ZOOM_OF_FIT = 2.2;
 
 /**
  * [Q160, 632 A] On the larger map a card and a phone's Plan a move come as
- * close as on today's: its whole-map view is smaller by the square root of how
- * many more spaces it has, so the zoom grows by as much. 1 on today's map.
+ * close as on the standard map's: its whole-map view is smaller by the square
+ * root of how many more spaces it has, so the zoom grows by as much. 1 on the
+ * standard map.
  */
 function playZoomScale(map: GameMap): number {
   return Math.sqrt(map.ruleset.config.map.MAP_NODE_COUNT / DEFAULT_RULESET.config.map.MAP_NODE_COUNT);
@@ -263,7 +264,7 @@ export function MapView({
       // own following waits for; it aims at wherever the figure is by then.
       let glide: { from: Point; to: () => Point; start: number; chasing: boolean } | null = null;
       // [Andrei, 2026-09-24] Q47: a walking figure that nears the edge of the
-      // view takes the map along with it; since Q57, while Track is pressed.
+      // view takes the map along with it, while Track is pressed (Q57).
       const stopCamera = (): void => {
         glide = null;
         following.current = false;

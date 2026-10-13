@@ -17,9 +17,9 @@ import type { PoiCandidate } from './candidates.ts';
  * How far the computer player counts a site, by its own speeds (Q112).
  *
  * The one cost per step (§1.2) still finds the routes counted here: the
- * cheapest by weighted terrain cost. What changed is how the computer ranks
- * the sites at the ends of those routes. The remoteness walk (§5.1) still
- * ranks by weighted terrain cost alone. A person's drawn route and the
+ * cheapest by weighted terrain cost. The computer ranks the sites at their
+ * ends by its speeds. The remoteness walk (§5.1) ranks by weighted terrain
+ * cost alone. A person's drawn route and the
  * computer's real move walk the best route for the player's speeds instead
  * (Q210, `bestRoute`), and the computer's search counts it too
  * (`closestByBestRoute`, stage 2); its imagined players walk it (stage 3)
@@ -34,7 +34,7 @@ export type ClosestFinder = (
   count: number,
 ) => readonly PoiCandidate[];
 
-/** The Q65 formula, which now lives beside the best route it also picks (Q210). */
+/** The Q65 formula, which lives beside the best route it also picks (Q210). */
 export { effectiveDistance } from '@adventure/core';
 
 /**
@@ -80,9 +80,8 @@ export const bestRouteStepsFor: RouteStepsFinder = (state, player, target) =>
 
 /**
  * [Q210] Stage 2 of Andrei's plan, 2026-10-02: "Build MCTS nodes with the
- * most efficient paths, but leave the simulated games as they are"; 820 A:
- * the first three of the search's uses "don't need the path, and can use the
- * distance provided by the formula".
+ * most efficient paths"; 820 A: the first three of the search's uses "don't
+ * need the path, and can use the distance provided by the formula".
  *
  * `closestBySpeeds` with each site's `effectiveDistance` along the best route
  * for the player's speeds, from the cached counts of every route kept to it,

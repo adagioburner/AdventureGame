@@ -26,9 +26,8 @@ export interface NewGame {
    */
   readonly players: readonly NewGamePlayer[];
   /**
-   * [SOURCE §6, chat] "the players start at a random spot of the plains that is
-   * not a POI. All players start from the same spot." Passed in rather than
-   * drawn here so this function stays pure — production callers get it from
+   * [SOURCE §6, chat] "All players start from the same spot." Passed in rather
+   * than drawn here so this function stays pure — production callers get it from
    * `chooseStartingNode(map, createRng(map.seed).fork(…))`, which replays with
    * the map.
    */

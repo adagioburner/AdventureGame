@@ -136,8 +136,7 @@ export class HotseatGame {
   private last: Purchase | null = null;
 
   constructor(setup: HotseatSetup) {
-    // [Q51, 21] Any player count the game takes, 2 to 5, as online; Q22's two
-    // seats were the mode's limit before the setup screens became one.
+    // [Q51, 21] Any player count the game takes, 2 to 5, as online.
     const count = setup.map.ruleset.config.players.PLAYER_COUNT;
     if (setup.seats.length < count.min || setup.seats.length > count.max) {
       throw new RangeError(`a game takes ${count.min} to ${count.max} players, got ${setup.seats.length}`);
@@ -257,9 +256,8 @@ export function purchaseOf(
 }
 
 /**
- * [SOURCE §6, chat] "the players start at a random spot of the plains that is
- * not a POI. All players start from the same spot." Drawn from a stream forked
- * off the map's own seed, so the start replays with the map.
+ * [SOURCE §6, chat] "All players start from the same spot." [Q227] The map's
+ * starting space, `startingNodeFor`.
  */
 export function hotseatStartingNode(map: GameMap): NodeId {
   return startingNodeFor(map);

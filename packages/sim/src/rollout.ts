@@ -39,9 +39,8 @@ import { siteOrderBySpeeds, type ClosestFinder } from './speeds.ts';
  *
  * [SOURCE §9, chat] "During MCTS rollout moves are simulated for all players,
  * AI and human." So every seat is driven by this one policy — there is no
- * separate opponent model, and the earlier `OpponentRolloutPolicy` seam is
- * gone. The rollout simply plays whichever seat is active, in turn order, until
- * it terminates.
+ * separate opponent model. The rollout simply plays whichever seat is active,
+ * in turn order, until it terminates.
  *
  * [SOURCE §9, chat] Choosing a target is a **macro-action**: "the simulated
  * player keeps moving to the chosen POI without making new decision until it's
@@ -53,14 +52,14 @@ import { siteOrderBySpeeds, type ClosestFinder } from './speeds.ts';
  * Dijkstra estimate, and records nothing. `walk.ts` is remoteness's loop alone.
  *
  * [Q210] Stage 3 of Andrei's plan, 2026-10-02: "Switch simulated games to the
- * strategy above", a player's arrival worked out from its route rather than
- * walked out turn by turn. A player walks the best route for its speeds,
- * traced once when it picks its target (823 A), and each turn is counted
- * along it (`countWalk`) and played with `applyCountedTurn`, which fights
+ * strategy above", a player's arrival worked out from its route. A player
+ * walks the best route for its speeds, traced once when it picks its target
+ * (823 A), and each turn is counted along it (`countWalk`) and played with
+ * `applyCountedTurn`, which fights
  * or takes an unclaimed site where a turn ends, its target or another on the
  * way, as `applyAction` does. The figure stands where the count puts it after
  * every turn, so the game is the one `applyAction` would have played along
- * that route. Which sites it picks among is as before (822 B).
+ * that route. It picks among the closest along the cheapest route (822 B).
  */
 export interface RolloutCursor {
   readonly state: GameState;
@@ -116,10 +115,8 @@ export function rolloutCursor(state: GameState, subject: PlayerId): RolloutCurso
  * exhaustion implies a finished game (a tie resolves once nothing remains to
  * break it, §1 chat), so in practice the first clause is the one that bites.
  *
- * Kept behind an interface because it is also the obvious lever if rollouts
- * prove too slow — a turn or depth cap is the usual mitigation, and it would
- * change what the backpropagated value means, so it is not applied
- * pre-emptively.
+ * Kept behind an interface so another stop can wrap it: the game's computer
+ * adds Q44's turn cap (`turnCapTermination`).
  *
  * `turnsTaken` counts the turns this rollout has played so far, every seat's.
  */
@@ -215,8 +212,8 @@ export interface RolloutOptions {
   readonly pick?: TargetPicker;
   /**
    * [Q210] How a player walks to its target: counted along its route, as the
-   * game plays since stage 3, when absent; `replayed` walks the cheapest
-   * route turn by turn through `applyAction`, as before it, for comparison.
+   * game plays (stage 3), when absent; `replayed` walks the cheapest route
+   * turn by turn through `applyAction`, for comparison.
    */
   readonly walks?: 'counted' | 'replayed';
   /** The route a counted walk follows; the best for the player's speeds when absent, as the game plays. */
@@ -401,7 +398,7 @@ function pickAmong(state: GameState, player: PlayerState, candidates: readonly P
  *
  * [Q210] The seat walks the best route for its speeds, counted (stage 3,
  * 823 A); with `walks: 'replayed'` it walks the cheapest route through
- * `applyAction`, as before.
+ * `applyAction`.
  */
 export function playRolloutTurn(cursor: RolloutCursor, options: RolloutOptions): RolloutCursor {
   if (options.walks === 'replayed') return playWalkedTurn(cursor, options, cheapestRoute);
@@ -452,8 +449,8 @@ function restedTurn(cursor: RolloutCursor, index: number, next: GameState): Roll
 
 /**
  * The active seat's turn walked through `applyAction` along the route
- * `routeOf` picks from where it stands: every imagined turn before stage 3,
- * and the search's own walk along a tree edge.
+ * `routeOf` picks from where it stands: `walks: 'replayed'`, and the
+ * search's own walk along a tree edge.
  */
 function playWalkedTurn(cursor: RolloutCursor, options: RolloutOptions, routeOf: RouteChoice): RolloutCursor {
   const state = cursor.state;

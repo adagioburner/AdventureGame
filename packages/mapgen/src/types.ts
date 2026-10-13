@@ -82,9 +82,8 @@ export interface GenerationContext {
 /**
  * Why an attempt was thrown away. Only §2.1's own rejection reasons appear.
  *
- * `poi_quota_unsatisfiable` used to live here, for a terrain with more leaves
- * than its `POI_COUNT`. [SOURCE §3/§9, chat] settled that without a rejection:
- * surplus leaves become stamina POIs, so the case no longer aborts an attempt.
+ * A terrain with more leaves than its `POI_COUNT` is not one: [SOURCE §3/§9,
+ * chat] surplus leaves become stamina POIs.
  *
  * `sites_apart_unreachable` [Q255]: a row that keeps its POIs `apart` found no
  * POI of its terrain far enough from the ones it kept. It is §2.1's answer for

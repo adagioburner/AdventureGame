@@ -8,8 +8,7 @@ import type { Camera } from '../render/isometric.ts';
  * controller is testable headlessly; the page turns pointer, wheel and key
  * events into these calls.
  *
- * Phase 3 landed this early, because a map shown whole on a phone is too small
- * to judge art by; phase 4's move mode sits beside it (`moveMode.ts`).
+ * Move mode sits beside it (`moveMode.ts`).
  */
 export interface PointerDrag {
   readonly from: Point;

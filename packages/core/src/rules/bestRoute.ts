@@ -60,7 +60,7 @@ export interface BestRouteSteps {
   readonly steps: PerTerrain<number>;
   /** Its `effectiveDistance` for the player's speeds. */
   readonly distance: number;
-  /** -1 for today's route, `routes.path`; otherwise its entry in `routesFrom(from)`. */
+  /** -1 for the cheapest route, `routes.path`; otherwise its entry in `routesFrom(from)`. */
   readonly entry: number;
 }
 
@@ -118,8 +118,8 @@ function pickBestRoute(routes: RouteTable, from: NodeId, to: NodeId, speeds: Per
   const first = front.start[to] as number;
   const last = front.start[to + 1] as number;
   const cost = config.movement.STAMINA_COST;
-  // Only a route strictly better than today's replaces it; among those, the
-  // least weighted terrain cost, then the first found.
+  // Only a route strictly better than the cheapest (`today`) replaces it;
+  // among those, the least weighted terrain cost, then the first found.
   let chosen = -1;
   let distance = today;
   let weight = 0;
@@ -153,8 +153,8 @@ function pickBestRoute(routes: RouteTable, from: NodeId, to: NodeId, speeds: Per
  * The route from `from` to `to` with the least `effectiveDistance` for
  * `stats`' speeds (810 A): free steps cost nothing, and a turn counts as 5
  * stamina. Among routes equally good, the cheapest by weighted terrain cost,
- * and today's route, `shortestPath`, whenever it is one of them (811 A), so a
- * player with no speeds is drawn and walks exactly the route they were.
+ * and the cheapest route, `shortestPath`, whenever it is one of them (811 A),
+ * so a player with no speeds is drawn and walks the cheapest route.
  * `null` only if `to` cannot be reached. The route is traced only here, from
  * the entry `bestRouteSteps` would pick.
  *

@@ -12,9 +12,7 @@ import type { GenerationContext, GenerationStep, MapDraft } from '../types.ts';
  * existed: 12% had no road at all between plains and forest, 22% had two or
  * fewer, and only 77% of forest spaces could be reached from plains without
  * stepping on a mountain. The triangulation still has plenty of edges across
- * each of those borders; pruning simply took them. Keeping more roads
- * everywhere does not work — at 330 roads most maps fall under `LEAF_COUNT.min`
- * and regenerate, and at 360 none can be made.
+ * each of those borders; pruning simply took them.
  *
  * **What it does.** An *area* is a set of spaces of one terrain joined by
  * roads. For every two areas that touch in the triangulation, it counts the

@@ -101,7 +101,7 @@ export const placePoisStep: GenerationStep = {
  * §3 — "POI placement: distributed randomly at approximately equal distances
  * from each other; every leaf node of the graph must be a POI (no dead ends);
  * leaf nodes are assigned POI status first, remaining POIs distributed randomly
- * among the rest." Counts per terrain come from `POI_COUNT` (25/20/15).
+ * among the rest." Counts per terrain come from `POI_COUNT`.
  *
  * [SOURCE §3, chat] Kept as a strategy seam so that swapping the rule stays a
  * one-liner: [SOURCE chat, 2026-09-22] Andrei settled it (Q23) on farthest-point
@@ -197,20 +197,14 @@ function nodesOfTerrain(draft: MapDraft, terrain: Terrain): NodeId[] {
  * Surplus leaves.
  *
  * §3 forces every leaf to be a POI, but leaf count (30–45) is not apportioned
- * across terrains in the 25/20/15 proportions, so a terrain can legally hold
+ * across terrains in the `POI_COUNT` proportions, so a terrain can legally hold
  * more leaves than its quota — e.g. 17 leaves in the mountains against a quota
  * of 15.
  *
  * [SOURCE §3/§9, chat] "Fill the extra leaf nodes with stamina rewards." So the
  * §4.2 quota is satisfied exactly as written and the surplus leaves become
- * *additional* POIs outside the table, each carrying `stamina`. Two things
- * follow:
- *
- *  - a map can hold slightly more than 60 POIs, and total POI count is no
- *    longer fixed;
- *  - `stamina`, which appears in §4.1's seven kinds but in no §4.2 row, finally
- *    has a home — [SOURCE §4.2, chat] "proceed now without stamina, add later
- *    as a config edit", and this is the one place it is placed meanwhile.
+ * *additional* POIs outside the table, each carrying `stamina`. So a map can
+ * hold slightly more POIs than the table's, and total POI count is not fixed.
  *
  * These POIs are unguarded: §4.2 is what decides guarding (v1 guards gold only),
  * and they are not in it. They are ordinary POIs otherwise — the remoteness

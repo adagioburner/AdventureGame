@@ -12,8 +12,8 @@ import { dijkstra, type MapGraph, type NodeId, type Rng, type RouteTable } from 
  *
  * Both callers are the same two operations — rank eligible POIs by weighted
  * terrain cost, then pick uniformly among the nearest K — so they are written
- * once, here, and `remoteness.ts` and `rollout.ts` are thin wrappers over this
- * file and `walk.ts`. There is deliberately no second implementation of either
+ * once, here, and `remoteness.ts` (through `walk.ts`) and `rollout.ts` both
+ * call this file. There is deliberately no second implementation of either
  * step anywhere in the repo. Only K differs, so it is passed in: the map's walk
  * uses `REMOTENESS_CANDIDATE_COUNT`, the computer player `CLOSE_CANDIDATE_COUNT`.
  *

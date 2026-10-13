@@ -85,8 +85,8 @@ SPECK_REACH = 4
 # The game's own threshold (apps/web/src/art/pixels.ts SOLID_ALPHA): anything at
 # least this opaque is picture rather than shadow when sizes are measured.
 SOLID_ALPHA = 128
-# How dark a shadow is where it was drawn most solid: the strength the manifest's
-# `shadows.opacity` gives the older sheets' shadows.
+# How dark a shadow is where it was drawn most solid: the same strength as the
+# manifest's `shadows.opacity`.
 SHADOW_OPACITY = 0.3
 # A shadow pixel is at least SHADOW_FLOOR opaque and either see-through (alpha
 # at most SEE_THROUGH) and a grey, perhaps tinted (channels within SHADOW_TINT

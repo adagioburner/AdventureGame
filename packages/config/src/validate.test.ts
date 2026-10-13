@@ -230,8 +230,8 @@ describe('resolvePending', () => {
   });
 
   it('leaves the pending block empty in the shipped ruleset', () => {
-    // docs/OPEN_QUESTIONS.md reads "Outstanding: none"; this keeps the config
-    // and the register from drifting apart silently.
+    // Every design value is decided (docs/OPEN_QUESTIONS.md); this keeps the
+    // config and the register from drifting apart silently.
     expect(Object.keys(DEFAULT_RULESET.engineering.pending)).toEqual([]);
   });
 });

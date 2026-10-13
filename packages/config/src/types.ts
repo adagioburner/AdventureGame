@@ -36,9 +36,8 @@ export interface MapConfig {
    */
   readonly COMPACTNESS_MAX: number;
   /**
-   * §11 `VALLEY_COUNT` — 2–4 valleys carved per map until Q245, none since:
-   * "stop making valleys, because now we are getting them for free" (Andrei,
-   * 2026-10-04).
+   * §11 `VALLEY_COUNT` — 0 since Q245: "stop making valleys, because now we
+   * are getting them for free" (Andrei, 2026-10-04).
    */
   readonly VALLEY_COUNT: IntRange;
   /** §11 `VALLEY_WIDTH` — fixed, 1 node wide. */
@@ -64,10 +63,9 @@ export interface MapConfig {
    * 12% had no road at all between plains and forest. Step 6b puts pruned
    * roads back until every two touching terrain areas meet in at least this
    * many separate places (roads that share a space count as one place).
-   * "Let's start with 2, and make it a configurable constant that is easy to
-   * change to 3" (OPEN_QUESTIONS Q105, 391); then, after looking at maps with
-   * 2, "let's change it to 1 first and see if that is enough" (398). At 1
-   * only areas that do not meet by road at all get one.
+   * Andrei, after looking at maps with 2: "let's change it to 1 first and see
+   * if that is enough" (OPEN_QUESTIONS Q105, 398). At 1 only areas that do not
+   * meet by road at all get one.
    */
   readonly BORDER_ROAD_PLACES: number;
   /**
@@ -124,10 +122,7 @@ export interface KeptApartConfig {
   readonly TERRAINS: readonly Terrain[];
   /**
    * The gap each space draws, in spaces, from `min` to `max` (917 D, "Uneven
-   * 1-3"). Andrei first asked for "1 space gap should be enough, like what we
-   * have for valleys width today" (914); one gap for the whole map drew a
-   * straight line between two areas, "straight and clearly artificial", so
-   * the gap now changes from space to space and the line winds.
+   * 1-3"), so the line between two areas winds.
    */
   readonly GAP: IntRange;
   /**
@@ -140,27 +135,20 @@ export interface KeptApartConfig {
 
 /** §11 rows covering POI counts and guard strength (§3, §4.4). */
 export interface PoiConfig {
-  /** §11 `POI_COUNT` — fixed target, 25 plains / 20 forest / 15 mountain. */
+  /** §11 `POI_COUNT` — fixed target, 32 plains / 18 forest / 15 mountain. */
   readonly POI_COUNT: PerTerrain<number>;
   /**
    * `OVERFLOW_LEAF_STAMINA_UNITS` — how many stamina units a leaf POI gets when
    * a terrain has more leaves than its `POI_COUNT` quota. Not in §11.
    *
    * [SOURCE §5/§9, chat] "Fill the extra leaf nodes with stamina rewards" —
-   * which both settles what to do with surplus leaves (§3 forces every leaf to
-   * be a POI) and gives the otherwise-unused `stamina` kind of §4.1 a home.
+   * which settles what to do with surplus leaves (§3 forces every leaf to be a
+   * POI).
    *
    * [SOURCE §9a, chat] "One stamina per leaf" — confirmed.
    *
-   * How much stamina a map carries therefore depends on how many leaves
-   * overflow, which is not fixed and can well be zero — a proportional spread
-   * of 30–45 leaves over quotas of 25/20/15 overflows nothing at all.
-   *
-   * [SOURCE §4.2, chat] That is accepted: "right now the configuration for
-   * stamina is 0, but we may change the rewards balance and add a non-zero
-   * default number of stamina rewards." So surplus-leaf stamina is incidental,
-   * and the §4.2 table is where stamina will arrive properly when the balance
-   * changes.
+   * How much surplus-leaf stamina a map carries therefore depends on how many
+   * leaves overflow, which is not fixed and can well be zero.
    */
   readonly OVERFLOW_LEAF_STAMINA_UNITS: number;
   /**
@@ -261,17 +249,15 @@ export interface BalancingConfig {
    * §11 `CLOSE_CANDIDATE_COUNT` — tunable. The computer player's K: used by
    * the MCTS rollout policy (§9) and, identically, by MCTS tree expansion.
    *
-   * [SOURCE §12.2, review] The tree originally had a K of its own,
-   * `MCTS_NODE_EXPANSION_PRUNING` = 10. The designer removed it: "We don't
-   * really need two different constants here. We will prune the tree by the
-   * CLOSE_CANDIDATE_COUNT, plus one branch for resting." So the rollout and the
-   * tree share this one number, and tuning it moves them together — which is
-   * the point.
+   * [SOURCE §12.2, review] "We don't really need two different constants
+   * here. We will prune the tree by the CLOSE_CANDIDATE_COUNT, plus one branch
+   * for resting." So the rollout and the tree share this one number, and tuning
+   * it moves them together — which is the point.
    *
-   * [SOURCE §5.1, review] It no longer sets the remoteness walk's K, which is
-   * `REMOTENESS_CANDIDATE_COUNT`: "if we change the setting for the number of
-   * the closest places, it should affect computer player only [...] these two
-   * definitely need to be separated."
+   * [SOURCE §5.1, review] The remoteness walk's K is
+   * `REMOTENESS_CANDIDATE_COUNT`, kept separate: "if we change the setting for
+   * the number of the closest places, it should affect computer player only
+   * [...] these two definitely need to be separated."
    */
   readonly CLOSE_CANDIDATE_COUNT: number;
   /**
@@ -310,7 +296,7 @@ export interface PlayerConfig {
    * needs no new config.
    */
   readonly STARTING_STAMINA_BASE: number;
-  /** §11 `STARTING_STAMINA_INCREMENT` — tunable (5; 10 until Q75). */
+  /** §11 `STARTING_STAMINA_INCREMENT` — tunable (5, Q75). */
   readonly STARTING_STAMINA_INCREMENT: number;
   /**
    * §11 `STARTING_GOLD` — tunable (5). [Q200] Andrei, 2026-10-02: "Now that
@@ -336,10 +322,7 @@ export interface CombatConfig {
  * §11 rows covering the AI player (§9).
  *
  * The final row of §11's table — "MCTS tree/selection policy, exploration
- * constant" — is **OPEN** (§12.2) and therefore has no field here. It is
- * carried instead as `EngineeringConfig.pending.MCTS_TREE_POLICY`, an explicit
- * unresolved placeholder, so that a build which needs it fails loudly rather
- * than silently using a value nobody chose.
+ * constant" — is UCT, per the §12.2 answer, with `MCTS_EXPLORATION_CONSTANT`.
  */
 export interface AiConfig {
   /** §11 `MCTS_TIME_BUDGET_PER_MOVE` — tunable, 10 seconds. Milliseconds. */
@@ -369,10 +352,6 @@ export interface AiConfig {
    * So the tree gets a rest branch alongside the POI targets, dropped whenever
    * the player already has three or more targets they can actually reach this
    * turn — resting is only worth searching when movement is constrained.
-   *
-   * [SOURCE §12.2, review] Untouched by the removal of
-   * `MCTS_NODE_EXPANSION_PRUNING`: that collapsed the two Ks, and this is a
-   * threshold on reachability, not a K.
    *
    * Counts reachable POI *targets*, despite the name saying nodes; the name is
    * the designer's.
@@ -409,8 +388,7 @@ export interface AiConfig {
 /**
  * [Q190] Buying speeds and skills with gold.
  *
- * Andrei, 2026-10-02: "allow players buy skills for gold, 1 to 1. We won't
- * need respawning skills then, this mechanism substitutes that." On their own
+ * Andrei, 2026-10-02: "allow players buy skills for gold, 1 to 1." On their own
  * turn, before they end it, a player buys one unit of a kind in `KINDS` for
  * `GOLD_PER_UNIT` gold, as many times as their gold pays for (751, Free). A
  * speed bought counts this turn too (752). The gold leaves the game (756).
@@ -442,9 +420,9 @@ export interface StartConfig {
 }
 
 /**
- * GDD.md §11's table, plus constants the *designer* has added to it in review
- * (currently `GOLD_WEIGHT`). Nothing the implementation invented on its own —
- * that lives in `EngineeringConfig`.
+ * GDD.md §11's table, plus constants the *designer* has added to it in review.
+ * Nothing the implementation invented on its own — that lives in
+ * `EngineeringConfig`.
  */
 export interface GameConfig {
   readonly map: MapConfig;
@@ -482,11 +460,11 @@ export interface GameConfig {
 export interface RewardGroupSpec {
   readonly kind: RewardKind;
   /**
-   * `null` = unguarded. [SOURCE §1.1, chat] In v1 only gold is guarded and
-   * every gold POI is guarded — but this is a *content* choice expressed in
-   * this table, not an engine constraint: §4.4 requires that guarding work on
-   * any reward kind, which it does, because nothing downstream inspects `kind`
-   * to decide whether a guard is legal.
+   * `null` = unguarded. [SOURCE §1.1, chat] In v1 only gold is guarded — but
+   * this is a *content* choice expressed in this table, not an engine
+   * constraint: §4.4 requires that guarding work on any reward kind, which it
+   * does, because nothing downstream inspects `kind` to decide whether a guard
+   * is legal.
    */
   readonly guard: GuardType | null;
   /** §4.2 "Total units" — the group's total reward units on this terrain. */
@@ -564,11 +542,10 @@ export interface EngineeringConfig {
    * making step 1 hit its node budget; §11 leaves sampling detail to the
    * implementer.
    *
-   * Calibrated once step 1 existed to actually run: the default started at
-   * 0.85, which was a guess made before there was a sampler, and yields ~220
-   * nodes against `MAP_NODE_COUNT`'s 240. 0.815 centres the yield on 240,
-   * measured over seeds. Poisson-disc sampling is a *distribution*, so a map
-   * lands a few nodes either side; §2's "~240" is what that approximates.
+   * Calibrated once step 1 existed to actually run: 0.815 centres the yield on
+   * `MAP_NODE_COUNT`'s 240, measured over seeds. Poisson-disc sampling is a
+   * *distribution*, so a map lands a few nodes either side; §2's "~240" is
+   * what that approximates.
    */
   readonly POISSON_RADIUS_FACTOR: number;
   /** Values GDD.md leaves genuinely undecided. Never silently defaulted. */

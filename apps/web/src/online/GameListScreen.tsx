@@ -26,7 +26,7 @@ interface GameListScreenProps {
  * [Q51, 26] New game, in the top bar, opens the one setup screen with "Play
  * online" on: the game is made at once, named "<username>’s game" (the name
  * can be changed there, 27), and turning the switch off makes it a game on
- * this device. It stands where Q50's "Play on one device" stood.
+ * this device.
  *
  * [Q90, 310 to 314] The game master's finished games have a trash bin left
  * of Open, which deletes the game for everyone once they confirm.

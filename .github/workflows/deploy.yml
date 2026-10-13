@@ -9,9 +9,9 @@ name: Deploy
 # the preview shows whichever pull request pushed last. The preview keeps its
 # own accounts and games, apart from the live ones.
 #
-# Until the repository has the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID
-# secrets, the job says so and deploys nothing. Pull requests from forks never
-# see the secrets, so they never deploy.
+# Without the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets, the job
+# says so and deploys nothing. Pull requests from forks never see the secrets,
+# so they never deploy.
 on:
   push:
     branches: [main]

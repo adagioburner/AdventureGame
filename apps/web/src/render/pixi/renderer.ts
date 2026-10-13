@@ -43,8 +43,7 @@ const CUE = {
 
 /**
  * [Q305, 9, 13] The ring under every figure, in node spacings: a see-through
- * disc in the gold of the ring that was under the player on turn
- * (`Prospect_ActiveRing`), with a rim of it `rim` wide; a selected one's
+ * gold disc (`color`), with a rim of it `rim` wide; a selected one's
  * outline goes round it `gap` out. Andrei: "let us try it without the black
  * outlines".
  */

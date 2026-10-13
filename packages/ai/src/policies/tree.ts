@@ -117,10 +117,9 @@ function argMaxWithRandomTieBreak<T>(items: readonly T[], score: (item: T) => nu
  * MIN_REACHABLE_NODES_FOR_REST = 3 POIs reachable in one turn."
  *
  * [SOURCE §12.2, review] How many is `CLOSE_CANDIDATE_COUNT`, the same K the
- * rollout policy and the remoteness walk use: "We don't really need two
- * different constants here. We will prune the tree by the CLOSE_CANDIDATE_COUNT,
- * plus one branch for resting." The tree's own `MCTS_NODE_EXPANSION_PRUNING` is
- * gone.
+ * rollout policy uses: "We don't really need two different constants here. We
+ * will prune the tree by the CLOSE_CANDIDATE_COUNT, plus one branch for
+ * resting."
  *
  * Both halves are here. Targets are recomputed per node against that node's
  * state, so a POI claimed earlier in the searched line is no longer a branch
@@ -286,8 +285,7 @@ function positionKey(state: GameState, player: PlayerState, bought: readonly Rew
  * purchases; so what was purchased before becomes a property of a MCTS node)
  * it should only make moves that utilize the bought skills to the fullest.
  * [...] If there are no such moves, it's a dead end, and such purchase should
- * not be considered." 983 A: the skip for a kind a site offers within reach
- * (759) is gone with it.
+ * not be considered."
  *
  * One branch for each kind the player could buy now (`buyableNow`), a unit
  * each, after `bought` earlier this turn, when one of the closest sites after

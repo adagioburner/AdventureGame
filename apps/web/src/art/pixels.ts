@@ -14,7 +14,7 @@ export interface Rect {
 export const SOLID_ALPHA = 128;
 
 /**
- * Most supplied sheets bake their drop shadow in as one opaque flat grey
+ * A supplied sheet may bake its drop shadow in as one opaque flat grey
  * (`#bbbbbb`), which would sit on the terrain as a grey patch. Every pixel
  * within one step of a listed colour becomes black at `opacity` instead, so the
  * shadow darkens whatever ground it falls on. Returns how many pixels changed.

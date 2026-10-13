@@ -171,7 +171,7 @@ export interface Surroundings {
 /**
  * Directions a picture may stand in from its node, in degrees counted
  * anticlockwise from screen-right, best first. Straight behind is first, so
- * a picture with nothing to avoid stands behind its node as it always did;
+ * a picture with nothing to avoid stands behind its node;
  * nothing faces the viewer, where the node's own icons and number go.
  */
 export const PICTURE_DIRECTIONS: readonly number[] = [90, 60, 120, 30, 150, 0, 180];

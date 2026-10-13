@@ -38,16 +38,15 @@ describe('renderMapSvg', () => {
   });
 
   it('draws nothing but the background as a rect', () => {
-    // Leaves used to carry a black square each. Andrei asked for them dropped
-    // on 2026-09-22 — "the leaves are pretty self-evident and easy to see" —
-    // and a node with one road out is indeed obvious on the drawing. The
-    // §11 leaf *count* is still reported and still tested; it is only the
-    // marker that went.
+    // Leaves carry no marker. Andrei, 2026-09-22: "the leaves are pretty
+    // self-evident and easy to see", and a node with one road out is indeed
+    // obvious on the drawing. The §11 leaf *count* is still reported and
+    // still tested.
     expect(count(svg, /<rect /g)).toBe(1);
   });
 
   it('marks every node carved into a plains valley', () => {
-    // New maps carve no valleys since Q245, so this one is drawn with some.
+    // Maps carve no valleys since Q245, so this one is drawn with some.
     const valleys: Ruleset = {
       ...DEFAULT_RULESET,
       config: { ...DEFAULT_RULESET.config, map: { ...DEFAULT_RULESET.config.map, VALLEY_COUNT: { min: 2, max: 4 } } },

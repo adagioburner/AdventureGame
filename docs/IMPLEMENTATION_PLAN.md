@@ -1,11 +1,12 @@
 # Implementation plan
 
-Status: **agreed; phases 0–4 done, phase 5 next.** This plan is derived from the
-five-step order Andrei proposed, checked against the design of record and
-against what is actually in the repo today. Phase 0 landed the test harness,
-phase 1 the map generator, phase 2 the rules engine, phase 3 the map as a
-player sees it and phase 4 a hot seat game played on it; everything from
-phase 5 on is still seams.
+Status: **agreed; phases 0–7 built, except phase 5's balancing pass; phase 8
+still to come.** This plan is derived from the five-step order Andrei
+proposed, checked against the design of record and against what was in the
+repo at the time. Phase 0 landed the test harness, phase 1 the map generator,
+phase 2 the rules engine, phase 3 the map as a player sees it, phase 4 a hot
+seat game played on it, phase 5 the computer player, phase 6 the server, its
+accounts and game list, and phase 7 online play.
 
 The design of record is [`GDD.md`](../GDD.md), with
 [`docs/ARCHITECTURE.md`](./ARCHITECTURE.md) for component boundaries,
@@ -16,23 +17,13 @@ plan needs something the design does not say, it asks rather than choosing —
 see [Questions](#questions) at the end. It invents no rules, no constants and
 no defaults.
 
-Andrei answered all five questions on 2026-09-22, and they are folded into the
-phases below: the AI budget stays in seconds, hotseat is 2 players, POI
-placement is farthest-point sampling alone, Q18's `total_skills` reading is
-confirmed as the units placed on the map, and he is supplying the missing
-placeholder art — the die-roll animation and the road brush are in this change,
-and forest gold and the stamina POIs borrow an existing sheet meanwhile. All
-five are registered as Q20–Q24 in
-[`docs/OPEN_QUESTIONS.md`](./OPEN_QUESTIONS.md), since that register rather
-than this plan is where the repo records a decision.
+Andrei answered all five questions on 2026-09-22. They are registered as
+Q20–Q24 in [`docs/OPEN_QUESTIONS.md`](./OPEN_QUESTIONS.md), since that register
+rather than this plan is where the repo records a decision.
 
-Where the repo stands: the architecture pass landed data models, component
-boundaries and interfaces that typecheck, and phases 0 and 1 have turned the
-first of the seams into code. The rest still throw `NotImplementedError`
-carrying the GDD section to implement against, and
-`grep -rn NotImplementedError packages apps tools` is the live worklist. Every
-phase below is written as "turn these named seams into code", not as "design
-this".
+The architecture pass landed data models, component boundaries and interfaces
+that typecheck, and every phase below is written as "turn these named seams
+into code", not as "design this".
 
 ---
 
@@ -56,8 +47,8 @@ later phase reports into, and a second required CI check. That is phase 0.
 **(b) Step 1 cannot be "only the map generator".** Pipeline step 7 computes
 remoteness between POI placement and reward assignment (§2.1 step 7, §5.1), and
 §5.2's guard strengths consume remoteness. Remoteness is a random walk over
-"the `CLOSE_CANDIDATE_COUNT` closest unvisited POIs", ranked by the weighted
-terrain cost. So generating one complete map unavoidably requires:
+"the `REMOTENESS_CANDIDATE_COUNT` closest unvisited POIs" (Q66), ranked by the
+weighted terrain cost. So generating one complete map unavoidably requires:
 
 - `shortestPath` in `packages/core/src/path.ts` — the single Dijkstra,
 - `closestPoiCandidates` in `packages/sim/src/candidates.ts` — the shared
@@ -90,13 +81,13 @@ opponent in hotseat makes the game actually playable for one person, well
 before any of the multiplayer work lands.
 
 This plan therefore puts the MCTS engine in phase 5, before the server phases,
-and keeps AI's *multiplayer* integration (the GM's-machine Web Worker, AI
-seats and settings in online games, resign-to-AI handover, GM switching a seat
-between human and AI) in phase 8 where it belongs, because that part genuinely
-does need the server. The hot seat start game panel's computer seats and
-thinking time moved into phase 5 at Andrei's ruling (Q40).
-Phase 5 and phases 6–7 are independent of each other, so if you would rather
-keep AI last, swap them; nothing downstream changes.
+and keeps AI's *multiplayer* integration until after them, because that part
+genuinely does need the server: computer seats and their thinking time in
+online games landed in phase 6 (Q48), their turns and resign-to-AI in phase 7
+(Q48, Q56 57), and the GM's-machine Web Worker and the GM switching a seat
+between human and AI are phase 8.
+The hot seat start game panel's computer seats and thinking time moved into
+phase 5 at Andrei's ruling (Q40).
 
 ### 1.2 The two missing pieces
 
@@ -113,10 +104,10 @@ supplied assets. Phase 3 below, and question
 six parameters tunable by play-test — `COMPACTNESS_MAX`, `REMOTENESS_WEIGHT`,
 `REMOTENESS_WEIGHT_FOR_DISTRIBUTION`, `CLOSE_CANDIDATE_COUNT`,
 `REMOTENESS_SIMULATION_RUNS`, `MCTS_TIME_BUDGET_PER_MOVE_MS` — and
-`tools/balance` exists as a first-class consumer for exactly that, with both
-its entry points still stubs. The map-side half of it belongs in phase 1 (it is
-how you see whether generation is "according to set parameters"); the self-play
-half needs the AI, so it sits at the end of phase 5.
+`tools/balance` exists as a first-class consumer for exactly that. The map-side
+half of it belongs in phase 1 (it is how you see whether generation is
+"according to set parameters"); the self-play half needs the AI, so it sits at
+the end of phase 5.
 
 ### 1.3 Phase map
 
@@ -127,13 +118,13 @@ half needs the AI, so it sits at the end of phase 5.
 | [2](#phase-2--rules-engine-headless) ✅ | §7/§8 movement, interaction, turn order, victory — pure, tested | part of 2 |
 | [3](#phase-3--art-binding-and-the-isometric-renderer) ✅ | Atlas loader, reward-kind-to-sheet mapping, isometric projection, draw layers | new |
 | [4](#phase-4--hotseat-ui) ✅ | Pan/zoom, move mode, path preview, End Turn, Rest, stats, game end | 2 |
-| [5](#phase-5--ai-players-the-engine) ✅ | MCTS `search()`, rollouts, computer seats and thinking time in hot seat (Q40), self-play harness; the balancing pass comes next | part of 5 |
-| [6](#phase-6--server-foundation-auth-and-lobby) | Host decision made real, transport, auth, game list, join/accept setup, computers in empty seats (Q48) | 3 |
-| [7](#phase-7--online-play) | Authoritative state, broadcast, reconnect, message board, out-of-turn planning, GM controls, computer seats' turns (Q48) | 4 |
-| [8](#phase-8--ai-in-multiplayer) | Web Worker on the GM's machine, resign-to-AI, human/AI switching (computer seats moved to phases 6 and 7, Q48) | rest of 5 |
+| [5](#phase-5--ai-players-the-engine) ✅ | MCTS `search()`, rollouts, computer seats and thinking time in hot seat (Q40), self-play harness; not the balancing pass | part of 5 |
+| [6](#phase-6--server-foundation-auth-and-lobby--done) ✅ | Host decision made real, transport, auth, game list, join/accept setup, computers in empty seats (Q48) | 3 |
+| [7](#phase-7--online-play--done) ✅ | Authoritative state, broadcast, reconnect, message board, out-of-turn planning, GM controls, computer seats' turns (Q48), resign-to-AI (Q56 57) | 4 |
+| [8](#phase-8--ai-in-multiplayer) | Web Worker on the GM's machine, GM switching a seat between human and AI (computer seats moved to phases 6 and 7, Q48) | rest of 5 |
 
 Phases 0–2 are strictly sequential. Phase 3 can start any time after phase 0
-(it touches no game logic). Phase 5 is independent of 6–8.
+(it touches no game logic).
 
 ---
 
@@ -145,8 +136,7 @@ Two things shape this section. One is §9 of `ARCHITECTURE.md`: the diagnostic
 view and the player-facing view are different drawings arriving in different
 phases, and §§2.1 and 2.2 below are those two views. The other is **who
 reviews** — from a browser or a phone, with no clone of this repository and
-nothing installed. An earlier draft of this section opened with `pnpm install`
-and was wrong about that.
+nothing installed.
 
 ### 2.0 With no checkout — the reviewing path
 
@@ -176,7 +166,7 @@ answer belongs in the thread.
 
 ```sh
 pnpm install          # once
-pnpm run typecheck    # three programs: packages + server, the web app, then tools
+pnpm run typecheck    # five programs: packages, the web app, the server, its tests, then tools
 pnpm test             # vitest run
 ```
 
@@ -308,11 +298,13 @@ asks.
   path on two clients, on the server and in a replay. The doc comment on the
   seam already says this.
 - `closestPoiCandidates` (`packages/sim/src/candidates.ts`) — one Dijkstra from
-  the origin, stopped once `CLOSE_CANDIDATE_COUNT` eligible POIs are settled,
-  ascending by cost, same deterministic tie-break. Three callers share it
-  (`docs/RULES.md`): the remoteness walk over *unvisited* POIs, the rollout
-  policy over *unclaimed* POIs, and tree expansion. Eligibility is injected;
-  the ranking is written once, here.
+  the origin, stopped once K eligible POIs are settled
+  (`REMOTENESS_CANDIDATE_COUNT` for the remoteness walk,
+  `CLOSE_CANDIDATE_COUNT` for the computer player, Q66), ascending by cost,
+  same deterministic tie-break. Three callers share it (`docs/RULES.md`): the
+  remoteness walk over *unvisited* POIs, the rollout policy over *unclaimed*
+  POIs, and tree expansion. Eligibility is injected; the ranking is written
+  once, here.
 
   The two eligibility sets really are different, and the remoteness one really
   is *unvisited* (Q25): §5.1's walk runs inside map generation where nothing is
@@ -337,12 +329,11 @@ throws `GenerationRejected` or mutates the draft, and all of them draw from the
 one `Rng` on `GenerationContext`.
 
 - **`1-sample`** — Poisson-disc over the map rectangle, ~`MAP_NODE_COUNT` (240)
-  points in `MAP_COORDINATE_SPACE`, radius from `POISSON_RADIUS_FACTOR` (0.85).
+  points in `MAP_COORDINATE_SPACE`, radius from `POISSON_RADIUS_FACTOR` (0.815).
 - **`2-triangulate`** — Delaunay. Planar by construction, and no later step
   adds an edge, so there is no planarity predicate anywhere in the repo and
-  none should be added. Needs a dependency decision: hand-rolled, or a small
-  library (`delaunator` is the obvious one). Proposal: take the library — a
-  correct incremental Delaunay is a week of subtle geometry and a hard
+  none should be added. It takes a small library, `delaunator`: a correct
+  incremental Delaunay is a week of subtle geometry, and the library is a hard
   dependency on nothing.
 - **`3-prune`** — remove edges longest-first down to `MAP_EDGE_COUNT` (300),
   each removal drawn uniformly among the `EDGE_PRUNE_JITTER` (10) longest edges
@@ -350,15 +341,16 @@ one `Rng` on `GenerationContext`.
   that disconnects the graph or pushes leaf count outside `LEAF_COUNT` (30–45)
   is skipped and pruning continues. Rebuild `adjacency` whenever `edges`
   changes.
-- **`4-seed-terrain`** — 1 or 2 seeds per terrain (`TERRAIN_SEEDS` since Q245: 2 each, forest and mountain areas `KEPT_APART`), flood fill biased toward
-  nodes with more same-terrain neighbours, until shares approach
-  `TERRAIN_AREA_SHARE` (45/30/25).
+- **`4-seed-terrain`** — 2 seeds per terrain (`TERRAIN_SEEDS`, Q245), the
+  forest and mountain areas `KEPT_APART`, flood fill biased toward nodes with
+  more same-terrain neighbours, until shares approach `TERRAIN_AREA_SHARE`
+  (45/30/25).
 - **`5-smooth`** — the flip loop. The measurement and its exit test
   (`meetsCompactnessTarget`) are already written; the loop that flips isolated
   nodes to their majority-neighbour terrain is not. Compactness is
   `boundary² / area`, measured **per connected component**, and this is the
   only step that enforces it.
-- **`6-carve-valleys`** — `VALLEY_COUNT` (2–4; 0 since Q245) fingers of `VALLEY_LENGTH`
+- **`6-carve-valleys`** — `VALLEY_COUNT` (0, Q245) fingers of `VALLEY_LENGTH`
   (5–12) nodes, `VALLEY_WIDTH` 1, from the plains boundary into a neighbour.
   Record them in `draft.valleyNodes` even though the Smooth exemption is
   already satisfied by ordering — the harness needs to tell carved plains from
@@ -378,23 +370,21 @@ strengths.
 
 - **`placePoisStep`** — every leaf node is a POI first (§3, "no dead ends"),
   then the rest distributed at "approximately equal distances". §3 states that
-  as a goal, not a procedure. `docs/ARCHITECTURE.md` §3 originally left
-  `PoiPlacementStrategy` as a seam with both farthest-point sampling and
-  graph-space Poisson-disc to build and compare; [SOURCE chat, 2026-09-22]
-  Andrei settled it (Q23): "use farthest point sampling, we'll switch if that
-  looks bad, which I doubt". So build **farthest-point sampling only**, and
+  as a goal, not a procedure. [SOURCE chat, 2026-09-22] Andrei settled the
+  procedure (Q23): "use farthest point sampling, we'll switch if that looks
+  bad, which I doubt". So build **farthest-point sampling only**, and
   keep `PoiPlacementStrategy` as a seam so the switch stays a one-liner rather
   than a rewrite. 1e is where you would see it look bad.
 - **`overflowLeafPois`** — a terrain can hold more leaves than its `POI_COUNT`
   quota, and the surplus leaves become *additional* POIs carrying `stamina`,
   `OVERFLOW_LEAF_STAMINA_UNITS` (1) each.
-  Total POI count is therefore not fixed at 60, and there is no
+  Total POI count is therefore not fixed at 65, and there is no
   `poi_quota_unsatisfiable` rejection.
 - **Remoteness** (`packages/sim/src/remoteness.ts`) —
   `REMOTENESS_SIMULATION_RUNS` (100) walks, each starting at a random plains
-  node and repeatedly moving to one of the `CLOSE_CANDIDATE_COUNT` closest
-  *unvisited* POIs until all are visited, then normalised to [0, 1]. The scorer
-  (`segmentSumRemotenessScorer`) is written; it needs 1a to run.
+  node and repeatedly moving to one of the `REMOTENESS_CANDIDATE_COUNT` (Q66)
+  closest *unvisited* POIs until all are visited, then normalised to [0, 1].
+  The scorer (`segmentSumRemotenessScorer`) is written; it needs 1a to run.
 - **`partitionPoisIntoGroups` / `distributeGroupUnits` / `assignRewards`** —
   §4.3, per terrain, per row of the §4.2 table, keyed by `(kind, guard)` so
   mountain's two gold rows stay distinct with no eighth reward kind. One
@@ -405,7 +395,9 @@ strengths.
   `guardStrengthFor` is written and needs remoteness to run.
   `ceil(units × GOLD_WEIGHT − remoteness × REMOTENESS_WEIGHT)` capped to
   `GUARD_STRENGTH` ({min: 0, max: 10} in the config, which supersedes §11's
-  `GUARD_STRENGTH_MIN` of 2). A capped result of 0 means unguarded.
+  `GUARD_STRENGTH_MIN` of 2), and at 12 instead for a combat guard on a pile of
+  6 gold or more (`BIG_PILE_GUARD`, Q275). A capped result of 0 means
+  unguarded.
 
 **Tests:** every leaf is a POI; POI counts per terrain equal `POI_COUNT` plus
 the stamina overflow; the §4.2 columns reconcile exactly — unit totals and
@@ -459,10 +451,9 @@ parsing, the SVG writer's output path, and the stdout report — plus the `map`
 and `map:batch` scripts in the root `package.json` that wrap it. Both are plain
 `node` invocations: [§2](#2-seeing-a-map--what-a-reviewer-types) records why no
 TypeScript runner is needed. The scripts live at the **root** so nobody has to
-know the workspace layout to look at a map. Since only one placement strategy is built (Q23), this is also the
-check on whether that choice holds: if POI spacing looks wrong in the SVG or
-the remoteness histogram is lopsided, the second strategy goes behind the same
-seam and gets compared here.
+know the workspace layout to look at a map. Since only one placement strategy
+is built (Q23), this is also the check on whether that choice holds: POI
+spacing in the SVG, and the shape of the remoteness histogram.
 
 **Phase 1 done when:** `generateMap(seed, ruleset)` returns a valid map for a
 batch of seeds with no unexplained rejections; the same seed gives a
@@ -528,7 +519,7 @@ Seven things worth knowing, five of them only visible once the pipeline ran:
   `MAP_NODE_COUNT`'s 240. No §11 value changed.
 - **`tools/` typechecks as its own program now.** A CLI needs `process` and
   `node:fs`, and the engine packages must not get Node's globals by accident;
-  `pnpm run typecheck` runs both `tsconfig.json` and `tools/tsconfig.json`.
+  `pnpm run typecheck` runs `tools/tsconfig.json` as well as `tsconfig.json`.
   See [`docs/STACK.md`](./STACK.md) §3.
 
 ---
@@ -545,10 +536,10 @@ example becomes a test.
    next turn's planned path.
 2. **`previewPath`** — the same accounting, producing §7.1's per-step colours
    instead of a new state: green free, yellow costs stamina, grey
-   unreachable. (§7.1 labelled yellow steps with their cost until Q32 dropped
-   the label in phase 3's review; `previewPath` still reports each cost.) Deliberately the same function family as `resolveMovement` so
-   the preview and the committed move cannot disagree. Grey reflects only this
-   turn and is never cached.
+   unreachable. (The page labels no yellow step with its cost, Q32;
+   `previewPath` still reports each cost.) Deliberately the same function
+   family as `resolveMovement` so the preview and the committed move cannot
+   disagree. Grey reflects only this turn and is never cached.
 3. **`resolveInteraction`** — §8. Unguarded: take it. Guarded: roll
    `GUARD_DIE`, and `roll + matching skill > guard_strength` takes the reward,
    otherwise it stays and the roll costs nothing. Either outcome ends the turn.
@@ -597,8 +588,7 @@ Five things worth knowing, three of them only visible once games ran:
   alternative was a copy in each of three later phases. `createGameState`
   (`rules/setup.ts`) is the opening position — §6's seats, stamina by seat and
   the one shared starting node — and `createDiceSource` (`rules/dice.ts`) is the
-  one `DiceSource` over an injected `Rng`. Phase 4's hotseat, phase 5's rollouts
-  and phase 6's `SetupFlow.start` all need both.
+  one `DiceSource` over an injected `Rng`.
 - **`PostMessageAction` carries an id and a timestamp now.** The engine has no
   clock by design (`Clock` is a session port), so the caller stamps a post and
   `applyAction` appends it. Without that, a replayed game's board could not come
@@ -639,18 +629,10 @@ phase 2.
    carries `tiles: "horizontal"` and `centerline_y`. The loader should keep
    them rather than drop them, since they are what tells it a sprite is a
    repeatable stroke instead of a one-shot image.
-2. **The reward-kind-to-sheet mapping.** Eight POI sheets are named by
-   `(terrain, kind[, guard])`: `Plains_PlainsMovement`, `Plains_ForestMovement`,
-   `Plains_Magic`, `Plains_GoldGuardedByFighting`, `Forest_MountainMovement`,
-   `Forest_Fighting`, `Mountains_GoldGuardedByFighting`,
-   `Mountains_GoldGuardedByMagic`. That is exactly §4.2's rows *minus* forest
-   gold. Two rows therefore borrow a sheet until their own exists (Q20):
-   **forest gold** draws from `Mountains_GoldGuardedByFighting`, and the
-   **stamina** POIs that surplus leaves create draw from
-   `Plains_PlainsMovement`. Put those two substitutions in one table the art
-   mapping reads, not scattered through the renderer, so swapping in a real
-   sheet is a one-line edit. Four dressing sheets cover the eye candy:
-   `Plains_Fields`, `Plains_GrassRocks`, `Forest_Trees`, `Mountains_Mountains`.
+2. **The reward-kind-to-sheet mapping.** POI sheets are named by
+   `(terrain, kind[, guard])`. Where a row draws from another row's sheet, put
+   that substitution in one table the art mapping reads, not scattered through
+   the renderer, so swapping in a real sheet is a one-line edit.
 3. **`Poi.artVariant` becomes an index** into the chosen sheet's `sprites`
    array, modulo its length, so a POI's picture is stable across reloads and
    replays and no sheet's sprite count is baked into the generator.
@@ -707,56 +689,35 @@ placeholder** — and that shaped most of what follows.
 
 - **One table decides every picture: `Art/manifest.json`.** It names the sheet
   for each terrain texture, dressing kind, POI row, road, marker and figure, and
-  the size each is drawn at. The two Q20 substitutions are rows in it with a
-  `borrowed` note. No code names a file in `Art/`, so a swap is a file drop plus
-  at most one manifest line; [`Art/README.md`](../Art/README.md) walks through
-  one. A sheet pairs with its atlas by file name, because five supplied atlases
-  name a file that was renamed on the way in.
+  the size each is drawn at. A row that draws from another row's sheet (Q250's
+  three) carries a `borrowed` note. No code names a file in `Art/`, so a swap is
+  a file drop plus at most one manifest line;
+  [`Art/README.md`](../Art/README.md) walks through one. A sheet pairs with its
+  atlas by file name.
 - **Sizes are in node spacings, not pixels.** One node spacing is the median
   road length, and each sheet is scaled on load so its typical sprite (the
   median of each sprite's larger solid side) comes out at its manifest size. A
   replacement drawn at another resolution, or with more padding in its cells,
   needs no other change.
-- **Most supplied sheets bake their shadow in as opaque grey** (`#bbbbbb`),
-  which would sit on the terrain as a grey slab. The loader turns exactly the
-  colours the manifest lists into translucent black, rim included, and a sheet
-  whose replacement draws its own shadow just loses its line. Those sheets
-  also anchor each sprite at the foot of that shadow, which left guardians
-  floating behind their nodes, so a sprite whose anchor sits below its lowest
-  solid pixel now stands on that pixel.
-- **Some supplied sheets are edited as they load, never in the PNG**
-  (Andrei's art pass after phase 4, 2026-09-23). The cottages and magic
-  buildings are brightened, the magic ones with much richer colour; the
-  guards are drawn twice the size with a faint cream contour, so they read
-  on the mountains, and the statues half as large again with a thin dark
-  contour. On the way there Andrei turned down a cream contour three times
-  as thick (too bright) and brighter, more vivid guards (they looked wrong).
-  He later asked for the plains-speed cottages to match the forest-speed
-  ones, which are drawn as supplied; brightness 1.3 and colour 2.0 match
-  them in both lightness and colour, measured over the whole sheet.
-  Each is one line under `adjustments` in the manifest, which a replacement
-  that already looks right just loses. Bigger guards crowd a mountain, so a
-  picture now avoids touching another POI's picture even at the cost of a
-  little road. The same pass turned the plains grass upright: it is drawn
-  through the inverse of the isometric projection, where before it leaned
-  right with the ground.
+- **A shadow baked in as opaque grey can be made see-through as it loads.**
+  The loader turns exactly the colours the manifest lists into translucent
+  black, rim included. No sheet in use needs it, since
+  `Art/tools/pack_sheets.py` makes the shadows dark and see-through as it
+  packs the sheets (Q59 89). A sprite whose anchor sits below its lowest solid
+  pixel stands on that pixel, so a sheet anchored at the foot of its shadow
+  leaves no guardian floating behind its node.
 - **Pictures stand right against their nodes, guardians on them** (Q35,
   Andrei, 2026-09-23). Each sprite's picture is measured in twelve
   horizontal bands as it loads, and placement uses those bands instead of
   its box, so a picture touches its node instead of standing off by its
   box's empty corner. The guardian rows, marked `on_node`, stand with their
   feet across the back of the node and step off it only where every spot on
-  it would cover a neighbour. Fields (`flat`) must lie wholly over plains,
-  no standing dressing touches a POI's picture or reward, and the two dark
-  brown field sprites are left out (`leave_out`), so on `adventure` there
-  are fewer fields than before.
+  it would cover a neighbour. No standing dressing touches a POI's picture or
+  reward.
 - **Four placeholders were generated** by `make_placeholders.py`, flagged
   `placeholder: true` like the die and the brush: tileable textures for the
   three terrains, and `Prospect_Markers` — §7.1's dots and crosses in green,
-  yellow and grey, a waypoint flag and an active-player ring. The viewer
-  first had an "Art in use" panel listing every picture as placeholder,
-  borrowed or supplied from those flags; Andrei had it removed in phase 4, and
-  the flags stay in the atlases.
+  yellow and grey, a waypoint flag and an active-player ring.
 - **The icons are renamed for what they show** (item 6): `plains_move.png`
   (the wagon wheel, was `roads.png`), `forest_move.png` (the green foot, was
   `plains.png`) and `mountain_move.png` (was `mountains.png`), so every icon
@@ -767,25 +728,21 @@ placeholder** — and that shaped most of what follows.
 - **Dressing never hides the game.** It is scattered deterministically from the
   map's seed at a per-terrain density, kept off nodes and roads, and never
   stands in front of a node or a road on screen. A test checks all three.
-  Mountains are the exception since Andrei's review: the manifest marks them
-  `backdrop`, so they are painted onto the ground under the roads and nodes,
-  each sized between `min_size` and `size` to stay over mountain ground, and
-  clipped to it, covering the whole mountain area instead of only its edges.
+  Mountains are the exception: the manifest marks them `backdrop`, so they
+  are painted onto the ground under the roads and nodes, each sized between
+  `min_size` and `size` to stay over mountain ground, and clipped to it,
+  covering the whole mountain area instead of only its edges.
   The largest go down first, so the middle of a region carries peaks up to
   2.4 node spacings across and smaller ones fill in along the edges; on seed
   `adventure` 60% of the mountain ground lies under a peak at least three
   times a tree's size, which a test holds above half.
-  Fields are laid out in small arrays side by side along the ground.
 - **Nothing internal is drawn** (item 9), and a test proves it the direct way:
   scrambling every POI's `remoteness` and `group` and the map's `attempts`
   leaves the scene identical, value for value.
 - **A guard's colour is on its POI's node, and comes from the POI's guard,
   never from the sheet** (Q31). A guarded node keeps its black outline and
   gains a red or purple ring outside it. So a gold POI whose guard §5.2 capped
-  to nothing still shows its castle, on a plain node with no number, and
-  forest gold on the borrowed mountain sheet gets red because its guard is
-  fighting. The first build ringed the picture itself, per §3's wording;
-  Andrei moved it to the node in his review.
+  to nothing still shows its castle, on a plain node with no number.
 - **A POI's picture stands beside its node, where it hides least.** Each
   picture touches its node in one of seven directions, behind or to a side,
   and takes the one that covers the least road, no other node and no other
@@ -794,27 +751,17 @@ placeholder** — and that shaped most of what follows.
   straight behind its node, and no picture covers another POI.
 - **A claimed POI keeps its picture exactly as it was, on a plain node, with
   no icons or number.** §4.5 says the node then behaves as an ordinary node.
-  It was first drawn 45% see-through, a default Andrei had not been asked
-  about, and the brightened cottages turned to ghosts; he ruled on
-  2026-09-23 that "the claimed POIs should lose their icons, but the images
-  DO NOT CHANGE".
-- **Andrei's first review (2026-09-23) made everything smaller and quieter.**
-  POI pictures are half their first size, which had them covering roads and
-  neighbouring POIs; the plains grass is under a third of its first size, the
-  fields about half, and the figures, waypoint flag, reward icons and guard
-  numbers shrank to match. Route steps that cost stamina are yellow with no
-  "-N" beside them (Q32). His second look the same day enlarged the node ovals
-  by half, with the reward icons touching them, and the magic POIs' towers by
-  half again.
+  Andrei ruled on 2026-09-23 that "the claimed POIs should lose their icons,
+  but the images DO NOT CHANGE".
+- **Route steps that cost stamina are yellow with no "-N" beside them** (Q32,
+  Andrei's first review, 2026-09-23).
 - **Pan and zoom landed early** (`interaction/camera.ts`: drag, pinch, wheel,
   `+`/`-`, and "Whole map"), because a map shown whole on a phone is too small
-  to judge art by. Move mode stays in phase 4. So does the move-prospect
-  input: the markers are drawn from `previewPath`, and the viewer shows one
-  sample route, walked by §8's worked-example player, so they can be judged
-  before phase 4 wires them to a click.
-- **Three type-check programs now**, not two: `apps/web` needs the DOM, JSX and
+  to judge art by. Move mode stays in phase 4, and so does the move-prospect
+  input; the markers are drawn from `previewPath`.
+- **`apps/web` type-checks as its own program**: it needs the DOM, JSX and
   Vite's types, which the packages must never see. `pnpm run typecheck` runs
-  all three, as CI does.
+  it beside the others, as CI does.
 - **`pixi.js/unsafe-eval` is imported once**, in `main.tsx`, so the renderer
   works under a page policy that forbids `eval` — which is what lets the
   viewer be published as a page at all.
@@ -828,10 +775,8 @@ placeholder** — and that shaped most of what follows.
 `enter()` for any seat that is not active. Duplicating the client to remove one
 feature would guarantee drift.
 
-1. **Local setup.** **Two seats** — Andrei fixed the hotseat count at 2, which
-   exercises turn order and both victory cases, and `PLAYER_COUNT` (2–5) stays
-   untouched in config because this is a hotseat constraint, not a change to the
-   game's range. A name and a figurine per player, starting stamina by seat
+1. **Local setup.** **Two seats** (Q22, replaced by Q51 21: 2 to 5 players).
+   A name and a figurine per player, starting stamina by seat
    (`STARTING_STAMINA_BASE` + (seat − 1) × `STARTING_STAMINA_INCREMENT`), all
    seats starting on one shared plains node with no POI via `chooseStartingNode`
    from an `Rng` derived from the map seed.
@@ -869,7 +814,7 @@ winner, and every number on screen came out of `@adventure/core`.
 ### What actually landed
 
 All seven items, as the page `pnpm build:web` builds and the published viewer
-now plays: pick a map by its seed, name the two seats and choose their
+now plays: pick a map by its seed, name the seats and choose their
 figurines, then play it out on one screen until the engine declares a winner.
 31 new tests, 331 in all.
 
@@ -882,7 +827,7 @@ figurines, then play it out on one screen until the engine declares a winner.
   transport. A test plays a whole game through it, seat after seat, to a
   winner.
 - **`HotseatGame` is the only local writer** (`modes/hotseat.ts`). It builds
-  the state with `createGameState`, puts both seats on
+  the state with `createGameState`, puts every seat on
   `chooseStartingNode(map, rng(map.seed).fork('starting-node'))`, and plays each
   action through `applyAction` with a `createDiceSource` of its own. The dice
   seed is drawn fresh for every game and printed at the top of the turn log,
@@ -890,16 +835,15 @@ figurines, then play it out on one screen until the engine declares a winner.
 - **A move keeps the waypoint it was planned through.** `MoveAction` gained an
   optional `waypoint`, and `applyMove` saves it with the route it could not
   finish, so a player's next turn reopens on that route with its waypoint flag
-  still up. Before this, only the path survived and the flag vanished.
+  still up.
 - **End Turn plays the turn out in three beats**: the figure walks the steps
   the engine says it walked, the die tumbles if a guard was faced, then the
   result card holds the matching face beside "4 rolled + 2 combat = 6
   against 5" and says what was taken or that the gold stays. The engine has
   already resolved the turn before the first beat; the beats only reveal it.
-  Since Andrei's rulings on 2026-09-24 (Q38), an unguarded claim shows a
-  small card reading only what was taken, "plains speed +2", that floats up
-  from the figure and fades by itself after 2 seconds; a guard fight's card
-  still waits for OK.
+  An unguarded claim shows a small card reading only what was taken, "plains
+  speed +2", that floats up from the figure and fades by itself after 2
+  seconds; a guard fight's card waits for OK (Q38, Andrei, 2026-09-24).
 - **Every number on screen comes from the engine**: the stats panel shows the
   engine's seven stats for each player and the free steps left in this turn's
   allowance, the route's colours and its hint ("All 9 steps this turn, for
@@ -916,19 +860,17 @@ figurines, then play it out on one screen until the engine declares a winner.
   otherwise:
   - A "Plan a move" button sits beside tapping your figure, and a
     "Waypoint" button arms the next tap as the waypoint, because a touch
-    screen has no shift key. "Find" centred the map on the current player
-    (until 2026-09-30, when player cards took that over, Q120),
-    and on a phone "Plan a move" does too, since the whole map there is too
-    small to find a figure or tap a node.
-  - End Turn with no route drawn means stay put, which is §8's way to fight a
-    guard again from its node; Rest is its own button.
+    screen has no shift key. On a phone "Plan a move" also centres the map on
+    the current player, since the whole map there is too small to find a
+    figure or tap a node.
+  - End Turn with no route drawn stays put on an unclaimed guarded site, which
+    is §8's way to fight a guard again from its node, and rests anywhere else
+    (Q125); Rest is its own button.
   - There is no hand-off curtain between seats: a notice names the next
     player and their card lights up. §7.2 has no hidden information, so
     nothing needs hiding while the device changes hands.
   - Tapping a POI's picture means its node, since the picture stands beside
     the node rather than on it.
-  - The sample route and its toggle are gone from the page; the route drawn
-    is now always the current player's own.
 - **A browser check plays whole games by clicking**, at desktop and at phone
   size. A Playwright script (kept out of the repo, like the phase 3
   screenshots) taps the figure, taps the target, shift-taps or uses the
@@ -941,16 +883,12 @@ figurines, then play it out on one screen until the engine declares a winner.
   the winning turn's result card; and the map's canvas kept its first size
   when the panels round it changed height, because PixiJS's `resizeTo`
   follows the window only.
-- **A closed tab loses the game**, as P3 says: nothing is saved, and reload
-  starts a new setup on the same map. Andrei has since ruled that a reload
-  should not lose the game, and postponed it to the multiplayer work (Q37).
-- **Andrei's first look at the game** (2026-09-23) asked for three changes,
+- **Andrei's first look at the game** (2026-09-23) asked for these changes,
   all made:
-  - The "Art in use" panel is gone from the page.
   - The current player's figure blinks while it is their turn, so it is easy
-    to find, with a ripple spreading on the ground under it; once they tap it
-    or press Plan a move it stops blinking and is highlighted instead, a gold
-    ring round it, until the turn is played. Cancel sets it blinking again.
+    to find, and the ring under it pulses; once they tap it or press Plan a
+    move it stops blinking and its ring gets a thick yellow outline instead,
+    until the turn is played (Q305). Cancel sets it blinking again.
     `MapRenderer.setCue` takes `blink`, `selected` or `none`; the page picks
     one from the turn and the move mode, and the renderer animates it.
   - The page calls the moving skills **plains speed, forest speed and
@@ -964,24 +902,24 @@ figurines, then play it out on one screen until the engine declares a winner.
 
 ---
 
-## Phase 5 — AI players, the engine — **built; the balancing pass comes next**
+## Phase 5 — AI players, the engine — **built, except the balancing pass**
 
 Depends on phases 1, 2 and nothing else. Every policy, evaluator and branch rule
 is already written; the loop is not.
 
-1. **`unclaimedPoiNodes`, `rolloutDriver`, `runRollout`** and
-   **`macroAdvanceToTarget`** (`packages/sim/src/rollout.ts`). A rollout plays
-   through the *real* rules — every turn goes through `applyAction` — and every
-   seat is simulated by the same policy, human-controlled seats included. There
-   is no opponent model. A macro-action commits to a POI and keeps moving toward
-   it across as many turns as it takes, ending on exactly `arrived`,
-   `target_claimed_by_other` or `terminal`.
+1. **`unclaimedPoiNodes`, `runRollout`** and **`macroAdvanceToTarget`**
+   (`packages/sim/src/rollout.ts`). A rollout plays through the *real* rules —
+   every turn goes through `applyAction` — and every seat is simulated by the
+   same policy, human-controlled seats included. There is no opponent model.
+   A macro-action commits to a POI and keeps moving toward it across as many
+   turns as it takes, ending on exactly `arrived`, `target_claimed_by_other` or
+   `terminal`.
 
    **Do not force this through `runWalk`.** The architecture pass gave the two
    walks a shared loop, and the designer's prediction is that only the target
    chooser survives (Q25). Four concrete places where `runWalk` and
    `WalkDriver` fit remoteness and strain against a rollout, worth checking
-   before writing `rolloutDriver`:
+   before writing the rollout:
 
    - `WalkDriver.advance` returns `TCursor | null`, which cannot express
      `MacroAdvanceOutcome` — `arrived` and `target_claimed_by_other` both
@@ -1029,8 +967,7 @@ is already written; the loop is not.
    range, not a particular divisor.
 6. **An AI seat in hotseat.** The cheapest possible way to play against it, and
    it needs no server at all. Andrei widened this (Q40): the hot seat start
-   game panel gets a human or computer choice per seat and a thinking time,
-   which the plan had put in phase 8.
+   game panel gets a human or computer choice per seat and a thinking time.
 7. **`runSelfPlayBatch`** in `tools/balance`, then **the balancing pass**: tune
    the six parameters §11 marks tunable, with `REMOTENESS_SIMULATION_RUNS`
    called out by §5.1 as expected to change "if 100 proves too imprecise or too
@@ -1049,29 +986,26 @@ turn; self-play games terminating.
 
 ### What actually landed
 
-Items 1 to 6 and the harness half of item 7. The balancing pass is next, as
-proposals Andrei rules on one at a time (Q40); nothing in §11 changed.
+Items 1 to 6 and the harness half of item 7; nothing in §11 changed. The
+balancing pass, as proposals Andrei rules on one at a time (Q40), is not done.
 
 - **The rollout** (`packages/sim/src/rollout.ts`) is its own small loop, as
   item 1 expected: `playRolloutTurn`, `macroAdvanceToTarget`,
   `playUntilTurnOf` and `runRollout`, over `candidates.ts`'s shared chooser.
-  `walk.ts` stays remoteness's own. There is no `rolloutDriver`, and the
-  termination's second argument is `turnsTaken`, not `legsTaken`, since a
-  macro-action spans turns. Each seat keeps its own target across the others'
-  turns (`RolloutCursor.targets`). A player that cannot take a single step
-  rests (Q43, `restWhenStuck()`), and a simulated game stops after
-  `SIMULATION_TURN_CAP` = 250 turns as well as on no gold left (Q44).
+  `walk.ts` stays remoteness's own. The termination's second argument is
+  `turnsTaken`, not `legsTaken`, since a macro-action spans turns. Each seat
+  keeps its own target across the others' turns (`RolloutCursor.targets`). A
+  player that cannot take a single step rests (Q43, `restWhenStuck()`), and a
+  simulated game stops after `SIMULATION_TURN_CAP` = 250 turns as well as on
+  no gold left (Q44).
 - **The search** (`packages/ai/src/mcts.ts`) is open-loop MCTS: a node holds
   no game state and each iteration replays its branches from the root, so the
-  dice and the other seats' choices are drawn afresh every time. The first
-  version kept one state per node, and one lucky or unlucky roll then decided
-  a branch for the rest of the search; with a star map's gold one step away it
-  chose a stamina POI instead. Open-loop is the standard form for a game with
-  chance in it, under §12.2's "sensible defaults". `startSearch` runs the same
-  search a slice at a time.
+  dice and the other seats' choices are drawn afresh every time. Open-loop is
+  the standard form for a game with chance in it, under §12.2's "sensible
+  defaults". `startSearch` runs the same search a slice at a time.
 - **The computer player** (`packages/ai/src/computer.ts`) is the v1 setup in
   one place: UCT with √2, the closest unclaimed POIs plus rest, §9's rollout,
-  the simulated evaluation (scored by the lead since Q113), the rest rule and
+  the simulated evaluation (scored by the lead, Q113), the rest rule and
   the turn cap.
   `chooseComputerMove` thinks in one go; `startComputerMove` in slices.
 - **Hot seat** (`apps/web`): Human and Computer buttons and a thinking time of
@@ -1092,10 +1026,10 @@ proposals Andrei rules on one at a time (Q40); nothing in §11 changed.
 
 ---
 
-## Phase 6 — server foundation, auth and lobby
+## Phase 6 — server foundation, auth and lobby — **done**
 
-Step 3 is mostly `SetupFlow` plus auth plus a game list, but none of it can run
-until the host is real. That is the substance of this phase.
+Step 3 is mostly the setup flow plus auth plus a game list, but none of it can
+run until the host is real. That is the substance of this phase.
 
 1. **Make the host decision concrete.** §12.1 and `docs/STACK.md` §5 decided:
    Cloudflare Durable Objects for the session layer, one DO per `gameId`, with
@@ -1120,14 +1054,13 @@ until the host is real. That is the substance of this phase.
 5. **The game list.** §3's "logged-in users see a list of in-progress games and
    can join one or start a new one" is the one thing that does not fit one-DO-
    per-game: listing games means an index *across* DOs. Proposal: a single lobby
-   DO (or a KV index) that games register with on creation and update on state
-   change. Worth naming because it is the only piece of multiplayer
-   infrastructure the architecture pass did not shape.
-6. **`SetupFlow`** — GM sets player count, users request to join, GM accepts or
-   rejects (which allocates the next seat and thereby fixes turn order), each
-   player picks name and avatar, GM starts. The GM is the game's creator and the
-   role cannot be transferred in v1, so there is no transfer message in the
-   protocol at all.
+   DO that games register with on creation and update on state change. Worth
+   naming because it is the only piece of multiplayer infrastructure the
+   architecture pass did not shape.
+6. **The setup flow** — GM sets player count, users request to join, GM accepts
+   or rejects, each player picks name and avatar, GM starts. The GM is the
+   game's creator and the role cannot be transferred in v1, so there is no
+   transfer message in the protocol at all.
 7. **`GameSession.handle`** — single-writer per `gameId`, so the authoritative
    state never needs locking. Its responsibilities are authority, sequencing,
    driving AI turns and persistence-plus-broadcast, and it contains no game
@@ -1151,7 +1084,7 @@ switch turned on again.
 
 - **One Worker** (`apps/server/src/worker.ts`) serves the pages, the account
   endpoints and two kinds of socket. **The lobby is one Durable Object**
-  (`lobby.ts`), item 5's first proposal: it holds the accounts, the logins
+  (`lobby.ts`), item 5's proposal: it holds the accounts, the logins
   and one row per game, and pushes the whole list to every open game list
   when a row changes. **Each game is a `GameRoom`** (`room.ts`), which gives
   `GameSession` storage, sockets and the lobby and feeds it one message at a
@@ -1179,8 +1112,7 @@ switch turned on again.
   same parts, and the "Play online" switch moves the seats from one to the
   other. `/hotseat` shows it with the switch off, reached from the login page
   (Q48 1) and by turning the switch off; the game list's New game button
-  opens it on (Q50's button is gone). The game page artifact shows it without
-  the switch.
+  opens it on. The game page artifact shows it without the switch.
 - **Tests** run the server in Cloudflare's local runtime from Node, through
   wrangler's `unstable_startWorker` (`apps/server/test/worker.test.ts`),
   because `@cloudflare/vitest-pool-workers` needs Vitest 4 and the repository
@@ -1193,7 +1125,7 @@ switch turned on again.
 
 ---
 
-## Phase 7 — online play
+## Phase 7 — online play — **done**
 
 1. **Committing a turn.** Client sends the intended action, the server resolves
    it through `applyAction` with its own die stream, persists and broadcasts.
@@ -1304,8 +1236,8 @@ came back with all 39 turns in its log.
   `apps/web/src/online/site.css`: below 900 wide the cards are one row that
   `Players` slides to the player on turn, a screen at least 4:3 wide puts
   them in a 300-wide column on the left, the line sits beside the buttons
-  from 560 wide, a portrait phone's top bar folds four buttons into Menu,
-  and the map's buttons are a row.
+  from 560 wide, a phone's top bar folds its buttons into Menu, upright or
+  sideways (Q72 280), and the map's buttons are a row.
 - **Presence** is a ping every 20 seconds that Cloudflare answers without
   waking the game; the game's alarm reads the times while it is watched, and
   a minute's silence is "Away" (Q54 31).
@@ -1330,34 +1262,21 @@ came back with all 39 turns in its log.
 
 ## Phase 8 — AI in multiplayer
 
-1. **Compute on the GM's machine.** §12.1 put map generation and MCTS on the
-   game master's client, so the DO adapter implements `MapService` and
-   `AiService` as round trips to the GM (`gm.requestMapGeneration` /
-   `gm.mapGenerated`, `gm.requestAiMove` / `gm.aiMove`). The session core never
-   learns this — that is what the ports were for. Note this makes `apps/web`
-   depend on `@adventure/mapgen` and `@adventure/ai`, which it does not today.
-2. **A Web Worker is not optional.** 10 seconds of search per AI seat per turn
+1. **A Web Worker is not optional.** 10 seconds of search per AI seat per turn
    cannot run on the GM's UI thread. (Hot seat thinks in one slice a frame on
    the page's thread instead, phase 5, because the published page cannot count
    on starting a worker; whether the GM's page can is this phase's to check.)
-3. **The composed consequence, stated plainly:** with AI and map generation on
+2. **The composed consequence, stated plainly:** with AI and map generation on
    the GM's machine, a disconnected game master blocks forced turns *and* every
    AI turn *and* map creation, so even an all-AI game cannot advance without the
    GM online. That is §12.1 and §12.4 composed, and it is stronger than either
    alone. Worth surfacing in the UI so a stalled game is legible rather than
    mysterious.
-4. ~~**AI seats at setup**~~ — landed in phase 6 instead (Q48): the GM may start
-   with seats empty and a computer plays each one. Their turns arrive in phase
-   7.
-5. ~~**AI settings**~~ — landed in phase 6 instead (Q48): one thinking time
-   for all of a game's computer seats, 1 to 60 seconds, set on the setup
-   screen and carried in the setup state.
-6. **Handover** — the GM may switch any player between human and AI control at
-   will. Only the GM hands control back to a human. (An AI taking over a
-   resigned seat landed in phase 7 instead, [Q56](./OPEN_QUESTIONS.md#q56) 57.)
+3. **Handover** — the GM may switch any player between human and AI control at
+   will. Only the GM hands control back to a human.
 
-**Done when:** a mixed human/AI online game plays to a finish, AI turns do not
-freeze the GM's browser, and the GM can flip a seat either way mid-game.
+**Done when:** AI turns do not freeze the GM's browser, and the GM can flip a
+seat either way mid-game.
 
 ---
 
@@ -1365,9 +1284,8 @@ freeze the GM's browser, and the GM can flip a seat either way mid-game.
 
 Named so the plan is not read as having forgotten them: spectators, replay
 playback UI (the determinism that would support it is there either way),
-tournaments or ranking, cross-game chat (§12.3 scoped the board to a game),
-mobile or touch input, internationalisation, GM role transfer (§6.1 rules it out
-for v1), and guarding any reward kind other than gold (an engine capability
+tournaments or ranking, internationalisation, GM role transfer (§6.1 rules it
+out for v1), and guarding any reward kind other than gold (an engine capability
 already, but a v1 *content* choice per §4.4).
 
 ---
@@ -1391,25 +1309,16 @@ request — `Art/Dice_d6_sheet.png` + `Dice_d6_atlas.json` and
 loader, or a person, can tell stand-in art from the real thing. The rest of the
 list below is Andrei's to supply:
 
-Six §10 asset groups were missing from `Art/`, and one POI sheet:
+These §10 asset groups were missing from `Art/`:
 
-- ~~**Forest gold.**~~ Eight POI sheets cover eight of §4.2's nine rows, with
-  none for forest's 4 fighting-guarded gold POIs. [SOURCE chat, review]
-  "Mountain gold placeholder images can be used" — so forest gold draws from
-  `Mountains_GoldGuardedByFighting` until a forest sheet exists.
-- ~~**Stamina POIs.**~~ Surplus leaves become stamina POIs, on any terrain, and
-  no sheet covers them. [SOURCE chat, review] "Plaines movement placeholder
-  images can be used" — so they draw from `Plains_PlainsMovement`.
-- ~~**Character figurines.**~~ Supplied 2026-09-22 as
-  `Art/player_avatars_sheet.png` + `player_avatars_atlas.json`: six full-body
-  figures on a 617×698 grid, anchored at the feet like every other sheet.
-  They are Andrei's own art, so no `"placeholder": true`. Setup offers these
-  six.
+- ~~**Character figurines.**~~ Supplied as `Art/player_avatars_sheet.png` +
+  `player_avatars_atlas.json`: six full-body figures (Q59 102), anchored at the
+  feet like every other sheet. They are Andrei's own art, so no
+  `"placeholder": true`. Setup offers these six.
 - **Player avatars** for GDD §2's stats panel are still coming as their own
   head-and-shoulders set (Q26). Meanwhile phase 3 crops the figurines, using
-  the per-figure boxes in `Art/player_avatars_portraits.json` — one uniform
-  enlarge-and-shift does not work, because the six heads start between row 24
-  and row 155 of the cell. Q26 has the measurements and the reasoning.
+  the per-figure boxes in `Art/player_avatars_portraits.json`. Q26 has the
+  reasoning.
 - ~~**Die-roll animation.**~~ Generated here: eight tumble frames to loop while
   the roll is in flight, then the six resting faces, one per `GUARD_DIE` value.
   [SOURCE chat, review] "this will be provided" — the generated one stands in
@@ -1431,7 +1340,6 @@ Six §10 asset groups were missing from `Art/`, and one POI sheet:
 `docs/STACK.md` §5 flagged this and left it as a design question: a fixed
 10-second budget buys very different search on a laptop than on a workstation,
 so with MCTS on the GM's machine, AI strength is not reproducible across games.
-A budget in rollouts would fix that at the cost of a variable turn length.
 
 [SOURCE chat, 2026-09-22] "Let's stick to the seconds budget for AI, the
 purpose of this game is fun, not the strongest and most consistent AI." So
@@ -1441,19 +1349,7 @@ accepted cost rather than an open item. One consequence for phase 5: a self-play
 comparison is only meaningful between runs on the same machine, so the harness
 should record the machine alongside the result.
 
-### P3. ~~Hotseat scope~~ — **answered (Q22): 2 players**
-
-[SOURCE chat, 2026-09-22] "2 players is a good enough number and exercises all
-necessary functionality." Phase 4 fixes the hotseat seat count at 2.
-`PLAYER_COUNT` (2–5) stays untouched in config — this is a temporary
-constraint in the hotseat mode, not a change to the game's range, and phase 6's
-setup flow is where the GM picks a count for real.
-
-Left unanswered, and not worth blocking on: whether a hotseat game should
-survive a page reload. Persisting to `localStorage` is small but the design does
-not mention it, so phase 4 does not, and a closed tab loses the game. Andrei
-has since ruled that it should survive one, postponed to the multiplayer work
-(Q37).
+### P3. ~~Hotseat scope~~ — **replaced by Q51: 2 to 5 players on one device**
 
 ### P4. ~~Q18, still open in fact~~ — **answered (Q24): the shipped reading is right**
 

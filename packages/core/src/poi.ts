@@ -18,7 +18,7 @@ export interface Poi {
   readonly terrain: Terrain;
   /** Exactly one kind, by construction. See `Reward`. */
   readonly reward: Reward;
-  /** `null` when unguarded. In v1 content this is non-null iff the kind is gold. */
+  /** `null` when unguarded. In v1 content this is non-null only when the kind is gold. */
   readonly guard: Guard | null;
   /**
    * [SOURCE §1.2] Normalised to [0, 1] across the map's POIs. Computed by the
@@ -30,10 +30,8 @@ export interface Poi {
   readonly group: RewardGroupKey;
   /**
    * A stable index drawn from the map PRNG, so the same seed always picks the
-   * same picture. The mapping from this index to an actual asset in `Art/` is
-   * **out of scope** for now and owned by the client's art-binding layer — the
-   * sheet/atlas layout, sizing and icon-to-reward mapping are all still to be
-   * decided with the designer. Nothing in the engine reads this field.
+   * same picture. The client's art layer picks a picture with it
+   * (`apps/web/src/art/catalog.ts`). Nothing in the engine reads this field.
    */
   readonly artVariant: number;
 }

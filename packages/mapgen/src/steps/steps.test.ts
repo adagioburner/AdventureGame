@@ -291,8 +291,8 @@ describe('step 5 — smooth', () => {
 });
 
 describe('step 6 — carve valleys', () => {
-  // New maps carve none since Q245 (VALLEY_COUNT 0), so the carving is tested
-  // on the maps it was made for: 2 to 4 valleys, terrain from 1 or 2 seeds a
+  // Maps carve none since Q245 (VALLEY_COUNT 0), so the carving is tested on a
+  // ruleset that turns it on: 2 to 4 valleys, terrain from 1 or 2 seeds a
   // terrain and nothing kept apart.
   const VALLEYS: Ruleset = {
     ...DEFAULT_RULESET,

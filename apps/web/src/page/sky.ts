@@ -29,10 +29,10 @@ export function paintSky(catalog: ArtCatalog, root: HTMLElement = document.docum
 
 /**
  * [Andrei, 2026-10-01] 676: "I am afraid that background that does not move
- * at all will create an unnatural feeling." He tried a sky that slides with
- * the map and settled on 677 at 17:09: "Let's make it still, but growing with
- * the zoom". So it does not slide when the map is dragged (`SKY_DRIFT` 0) and
- * grows a little as the map is zoomed in (`SKY_ZOOM_GROWTH`).
+ * at all will create an unnatural feeling." 677 at 17:09: "Let's make it
+ * still, but growing with the zoom". So it does not slide when the map is
+ * dragged (`SKY_DRIFT` 0) and grows a little as the map is zoomed in
+ * (`SKY_ZOOM_GROWTH`).
  */
 
 /**

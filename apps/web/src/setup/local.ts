@@ -6,8 +6,8 @@ import type { HotseatSeat } from '../modes/hotseat.ts';
 /**
  * A setup that lives on this device only: the one setup screen with "Play
  * online" off ([Q51]). Every seat is played here, by a person or by the
- * computer, as on the hot seat panel before the screens became one (Q41):
- * switching a seat between Human and Computer keeps its name and figure.
+ * computer (Q41): switching a seat between Human and Computer keeps its name
+ * and figure.
  *
  * Turning "Play online" on sends this to the server (`toNewGameSetup`), and
  * turning it off brings a stored game's setup back here (`fromOnlineSetup`).
@@ -96,7 +96,7 @@ function randomPick(count: number): number {
   return Math.floor((value / 2 ** 32) * count);
 }
 
-/** The seats a hot seat game starts with. A name left empty is "Player N", as before. */
+/** The seats a hot seat game starts with. A name left empty is "Player N". */
 export function toHotseatSeats(setup: LocalSetup): HotseatSeat[] {
   return setup.seats.map((seat, index) => ({
     name: seat.name.trim() || `Player ${index + 1}`,

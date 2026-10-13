@@ -37,8 +37,7 @@ OUT = os.path.join(ART, "player_avatars_portraits.json")
 
 # Portrait side as a fraction of the figure's height from the top of the head to
 # its feet, picked by eye over all six: it takes the head and both shoulders
-# without reaching the waist. The first six figures wanted 0.32; the second six
-# (Q59) have heads a third of their height, and at 0.32 showed a face alone.
+# without reaching the waist.
 SIDE_FRACTION = 0.5
 # Headroom above the hair, as a fraction of the portrait side.
 HEADROOM = 0.06
