@@ -16,14 +16,12 @@ import {
 import {
   cheapestRoute,
   closestPoiCandidates,
-  unclaimedPoiNodes,
   winnablePoiNodesWith,
   winsOnSomeRoll,
   type ClosestFinder,
   type PoiCandidate,
   type RouteChoice,
   type RouteStepsFinder,
-  type TargetFilter,
 } from '@adventure/sim';
 import type { ActionEnumerator, MctsBranch, MctsNode, TreePolicy, TurnReachability } from '../types.ts';
 
@@ -137,29 +135,22 @@ function argMaxWithRandomTieBreak<T>(items: readonly T[], score: (item: T) => nu
  * that a move this turn would use up (`buyBranches`). Below a purchase only
  * such moves are branches, and resting is not one (`usesFully`).
  *
- * [Q295] The game's computer skips guarded gold it cannot win (`choicesAt`):
- * "I think the computer player today still considers guarded POIs that it
- * cannot win. [...] This needs to stop." With nothing left it could win, rest
- * is its only branch.
+ * [Q295] It skips guarded gold it cannot win (`choicesAt`): "I think the
+ * computer player today still considers guarded POIs that it cannot win.
+ * [...] This needs to stop." With nothing left it could win, rest is its only
+ * branch.
  */
 export function closestUnclaimedPoiEnumerator(
   config: GameConfig,
   reachability: TurnReachability,
-  /** Which POIs may be targets in place of `unwinnable`'s; every unclaimed one, or those its gold could win, when absent. */
-  allowed?: TargetFilter,
-  /** Which of those count as closest; by weighted terrain cost when absent. The game passes `closestByBestRoute` (Q210). */
+  /** Which of the POIs it may head for count as closest; by weighted terrain cost when absent. The game passes `closestByBestRoute` (Q210). */
   closest?: ClosestFinder,
   /** The route a move walks, which `usesFully` checks; the cheapest when absent. The game passes `bestRouteForSpeeds` (Q210, 820 A). */
   walkRoute: RouteChoice = cheapestRoute,
-  /** [Q295] Whether guarded gold it cannot win is weighed, as before, or skipped (`choicesAt`), as the game passes. */
-  unwinnable: 'weighed' | 'skipped' = 'weighed',
 ): ActionEnumerator {
   const count = config.balancing.CLOSE_CANDIDATE_COUNT;
-  const skips = unwinnable === 'skipped';
-  const eligibleFor = (state: GameState, player: PlayerState): ReadonlySet<NodeId> => {
-    if (allowed !== undefined) return allowed(state, player);
-    return skips ? winnablePoiNodesWith(state, player, affordableUnits(state, player)) : unclaimedPoiNodesOf(state);
-  };
+  const eligibleFor = (state: GameState, player: PlayerState): ReadonlySet<NodeId> =>
+    winnablePoiNodesWith(state, player, affordableUnits(state, player));
   const rank = (state: GameState, player: PlayerState, eligible: ReadonlySet<NodeId>, upTo: number): readonly PoiCandidate[] =>
     closest === undefined
       ? closestPoiCandidates(state.map.graph, player.position, eligible, upTo, config, routeTable(state.map.graph, config))
@@ -174,17 +165,15 @@ export function closestUnclaimedPoiEnumerator(
     return !winsOnSomeRoll(state, player, guard) && reachability.isReachableThisTurn(state, player.id, candidate);
   };
   /**
-   * [Q295] The sites the subject may head for. Weighing unwinnable guards,
-   * `closestTo`. Skipping them, Andrei's "buy, then go", 2026-10-09: a site
-   * is a choice when the units its gold buys could win it, but a guard it
-   * reaches this turn only when the skill it holds now, after this turn's
-   * purchases, could; the next closest take the places of those it leaves out
-   * ("fill up to 10"). Buying stays weighed against `closestTo`, which counts
-   * the gold, so a unit is still tried towards a guard it will reach once the
-   * units are bought.
+   * [Q295] The sites the subject may head for, Andrei's "buy, then go",
+   * 2026-10-09: a site is a choice when the units its gold buys could win it,
+   * but a guard it reaches this turn only when the skill it holds now, after
+   * this turn's purchases, could; the next closest take the places of those
+   * it leaves out ("fill up to 10"). Buying stays weighed against `closestTo`,
+   * which counts the gold, so a unit is still tried towards a guard it will
+   * reach once the units are bought.
    */
   const choicesAt = (state: GameState, player: PlayerState): readonly PoiCandidate[] => {
-    if (!skips) return closestTo(state, player);
     const eligible = eligibleFor(state, player);
     const choices: PoiCandidate[] = [];
     for (const candidate of rank(state, player, eligible, eligible.size)) {
@@ -206,7 +195,7 @@ export function closestUnclaimedPoiEnumerator(
    * yet; the answer is the same, found sooner.
    */
   const leadsOn = (after: GameState, buyer: PlayerState, all: readonly RewardKind[], target: PoiCandidate): boolean => {
-    if (!skips || !leavesOut(after, buyer, target)) return true;
+    if (!leavesOut(after, buyer, target)) return true;
     const key = `${positionKey(after, buyer, all)}|${target.node}`;
     const remembered = followed.get(key);
     if (remembered !== undefined) return remembered;
@@ -404,32 +393,6 @@ export function staminaBeyondThisTurn(steps: PerTerrain<number>, free: PerTerrai
     if (beyond > 0) stamina += cost[terrain] * beyond;
   }
   return stamina;
-}
-
-/** POIs whose reward is still unclaimed (§4.5) — the eligible target set. */
-export function unclaimedPoiNodesOf(state: GameState): ReadonlySet<NodeId> {
-  return unclaimedPoiNodes(state);
-}
-
-/**
- * [SOURCE §12.2, chat] "reachable in one turn": walking the cheapest route to
- * the target (the one metric, §5.1) arrives this turn, on this turn's
- * allowance and the player's stamina (§7). Standing on it already counts.
- *
- * The search before Q210's stage 2, kept to compare with; the game's is
- * `stepsReachability(bestRouteStepsFor)`.
- */
-export function previewReachability(): TurnReachability {
-  return {
-    isReachableThisTurn(state: GameState, subject: PlayerId, target: PoiCandidate): boolean {
-      const player = playerById(state, subject);
-      const config = state.map.ruleset.config;
-      const route = routeTable(state.map.graph, config).path(player.position, target.node);
-      if (route === null) return false;
-      return previewPath(state.map.graph, player.position, route, state.turn.allowance, player.stats.stamina, config)
-        .destinationReachable;
-    },
-  };
 }
 
 /**

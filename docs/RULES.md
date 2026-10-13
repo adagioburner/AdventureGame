@@ -274,7 +274,7 @@ worth keeping apart (`packages/ai/src/policies/evaluators.ts`):
   the other two are there to experiment with. The game scores the same
   rollout by the lead instead (Q113): `(lead / (|lead| + 1) + 1) / 2`, the lead
   being the subject's gold minus the richest other player's
-  (`simulatedLeadEvaluator('soft')`, which `computerEvaluator()` returns).
+  (`simulatedLeadEvaluator()`, which `computerEvaluator()` returns).
 - **estimated** — no rollout at all: the subject's gold and skills as they stand
   at the node being evaluated, weighted by how far the game has run (the share
   of POIs claimed, `sitesClaimedShare`, Q291), so skills count for most at the

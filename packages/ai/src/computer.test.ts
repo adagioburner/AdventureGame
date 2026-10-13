@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_GAME_CONFIG } from '@adventure/config';
 import { applyAction, createDiceSource, createRng } from '@adventure/core';
-import { closestByTerrainCost, rolloutCursor } from '@adventure/sim';
+import { rolloutCursor } from '@adventure/sim';
 import { fixtureGame, fixtureMap, n, player, withStats } from '../../core/src/rules/scenario.fixture.ts';
 import { chooseComputerMove, computerSearchOptions, startComputerMove, type ComputerSettings } from './computer.ts';
 
@@ -104,12 +104,5 @@ describe('which sites the computer counts as closest (Q112)', () => {
     const state = withStats(fixtureGame(fork, 0), player('one'), { mountain_move: 2 });
     const one = { ...settings().config, balancing: { ...settings().config.balancing, CLOSE_CANDIDATE_COUNT: 1 } };
     expect(targets(computerSearchOptions(state, player('one'), { ...settings(), config: one }), state)).toEqual([n(2)]);
-  });
-
-  it('ranks by weighted terrain cost alone when told to, as before', () => {
-    const state = withStats(fixtureGame(fork, 0), player('one'), { mountain_move: 2 });
-    const one = { ...settings().config, balancing: { ...settings().config.balancing, CLOSE_CANDIDATE_COUNT: 1 } };
-    const options = computerSearchOptions(state, player('one'), { ...settings(), config: one, closest: closestByTerrainCost });
-    expect(targets(options, state)).toEqual([n(7)]);
   });
 });

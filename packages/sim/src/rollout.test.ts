@@ -28,6 +28,7 @@ import {
   macroAdvanceToTarget,
   playRolloutTurn,
   playUntilTurnOf,
+  playWalkedTurn,
   restWhenStuck,
   rolloutCursor,
   runRollout,
@@ -35,8 +36,8 @@ import {
   turnTowards,
   unclaimedPoiNodes,
   winnableBySkill,
-  winnablePoiNodes,
   type RestRule,
+  type RolloutCursor,
   type RolloutOptions,
 } from './rollout.ts';
 import { closestBySpeeds } from './speeds.ts';
@@ -99,38 +100,6 @@ describe('unclaimedPoiNodes', () => {
   });
 });
 
-describe('winnablePoiNodes (detail 419, comparison only)', () => {
-  const guarded = fixtureMap({
-    terrains: ['plains', 'plains', 'plains', 'plains'],
-    edges: [
-      [0, 1],
-      [1, 2],
-      [2, 3],
-    ],
-    pois: [
-      { node: 1, kind: 'fighting', units: 1, guard: null },
-      { node: 2, kind: 'gold', units: 2, guard: { type: 'fighting', strength: 6 } },
-      { node: 3, kind: 'gold', units: 3, guard: { type: 'magic', strength: 7 } },
-    ],
-  });
-  const seatOne = (state: GameState) => state.players[0]!;
-
-  it('leaves out gold whose guard a 6 plus the skill does not beat', () => {
-    const state = fixtureGame(guarded, 0);
-    expect([...winnablePoiNodes(state, seatOne(state))]).toEqual([n(1)]);
-    const fighter = withStats(state, player('one'), { fighting: 1 });
-    expect([...winnablePoiNodes(fighter, seatOne(fighter))]).toEqual([n(1), n(2)]);
-    const mage = withStats(state, player('one'), { magic: 2 });
-    expect([...winnablePoiNodes(mage, seatOne(mage))]).toEqual([n(1), n(3)]);
-  });
-
-  it('falls back to every unclaimed POI when nothing is winnable', () => {
-    const state = fixtureGame(guarded, 0);
-    const claimed = applyAction(state, { kind: 'move', player: player('one'), path: [n(1)] }, scriptedDice([])).state;
-    expect([...winnablePoiNodes(claimed, claimed.players[1]!)]).toEqual([n(2), n(3)]);
-  });
-});
-
 describe('winnableBySkill (Q295: the sites imagined players head for)', () => {
   const guarded = fixtureMap({
     terrains: ['plains', 'plains', 'plains', 'plains'],
@@ -160,8 +129,10 @@ describe('winnableBySkill (Q295: the sites imagined players head for)', () => {
     const two = claimed.players[1]!;
     expect([...winnableBySkill(claimed, two)]).toEqual([]);
 
-    for (const walks of ['counted', 'replayed'] as const) {
-      const after = playRolloutTurn(rolloutCursor(claimed, player('one')), options({ targets: winnableBySkill, walks }));
+    // Counted, as imagined games walk, and walked through `applyAction`.
+    const walked = (cursor: RolloutCursor, rules: RolloutOptions) => playWalkedTurn(cursor, rules, cheapestRoute);
+    for (const play of [playRolloutTurn, walked]) {
+      const after = play(rolloutCursor(claimed, player('one')), options({ targets: winnableBySkill }));
       expect(after.state.players[1]?.position).toBe(two.position);
       expect(after.state.players[1]?.stats.stamina).toBe(two.stats.stamina + DEFAULT_GAME_CONFIG.movement.REST_STAMINA_GAIN);
       expect(after.state.turn.activeSeat).toBe(1);
@@ -365,7 +336,7 @@ describe('counted walks in imagined games (Q210, stage 3, 823 A)', () => {
     expect(poiRuntimeAt(counted.state, n(5))?.claimedBy).toBe(player('one'));
     expect(counted.targets[0]).toBeNull();
 
-    const replayed = playRolloutTurn(cursor, options({ walks: 'replayed' }));
+    const replayed = playWalkedTurn(cursor, options(), cheapestRoute);
     expect(replayed.state.players[0]?.position).toBe(n(1));
   });
 
@@ -408,18 +379,21 @@ describe('counted walks in imagined games (Q210, stage 3, 823 A)', () => {
         [line, 3],
         [detour, 0],
       ] as const) {
-        const play = (walks: 'counted' | 'replayed') =>
-          runRollout(
-            rolloutCursor(fixtureGame(map, start), player('one')),
-            options({
-              config: DEFAULT_GAME_CONFIG,
-              rng: createRng(seed),
-              dice: createDiceSource(createRng(seed), DEFAULT_GAME_CONFIG),
-              walks,
-              walkRoute: cheapestRoute,
-            }),
-          ).state;
-        expect(board(play('counted'))).toEqual(board(play('replayed')));
+        const rules = () =>
+          options({
+            config: DEFAULT_GAME_CONFIG,
+            rng: createRng(seed),
+            dice: createDiceSource(createRng(seed), DEFAULT_GAME_CONFIG),
+            walkRoute: cheapestRoute,
+          });
+        const counted = runRollout(rolloutCursor(fixtureGame(map, start), player('one')), rules()).state;
+        // The same game, every turn walked through applyAction.
+        const walkedRules = rules();
+        let replayed = rolloutCursor(fixtureGame(map, start), player('one'));
+        for (let turns = 0; !walkedRules.termination.isTerminal(replayed, turns); turns++) {
+          replayed = playWalkedTurn(replayed, walkedRules, cheapestRoute);
+        }
+        expect(board(counted)).toEqual(board(replayed.state));
       }
     }
   });

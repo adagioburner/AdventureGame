@@ -425,10 +425,7 @@ played with `applyCountedTurn` (823 A): `applyAction`'s turn with the walk
 already counted, so a turn ending on an unclaimed site still fights or takes
 it. `RolloutCursor.walks` carries each seat's route and how far along it the
 seat is. Counted along the cheapest route, an imagined game is exactly the one
-`applyAction` plays (a test holds them equal). `closestByTerrainCost` keeps
-the earlier ranking for the balancing harness's `+fixed` seats,
-`+cheapest-search` the search before stage 2, and `+replayed-walks` the
-imagined walks before stage 3.
+`applyAction` plays (a test holds them equal).
 
 **Routes are searched once per map in a game** (Andrei, 2026-09-28):
 `routeTable` in `packages/core/src/path.ts` runs the whole Dijkstra from every
@@ -535,7 +532,7 @@ is injected rather than defaulted.
 where the lead is the subject's gold minus the richest other player's when the
 rollout ends. Level is 0.5 and the value stays in [0, 1], so √2 still holds.
 `computerEvaluator()` in `packages/ai/src/computer.ts` returns it
-(`simulatedLeadEvaluator('soft')`); the balancing harness's `simulated` seat is
+(`simulatedLeadEvaluator()`); the balancing harness's `simulated` seat is
 still the subject's own gold, to compare against.
 
 The estimated evaluator never reads `rolledOut`, so `search()` skips the

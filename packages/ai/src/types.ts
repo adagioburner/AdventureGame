@@ -115,8 +115,7 @@ export interface ActionEnumerator {
  * arrive at that target within this turn's allowance and stamina (§7)?
  *
  * Injected so a test can fix it; the game's is
- * `stepsReachability(bestRouteStepsFor)` (Q210, 820 A), `previewReachability()`
- * the one before, `previewPath` over the cheapest route.
+ * `stepsReachability(bestRouteStepsFor)` (Q210, 820 A).
  */
 export interface TurnReachability {
   isReachableThisTurn(state: GameState, subject: PlayerId, target: PoiCandidate): boolean;

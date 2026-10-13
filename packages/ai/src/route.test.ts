@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_GAME_CONFIG } from '@adventure/config';
-import { applyAction, asNodeId, createDiceSource, createRng, playerById, poiRuntimeAt } from '@adventure/core';
+import { applyAction, asNodeId, createDiceSource, createRng, playerById, poiRuntimeAt, previewPath, routeTable, type GameState } from '@adventure/core';
 import {
   bestRouteForSpeeds,
   bestRouteStepsFor,
@@ -16,7 +16,7 @@ import {
 import { fixtureGame, fixtureMap, player, withStats } from '../../core/src/rules/scenario.fixture.ts';
 import { computerSearchOptions, type ComputerSettings } from './computer.ts';
 import { firstTurnOf } from './mcts.ts';
-import { previewReachability, stepsReachability, usesFully } from './policies/tree.ts';
+import { stepsReachability, usesFully } from './policies/tree.ts';
 
 /**
  * [Q210] Stage 1: the computer's real move walks the best route for its
@@ -124,18 +124,23 @@ describe('the computer search’s own choices (Q210, stage 2, 820 A)', () => {
     const state = withStats(fixtureGame(sites, 0), one, { forest_move: 3, stamina: 1 });
     const magic = { node: n(5), cost: 5 };
     expect(stepsReachability(bestRouteStepsFor).isReachableThisTurn(state, one, magic)).toBe(true);
-    expect(previewReachability().isReachableThisTurn(state, one, magic)).toBe(false);
+    expect(stepsReachability(cheapestRouteSteps).isReachableThisTurn(state, one, magic)).toBe(false);
   });
 
   it('tells what is reached this turn from the steps per terrain exactly as walking the route does', () => {
+    // Walking the cheapest route to the site with §7's preview: it arrives this turn, or standing on it already.
+    const walksThere = (state: GameState, node: number): boolean => {
+      const player = playerById(state, one);
+      const config = state.map.ruleset.config;
+      const route = routeTable(state.map.graph, config).path(player.position, n(node));
+      return route !== null && previewPath(state.map.graph, player.position, route, state.turn.allowance, player.stats.stamina, config).destinationReachable;
+    };
     for (let forest = 0; forest <= 3; forest++) {
       for (let stamina = 0; stamina <= 7; stamina++) {
         const state = withStats(fixtureGame(sites, 0), one, { forest_move: forest, stamina });
         for (let node = 0; node <= 8; node++) {
           const site = { node: n(node), cost: 0 };
-          expect(stepsReachability(cheapestRouteSteps).isReachableThisTurn(state, one, site)).toBe(
-            previewReachability().isReachableThisTurn(state, one, site),
-          );
+          expect(stepsReachability(cheapestRouteSteps).isReachableThisTurn(state, one, site)).toBe(walksThere(state, node));
         }
       }
     }
@@ -149,11 +154,10 @@ describe('the computer search’s own choices (Q210, stage 2, 820 A)', () => {
     expect(usesFully(after, playerById(after, one), n(5), ['forest_move'], cheapestRoute)).toBe(false);
   });
 
-  it('walks a choice along the best route for its speeds, and the cheapest as before with searchRoutes cheapest', () => {
+  it('walks a choice along the best route for its speeds', () => {
     const state = withStats(fixtureGame(sites, 0), one, { forest_move: 3, stamina: 10 });
     const options = computerSearchOptions(state, one, settings());
     expect(options.edgeRoute).toBe(bestRouteForSpeeds);
-    expect(computerSearchOptions(state, one, { ...settings(), searchRoutes: 'cheapest' }).edgeRoute).toBe(cheapestRoute);
     const rules = { config: options.config, termination: options.termination, restRule: options.restRule, dice: options.dice, rng: options.rng };
     const walked = (route: typeof cheapestRoute) =>
       playerById(macroAdvanceToTarget(rolloutCursor(state, one), n(5), rules, route).cursor.state, one).stats.stamina;

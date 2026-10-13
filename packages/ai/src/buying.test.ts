@@ -186,9 +186,8 @@ describe('guarded gold it cannot win (Q295)', () => {
     ],
   });
   const at = (stats: Parameters<typeof withStats>[2]) => withStats(fixtureGame(pass, 0), one, { stamina: 1, ...stats });
-  const skipping = (config = DEFAULT_GAME_CONFIG): ComputerSettings => ({ ...settings(), config, unwinnableGuards: 'skipped' });
   const branchesAt = (state: GameState, bought: readonly RewardKind[] = [], config = DEFAULT_GAME_CONFIG) =>
-    computerSearchOptions(state, one, skipping(config)).actions.enumerate(state, one, bought);
+    computerSearchOptions(state, one, { ...settings(), config }).actions.enumerate(state, one, bought);
   const targetsOf = (branches: readonly MctsBranch[]) => branches.flatMap((branch) => (branch.kind === 'target' ? [branch.target.node] : [])).sort((a, b) => a - b);
   const buysOf = (branches: readonly MctsBranch[]) => branches.flatMap((branch) => (branch.kind === 'buy' ? [branch.skill] : []));
 
@@ -218,12 +217,6 @@ describe('guarded gold it cannot win (Q295)', () => {
 
     // On 4, the second unit leaves two 4 ahead, which does not end the game.
     expect(buysOf(branchesAt(withStats(at({ fighting: 1, gold: 2 }), player('two'), { gold: 4 })))).toContain('fighting');
-  });
-
-  it('weighs every unclaimed site, as before, when the guards are weighed', () => {
-    const state = at({ fighting: 1, gold: 2 });
-    const weighing: ComputerSettings = { ...settings(), unwinnableGuards: 'weighed' };
-    expect(targetsOf(computerSearchOptions(state, one, weighing).actions.enumerate(state, one))).toEqual([1, 2, 3]);
   });
 
   it('skips them in the game', () => {
