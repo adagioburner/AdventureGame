@@ -20,6 +20,21 @@ export interface MoveAction {
    * the same guard again". That is how §8's "remain stationed on the node" is
    * expressed: a turn with no movement still ends on a POI, so interaction
    * re-triggers and the player gets another roll against the guard.
+   *
+   * [SOURCE §7, chat] "Resting means taking no action, including no
+   * interaction with a POI, so it is different."
+   *
+   * Rest and a zero-length move both leave the player where they are, but they
+   * are **not** the same action, and the difference is a real decision for a
+   * player camped on a guarded POI:
+   *
+   *  - zero-length move → interaction re-triggers, so another roll at the guard,
+   *    and no stamina gained (§8);
+   *  - rest → `REST_STAMINA_GAIN` stamina, and explicitly "no
+   *    movement/interaction" (§7), so no roll.
+   *
+   * Each turn on that node is therefore a choice between another attempt and
+   * recovering stamina, rather than both at once.
    */
   readonly path: readonly NodeId[];
   /**
@@ -45,24 +60,6 @@ export interface RestAction {
    */
   readonly plan?: PlannedPath;
 }
-
-/**
- * [SOURCE §7, chat] "Resting means taking no action, including no interaction
- * with a POI, so it is different."
- *
- * Rest and a zero-length move both leave the player where they are, but they
- * are **not** the same action, and the difference is a real decision for a
- * player camped on a guarded POI:
- *
- *  - zero-length move → interaction re-triggers, so another roll at the guard,
- *    and no stamina gained (§8);
- *  - rest → `REST_STAMINA_GAIN` stamina, and explicitly "no
- *    movement/interaction" (§7), so no roll.
- *
- * Each turn on that node is therefore a choice between another attempt and
- * recovering stamina, rather than both at once.
- */
-export const ZERO_LENGTH_MOVE_PATH: readonly NodeId[] = [];
 
 export type TurnAction = MoveAction | RestAction;
 

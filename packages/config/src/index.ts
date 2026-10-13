@@ -25,7 +25,7 @@ export {
   LARGER_MAP_GAME_CONTENT,
   LARGER_MAP_REWARD_TABLE,
 } from './content.ts';
-export { validateRuleset, resolvePending, RulesetError, UnresolvedDesignError } from './validate.ts';
+export { validateRuleset, RulesetError } from './validate.ts';
 
 import {
   DEFAULT_ENGINEERING_CONFIG,

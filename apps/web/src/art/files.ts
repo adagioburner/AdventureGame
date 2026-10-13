@@ -10,12 +10,12 @@ import type { ArtFiles } from './catalog.ts';
  */
 const ART_DIR = '../../../../Art/';
 
-const json = import.meta.glob<unknown>(['../../../../Art/*.json', '../../../../Art/Icons/*.json'], {
+const json = import.meta.glob<unknown>('../../../../Art/*.json', {
   import: 'default',
   eager: true,
 });
 const urls = import.meta.glob<string>(
-  ['../../../../Art/*.png', '../../../../Art/Icons/*.png', '../../../../Art/Island/*.{png,jpg}', '../../../../Art/Sounds/*.{wav,mp3}'],
+  ['../../../../Art/*.png', '../../../../Art/Icons/*.png', '../../../../Art/Island/*.png', '../../../../Art/Sounds/*.{wav,mp3}'],
   {
     query: '?url',
     import: 'default',

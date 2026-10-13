@@ -125,15 +125,10 @@ export const LARGER_MAP_GAME_CONFIG: GameConfig = {
   },
 };
 
-/**
- * Implementation-only knobs. Nothing here comes from GDD.md, and the `pending`
- * block holds values nobody has decided yet — reading one throws.
- */
+/** Implementation-only knobs. Nothing here comes from GDD.md. */
 export const DEFAULT_ENGINEERING_CONFIG: EngineeringConfig = {
   MAX_GENERATION_ATTEMPTS: 50,
   POISSON_RADIUS_FACTOR: 0.815,
-  // Every design value is decided; see the note on `PendingConfig`.
-  pending: {},
 };
 
 /**

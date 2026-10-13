@@ -61,7 +61,7 @@ Two rules hold the shape together:
 |---|---|---|
 | `GameConfig` | Every row of §11's table, under the GDD's own `SCREAMING_SNAKE` names | Exactly §11, nothing more |
 | `GameContent` | §4.2's reward table | Design content, keyed by `(terrain, kind, guard)` |
-| `EngineeringConfig` | `MAX_GENERATION_ATTEMPTS`, `POISSON_RADIUS_FACTOR`, and a `pending` block | Never merged into `GameConfig`, so "what the designer specified" and "what the implementation added" can't be confused |
+| `EngineeringConfig` | `MAX_GENERATION_ATTEMPTS` and `POISSON_RADIUS_FACTOR` | Never merged into `GameConfig`, so "what the designer specified" and "what the implementation added" can't be confused |
 
 Ranges that appear as `MIN`/`MAX` pairs in §11 are single `IntRange` values
 (`LEAF_COUNT`, `VALLEY_COUNT`, `VALLEY_LENGTH`, `GUARD_STRENGTH`,
@@ -74,16 +74,13 @@ Several §11 rows are marked "tunable" or "starting value". They are treated as
 `REMOTENESS_SIMULATION_RUNS = 100` and the rest are transcribed as-is, and
 nothing derives, rounds or "improves" them.
 
-Two things the config module does structurally:
+One thing the config module does structurally:
 
 - **Formulas over values.** Starting stamina is
   `startingStaminaForSeat(seat) = STARTING_STAMINA_BASE + (seat−1) × STARTING_STAMINA_INCREMENT`,
   not a five-entry table — so raising `PLAYER_COUNT.max` above 5 needs no new
   design input. Same reasoning applies wherever §11 expresses a per-seat or
   per-terrain quantity as a rule rather than a list.
-- **Undecided ≠ defaulted.** `pending.*` entries are `PendingValue<T>` with
-  `value: null`. `resolvePending()` throws `UnresolvedDesignError` with the GDD
-  reference. A build that needs an unmade decision fails loudly.
 
 `validateRuleset()` enforces the invariants the algorithms rely on: §4.2's POI
 counts sum to `POI_COUNT[terrain]`; every row has `totalUnits ≥ poiCount` (§4.3
@@ -558,7 +555,7 @@ two phases by §9, two by §12.2 — which is precisely why they sit behind thei
 own interfaces instead of inside the function. `computer.ts` puts the v1
 choice of each in one place for callers.
 
-The session layer sees only:
+The page sees only:
 
 ```ts
 interface AiPlayer {
@@ -583,20 +580,18 @@ transport, storage engine, socket, or timer. Everything arrives through
 
 The board needs no store of its own because it is game state (§12.3), so
 `GameStore` already persists it. There is no game master absence policy
-because §12.4 decided there is no fallback to configure: a GM-only request with
-no game master connected is answered `game_master_unavailable` and the game
-waits.
+because §12.4 decided there is no fallback to configure: with no game master
+connected, the game waits for them.
 
 [SOURCE §12.1, chat] Map generation and the MCTS search run on the **game
-master's machine**, and `GameSession` asks for both as messages rather than
+master's machine**, and both reach `GameSession` as messages rather than
 through ports: a call that waits for the GM's browser would have to stay in
 memory, and a Durable Object may sleep between two messages. So Start sends
 `gm.requestMapGeneration` to the GM's browser and `gm.mapGenerated` answers
 it, with the game in a `starting` phase between them
-(`docs/IMPLEMENTATION_PLAN.md` phase 6), and a computer's turn is
-`gm.requestAiMove` answered by `gm.aiMove`. `MapService` and `AiService` stay
-in `ports.ts` as the shape a server-side generator or computer would take;
-nothing implements them.
+(`docs/IMPLEMENTATION_PLAN.md` phase 6). A computer's turn needs no request:
+the GM's browser has the game like every other page, thinks for the computer
+on turn, and sends its move as `gm.aiMove`.
 
 That composition has a consequence stronger than §12.4 states on its own: with
 AI on the GM's machine, a disconnected game master blocks not just forced turns
@@ -609,8 +604,9 @@ gives it with an in-process queue keyed by `gameId`) and `GameSession` is
 identical either way.
 
 Its responsibilities, and only these: **authority** (is this user the game
-master, is it this player's turn), **sequencing**, **driving AI turns**, and
-**persistence + broadcast**. It contains no game rules.
+master, is it this player's turn), **sequencing**, **playing the AI turns the
+game master's browser sends**, and **persistence + broadcast**. It contains no
+game rules.
 
 Authority is here and nowhere else — the engine deliberately doesn't know who
 the GM is. §6.1's GM is the game's creator and the role cannot be transferred in
@@ -657,7 +653,6 @@ on it.
 | `interaction/picking.ts` | What a click or tap landed on: the figures under it, front first, and the node, forgiving a finger at any zoom |
 | `modes/` | Online vs. hotseat as a flag on one UI; `hotseat.ts` also holds `HotseatGame`, the local game with its own dice |
 | `page/` | The React page: setup, the game screen, the stats panel, the result and end cards, and `journal.ts`, the turn log in words |
-| `state/client.ts` | `ClientGameStore` and the `Transport` seam; online play does not use them, it goes through `online/socket.ts` |
 
 Three decisions worth stating:
 

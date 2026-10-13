@@ -45,7 +45,6 @@ export const SKILL_KINDS = [
   'fighting',
   'magic',
 ] as const satisfies readonly RewardKind[];
-export type SkillKind = (typeof SKILL_KINDS)[number];
 
 /**
  * [SOURCE §4.4] A guard is fighting-gated (red) or magic-gated (purple).

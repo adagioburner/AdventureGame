@@ -77,8 +77,8 @@ export interface HotseatSetup {
 
 /**
  * One turn as it was played, with what a reader needs to check it by hand:
- * where the player stood, the allowance §7 had refreshed for them, their stats
- * before, and every player's stats after.
+ * the allowance §7 had refreshed for the player, their stats before, and every
+ * player's stats after.
  */
 export interface PlayedTurn {
   readonly number: number;
@@ -87,7 +87,6 @@ export interface PlayedTurn {
   readonly name: string;
   readonly action: TurnAction;
   readonly events: readonly GameEvent[];
-  readonly positionBefore: NodeId;
   readonly allowanceBefore: MovementAllowance;
   readonly statsBefore: PlayerStats;
   /** The state the turn left, which is also the next turn's `before`. */
@@ -223,7 +222,6 @@ export function playedTurnOf(
     name: player.name,
     action,
     events,
-    positionBefore: player.position,
     allowanceBefore: before.turn.allowance,
     statsBefore: player.stats,
     after,

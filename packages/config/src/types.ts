@@ -506,23 +506,6 @@ export interface GameContent {
 /* -------------------------------------------------------------------------- */
 
 /**
- * A value that GDD.md does not specify and that nobody has chosen yet.
- *
- * It is deliberately *not* a number: code that needs one cannot accidentally
- * read a plausible-looking default, and `resolvePending()` throws with the GDD
- * reference attached. See `docs/OPEN_QUESTIONS.md`.
- */
-export interface PendingValue<T> {
-  readonly __pending: true;
-  /** Where the gap lives, e.g. "GDD.md §12.2". */
-  readonly gdd: string;
-  /** What decision is missing, in one line. */
-  readonly question: string;
-  /** Always `null` — there is no default, by design. */
-  readonly value: T | null;
-}
-
-/**
  * Knobs the implementation needs that GDD.md's §11 table does not contain.
  *
  * Kept in its own object, never merged into `GameConfig`, so that "what the
@@ -548,21 +531,6 @@ export interface EngineeringConfig {
    * what that approximates.
    */
   readonly POISSON_RADIUS_FACTOR: number;
-  /** Values GDD.md leaves genuinely undecided. Never silently defaulted. */
-  readonly pending: PendingConfig;
-}
-
-/**
- * Unresolved design values.
- *
- * **Currently empty** — every open item from GDD.md §12, and every gap found
- * while building against it, has now been decided. The machinery stays because
- * it is the mechanism that keeps "undecided" from decaying into "whatever the
- * first implementer typed": a new gap becomes a `PendingValue` here, and
- * `resolvePending()` throws on it with the GDD reference attached.
- */
-export interface PendingConfig {
-  readonly [key: string]: PendingValue<unknown> | undefined;
 }
 
 /** Everything needed to generate and run a game, in three separated layers. */

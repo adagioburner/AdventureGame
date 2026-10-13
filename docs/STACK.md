@@ -159,9 +159,9 @@ That is worth taking advantage of whatever the host.
   in the DO, so it can neither block that game's other messages nor accrue
   Workers CPU billing. Map generation likewise.
 - `AiPlayer.chooseAction` was already async and behind a port, so the session
-  core is unchanged by this. `GameSession` asks the GM's client for both as
-  messages (`gm.requestMapGeneration` / `gm.mapGenerated`, `gm.requestAiMove` /
-  `gm.aiMove`); nothing implements the `MapService` and `AiService` ports.
+  core is unchanged by this. `GameSession` asks the GM's client for the map as
+  a message (`gm.requestMapGeneration` / `gm.mapGenerated`), and the GM's
+  client sends each computer's move as one (`gm.aiMove`).
 
 ### What it costs
 
@@ -188,10 +188,10 @@ That is worth taking advantage of whatever the host.
 ### If DO turns out not to fit
 
 The swap is an adapter. `packages/session` imports no transport, storage, socket
-or timer, and the in-memory adapters in `apps/server/src/adapters/memory.ts`
-exist to keep proving that. The nearest alternative remains a single long-lived
-Node service with an in-process queue keyed by `gameId` — same single-writer
-property, one deployment, no hibernation saving.
+or timer, and its tests run it on in-memory ports, which keeps proving that.
+The nearest alternative remains a single long-lived Node service with an
+in-process queue keyed by `gameId` — same single-writer property, one
+deployment, no hibernation saving.
 
 ## 6. Summary
 
@@ -202,6 +202,6 @@ property, one deployment, no hibernation saving.
 | Client chrome | React + Vite | Easy |
 | Delaunay | `delaunator` | Easy — one step |
 | Session host | **Decided: Durable Objects, one per game** | Easy — adapter only |
-| Map generation + AI host | **Decided: the game master's machine** | Easy — `MapService` / `AiService` keep the shape |
+| Map generation + AI host | **Decided: the game master's machine** | Easy — both are messages to and from the game master's page |
 | MCTS off the GM's UI thread | A slice a frame on the page's thread; a Web Worker is phase 8's to check | Easy |
 | AI budget in seconds vs. rollouts | Seconds, per §11 — but it makes AI strength hardware-dependent | Config |

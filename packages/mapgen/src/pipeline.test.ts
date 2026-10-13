@@ -24,7 +24,7 @@ import {
   type NodeId,
 } from '@adventure/core';
 import { defaultRemotenessScorer } from '@adventure/sim';
-import { generateMap, reviveGameMap } from './pipeline.ts';
+import { generateMap } from './pipeline.ts';
 import { areaLabels } from './terraingrowth.ts';
 import type { MapDraft } from './types.ts';
 
@@ -88,21 +88,6 @@ describe('generateMap', () => {
       expect(leaves).toBeGreaterThanOrEqual(LEAF_COUNT.min);
       expect(leaves).toBeLessThanOrEqual(LEAF_COUNT.max);
     }
-  }, 30000);
-
-  it('survives the JSON round trip Q15 sends it through', () => {
-    // Q15 settled that the finished map is *sent* to every client rather than
-    // regenerated per client, so nothing in it may be a Set, a class instance
-    // or a function. `poiByNode` is the one Map, and `reviveGameMap` is the
-    // other half of the trip.
-    const map = mapOf('adventure');
-    const revived = reviveGameMap(JSON.parse(JSON.stringify(map)) as GameMap);
-
-    expect(revived.graph).toEqual(map.graph);
-    expect(revived.pois).toEqual(map.pois);
-    expect(revived.attempts).toBe(map.attempts);
-    expect([...revived.poiByNode.entries()].sort()).toEqual([...map.poiByNode.entries()].sort());
-    for (const poi of map.pois) expect(poiAt(revived, poi.node)).toEqual(poi);
   }, 30000);
 });
 

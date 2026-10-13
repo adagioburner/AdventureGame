@@ -30,7 +30,6 @@ import type { PlayedTurn, Purchase } from '../modes/hotseat.ts';
  */
 export interface JournalEntry {
   readonly number: number;
-  readonly seat: number;
   readonly name: string;
   readonly headline: string;
   readonly details: readonly string[];
@@ -87,7 +86,7 @@ export function journalEntry(turn: PlayedTurn, before: GameState, movedOn = fals
   const map = before.map;
   const mover = turn.after.players.find((player) => player.id === turn.player);
   if (mover === undefined) throw new RangeError(`no player ${turn.player}`);
-  const base = { number: turn.number, seat: turn.seat, name: turn.name, statsAfter: mover.stats };
+  const base = { number: turn.number, name: turn.name, statsAfter: mover.stats };
 
   const moved = find(turn.events, 'moved');
   const rested = find(turn.events, 'rested');
@@ -145,7 +144,7 @@ function describeWalk(
   if (resolution.walked.length === 0) {
     return {
       headline: 'Could not afford the first step',
-      details: [heading, stoppedLine(resolution.from, resolution.remainder, turn, map, turn.allowanceBefore, turn.statsBefore.stamina)],
+      details: [heading, stoppedLine(resolution.remainder, turn, map, turn.allowanceBefore, turn.statsBefore.stamina)],
     };
   }
 
@@ -168,7 +167,7 @@ function describeWalk(
     for (const step of preview.steps) {
       if (step.color === 'free') left[terrainOf(map, step.node)]--;
     }
-    details.push(stoppedLine(resolution.to, resolution.remainder, turn, map, left, turn.statsBefore.stamina - preview.totalStaminaCost));
+    details.push(stoppedLine(resolution.remainder, turn, map, left, turn.statsBefore.stamina - preview.totalStaminaCost));
   }
 
   const walked = resolution.walked.length;
@@ -177,7 +176,6 @@ function describeWalk(
 
 /** The one reason a walk ends early (§7): the next step is not free and costs more stamina than is left. */
 function stoppedLine(
-  at: NodeId,
   remainder: readonly NodeId[],
   turn: PlayedTurn,
   map: GameMap,
@@ -271,7 +269,6 @@ export function purchaseEntry(purchase: Purchase): JournalEntry {
   const won = find(purchase.events, 'game_won');
   return {
     number: purchase.number,
-    seat: purchase.seat,
     name: purchase.name,
     headline: 'Bought, and the game ended',
     details: [...[...purchase.earlier, purchase].map(purchaseLine), ...(won === undefined ? [] : [victoryLine(won.winners.length, purchase.after)])],

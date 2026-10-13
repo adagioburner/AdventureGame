@@ -45,8 +45,6 @@ export interface SheetTextures {
   readonly atlas: Atlas;
   /** One per sprite, in atlas order. */
   readonly frames: readonly Texture[];
-  /** Texture pixels per pixel of the original sheet. */
-  readonly scale: number;
   /** The typical sprite span, in texture pixels. */
   readonly typical: number;
   /** Each sprite's solid picture relative to where it stands, in typical spans; in atlas order. */
@@ -213,7 +211,7 @@ function processSheet(
       bands,
     };
   });
-  const sheet: SheetTextures = { atlas, frames, scale, typical: typicalOriginal * scale, shapes };
+  const sheet: SheetTextures = { atlas, frames, typical: typicalOriginal * scale, shapes };
   return { sheet, full };
 }
 

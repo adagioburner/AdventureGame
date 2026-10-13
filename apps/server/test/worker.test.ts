@@ -5,10 +5,13 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { unstable_startWorker } from 'wrangler';
 
 import { DEFAULT_RULESET } from '@adventure/config';
+import { activePlayer } from '@adventure/core';
 import { generateMap } from '@adventure/mapgen';
 import {
+  computerMoveRequestId,
   decodeServerMessage,
   encodeMessage,
+  replayRecord,
   type ClientMessage,
   type LoginResponse,
   type ServerMessage,
@@ -331,10 +334,14 @@ describe('the server, in the local Workers runtime', () => {
     const refused = await beaGame.next((m): m is Extract<ServerMessage, { type: 'error' }> => m.type === 'error');
     expect(refused.code).toBe('turn_over');
 
-    // The computer's turn: the server asks the game master's page for the move.
-    const ask = await gmGame.next((m): m is Extract<ServerMessage, { type: 'gm.requestAiMove' }> => m.type === 'gm.requestAiMove');
-    expect(ask).toMatchObject({ requestId: 'turn-3', player: 'seat-3' });
-    gmGame.send({ type: 'gm.aiMove', gameId, requestId: ask.requestId, player: ask.player, action: { kind: 'rest', player: ask.player } });
+    // The computer's turn: the game master's page plays it from the turns it
+    // has heard, naming the turn with `computerMoveRequestId`.
+    let now = state;
+    for (const seq of [1, 2, 3]) now = replayRecord(now, (await gmGame.next(played(seq))).record).state;
+    const computer = activePlayer(now);
+    expect(computer).toMatchObject({ id: 'seat-3', control: 'ai' });
+    expect(computerMoveRequestId(now)).toBe('turn-3');
+    gmGame.send({ type: 'gm.aiMove', gameId, requestId: computerMoveRequestId(now), player: computer.id, action: { kind: 'rest', player: computer.id } });
     await beaGame.next(played(4));
 
     // [Q54, 34] The game master's list says it is their turn.

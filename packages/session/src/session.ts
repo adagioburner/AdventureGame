@@ -29,7 +29,7 @@ import {
   type ServerMessage,
   type SetupState,
 } from '@adventure/protocol';
-import { GAME_MASTER_ABSENCE_BEHAVIOUR, type GameListing, type SessionPorts } from './ports.ts';
+import type { GameListing, SessionPorts } from './ports.ts';
 import { applySetupAction, createSetup, drawSeats, SetupError, startGame, type NewSetup, type SetupLimits } from './setup.ts';
 
 /**
@@ -45,8 +45,8 @@ import { applySetupAction, createSetup, drawSeats, SetupError, startGame, type N
  *   - authority: is this user the game master (§7.3), is it this player's turn;
  *   - sequencing: apply one action at a time through `applyAction`, with the
  *     server's own dice, and keep a record of each;
- *   - driving AI turns by asking the game master's browser for them when the
- *     active seat is AI-controlled (§12.1);
+ *   - playing AI turns as the game master's browser sends them: its page
+ *     thinks for every AI-controlled seat on turn (§12.1);
  *   - the game's lifetime ([Q55]): ending it when its time is up, and
  *     deleting it a week after it closed, whenever its host wakes it, or
  *     sooner when its game master deletes it once it has finished ([Q90]);
@@ -56,6 +56,14 @@ import { applySetupAction, createSetup, drawSeats, SetupError, startGame, type N
  * live in `@adventure/core`, so the server, the client's preview and MCTS all
  * agree by construction rather than by review. The setup flow's own rules are
  * `setup.ts`'s.
+ *
+ * [SOURCE §12.4, chat] "The game cannot proceed for a player that cannot
+ * establish connection with the game state server. If the game master
+ * disconnects there is no one to force the next turn so the game stalls as
+ * well." So there is no fallback: with map generation and the computer's moves
+ * on the game master's machine (§12.1), a game whose game master is away
+ * waits, and that blocks not only forced turns but every computer turn and
+ * map creation, so even an all-computer game cannot advance without them.
  */
 export class GameSession {
   /**
@@ -102,8 +110,6 @@ export class GameSession {
       });
     }
     if (setup.phase === 'starting' && user === setup.gameMaster) await this.requestMap(setup);
-    // [SOURCE §12.4] A computer's turn waits for the game master; asked again when they are back.
-    if (game !== null && user === setup.gameMaster) await this.requestAiMove(setup, game);
   }
 
   /**
@@ -181,7 +187,6 @@ export class GameSession {
         await this.ports.broadcaster.broadcast(this.gameId, { type: 'game.state', state: started.game });
         await this.ports.broadcaster.broadcast(this.gameId, { type: 'game.history', gameId: this.gameId, records: [] });
         await this.ports.directory.update(this.gameId, listingOf(started.setup, started.game));
-        await this.requestAiMove(started.setup, started.game);
         return;
       }
 
@@ -442,8 +447,8 @@ export class GameSession {
 
   /**
    * Applies one action to the game with the server's dice, keeps its record,
-   * stores and sends it, and moves the game on: the list's row, a computer's
-   * turn to ask for, the game closing when it has finished.
+   * stores and sends it, and moves the game on: the list's row, the game
+   * closing when it has finished.
    */
   private async play(setup: SetupState, game: GameState, action: GameAction, by: UserId | null): Promise<void> {
     const dice = await this.ports.dice.forGame(this.gameId);
@@ -477,8 +482,6 @@ export class GameSession {
     const before = listingOf(setup, game);
     const after = listingOf(current, outcome.state);
     if (JSON.stringify(before) !== JSON.stringify(after)) await this.ports.directory.update(this.gameId, after);
-    // A new turn, or a resignation handing the turn on to the computer.
-    if (outcome.state.turn.number !== game.turn.number || action.kind === 'resign') await this.requestAiMove(current, outcome.state);
   }
 
   /**
@@ -504,29 +507,11 @@ export class GameSession {
   }
 
   /**
-   * [SOURCE §12.1] Asks the game master's browser for the move of the
-   * computer on turn, if a computer is on turn. Nobody answers while they are
-   * away, and the game waits (§12.4); `connected` asks again.
-   */
-  private async requestAiMove(setup: SetupState, game: GameState): Promise<void> {
-    if (game.status !== 'in_progress') return;
-    const active = activePlayer(game);
-    if (active.control !== 'ai') return;
-    await this.ports.broadcaster.sendTo(setup.gameMaster, {
-      type: 'gm.requestAiMove',
-      gameId: this.gameId,
-      requestId: computerMoveRequestId(game),
-      player: active.id,
-    });
-  }
-
-  /**
    * [SOURCE §12.1, chat] The map is generated on the game master's machine.
    * [SOURCE §12.4, chat] With the GM gone nobody answers, and the game waits
    * in `starting` until they are back (`connected` asks again).
    */
   private async requestMap(setup: SetupState): Promise<void> {
-    void GAME_MASTER_ABSENCE_BEHAVIOUR;
     await this.ports.broadcaster.sendTo(setup.gameMaster, {
       type: 'gm.requestMapGeneration',
       gameId: this.gameId,

@@ -41,13 +41,12 @@ Two design questions are open, neither blocking: [Q27](./docs/OPEN_QUESTIONS.md)
 — `COMPACTNESS_MAX` never binds on a graph this sparse, so §2.1's Smooth step
 currently does nothing — and [Q30](./docs/OPEN_QUESTIONS.md), turned up by phase
 2: §1 ends a game only through a decisive gold lead, so a position where the
-gold that is left sits behind guards nobody can beat has no ending at all. The
-config's `pending` block is empty. The §12 decisions: Durable Objects for the
-session layer with map generation and AI on the game master's machine (§12.1),
-UCT over the 10 closest unclaimed POIs (§12.2), the message board as ordinary
-game state (§12.3), and no fallback for a disconnected game master — the game
-stalls (§12.4). Unmade *design* decisions throw `UnresolvedDesignError`, and
-have no defaults to fall back on.
+gold that is left sits behind guards nobody can beat has no ending at all.
+Every design value in the config is decided. The §12 decisions: Durable
+Objects for the session layer with map generation and AI on the game master's
+machine (§12.1), UCT over the 10 closest unclaimed POIs (§12.2), the message
+board as ordinary game state (§12.3), and no fallback for a disconnected game
+master — the game stalls (§12.4).
 
 ## Documents
 

@@ -252,12 +252,10 @@ export interface MoveProspectArt {
   readonly dot: Readonly<Record<PathStepColor, string>>;
   readonly cross: Readonly<Record<PathStepColor, string>>;
   readonly waypoint: string;
-  readonly active: string;
   readonly dotSize: number;
   readonly dotSpacing: number;
   readonly crossSize: number;
   readonly waypointSize: number;
-  readonly activeSize: number;
 }
 
 const PATH_STEP_COLORS: readonly PathStepColor[] = ['free', 'stamina', 'unreachable'];
@@ -328,12 +326,10 @@ export function parseManifest(json: unknown): ArtManifest {
       dot: byStepColor(prospect['dot'], 'manifest.json: move_prospect.dot'),
       cross: byStepColor(prospect['cross'], 'manifest.json: move_prospect.cross'),
       waypoint: string(prospect['waypoint'], 'manifest.json: move_prospect.waypoint'),
-      active: string(prospect['active'], 'manifest.json: move_prospect.active'),
       dotSize: positive(prospect['dot_size'], 'manifest.json: move_prospect.dot_size'),
       dotSpacing: positive(prospect['dot_spacing'], 'manifest.json: move_prospect.dot_spacing'),
       crossSize: positive(prospect['cross_size'], 'manifest.json: move_prospect.cross_size'),
       waypointSize: positive(prospect['waypoint_size'], 'manifest.json: move_prospect.waypoint_size'),
-      activeSize: positive(prospect['active_size'], 'manifest.json: move_prospect.active_size'),
     },
     figurines: {
       sheet: string(figurines['sheet'], 'manifest.json: figurines.sheet'),

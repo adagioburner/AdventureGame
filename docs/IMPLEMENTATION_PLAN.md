@@ -1036,9 +1036,8 @@ run until the host is real. That is the substance of this phase.
    map generation and the MCTS search on the game master's machine. So this
    phase adds the Workers project and `wrangler` config and turns
    `apps/server/src/adapters/durable-object.ts` into a working adapter.
-   `packages/session` imports no transport, storage, socket or timer and the
-   in-memory adapters exist to keep proving that — keep both adapters working,
-   because the in-memory one is what tests run against.
+   `packages/session` imports no transport, storage, socket or timer, and its
+   tests run it on in-memory ports, which keeps proving that.
 2. **Transport.** WebSocket, with Hibernation: a 2–5 player turn-based game idles
    for minutes at a time, so hibernation makes idle games cost approximately
    nothing while keeping connections open.
@@ -1101,7 +1100,7 @@ switch turned on again.
   `setup.start` moves the game to `starting` and asks the game master's
   browser for the map; `gm.mapGenerated` starts it. A Durable Object may sleep
   between the two, so nothing waits in memory, and a game master who reloads
-  while a game is starting is asked again. `MapService` is unused.
+  while a game is starting is asked again.
 - **The pages** are `apps/web/src/online/`, built by `pnpm build:site`
   (`vite build --mode site`) into `apps/web/dist-site/`, which the Worker
   serves. `main.tsx` picks the site only in that mode, and the hot seat build
@@ -1162,10 +1161,9 @@ switch turned on again.
    Turn log, posts of up to 500 characters, and an unread count.
 6. **GM controls (§7.3).** Force a player's currently-planned move, or force a
    rest if none was planned, at the GM's discretion with no fixed time
-   threshold. A GM-only request with no game master connected is answered
-   `game_master_unavailable` and the game waits (§12.4) — there is no fallback
-   to configure. Move on, its races and the game master's end time panel are
-   [Q56](./OPEN_QUESTIONS.md#q56) 54 to 56.
+   threshold. With no game master connected the game waits (§12.4) — there is
+   no fallback to configure. Move on, its races and the game master's end time
+   panel are [Q56](./OPEN_QUESTIONS.md#q56) 54 to 56.
 7. **Resignation.** A human may resign at any time, and the computer plays the
    seat from then on ([Q56](./OPEN_QUESTIONS.md#q56) 57, built here since
    computer seats already play in this phase). Only the GM can hand control
@@ -1173,9 +1171,9 @@ switch turned on again.
 8. **Computer seats' turns** (Q48). Andrei's answer on phase 6 lets the GM start
    with seats empty, played by the computer, so a started game has computer
    turns straight away. They are played here rather than in phase 8: the
-   server asks the GM's browser for the move (`gm.requestAiMove` /
-   `gm.aiMove`), which thinks with the hot seat's `startComputerMove` for the
-   setup screen's thinking time. With no GM connected the game waits (§12.4).
+   GM's browser thinks for the computer on turn with the hot seat's
+   `startComputerMove`, for the setup screen's thinking time, and sends the
+   move (`gm.aiMove`). With no GM connected the game waits (§12.4).
 
 9. **Game lifetime** ([Q55](./OPEN_QUESTIONS.md#q55)). A stored game has a
    lifetime chosen on the new game screen, 1, 3, 7 or 14 days from creation
