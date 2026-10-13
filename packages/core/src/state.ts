@@ -5,7 +5,7 @@ import type { PoiRuntimeState } from './poi.ts';
 import type { BoardPost } from './messageboard.ts';
 import type { GameEnding } from './action.ts';
 
-export type GameStatus = 'setup' | 'in_progress' | 'finished';
+export type GameStatus = 'in_progress' | 'finished';
 
 /** State scoped to the player whose turn it currently is. */
 export interface TurnState {

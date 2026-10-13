@@ -61,7 +61,3 @@ export interface RewardGroupKey {
 export function rewardGroupKeyOf(key: RewardGroupKey): string {
   return `${key.kind}/${key.guard ?? 'unguarded'}`;
 }
-
-export function sameRewardGroup(a: RewardGroupKey, b: RewardGroupKey): boolean {
-  return a.kind === b.kind && a.guard === b.guard;
-}

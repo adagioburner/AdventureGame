@@ -4,15 +4,15 @@ Every unresolved item that actually shaped a decision in the code, what I did
 about it, and where the seam lives. Two categories:
 
 - **Routed around** — the architecture stays coherent without an answer. There
-  is a named interface or a `pending` config entry, it has *no default*, and
-  reading it throws with a GDD reference attached.
+  was a named interface or a `pending` config entry, it had *no default*, and
+  reading it threw with a GDD reference attached.
 - **Asking** — I could not proceed honestly without you, or I found a gap or a
   discrepancy that isn't in GDD.md §12 and that you should see.
 
 Nothing below was resolved by picking something reasonable.
 
 **Answered:** all four of GDD.md §12's own open items, and every question in
-this register but Q27 and Q30. `pending` in the config is empty.
+this register but Q27 and Q30. The config has no undecided values left.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
 `COMPACTNESS_MAX` never binds on a map of ~240 nodes and 300 edges, so §2.1's

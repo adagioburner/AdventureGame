@@ -3,7 +3,6 @@ import type { DiceSource, GameState, PlayerId, Rng } from '@adventure/core';
 import {
   bestRouteForSpeeds,
   bestRouteStepsFor,
-  cheapestRoute,
   closestByBestRoute,
   closestBySpeeds,
   closestWinnableBySpeeds,
@@ -12,14 +11,11 @@ import {
   restWhenStuck,
   turnCapTermination,
   winnableBySkill,
-  type ClosestFinder,
-  type TargetFilter,
-  type TargetPicker,
 } from '@adventure/sim';
 import { planTurn, searchTree, startSearch, type SearchResult, type TurnPlan } from './mcts.ts';
 import { simulatedLeadEvaluator } from './policies/evaluators.ts';
 import { closestPoiRolloutPolicy } from './policies/rollout.ts';
-import { closestUnclaimedPoiEnumerator, previewReachability, stepsReachability, uctTreePolicy } from './policies/tree.ts';
+import { closestUnclaimedPoiEnumerator, stepsReachability, uctTreePolicy } from './policies/tree.ts';
 import type { MctsOptions, NodeEvaluator } from './types.ts';
 
 /** What a computer seat needs besides the position. */
@@ -37,49 +33,6 @@ export interface ComputerSettings {
    * another to compare with it.
    */
   readonly evaluator?: NodeEvaluator;
-  /**
-   * Which sites a player may head for, in the search's choices and in the
-   * games it plays in its head. The game leaves it out and gets Q295's
-   * (`unwinnableGuards`); the balancing harness passes `winnablePoiNodes` to
-   * compare with detail 419's.
-   */
-  readonly targets?: TargetFilter;
-  /**
-   * Which sites count as closest, in the search's choices and in its imagined
-   * games. The game leaves it out and gets `closestBySpeeds` (Q112); the
-   * balancing harness passes `closestByTerrainCost` to compare with before.
-   */
-  readonly closest?: ClosestFinder;
-  /**
-   * Which of the closest a player in an imagined game heads for. The game
-   * leaves it out and gets `goldByProgressPicker`: gold more often as the
-   * sites are claimed (Q290).
-   */
-  readonly pick?: TargetPicker;
-  /**
-   * [Q210] Which routes the search's own choices count: which sites are
-   * choices, whether resting and which purchases are weighed, and its own
-   * walk along a choice. The game leaves it out and gets the best for the
-   * player's speeds (stage 2, 820 A); the balancing harness passes
-   * `'cheapest'` to compare with the search before.
-   */
-  readonly searchRoutes?: 'best' | 'cheapest';
-  /**
-   * [Q210] How the players in the games it imagines walk. The game leaves it
-   * out and gets a walk counted along the best route for their speeds (stage
-   * 3, 823 A); the balancing harness passes `'replayed'`, the cheapest route
-   * turn by turn, to compare with the computer before.
-   */
-  readonly imaginedWalks?: 'counted' | 'replayed';
-  /**
-   * [Q295] Guarded gold a player cannot win. The game leaves it out and gets
-   * `'skipped'`: the search's own choices skip a guard it reaches this turn
-   * unless the skill it holds could win, and any its gold could not buy the
-   * win of either, the next closest taking their places; the players in its
-   * imagined games skip what their skill cannot win (`winnableBySkill`); with
-   * nothing left either rests. `'weighed'` is the computer before.
-   */
-  readonly unwinnableGuards?: 'weighed' | 'skipped';
 }
 
 /**
@@ -88,7 +41,7 @@ export interface ComputerSettings {
  * gold minus the richest other player's when the imagined game ends.
  */
 export function computerEvaluator(): NodeEvaluator {
-  return simulatedLeadEvaluator('soft');
+  return simulatedLeadEvaluator();
 }
 
 /**
@@ -101,44 +54,34 @@ export function computerEvaluator(): NodeEvaluator {
  * cheapest route (`closestBySpeeds`, 822 B) and walking the best route for
  * them, counted (Q210 stage 3, 823 A), heading for gold more often as the
  * sites are claimed (Q290, `goldByProgressPicker`), and the lead score (Q113,
- * `computerEvaluator`). Guarded gold it cannot win is skipped, by its own
- * choices and by the players it imagines (Q295, `unwinnableGuards`). The
- * games it plays in its head rest when stuck (Q43) and stop when the gold is gone, the game is
- * won, or `SIMULATION_TURN_CAP` turns have passed since `state` (Q44).
+ * `computerEvaluator`). Guarded gold it cannot win is skipped (Q295): its own
+ * choices skip a guard it reaches this turn unless the skill it holds could
+ * win, and any its gold could not buy the win of either, the next closest
+ * taking their places (`closestUnclaimedPoiEnumerator`); the players in its
+ * imagined games skip what their skill cannot win (`winnableBySkill`); with
+ * nothing left either rests. The games it plays in its head rest when stuck
+ * (Q43) and stop when the gold is gone, the game is won, or
+ * `SIMULATION_TURN_CAP` turns have passed since `state` (Q44).
  */
 export function computerSearchOptions(state: GameState, subject: PlayerId, settings: ComputerSettings): MctsOptions {
   const { config } = settings;
   const termination = turnCapTermination(goldExhaustedTermination(), state.turn.number, config.ai.SIMULATION_TURN_CAP);
   const restRule = restWhenStuck();
-  const closest = settings.closest ?? closestBySpeeds;
-  const cheapest = settings.searchRoutes === 'cheapest';
-  const edgeRoute = cheapest ? cheapestRoute : bestRouteForSpeeds;
-  const unwinnable = settings.unwinnableGuards ?? 'skipped';
-  const imaginedTargets = unwinnable === 'skipped' ? (settings.targets ?? winnableBySkill) : settings.targets;
-  // With the game's own targets and ranking, the imagined players find both in one pass.
-  const candidates = imaginedTargets === winnableBySkill && closest === closestBySpeeds ? closestWinnableBySpeeds : undefined;
   return {
     subject,
     config,
     treePolicy: uctTreePolicy(config.ai.MCTS_EXPLORATION_CONSTANT),
-    actions: closestUnclaimedPoiEnumerator(
-      config,
-      cheapest ? previewReachability() : stepsReachability(bestRouteStepsFor),
-      settings.targets,
-      settings.closest ?? (cheapest ? closestBySpeeds : closestByBestRoute),
-      edgeRoute,
-      unwinnable,
-    ),
-    edgeRoute,
+    actions: closestUnclaimedPoiEnumerator(config, stepsReachability(bestRouteStepsFor), closestByBestRoute, bestRouteForSpeeds),
+    edgeRoute: bestRouteForSpeeds,
     rollout: closestPoiRolloutPolicy({
       config,
       termination,
       restRule,
-      closest,
-      ...(imaginedTargets === undefined ? {} : { targets: imaginedTargets }),
-      ...(candidates === undefined ? {} : { candidates }),
-      pick: settings.pick ?? goldByProgressPicker(),
-      ...(settings.imaginedWalks === undefined ? {} : { walks: settings.imaginedWalks }),
+      closest: closestBySpeeds,
+      targets: winnableBySkill,
+      // The imagined players find both of those in one pass.
+      candidates: closestWinnableBySpeeds,
+      pick: goldByProgressPicker(),
     }),
     evaluator: settings.evaluator ?? computerEvaluator(),
     termination,
@@ -147,7 +90,7 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
     rng: settings.rng,
     timeBudgetMs: settings.thinkingMs,
     now: settings.now,
-    ...(unwinnable === 'skipped' && imaginedTargets !== undefined ? { imaginedTargets } : {}),
+    imaginedTargets: winnableBySkill,
   };
 }
 

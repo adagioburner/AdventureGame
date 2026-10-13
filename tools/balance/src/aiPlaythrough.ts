@@ -13,7 +13,6 @@ import {
   type PlayerId,
 } from '@adventure/core';
 import { chooseComputerMove, computerEvaluator, type MctsNode, type NodeEvaluator } from '@adventure/ai';
-import type { ClosestFinder, TargetFilter, TargetPicker } from '@adventure/sim';
 import type { PlaythroughDriver, TurnChoice } from './playthrough.ts';
 
 /** How the computer player thinks in a playthrough. */
@@ -31,18 +30,6 @@ export interface ComputerSettings {
   readonly now: () => number;
   /** How the search values a position; the game's own (the lead score, Q113) when absent. */
   readonly evaluator?: NodeEvaluator;
-  /** Which sites a player may head for; every unclaimed one when absent, as the game plays. */
-  readonly targets?: TargetFilter;
-  /** Which sites count as closest; by the player's own speeds when absent, as the game plays (Q112). */
-  readonly closest?: ClosestFinder;
-  /** Which of the closest a player in an imagined game heads for; gold more often as the sites are claimed when absent, as the game plays (Q290). */
-  readonly pick?: TargetPicker;
-  /** [Q210] Which routes the search's own choices count; the best for the player's speeds when absent, as the game plays. */
-  readonly searchRoutes?: 'best' | 'cheapest';
-  /** [Q210] How the players in its imagined games walk; counted along the best route for their speeds when absent, as the game plays. */
-  readonly imaginedWalks?: 'counted' | 'replayed';
-  /** [Q295] Guarded gold a player cannot win; skipped, as the game plays, when absent. */
-  readonly unwinnableGuards?: 'weighed' | 'skipped';
   /** Told after every move how many iterations the search ran in how long. */
   readonly onSearch?: (iterations: number, took: number) => void;
 }
@@ -83,12 +70,6 @@ export function computerDriver(settings: ComputerSettings): PlaythroughDriver {
         dice,
         now: settings.now,
         ...(settings.evaluator === undefined ? {} : { evaluator: settings.evaluator }),
-        ...(settings.targets === undefined ? {} : { targets: settings.targets }),
-        ...(settings.closest === undefined ? {} : { closest: settings.closest }),
-        ...(settings.pick === undefined ? {} : { pick: settings.pick }),
-        ...(settings.searchRoutes === undefined ? {} : { searchRoutes: settings.searchRoutes }),
-        ...(settings.imaginedWalks === undefined ? {} : { imaginedWalks: settings.imaginedWalks }),
-        ...(settings.unwinnableGuards === undefined ? {} : { unwinnableGuards: settings.unwinnableGuards }),
       });
       const took = settings.now() - started;
       settings.onSearch?.(result.iterations, took);

@@ -6,10 +6,8 @@
   "main": "src/index.ts",
   "types": "src/index.ts",
   "dependencies": {
-    "@adventure/ai": "workspace:*",
     "@adventure/config": "workspace:*",
     "@adventure/core": "workspace:*",
-    "@adventure/mapgen": "workspace:*",
     "@adventure/protocol": "workspace:*"
   }
 }

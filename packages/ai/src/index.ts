@@ -15,8 +15,6 @@ export { closestPoiRolloutPolicy, type ClosestPoiRolloutSettings } from './polic
 export {
   uctTreePolicy,
   closestUnclaimedPoiEnumerator,
-  unclaimedPoiNodesOf,
-  previewReachability,
   stepsReachability,
   staminaBeyondThisTurn,
 } from './policies/tree.ts';
@@ -25,5 +23,4 @@ export {
   estimatedGoldAndSkillsEvaluator,
   hybridGoldAndSkillsEvaluator,
   simulatedLeadEvaluator,
-  type LeadScore,
 } from './policies/evaluators.ts';

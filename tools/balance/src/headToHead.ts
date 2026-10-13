@@ -7,7 +7,6 @@ import {
   simulatedRolloutEvaluator,
   type NodeEvaluator,
 } from '@adventure/ai';
-import { closestBySpeeds, closestByTerrainCost, goldByProgressPicker, winnablePoiNodes } from '@adventure/sim';
 import { computerDriver } from './aiPlaythrough.ts';
 import { playGame, type Playthrough, type PlaythroughDriver, type PlaythroughEnd } from './playthrough.ts';
 
@@ -22,12 +21,9 @@ export const EVALUATORS = {
   simulated: simulatedRolloutEvaluator,
   estimated: () => estimatedGoldAndSkillsEvaluator(),
   hybrid: () => hybridGoldAndSkillsEvaluator(),
-  // Today's imagined games, scored by the gold lead over the richest opponent (detail 417).
-  lead: () => simulatedLeadEvaluator('margin'),
-  'lead-win': () => simulatedLeadEvaluator('win'),
-  'lead-win-margin': () => simulatedLeadEvaluator('win-and-margin'),
+  // Scored by the gold lead over the richest opponent (detail 417), in
   // Andrei's form, 2026-09-30 11:43; the game's own since Q113.
-  'lead-soft': () => simulatedLeadEvaluator('soft'),
+  'lead-soft': () => simulatedLeadEvaluator(),
 } as const satisfies Record<string, () => NodeEvaluator>;
 
 export type EvaluatorName = keyof typeof EVALUATORS;
@@ -37,60 +33,25 @@ export function isEvaluatorName(name: string): name is EvaluatorName {
 }
 
 /**
- * What a seat may change about where it goes, each for comparison only:
- *  - `winnable`: only sites it could win now are choices (detail 419).
- *  - `gold-later`: its imagined players head for gold more often as the
- *    sites are claimed (idea 1, 421 A). The game's own pick since Q290, so
- *    this changes nothing; kept so earlier runs' commands still read the same.
- *  - `speeds`: closest by its own speeds, Q65's effective distance over the
- *    steps per terrain of the cheapest route (idea 2, 422-424 A). The game's
- *    own ranking since Q112, so this changes nothing; kept so earlier runs'
- *    commands still read the same.
- *  - `fixed`: closest by weighted terrain cost alone, the computer player's
- *    ranking before Q112.
- *  - `cheapest-search`: the search's own choices count the cheapest route,
- *    as before Q210's stage 2: which sites are choices, the resting and
- *    buying checks, and its own walk along a choice.
- *  - `replayed-walks`: the players in its imagined games walk the cheapest
- *    route turn by turn, as before Q210's stage 3.
- *  - `skip-unwinnable`: guarded gold it cannot win is skipped, by its own
- *    choices and by everyone in its imagined games (Q295). The game's own
- *    since then, so this changes nothing; kept so the run's command still
- *    reads the same.
- */
-export const SEAT_FLAGS = ['winnable', 'gold-later', 'speeds', 'fixed', 'cheapest-search', 'replayed-walks', 'skip-unwinnable'] as const;
-export type SeatFlag = (typeof SEAT_FLAGS)[number];
-
-/**
- * One seat's way of thinking: an evaluation, any `SEAT_FLAGS`, and optionally
- * its own UCT exploration constant in place of §11's
- * `MCTS_EXPLORATION_CONSTANT`. Written `hybrid`, `simulated+speeds`,
- * `hybrid@0.3` or `simulated+winnable+gold-later@0.3`.
+ * One seat's way of thinking: an evaluation, and optionally its own UCT
+ * exploration constant in place of §11's `MCTS_EXPLORATION_CONSTANT`.
+ * Written `hybrid` or `hybrid@0.3`.
  */
 export interface SeatSpec {
   readonly evaluator: EvaluatorName;
-  readonly flags: readonly SeatFlag[];
   readonly exploration: number | null;
 }
 
-function isSeatFlag(text: string): text is SeatFlag {
-  return SEAT_FLAGS.some((flag) => flag === text);
-}
-
 export function parseSeatSpec(text: string): SeatSpec | null {
-  const [head, constant] = text.split('@');
-  const [name, ...rest] = (head ?? '').split('+');
+  const [name, constant] = text.split('@');
   if (name === undefined || !isEvaluatorName(name)) return null;
-  if (!rest.every(isSeatFlag)) return null;
-  const flags = rest.filter(isSeatFlag);
-  if (constant === undefined) return { evaluator: name, flags, exploration: null };
+  if (constant === undefined) return { evaluator: name, exploration: null };
   const exploration = Number(constant);
-  return Number.isFinite(exploration) && exploration >= 0 ? { evaluator: name, flags, exploration } : null;
+  return Number.isFinite(exploration) && exploration >= 0 ? { evaluator: name, exploration } : null;
 }
 
 export function seatLabel(spec: SeatSpec): string {
-  const name = [spec.evaluator, ...spec.flags].join('+');
-  return spec.exploration === null ? name : `${name}@${spec.exploration}`;
+  return spec.exploration === null ? spec.evaluator : `${spec.evaluator}@${spec.exploration}`;
 }
 
 function withExploration(ruleset: Ruleset, exploration: number | null): Ruleset {
@@ -141,13 +102,6 @@ export function playHeadToHead(options: HeadToHeadOptions): { readonly game: Hea
       seed: `${options.seed}-seat${index + 1}`,
       now: options.now,
       evaluator: EVALUATORS[spec.evaluator](),
-      ...(spec.flags.includes('winnable') ? { targets: winnablePoiNodes } : {}),
-      ...(spec.flags.includes('gold-later') ? { pick: goldByProgressPicker() } : {}),
-      ...(spec.flags.includes('speeds') ? { closest: closestBySpeeds } : {}),
-      ...(spec.flags.includes('fixed') ? { closest: closestByTerrainCost } : {}),
-      ...(spec.flags.includes('cheapest-search') ? { searchRoutes: 'cheapest' as const } : {}),
-      ...(spec.flags.includes('replayed-walks') ? { imaginedWalks: 'replayed' as const } : {}),
-      ...(spec.flags.includes('skip-unwinnable') ? { unwinnableGuards: 'skipped' as const } : {}),
       onSearch: (iterations) => {
         const counter = counters[index];
         if (counter === undefined) return;
@@ -163,25 +117,19 @@ export function playHeadToHead(options: HeadToHeadOptions): { readonly game: Hea
       '# simulated = share of the gold it ends with in a random game played to the end;',
       '# estimated = gold and skills it holds at the searched position, weighted by the share of sites claimed so far,',
       '# no game played; hybrid = the average of the two.',
-      '# lead = today\'s imagined games, scored by the gold lead over the richest other player:',
-      '# (lead / total gold + 1) / 2; lead-win: 1 ahead, 0.5 level, 0 behind; lead-win-margin: their average;',
-      '# lead-soft: (lead / (|lead| + 1) + 1) / 2 with the lead in gold.',
-      '# +winnable: only sites it could win now are choices, for itself and for everyone in its imagined',
-      '# games (gold whose guard a 6 plus the skill does not beat is left out, unless nothing else is left).',
+      '# lead-soft = the same imagined games, scored by the gold lead over the richest other player:',
+      '# (lead / (|lead| + 1) + 1) / 2 with the lead in gold.',
       '# In its imagined games a player heads for a gold site among its 10 closest with chance p = share of',
-      '# the map\'s sites claimed, otherwise for any of the 10 (Q290; +gold-later says so explicitly).',
+      '# the map\'s sites claimed, otherwise for any of the 10 (Q290).',
       '# Every seat ranks its 10 closest, for itself and in its imagined games, by the least over n turns of',
-      '# 5n + the stamina still needed after n turns of free steps, from the steps per terrain of the cheapest route',
-      '# (Q112; +speeds says so explicitly). +fixed: ranked by weighted terrain cost alone, as before Q112.',
+      '# 5n + the stamina still needed after n turns of free steps, from the steps per terrain of the cheapest route (Q112).',
       '# The search\'s own choices count the best route for its speeds instead (Q210 stage 2): which sites are',
       '# choices, whether resting and which purchases are weighed, and its own walk along a choice.',
-      '# +cheapest-search: they count the cheapest route, as before stage 2.',
       '# Players in its imagined games walk the best route for their speeds, traced once when they pick a site',
-      '# and counted turn by turn along it (Q210 stage 3). +replayed-walks: they walk the cheapest route, as before.',
+      '# and counted turn by turn along it (Q210 stage 3).',
       '# Its own choices skip a guard it reaches this turn unless the skill it holds after buying could win, and any',
       '# guard the units its gold buys could not win either, the next closest taking their places; its imagined',
-      '# players skip guards their skill cannot win; with nothing left to win, either rests (Q295; +skip-unwinnable',
-      '# says so explicitly).',
+      '# players skip guards their skill cannot win; with nothing left to win, either rests (Q295).',
       ...(drivers[0]?.describe ?? []),
     ],
     choose(state, playerId) {

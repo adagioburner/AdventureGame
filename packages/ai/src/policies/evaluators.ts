@@ -30,7 +30,7 @@ import type { NodeEvaluator } from '../types.ts';
  * estimated and hybrid evaluators exist to be experimented with, which is why
  * `SearchOptions.evaluator` is injected rather than defaulted. [SOURCE §9,
  * chat, 2026-09-30] The game's computer players score the simulated game by
- * the lead (Q113), `simulatedLeadEvaluator('soft')` (`computerEvaluator()` in
+ * the lead (Q113), `simulatedLeadEvaluator()` (`computerEvaluator()` in
  * `../computer.ts`).
  */
 
@@ -82,28 +82,19 @@ export function simulatedRolloutEvaluator(): NodeEvaluator {
 }
 
 /**
- * How the gold lead at a rollout's end becomes a score in [0, 1].
- *
- *  - `margin`: (lead / total gold + 1) / 2, so level is 0.5 and every gold
- *    of lead or deficit counts the same.
- *  - `win`: 1 ahead, 0.5 level, 0 behind, whatever the margin.
- *  - `win-and-margin`: the average of the two.
- *  - `soft`: Andrei's form, 2026-09-30 11:43: (lead / (|lead| + 1) + 1) / 2
- *    with the lead in gold. Level is 0.5, one gold ahead 0.75, two 0.83;
- *    a smooth win-or-lose that still prefers a bigger lead. The game's
- *    computer players use it (Q113).
- */
-export type LeadScore = 'margin' | 'win' | 'win-and-margin' | 'soft';
-
-/**
  * **Simulated, scored by the lead.** Andrei, 2026-09-30 (detail 417): an
  * imagined game "is scored by the gold lead over the best opponent instead of
  * the computer's own gold". The lead is the subject's gold minus the richest
  * other player's, read at the rollout's end like the simulated evaluation.
+ *
+ * The score is Andrei's form, 2026-09-30 11:43: (lead / (|lead| + 1) + 1) / 2
+ * with the lead in gold. Level is 0.5, one gold ahead 0.75, two 0.83; a
+ * smooth win-or-lose that still prefers a bigger lead. The game's computer
+ * players use it (Q113).
  */
-export function simulatedLeadEvaluator(form: LeadScore = 'margin'): NodeEvaluator {
+export function simulatedLeadEvaluator(): NodeEvaluator {
   return {
-    name: `simulated-lead-${form}`,
+    name: 'simulated-lead-soft',
     readsRollout: true,
     evaluate(_atNode: RolloutCursor, rolledOut: RolloutCursor, subject: PlayerId): number {
       const state = rolledOut.state;
@@ -113,13 +104,7 @@ export function simulatedLeadEvaluator(form: LeadScore = 'margin'): NodeEvaluato
         if (player.id !== subject && player.stats.gold > best) best = player.stats.gold;
       }
       const lead = best === Number.NEGATIVE_INFINITY ? own : own - best;
-      const total = totalGoldUnits(state.map);
-      const margin = total === 0 ? 0.5 : Math.min(1, Math.max(0, (lead / total + 1) / 2));
-      const win = lead > 0 ? 1 : lead < 0 ? 0 : 0.5;
-      if (form === 'soft') return (lead / (Math.abs(lead) + 1) + 1) / 2;
-      if (form === 'win') return win;
-      if (form === 'win-and-margin') return (win + margin) / 2;
-      return margin;
+      return (lead / (Math.abs(lead) + 1) + 1) / 2;
     },
   };
 }

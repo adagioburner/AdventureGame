@@ -24,8 +24,6 @@ export interface ClosestPoiRolloutSettings {
   readonly candidates?: CandidateFinder;
   /** Which of the closest a player heads for; uniformly at random when absent. */
   readonly pick?: TargetPicker;
-  /** [Q210] How a player walks: counted along the best route for its speeds when absent (stage 3). */
-  readonly walks?: 'counted' | 'replayed';
 }
 
 /**

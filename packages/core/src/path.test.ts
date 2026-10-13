@@ -4,7 +4,7 @@ import { DEFAULT_GAME_CONFIG, type Terrain } from '@adventure/config';
 import { asNodeId, type NodeId } from './ids.ts';
 import type { MapGraph } from './graph.ts';
 import { createRng } from './rng.ts';
-import { dijkstra, pathCost, routeTable, routeVia, shareRouteTable, shortestPath, stepCost, terrainStepCost, workOutAllRoutes } from './path.ts';
+import { dijkstra, pathCost, routeTable, shareRouteTable, shortestPath, stepCost, terrainStepCost, workOutAllRoutes } from './path.ts';
 
 const config = DEFAULT_GAME_CONFIG;
 
@@ -125,25 +125,6 @@ describe('dijkstra', () => {
     );
     const result = dijkstra(graph, n(0), config, { stopWhen: (node) => node === n(1) });
     expect(result.settled).toEqual([n(0), n(1)]);
-  });
-});
-
-describe('routeVia', () => {
-  it('is the path to the waypoint followed by the path onward', () => {
-    const graph = graphOf(
-      ['plains', 'plains', 'plains', 'plains'],
-      [
-        [0, 1],
-        [1, 2],
-        [2, 3],
-      ],
-    );
-    expect(routeVia(graph, n(0), n(2), n(1), config)).toEqual([n(1), n(2), n(1)]);
-  });
-
-  it('is the plain shortest path when there is no waypoint', () => {
-    const graph = graphOf(['plains', 'plains'], [[0, 1]]);
-    expect(routeVia(graph, n(0), null, n(1), config)).toEqual([n(1)]);
   });
 });
 

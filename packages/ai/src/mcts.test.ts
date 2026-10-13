@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_GAME_CONFIG } from '@adventure/config';
 import { applyAction, createDiceSource, createRng, type GameState } from '@adventure/core';
-import { goldExhaustedTermination, restWhenStuck, rolloutCursor, runRollout } from '@adventure/sim';
+import { bestRouteStepsFor, goldExhaustedTermination, restWhenStuck, rolloutCursor, runRollout } from '@adventure/sim';
 import {
   fixtureGame,
   fixtureMap,
@@ -11,6 +11,7 @@ import {
   withPosition,
   withStats,
 } from '../../core/src/rules/scenario.fixture.ts';
+import { computerSearchOptions } from './computer.ts';
 import { search, searchTree, startSearch } from './mcts.ts';
 import {
   estimatedGoldAndSkillsEvaluator,
@@ -18,8 +19,7 @@ import {
   simulatedLeadEvaluator,
   simulatedRolloutEvaluator,
 } from './policies/evaluators.ts';
-import { closestPoiRolloutPolicy } from './policies/rollout.ts';
-import { closestUnclaimedPoiEnumerator, previewReachability, uctTreePolicy } from './policies/tree.ts';
+import { stepsReachability } from './policies/tree.ts';
 import type { MctsOptions } from './types.ts';
 
 const restRule = restWhenStuck();
@@ -59,29 +59,22 @@ function tickingClock(): () => number {
   return () => now++;
 }
 
+/** The game's computer for the seat to move (`computerSearchOptions`), with `overrides`. */
 function optionsFor(state: GameState, overrides: Partial<MctsOptions> = {}): MctsOptions {
   const config = DEFAULT_GAME_CONFIG;
-  const termination = goldExhaustedTermination();
-  return {
-    subject: state.players[state.turn.activeSeat - 1]?.id ?? player('one'),
+  const subject = state.players[state.turn.activeSeat - 1]?.id ?? player('one');
+  const settings = {
     config,
-    treePolicy: uctTreePolicy(config.ai.MCTS_EXPLORATION_CONSTANT),
-    actions: closestUnclaimedPoiEnumerator(config, previewReachability()),
-    rollout: closestPoiRolloutPolicy({ config, termination, restRule }),
-    evaluator: simulatedRolloutEvaluator(),
-    termination,
-    restRule,
-    dice: createDiceSource(createRng('search-dice'), config),
+    thinkingMs: 200,
     rng: createRng('search'),
-    timeBudgetMs: 200,
+    dice: createDiceSource(createRng('search-dice'), config),
     now: tickingClock(),
-    ...overrides,
   };
+  return { ...computerSearchOptions(state, subject, settings), ...overrides };
 }
 
 describe('closestUnclaimedPoiEnumerator', () => {
-  const enumerate = (state: GameState) =>
-    closestUnclaimedPoiEnumerator(DEFAULT_GAME_CONFIG, previewReachability()).enumerate(state, player('one'));
+  const enumerate = (state: GameState) => optionsFor(state).actions.enumerate(state, player('one'));
 
   it('offers rest only when fewer than 3 of its targets can be reached this turn', () => {
     const rich = withStats(fixtureGame(star, 0), player('one'), { stamina: 30 });
@@ -100,18 +93,18 @@ describe('closestUnclaimedPoiEnumerator', () => {
   it('branches only over unclaimed POIs, recomputed at the state given', () => {
     const state = withStats(fixtureGame(star, 0), player('one'), { stamina: 30 });
     const took = applyAction(state, { kind: 'move', player: player('one'), path: [n(1)] }, createDiceSource(createRng('x'), DEFAULT_GAME_CONFIG)).state;
-    const targets = closestUnclaimedPoiEnumerator(DEFAULT_GAME_CONFIG, previewReachability())
-      .enumerate(took, player('two'))
+    const targets = optionsFor(took)
+      .actions.enumerate(took, player('two'))
       .flatMap((branch) => (branch.kind === 'target' ? [branch.target.node] : []));
     expect(targets).not.toContain(n(1));
     expect(targets).toContain(n(7));
   });
 });
 
-describe('previewReachability', () => {
-  it('counts a target reachable when the cheapest route arrives this turn', () => {
+describe('stepsReachability', () => {
+  it('counts a target reachable when the best route for its speeds arrives this turn', () => {
     const state = withStats(withPosition(fixtureGame(star, 0), player('one'), 5), player('one'), { stamina: 3, forest_move: 0 });
-    const reach = previewReachability();
+    const reach = stepsReachability(bestRouteStepsFor);
     expect(reach.isReachableThisTurn(state, player('one'), { node: n(7), cost: 4 })).toBe(false);
     const richer = withStats(state, player('one'), { stamina: 4 });
     expect(reach.isReachableThisTurn(richer, player('one'), { node: n(7), cost: 4 })).toBe(true);
@@ -164,13 +157,8 @@ describe('lead evaluation', () => {
     const state = withStats(fixtureGame(star, 0), player('one'), { stamina: 1 });
     const took = applyAction(state, { kind: 'move', player: player('one'), path: [n(1)] }, createDiceSource(createRng('x'), DEFAULT_GAME_CONFIG)).state;
     const at = rolloutCursor(took, player('one'));
-    expect(simulatedLeadEvaluator('margin').evaluate(at, at, player('one'))).toBeCloseTo((2 / 5 + 1) / 2);
-    expect(simulatedLeadEvaluator('margin').evaluate(at, at, player('two'))).toBeCloseTo((-2 / 5 + 1) / 2);
-    expect(simulatedLeadEvaluator('win').evaluate(at, at, player('one'))).toBe(1);
-    expect(simulatedLeadEvaluator('win').evaluate(at, at, player('two'))).toBe(0);
-    expect(simulatedLeadEvaluator('win-and-margin').evaluate(at, at, player('one'))).toBeCloseTo((1 + 0.7) / 2);
-    expect(simulatedLeadEvaluator('soft').evaluate(at, at, player('one'))).toBeCloseTo((2 / 3 + 1) / 2);
-    expect(simulatedLeadEvaluator('soft').evaluate(at, at, player('two'))).toBeCloseTo((-2 / 3 + 1) / 2);
+    expect(simulatedLeadEvaluator().evaluate(at, at, player('one'))).toBeCloseTo((2 / 3 + 1) / 2);
+    expect(simulatedLeadEvaluator().evaluate(at, at, player('two'))).toBeCloseTo((-2 / 3 + 1) / 2);
   });
 });
 

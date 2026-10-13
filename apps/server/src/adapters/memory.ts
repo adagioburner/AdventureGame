@@ -1,80 +1,10 @@
-import type { GameId, GameState, UserId } from '@adventure/core';
-import type { Broadcaster, Clock, GameDirectory, GameListing, GameStore } from '@adventure/session';
-import type { GameRecord, ServerMessage, SetupState } from '@adventure/protocol';
+import type { Clock } from '@adventure/session';
 import type { AccountRecord, AccountStore, LoginRecord } from '../auth/accounts.ts';
 
-/**
- * In-memory adapters, for local development, hotseat-on-one-process, and tests.
- *
- * These exist to prove the ports are actually sufficient: if the session layer
- * runs against these, it has no hidden dependency on a particular host — which
- * is the property §12.1 needs preserved.
- */
-export function createMemoryGameStore(): GameStore {
-  const games = new Map<GameId, GameState>();
-  const setups = new Map<GameId, SetupState>();
-  const records = new Map<GameId, GameRecord[]>();
-  const removed = new Set<GameId>();
-  return {
-    load: async (gameId) => games.get(gameId) ?? null,
-    save: async (state) => {
-      games.set(state.id, state);
-    },
-    loadSetup: async (gameId) => setups.get(gameId) ?? null,
-    saveSetup: async (setup) => {
-      setups.set(setup.gameId, setup);
-    },
-    appendRecord: async (gameId, record) => {
-      const list = records.get(gameId) ?? [];
-      const stored: GameRecord = { ...record, seq: list.length + 1 };
-      records.set(gameId, [...list, stored]);
-      return stored;
-    },
-    loadRecords: async (gameId) => records.get(gameId) ?? [],
-    replaceRecord: async (gameId, record) => {
-      const list = records.get(gameId) ?? [];
-      if (list[record.seq - 1] === undefined) throw new RangeError(`${gameId} has no record ${record.seq}`);
-      records.set(gameId, list.map((stored) => (stored.seq === record.seq ? record : stored)));
-    },
-    remove: async (gameId) => {
-      games.delete(gameId);
-      setups.delete(gameId);
-      records.delete(gameId);
-      removed.add(gameId);
-    },
-    isRemoved: async (gameId) => removed.has(gameId),
-  };
-}
-
-/** Keeps the game list's rows, for tests of whatever reports to it. */
-export function createMemoryGameDirectory(): GameDirectory & { readonly rows: Map<GameId, GameListing> } {
-  const rows = new Map<GameId, GameListing>();
-  return {
-    rows,
-    update: async (gameId, listing) => {
-      if (listing === null) rows.delete(gameId);
-      else rows.set(gameId, listing);
-    },
-  };
-}
-
-export function createMemoryBroadcaster(): Broadcaster & {
-  readonly sent: readonly { target: string; message: ServerMessage }[];
-} {
-  const sent: { target: string; message: ServerMessage }[] = [];
-  return {
-    sent,
-    broadcast: async (gameId: GameId, message: ServerMessage) => {
-      sent.push({ target: `game:${gameId}`, message });
-    },
-    sendTo: async (userId: UserId, message: ServerMessage) => {
-      sent.push({ target: `user:${userId}`, message });
-    },
-  };
-}
-
+/** The clock the server runs on: `Date.now()`. */
 export const systemClock: Clock = { now: () => Date.now() };
 
+/** An account store kept in memory, for tests. */
 export function createMemoryAccountStore(): AccountStore {
   const accounts = new Map<string, AccountRecord>();
   const logins = new Map<string, LoginRecord>();

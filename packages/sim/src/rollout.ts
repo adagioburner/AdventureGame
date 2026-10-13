@@ -210,12 +210,6 @@ export interface RolloutOptions {
   readonly candidates?: CandidateFinder;
   /** Which of the closest a player heads for; uniformly at random when absent. The game's computer passes `goldByProgressPicker` (Q290). */
   readonly pick?: TargetPicker;
-  /**
-   * [Q210] How a player walks to its target: counted along its route, as the
-   * game plays (stage 3), when absent; `replayed` walks the cheapest route
-   * turn by turn through `applyAction`, for comparison.
-   */
-  readonly walks?: 'counted' | 'replayed';
   /** The route a counted walk follows; the best for the player's speeds when absent, as the game plays. */
   readonly walkRoute?: RouteChoice;
 }
@@ -306,22 +300,6 @@ export const closestWinnableBySpeeds: CandidateFinder = (state, player, count) =
   return found;
 };
 
-/**
- * Unclaimed POIs `player` could win now: every unguarded one, and guarded gold
- * whose guard the die's best roll plus the player's skill beats (§8: roll +
- * skill > strength). When that leaves nothing, every unclaimed POI, so a
- * player never runs out of somewhere to go while gold is left.
- *
- * For comparison only (detail 419, Andrei 2026-09-30: leave gold nobody can win
- * yet out of the computer's choices, tested on its own). The game's computer
- * players skip such gold by Q295's rules instead: `winnableBySkill` in the
- * games they imagine, and `closestUnclaimedPoiEnumerator`'s in their own choices.
- */
-export function winnablePoiNodes(state: GameState, player: PlayerState): ReadonlySet<NodeId> {
-  const nodes = winnablePoiNodesWith(state, player, 0);
-  return nodes.size > 0 ? nodes : unclaimedPoiNodes(state);
-}
-
 /** Which route a player takes to a target: the whole route, excluding where they stand. */
 export type RouteChoice = (state: GameState, player: PlayerState, target: NodeId) => readonly NodeId[] | null;
 
@@ -362,7 +340,7 @@ export type MacroAdvanceOutcome =
   | 'target_claimed_by_other'
   | 'terminal';
 
-/** `chooseWalkTarget` with the balancing harness's `closest` and `pick` in place of its two steps. */
+/** `chooseWalkTarget` with `closest` and `pick`, where given, in place of its two steps. */
 function comparedTarget(
   state: GameState,
   player: PlayerState,
@@ -397,11 +375,9 @@ function pickAmong(state: GameState, player: PlayerState, candidates: readonly P
  * has just claimed; everyone else keeps theirs.
  *
  * [Q210] The seat walks the best route for its speeds, counted (stage 3,
- * 823 A); with `walks: 'replayed'` it walks the cheapest route through
- * `applyAction`.
+ * 823 A).
  */
 export function playRolloutTurn(cursor: RolloutCursor, options: RolloutOptions): RolloutCursor {
-  if (options.walks === 'replayed') return playWalkedTurn(cursor, options, cheapestRoute);
   const player = activePlayer(cursor.state);
   const target = committedTarget(cursor, player, options);
   if (target === null) return restedTurn(cursor, player.seat - 1, applyCountedTurn(cursor.state, { kind: 'rest' }, options.dice));
@@ -449,10 +425,12 @@ function restedTurn(cursor: RolloutCursor, index: number, next: GameState): Roll
 
 /**
  * The active seat's turn walked through `applyAction` along the route
- * `routeOf` picks from where it stands: `walks: 'replayed'`, and the
- * search's own walk along a tree edge.
+ * `routeOf` picks from where it stands: the search's own walk along a tree
+ * edge (`macroAdvanceToTarget`). A test plays whole imagined games with it
+ * along the cheapest route, to hold `playRolloutTurn`'s counted walks to
+ * what `applyAction` plays.
  */
-function playWalkedTurn(cursor: RolloutCursor, options: RolloutOptions, routeOf: RouteChoice): RolloutCursor {
+export function playWalkedTurn(cursor: RolloutCursor, options: RolloutOptions, routeOf: RouteChoice): RolloutCursor {
   const state = cursor.state;
   const player = activePlayer(state);
   const index = player.seat - 1;

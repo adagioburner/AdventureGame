@@ -25,18 +25,12 @@ importers:
 
   apps/server:
     dependencies:
-      '@adventure/ai':
-        specifier: workspace:*
-        version: link:../../packages/ai
       '@adventure/config':
         specifier: workspace:*
         version: link:../../packages/config
       '@adventure/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@adventure/mapgen':
-        specifier: workspace:*
-        version: link:../../packages/mapgen
       '@adventure/protocol':
         specifier: workspace:*
         version: link:../../packages/protocol
@@ -44,6 +38,9 @@ importers:
         specifier: workspace:*
         version: link:../../packages/session
     devDependencies:
+      '@adventure/mapgen':
+        specifier: workspace:*
+        version: link:../../packages/mapgen
       '@adventure/sim':
         specifier: workspace:*
         version: link:../../packages/sim
@@ -140,18 +137,12 @@ importers:
 
   packages/session:
     dependencies:
-      '@adventure/ai':
-        specifier: workspace:*
-        version: link:../ai
       '@adventure/config':
         specifier: workspace:*
         version: link:../config
       '@adventure/core':
         specifier: workspace:*
         version: link:../core
-      '@adventure/mapgen':
-        specifier: workspace:*
-        version: link:../mapgen
       '@adventure/protocol':
         specifier: workspace:*
         version: link:../protocol

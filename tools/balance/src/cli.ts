@@ -72,8 +72,7 @@ function renderOne(args: readonly string[]): number {
 
   if (wantsJson) {
     const jsonPath = resolve(OUTPUT_DIR, `${fileSafe(seed)}.json`);
-    // `poiByNode` is a Map and does not survive JSON; `reviveGameMap` rebuilds
-    // it on the way back in, which is the round trip Q15 needs anyway.
+    // `poiByNode` is a Map, so plain JSON writes it as `{}`; this file is for reading, and nothing loads it back.
     writeFileSync(jsonPath, `${JSON.stringify(map, null, 2)}\n`, 'utf8');
     process.stdout.write(`${jsonPath}\n`);
   }
@@ -141,7 +140,7 @@ function headToHead(args: readonly string[]): number {
   const seatsOption = args.find((argument) => argument.startsWith('--seats='));
   const seats = (seatsOption?.slice('--seats='.length).split(',') ?? []).map(parseSeatSpec);
   if (seed === undefined || seats.length < 2 || seats.some((spec) => spec === null)) {
-    process.stderr.write('h2h needs a seed and --seats= with two or more of simulated, estimated, hybrid, lead, lead-win, lead-win-margin, lead-soft, each optionally with +winnable, +gold-later, +speeds, +fixed, +cheapest-search, +replayed-walks, +skip-unwinnable and @<exploration>\n');
+    process.stderr.write('h2h needs a seed and --seats= with two or more of simulated, estimated, hybrid, lead-soft, each optionally with @<exploration>\n');
     return 2;
   }
   const seconds = secondsOption(args);

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_RULESET } from '@adventure/config';
-import { asGameId, asNodeId, asUserId, type GameId, type GameState, type UserId } from '@adventure/core';
-import { DAY_MS, type ClientMessage, type GameRecord, type ServerMessage, type SetupState } from '@adventure/protocol';
+import { activePlayer, asGameId, asNodeId, asUserId, type GameId, type GameState, type UserId } from '@adventure/core';
+import { computerMoveRequestId, DAY_MS, type ClientMessage, type GameRecord, type ServerMessage, type SetupState } from '@adventure/protocol';
 import { fixtureMap, scriptedDice } from '../../core/src/rules/scenario.fixture.ts';
 import type { GameListing, GameStore } from './ports.ts';
 import { GameSession } from './session.ts';
@@ -229,6 +229,10 @@ const playMap = fixtureMap({
 });
 const n = asNodeId;
 
+/** The game master's page resting a computer seat on its turn, as `gm.aiMove`. */
+const playsRest = (game: GameState, player: string): ClientMessage =>
+  ({ type: 'gm.aiMove', gameId: G, requestId: computerMoveRequestId(game), player, action: { kind: 'rest', player } }) as ClientMessage;
+
 /** Andrei and Bea in a started game on `playMap`, both at node 0, Andrei on turn. */
 async function started(rolls: readonly number[] = [], seats: 'people' | 'computer' = 'people') {
   const h = harness(rolls);
@@ -319,21 +323,23 @@ describe('GameSession in play', () => {
     expect(h.records()[0]?.rolls).toEqual([{ value: 6, sides: 6 }]);
   });
 
-  it('asks the game master for a computer’s move, plays the answer, and ignores a stale one', async () => {
+  it('plays the computer’s move the game master’s page sends for the turn, and ignores a stale one', async () => {
     const h = harness();
     await h.session.create({ name: 'g', gameMaster: { userId: andrei, displayName: 'Andrei' }, mapSeed: 'fixture' });
     await send(h.session, andrei, { type: 'setup.start', gameId: G });
     await send(h.session, andrei, { type: 'gm.mapGenerated', gameId: G, map: playMap });
     h.take();
     await send(h.session, andrei, { type: 'turn.rest', gameId: G, turn: 1 });
-    const asked = h.take().find(({ message }) => message.type === 'gm.requestAiMove');
-    expect(asked).toMatchObject({ to: andrei, message: { requestId: 'turn-2', player: 'seat-2' } });
+    expect(h.take().map(({ to, message }) => [to, message.type])).toEqual([['all', 'game.played']]);
 
-    // A reload asks again.
+    // The game master's page thinks from the game it is sent, after a reload too.
     await h.session.connected(andrei);
-    expect(h.take().map(({ message }) => message.type)).toContain('gm.requestAiMove');
+    expect(h.take().map(({ message }) => message.type)).toEqual(['setup.state', 'game.state', 'game.history']);
+    const game = h.game() as GameState;
+    expect(activePlayer(game)).toMatchObject({ id: 'seat-2', control: 'ai' });
+    expect(computerMoveRequestId(game)).toBe('turn-2');
 
-    const move = { type: 'gm.aiMove', gameId: G, requestId: 'turn-2', player: 'seat-2', action: { kind: 'rest', player: 'seat-2' } } as ClientMessage;
+    const move = { type: 'gm.aiMove', gameId: G, requestId: computerMoveRequestId(game), player: 'seat-2', action: { kind: 'rest', player: 'seat-2' } } as ClientMessage;
     await send(h.session, andrei, move);
     await send(h.session, andrei, move);
     expect(h.records().map((record) => record.action.kind)).toEqual(['rest', 'rest']);
@@ -391,20 +397,24 @@ describe('GameSession in play', () => {
     expect(h.game()?.players[1]).toMatchObject({ control: 'ai', resigned: true });
     expect(h.setup()?.seats[1]).toMatchObject({ userId: bea, thinkingSeconds: 10 });
     expect(h.records().at(-1)).toMatchObject({ action: { kind: 'resign', player: 'seat-2' }, by: bea });
-    // The computer's turn comes: the game master's page is asked for it.
-    h.take();
+    // The computer's turn comes, and the game master's page plays it.
     await send(h.session, andrei, { type: 'turn.rest', gameId: G, turn: 1 });
-    expect(h.take().find(({ message }) => message.type === 'gm.requestAiMove')).toMatchObject({ to: andrei, message: { player: 'seat-2' } });
+    await send(h.session, andrei, playsRest(h.game() as GameState, 'seat-2'));
+    expect(h.records().at(-1)).toMatchObject({ action: { kind: 'rest', player: 'seat-2' }, by: andrei });
     // Resigned, Bea can no longer play the seat, nor resign again.
+    h.take();
     await send(h.session, bea, { type: 'player.resign', gameId: G });
     expect(h.take().map(({ message }) => message.type === 'error' && message.message)).toEqual(['the computer plays your seat']);
   });
 
-  it('asks the game master for the computer’s move at once when the player on turn resigns', async () => {
+  it('takes the computer’s move for the same turn when the player on turn resigns', async () => {
     const h = await started();
-    h.take();
     await send(h.session, andrei, { type: 'player.resign', gameId: G });
-    expect(h.take().find(({ message }) => message.type === 'gm.requestAiMove')).toMatchObject({ message: { requestId: 'turn-1', player: 'seat-1' } });
+    const game = h.game() as GameState;
+    expect(activePlayer(game)).toMatchObject({ id: 'seat-1', control: 'ai' });
+    expect(computerMoveRequestId(game)).toBe('turn-1');
+    await send(h.session, andrei, playsRest(game, 'seat-1'));
+    expect(h.records().at(-1)).toMatchObject({ action: { kind: 'rest', player: 'seat-1' }, by: andrei });
   });
 
   it('keeps posts on the board from anyone holding a seat, after the end too (Q56 59)', async () => {
@@ -451,9 +461,10 @@ describe('GameSession in play', () => {
       ['andrei', 'resign your own seat with Resign'],
       ['andrei', 'the computer already plays Bea'],
     ]);
-    // On Bea's turn the game master's page is asked for the computer's move at once.
+    // On Bea's turn the game master's page plays the computer's move.
     await send(h.session, andrei, { type: 'turn.rest', gameId: G, turn: 1 });
-    expect(h.take().find(({ message }) => message.type === 'gm.requestAiMove')).toMatchObject({ to: andrei, message: { player: 'seat-2' } });
+    await send(h.session, andrei, playsRest(h.game() as GameState, 'seat-2'));
+    expect(h.records().at(-1)).toMatchObject({ action: { kind: 'rest', player: 'seat-2' }, by: andrei });
   });
 
   it('lets the game master delete a post, erasing its words from the stored record too, after the end as well (Q85, 298 to 300)', async () => {

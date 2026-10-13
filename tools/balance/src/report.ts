@@ -1,4 +1,4 @@
-import { TERRAINS, type Ruleset, type Terrain } from '@adventure/config';
+import { TERRAINS, type Ruleset } from '@adventure/config';
 import type { GameMap } from '@adventure/core';
 import { strongestGuard, type MapGenerationReport } from './index.ts';
 

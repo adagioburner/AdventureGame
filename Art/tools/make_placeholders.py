@@ -643,7 +643,6 @@ PROSPECT_STATES = [
     ("Unreachable", (196, 196, 196, 255)),  # grey: not reachable this turn
 ]
 FLAG = (66, 128, 222, 255)
-RING = (255, 232, 120, 255)
 
 
 def build_markers(art_dir: str) -> None:
@@ -713,14 +712,6 @@ def build_markers(art_dir: str) -> None:
     canvas.fill_sdf(box, pennant(0), FLAG)
     sprite("Prospect_Waypoint", 3, 0, {"x": foot_x - ox, "y": foot_y - oy}, role="waypoint")
 
-    # The active player's ring, laid on the ground under their figurine.
-    ox, oy = 3 * MARKER, MARKER
-    cx, cy = ox + MARKER / 2, oy + MARKER / 2
-    box = (ox, oy, ox + MARKER, oy + MARKER)
-    canvas.fill_sdf(box, lambda x, y: abs(math.hypot(x - cx, y - cy) - 46) - 12, BLACK)
-    canvas.fill_sdf(box, lambda x, y: abs(math.hypot(x - cx, y - cy) - 46) - 6, RING)
-    sprite("Prospect_ActiveRing", 3, 1, centre, role="active")
-
     write_png(os.path.join(art_dir, "Prospect_Markers_sheet.png"), width, height, canvas.downsample())
     atlas = {
         "sheet": "Prospect_Markers_sheet.png",
@@ -732,10 +723,10 @@ def build_markers(art_dir: str) -> None:
             "coloured per §7.1: green where this turn's skill allowance covers the "
             "step, yellow where it costs stamina, grey where it is out of reach this "
             "turn. The dots make the thick dotted line and the crosses mark the "
-            "destination; both, and the active player's ring, are drawn top-down "
-            "and laid on the ground by the renderer, which is what turns the flat X "
-            "into the isometric cross §7.1 asks for. The waypoint flag stands up on "
-            "its node instead, so it is drawn upright and anchored at its foot."
+            "destination; both are drawn top-down and laid on the ground by the "
+            "renderer, which is what turns the flat X into the isometric cross §7.1 "
+            "asks for. The waypoint flag stands up on its node instead, so it is "
+            "drawn upright and anchored at its foot."
         ),
         "sprites": sprites,
     }
