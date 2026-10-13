@@ -1,6 +1,6 @@
 import type { GameConfig, RewardKind } from '@adventure/config';
 import type { DiceSource, GameState, PlayerId, Rng } from '@adventure/core';
-import type { PoiCandidate, RestRule, RolloutCursor, RolloutTermination, RouteChoice, TargetFilter } from '@adventure/sim';
+import type { PoiCandidate, RestRule, RolloutCursor, RolloutOptions, RolloutTermination, RouteChoice } from '@adventure/sim';
 
 /**
  * One branch of the search tree.
@@ -196,8 +196,10 @@ export interface MctsOptions {
   /** [Q280] What the subject has already bought this turn at the root; nothing when absent. */
   readonly rootBought?: readonly RewardKind[];
   /**
-   * [Q295] Which sites the other seats head for on their turns along a tree
-   * edge, as in the games the computer imagines; every unclaimed one when absent.
+   * [Q295, Q307] How the other seats choose their sites on their turns along a
+   * tree edge: as the players in the games the computer imagines do. Every
+   * unclaimed site, ranked by weighted terrain cost and picked at random, when
+   * absent.
    */
-  readonly imaginedTargets?: TargetFilter;
+  readonly imaginedPlayers?: Pick<RolloutOptions, 'targets' | 'closest' | 'candidates' | 'pick'>;
 }

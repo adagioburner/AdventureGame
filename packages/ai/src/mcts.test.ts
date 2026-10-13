@@ -196,12 +196,16 @@ describe('search', () => {
     expect(action?.player).toBe(player('two'));
   });
 
-  it('takes the gold next door over everything else when it has the time', () => {
-    // Gold 2 on 1 is one free... stamina step away; the guarded 3 is four
-    // steps into forest behind a guard of 4.
+  it('heads for gold over everything else when it has the time', () => {
+    // Gold 2 on 1 is one stamina step away; the guarded 3 on 7 is three steps
+    // away, into the forest, behind a guard of 4. Which of the two it takes
+    // first turns on how it expects the other player to move: since the other
+    // seat's turns along its tree's edges choose as its imagined players do
+    // (Q307), it goes for the 3 first; before, it took the 2.
     const state = fixtureGame(star, 0);
     const plan = search(state, optionsFor(state, { timeBudgetMs: 2000 }));
-    expect(plan).toMatchObject({ buy: null, action: { kind: 'move', player: player('one'), path: [n(1)], waypoint: null } });
+    expect(plan).toMatchObject({ buy: null, action: { kind: 'move', player: player('one'), waypoint: null } });
+    expect([n(1), n(7)]).toContain(plan.action?.kind === 'move' ? plan.action.path.at(-1) : null);
   });
 
   it('is reproducible from its seeds and clock', () => {
@@ -222,6 +226,24 @@ describe('search', () => {
     expect(() => searchTree(state, optionsFor(state, { rollout: neverRun, evaluator: hybridGoldAndSkillsEvaluator() }))).toThrow(
       'should not roll out',
     );
+  });
+
+  it('has the other seats along its tree edges choose as its imagined players do (Q307)', () => {
+    // With the estimated evaluation no game is played out, so every pick is
+    // one the other seat makes on its turn along a tree edge.
+    const state = fixtureGame(star, 0);
+    const options = optionsFor(state, { evaluator: estimatedGoldAndSkillsEvaluator() });
+    const imagined = options.imaginedPlayers;
+    if (imagined?.pick === undefined) throw new Error('the game passes its imagined players a pick');
+    const pick = imagined.pick;
+    const pickers: string[] = [];
+    const counted: MctsOptions = {
+      ...options,
+      imaginedPlayers: { ...imagined, pick: (at, who, candidates, rng) => (pickers.push(who.id), pick(at, who, candidates, rng)) },
+    };
+    searchTree(state, counted);
+    expect(pickers.length).toBeGreaterThan(0);
+    expect(new Set(pickers)).toEqual(new Set([player('two')]));
   });
 
   it('refuses to search for a player whose turn it is not', () => {
@@ -247,7 +269,8 @@ describe('startSearch', () => {
     const state = fixtureGame(star, 0);
     const sliced = startSearch(state, optionsFor(state, { timeBudgetMs: 2000 }));
     while (!sliced.step(25));
-    expect(sliced.result().best.action).toEqual({ kind: 'target', target: expect.objectContaining({ node: n(1) }) });
+    const long = searchTree(state, optionsFor(state, { timeBudgetMs: 2000 }));
+    expect(sliced.result().best.action).toEqual(long.best.action);
   });
 
   it('has no result before its first slice, and refuses the wrong player', () => {

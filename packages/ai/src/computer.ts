@@ -59,30 +59,31 @@ export function computerEvaluator(): NodeEvaluator {
  * win, and any its gold could not buy the win of either, the next closest
  * taking their places (`closestUnclaimedPoiEnumerator`); the players in its
  * imagined games skip what their skill cannot win (`winnableBySkill`); with
- * nothing left either rests. The games it plays in its head rest when stuck
- * (Q43) and stop when the gold is gone, the game is won, or
- * `SIMULATION_TURN_CAP` turns have passed since `state` (Q44).
+ * nothing left either rests. The other seats' turns along its tree's edges
+ * choose their sites as its imagined players do (Q307). The games it plays in
+ * its head rest when stuck (Q43) and stop when the gold is gone, the game is
+ * won, or `SIMULATION_TURN_CAP` turns have passed since `state` (Q44).
  */
 export function computerSearchOptions(state: GameState, subject: PlayerId, settings: ComputerSettings): MctsOptions {
   const { config } = settings;
   const termination = turnCapTermination(goldExhaustedTermination(), state.turn.number, config.ai.SIMULATION_TURN_CAP);
   const restRule = restWhenStuck();
+  // [Q307] The players it imagines, in the games it plays out and on the other
+  // seats' turns along its tree's edges alike.
+  const imaginedPlayers = {
+    closest: closestBySpeeds,
+    targets: winnableBySkill,
+    // They find both of those in one pass.
+    candidates: closestWinnableBySpeeds,
+    pick: goldByProgressPicker(),
+  };
   return {
     subject,
     config,
     treePolicy: uctTreePolicy(config.ai.MCTS_EXPLORATION_CONSTANT),
     actions: closestUnclaimedPoiEnumerator(config, stepsReachability(bestRouteStepsFor), closestByBestRoute, bestRouteForSpeeds),
     edgeRoute: bestRouteForSpeeds,
-    rollout: closestPoiRolloutPolicy({
-      config,
-      termination,
-      restRule,
-      closest: closestBySpeeds,
-      targets: winnableBySkill,
-      // The imagined players find both of those in one pass.
-      candidates: closestWinnableBySpeeds,
-      pick: goldByProgressPicker(),
-    }),
+    rollout: closestPoiRolloutPolicy({ config, termination, restRule, ...imaginedPlayers }),
     evaluator: settings.evaluator ?? computerEvaluator(),
     termination,
     restRule,
@@ -90,7 +91,7 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
     rng: settings.rng,
     timeBudgetMs: settings.thinkingMs,
     now: settings.now,
-    imaginedTargets: winnableBySkill,
+    imaginedPlayers,
   };
 }
 
