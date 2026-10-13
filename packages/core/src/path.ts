@@ -505,25 +505,6 @@ function swap(heap: HeapEntry[], a: number, b: number): void {
 }
 
 /**
- * [SOURCE §4] Shift-click sets an intermediate waypoint. The resulting route is
- * the cheapest path to the waypoint followed by the cheapest path onward.
- */
-export function routeVia(
-  graph: MapGraph,
-  from: NodeId,
-  waypoint: NodeId | null,
-  to: NodeId,
-  config: GameConfig,
-): readonly NodeId[] | null {
-  if (waypoint === null) return shortestPath(graph, from, to, config);
-  const first = shortestPath(graph, from, waypoint, config);
-  if (first === null) return null;
-  const second = shortestPath(graph, waypoint, to, config);
-  if (second === null) return null;
-  return [...first, ...second];
-}
-
-/**
  * [SOURCE §4] Path colouring: green = covered by the current skill allowance,
  * yellow = costs stamina, grey = unreachable. The UI puts no cost beside a
  * yellow step (Andrei's 2026-09-23 review, Q32); `staminaCost` is still

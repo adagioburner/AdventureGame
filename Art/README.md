@@ -94,10 +94,10 @@ of their shadows, the sprite stands on the pixel instead, so its feet and not
 its shadow touch the node. Sprite ids must
 be unique within a sheet. Optional sprite fields: `tiles` (`"both"` for a
 terrain texture, `"horizontal"` for a road stroke), `centerline_y` for where a
-stroke's centre runs, and `role`, `state` and `value` labelling marker and die
+stroke's centre runs, and `role` and `value` labelling marker and die
 sprites. A generated sheet also carries `"placeholder": true` at the top
-level. Anything else, such as `original` and `source_box_in_original`, is
-there for people and ignored by the game.
+level. Anything else, such as `notes`, a sprite's `state`, `original` and
+`source_box_in_original`, is there for people and ignored by the game.
 
 ## How the manifest is organised
 
@@ -145,7 +145,7 @@ there for people and ignored by the game.
   shadow, `width` thick as a share of the sheet's typical sprite. A line for
   a sheet the manifest does not draw is reported as a problem.
 - `move_prospect`: which marker sprites draw §7.1's dots, crosses and waypoint
-  flag, and their sizes; its `active` ring is not drawn (Q305).
+  flag, and their sizes.
 - `figurines`, `portraits`, `dice`: the player figures, their portrait crops
   and the die sheet. `figurines.animation` has each figure on the map play
   its idle loop once now and then, when it is drawn big enough (Q305): its

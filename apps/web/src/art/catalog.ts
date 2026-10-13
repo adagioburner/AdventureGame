@@ -147,7 +147,6 @@ export function buildArtCatalog(files: ArtFiles): ArtCatalog {
       ...Object.values(prospect.dot),
       ...Object.values(prospect.cross),
       prospect.waypoint,
-      prospect.active,
     ]) {
       check(() => spriteIndex(markers, id));
     }

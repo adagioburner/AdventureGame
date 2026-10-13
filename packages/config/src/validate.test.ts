@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_RULESET, FORTRESSES_APART, LARGER_MAP_RULESET } from './index.ts';
-import type { PendingValue, RewardGroupSpec, Ruleset } from './types.ts';
-import { RulesetError, UnresolvedDesignError, resolvePending, validateRuleset } from './validate.ts';
+import type { RewardGroupSpec, Ruleset } from './types.ts';
+import { RulesetError, validateRuleset } from './validate.ts';
 import type { Terrain } from './vocabulary.ts';
 
 /**
@@ -192,46 +192,5 @@ describe('validateRuleset', () => {
     expect([forestStamina(DEFAULT_RULESET)?.totalUnits, forestStamina(DEFAULT_RULESET)?.poiCount]).toEqual([8, 4]);
     expect([forestStamina(LARGER_MAP_RULESET)?.totalUnits, forestStamina(LARGER_MAP_RULESET)?.poiCount]).toEqual([11, 6]);
     expect([DEFAULT_RULESET.config.pois.POI_COUNT.forest, LARGER_MAP_RULESET.config.pois.POI_COUNT.forest]).toEqual([18, 25]);
-  });
-});
-
-describe('resolvePending', () => {
-  const unresolved: PendingValue<number> = {
-    __pending: true,
-    gdd: 'GDD.md §12.2',
-    question: 'What exploration constant should the tree use?',
-    value: null,
-  };
-
-  it('throws rather than substituting a plausible default', () => {
-    // This is the chokepoint that keeps "undecided" from decaying into
-    // "whatever the first implementer typed".
-    expect(() => resolvePending(unresolved)).toThrow(UnresolvedDesignError);
-  });
-
-  it('carries the GDD reference and the question on the error', () => {
-    try {
-      resolvePending(unresolved);
-      expect.unreachable('resolvePending should have thrown');
-    } catch (error) {
-      expect(error).toBeInstanceOf(UnresolvedDesignError);
-      expect((error as UnresolvedDesignError).gdd).toBe('GDD.md §12.2');
-      expect((error as UnresolvedDesignError).question).toBe(unresolved.question);
-      expect((error as UnresolvedDesignError).message).toMatch(/docs\/OPEN_QUESTIONS\.md/);
-    }
-  });
-
-  it('returns a value once one has been supplied', () => {
-    expect(resolvePending({ ...unresolved, value: 1.41 })).toBe(1.41);
-  });
-
-  it('returns a supplied falsy value rather than treating it as unresolved', () => {
-    expect(resolvePending({ ...unresolved, value: 0 })).toBe(0);
-  });
-
-  it('leaves the pending block empty in the shipped ruleset', () => {
-    // Every design value is decided (docs/OPEN_QUESTIONS.md); this keeps the
-    // config and the register from drifting apart silently.
-    expect(Object.keys(DEFAULT_RULESET.engineering.pending)).toEqual([]);
   });
 });

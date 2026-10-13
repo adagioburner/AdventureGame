@@ -1,36 +1,11 @@
 import { GUARD_TYPES, TERRAINS } from './vocabulary.ts';
-import type { PendingValue, Ruleset } from './types.ts';
+import type { Ruleset } from './types.ts';
 
 export class RulesetError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'RulesetError';
   }
-}
-
-/** Thrown when code reaches a value GDD.md has not decided yet. */
-export class UnresolvedDesignError extends Error {
-  readonly gdd: string;
-  readonly question: string;
-  constructor(pendingValue: PendingValue<unknown>) {
-    super(
-      `Unresolved design decision (${pendingValue.gdd}): ${pendingValue.question}\n` +
-        `See docs/OPEN_QUESTIONS.md. Do not substitute a default — ask the designer.`,
-    );
-    this.name = 'UnresolvedDesignError';
-    this.gdd = pendingValue.gdd;
-    this.question = pendingValue.question;
-  }
-}
-
-/**
- * Read a pending value. Throws unless someone has actually supplied one.
- * This is the single chokepoint that keeps "undecided" from decaying into
- * "whatever the first implementer typed".
- */
-export function resolvePending<T>(pendingValue: PendingValue<T>): T {
-  if (pendingValue.value === null) throw new UnresolvedDesignError(pendingValue);
-  return pendingValue.value;
 }
 
 /**

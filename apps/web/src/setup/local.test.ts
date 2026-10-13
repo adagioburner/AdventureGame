@@ -5,7 +5,6 @@ import { fromOnlineSetup, inOrder, newLocalSetup, startingOrder, toHotseatSeats,
 
 const limits: LocalLimits = {
   playerCount: { min: 2, max: 5 },
-  thinkingSeconds: { min: 1, max: 60 },
   defaultThinkingSeconds: 10,
   figures: ['fig_01', 'fig_02', 'fig_03', 'fig_04', 'fig_05', 'fig_06'],
 };

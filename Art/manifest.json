@@ -118,12 +118,10 @@
       "unreachable": "Prospect_Cross_Unreachable"
     },
     "waypoint": "Prospect_Waypoint",
-    "active": "Prospect_ActiveRing",
     "dot_size": 0.2,
     "dot_spacing": 0.25,
     "cross_size": 0.6,
-    "waypoint_size": 0.35,
-    "active_size": 0.4
+    "waypoint_size": 0.35
   },
   "figurines": {
     "sheet": "player_avatars",

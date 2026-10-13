@@ -585,7 +585,6 @@ function listOf(names: readonly string[]): string {
 function localLimits(catalog: ArtCatalog): LocalLimits {
   return {
     playerCount: DEFAULT_RULESET.config.players.PLAYER_COUNT,
-    thinkingSeconds: DEFAULT_RULESET.config.ai.THINKING_TIME_SECONDS,
     defaultThinkingSeconds: Math.round(DEFAULT_RULESET.config.ai.MCTS_TIME_BUDGET_PER_MOVE_MS / 1000),
     figures: atlasOf(catalog, catalog.manifest.figurines.sheet).sprites.map((sprite) => sprite.id),
   };

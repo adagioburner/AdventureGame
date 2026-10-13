@@ -102,7 +102,7 @@ export function isOpenSeat(seat: SetupSeat): boolean {
  * and the role "cannot be transferred to anyone else in v1" — so `gameMaster`
  * is readonly for the whole life of the game and there is no transfer message
  * anywhere in this protocol. What happens when that person disappears is
- * §12.4; see `GAME_MASTER_ABSENCE_BEHAVIOUR` in `@adventure/session`.
+ * §12.4: the game waits for them (see `GameSession` in `@adventure/session`).
  *
  * [SOURCE §2, chat] "Turn order fixed at game start, never changes thereafter
  * (order determined by whatever is most convenient to implement — expected

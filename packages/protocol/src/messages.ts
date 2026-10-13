@@ -176,9 +176,11 @@ export type ClientMessage =
    */
   | { readonly type: 'gm.mapGenerated'; readonly gameId: GameId; readonly map: GameMap }
   /**
-   * The GM's client answering a `gm.requestAiMove`, with the searched move.
-   * [Q190] `buy`, when present, is played first (761); `action` is `null`
-   * only when that purchase ends the game (756).
+   * The GM's client playing the turn of the computer seat on turn, with the
+   * searched move. It thinks for every computer seat from the game it has, and
+   * names the turn with `computerMoveRequestId`. [Q190] `buy`, when present,
+   * is played first (761); `action` is `null` only when that purchase ends the
+   * game (756).
    */
   | {
       readonly type: 'gm.aiMove';
@@ -256,27 +258,11 @@ export type ServerMessage =
    * whenever it changes.
    */
   | { readonly type: 'game.presence'; readonly gameId: GameId; readonly away: readonly UserId[] }
-  /**
-   * [SOURCE §12.1, chat] Sent only to the game master's client, asking it to run
-   * the MCTS search for an AI-controlled seat and reply with `gm.aiMove`. The
-   * server holds no AI of its own.
-   *
-   * [SOURCE §12.4, chat] If the game master is not connected, nobody answers
-   * this and the game stalls — which is the specified behaviour, not a failure
-   * mode to work around.
-   */
-  | {
-      readonly type: 'gm.requestAiMove';
-      readonly gameId: GameId;
-      readonly requestId: string;
-      readonly player: PlayerId;
-    }
   /** Sent only to the game master's client, asking it to generate the map. */
   | { readonly type: 'gm.requestMapGeneration'; readonly gameId: GameId; readonly seed: string }
   | { readonly type: 'error'; readonly message: string; readonly code: ProtocolErrorCode };
 
 export type ProtocolErrorCode =
-  | 'unauthenticated'
   | 'not_game_master'
   /** [Q300, 6 and 7] Deleting a post on the site's board, or stopping an account, is a moderator's alone. */
   | 'not_moderator'
@@ -291,18 +277,7 @@ export type ProtocolErrorCode =
   | 'game_not_found'
   /** [Q55, 37] The game ended or was cancelled more than 7 days ago and has been deleted. */
   | 'game_removed'
-  | 'game_full'
-  /**
-   * [SOURCE §12.4, chat] "The game cannot proceed for a player that cannot
-   * establish connection with the game state server. If the game master
-   * disconnects there is no one to force the next turn so the game stalls as
-   * well." With map generation and AI on the GM's machine (§12.1), a
-   * disconnected GM also blocks every AI turn and map creation. Reported, not
-   * worked around.
-   */
-  | 'game_master_unavailable'
-  /** Raised when a request needs a decision GDD.md has not made yet. */
-  | 'unresolved_design_item';
+  | 'game_full';
 
 /** [Q56, 59] The longest post on a game's board, in characters; [Q300, 1] on the site's board too. */
 export const BOARD_POST_MAX = 500;

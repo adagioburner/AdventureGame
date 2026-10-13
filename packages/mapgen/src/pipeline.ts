@@ -1,6 +1,5 @@
 import { validateRuleset, type Ruleset } from '@adventure/config';
 import {
-  asNodeId,
   createRng,
   type GameMap,
   type Guard,
@@ -175,25 +174,4 @@ function remotenessOf(draft: MapDraft, node: NodeId): number {
   const score = draft.remoteness.get(node);
   if (score === undefined) throw new RangeError(`no remoteness score for POI node ${node}`);
   return score;
-}
-
-/**
- * Rebuild the lookup `sealMap` dropped on the way through `JSON.stringify`.
- *
- * Q15 ships the sealed map to every client as JSON, and a `Map` does not
- * survive that. This is the other half of the round trip, so a client, a replay
- * and the balancing harness all reconstruct the identical object rather than
- * each inventing its own index.
- */
-export function reviveGameMap(parsed: Omit<GameMap, 'poiByNode'> & { poiByNode?: unknown }): GameMap {
-  const poiByNode = new Map<NodeId, number>();
-  parsed.pois.forEach((poi, index) => poiByNode.set(asNodeId(poi.node), index));
-  return {
-    seed: parsed.seed,
-    ruleset: parsed.ruleset,
-    graph: parsed.graph,
-    pois: parsed.pois,
-    poiByNode,
-    attempts: parsed.attempts,
-  };
 }

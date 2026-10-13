@@ -33,7 +33,6 @@ export interface LocalSeat {
 /** What a local setup is checked against: §11's ranges and the figurine sheet. */
 export interface LocalLimits {
   readonly playerCount: IntRange;
-  readonly thinkingSeconds: IntRange;
   readonly defaultThinkingSeconds: number;
   readonly figures: readonly string[];
 }

@@ -11,7 +11,7 @@ import { PixiMapRenderer } from '../render/pixi/renderer.ts';
 import type { LoadedArt } from '../render/pixi/textures.ts';
 import { SPACING_PX, type FigureCue, type MapScene, type Walker } from '../render/sceneModel.ts';
 import { MAP_RESTORE_WAIT_MS, MAP_RETRY_MS, noteMapTrouble } from './mapTrouble.ts';
-import { skyPlacement, skyRoom } from './sky.ts';
+import { skyScale } from './sky.ts';
 
 /** What the page can ask of the map once it is up. */
 export interface MapHandle {
@@ -231,10 +231,8 @@ export function MapView({
       // which on a phone's New game screen runs on under the form.
       const placeSky = (): void => {
         const layer = sky.current;
-        const stage = layer?.parentElement;
-        if (layer === null || stage === null || stage === undefined) return;
-        const placed = skyPlacement({ x: stage.clientWidth, y: stage.clientHeight }, fit(), camera.camera);
-        layer.style.transform = `translate(${placed.x}px, ${placed.y}px) scale(${placed.scale})`;
+        if (layer === null) return;
+        layer.style.transform = `scale(${skyScale(fit(), camera.camera)})`;
       };
       const apply = (): void => {
         map.setViewport(viewport());
@@ -496,7 +494,7 @@ export function MapView({
 
   return (
     <>
-      <div ref={sky} className="map-sky" style={{ inset: `${(-(skyRoom() - 1) / 2) * 100}%` }} />
+      <div ref={sky} className="map-sky" />
       <div ref={host} className="canvas-host" aria-label="The map" role="img" />
       {broken ? (
         // [Q86, 331] The map could not be built, even after trying again.

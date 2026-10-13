@@ -6,7 +6,6 @@ import {
   pathCost,
   previewPath,
   refreshAllowance,
-  routeVia,
   shortestPath,
   type GameState,
   type NodeId,
@@ -100,7 +99,7 @@ describe('move mode (§7.1), idle → selecting → previewing', () => {
     controller.enter(player.id);
     controller.choose(target, false);
     controller.choose(off, true);
-    const via = routeVia(map.graph, player.position, off, target, config);
+    const via = bestRouteVia(map.graph, player.position, off, target, player.stats, config);
     expect(controller.state.kind === 'previewing' && controller.state.path).toEqual(via);
     expect(controller.state.kind !== 'idle' && controller.state.waypoint).toBe(off);
     controller.choose(off, true);

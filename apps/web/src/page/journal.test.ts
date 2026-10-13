@@ -91,7 +91,6 @@ function describeTurn(before: GameState, plan: Plan, roll: DiceSource = dice()) 
     name: player.name,
     action,
     events: outcome.events,
-    positionBefore: player.position,
     allowanceBefore: before.turn.allowance,
     statsBefore: player.stats,
     after: outcome.state,
