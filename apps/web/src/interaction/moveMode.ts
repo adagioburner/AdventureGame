@@ -18,8 +18,8 @@ import type { UiModeConfig } from '../modes/hotseat.ts';
  * mode; clicking a destination node highlights the shortest path (weighted
  * terrain cost, §5.1) with a thick dotted line and an isometric cross at the
  * destination. Shift-click sets an intermediate waypoint when more than one
- * path exists." [Q210] The path highlighted is now the best for the player's
- * speeds (`bestRouteVia`), not the cheapest by terrain alone.
+ * path exists." [Q210] The path highlighted is the best for the player's
+ * speeds (`bestRouteVia`).
  *
  * A small explicit state machine rather than scattered flags, because the same
  * states behave differently in the two modes (§7.1 vs §7.2).

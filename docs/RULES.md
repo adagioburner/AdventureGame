@@ -6,20 +6,19 @@ code, not a new authority — **[`GDD.md`](../GDD.md) remains the single source 
 truth**, and every rule below traces back to a GDD section, cited as `§n`. If
 this file and the GDD ever disagree, the GDD wins and this file is wrong.
 
-One thing to know before reading: as of phase 5 every rule below is real code.
-Map generation (§2.1), movement, interaction, turn order, victory and the AI
-(§9's MCTS search and its rollouts) all run; `pnpm game <seed>` plays a whole
-game headlessly and prints it turn by turn, and `pnpm game <seed> --computer`
-has the computer play both seats. What is still a contract throwing
-`NotImplementedError` is the session layer (§6.1's setup flow, the server). The
-rules are decided either way — see
-[`docs/OPEN_QUESTIONS.md`](./OPEN_QUESTIONS.md) for how each was settled.
+One thing to know before reading: every rule below is real code. Map
+generation (§2.1), movement, interaction, turn order, victory, the AI (§9's
+MCTS search and its rollouts) and the session layer (§6.1's setup, the server)
+all run; `pnpm game <seed>` plays a whole game headlessly and prints it turn by
+turn, and `pnpm game <seed> --computer` has the computer play both seats. See
+[`docs/OPEN_QUESTIONS.md`](./OPEN_QUESTIONS.md) for how each rule was settled.
 
 ## The shape of a game
 
 Two to five players share one map of ~240 nodes across plains, forest and
-mountain terrain. Sixty of those nodes are POIs holding rewards; gold is the
-only thing anyone wins with. Nothing is hidden — the whole map, every POI and
+mountain terrain (~336 for four or five, Q160). Sixty-five of those nodes are
+POIs holding rewards (91 on the larger map); gold is the only thing anyone wins
+with. Nothing is hidden — the whole map, every POI and
 every reward is visible to everyone from the start (§1).
 
 Every player has seven uncapped stats, one per reward kind: plains / forest /
@@ -36,8 +35,10 @@ afterwards (§2, §6.1). With Shuffle seats on (Q165), the seats are drawn at
 random as the game starts instead, the game master's with the rest, from the
 server's die stream online (`drawSeats`, `packages/session/src/setup.ts`) and
 the browser's generator on one device (`startingOrder`,
-`apps/web/src/setup/local.ts`). Every player starts on the *same* node: a random plains
-node that is not a POI (`chooseStartingNode`, `packages/core/src/gamemap.ts`).
+`apps/web/src/setup/local.ts`). Every player starts on the *same* node: the
+deepest plains node that is not a POI and whose sites within 5 road steps
+average a remoteness below 0.1 (Q227, `chooseStartingNode`,
+`packages/core/src/gamemap.ts`).
 Stamina and gold are the stats that do not start at zero — seat *n* starts with
 `STARTING_STAMINA_BASE + (n − 1) × STARTING_STAMINA_INCREMENT`, i.e. 30, 35, 40…
 (`startingStaminaForSeat`, `packages/config/src/index.ts`), and every seat with
@@ -116,13 +117,13 @@ what a player is shown and what the server commits cannot disagree. Grey means
 "not this turn", never "impossible" — resting always restores stamina.
 
 **One cost per step, everywhere.** That same 1 / 2 / 3 weighted terrain cost is
-the only cost in the design: the remoteness walk (§5.1) and the AI's POI
-targeting (§9) use it, from `packages/core/src/path.ts`. There is no second
-cost function in the repo, and shortest-path ties break deterministically so
-two clients, the server and a replay all draw the identical path. Since Q210
-the route drawn for a person, and the computer's real move, is the best for the
-player's speeds (`bestRoute`): free steps cost nothing and a turn counts as 5
-stamina. It is picked as deterministically, and with no speeds it is the
+the only step cost in the design: the remoteness walk (§5.1) ranks by it and
+the AI's POI targeting (§9) counts stamina with it, from
+`packages/core/src/path.ts`. There is no second cost function in the repo, and
+shortest-path ties break deterministically so two clients, the server and a
+replay all draw the identical path. The route drawn for a person, and the
+routes the computer walks, are the best for the player's speeds (Q210,
+`bestRoute`): free steps cost nothing and a turn counts as 5 stamina. It is picked as deterministically, and with no speeds it is the
 cheapest route.
 
 ### Arriving at a POI
@@ -210,13 +211,16 @@ edge and one rollout leg mean the same thing and node values compose — and the
 tree stays shallow enough to search within the time budget, because a node is a
 real decision point rather than a single step.
 
-**Targets are the `CLOSE_CANDIDATE_COUNT` closest eligible POIs, picked
-uniformly at random.** Ranking is by the weighted terrain cost above, and the
+**Targets are the `CLOSE_CANDIDATE_COUNT` closest eligible POIs, picked at
+random.** By default ranking is by the weighted terrain cost above, and the
 whole thing — rank, then pick uniformly among the nearest K — is written once in
-`packages/sim/src/candidates.ts` and shared by three callers: the remoteness
-walk (§5.1, over *unvisited* POIs), the rollout policy (§9, over *unclaimed*
-POIs) and tree expansion (also unclaimed; the game's computer leaves out
-guarded gold it cannot win, Q295). The rollout and the tree share the
+`packages/sim/src/candidates.ts` for three callers: the remoteness walk (§5.1,
+over *unvisited* POIs), the rollout policy (§9, over *unclaimed* POIs) and tree
+expansion (also unclaimed; the game's computer leaves out guarded gold it
+cannot win, Q295). The game's computer ranks by its own speeds instead (Q112,
+`packages/sim/src/speeds.ts`): its rollout by `closestBySpeeds`, along the
+cheapest route, and its tree by `closestByBestRoute`, along the best route for
+its speeds (Q210). The rollout and the tree share the
 one K, so tuning `CLOSE_CANDIDATE_COUNT` moves both together; the remoteness
 walk has its own, `REMOTENESS_CANDIDATE_COUNT` (Q66), so the computer player
 tunes without moving the maps. What differs is eligibility, and what each does
@@ -267,8 +271,8 @@ worth keeping apart (`packages/ai/src/policies/evaluators.ts`):
 
 - **simulated** — the subject's gold once the rollout above has run to gold
   exhaustion. `simulatedRolloutEvaluator()`. This is §9's specified default;
-  the other two are there to experiment with. Since Q113 the game scores the
-  same rollout by the lead instead: `(lead / (|lead| + 1) + 1) / 2`, the lead
+  the other two are there to experiment with. The game scores the same
+  rollout by the lead instead (Q113): `(lead / (|lead| + 1) + 1) / 2`, the lead
   being the subject's gold minus the richest other player's
   (`simulatedLeadEvaluator('soft')`, which `computerEvaluator()` returns).
 - **estimated** — no rollout at all: the subject's gold and skills as they stand
@@ -315,9 +319,9 @@ a time; the rest of the macro-action is re-derived next turn
 | The `GUARD_DIE` stream | `packages/core/src/rules/dice.ts` |
 | The action space | `packages/core/src/action.ts` |
 | Distance metric, path preview | `packages/core/src/path.ts` |
-| Target ranking and choice (shared) | `packages/sim/src/candidates.ts`, `walk.ts` |
+| Target ranking and choice | `packages/sim/src/candidates.ts`, `speeds.ts`, `goldByProgress.ts` |
 | Rollout, macro-actions, termination | `packages/sim/src/rollout.ts` |
-| Remoteness walk and scoring | `packages/sim/src/remoteness.ts` |
+| Remoteness walk and scoring | `packages/sim/src/remoteness.ts`, `walk.ts` |
 | Tree policy, branches, evaluators | `packages/ai/src/` |
 | Every constant named above | `packages/config/src/defaults.ts` |
 

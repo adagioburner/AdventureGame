@@ -77,7 +77,7 @@ describe('the route the computer walks (Q210, stage 1)', () => {
     const options = computerSearchOptions(state, one, settings());
     const end = options.rollout.run(rolloutCursor(state, one), createRng('imagined'), createDiceSource(createRng('imagined'), DEFAULT_GAME_CONFIG));
     expect(poiRuntimeAt(end.state, n(5))).toEqual({ claimedBy: one, claimedOnTurn: state.turn.number });
-    // Before stage 3 they walked the cheapest route.
+    // The cheapest route goes along the plains.
     expect(turnTowards(state, n(5), options.restRule)).toMatchObject({ kind: 'move', path: [n(1), n(2), n(3), n(4), n(5)] });
   });
 });

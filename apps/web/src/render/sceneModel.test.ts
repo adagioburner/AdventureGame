@@ -106,7 +106,7 @@ describe('what the player sees of the map', () => {
   it('keeps POI pictures off the roads and off other POIs', () => {
     // Andrei, 2026-09-23: "placing the POI images so that they do not obscure
     // roads and other POI". Measured against every picture standing straight
-    // behind its node, which is where the first build put them all.
+    // behind its node.
     const pois = new Set(game.map.pois.map((poi) => poi.node));
     let hidden = 0;
     let hiddenBehind = 0;

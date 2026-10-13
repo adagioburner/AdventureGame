@@ -8,7 +8,7 @@ import type { AccountRecord, AccountStore, LoginRecord } from '../auth/accounts.
  *
  * These exist to prove the ports are actually sufficient: if the session layer
  * runs against these, it has no hidden dependency on a particular host — which
- * is the property §12.1 needs preserved until hosting is decided.
+ * is the property §12.1 needs preserved.
  */
 export function createMemoryGameStore(): GameStore {
   const games = new Map<GameId, GameState>();

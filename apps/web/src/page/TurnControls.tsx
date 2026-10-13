@@ -154,7 +154,7 @@ export function TurnControls(props: TurnControlsProps) {
           </p>
           {bar}
         </div>
-        {/* [Q120, 475] Empty since Find went, and kept so the panel is as tall as before on a phone. */}
+        {/* [Q120, 475] Empty, and kept so the panel keeps its height on a phone. */}
         <div className="buttons" />
       </section>
     );
@@ -184,7 +184,7 @@ export function TurnControls(props: TurnControlsProps) {
 
 /**
  * [Q85, 302 and 304-307] The game master's actions on another person's turn
- * (Move on and Resign; Find left the list with the Find button, [Q120, 475])
+ * (Move on and Resign)
  * in one "Bea ▾" button, so they never take a second row: its list opens
  * above it, and closes on a choice, a press elsewhere or when the turn passes
  * (keyed by the turn), as the Menu list does ([Q58, 84]).

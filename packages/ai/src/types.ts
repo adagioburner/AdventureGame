@@ -86,13 +86,14 @@ export interface TreePolicy {
  *
  * [SOURCE §12.2, review] How many is `CLOSE_CANDIDATE_COUNT`: "We don't really
  * need two different constants here. We will prune the tree by the
- * CLOSE_CANDIDATE_COUNT, plus one branch for resting." The tree's own
- * `MCTS_NODE_EXPANSION_PRUNING` is gone.
+ * CLOSE_CANDIDATE_COUNT, plus one branch for resting."
  *
- * This reuses `closestPoiCandidates` from `@adventure/sim`, the same ranking
- * the remoteness walk (§5.1) and the rollout policy (§9) use. Three callers,
- * one kernel, one K; only what they do with the result differs — the tree takes
- * every candidate as a branch, the rollout picks one uniformly.
+ * With no ranking passed, this reuses `closestPoiCandidates` from
+ * `@adventure/sim`, the same ranking the remoteness walk (§5.1) and the
+ * rollout policy (§9) use by default; only what they do with the result
+ * differs — the tree takes every candidate as a branch, the rollout picks one
+ * uniformly. The game's computer ranks by its speeds instead (Q112, Q210:
+ * `closestByBestRoute`).
  *
  * [SOURCE §12.2, chat] Rest is a branch too — "let us prune it if there are at
  * least MIN_REACHABLE_NODES_FOR_REST = 3 POIs reachable in one turn" — so the
@@ -139,15 +140,11 @@ export interface RolloutPolicy {
  *
  * [SOURCE §5, chat] "Backpropagated value: the simulated player's gold amount
  * after rollout, **by default**. The tree-node evaluation function must be
- * easily swappable — a planned future experiment is a hybrid `average(gold
- * after simulation, gold now + (number of skills) × balancing_constant, at the
- * node being evaluated)`."
+ * easily swappable."
  *
- * [SOURCE §9, review] That `balancing_constant` form is superseded, and
- * the quote is kept for provenance only: the second term is now the *estimated*
- * evaluation, whose gold/skills weight moves with the game instead of being
- * tuned. See Q18 in `docs/OPEN_QUESTIONS.md`, and `policies/evaluators.ts` for
- * the three that ship — simulated, estimated and hybrid.
+ * [SOURCE §9, review] See Q18 in `docs/OPEN_QUESTIONS.md`, and
+ * `policies/evaluators.ts` for the three that ship — simulated, estimated and
+ * hybrid.
  *
  * The signature takes both the rolled-out cursor *and* the position at the
  * node being evaluated — where this iteration's rollout started — which is what

@@ -21,12 +21,12 @@ import type { GenerationContext } from './types.ts';
  *
  * "Apart" is measured on the ground, step 2's triangulation, not only by road:
  * two areas side by side with no road between them still read as one area on
- * the map, and that is how most areas met before this existed.
+ * the map.
  *
  * [Q245, 917] `gaps[node]` is how many spaces a terrain must keep between two
  * of its areas when it takes `node`. Every space draws its own, so two areas
  * stop one space apart in some places and further in others, and the plains
- * between them winds; one gap for the whole map drew it as a straight line.
+ * between them winds.
  */
 export interface KeptApart {
   readonly ground: readonly (readonly NodeId[])[];
@@ -299,12 +299,11 @@ function moveOneNode(
 
   // Nobody can reach a surplus terrain directly. On a graph this sparse a
   // region is routinely walled in by a terrain that is *already* at its target
-  // and so has nothing to spare — which, before this existed, left the shares
-  // stuck as much as ten points out on the odd map. So trade instead: the
-  // neighbour hands one node over and immediately takes one back from a
-  // terrain that does have a surplus. It nets out at one node off the surplus
-  // and one onto the terrain that was short, exactly as a direct move does, so
-  // the total deviation still falls by two and the pass still cannot cycle.
+  // and so has nothing to spare. So trade instead: the neighbour hands one
+  // node over and immediately takes one back from a terrain that does have a
+  // surplus. It nets out at one node off the surplus and one onto the terrain
+  // that was short, exactly as a direct move does, so the total deviation
+  // still falls by two and the pass still cannot cycle.
   for (const wanted of needy) {
     for (const through of TERRAINS) {
       if (through === wanted || surplus(through)) continue;

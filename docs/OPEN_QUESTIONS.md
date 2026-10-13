@@ -11,21 +11,13 @@ about it, and where the seam lives. Two categories:
 
 Nothing below was resolved by picking something reasonable.
 
-**Answered so far:** all four of GDD.md §12's own open items, Q1–Q26, Q28–Q29 and Q31–Q61.
-`pending` in the config is empty.
+**Answered:** all four of GDD.md §12's own open items, and every question in
+this register but Q27 and Q30. `pending` in the config is empty.
 
 **Outstanding: two — [Q27](#q27) and [Q30](#q30), neither of them blocking.** Building phase 1 turned up that
 `COMPACTNESS_MAX` never binds on a map of ~240 nodes and 300 edges, so §2.1's
 Smooth step does nothing at the current constants. It is a tuning question
 rather than a blocker: generation works and the code implements §2.1 literally.
-[Q29](#q29), the other thing reviewing phase 1 turned up, is answered — §4.3
-leaned bigger stacks toward remote POIs only 57% of the time, and Andrei's swap
-pass is now §4.3 step 4, which takes it to 96%. Everything
-else in this register is answered, and so is every reading that was held open
-for confirmation — Q1's first-segment wrinkle, Q13, Q17, and, as of
-2026-09-22, Q18's own pick of what "total skills available" divides by
-([Q24](#q24)) and whether the §2 avatar is its own asset ([Q26](#q26)). The
-config's `pending` block is empty.
 
 [Q30](#q30) came out of phase 2: with the rules engine running, a game can in
 principle reach a position where the gold that is left is behind guards nobody
@@ -37,10 +29,10 @@ rule that is wrong.
 lists the seams it draws on.
 
 Q20–Q26 came out of writing that plan, and of the art landing against it,
-rather than the architecture pass, and sit in their own section below. Q27 came
-out of running the pipeline for the first time. Q31 and Q32 are Andrei's
-rulings from his first look at the phase 3 map, recorded here because each
-changes what GDD §3 or §7.1 says.
+rather than the architecture pass, and sit in their own section below with
+every question raised since. Q27 came out of running the pipeline for the first
+time. Q31 and Q32 are Andrei's rulings from his first look at the phase 3 map,
+recorded here because each changes what GDD §3 or §7.1 says.
 
 ---
 
@@ -48,8 +40,8 @@ changes what GDD §3 or §7.1 says.
 
 | # | Decision | What it changed in the code |
 |---|---|---|
-| §12.1 | [SOURCE, chat] "Durable Objects, with flexible architecture to swap it for something else if DO don't fit the bill. Everything else, i.e. map generation and player AI, runs on the game master's machine." | The DO becomes one adapter behind `SessionPorts`; `packages/session` still imports no transport, storage, socket or timer, so the swap stays an adapter. `MapService` and `AiService` keep their interfaces but the DO implements them as **round trips to the GM's client** (`gm.requestMapGeneration`/`gm.mapGenerated`, `gm.requestAiMove`/`gm.aiMove`). See `docs/STACK.md` for what the choice costs. |
-| §12.2 | [SOURCE, chat] Branches are the closest unclaimed POIs at that point in the game; "for everything else please use sensible defaults that are recommended for standard MCTS implementations." The K was `MCTS_NODE_EXPANSION_PRUNING = 10`, **superseded** — see Q19. | `closestUnclaimedPoiEnumerator()` and `uctTreePolicy()` ship as named, swappable defaults. The enumerator calls the same `closestPoiCandidates` as the remoteness walk and the rollout policy — three consumers, one kernel, one K. Sub-questions: Q16, Q17, Q19. |
+| §12.1 | [SOURCE, chat] "Durable Objects, with flexible architecture to swap it for something else if DO don't fit the bill. Everything else, i.e. map generation and player AI, runs on the game master's machine." | The DO becomes one adapter behind `SessionPorts`; `packages/session` still imports no transport, storage, socket or timer, so the swap stays an adapter. `MapService` and `AiService` keep their interfaces, but nothing implements them: `GameSession` makes **round trips to the GM's client** as messages instead (`gm.requestMapGeneration`/`gm.mapGenerated`, `gm.requestAiMove`/`gm.aiMove`). See `docs/STACK.md` for what the choice costs. |
+| §12.2 | [SOURCE, chat] Branches are the closest unclaimed POIs at that point in the game; "for everything else please use sensible defaults that are recommended for standard MCTS implementations." The K is `CLOSE_CANDIDATE_COUNT` (Q19). | `closestUnclaimedPoiEnumerator()` and `uctTreePolicy()` ship as named, swappable defaults. Sub-questions: Q16, Q17, Q19. |
 | §12.3 | [SOURCE, chat] "The message board should be part of the game state and as such persistent along with the rest of the game. There is no difference between the message board state and other game state." | `BoardPost` moved into `@adventure/core`; `GameState.messageBoard` holds it; posting is a `PostMessageAction` through `applyAction`, the single writer. `MessageBoardStore` and the `board.posts` message are **deleted** — no store, no retention policy, no separate channel. |
 | §12.4 | [SOURCE, chat] "The game cannot proceed for a player that cannot establish connection with the game state server. If the game master disconnects there is no one to force the next turn so the game stalls as well." | `GameMasterAbsencePolicy` **deleted** — there is no fallback to configure. A GM-only request with no GM connected is answered `game_master_unavailable` and the game waits. |
 
@@ -59,9 +51,7 @@ machine, a disconnected GM blocks not just forced turns but every AI turn and
 map creation. Even an all-AI game cannot advance while the GM is offline. That
 follows from the two answers; it is recorded, not re-opened.
 
-`SessionPorts` is down from eight ports to six as a result.
-
-## B. Questions — I need an answer before these can be written
+## B. Questions — **all answered**
 
 ### Q1. ~~What exactly is a POI's per-walk remoteness score?~~ — **answered, implemented**
 
@@ -107,10 +97,10 @@ not in `EngineeringConfig`.
 Two knock-on changes this answer makes to earlier text, recorded rather than
 re-decided:
 
-- **`GUARD_STRENGTH` is now 0–10, not §11's 2–10.** The cap was given as "0 and
+- **`GUARD_STRENGTH` is 0–10, not §11's 2–10.** The cap was given as "0 and
   10", and 0 is meaningful: it is what "1 gold with maximum remoteness is
-  unguarded" produces (`1×3 − 1×4 = −1`, capped to 0). *Since Q275 a pile of
-  6 gold or more guarded by combat is capped at 12.*
+  unguarded" produces (`1×3 − 1×4 = −1`, capped to 0). A pile of 6 gold or
+  more guarded by combat is capped at 12 (Q275).
 - **§4.4's "every gold POI is guarded, none are exempt" no longer holds.** Any
   POI whose formula result caps at 0 is unguarded. The data model already allows
   `guard: null`, so nothing structural changes.
@@ -128,12 +118,14 @@ recommendation:
 | 2 | 6 | 5 | 4 | 3 | 2 |
 | 3 | 9 | 8 | 7 | 6 | 5 |
 | 4 | 10 | 10 | 10 | 9 | 8 |
-| ≥5 | 10 | 10 | 10 | 10 | 10 |
+| 5, or more under magic | 10 | 10 | 10 | 10 | 10 |
+| 6 or more under combat | 12 | 12 | 12 | 12 | 12 |
 
 So remoteness stops discounting the guard once a stack reaches 5 gold. Reachable
-stacks per §4.2 row are 1–9 (plains), 1–2 (forest), 1–11 (mountain/fighting),
-1–6 (mountain/magic), so the plains and mountain rows can produce POIs pinned at
-the cap.
+stacks per guarded §4.2 row are 1–9 (plains/fighting), 1–4 (plains/magic),
+1–11 (mountain/fighting) and 1–6 (mountain/magic), and on the larger map 1–12,
+1–5, 1–15 and 1–8, so every one of those rows can produce POIs pinned at the
+cap.
 
 ### Q2a. ~~Is guard strength rounded?~~ — **answered, implemented**
 
@@ -177,12 +169,7 @@ Two properties of the resulting rule, worth having in hand when you tune
 So 25 leaves roughly 2× headroom over a circle, and its practical meaning is
 "thin regions up to 24 nodes are allowed".
 
-### Q5. ~~`stamina` appears in no §4.2 row~~ — **answered**
-
-[SOURCE §4.2, chat] "Proceed now without stamina, add later as a config edit.
-One possibility is to have extra leaf nodes filled with stamina rewards." The
-§4.2 table is unchanged; stamina's only placement for now is the surplus-leaf
-rule of Q9.
+### Q5. ~~`stamina` appears in no §4.2 row~~ — **replaced by Q240: a stamina row in §4.2**
 
 ### Q6. ~~When does an MCTS rollout stop, and what do the other players do?~~ — **answered, implemented**
 
@@ -216,40 +203,31 @@ default.
 ### Q7. ~~How much jitter in the edge-pruning order?~~ — **answered, implemented**
 
 [SOURCE §2.1 step 3, chat] "We can choose randomly from the longest
-EDGE_PRUNE_JITTER = 10 edges." Now a real `MapConfig` row, so `pending` is
-**empty** for the first time.
+EDGE_PRUNE_JITTER = 10 edges." Now a real `MapConfig` row.
 
-### Q8. ~~What procedure gives POIs "approximately equal distances"?~~ — **answered**
-
-[SOURCE §3, chat] "Let us prototype and choose." `PoiPlacementStrategy` stays a
-seam with two implementations to build — farthest-point sampling and graph-space
-Poisson-disc — and `tools/balance` compares them on real maps.
+### Q8. ~~What procedure gives POIs "approximately equal distances"?~~ — **replaced by Q23: farthest-point sampling only, the seam kept**
 
 ### Q9. ~~What gives when a terrain has more leaves than its POI quota?~~ — **answered**
 
 [SOURCE §9, chat] "Fill the extra leaf nodes with stamina rewards." The §4.2
 quota is met exactly as written, and surplus leaves become *additional* POIs
 outside the table carrying stamina. Consequences, all recorded rather than
-re-decided: a map can hold slightly more than 60 POIs; the
-`poi_quota_unsatisfiable` rejection is **deleted**, since the case no longer
-aborts generation; and these POIs are unguarded, because §4.2 is what decides
-guarding and they are not in it.
+re-decided: a map can hold slightly more than 65 POIs (91 on the larger map);
+the `poi_quota_unsatisfiable` rejection is **deleted**, since the case no
+longer aborts generation; and these POIs are unguarded, because §4.2 is what
+decides guarding and they are not in it.
 
 ### Q9a. ~~How many stamina units per surplus leaf?~~ — **answered**
 
-[SOURCE §9a, chat] "One stamina per leaf." `OVERFLOW_LEAF_STAMINA_UNITS = 1`.
+[SOURCE §9a, chat] "One stamina per leaf." `OVERFLOW_LEAF_STAMINA_UNITS = 1`,
+and a unit gives 5 stamina (`STAMINA_PER_UNIT`, Q240 903).
 
 On my flag that the total can be zero — a proportional spread of 30–45 leaves
 over quotas of 25/20/15 overflows nothing at all — [SOURCE §4.2, chat]: "right
 now the configuration for stamina is 0, but we may change the rewards balance
 and add a non-zero default number of stamina rewards." So surplus-leaf stamina
-is incidental, and the §4.2 table is where stamina arrives properly when the
-balance changes.
-
-Worth knowing for that edit: adding a stamina row is a config change but **not a
-purely additive one**. Each terrain's `poiCount` column must sum to
-`POI_COUNT[terrain]`, so giving stamina POIs means taking them from another kind
-on that terrain. `validateRuleset` catches it either way.
+is incidental, and the §4.2 table is where stamina arrives properly: the
+forest's stamina row (Q240, Q250).
 
 ### Q10. ~~The tree policy also needs an action enumeration~~ — **answered with §12.2**
 
@@ -260,26 +238,19 @@ Q16 and Q17.
 
 [SOURCE §9, chat] "The sum of all skill levels" — so fighting 3 + magic 1
 contributes 4, not 2. Summed over the five skills (three movement, fighting,
-magic); gold is the objective and stamina a resource, so neither counts.
+magic); gold is the objective, so it does not count, and 5 stamina count as
+one skill point (Q110).
 
-`hybridGoldAndSkillsEvaluator(balancingConstant)` is now fully written. Both
-halves are normalised by total map gold per Q14, which keeps the average over
-two comparable quantities and puts `balancingConstant` in units of *gold per
-skill level* — a natural thing to tune.
-
-**The answer above still stands; the formula around it does not.** Q18 replaces
-the fixed `balancingConstant` with a weight that moves as gold is claimed,
-divides the skill term by total skills rather than by total gold, and moves the
-whole thing into the *estimated* evaluator, leaving the hybrid as the average of
-simulated and estimated. "Sum of skill levels, not a count of skills" is what
-carries over, and it is the skill numerator
-`estimatedGoldAndSkillsEvaluator()` uses.
+"Sum of skill levels, not a count of skills" is the skill numerator
+`estimatedGoldAndSkillsEvaluator()` uses (Q18).
 
 ### Q12. ~~Where do players start on the map?~~ — **answered, implemented**
 
 [SOURCE §6, chat] "The players start at a random spot of the plains that is not
-a POI. All players start from the same spot." `chooseStartingNode(map, rng)`,
-with its `Rng` derived from the map seed so the start point replays with the map.
+a POI. All players start from the same spot." The spot is the deepest plains
+space whose sites within 5 steps average less than 0.1 remoteness (Q227).
+`chooseStartingNode(map, rng)`, with its `Rng` derived from the map seed so the
+start point replays with the map.
 
 ### Q13. ~~Is a zero-length move a legal action?~~ — **answered, confirmed**
 
@@ -300,15 +271,17 @@ another attempt and recovering stamina.
 ### Q14. ~~UCB1's √2 assumes rewards in [0, 1]~~ — **answered, implemented; Q18 changes how the estimate gets there**
 
 [SOURCE §9, chat] "Yes, we can normalize by dividing over total gold on the
-map." Every gold term divides by `totalGoldUnits(map)`, so every backpropagated
-value sits in [0, 1] and √2 is the correct constant. The divisor is gold
-*placed*, fixed for the whole game, so values stay comparable across a search.
+map." In the three evaluators every gold term divides by `totalGoldUnits(map)`,
+so every backpropagated value sits in [0, 1] and √2 is the correct constant.
+The divisor is gold *placed*, fixed for the whole game, so values stay
+comparable across a search.
 
 The answer holds for all three evaluators, but Q18 gave the estimated one a
 second denominator: its skill term divides by `totalSkillUnits(map)`, and the
 two terms are combined by weights summing to 1, so it lands in [0, 1] without
 gold's divisor having to carry it. The simulated evaluator is unchanged, and the
-hybrid averages two values already in [0, 1].
+hybrid averages two values already in [0, 1]. The lead score the game's
+computer uses (Q113) stays in [0, 1] by its own shape.
 
 The two settings are now coupled: changing the normalisation without revisiting
 `MCTS_EXPLORATION_CONSTANT` breaks the exploration/exploitation balance. Noted
@@ -332,11 +305,7 @@ One implementation detail worth stating: reachability is counted over the
 list is not a branch the search can take, so counting it would let rest be
 pruned on the strength of an option that does not exist in the tree.
 
-`MIN_REACHABLE_NODES_FOR_REST` survives Q19 unchanged: that collapsed the two
-Ks, and this is a threshold on reachability, not a K.
-
-The reachability test itself is injected (`TurnReachability`) because it needs
-`previewPath`, which is not written yet. The rule is.
+The reachability test itself is injected (`TurnReachability`).
 
 ### Q17. ~~Macro-action or single turn?~~ — **answered, confirmed**
 
@@ -347,12 +316,12 @@ to cover **tree expansion** as well, so a tree edge and a rollout leg mean the
 same thing and node values compose.
 
 `macroAdvanceToTarget` ends on exactly three conditions — `arrived`,
-`target_claimed_by_other`, `terminal` — with every turn in between going through
-`applyAction`, and the other seats taking their own turns as they come. One
-macro-action is one tree edge, which keeps the tree shallow enough to search in
-ten seconds: a node is a real decision point, not a single step. `search()`
-returns only the first turn of the chosen branch, since the session layer
-commits one turn at a time.
+`target_claimed_by_other`, `terminal` — with each of the mover's turns going
+through `applyAction`, and the other seats taking their own turns as they come,
+counted along their routes (Q210). One macro-action is one tree edge, which
+keeps the tree shallow enough to search in ten seconds: a node is a real
+decision point, not a single step. `search()` returns only the first turn of
+the chosen branch, since the session layer commits one turn at a time.
 
 [SOURCE §9, chat] "The same holds for remoteness calculation." It already did —
 §5.1's walk commits to a target and makes no new decision on the way. The one
@@ -371,9 +340,12 @@ this coefficient change with time (skills are important at the beginning of the
 game, and are worthless at the end)."
 
 ```
-value = gold/total_gold × progress + skills/total_skills × (1 − progress)
-        progress = gold claimed by all players / total_gold
+value = gold/total_gold × progress
+      + (skills + stamina/STAMINA_PER_SKILL_POINT)/total_skills × (1 − progress)
+        progress = sites claimed by all players / all the map's sites
 ```
+
+The stamina term is Q110's and `progress` is Q291's.
 
 **Where it belongs.** [SOURCE §9, review] Not in the hybrid — in an
 *estimated* evaluator, one of three kinds the designer distinguishes:
@@ -388,9 +360,8 @@ So the formula is a property of a *position*, not of the rollout, and the hybrid
 stays what it always was: half simulated, half estimated. The implementation
 composes it from the other two evaluators rather than reimplementing either.
 
-This **supersedes Q11 and Q14's version of the estimated half**, which added
-gold to skills scaled by a fixed `balancingConstant` and normalised both by
-total map gold. Three consequences:
+This **supersedes Q11 and Q14's version of the estimated half**. Three
+consequences:
 
 - `balancingConstant` goes away. What it was tuning is `progress`, which the
   game state already supplies, so there is no constant left to fine-tune.
@@ -399,41 +370,38 @@ total map gold. Three consequences:
   value is in [0, 1] already; so the hybrid's average is too, and
   `MCTS_EXPLORATION_CONSTANT` = √2 stays correct. The coupling Q14 flagged
   between the two settings is unchanged in kind.
-- The weights run the way the designer described: at the start almost no gold is
-  claimed, so `progress` ≈ 0 and skills carry the value; by the end `progress`
-  ≈ 1 and only gold counts. `progress` is meaningful precisely because the
-  estimate reads the node — a rollout ends with no unclaimed gold left (Q6), so
-  measured there it would always be 1.
+- The weights run the way the designer described: at the start almost nothing
+  is claimed, so `progress` ≈ 0 and skills carry the value; by the end
+  `progress` ≈ 1 and only gold counts. `progress` is meaningful precisely
+  because the estimate reads the node — a rollout ends with no unclaimed gold
+  left (Q6), and usually few skills.
 
-`totalGoldUnits(map)` and `unclaimedGoldUnits(state)` gave `total_gold` and, by
-subtraction, gold claimed by all players. `totalSkillUnits(map)` is new, and the
-five skill kinds moved into `SKILL_KINDS` in `@adventure/config` so the skill
-term's numerator and denominator read the same list.
+`totalGoldUnits(map)` gives `total_gold`, `sitesClaimedShare(state)` gives
+`progress` and `totalSkillUnits(map)` gives `total_skills`; the five skill kinds
+sit in `SKILL_KINDS` in `@adventure/config` so the skill term's numerator and
+denominator read the same list.
 
 **One reading I picked, flagged on PR #5 rather than assumed silently:**
 `total_skills` is the sum of skill units *placed on the map*, the exact parallel
 of `totalGoldUnits`, so the term reaches 1 when one player holds every skill
-POI. The alternative — a theoretical maximum skill level per player — would make
-the term mean something different and never reach 1. Changing it later is a
-one-line change to `totalSkillUnits`.
+POI. Changing it later is a one-line change to `totalSkillUnits`.
 
 **Confirmed, 2026-09-22.** That reading shipped as a pick rather than an answer
 and is now the designer's own: see [Q24](#q24). No code changed.
 
 **What v1 uses.** [SOURCE §9, review] "The plan is to use the simulated
 rollout for node evaluation in v1, and then experiment with other evaluators."
-So `simulatedRolloutEvaluator()` — §9's specified default — is the one the first
-release runs, and the other two exist to be switched in afterwards. That is why
-`SearchOptions.evaluator` is injected with no default: choosing between them is
-a caller's decision, not a hard-coded one.
+So the game's computer players run the simulated evaluation — §9's specified
+default — scored by the lead (Q113, `computerEvaluator()`), and the other two
+exist to be switched in afterwards. That is why `MctsOptions.evaluator` is
+injected with no default: choosing between them is a caller's decision, not a
+hard-coded one.
 
 The three are named the same way everywhere, in the register, in
 `docs/ARCHITECTURE.md` §7 and in the code: **simulated**
 (`simulatedRolloutEvaluator()`), **estimated**
 (`estimatedGoldAndSkillsEvaluator()`) and **hybrid**
-(`hybridGoldAndSkillsEvaluator()`). The simulated one was called
-`goldAfterSimulationEvaluator()` until this PR, which left the code and the
-design using different words for the same thing.
+(`hybridGoldAndSkillsEvaluator()`).
 
 ### Q19. ~~Two constants for one ranking?~~ — **answered, implemented**
 
@@ -444,37 +412,27 @@ different constants here. We will prune the tree by the CLOSE_CANDIDATE_COUNT,
 plus one branch for resting."
 
 So `MCTS_NODE_EXPANSION_PRUNING` is **deleted** from `AiConfig`, and
-`closestUnclaimedPoiEnumerator` prunes to `CLOSE_CANDIDATE_COUNT` — one K for
-all three callers of `closestPoiCandidates`, and tuning it now moves the tree
-and the rollout together.
-
-This also removed a latent inconsistency rather than only a constant.
-`closestPoiCandidates` caps its own result at `CLOSE_CANDIDATE_COUNT`, so the
-enumerator's `slice(0, MCTS_NODE_EXPANSION_PRUNING)` could never have widened it
-to 10 — the tree would have branched over 5 whatever that constant said. The
-slice is gone with it; the kernel's cap is the only cap.
+`closestUnclaimedPoiEnumerator` prunes to `CLOSE_CANDIDATE_COUNT`, the rollout's
+K, so tuning it moves the tree and the rollout together. The ranking returns at
+most that many, so there is no second cap.
 
 The rest branch is untouched: `MIN_REACHABLE_NODES_FOR_REST` = 3 still gates it
 (Q16), since it is a threshold on reachability rather than a second K.
 
-**Follow-up: the value moved.** [SOURCE §1.2, chat] With one constant now
-serving all three callers, the designer raised it from 5 to **10** — "we don't
-want to risk pruning out good moves early on". The numbers above are what was
-true when the two constants were collapsed, not the current default. Worth
-knowing that this is no longer only an AI knob: §5.1's remoteness walk reads the
-same constant, so the change moves remoteness scores, and through §5.2 the guard
-strengths and reward stacking of every generated map. *Since [Q66](#q66) it no
-longer does: the walk has its own `REMOTENESS_CANDIDATE_COUNT`.*
+**Follow-up: the value moved.** [SOURCE §1.2, chat] The designer raised it from
+5 to **10** — "we don't want to risk pruning out good moves early on". §5.1's
+remoteness walk has its own `REMOTENESS_CANDIDATE_COUNT` (Q66).
 
 ---
 
 ## B3. Questions from the implementation-planning pass
 
-Six gaps found while turning GDD.md and the architecture into a phased build
-order (`docs/IMPLEMENTATION_PLAN.md`), all answered by the designer on
-2026-09-22. None of them changed a rule; they settled scope and content, Q24
+Q20 to Q25 are six gaps found while turning GDD.md and the architecture into a
+phased build order (`docs/IMPLEMENTATION_PLAN.md`), all answered by the designer
+on 2026-09-22. None of them changed a rule; they settled scope and content, Q24
 confirmed a reading Q18 had had to pick, and Q25 confirmed §5.1 unchanged while
-narrowing how much code two components should expect to share.
+narrowing how much code two components should expect to share. Every question
+raised since follows them here.
 
 ### Q20. ~~Which §10 art assets are coming, and which need standing in?~~ — **answered**
 
@@ -485,14 +443,6 @@ character figurines and player avatars, the die-roll animation, the three
 terrain textures, the road/path brush, and the move-prospect visuals (path
 highlight, destination cross, waypoint marker).
 
-Also worth recording, because it misleads: all seven §4.1 reward icons *are*
-present, but two filenames do not describe their contents — `Art/Icons/roads.png`
-is the brown wagon wheel (plains movement) and `Art/Icons/plains.png` is the
-green foot (forest movement). There is no road-brush asset in `Icons/` at all.
-Any art mapping must be written against the pictures, not the names. This
-contradicts GDD.md §4.1's `[INFERRED §6]` line that the supplied icons "match
-this table with no discrepancies": the *set* matches, the names do not.
-
 [SOURCE chat, 2026-09-22] "I will add the missing placeholder art before we
 start implementing the plan." So the phases assume the full set and need no
 fallback path. Two of the gaps were closed on request in the same pass —
@@ -500,38 +450,25 @@ fallback path. Two of the gaps were closed on request in the same pass —
 marked `"placeholder": true` in their atlases,
 regenerable with `Art/tools/make_placeholders.py`.
 
-**The character figurines arrived on 2026-09-22**, supplied rather than
-generated: `Art/player_avatars_sheet.png` + `player_avatars_atlas.json`, six
-full-body figures on the same packed-grid, feet-anchored convention as the
-POI sheets and with no placeholder flag. Whether the separate player avatar
-of GDD §2 is these same six or a distinct set is not settled; the six stand
-in for both meanwhile, which also means hotseat setup offers six characters.
+The art mapping is not one sheet per §4.2 row: a row can point at a sheet
+belonging to another row. Keep those substitutions in one table rather than
+scattered through the renderer, so dropping in a real sheet is a one-line edit.
+[SOURCE §10, review] The die-roll animation "will be provided", so the generated
+one is a stand-in rather than the final asset.
 
-**Two of the POI gaps borrow an existing sheet meanwhile.** [SOURCE §10,
-review] "Mountain gold placeholder images can be used" for forest's gold POIs,
-and "Plaines movement placeholder images can be used" for the stamina POIs that
-surplus leaves create. So the art mapping is not one sheet per §4.2 row: two
-rows point at a sheet belonging to another row. Keep those two substitutions in
-one table rather than scattered through the renderer, so dropping in a real
-sheet is a one-line edit. [SOURCE §10, review] The die-roll animation "will be
-provided" too, so the generated one is a stand-in rather than the final asset.
-
-**Phase 3 closed the rest with placeholders and renamed the icons.** The three
-terrain textures and the move-prospect markers (path dots, destination cross,
-waypoint flag, active-player ring) are generated by the same script and carry
-the same flag. The icons are now named for their reward kind —
-`Icons/plains_move.png` is the wagon wheel that was `roads.png`,
-`Icons/forest_move.png` the foot that was `plains.png` — so the misleading
-names above are gone. The two borrowed rows are the ones marked `borrowed` in
-`Art/manifest.json`, which is the one table this question asked for.
+**Phase 3 closed the rest with placeholders.** The three terrain textures and
+the move-prospect markers (path dots, destination cross, waypoint flag,
+active-player ring) are generated by the same script and carry the same flag.
+The icons are named for their reward kind. The borrowed rows are the ones
+marked `borrowed` in `Art/manifest.json`, which is the one table this question
+asked for.
 
 ### Q21. ~~Is the AI's time budget wall-clock seconds or a rollout count?~~ — **answered: seconds**
 
 `docs/STACK.md` §5 raised this and left it open: with the MCTS search on the
 game master's machine (§12.1), a fixed 10-second budget buys very different
 search on a laptop than on a workstation, so AI strength is not reproducible
-across games. A budget expressed in rollouts would fix that, at the cost of a
-variable turn length.
+across games.
 
 [SOURCE chat, 2026-09-22] "Let's stick to the seconds budget for AI, the purpose
 of this game is fun, not the strongest and most consistent AI."
@@ -542,24 +479,7 @@ accepted cost rather than an open item. One consequence for the balancing
 harness: a self-play result is only comparable to another run on the same
 machine, so `runSelfPlayBatch` should record the machine beside the numbers.
 
-### Q22. ~~How many seats does hotseat fix, while the count is temporary?~~ — **answered: 2**
-
-[SOURCE chat, 2026-09-22] "2 players is a good enough number and exercises all
-necessary functionality." Two seats also exercise both victory cases — a clear
-leader and a tie with no gold left — and turn order.
-
-`PLAYER_COUNT` (2–5) is untouched: this is a constraint of the hotseat mode
-while the setup flow does not exist yet, not a change to the game's range.
-§6.1's flow is where a game master picks a count for real.
-
-Left unasked and not worth blocking on: whether a hotseat game survives a page
-reload. Persisting it is small but the design does not mention it, so the plan
-does not either, and a closed tab loses the game.
-Andrei has since ruled that it should survive one, and postponed it to the
-multiplayer work ([Q37](#q37)).
-
-*Replaced 2026-09-24 by [Q51](#q51) 21: a game on one device takes 2 to 5
-players, picked on the one new game screen.*
+### Q22. ~~How many seats does hotseat fix, while the count is temporary?~~ — **replaced by Q51: 2 to 5 players on one device**
 
 ### Q23. ~~Build both POI placement strategies, or one?~~ — **answered: farthest-point only, seam kept**
 
@@ -574,8 +494,8 @@ looks bad, which I doubt."
 So farthest-point sampling is the one to write, and the seam stays, so adding
 the other is a one-liner rather than a rewrite. The judgement of "looks bad"
 belongs to `runMapBatch` over many seeds: POI spacing in the map dump, and the
-shape of the remoteness histogram. This supersedes §3's "two implementations to
-build"; the superseded reading is kept above as it was written.
+shape of the remoteness histogram. This supersedes Q8's "two implementations to
+build".
 
 ### Q24. ~~Is Q18's "total skills available" the units on the map, or a per-player maximum?~~ — **answered: the units on the map**
 
@@ -590,10 +510,10 @@ going to be used."
 
 So `totalSkillUnits()` in `packages/core/src/gamemap.ts` stands exactly as
 written and **no code changes**. The confirmation matters for what the
-estimated evaluator *means*: its skill term reaches 1 precisely when one player
-holds every skill POI on the map, which is what keeps it commensurable with the
-gold term and the whole evaluator inside [0, 1] — the range
-`MCTS_EXPLORATION_CONSTANT` = √2 assumes ([Q14](#q14)). It also agrees with §6's
+estimated evaluator *means*: its skill term reaches 1 when one player holds
+every skill POI on the map, and stops at 1 (Q110), which is what keeps it
+commensurable with the gold term and the whole evaluator inside [0, 1] — the
+range `MCTS_EXPLORATION_CONSTANT` = √2 assumes ([Q14](#q14)). It also agrees with §6's
 "per-player stats, uncapped": a per-player maximum would have had to be invented,
 and §11 has no row for one.
 
@@ -638,14 +558,12 @@ records every leg as `{target.node, target.cost}`, which is the Dijkstra
 estimate rather than the real turns' cost and is simply wrong when a target is
 claimed by someone else en route; `WalkResult.visits` exists for the remoteness
 scorer and a rollout consumes none of it; and `WalkDriver.done(cursor)` cannot
-supply the `legsTaken` that `RolloutTermination.isTerminal` takes for a future
+supply the `turnsTaken` that `RolloutTermination.isTerminal` takes for a future
 depth cap.
 
-So the expectation for phase 5 is: keep `candidates.ts` shared, and let the
-rollout have its own loop over `macroAdvanceToTarget` rather than being bent
-through `runWalk`. `docs/ARCHITECTURE.md` §5's "one shared component" stays
-true of the target chooser and the one distance metric, which is what §9 asks
-for; it is the generic loop that is not expected to survive.
+So phase 5 kept `candidates.ts` shared and gave the rollout its own loop rather
+than bending it through `runWalk`; `walk.ts` is the remoteness walk's loop
+alone.
 
 ### Q26. ~~Is GDD §2's player avatar the figurine sheet, or its own asset?~~ — **answered: its own set, cropped figurines meanwhile**
 
@@ -661,17 +579,18 @@ only their head and shoulders fit into the frame."
 So the avatar is its own asset and the figurines stand in until it arrives.
 **One uniform enlarge-and-shift will not do it**, which is worth recording
 because it is the obvious implementation and it fails: measured from the sheet's
-alpha, the six heads start between row 24 and row 155 of a 698-row cell, so a
-transform that frames the knight lands on the halfling's chest. The heads are
-not centred alike either — a held axe or staff drags a figure's bounding-box
-centre up to 76px off its own face.
+alpha, the six heads start between row 13 and row 73 of a 410-row cell. The
+heads are not centred alike either — a held map, lute or staff drags a
+figure's bounding-box centre off its own face, and a backpack or basket beside
+the head pulls the measured head centre off it.
 
 `Art/player_avatars_portraits.json` therefore carries one square, cell-relative
-box per figure, measured rather than hand-placed and regenerable with
-`python3 Art/tools/make_portrait_crops.py`. It is marked `"temporary": true`;
-delete both it and the tool when the real set lands. Phase 3 scales the box
-into the avatar frame — there is no second PNG, so nothing is upscaled on disk
-and nothing has to be kept in step with the figurine sheet.
+box per figure, measured, with three face centres set by eye (Q60 107), and
+regenerable with `python3 Art/tools/make_portrait_crops.py`. It is marked
+`"temporary": true`; delete both it and the tool when the real set lands.
+Phase 3 scales the box into the avatar frame — there is no second PNG, so
+nothing is upscaled on disk and nothing has to be kept in step with the
+figurine sheet.
 
 <a id="q27"></a>
 ### Q27. Should `COMPACTNESS_MAX` be retuned? The Smooth step currently does nothing — **asking**
@@ -730,10 +649,10 @@ Both halves of his reading were right, and the second one is the consequence of
 the first. §2.1 step 6 converts forest and mountain nodes into plains *after*
 step 4 has hit its shares, so the map a player is handed drifts; `adventure`
 finished 65 / 26 / 9 against 45 / 30 / 25. And because §4.2 fixes the POI count
-per terrain — 25 plains, 20 forest, 15 mountain, whatever the node counts turn
-out to be — every node the valleys take out of mountain also packs mountain's
-POIs closer together. On that map two thirds of every mountain node carried a
-POI while plains ran one per 6.2 nodes; `saltmarch` was one per 1.7.
+per terrain, whatever the node counts turn out to be, every node the valleys
+take out of mountain also packs mountain's POIs closer together. On that map
+two thirds of every mountain node carried a POI while plains ran one per 6.2
+nodes; `saltmarch` was one per 1.7.
 
 Recorded in `GDD.md` §2.1 as [SOURCE §2.1, review] and implemented: step 6 ends
 by growing whatever terrain is short back into plains, leaving the carved
@@ -744,11 +663,8 @@ and 21.8–25.2% mountain. The same 40 seeds through the old pipeline ran
 32.9–66.8% plains, 17.5–45.7% forest and 6.4–31.0% mountain. POI spacing sits
 between one per 2.9 and one per 4.9 nodes on every terrain.
 
-Two knock-on facts worth knowing rather than re-deriving. Plains compactness
-rises — 6.8 on `adventure` against 0.9 before — because plains is now genuinely
-corridor-shaped where a valley runs; that is what a valley is, and it is still
-far inside `COMPACTNESS_MAX`, so [Q27](#q27) is unchanged. And a terrain walled
-in by one that is already at its share cannot be fixed by a straight transfer,
+One knock-on fact worth knowing rather than re-deriving. A terrain walled in
+by one that is already at its share cannot be fixed by a straight transfer,
 so the regrowth also trades: the neighbour hands a node over and takes one back
 from a terrain that has a surplus. Without that trade the shares stuck as much
 as ten points out on the odd map.
@@ -769,8 +685,7 @@ as a tendency:
 - His example, `plains_move`: a P1 sat at mean remoteness 0.18, P2 at 0.21,
   P3 at 0.22, P4 at 0.25. Mountain gold was the steepest row — 0.43 / 0.52 /
   0.60 / 0.64 — and no row ran backwards.
-- Raising `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` helped but saturated: 57.8% at
-  the default 2, then 59.9% (w=4), 62.3% (w=8), 63.6% (w=16), 65.1% (w=32).
+- Raising `REMOTENESS_WEIGHT_FOR_DISTRIBUTION` helped but saturated.
   §4.3 step 3 is a *weighted random draw*, one unit at a time, and §4.2 hands
   most rows barely more spare units than POIs — `plains_move` is 20 units over
   10 POIs — so with that few draws the variance dominates however hard
@@ -812,23 +727,18 @@ Three things worth knowing about it:
   regard for remoteness" reads as permission, not an instruction, and the
   measurement says the choice barely matters once step 4 runs: at 3 passes it is
   91.8% with the weight at 2 against 91.2% with it at 0. Leaving it keeps §4.3
-  step 3 exactly as the GDD writes it. Say the word and it goes to 0.
+  step 3 exactly as the GDD writes it.
 - **Nothing in §4.2 moves.** A swap exchanges two stacks *inside* one row, so
   the row's total units, its POI count and step 2's guaranteed unit all survive
   untouched — verified on the sealed map, and generation still takes ~195 ms.
 - **Unguarded gold all but disappears, which is a real side effect.** §5.2 caps
   guard strength at 0, and the only way to reach the cap is a 1-unit stack at
-  remoteness ≥ 0.5 — precisely what step 4 moves. Over 60 maps, gold POIs
+  remoteness ≥ 0.75 — precisely what step 4 moves. Over 60 maps, gold POIs
   sealing unguarded fall from **3.3%** to **0.2%**, and 58 of those 60 maps have
   none at all. That pushes §4.4's "every gold POI is guarded, none are exempt"
   back toward literally true, and mean guard strength is unchanged at 4.6. If
   the occasional unguarded remote 1-gold was wanted as a treat, that is a
   separate decision about §5.2's constants, not about step 4.
-
-**Not taken:** making step 3 itself deterministic — sorting a row by remoteness
-and dealing spare units from the remote end. It would guarantee the ordering by
-construction, but it removes the per-seed variety, which is the thing his "we
-don't have to do complete ordering" preserves.
 
 ---
 
@@ -874,12 +784,12 @@ contours; instead, the nodes should."*
 So the colour is now on the POI's node: every node keeps its black outline,
 and a guarded POI's node gains a ring in its guard's colour just outside it —
 the black one stays inside, as Andrei asked on his second look the same day.
-The picture stands beside the node, touching it, and never on it, so the whole
-ring shows; the reward icons and the guard's number touch the node's front.
-Once the POI is claimed, §4.5's "behaves like an ordinary node" makes it an
-ordinary node again, ring and all. The ring's width is `guards.ring_width` in
-`Art/manifest.json`. GDD §3 carries the ruling as a `[SOURCE §1, review]` note
-beside the original sentence.
+The picture stands beside the node, touching it, so the whole ring shows,
+unless it is a guardian, which stands on it (Q35); the reward icons and the
+guard's number touch the node's front. Once the POI is claimed, §4.5's "behaves
+like an ordinary node" makes it an ordinary node again, ring and all. The
+ring's width is `guards.ring_width` in `Art/manifest.json`. GDD §3 carries the
+ruling as a `[SOURCE §1, review]` note beside the original sentence.
 
 ---
 
@@ -920,12 +830,10 @@ find your character on the map. Can we make it so it blinks when it's your
 turn, and, once you clicked it to start planning your move, it stops blinking
 and highlights instead."*
 
-The figure and its ring now pulse while it is the player's turn, with a
-ripple spreading on the ground under them, and once the player taps the
-figure or presses Plan a move it holds still, the ring enlarged and circled
-in gold, until End Turn or Rest. Cancel sets it blinking again. The ripple is
-an addition he did not ask for and is one line to drop. GDD §7.2 carries the
-ruling as a `[SOURCE §intro, review]` note.
+The figure and its ring now pulse while it is the player's turn, and once the
+player taps the figure or presses Plan a move it holds still, its ring with a
+thick yellow outline (Q305), until End Turn or Rest. Cancel sets it blinking
+again. GDD §7.2 carries the ruling as a `[SOURCE §intro, review]` note.
 
 ### Q35. ~~Where does a POI's image stand?~~ — **answered 2026-09-23: against its node, a guardian on it**
 
@@ -942,11 +850,10 @@ guardians, stand with their feet 60% of the way from the node's centre to its
 rim, in one of the same seven directions. Where every such spot would cover a
 neighbouring node or image, which happens on a crowded mountain (8 of the 19
 on `adventure`), the guardian stands beside its node instead; asked, Andrei
-kept that rule. Standing dressing (trees, fields, grass and rocks) never
-covers a POI's picture or its icons. Asked whether that should cover the
-trees or only the fields that prompted it, he answered *"let's have the POI
-images always unobscured"*. GDD §3 carries the ruling as a
-`[SOURCE §1, review]` note after Q31's.
+kept that rule. Standing dressing never covers a POI's picture or its icons.
+Asked whether that should cover the trees or only the fields that prompted it,
+he answered *"let's have the POI images always unobscured"*. GDD §3 carries the
+ruling as a `[SOURCE §1, review]` note after Q31's.
 
 ### Q36. ~~How is a claimed POI drawn?~~ — **answered 2026-09-23: its picture does not change**
 
@@ -960,14 +867,12 @@ ruling as a `[SOURCE §2, review]` note.
 
 ### Q37. ~~Should a hot seat game survive a page reload?~~ — **answered 2026-09-24: yes, postponed to multiplayer**
 
-Phase 4 shipped without asking (Q22 above, and the plan's P3), so reloading or
-closing the page loses the game in progress. It was item 38 on the list of
-choices made without asking him. Andrei: *"reloading should not kill the game.
-This one can be postponed, because with multiplayer the game [state] will be
-persisted anyway."* Nothing is built for it now. It is recorded here so the
-multiplayer work picks it up; the plan's phase 7 already expects a game to
-survive a reload on both sides. *[Q56](#q56) 66 keeps a game on one
-device in that browser, so a reload picks it up where it was.*
+Phase 4 shipped without asking (the plan's P3), so reloading or closing the
+page lost the game in progress. It was item 38 on the list of choices made
+without asking him. Andrei: *"reloading should not kill the game. This one can
+be postponed, because with multiplayer the game [state] will be persisted
+anyway."* [Q56](#q56) 66 built it: a game on one device is kept in that
+browser, so a reload picks it up where it was.
 
 ### Q38. ~~How does the page show what a POI gave?~~ — **answered 2026-09-24: unguarded floats up from the figure and fades, a guard fight waits for OK**
 
@@ -976,22 +881,20 @@ unguarded claims included. That was never put to Andrei; it was item 2 on the
 list of choices made without asking him. His rulings:
 
 - *"the unguarded poi should produce a card that fades itself. The guarded
-  POI produce a card with a die roll that has an ok button"*, and it stays 4
-  seconds before it fades (his pick of 2, 4 or 6). The fade itself takes half
-  a second, which he was told and did not change.
+  POI produce a card with a die roll that has an ok button"*. The fade itself
+  takes half a second, which he was told and did not change.
 - *"the message for unguarded poi should be simpler, like 'plains speed
-  +2'"*: the card reads only that, with no portrait or heading (his pick of
-  text only, portrait and text, or icon and text).
+  +2'"*: the card reads only that, with no portrait or heading (his pick).
 - *"please remove the 'costs nothing' phrase in case of a failed die roll"*,
   from the card and, at his pick, from the turn log too. The rule itself is
   unchanged: a failed roll still has no other cost (GDD §8).
 - Later the same night: *"can the disappearing card be smaller? i would
   prefer it if it was floating up from the figure as it lands on the POI"*.
   From a preview of three looks he picked the small card (the result card's
-  light box and green top edge, shrunk, over a dark pill or bare text) and 2
-  seconds over 4. So the unguarded notice now appears on the figure's head as
-  the walk ends, fades in over a fifth of a second, drifts up about 40 pixels,
-  stays 2 seconds and fades out over half a second. It keeps its size at any
+  light box and green top edge, shrunk) and 2 seconds. So the unguarded notice
+  now appears on the figure's head as the walk ends, fades in over a fifth of
+  a second, drifts up about 40 pixels, stays 2 seconds and fades out over half
+  a second. It keeps its size at any
   zoom and moves with the figure through a pan. The fade-in, the rise and
   following the figure were shown in the preview before he picked.
 
@@ -1010,23 +913,19 @@ panel, the end-of-game table and the turn log. `STAT_ORDER` in
 
 The plan split his fifth step in two: phase 5 had "an AI seat in hotseat" and
 phase 8 had "AI seats at setup" and "AI settings". Andrei asked whether phase 5
-would need changes to the start game panel, and on the choice between both
-controls now, the seat only now, or both later he picked **both now**: the
+would need changes to the start game panel, and he picked **both now**: the
 hot seat start game panel gets a human or computer choice per seat and a
-thinking time. Phase 8 carries those two controls into online games. The six
-§11 values the plan tunes at the end of phase 5 come afterwards, as proposals
-he rules on one at a time; this change tunes nothing.
+thinking time. The six §11 values the plan tunes at the end of phase 5 come
+afterwards, as proposals he rules on one at a time; this change tunes nothing.
 
 ### Q41. ~~How does the start game panel set up a computer seat?~~ — **answered 2026-09-24: as recommended**
 
 Five details the ask left open, put to him with a mock and a recommendation
 each. He took all five recommendations:
 
-- Either seat or both can be the computer; with both, the game plays itself.
-  Both seats start as Human, as before.
-- Two buttons at the top of each seat, Human and Computer. The panel's opening
-  line now reads "Two seats take turns on this screen, each played by a person
-  or by the computer."
+- Any seat, or every seat, can be the computer; with every seat the computer,
+  the game plays itself. Every seat starts as Human.
+- Two buttons at the top of each seat, Human and Computer.
 - Each computer seat has its own thinking time, shown in that seat.
 - The thinking time is a box for whole seconds from 1 to 60, filled in with
   §11's 10. `THINKING_TIME_SECONDS` in the config holds the range. Start the
@@ -1034,22 +933,18 @@ each. He took all five recommendations:
 - A computer seat's name and figurine are chosen as a person's are, and
   nothing in the game marks it as a computer except its thinking.
 
-*Since [Q51](#q51) the panel is the one new game screen: it takes 2 to 5
-seats, and since [Q53](#q53) it has no opening line.*
-
 ### Q42. ~~What shows during the computer's turn?~~ — **answered 2026-09-24: a filling bar, and its die card closes itself**
 
 - While it thinks, the line above the buttons reads "<name> is thinking…" over
   a bar that fills across its thinking time. Its player card is highlighted and
   its figure blinks, as for anyone's turn, and the map still pans and zooms.
-  Plan a move, Rest and End turn are hidden until it has moved; Find stays.
+  Plan a move, Rest and End turn are hidden until it has moved.
 - Its move then plays out like a person's End turn: its route is drawn, the
   figure walks, an unguarded claim floats up and fades, and the die tumbles if
   it fights a guard.
-- The recommendation was for that die card to wait for OK as a person's does.
-  Andrei chose the other option: *"the computer's die panel closes itself,
-  pressing OK is [not] necessary"*. It closes after 3 seconds. The OK button is
-  still on it and closes it sooner. A person's die card still waits for OK.
+- Andrei: *"the computer's die panel closes itself, pressing OK is [not]
+  necessary"*. It closes after 3 seconds. The OK button is still on it and
+  closes it sooner. A person's die card still waits for OK.
 
 ### Q43. ~~When does a simulated player rest?~~ — **answered 2026-09-24: when it cannot take a single step**
 
@@ -1066,9 +961,8 @@ Q30's position, gold that nobody can take, would leave a game the computer
 plays in its head running for ever. Andrei: *"we can end the simulation after
 250 turns and give the victory to whatever player has more gold"*.
 `SIMULATION_TURN_CAP` (250) counts turns from the position the computer is
-thinking about. A game stopped there is scored like any other: the simulated
-evaluation reads each player's share of the map's gold, so whoever holds more
-comes out ahead.
+thinking about. A game stopped there is scored like any other, by the
+computer's gold lead (Q113), so whoever holds more comes out ahead.
 
 This is for the games the computer plays in its head only; a real game still
 has no turn limit, and Q30 stays open.
@@ -1088,11 +982,10 @@ from the start of its turn. When the page stutters or freezes, part of that
 time passes with no thinking done. In the headless browser used for checks,
 which has no graphics card, the page froze for up to 17 seconds at each turn
 change, a move got one or two slices, and the computer played almost at
-random. Put to Andrei with two options: move when the seconds are up (weaker
-on a slow page, but a turn never takes longer than the time set), or keep
-thinking until it has had its full seconds (as strong, but a slow page makes
-the turn run longer). Recommended and chosen: **as now**, which keeps Q20's
-rule of thinking in seconds rather than for strength. Nothing changed.
+random. Put to Andrei: move when the seconds are up (weaker on a slow page,
+but a turn never takes longer than the time set). Recommended and chosen:
+**as now**, which keeps Q21's rule of thinking in seconds rather than for
+strength. Nothing changed.
 
 ### Q46. ~~How does the map come to the current player at the start of a turn?~~ — **answered 2026-09-24: it glides, keeps the zoom, and waits for a claim's notice**
 
@@ -1102,16 +995,15 @@ computer, phones too, from the first turn on. Three details it left open, put
 to him with a recommendation each:
 
 - **Glide**, as recommended: the map slides to the figure over about half a
-  second (`GLIDE_MS`), easing in and out. The Find button still jumps.
-- **Keep the zoom**, over the recommendation to zoom in as Find does: only the
-  map's position changes, so on the whole-map view it stays that far out,
-  centred on the figure.
+  second (`GLIDE_MS`), easing in and out.
+- **Keep the zoom**: only the map's position changes, so on the whole-map view
+  it stays that far out, centred on the figure.
 - **After the notice**, as recommended: when the move before ended with an
   unguarded claim, the map waits until that claim's notice has faded, since the
   notice rides on the figure that made the claim. A guard fight's die card sits
   at the top of the screen and does not hold it up.
 
-Panning, zooming or pressing Find while it glides stops it where it is.
+Panning or zooming while it glides stops it where it is.
 `glideTo` in `apps/web/src/page/MapView.tsx`, called from `GameScreen.tsx`.
 
 ### Q47. ~~How does the map follow a figure that walks out of view?~~ — **answered 2026-09-24: from near the edge, keeping pace, until someone moves the map**
@@ -1123,12 +1015,12 @@ recommendation, and he took all three:
 
 - **Near the edge:** following starts once the walking figure is within a
   fifth of the view from any edge (`FOLLOW_MARGIN_OF_VIEW`), so it never
-  leaves the screen, rather than only after it has gone out of view.
+  leaves the screen.
 - **Keep pace:** the map slides along with the figure, keeping it that far
-  inside the edge until the walk ends, rather than gliding to re-center it.
-- **Stop:** if someone drags, pinches, zooms or presses Find during a walk, the
-  map stops following for the rest of that walk. The next turn's glide
-  (Q46) still happens.
+  inside the edge until the walk ends.
+- **Stop:** if someone drags, pinches or zooms during a walk, the map stops
+  following for the rest of that walk. The next turn's glide (Q46) still
+  happens.
 
 `followInto` in `apps/web/src/interaction/camera.ts`, applied on each frame of
 a walk in `MapView.tsx`.
@@ -1143,21 +1035,21 @@ seats are played by the ai"*, which raised 14 to 17; for everything else he
 said *"everything as recommended"*.
 
 1. **Hot seat on the site:** a "Play on one device" button on the login page
-   opens the hot seat start panel, unchanged, with no account needed.
+   opens the new game screen without the "Play online" switch ([Q51](#q51)
+   26), with no account needed.
 2. **Usernames:** 3 to 20 letters, digits or underscores. Capitals don't make
    a different name, so "Andrei" and "andrei" are one account.
 3. **Passwords:** at least 8 characters, nothing else required. There is no
    email address, so a forgotten password cannot be reset in v1.
 4. **Logins** last 30 days on that browser, with a Log out button.
 5. **The game list** has two parts. Your games: every game you are in,
-   waiting or started. Open games: games still waiting for players, with the
-   name, the game master, seats filled ("2 of 3") and an Ask to join button.
-   Finished games are not listed. *[Q55](#q55) 36 keeps a finished game in Your
-   games for 7 days.*
+   waiting or started, and a finished one for 7 days ([Q55](#q55) 36). Open
+   games: games still waiting for players, with the name, the game master,
+   seats filled ("2 of 3") and an Ask to join button.
 6. **Game names:** the creator types one, filled in as "<username>'s game".
-7. **The game master plays**, always in seat 1. Later seats go in the order
-   the game master accepts people (§6).
-8. **The map:** the game master picks it with the hot seat panel's seed box
+7. **The game master plays**, in seat 1 unless the seats are shuffled (Q165).
+   An accepted person takes the first free Human seat ([Q51](#q51) 22).
+8. **The map:** the game master picks it with the new game screen's seed box
    and map preview; everyone else in the game sees it as it changes.
 9. **Player count:** the game master picks 2 to 5, starting at 2, never below
    the seats already filled.
@@ -1169,30 +1061,19 @@ said *"everything as recommended"*.
     leave before the start; the game master can cancel a game before it
     starts, which takes it off the list.
 12. **Start** works with seats still empty, and a computer plays each empty
-    seat. Seats go in acceptance order, so the computers take the last seats
-    and start with the most stamina (§6). Everyone then sees the map with
-    every figure on the starting node and a line saying online turns arrive
-    in the next phase.
+    seat. Everyone then sees the map with every figure on the starting node.
 13. **The look:** login, register, the game list and the setup screen in the
     style of the hot seat start panel, with no new art.
 14. **Computer seats** are "Computer 1", "Computer 2" and so on, each with a
     figure nobody holds, and the game master can change them before Start.
-15. **Thinking time:** one box on the setup screen for all the computer seats,
-    whole seconds from 1 to 60, starting at 10 as in hot seat (Q41).
+15. **Thinking time:** each computer seat has its own ([Q51](#q51) 24), whole
+    seconds from 1 to 60, starting at 10 as in hot seat (Q41).
 16. **Starting alone:** the game master can start with nobody else joined and
     computers in every other seat.
 17. **The computers' online turns move into phase 7**, so a game with
     computer seats plays to the end as soon as online turns work. Phase 8
-    keeps the Web Worker, resigning to the computer and switching a seat
-    between person and computer mid-game. *Since [Q56](#q56) 57, resigning to the
-    computer is built in phase 7; handing a seat back stays in phase 8.*
-
-*[Q51](#q51) changed 7, 12, 14 and 15 when the two setup screens became one:
-the game master makes each seat Human or Computer, an accepted person takes
-the first free Human seat instead of the next one in acceptance order, the
-computer plays a Human seat still empty at Start, and each computer seat has
-its own thinking time. 1 and 8 now open the same screen with the switch off
-or on.*
+    keeps the Web Worker and handing a seat back from the computer mid-game;
+    resigning to the computer is built in phase 7 ([Q56](#q56) 57).
 
 ### Q49. ~~Who gets a figure two seats want?~~ — **answered 2026-09-24: as recommended, with every clash detected and told**
 
@@ -1229,17 +1110,7 @@ What "detected, resolved and told" became (`packages/session/src/setup.ts`,
 - Someone whose request was still waiting when the game master pressed Start
   sees "This game started without you" over the map.
 
-### Q50. ~~Can someone logged in play hot seat?~~ — **answered 2026-09-24: yes, from the game list too**
-
-Q48 1 put "Play on one device" on the login page only, so someone already
-logged in could reach hot seat only by logging out. Andrei took the
-recommendation: the game list's top bar has the same button, beside Log out
-(`apps/web/src/online/GameListScreen.tsx`). It opens the same `/hotseat` page,
-unchanged, and keeps the login.
-
-*Taken back 2026-09-24 by [Q51](#q51) 26: the game list has one New game
-button instead, and turning its "Play online" switch off gives the game on one
-device.*
+### Q50. ~~Can someone logged in play hot seat?~~ — **replaced by Q51: New game with "Play online" off**
 
 <a id="q51"></a>
 ### Q51. ~~Can the hot seat and online setup screens be one?~~ — **answered 2026-09-24: yes, with a "Play online" switch**
@@ -1256,14 +1127,14 @@ look good, except the wording in 28, which should say "play online""*.
 21. **Player count:** a game on one device takes 2 to 5 players, as a stored
     one does. This replaces Q22's two seats.
 22. **Seats:** every seat has Human and Computer buttons. In a stored game
-    seat 1 is always the game master's, and every other Human seat is kept
-    for someone who asks to join: accepting puts them in the first free Human
-    seat, and a request can be accepted only while one is free. A Human seat
-    still empty at Start is played by the computer. This replaces Q48 7 and
-    12's acceptance order.
+    seat 1 is the game master's unless the seats are shuffled (Q165), and
+    every other Human seat is kept for someone who asks to join: accepting
+    puts them in the first free Human seat, and a request can be accepted only
+    while one is free. A Human seat still empty at Start is played by the
+    computer.
 23. **No two people on one device in a stored game** yet.
 24. **Thinking time** is set per computer seat, under its figures, as on the
-    hot seat panel (Q41). This replaces Q48 15's one box.
+    hot seat panel (Q41).
 25. **The switch:** turning it on stores the game at once, lists it and
     changes the page's address. Turning it off before the start removes the
     game; if anyone has asked to join or taken a seat, the game master is
@@ -1291,9 +1162,8 @@ and seed the page already has.
 Q51 21's five seats made the play screen's player cards taller than a
 computer window: with 4 players under about 920 pixels tall, or 5 under about
 1080, they pushed Plan a move, Rest and End turn off the bottom. Of three ways
-put to him (scroll the cards, shrink the cards of players not on turn, or move
-the buttons above the cards) Andrei took the recommended one: the cards scroll
-in their own column when they don't fit, and the buttons stay where they are.
+put to him, Andrei took the recommended one: the cards scroll in their own
+column when they don't fit, and the buttons stay where they are.
 Two or three players, and phones, look as before. `.players` in
 `apps/web/index.html`.
 
@@ -1307,13 +1177,11 @@ figure (Q46). Only the column moves, and only when the card is out of view.
 `Players` in `apps/web/src/page/Players.tsx`.
 
 In the same review he asked for superfluous wording to go from the new game
-screen: its opening line no longer adds "All start on the plains node where
-the figures stand.", and a seat's heading reads "Seat 3 · starts with 50
-stamina" without "moves third". Asked which other lines could go, he took
-the recommendations: the screen has no opening line at all ("Each seat takes
-its turn on this screen, played by a person or by the computer." is gone),
-the game master's line is just "You are the game master.", and a kept seat's
-line and the "1 to 60" beside the thinking time stay.
+screen: a seat's heading reads "Seat 3 · starts with 40 stamina" without
+"moves third". Asked which other lines could go, he took the recommendations:
+the screen has no opening line at all, the game master's line is just "You are
+the game master.", and a kept seat's line and the "1 to 60" beside the
+thinking time stay.
 
 <a id="q54"></a>
 ### Q54. ~~How does a player who lost the connection get back into a game in progress?~~ — **answered 2026-09-25: as recommended, for phase 7**
@@ -1349,8 +1217,8 @@ computer turns included.
     waiting on them, computer turns included, the line reads "Waiting for the
     game master, Andrei, to come back."
 34. **Your turn while not looking:** the browser tab's title reads "Your turn
-    · Adventure" while it is your turn, and Your games says "Your turn" on
-    that game. There are no emails.
+    · Skyholm Adventures" (Q175) while it is your turn, and Your games says
+    "Your turn" on that game. There are no emails.
 35. **Two devices:** one person may have a game open on several devices;
     whichever acts first counts, and the others see the result.
 
@@ -1369,17 +1237,14 @@ phase 7.
 
 36. **Finished games** stay in Your games for 7 days, marked "Finished · Bea
     won", with Open to see the final map and turn log, then leave the list.
-    This replaces Q48 5, which took a finished game off the list at once.
 37. **Deletion:** a finished or cancelled game is deleted from the server 7
     days after it finished or was cancelled; its old address then says "This
     game has ended and been removed."
-38. ~~Games that never start are cancelled after 7 days with no changes.~~
-    Replaced by the lifetime (47).
-39. ~~A game in progress with no turn for 30 days ends and is removed.~~
-    Replaced by the lifetime (47).
+38. Games that never start: replaced by the lifetime (47).
+39. A game in progress with no turn for 30 days: replaced by the lifetime (47).
 40. **The game master can end a game in progress** with "End the game", which
-    asks first. It ends without a winner, everyone sees "The game master
-    ended this game.", and it is kept and deleted like a finished game.
+    asks first. The player holding the most gold wins, a tie shared
+    ([Q85](#q85) 291), and it is kept and deleted like a finished game.
 41. **Built in phase 7**, with Q54.
 42. **The lifetime counts from creation**, so a game that never starts also
     goes when its time is up.
@@ -1419,8 +1284,8 @@ the Track button's own details are 72 to 77, answered as [Q57](#q57).
 48. **Someone else on turn:** the map and cards as in hot seat, the figure on
     turn blinking. The line above the buttons reads "Bea is playing. You can
     plan your next move.", or for a computer "Computer 1 is thinking…" over
-    its filling bar. Plan a move and Find are there; Rest and End turn appear
-    on your turn.
+    its filling bar. Plan a move is there; Rest and End turn appear on your
+    turn.
 49. **Planning out of turn** looks as on your own turn: your figure is
     highlighted and the route is coloured for your next turn, with your
     speeds' free steps refreshed. When your turn comes the route is drawn and
@@ -1431,19 +1296,19 @@ the Track button's own details are 72 to 77, answered as [Q57](#q57).
     walk, the die, an unguarded claim floating up. Their fight card closes
     itself after 3 seconds as a computer's does (Q42); only your own waits for
     OK. A route you were planning steps aside while they walk and comes back.
-52. ~~The map glides to whoever is on turn and follows walks, except while you
-    have a route open.~~ **Changed:** an explicit Track toggle. While it is
-    pressed the map follows the players on turn; panning, zooming or planning
-    unpresses it; pressing it goes back to watching. The notice "Your turn" or
+52. **Changed:** an explicit Track toggle. While it is pressed the map
+    follows the players on turn; panning, zooming or planning unpresses it;
+    pressing it goes back to watching. The notice "Your turn" or
     "Bea's turn" stays. Its details are [Q57](#q57).
 53. **Your planned move is the route you have drawn**, saved on the server as
     you draw it, so it survives a reload and shows on your other devices. End
     turn plays it and so does Move on; Cancel clears it, and a player moved on
     with no route rests (§7.3).
 54. **Move on:** on another person's turn the game master has "Move Bea on",
-    away or not, which asks "Play Bea's saved route now? With none saved, Bea
-    rests." and plays exactly as Bea's own End turn or Rest. The turn log
-    marks it "Moved on by the game master".
+    in the "Bea ▾" list with Resign Bea ([Q85](#q85) 302, 306), away or not,
+    which asks "Play Bea's saved route now? With none saved, Bea rests." and
+    plays exactly as Bea's own End turn or Rest. The turn log marks it "Moved
+    on by the game master".
 55. **Races** (Q49's rule): whichever reaches the server first is played. If
     Bea was first the game master sees "Bea ended the turn first."; Bea sees
     "The game master moved you on." whenever it happens, and her End turn then
@@ -1457,22 +1322,22 @@ the Track button's own details are 72 to 77, answered as [Q57](#q57).
     included, has "Resign" in the top bar, which asks first. The computer
     then plays the seat with 10 seconds' thinking, the card reads "Resigned ·
     the computer plays", and the person can still watch and post. Handing the
-    seat back is the game master's and stays in phase 8 (§7.3). This replaces
-    Q48 17's "resigning to the computer" in phase 8.
+    seat back is the game master's and stays in phase 8 (§7.3).
 58. **The board** opens from a "Messages" button in the top bar beside Turn
     log, where the turn log opens; opening one closes the other.
 59. **A post** shows the writer's figure, name and time ("Bea · 14:02", with
     the day if not today), oldest at the top, with a box and Send at the
     bottom; up to 500 characters. Everyone holding a seat can post from Start
     until the game is removed, after it ends too. The computer never posts.
-    Posts cannot be edited or deleted.
+    Posts cannot be edited; the game master can delete one ([Q85](#q85) 298).
 60. **New posts:** while the board is closed its button counts the posts not
     yet seen on that device ("Messages 2"). No sound, nothing over the map.
-61. **The end card** is hot seat's with "Your games" in place of "New game".
-    A time-out reads "Time ran out. Bea held the most gold, 34 against 20.",
-    or on a tie "Time ran out with Bea and Cal on 34 gold each."; a game the
-    game master ended reads "The game master ended this game.", with the
-    table and no winner.
+61. **The end card** is hot seat's with "Games" in place of "New game"
+    ([Q72](#q72) 286). A time-out reads "Time ran out. Bea held the most gold,
+    34 against 20.", or on a tie "Time ran out with Bea and Cal on 34 gold
+    each."; a game the game master ended reads "The game master ended the
+    game. Bea held the most gold, 34 against 20." or "The game master ended
+    the game with Bea and Cal on 34 gold each." ([Q85](#q85) 293).
 62. **A game whose time runs out before it starts** is cancelled: it leaves
     the lists at once, and anyone opening it in the next 7 days reads "This
     game ran out of time before it started." Then it is deleted (Q55 37).
@@ -1480,8 +1345,8 @@ the Track button's own details are 72 to 77, answered as [Q57](#q57).
     2 of 3 · Ends Sunday 14:00"; started, "Game master: Andrei · started ·
     Ends Sunday 14:00", with a highlighted "Your turn" at the front on your
     turn (Q54 34); finished, "Finished · Bea won", "Finished · Bea and Cal
-    share the win" or "Ended by the game master". The end time is highlighted
-    in its last 24 hours (Q55 46).
+    share the win" or "Ended by the game master · Bea won" ([Q85](#q85) 293).
+    The end time is highlighted in its last 24 hours (Q55 46).
 64. **Games already on the site** when phase 7 goes live get the 3-day
     default counted from that moment, so none disappears on the day.
 65. **Online dice are drawn fresh** from Cloudflare's unpredictable random
@@ -1518,7 +1383,7 @@ on the same page as details 72 to 77, each with a recommendation. Andrei:
     is in progress.
 73. **What unpresses it:** anything that moves the map or starts planning:
     dragging the map, the mouse wheel, pinching, "+", "−", "Whole map",
-    "Find", tapping your figure or "Plan a move". A tap on the map that
+    tapping your figure or "Plan a move". A tap on the map that
     starts nothing leaves it pressed.
 74. **While pressed** the map does what hot seat did: at the start of each
     turn it glides to the player on turn at the zoom it has (Q46), and it
@@ -1567,12 +1432,12 @@ should follow the turn, showing the active players card"* (79).
     map takes the rest, and the top bar fits on one row.
 82. **The line beside the buttons** on screens 560 to 899 wide: to the right
     of Rest, End turn and the others. Narrower screens keep it above them.
-83. **The game's name and seed** sit on the same row as "Adventure" on
-    phones, cut short with "…" when there is no room.
-84. **One Menu button** on portrait phone screens opens Resign, Your games,
-    Turn log and Messages as a list, and carries the count of unseen messages
-    ("Menu 2"). The end time stays in the bar. In landscape the four buttons
-    stay in the bar.
+83. **The game's name and seed** sit on the same row as "Skyholm Adventures" or
+    "Skyholm" (Q175) on phones, cut short with "…" when there is no room.
+84. **One Menu button** on phone screens, held upright or turned sideways
+    ([Q72](#q72) 280), opens Resign, Games, Turn log, Messages and Rules
+    ([Q71](#q71) 220) as a list, and carries the count of unseen messages
+    ("Menu 2"). The end time stays in the bar.
 85. **The map's buttons in a row** on phone screens in both layouts: Track,
     "+", "−" and "Whole map" along the bottom right of the map, a little
     smaller.
@@ -1612,8 +1477,7 @@ and then *"the rest of the recommendations regarding the new art sound good to
 me"*, 105 included.
 
 88. **Tried on a branch of its own,** with a second game page carrying the new
-    art; today's page stays as it is, and main and the live site keep today's
-    art until he merges.
+    art, until he merged it.
 89. **Shadows dark and see-through,** as today's: the grey of each shadow
     becomes black at today's strength, keeping its shape and soft edge, the
     magic guards' solid shadows included. Sizes and positions are measured on
@@ -1636,12 +1500,11 @@ me"*, 105 included.
     cluster left with one bush is not placed.
 96. **0.9 pieces for every plains node,** as today, each bush of a cluster
     counting as one, and every piece on the sheet equally likely to be picked.
-97. **All 24 combat guards** stand on mountain and forest gold alike, one per
-    POI, on its node as today (Q35); forest gold still borrows them (Q20).
-98. **Plains gold is its castle alone,** as today; the red ring and number say
-    it is guarded (Q31).
-99. **Stamina POIs borrow the new red-roofed houses,** as they borrowed the
-    cottages (Q20).
+97. **All 24 combat guards** stand on mountain gold (Q250), one per POI, on
+    its node as today (Q35).
+98. **Plains gold guarded by combat is its castle alone,** as today; the red
+    ring and number say it is guarded (Q31).
+99. **Stamina POIs have pictures of their own** (Q240).
 100. **No brightness or colour boost** on the new houses and magic buildings.
 101. **No contours:** *"new art should not need any contours, hopefully it's
     visible enough on its own"*, guards included.
@@ -1649,9 +1512,9 @@ me"*, 105 included.
     each seat's first choice is by position as today.
 103. **Portraits are crops of the new figures,** head and shoulders, cut the
     same way until his head-and-shoulders set arrives (Q26).
-104. **Replaced pictures are deleted** from `Art/` when the new art goes onto
-    main; the repository's history keeps them.
-105. **Stamina POIs grow to 0.5** with the houses they borrow.
+104. **Replaced pictures are deleted** from `Art/`; the repository's history
+    keeps them.
+105. **Stamina POIs are 0.45** (Q240 904).
 
 His sheets are kept as supplied in `Art/originals/`, and
 `Art/tools/pack_sheets.py` packs them into the game's sheets and atlases and
@@ -1678,15 +1541,13 @@ need to be shifted to the right so that the face appears in the center"*.
     touches the clear canvas in the lower half of the picture, and made dark
     (89). The slime's is tinted orange and ringed by its own glow, so it is
     not found, and keeps the shadow it was drawn with, a faint brownish patch.
-    Recommended: keep it as drawn. Or: its shadow is marked out by hand for
-    that one picture in `Art/tools/pack_sheets.py` and made dark like the
-    others.
+    Recommended: keep it as drawn.
 107. **How much of a figure a portrait shows.** The crop's side was a third of
     the figure's height (`SIDE_FRACTION` 0.32 in
     `Art/tools/make_portrait_crops.py`), set for the first six figures; the
     new figures' heads are larger and a third shows a face alone.
-    Recommended: half the figure's height (0.5), head and shoulders. Or: a
-    third, as before. **Half, and the 2nd, 3rd and 5th figures' crops are
+    Recommended: half the figure's height (0.5), head and shoulders. **Half,
+    and the 2nd, 3rd and 5th figures' crops are
     centred on the face:** a backpack or basket beside their heads pulled the
     measured head centre off the face, so `FACE_X` in the tool sets their
     face centres by eye, between the eyes. The 1st, 4th and 6th are as they
@@ -1694,14 +1555,12 @@ need to be shifted to the right so that the face appears in the center"*.
 108. **How close the bushes of a cluster stand.** 95 says close enough to
     touch, those behind partly hidden. As built, a quarter of a bush's width
     nearer than edge to edge (`CLUSTER_TOUCH` 0.75 in
-    `apps/web/src/render/dressing.ts`). Recommended: as built. Or: just
-    touching (1.0).
+    `apps/web/src/render/dressing.ts`). Recommended: as built.
 109. **How common bushes are.** 96 makes every piece of the sheet equally
     likely to be picked, each bush of a cluster counting as one piece. As
     built the chance is per pick, and a picked bush brings its whole cluster,
     so the 5 bushes of 25 pieces are about 4 pieces in 10 on the map (221 of
-    582 over six seeds). Recommended: as built. Or: each piece on the map
-    equally likely to be any of the 25, so bushes are 1 in 5.
+    582 over six seeds). Recommended: as built.
 
 <a id="q61"></a>
 ### Q61. ~~How do the reward icons become more visible?~~ — **answered 2026-09-27: as recommended, except the size and the players' cards, plus a beige fill**
@@ -1721,14 +1580,13 @@ for two more things: *"change the white in the circles to slightly beige, eg
 RGB=(230, 220, 210)"* and *"add a beige-filled circles under the wagon wheel
 icon as well, so the gaps between spikes and the center are of that color"*.
 
-110. **Every icon is 0.24** of a road length across its longer side, up from
-    0.18 (his number): a circled icon's disc, the wheel, magic and gold, and
-    the heart, which is a little wider than tall, by its width.
+110. **Every icon is 0.24** of a road length across its longer side (his
+    number): a circled icon's disc, the wheel, magic and gold, and the heart,
+    which is a little wider than tall, by its width.
 111. **The picture spans about four fifths of its disc** (0.82), measured by
     the smallest circle round the picture.
-112. **The crossed swords fit wholly inside their disc,** with the same room
-    as the foot and the mountain, so they come out smaller than those two.
-    Changed on 10-03 by [Q230](#q230): the swords now reach over the contour.
+112. **The crossed swords reach just over the contour of their disc**
+    ([Q230](#q230)).
 113. **The contour is 4% of the disc's width,** as thick as the black rims on
     the wheel, magic and gold.
 114. **Each contour is its picture's own colour:** the swords' red `#b71b1c`,
@@ -1812,8 +1670,7 @@ button use a volume / speaker icon or a webding symbol?"*
     and the resting player's stamina goes up on their card. Every rest the
     map plays out is heard, as by 138. Staying put on a node is a move, not a
     rest, and makes no rest sound.
-143. **A new message: two knocks on a door** (B; C, two rising plucks, was
-    recommended).
+143. **A new message: two knocks on a door** (B).
 144. **A message from someone else is heard as it arrives while the game is
     open,** whether the board is open or closed and whether the page is in
     front or behind another. Your own messages, and those already on the
@@ -1822,9 +1679,8 @@ button use a volume / speaker icon or a webding symbol?"*
     has put behind another, and a paused page is silent until it is back.
 145. **The Sound button stays after a game ends,** on one device and online,
     where Track goes.
-146. **The button row on a folded Fold.** Recommended was A, less space round
-    the buttons' words below 360 pixels wide; he asked instead whether the
-    Sound button can show a speaker symbol. With a symbol in place of the
+146. **The button row on a folded Fold.** He asked whether the Sound button
+    can show a speaker symbol. With a symbol in place of the
     word the row fits at 340 pixels. How it looks went on the page as the
     sound details 170 to 172 (the computer-player thread has 147 to 150),
     with pictures, and at 02:53 he answered: *"the recommendations for
@@ -1836,8 +1692,8 @@ button use a volume / speaker icon or a webding symbol?"*
     dark, and blue while pressed, and looks the same everywhere.
 171. **Sound off shows twice:** the speaker trades its two sound waves for a
     small cross, and the button is no longer pressed.
-172. **The spacing stays as it was on every screen;** 146 A is not built. With
-    the speaker the row fits a folded Fold with 18 pixels to spare.
+172. **The spacing stays as it was on every screen.** With the speaker the
+    row fits a folded Fold with 18 pixels to spare.
 
 The footsteps are timed by the sound's own clock from the moment the walk
 starts, so they keep the walk's pace however smoothly the map draws
@@ -1876,7 +1732,6 @@ leaving the field did not. Three details went to him with pictures, and at
      master's setup of an online game. Enter draws the seed typed, and so does
      leaving the field.
 226. **A field left empty gets the current seed back** when it is left.
-     Before, it stayed empty.
 227. **Random pressed straight after typing draws only its own map,** not the
      typed seed first.
 
@@ -1899,23 +1754,23 @@ the sensible option / 221: yes, except maybe the game start screen where the
 only place for it is next to the word "Adventure". It may be the same style as
 "Adventure" but on the right side / 222: no second row, we already ruled that
 out"*, at 20:03: *"yes, 228-230 [...] the recommended options look good"*, and
-at 20:05: *"223: lets try the new tab, I'll experiment with it on a real phone.
-224: sure, let's look at it separately"*. The start screens' "Rules" in the
-style of Adventure then turned out to add a row on common phones 390 to 430
-wide (231), and on 29 September at 00:29 he ruled: *"Let us simply remove the
-Rules button from the Start screens. Users don't need to read the rules before
-the game in on."* Rules then opened his Claude Docs page by its address, and at
-01:05 he asked for that to change: *"I don't like having this kind of outside
-dependency. Can we source it from the same repo everything else is in"*. At
-01:38 he answered: *"232-235 your recommendations are good"*, and at 02:35,
-after pictures: *"looks good, proceed with recommended options"* (236 to 238).
+at 20:05: *"224: sure, let's look at it separately"*. The start screens'
+"Rules" in the style of Adventure then turned out to add a row on common phones
+390 to 430 wide (231), and on 29 September at 00:29 he ruled: *"Let us simply
+remove the Rules button from the Start screens. Users don't need to read the
+rules before the game in on."* Rules then opened his Claude Docs page by its
+address, and at 01:05 he asked for that to change: *"I don't like having this
+kind of outside dependency. Can we source it from the same repo everything else
+is in"*. At 01:38 he answered: *"232-235 your recommendations are good"*, and
+at 02:35, after pictures: *"looks good, proceed with recommended options"* (236
+to 238).
 
-220. **A Menu on phones:** on a desktop, and on a phone turned sideways, Rules
-     is at the right end of the top bar. On a phone held upright each bar's
-     buttons share one Menu button, as the online game's already did
-     ([Q58](#q58), 84), with Rules last: the game on this device (New game,
-     Turn log, and on the site Your games), the game list (New game, Log out)
-     and the online game (Resign, Your games, Turn log, Messages).
+220. **A Menu on phones:** on a desktop Rules is at the right end of the top
+     bar. On a phone, held upright or turned sideways ([Q72](#q72) 280 and
+     283), each bar's buttons share one Menu button, as the online game's
+     already did ([Q58](#q58), 84), with Rules last: the game on this device
+     (New game, Turn log, and on the site Games), the game list (New game, Log
+     out) and the online game (Resign, Games, Turn log, Messages).
 221. **"Rules", in the bar buttons' style.**
 222. **No second row** on a phone.
 228. **The start screens** are those before a game starts: the setup of a game
@@ -1932,7 +1787,7 @@ after pictures: *"looks good, proceed with recommended options"* (236 to 238).
      The game stays where it is underneath. The same on the game page and on
      the site.
 234. **The game's own fonts and colours,** with headings in the style of the
-     word Adventure.
+     game's name in the top bar.
 235. **The rewards table keeps his words** for each icon ("Brown wagon wheel"),
      not the game's pictures.
 236. **Closing it:** the Close button, Esc, or on a desktop a click outside it.
@@ -1944,9 +1799,8 @@ after pictures: *"looks good, proceed with recommended options"* (236 to 238).
      or another player's turn online, plays out behind it.
 
 No bar is taller and no map smaller on any screen at the common sizes checked.
-224, the online game master's bar that already takes two rows on a folded
-phone (and on a phone turned sideways, where Rules follows Messages on the
-second row), is to be looked at separately. The button and the rulebook's
+224, the online game master's bar that already took two rows on a folded
+phone, was looked at separately in [Q72](#q72). The button and the rulebook's
 window are in `apps/web/src/page/Rules.tsx`, the reading of the file in
 `apps/web/src/page/rulebook.ts`, and the Menu in `apps/web/src/page/BarMenu.tsx`.
 
@@ -2033,36 +1887,31 @@ to the other ones? I think even a dot, or a small cross in the middle can help.
 Or change their outlines a little?"* An unguarded site's node was drawn exactly
 like a plain node, with its picture beside it, so on a crowded map the node it
 belongs to was easy to mistake for a neighbour. Five marks went to him in
-pictures (a dot, a cross, a thicker outline, a white ring, a light fill). At
-03:26 he answered: *"i like the dot in the middle. But then, we need to put it
-on guarded sites as well, can you show me how it will look? And when a site is
-claimed, the dot needs to disappear"*, at 03:41: *"i liked the way tapping
-worked, not ready to change it now"*, and at 03:42: *"one more thing to
-experiment with is the color of the dot: brown as the site outline, or the
-color og the reward icon"*. At 05:07 he asked to see *"the dot size 0.55 color
-of the roads (lighter brown)"*, and at 05:42 he ruled: *"The road color and
-size 0.55 work. The dot goes away once the reward is claimed."*
+pictures. At 03:26 he answered: *"i like the dot in the middle. But then, we
+need to put it on guarded sites as well, can you show me how it will look? And
+when a site is claimed, the dot needs to disappear"*, at 03:41: *"i liked the
+way tapping worked, not ready to change it now"*, and at 03:42: *"one more
+thing to experiment with is the color of the dot: brown as the site outline, or
+the color og the reward icon"*. At 05:07 he asked to see *"the dot size 0.55
+color of the roads (lighter brown)"*, and at 05:42 he ruled: *"The road color
+and size 0.55 work. The dot goes away once the reward is claimed."*
 
 260. **A dot in the middle of the node.**
-261. **The brown of the roads,** the road brush's main colour (`#966a3e`),
-     rather than the darker brown of the outline or the reward icon's colour.
+261. **The brown of the roads,** the road brush's main colour (`#966a3e`).
 262. **0.55 of the node's width across,** inside its black outline.
 263. **Every site,** whatever its reward, stamina included.
 264. **It goes when the site is claimed,** with the site's icons.
-265. **Guarded sites get it too,** inside their guard's ring (his change to the
-     recommendation that they stay as they were).
+265. **Guarded sites get it too,** inside their guard's ring.
 266. **Whatever covers a node today covers the dot:** figures, a planned
-     route's markers and cross, the waypoint flag and the ring round the player
-     whose turn it is.
+     route's markers and cross, and the waypoint flag.
 268. **Tapping and clicking are unchanged:** a tap still picks the nearest node,
      or a site's picture.
 269. **A guarded site's dot is the same road brown,** not its guard's colour.
 
-267 (moving pictures and icons out for a wider outline) and 270 (the colour of
-a stamina site's dot if dots took the reward's colour) fell away with the
-choices above. Nothing else changed: the node, its outline, the guard's ring and
-where each picture and icon stands are as they were. The dot's size and colour
-are `nodes.site_dot` in `Art/manifest.json`; it is drawn with the nodes in
+267 and 270 fell away with the choices above. Nothing else changed: the node,
+its outline, the guard's ring and where each picture and icon stands are as
+they were. The dot's size and colour are `nodes.site_dot` in
+`Art/manifest.json`; it is drawn with the nodes in
 `apps/web/src/render/pixi/renderer.ts` from `siteDot` in
 `apps/web/src/render/sceneModel.ts`.
 
@@ -2097,16 +1946,15 @@ fine as recommended"*.
      plays the seat from then on, thinking 10 seconds a move; figure, stats,
      gold and place in the turn order stay; the card reads "Resigned · the
      computer plays". Any seat a person still plays but the game master's own.
-295. ~~In the panel under the end time.~~ **Changed:** "Resign Bea" goes beside
-     "Move Bea on", so only the player on turn can be resigned from the page.
+295. **"Resign Bea" goes with "Move Bea on",** in the Bea ▾ list of 302 and
+     306, so only the player on turn can be resigned from the page.
 296. **The game master is asked first,** "Resign Bea? The computer plays Bea
      from now on.", and Bea is told "The game master resigned you. The computer
      plays Bea from now on." Everyone else sees it on her card.
 297. **Bea can still watch and post,** as after her own Resign.
-298. **Delete sits at the right end of each post's name line,** for the game
-     master only, on every post including their own, and asks first: "Delete
-     Bea's message? Its words are erased for everyone." **Changed:** a trash bin
-     icon instead of the word Delete.
+298. **A trash bin sits at the right end of each post's name line,** for the
+     game master only, on every post including their own, and asks first:
+     "Delete Bea's message? Its words are erased for everyone."
 299. **A deleted post keeps its place, name and time,** and its words become
      "Deleted by the game master." in grey. They are erased from the server too,
      from the record that posted them, so a delete cannot be undone.
@@ -2118,29 +1966,24 @@ fine as recommended"*.
      message.
 
 Raised by the two changes, and answered at 12:58: *"303 and 303, sounds
-good. Then we can fold "find Bea" into under the new "Bea" button as well"*
-(302 and 303):
+good"* (302 and 303):
 
 302. **On phones there is no room for Resign Bea beside Move Bea on:** it wraps
      to a second row of buttons on the 340 folded phone and on sideways phones,
      and on a 390 phone while planning or with a longer name. **Answered:** on
      phones one "Bea ▾" button in place of Move Bea on, opening Move Bea on and
-     Resign Bea above it, and Find Bea too. Desktop was to get them side by
-     side; see 306.
+     Resign Bea above it, and on desktop too (306).
 303. **The trash bin** is drawn in the sound button's line style, 16 pixels, in
      the game's link blue. **Answered:** yes.
 
-Raised by folding Find Bea into the button, and answered at 13:10: *"304 -
-307, yes, looks good. Just to confirm: if I'm not a game master, I don't need
-the Bea button, right? I still get "Find Bea' where it fits"*. Only the game
-master has the Bea ▾ button; everyone else keeps Find Bea as before.
+Raised by the Bea ▾ button, and answered at 13:10: *"304 - 307, yes, looks
+good. Just to confirm: if I'm not a game master, I don't need the Bea button,
+right?"* Only the game master has the Bea ▾ button.
 
-304. **Find Bea comes back on phones for the game master.** Phones have had no
-     Find button since hot seat, to keep one row; inside the list it takes no
-     room. Other players' phones, and the game master's own turn or a
-     computer's, stay as they are. **Answered:** yes.
-305. **The list reads Move Bea on, Resign Bea, Find Bea,** top to bottom, and
-     Find Bea looks like the other two there. **Answered:** yes.
+304. **The list has no Find Bea,** as no screen has a Find button
+     ([Q120](#q120) 475).
+305. **The list reads Move Bea on, Resign Bea,** top to bottom. **Answered:**
+     yes.
 306. **Desktop gets the Bea ▾ button too,** so the game master's buttons are the
      same on every screen and stay on one row there with a long name while
      planning. **Answered:** yes.
@@ -2149,7 +1992,8 @@ master has the Bea ▾ button; everyone else keeps Find Bea as before.
      **Answered:** yes.
 
 He also asked for the Turn log and Messages on a 1366×768 laptop to be looked
-at: with three players they get a strip about 17 pixels tall under the buttons.
+at: with three players they got a strip about 17 pixels tall under the buttons.
+That is [Q87](#q87).
 
 <a id="q86"></a>
 ### Q86. ~~What does the game do when the map cannot be drawn?~~ — **answered 2026-09-29: builds it again by itself, and says so with a Reload button if it still can't; 332 to 334 as recommended**
@@ -2198,8 +2042,7 @@ the start, because it gets in the way"*, which is 309.
 308. **On desktop the Turn log and Messages open over the map's left edge,**
      beside the cards, the full height of the game and 360 pixels wide, with
      the × to close them, as they do on phones. The cards and buttons stay as
-     they are. **Answered:** A. (B kept them in the column's bottom 280
-     pixels with the cards scrolling above; C drew the cards as on phones.)
+     they are. **Answered:** A.
 309. **The panel starts closed** when a game opens on desktop, as on phones.
      Turn log and Messages each open it and close it again, and so does the ×.
      Hot seat gets its Turn log button on desktop too. **Answered:** yes. This
@@ -2212,8 +2055,7 @@ Raised by building it:
      At 1366 wide the panel covers the left of the end-of-game card (about 130
      pixels) and of a turn's result (about 50); on 1920 they don't meet.
      Recommended: the card, whole, over the panel's edge until it fades or is
-     closed. Otherwise the panel covers them, as it covers everything on
-     phones. **Answered** at 18:34: *"Got it, of course the answer for 335 is
+     closed. **Answered** at 18:34: *"Got it, of course the answer for 335 is
      Card on top"*. The cards, the rising claim notice and the notices at the
      map's foot show over the panel; the game master's end-time list and the
      Bea ▾ list stay over both.
@@ -2276,7 +2118,7 @@ interest"; the code keeps its names (`poiAt`, `poiRuntime` and so on).
      spaces"*.
 
 <a id="q105"></a>
-### Q105. ~~How do the terrains get more roads between them?~~ — **answered 2026-09-29: put pruned roads back where two areas meet (A), 2 places to start, then 1; the rest as recommended**
+### Q105. ~~How do the terrains get more roads between them?~~ — **answered 2026-09-29: put pruned roads back where two areas meet (A), so that they meet in 1 place (398); the rest as recommended**
 
 On 29 September at 19:01 Andrei wrote: *"The generated maps often have too
 little connectivity: only one link between plains and forest for example, or no
@@ -2292,13 +2134,11 @@ map can be made.
 
 390. **How to loosen it.** A: after step 6, put back pruned triangulation roads
      where two terrain areas meet in too few places, terrain unchanged
-     (recommended). B: grow terrain by nearness on the ground instead of along
-     roads, which redraws every map and helps less (forest reachable 90.5%).
-     **Answered** at 19:42: A.
+     (recommended). **Answered** at 19:42: A.
 391. **How many separate places two touching areas meet in** (roads sharing a
-     space count as one): 2, 3 (recommended) or 4. **Answered:** *"let's start
-     with 2, and make it a configurable constant that is easy to change to
-     3"*: `BORDER_ROAD_PLACES` in `packages/config/src/defaults.ts`.
+     space count as one). **Answered:** *"let's start with 2, and make it a
+     configurable constant that is easy to change to 3"*: `BORDER_ROAD_PLACES`
+     in `packages/config/src/defaults.ts`, which 398 sets to 1.
 392. **Dead ends may take a put-back road while at least 30 remain**
      (`LEAF_COUNT.min`), preferring roads that join none. **Answered:** as
      recommended.
@@ -2307,38 +2147,22 @@ map can be made.
 394. **Two pieces of one terrain that touch on the ground but share no road
      are joined by one road** (`JOINED_PIECE_ROADS`). **Answered:** as
      recommended.
-395. **Only areas of 5+ spaces get roads put back** (`BORDER_AREA_MIN_SIZE`),
-     about 10 roads per map; areas of 3+ would put back about 13, every size
-     about 18. Recommended: 5+. **Answered** at 20:26: as recommended.
+395. **Only areas of 5+ spaces get roads put back** (`BORDER_AREA_MIN_SIZE`).
+     Recommended: 5+. **Answered** at 20:26: as recommended.
 396. **Which pruned road goes back:** with no crossing yet the shortest, then
      the one farthest from the border's existing crossings, so they spread
-     along the border (recommended); or always the shortest, which often lands
-     beside an existing crossing. Andrei asked whether the
-     farthest roads would all land near the map's edge. They do not: over 100
-     maps 14% of put-back roads lie within one road length of the edge (11%
-     with the shortest road first), against 27% of spaces. "Farthest" is
-     measured along the one border, from its own crossings, most borders end
-     inside the map where a third terrain starts, and near the edge the pruned
-     roads are long thin ones the 1.3 times limit rules out. **Answered** at
-     20:31: *"OK, the 1.3x limit saves the day. I'm OK with the first option
-     (farthest from the border's existing roads)"*.
-397. **A valley's sides may take a put-back road** (recommended; about 1 in 5
-     put-back roads touches a valley); or valleys keep only their own roads,
-     which leaves 10% of maps with 2 or fewer plains–forest roads instead of
-     8%. **Answered** at 20:26: as recommended.
+     along the border (recommended). Andrei asked whether the farthest roads
+     would all land near the map's edge. They do not: over 100 maps 14% of
+     put-back roads lie within one road length of the edge, against 27% of
+     spaces. "Farthest" is measured along the one border, from its own
+     crossings, most borders end inside the map where a third terrain starts,
+     and near the edge the pruned roads are long thin ones the 1.3 times limit
+     rules out. **Answered** at 20:31: *"OK, the 1.3x limit saves the day. I'm
+     OK with the first option (farthest from the border's existing roads)"*.
+397. **A valley's sides may take a put-back road** (recommended). **Answered**
+     at 20:26: as recommended.
 
-With 2 places, over the same 100 maps: every map has at least 2 roads between
-plains and forest, 98.6% of forest is reachable from plains without mountains,
-maps carry 302 to 322 roads (310 on average) and dead ends fall from 39.6 to
-35.8 per map. Terrain, spaces and their positions do not change, but the new
-roads change which spaces are dead ends and how remote each site is, so a seed
-gives a different map from before: on `adventure` 49 of 60 sites stay on the
-same space and the rewards are dealt again over them. Routes get shorter, so
-games end sooner: with the simple test player a 2-player game's median falls
-from 59 rounds to 46 and a 4-player game's from 50 to 36. Online games already
-started keep the map they were stored with; a hot seat game kept in the
-browser is replayed from its seed, so one kept from before cannot resume. The
-rulebook does not describe roads, so it is unchanged; the step is GDD §2.1
+The rulebook does not describe roads, so it is unchanged; the step is GDD §2.1
 step 6b.
 
 398. **One place instead of two.** On 29 September at 20:56, with 2 places
@@ -2353,8 +2177,7 @@ step 6b.
      314 roads (305 on average), dead ends average 37.8, 94% of sites stay on
      the space they had before step 6b, unguarded gold is 0.48% of gold sites,
      and the simple test player's median game is 49 rounds with 2 players and
-     40 with 4 (59 and 50 before step 6b). A seed gives a different map again,
-     so a hot seat game kept under 2 places cannot resume either.
+     40 with 4 (59 and 50 before step 6b).
 
 ### Q110. ~~Does stamina count in the estimated evaluation?~~ — **answered 2026-09-30: yes, 5 stamina as one skill point**
 
@@ -2369,25 +2192,12 @@ Until then the estimate had no stamina in it: Q11 had left it out as "a
 resource". `estimatedGoldAndSkillsEvaluator()` now adds stamina divided by
 `STAMINA_PER_SKILL_POINT` (5, its own AI setting rather than
 `REST_STAMINA_GAIN`) to the skill points. `total_skills` stays the skill units
-on the map (Q24), 75 on every map today, so the term could in principle pass 1;
-it stops at 1, which keeps every value between 0 and 1 as Q14 needs. The
-game's computer players still use the simulated evaluation (Q18), so nothing in
-play changes.
+on the map (Q24), 75 on the standard map and 105 on the larger one (Q160), so
+the term could in principle pass 1; it stops at 1, which keeps every value
+between 0 and 1 as Q14 needs. The game's computer players still use the
+simulated evaluation (Q18), so nothing in play changes.
 
-### Q111. ~~What is the estimate's progress?~~ — **answered 2026-09-30: skill and gold units claimed, over all of them**
-
-[SOURCE §9, chat] Andrei, 2026-09-30, after the first comparison: "let's rerun
-this with p defined as (skills and gold claimed) / (total skills and gold) so we
-have continuous progress from the start".
-
-Q18's `progress` was gold claimed over total gold, so it sat at 0 through an
-opening of skill claims. It is now the skill and gold units anyone has claimed
-over the 120 on a v1 map (75 skill, 45 gold). Stamina rewards are not counted;
-a v1 map has none. Only the estimated evaluation reads it (and the hybrid
-through it); the game's computer players still use the simulated one.
-
-*Since [Q291](#q291) (2026-10-09) the estimate's progress is the sites claimed
-over all the map's sites, and this count of units is gone.*
+### Q111. ~~What is the estimate's progress?~~ — **replaced by Q291: the sites claimed over all the map's sites**
 
 ### Q112. ~~How far does the computer count a site?~~ — **answered 2026-09-30: by its own speeds, from the steps per terrain on the cheapest route (422-424 A, 426)**
 
@@ -2396,17 +2206,16 @@ steps on each terrain) instead of one number (distance) and recalculating
 distances based on current skills using the cached numbers. It bothers me that
 the cached distances always consider mountains inaccessible when in reality by
 the [end] of the game you can have lots of mountain speed". Then 422 A (count
-the cheapest route's steps only; a second, fewest-steps route postponed), 423 A
-(his 2026-09-28 formula: the least over n turns of 5n + the stamina still
-needed after n turns of free steps), 424 A (for the computer's own choices and
-every player in its imagined games).
+the cheapest route's steps only; a second, fewest-steps route postponed, and
+taken up in Q210), 423 A (his 2026-09-28 formula: the least over n turns of
+5n + the stamina still needed after n turns of free steps), 424 A (for the
+computer's own choices and every player in its imagined games).
 
 Tested against the computer as it was: 19 of 20 wins at 3 s a move (+6.6 gold
 a game), and 13 of 20 at 10 s on ten other maps (+3.5); 426: put it in the
-game. Routes walked are unchanged, still the cheapest by weighted terrain cost;
-only which sites count as the 10 closest changes. The remoteness walk and a
-person's route preview keep weighted terrain cost. Equal distances keep the
-weighted-terrain-cost order.
+game. Only which sites count as the 10 closest changes. The remoteness walk
+keeps weighted terrain cost. Equal distances keep the weighted-terrain-cost
+order.
 
 ### Q113. ~~How does the computer score a game it imagines?~~ — **answered 2026-09-30: by its gold lead over the richest other player, (lead / (|lead| + 1) + 1) / 2 (417, 418, 429)**
 
@@ -2429,30 +2238,7 @@ ten other maps (+2.2); with both ranking sites by their own speeds (Q112), 12
 of 20 at 3 s (+3.3) and 11 of 20 at 10 s (+2.2). All four together 48 of 80,
 +2.9 ± 1.1 gold a game; the 10 s runs alone are within luck.
 
-### Q115. ~~Which guards do forest sites get?~~ — **answered 2026-09-30: each forest gold site fighting or magic by a coin flip, magic drawn as the mountains' magic guardians (450-452 A)**
-
-*Since [Q185](#q185) (2026-10-01) the chance is 100%: every forest gold site is magic-guarded.*
-
-[SOURCE §4.4, chat] Andrei, 2026-09-30: "Magic doesn't play an important
-enough role. Can you make it so the forest POI are assigned randomly either
-magic or combat guards?" Then 450 A (only forest's 4 gold sites, the ones
-guarded before, get the random guard; the other 16 stay unguarded), 451 A (a
-coin flip for each site on its own, 50% magic, as the named constant
-`FOREST_MAGIC_GUARD_CHANCE`; not exactly 2 of 4 on every map) and 452 A (a
-magic-guarded forest site borrows the mountains' magic guardians, as its
-fighting guards borrow the mountains' fighting ones).
-
-Until then all four forest gold sites were fighting-guarded. A map now carries
-0 to 4 magic-guarded forest gold sites: at 0.5, 2 on 3 maps in 8 and none on 1
-in 16 (100 maps measured: 9 with none, 20 with 1, 34 with 2, 32 with 3, 5 with
-4). Unchanged: guard strength (§5.2 never reads the type; forest guards run 1
-to 6, mostly 2 or 3), forest's 5 gold on 4 sites, magic rewards (10 on 6 plains
-sites), plains and mountain guards, the rulebook (it never says which terrain
-has which guard). The coin flips are the map's last draws, so on every seed
-only some forest gold guards and their pictures differ from before; over 100
-seeds every road, reward, strength and other picture was identical. A hot seat
-game kept on one device that fought at a forest gold site that turned magic may
-not resume as it was; an online game keeps the map it was made with.
+### Q115. ~~Which guards do forest sites get?~~ — **replaced by Q185, then Q250: there is no gold in forests**
 
 <a id="q120"></a>
 ### Q120. ~~What does clicking a player's card do?~~ — **answered 2026-09-30: finds the player, as the Find button did, which goes; the rest as recommended (470-475)**
@@ -2465,22 +2251,20 @@ look good, except I don't think we need the "find" button any more. It was not
 present on some screens anyway"*.
 
 470. **How the map gets to the player.** A: it jumps there and zooms in to
-     playing distance, as Find did (recommended). B: it glides there over half
-     a second at the zoom it has, as at the start of a turn. C: it glides and
-     zooms in. **Answered:** A. A figure part-way along a walk is found where
-     it has got to.
-471. **Marking the found figure.** A: no mark. B: for 2 seconds it stands on
-     the yellow-edged ring of a figure being planned; the player on turn's
-     figure already blinks and gets nothing more (recommended). **Answered:**
-     B. The 2 seconds are `timing.foundMs` in `GameScreen.tsx`.
+     playing distance, as Find did (recommended). **Answered:** A. A figure
+     part-way along a walk is found where it has got to.
+471. **Marking the found figure.** B: for 2 seconds its ring is outlined in
+     yellow as a figure being planned is (Q305); the player on turn's figure
+     already blinks and gets nothing more (recommended). **Answered:** B. The 2
+     seconds are `timing.foundMs` in `GameScreen.tsx`.
 472. **How a card shows it can be clicked, on a laptop.** A: the pointer turns
-     into a hand over it and the card looks the same (recommended). B: nothing
-     changes. **Answered:** A.
-473. **The Track button.** A: it unpresses, as with Find and moving the map
-     yourself, since a pressed Track would pull the map back to a walking
-     figure (recommended). B: it stays as it was. **Answered:** A.
+     into a hand over it and the card looks the same (recommended).
+     **Answered:** A.
+473. **The Track button.** A: it unpresses, as with moving the map yourself,
+     since a pressed Track would pull the map back to a walking figure
+     (recommended). **Answered:** A.
 474. **After the game ends.** A: cards still find players on the final map
-     (recommended). B: only while the game is on. **Answered:** A.
+     (recommended). **Answered:** A.
 475. **The Find button goes,** from every screen: under the turn buttons on a
      laptop (phones never showed it) and from the game master's "Bea ▾" list,
      which keeps Move Bea on and Resign Bea. A phone's panel stays as tall as
@@ -2496,32 +2280,26 @@ another fight (§8), anywhere else nothing at all, not even stamina. Answered
 at 21:46: *"The recommended options look good, please proceed"*. 494 and
 495 answered 2026-10-01 at 00:59: *"the recommendations are good"*.
 
-490. **Which End turns rest:** with no route, and also with a route whose
-     first step this turn cannot pay; the route is kept for next turn
-     (recommended); or only with no route. On an unclaimed guarded site End
-     turn still stays and fights again. **Answered:** as recommended.
-491. **The game master's Move on** does what End turn would, so a saved route
-     whose first step cannot be paid rests too (recommended); or Move on
-     unchanged. **Answered:** as recommended.
-492. **The buttons:** Rest and End turn both stay, and the line above them
-     says *"End turn with no route rests: +5 stamina."* (recommended); or Rest
-     hidden while End turn would rest anyway. **Answered:** as recommended.
-493. **The turn log:** an automatic rest reads like any rest, *"Rested: +5
-     stamina"* (recommended); or it also says End turn made it one.
+490. **Which End turns rest:** with no route, and also with a route whose first
+     step this turn cannot pay; the route is kept for next turn (recommended).
+     On an unclaimed guarded site End turn still stays and fights again.
      **Answered:** as recommended.
+491. **The game master's Move on** does what End turn would, so a saved route
+     whose first step cannot be paid rests too (recommended). **Answered:** as
+     recommended.
+492. **The buttons:** Rest and End turn both stay, and the line above them
+     says *"End turn with no route rests: +5 stamina."* (recommended).
+     **Answered:** as recommended.
+493. **The turn log:** an automatic rest reads like any rest, *"Rested: +5
+     stamina"* (recommended). **Answered:** as recommended.
 494. The line above the buttons with a route whose first step
      cannot be paid, away from a guard. As built: *"Not even the first of
      these 4 steps is affordable this turn. End turn rests: +5 stamina, and
-     keeps the route for next turn."* (recommended); or the wording before,
-     *"…Rest gains 5 stamina; End turn walks nothing and keeps the route for
-     next turn."*, which no longer says what End turn does. **Answered:** as
+     keeps the route for next turn."* (recommended). **Answered:** as
      recommended (as built).
-495. The line when a player picks their own space as the
-     destination, away from a guard. As built: *"Staying here this turn. End
-     turn with no route rests: +5 stamina."*; *"Staying here this turn. End
-     turn rests: +5 stamina."* (recommended); or the wording before,
-     *"…End turn with no route stays put."*, which no longer says what End
-     turn does. **Answered:** as recommended.
+495. The line when a player picks their own space as the destination, away from
+     a guard: *"Staying here this turn. End turn rests: +5 stamina."*
+     (recommended). **Answered:** as recommended.
 
 `endTurnActionFor` (`packages/core/src/rules/turn.ts`) decides it, for the
 page's End turn, the server's `turn.end` and Move on (`moveOnActionFor`), and
@@ -2530,60 +2308,7 @@ game kept on one device, and an online game's records. Computer players do
 not change: they already rest on a turn they cannot take a step (Q43), and
 stand still only on the guarded site they are after.
 
-### Q135. ~~Do speeds and skills come back?~~ — **answered 2026-09-30 and 10-01: one empty site a turn, from the farther half, while fewer than 2 sites offer a skill (530-541)**
-
-[SOURCE §4.5, chat] Andrei, 2026-09-30: "Already with 4 players, some
-necessary skills like combat run out too quickly. They need to respawn. This is
-especially true for combat and magic that are necessary for fighting guards.
-Skills need to respawn where there are too few of it left, randomly at POIs
-that were offering this skill before and are far from all players." Then 530 A
-(the three speeds, combat and magic, each counted on its own; never gold or
-stamina), 531 C with his "keep at least 2 of each skill on the map (instead of
-3)" and, on 2026-10-01, "We need two *sites* with the skill at any time, not two
-units of skill on the map" (`RESPAWN_SHORT_BELOW_SITES` 2, whatever the player
-count or the sites' units), 532 A (one site
-a turn, with the whole stack it started with), 533 A (drawn at random from the
-farther half of the empty sites, `RESPAWN_FAR_SHARE` 0.5 rounded up, never one
-a figure stands on), 534 A (far by the stamina cost of the cheapest route from
-the nearest figure), 535 A (a site can come back again and again), 536 A (a
-turn log line, "3 combat came back at a forest site."), 537 A (the computer's
-imagined games include it), 538 A (the rulebook paragraph). Then "There has to be a respawn sound, and if
-Track is pressed, we should bring the respawn site into view": 539 B (a far
-bell, a placeholder in Art/Sounds/respawn.wav), 540 A (after the turn's walk,
-die and claim notice) and 541 A (the map stays 1.5 s, `timing.respawnStayMs`).
-
-The draw comes from the game's dice: online the server's stream, recorded with
-the game as `picks`; on one device the die's seed. Games started before the
-rule keep the old one: an online game holds the rules it was made with, and a
-kept hot seat game says whether it had the rule. In six four-player computer
-games at 3 s a move counting sites, all ended with a winner, 121 turns on
-average against 148 on the same maps without the rule (125 counting units);
-18 sites came back a game, mostly forest speed, combat and mountains speed
-(plains speed 4 times in all, magic once), never two in one turn, the first on
-turns 7 to 23. Claimed sites keep their picture (Q36).
-
-Andrei, 2026-10-01: "let us cap the skills to 2 units when they respawn. The
-idea is to provide a player who was late to the party with something to do,
-not to create a cornucopia." A site that comes back offers at most
-`RESPAWN_MAX_UNITS` (2), and one that held fewer gets those; the map's icons,
-the turn log and the claim card show what it offers. Games started before the
-cap bring whole stacks back. 543 A: the rulebook adds "but never more than 2"
-to the sentence, and "at most 2 units" to the quick reference row.
-
-Then, the same day, having played: "even capping regrown skills by 2 is too
-much. It's not supposed to be easy when skills run out. Starving your
-opponents of some skill should be one of the strategies. Let's change that cap
-to one." `RESPAWN_MAX_UNITS` is 1, so every site that comes back offers 1 unit;
-games started under the cap of 2 keep 2. 544 A: the rulebook says the site
-"gets back 1 unit of it", and the quick reference row "with 1 unit".
-
-Andrei, 2026-10-01, on the rulebook's sentences about how the site is picked
-and that it can come back again: "These all are unnecessary details for the
-players, the game engine takes care of them. THey need to be removed from the
-rulebook -- but we also need to make sure they are preserved somewhere else."
-The rulebook drops them; 545: GDD.md §4.5 keeps them.
-
-*Since [Q190](#q190) (2026-10-02) speeds and skills are bought instead: games started since have none of this, and games started before keep it (757, 758).*
+### Q135. ~~Do speeds and skills come back?~~ — **replaced by Q190: speeds and skills are bought with gold, and none come back (Q265)**
 
 ### Q140. ~~How are a player card's stats arranged, and how does gold stand out?~~ — **answered 2026-10-01: moving down the left, the rest down the right with gold last, gold's number deep red (550-553 A)**
 
@@ -2617,41 +2342,34 @@ details were put to him with pictures at laptop, 390 and 340 px, and he
 answered 570 to 573 on their cards at 03:49 and 574 to 576 at 04:32.
 
 570. **How a turn starts.** A: as before, the figure blinks and Plan a move
-     shows; the first tap on a space picks the figure up and chooses that
-     space (recommended). B: the figure starts picked up, still on its gold
-     ring, with Cancel and Waypoint showing. Either way every tap on your turn
-     does what it does once your figure is picked up, so a tap on another
-     player's figure chooses their space instead of showing hot seat's notice.
-     Track unpresses when a space is chosen, as when a figure is picked up,
-     and End turn presses it again. **Answered:** A, in his 03:02 message and
-     on its card.
+     shows; the first tap on a space picks the figure up and chooses that space
+     (recommended). Every tap on your turn does what it does once your figure
+     is picked up, so a tap on another player's figure chooses their space
+     instead of showing hot seat's notice. Track unpresses when a space is
+     chosen, as when a figure is picked up, and End turn presses it again.
+     **Answered:** A, in his 03:02 message and on its card.
 571. **The line above the buttons at turn start.** A: *"Bea: tap where to go.
-     End turn with no route rests: +5 stamina."*, on a guarded site *"…End
-     turn with no route stays here and fights the guard again. Rest gains 5
-     stamina."* (recommended). B: *"Bea: tap where to go (or Plan a move).
-     …"*. C: the line before, *"Bea: tap your figure (or Plan a move), then
-     where to go. …"*. **Answered:** A.
+     End turn with no route rests: +5 stamina."*, on a guarded site *"…End turn
+     with no route stays here and fights the guard again. Rest gains 5
+     stamina."* (recommended). **Answered:** A.
 572. **Online, on someone else's turn.** A: as before, planning your next move
      starts with your figure or Plan a move, and a tap on a space alone shows
      the notice, since a stray tap would save a route that the game master's
-     Move on would walk (recommended). B: a tap on a space plans at once.
-     **Answered:** A.
+     Move on would walk (recommended). **Answered:** A.
 573. **The rulebook,** under Planning a route. A: *"Choose where you want to
-     go."* (recommended). B: *"Tap or click where you want to go."* It read
-     *"Select your figure, then where you want to go."* **Answered:** A.
+     go."* (recommended). **Answered:** A.
 574. **How long the figure blinks on a route saved from the turn before,**
      counted from the start of the turn. A: 2 seconds, two blinks
-     (recommended). B: 3 seconds. C: 1 second. **Answered:** A, as
-     `timing.savedRouteBlinkMs` in `GameScreen.tsx`. The 2 seconds start when
-     the map can glide to the player on turn (Q46), so they are not spent
-     under an unguarded claim's notice or a site coming back (Q135).
-575. **How the figure looks once that blink stops.** A: still on its gold
-     ring, as after a tap on a space; only the look changes, so Track stays
+     (recommended). **Answered:** A, as `timing.savedRouteBlinkMs` in
+     `GameScreen.tsx`. The 2 seconds start when the map can glide to the player
+     on turn (Q46), so they are not spent under an unguarded claim's notice.
+575. **How the figure looks once that blink stops.** A: its ring outlined, as
+     after a tap on a space (Q305); only the look changes, so Track stays
      pressed and the figure counts as picked up only once tapped
-     (recommended). B: like the other players' figures. **Answered:** A.
+     (recommended). **Answered:** A.
 576. **Tapping your figure, or Plan a move, before any space is chosen.** A:
-     the blink stops, as before (Q34) (recommended). B: it blinks on until a
-     space is chosen. **Answered:** A, nothing changes.
+     the blink stops, as before (Q34) (recommended). **Answered:** A, nothing
+     changes.
 
 `choose` in `apps/web/src/interaction/moveMode.ts` picks the figure up on the
 planner's own turn, `GameScreen`'s `onTap` sends a tap on a space there, and
@@ -2671,11 +2389,9 @@ saved route does. 610 and 611 answered at 05:24.
 610. **Cancel, then Rest or End turn, on one device:** today a route saved from
      an earlier turn and then cancelled comes back at the next turn; online it
      is gone. After Cancel, Rest and End turn keep no route, as online
-     (recommended); or the cancelled route comes back, as today.
-     **Answered:** as recommended.
+     (recommended). **Answered:** as recommended.
 611. **The rulebook:** the Rest line ends with *"Your route is kept for next
-     turn."* (recommended); or the rulebook stays as it is. **Answered:** as
-     recommended.
+     turn."* (recommended). **Answered:** as recommended.
 
 ### Q160. ~~How do maps grow for 4 and 5 players?~~ — **answered 2026-10-01: 40% larger, everything on them 1.4 ×, sites rounded to the nearest; the rest as recommended (630-635)**
 
@@ -2688,35 +2404,30 @@ of gold are currently hard coded anywhere in the code. when a game is started
 the map should redraw when one changes the number of players to 4 [or] 5 or
 back to three or less."* Nothing in the game hard-codes a total: the win check,
 the computer and everything else count gold and skills on the map. The rulebook's
-quick reference said "Gold on the map: 45". Every unit total divides (gold 45
-→ 63, speeds and skills 75 → 105, sites per terrain 35 / 28 / 21); six
-per-reward site counts did not. Answered 06:57 to 07:01.
+quick reference said "Gold on the map: 45". Six per-reward site counts did
+not divide. Answered 06:57 to 07:01.
 
 630. **Sites per reward:** plains 9.8, 8.4 and 2.8, forest 11.2, 11.2 and 5.6
      rounded to the nearest (10, 8, 3; 11, 11, 6), which keeps each terrain's
-     total (recommended); or other numbers. **Answered:** nearest.
+     total (recommended). **Answered:** nearest.
 631. **Roads, dead ends and valleys:** 300 roads cannot join 336 spaces, so
-     roads 420 and dead ends 42-63, valleys as today (recommended); or valleys
-     3-6 of 7-17 spaces too. **Answered:** valleys as today.
+     roads 420 and dead ends 42-63, valleys as today (recommended).
+     **Answered:** valleys as today.
 632. **Zoom after a card tap and a phone's Plan a move:** as close as on today's
-     map (recommended); or 2.2 × the whole-map view, about 15% farther out on
-     the larger map. **Answered:** as close as today.
-633. **Everything else** (stamina, rest, guards, skills coming back, the 10
-     closest sites, border roads, terrain shares, thinking time) stays as today
-     (recommended); or some change. **Answered:** keep all.
-634. **The rulebook:** the Gold row reads "45, or 63 with 4 or 5 players" and
-     The map gains *"With 4 or 5 players the map is 40% larger, with 40% more
-     spaces, sites, rewards and gold."* (recommended); or only the Gold row.
-     **Answered:** row and sentence.
+     map (recommended). **Answered:** as close as today.
+633. **Everything else** (stamina, rest, guards, the 10 closest sites, border
+     roads, terrain shares, thinking time) stays as today (recommended).
+     **Answered:** keep all.
+634. **The rulebook:** the Gold row reads "48, or 67 with 4 or 5 players"
+     (Q250) and The map gains *"With 4 or 5 players the map is 40% larger, with
+     40% more spaces, sites, rewards and gold."* (recommended). **Answered:**
+     row and sentence.
 635. **Setting up:** when the number of players crosses 3 and 4 the New game
-     panel stays and the map behind it changes once drawn (recommended); or the
-     drawing message shows first, as after a new seed. **Answered:** panel
-     stays.
+     panel stays and the map behind it changes once drawn (recommended).
+     **Answered:** panel stays.
 
-The same seed draws a different map at each size. Games already under way keep
-their map: an online game holds the map it started with, and a game kept on one
-device says which size it is on, one kept before maps grew being on today's.
-The larger map takes about 0.5 s to draw against 0.3 s.
+The same seed draws a different map at each size. The larger map takes about
+0.5 s to draw against 0.3 s.
 
 ### Q165. ~~Can the seats be shuffled before the game starts?~~ — **answered 2026-10-01: yes, a Shuffle seats switch that draws every seat at Start; 650-656 as recommended**
 
@@ -2731,30 +2442,27 @@ master by seat, so only the setup changes. Answered 10:58 to 11:00.
 
 650. **How the seats are shuffled:** a Shuffle seats switch; with it on, the
      seats are drawn at random when Start is pressed, so nobody sees the order
-     until the game begins (recommended); or a button that reorders the seat
-     cards at once and can be pressed again. **Answered:** the switch.
+     until the game begins (recommended). **Answered:** the switch.
 651. **Its look:** under Players, like Play online's switch, "Shuffle seats"
      with *"Seats are drawn at random when the game starts."* under it
-     (recommended); or a row "Seat order" with As listed and Shuffled.
-     **Answered:** like Play online.
-652. **Which games:** on one device and online alike (recommended); or online
-     only. **Answered:** both.
+     (recommended). **Answered:** like Play online.
+652. **Which games:** on one device and online alike (recommended).
+     **Answered:** both.
 653. **Seat cards while it is on:** "Seat 1 · starts with 30 stamina" and so
-     on as today (recommended); or "Player 1 · seat drawn at the start".
-     **Answered:** as today.
+     on as today (recommended). **Answered:** as today.
 654. **Players who joined online:** the game master's line gains *"Seats are
-     shuffled when the game starts."* (recommended); or nothing.
-     **Answered:** the sentence.
+     shuffled when the game starts."* (recommended). **Answered:** the
+     sentence.
 655. **The next game:** the switch stays as set for the next New game and goes
      along when Play online is turned on or off; a freshly opened page starts
-     with it off (recommended); or off at every New game. Either way New game
-     lists the seats as set, not as drawn. **Answered:** stays as set.
+     with it off (recommended). New game lists the seats as set, not as
+     drawn. **Answered:** stays as set.
 656. **The rulebook:** Setting up reads *"Seat 1 moves first. With Shuffle
      seats on, the seats are drawn at random when the game starts, and each
      player starts with the stamina of the seat they draw. Otherwise seats go
      in the order set up, and online the game master is in seat 1."*, and The
      game master says the creator *"sits in seat 1 unless the seats are
-     shuffled"* (recommended); or Setting up only. **Answered:** both places.
+     shuffled"* (recommended). **Answered:** both places.
 
 Each player starts with the stamina of the seat they draw (Q75). Online the
 draw uses the server's die stream, so nobody can foresee or redraw it; on one
@@ -2773,11 +2481,9 @@ darken it for more contrast (or maybe not)"*. Until then the map stood on a
 plain grey-blue (`--map-ground`). Answered 16:46 to 16:5x.
 
 670. **Where the ground meets the rock:** a thin rim of the rock's stone tops
-     shows below the ground's edge (recommended); or the ground runs straight
-     to the cliff, the tops hidden. **Answered:** the rim. Set any lower, sky
-     showed through gaps between the stones.
-671. **His sky:** as drawn; 15% darker (recommended); or 30% darker.
-     **Answered:** as drawn.
+     shows below the ground's edge (recommended). **Answered:** the rim. Set
+     any lower, sky showed through gaps between the stones.
+671. **His sky.** **Answered:** as drawn.
 672. **What Whole map and the game's first view frame:** the whole island, rock
      included (recommended); or the map as before, the rock running off the
      bottom of a laptop's screen. **Answered:** the map as before. Nothing
@@ -2785,72 +2491,55 @@ plain grey-blue (`--map-ground`). Answered 16:46 to 16:5x.
      game" screen, it would be nice to show the whole island, as in
      recommended in 672"*, so there (hot seat and online) Whole map and the
      first view frame the rock down to its lowest point.
-673. **A dark-mode screen:** his sky darkened for night (recommended); the
-     same sky as on a light screen; or the dark grey as before.
-     **Answered:** darkened for night, to 40% of its brightness; made lighter
-     in 682.
-674. **The New game screen:** island and sky there too (recommended); or as
-     before. **Answered:** there too.
-675. **Which rock:** the first, darker one with glowing cyan cracks; or the
-     brighter one (recommended). **Answered:** the brighter one.
+673. **A dark-mode screen:** his sky darkened for night (recommended).
+     **Answered:** darkened for night, to 70% of its brightness (682).
+674. **The New game screen:** island and sky there too (recommended).
+     **Answered:** there too.
+675. **Which rock:** the brighter one (recommended). **Answered:** the brighter
+     one.
 676. **When the map is dragged or zoomed:** the sky stays still behind it
-     (recommended); or it moves a little with the map. **Answered** at 16:52:
-     *"I am afraid that background that does not move at all will create an
-     unnatural feeling. How expensive, peformance-wise, is to move the
-     background a little? If it's not too much, I'd prefer that"*. It is
-     cheap: the sky is one layer the browser slides, and the map is redrawn
-     on every frame of a drag anyway. The amounts below were offered on a
-     page that moves his sky behind the island (Island sky drift).
-677. **How far the sky moves:** as far as the map moves at the whole-map view
-     times still, 1/20, 1/10 (recommended) or 1/5, and less as the map is
-     zoomed in, as a faraway sky would. To have room to move, the sky is
-     drawn larger, so its clouds look about 6%, 12% or 25% bigger; dragged
-     far off, it stops at its edge. **Answered:** 1/10 at 17:07, then at
-     17:08 *"The sky should grow but it should not move up and down like
-     today"* and at 17:09 *"Actually scratch that. Let's make it still, but
-     growing with the zoom"*: still (`SKY_DRIFT` 0), so the sky is drawn at
-     the box's size, as before.
+     (recommended). **Answered** at 16:52: *"I am afraid that background that
+     does not move at all will create an unnatural feeling. How expensive,
+     peformance-wise, is to move the background a little? If it's not too
+     much, I'd prefer that"*, and then still (677).
+677. **How far the sky moves.** **Answered** at 17:08: *"The sky should grow
+     but it should not move up and down like today"* and at 17:09 *"Actually
+     scratch that. Let's make it still, but growing with the zoom"*: still
+     (`SKY_DRIFT` 0), so the sky is drawn at the box's size, as before.
 678. **Zooming:** the sky grows a little as the map is zoomed in, by up to a
-     tenth at 1/10 (recommended); or it keeps its size. **Answered** in the
-     same words: it grows, by about a tenth at the closest zoom, as on the
-     page, and never below its size at the whole-map view
+     tenth (recommended). **Answered** in the same words: it grows, by about a
+     tenth at the closest zoom, and never below its size at the whole-map view
      (`SKY_ZOOM_GROWTH`).
 679. **Where the ground's front edge meets the rock** (17:11: *"Is there a way
      to blur the edge of the map so it blends better with the stone rim?"*;
-     17:14: *"Or, another idea, put a stone edge on the map border"*): as
-     before, the ground ending in a straight line above the rim; a soft edge,
-     the rock's stone tops fading into the ground; or a stone border, the
-     same stone tops drawn over the ground's edge (recommended). The back
-     edges stay ground against sky. **Answered** at 18:41: the soft edge. The
-     rock is drawn over the ground and its stone tops fade out over 24 of the
-     picture's pixels above the edge (`fade` in `Art/manifest.json`).
+     17:14: *"Or, another idea, put a stone edge on the map border"*): a soft
+     edge, the rock's stone tops fading into the ground. The back edges stay
+     ground against sky. **Answered** at 18:41: the soft edge. The rock is
+     drawn over the ground and its stone tops fade out over 24 of the picture's
+     pixels above the edge (`fade` in `Art/manifest.json`).
 680. **While the sky's picture loads** (asked at the coordinator's prompt, as
      the old grey-blue showed until then, on the map's box and the "Drawing
-     the map" screen): the old grey-blue; the sky's own average blue,
-     darkened at night like the sky, so the switch is barely seen
-     (recommended); or the map waiting for the sky, so no switch is seen but
-     the map comes later on a slow connection. **Answered** at 19:10: the
-     sky's own blue, #809ab4 (`color` in `Art/manifest.json`).
+     the map" screen): the sky's own average blue, darkened at night like the
+     sky, so the switch is barely seen (recommended). **Answered** at 19:10:
+     the sky's own blue, #809ab4 (`color` in `Art/manifest.json`).
 681. **The map's side corners** (19:13, with a picture of the left corner:
-     *"This detail around corners is rather ugly. I thin you need to extend
-     the map less in that direction"*): the ground's corner stuck out past
-     the rock's rounded end as a thin sheet over the sky. Offered: the rock
-     about 4% larger, its left and right points moved 27 and 26 of its pixels
-     in along its top edges so its ends reach past the corners; or the ground
-     cut back at the side corners, the rock as before (recommended).
-     **Answered** at 19:41: *"can we just have the rick and the map align in
-     that direction? I mean the rock should extend in SW and SE directions but
-     be aligned with the map edge in NW and NE"*. The rock keeps the moved
-     points, so it reaches right up to the corners (about 4% larger), and is
-     cut off flush there: nothing of it left of the left corner, right of the
-     right one, or above the ground's back edges.
+     *"This detail around corners is rather ugly. I thin you need to extend the
+     map less in that direction"*): the ground's corner stuck out past the
+     rock's rounded end as a thin sheet over the sky. Offered: the rock about
+     4% larger, its left and right points moved 27 and 26 of its pixels in
+     along its top edges so its ends reach past the corners. **Answered** at
+     19:41: *"can we just have the rick and the map align in that direction? I
+     mean the rock should extend in SW and SE directions but be aligned with
+     the map edge in NW and NE"*. The rock keeps the moved points, so it
+     reaches right up to the corners (about 4% larger), and is cut off flush
+     there: nothing of it left of the left corner, right of the right one, or
+     above the ground's back edges.
 682. **The night sky's brightness** (19:48: *"I don't see the sky background
      in the preview, is it supposed to be there?"*; 19:50: *"I think Ihave the
      dark theme, and the clouds are so dark one cant really see them"*): at
-     40% of its brightness (673) the clouds hardly showed. Offered: 40% as
-     before, 55%, 70% (recommended) or 85%. **Answered** at 19:59: 70% (`shade`
-     `dark` 0.3 in `Art/manifest.json`), also for the sky's blue while it
-     loads.
+     the 40% of its brightness first built for 673 the clouds hardly showed.
+     Recommended: 70%. **Answered** at 19:59: 70% (`shade` `dark` 0.3 in
+     `Art/manifest.json`), also for the sky's blue while it loads.
 
 The rock is his picture as drawn, stretched only so its top edges lie along
 the map's front edges, which it already slopes along; 4 and 5 player maps get
@@ -2874,23 +2563,18 @@ Answered 21:30, and 692 at 22:04.
      judged by the room each bar actually has (recommended). Measured, that is
      an online game's bar in play on a phone held upright, and its bar before
      the start on a 340 px phone; elsewhere the seed or "Logged in as" beside
-     the name is cut shorter on phones. Or Skyholm in every bar on a phone held
-     upright; or in every bar everywhere. **Answered:** where it fits.
-691. **Browser tab titles:** the full name, "Skyholm Adventures", "Skyholm
-     Adventures Hot Seat" and "Your turn · Skyholm Adventures" (recommended);
-     or Skyholm. **Answered:** the full name.
-     *Since [Q306](#q306) the one-device page's tab reads "Skyholm Adventures"
-     too.*
+     the name is cut shorter on phones. **Answered:** where it fits.
+691. **Browser tab titles:** the full name, "Skyholm Adventures", the
+     one-device page's included ([Q306](#q306)), and "Your turn · Skyholm
+     Adventures" (recommended). **Answered:** the full name.
 692. **The documents' titles:** "Skyholm Adventures — Rulebook", the README's
      "Skyholm Adventures" and "Game Design Document — Skyholm Adventures"
-     (recommended); or the design document keeps "Multiplayer Turn-Based
-     Adventure Game". Sentences describing the kind of game stay either way.
+     (recommended). Sentences describing the kind of game stay.
      **Answered:** all three.
 693. **Names nobody sees:** code packages (`@adventure/…`), the browser keys
      that keep saved games, logins and the sound setting, request headers, the
      Workers behind the site address, the repository, the `adventure` seed the
-     tests use and past rulings here all keep their names (recommended); or
-     packages, headers and keys renamed with saved games moved over.
+     tests use and past rulings here all keep their names (recommended).
      **Answered:** they keep their names.
 
 ### Q180. ~~What can be done about the trees crowding the map's edge?~~ — **answered 2026-10-01: a third of the trees past the outermost roads stay, and the rest are planted in the middle of the forest, as many as fit by today's rules (710, 711)**
@@ -2906,48 +2590,22 @@ behind it, so that strip took most of the trees: 188 of the 230 on seed
 adventure. The floating island (Q170) placed no trees; its sky only made the
 hedge stand out. Answered 21:59 and 22:09.
 
-710. **How many of the trees past the outermost roads stay:** half; a third,
-     in small groups with sky between them (recommended); a sixth; or none.
-     **Answered:** a third. Each stays by that chance (`EDGE_TREES_KEPT` in
+710. **How many of the trees past the outermost roads stay:** a third, in small
+     groups with sky between them (recommended). **Answered:** a third. Each
+     stays by that chance (`EDGE_TREES_KEPT` in
      `apps/web/src/render/dressing.ts`). All four edges alike; the two front
      edges rarely have any.
 711. **The trees taken off the edge:** planted in the middle of the forest
-     wherever a tree fits by today's rules (recommended); planted there and
-     allowed to stand closer to roads, a tree's leaves possibly touching a
-     road's side; or not planted, leaving the forest with fewer trees.
-     **Answered:** planted by today's rules. On seed adventure 48 of the 120
-     fit, so the middle goes from 42 trees to 90. Each tree taken off gets
-     `MIDDLE_TRIES` (40) tries before it is dropped.
+     wherever a tree fits by today's rules (recommended). **Answered:** planted
+     by today's rules. On seed adventure 48 of the 120 fit, so the middle goes
+     from 42 trees to 90. Each tree taken off gets `MIDDLE_TRIES` (40) tries
+     before it is dropped.
 
-Andrei also asked, at 22:01, whether trees could hide a small piece of road;
-letting a tree hide up to a road's width of road would fit 74 instead of 48
-on seed adventure. Not built: he picked 711's first answer after asking.
 Every other tree, bush and stone stays where it was.
 
-### Q185. ~~Which guard does forest gold get now?~~ — **answered 2026-10-01: always magic, by the same chance turned to 100%; kept games keep their coin flips, and the rulebook says each terrain's guard (730, 731 A)**
+### Q185. ~~Which guard does forest gold get now?~~ — **replaced by Q250: there is no gold in forests**
 
-[SOURCE §4.4, chat] Andrei, 2026-10-01: "After playing some more I think we
-need to make all gold in the forests guarded by magic. Otherwise magic plays
-too little role", then "it's a good idea to keep the logic that says forest
-magic is decided by chance, just turn this chance all the way to 100%".
-
-`FOREST_MAGIC_GUARD_CHANCE` (Q115) goes from 0.5 to 1, on the standard and the
-larger map alike, so every guarded forest gold site is a magic guard drawn as
-the mountains' magic guardians (452). Since the draws stay the map's last, on
-every seed only forest gold guards change; strengths, rewards and every other
-site are as before.
-
-730. **A hot seat game kept before the change:** goes on with the coin-flip
-     guards it began with, as games kept before the skill cap kept their rules
-     (recommended); or its forest gold turns magic. **Answered:** keeps its
-     guards. A kept game now records its chance; one without it is drawn at
-     0.5. Online games keep the map they were made with either way.
-731. **The rulebook:** after "Bigger gold stacks have stronger guards, up to
-     10", *"Gold on plains is guarded by combat, in forests by magic, and in
-     the mountains by either."* (recommended); or forests only; or no change.
-     **Answered:** all three terrains.
-
-### Q190. ~~Can speeds and skills be bought with gold?~~ — **answered 2026-10-02: yes, 1 gold a unit on your own turn, as many as you like, from a Buy panel with Cancel on every screen; it replaces speeds and skills coming back in new games; other players' purchases float up from the buyer's figure with a cash register (750-788)**
+### Q190. ~~Can speeds and skills be bought with gold?~~ — **answered 2026-10-02: yes, 1 gold a unit on your own turn, as many as you like, from a Buy panel with Cancel on every screen; it replaces speeds and skills coming back; other players' purchases float up from the buyer's figure with a cash register (750-788)**
 
 [SOURCE §2, §5, chat] Andrei, 2026-10-02 at 00:41: *"Players complain that if
 they didn't get the right skill early on they are screwed for the rest of the
@@ -2961,15 +2619,12 @@ a computer player if that skill is within 1 turn reach from them (cached
 distances to the skill site less or equal current speed), or 1 turn reach plus
 some stamina."* Answered between 02:17 and 02:50.
 
-750. **Where buying happens:** a + beside each skill on every card; one Buy
-     button on the card of the player on turn, opening a panel with a + per
-     skill; or the + on laptops and the panel on phones (recommended).
-     **Answered:** the last, then at 02:42 *"a separate buy panel in all
-     cases, and a cancel option on it. This way, if you misclick, you can
-     always cancel"*: the Buy panel on every screen.
+750. **Where buying happens:** one Buy button on the card of the player on
+     turn, opening a panel with a + per skill. **Answered** at 02:42: *"a
+     separate buy panel in all cases, and a cancel option on it. This way, if
+     you misclick, you can always cancel"*: the Buy panel on every screen.
 751. **Does buying use the turn:** no, any number during your turn
-     (recommended); one a turn; or it takes the turn as resting does.
-     **Answered:** any number.
+     (recommended). **Answered:** any number.
 752. **A speed bought counts this turn:** its free step is there at once
      (recommended). **Answered:** yes.
 753. **What can be bought:** the five skills, the three speeds with combat and
@@ -2980,23 +2635,17 @@ some stamina."* Answered between 02:17 and 02:50.
      selling back; undo became 765.
 756. **The spent gold:** leaves the game, and a purchase runs the win check, as
      a claim does (recommended). **Answered:** yes.
-757. **Speeds and skills coming back (Q135):** off for new games, the code kept
-     (recommended). **Answered:** keep the code.
-758. **Games already started:** keep the rules they began with, coming back
-     included and no buying (recommended). **Answered:** whatever is
-     convenient, so they keep their rules.
-759. **When the computer considers a purchase:** not while a site offering the
-     skill is within this turn's free steps; nor within them plus 5 stamina,
-     capped by the stamina it holds (recommended, `BUY_SKIP_STAMINA`); or plus
-     all its stamina. **Answered:** plus 5 stamina. *Replaced by
-     [Q280](#q280): the computer buys only what a move this turn uses up, and
-     the skip is gone (983 A).*
+757. **Speeds and skills coming back (Q135):** off; its code went with Q265
+     (952 A).
+758. **Games already started:** moot since Q265.
+759. **When the computer considers a purchase:** replaced by [Q280](#q280):
+     the computer buys only what a move this turn uses up (983 A).
 760. **The players the computer imagines:** never buy, as they never rest by
      choice (recommended). **Answered:** off.
 761. **The computer's turn:** it thinks once, then buys and moves
      (recommended). **Answered:** yes.
-762. **What others see:** a turn log line, no sound or notice (recommended).
-     **Answered:** yes. *Changed at 07:02 by 773-786.*
+762. **What others see:** a turn log line (recommended). **Answered:** yes,
+     and since 07:02 a notice with a sound (773-786).
 763. **Which screens get the Buy button:** every screen that shows Menu,
      phones held sideways too (recommended). **Answered:** yes.
 764. **"Playing now" on an upright phone:** "Turn N ·" and "Playing now" on two
@@ -3021,31 +2670,27 @@ some stamina."* Answered between 02:17 and 02:50.
 771. **Online, Done arriving after the turn has ended** (the game master moved
      the player on just as they pressed it): nothing is bought, and a notice at
      the bottom of the map says *"Your turn ended before the purchase arrived,
-     so nothing was bought."* (recommended); or nothing is said. **Answered:**
-     as recommended, 03:28.
+     so nothing was bought."* (recommended). **Answered:** as recommended,
+     03:28.
 772. **The log when a purchase ends the game** (the turn has no move): the
      headline *"Bought, and the game ended"* above the 769 line and who won
-     (recommended); or the 769 line as the headline. **Answered:** as
-     recommended, 03:28.
+     (recommended). **Answered:** as recommended, 03:28.
 
-The rulebook draft was approved at 02:45 with the panel sentence in place of
-the + signs.
+The rulebook draft was approved at 02:45 with the panel sentence.
 
 At 06:58 Andrei asked *"How do I see it when other players buy something?"*,
-and at 07:02, told it was 762's log line: *"We need to change that. Their
-purchase panel should open, with the purchases they made, and stay open for
-some time, e.g. 2 seconds. It also would be nice if a purchase got completed
-with some sound, e.g. a cash register sound"*. At 07:25 he sent the cash
-register he had in mind, and at 07:26 offered *"another option is to have a
-small panel floating up similar to when you claim a reward."* At 07:45:
-*"Basically the purchase notice works the same way as claiming a reward, but
-happens before the walk, not after"*.
+and at 07:02, told it was 762's log line: *"We need to change that. [...] It
+also would be nice if a purchase got completed with some sound, e.g. a cash
+register sound"*. At 07:25 he sent the cash register he had in mind, and at
+07:26 offered *"another option is to have a small panel floating up similar to
+when you claim a reward."* At 07:45: *"Basically the purchase notice works the
+same way as claiming a reward, but happens before the walk, not after"*.
 
 773. **Who sees it:** *"online, everyone but the buyer. Hotseat, only
      computer's purchases."* (07:30).
-774. **What it looks like:** the buyer's Buy panel opening on their card, or
-     a notice floating up from their figure like a claim's. **Answered:**
-     *"Let's go with a gloating* [floating] *notice"* (07:45).
+774. **What it looks like:** a notice floating up from the buyer's figure like
+     a claim's. **Answered:** *"Let's go with a gloating* [floating] *notice"*
+     (07:45).
 775. **How long it stays:** *"same timing as a regular claim"* (07:45): it
      fades in, stays 2 seconds and fades out.
 776. **A computer's walk:** *"a computer's walk waits until the purchase
@@ -3075,12 +2720,12 @@ happens before the walk, not after"*.
      "Purchased", for a shorter card"*: the notice reads *"Bought magic
      +2"*.
 787. **The sound with several notices:** each notice plays its own cash
-     register (as built), or only the first. **Answered:** as built, 13:39,
+     register (as built). **Answered:** as built, 13:39,
      *"787 and 788 look good"*.
 788. **A purchase that ends the game:** the end card waits for its notices
      (as built). **Answered:** as built, 13:39.
 
-### Q200. ~~Should players start with gold?~~ — **answered 2026-10-02: yes, 5 each, in games started from now on (790-792)**
+### Q200. ~~Should players start with gold?~~ — **answered 2026-10-02: yes, 5 each (790-792)**
 
 [SOURCE §6, chat] Andrei, 2026-10-02 at 14:57: *"Now that players can buy
 skills for gold, it makes sense to starts them with 5 gold to enable a variety
@@ -3090,15 +2735,13 @@ a lead with the gold left on the map, and the same 5 each changes no lead. The
 computer follows the buying rules as they are, so it may spend some of its 5
 early. Asked at 15:10 with a picture; at 15:22, *"790 to 792: looks good"*.
 
-790. **Which games:** only games started from now on, while games already
-     under way keep starting at 0, as with buying (recommended).
-     **Answered:** yes.
+790. **Which games:** moot since Q265.
 791. **The rulebook:** *"Every player starts with 5 gold. The other stats
      (the three speeds, combat and magic) start at 0."*, plus a Quick
      reference row "Starting gold: 5" (recommended). **Answered:** yes.
 792. **The New game screen's seat line:** A, as today, *"Seat 2 · starts with
-     35 stamina"*, since it shows what differs between seats (recommended);
-     or B, *"... and 5 gold"*. **Answered:** A.
+     35 stamina"*, since it shows what differs between seats (recommended).
+     **Answered:** A.
 
 ### Q210. Which route do players take? — **stage 1 answered 2026-10-02: the best for their speeds, drawn for people and walked by the computer's real moves; stage 2 answered: its search's own choices too; stage 3 answered: the games it imagines walk it, counted along a route traced once (810-826)**
 
@@ -3118,21 +2761,17 @@ first we need to calculate the path and figure out where it is on it."*
 Answered at 18:56.
 
 810. **What counts as best:** his Q112 formula on the route itself, free steps
-     costing nothing and a turn counting as 5 stamina (recommended); the least
-     stamina on this turn's walk; or the fewest turns with the stamina held
-     now. **Answered:** as recommended.
+     costing nothing and a turn counting as 5 stamina (recommended).
+     **Answered:** as recommended.
 811. **Two routes equally good:** the one cheaper by terrain alone, today's
-     route whenever it is one of them (recommended); or the one with fewer
-     steps. **Answered:** as recommended.
-812. **With a waypoint:** each leg the best for the player's speeds
-     (recommended); or waypoint routes as before. **Answered:** as
+     route whenever it is one of them (recommended). **Answered:** as
      recommended.
+812. **With a waypoint:** each leg the best for the player's speeds
+     (recommended). **Answered:** as recommended.
 813. **Buying a speed with a route drawn:** the route is picked again for the
-     new speeds, a waypoint kept (recommended); or it stays and is only
-     recoloured. **Answered:** as recommended.
+     new speeds, a waypoint kept (recommended). **Answered:** as recommended.
 814. **Where the computer uses it:** settled by his three stages above.
-815. **Games already under way:** they get it too, no rule changing
-     (recommended); or new games only. **Answered:** as recommended.
+815. **Games already under way:** moot since Q265.
 816. **The rulebook:** *"drop the details on how the route is calculated. THe
      players only need to know that we picked for them what we think is the
      best"*: it says the game draws the route it thinks is best for you. How
@@ -3140,42 +2779,36 @@ Answered at 18:56.
 817. **Comparing stage 1's computer with today's at 3 s:** *"B is good enough,
      you are not changing how computers decide the next move"*: no comparison
      for stage 1; one PR per stage.
-818. **Track when a purchase picks a route brought back again:** A, Track
-     unpresses, as when you change a route yourself; or B, Track stays
-     pressed, as a route brought back leaves it (575; recommended). Either way
-     the new route is saved online. **Answered** at 19:27: *"818: B, the
-     rulebook wording is OK"*.
+818. **Track when a purchase picks a route brought back again:** B, Track
+     stays pressed, as a route brought back leaves it (575; recommended). The
+     new route is saved online. **Answered** at 19:27: *"818: B, the rulebook
+     wording is OK"*.
 819. **A bug found while checking 818, on the live site since buying
      ([Q190](#q190)):** on one device, a route drawn and put down with Track
-     jumped back to the route saved last turn when anything was bought. A,
-     fix it in this PR, so the route drawn stays (recommended); B, its own PR;
-     C, leave it. **Answered** at 20:04: *"sure, let's fix it"*: A. The same
-     cause brought last turn's route back after Cancel and a purchase, against
-     610; that is fixed too.
+     jumped back to the route saved last turn when anything was bought. A, fix
+     it in this PR, so the route drawn stays (recommended). **Answered** at
+     20:04: *"sure, let's fix it"*: A. The same cause brought last turn's route
+     back after Cancel and a purchase, against 610; that is fixed too.
 820. **Stage 2, where the search counts the best route:** A, all four places
      its own choices look at routes: which 10 sites are choices, whether
      resting is weighed, which purchases are skipped, and its own walk to a
-     choice (recommended); B, only the ranking and its own walk. Andrei,
-     21:59: *"the first three items don't need the path, and can use the
-     distance provided by the formula, right? It's only the walk that needs
-     the actual path"*. Confirmed: ranking and the buy check already read
-     only the cached steps per terrain, and the rest check can, since the
-     walk arrives this turn exactly when the player holds Σ cost × max(steps
-     − free steps, 0) stamina. All three count the best route's steps, the
-     route the computer walks. 22:00: *"yes, please go ahead"*.
+     choice (recommended). Andrei, 21:59: *"the first three items don't need
+     the path, and can use the distance provided by the formula, right? It's
+     only the walk that needs the actual path"*. Confirmed: ranking and the buy
+     check already read only the cached steps per terrain, and the rest check
+     can, since the walk arrives this turn exactly when the player holds Σ cost
+     × max(steps − free steps, 0) stamina. All three count the best route's
+     steps, the route the computer walks. 22:00: *"yes, please go ahead"*.
 821. **Comparing stage 2 at 3 s before it merges:** A, 20 games, 2 computers,
      3 s a move, seats swapped, against the computer before it, reporting
-     wins, gold margins and games imagined per move (recommended); B, none.
+     wins, gold margins and games imagined per move (recommended).
      **Answered:** A.
 
 Stage 3, asked 2026-10-02 at 22:58 after *"go ahead merge it and let's go to
 stage 3"* (22:51), answered at 23:34 and 23:36:
 
-822. **Which sites imagined players head for:** the 10 closest by the best
-     route for their speeds, like the search's own choices (recommended, and
-     the costly part: on its own it cut games imagined per move from 1,800 to
-     700 at turn 1); or the 10 closest along the cheapest route as before, only
-     the walk changing. **Answered:** B.
+822. **Which sites imagined players head for:** B, the 10 closest along the
+     cheapest route as before, only the walk changing. **Answered:** B.
 823. **How an imagined walk is counted:** the best route traced once when a
      player picks its site and its turns counted along it in order, as a real
      walk goes, the figure not moved step by step but placed when it arrives,
@@ -3192,27 +2825,16 @@ stage 3"* (22:51), answered at 23:34 and 23:36:
      needed. Are you saying that picking the path is simply not costly enough
      to bother?"* Yes, and the totals alone do not give the arrival. 23:36:
      **Answered:** A, *"let's proceed with 823 A and lo[o]k at the numbers"*.
-824. **Games where skills come back** (started before buying), whose returning
-     skill goes far from every figure: they keep the imagined games of before
-     (recommended), or get stage 3 too. **Answered:** *"whatever is the most
-     convenient, there arent too many old games"*. Stage 3 places every figure
-     after every turn and brings skills back as a played turn does, so these
-     games get it too with nothing added.
+824. **Games where skills come back** (started before buying): moot since
+     Q265 (952 A).
 825. **Comparing stage 3 at 3 s before it merges:** 20 games, 2 computers,
      seats swapped, against the computer before it, reporting wins, gold
-     margins and games imagined per move (recommended); or none. **Answered:**
-     A, *"of course"*.
+     margins and games imagined per move (recommended). **Answered:** A, *"of
+     course"*.
 826. **Where an imagined figure is placed**, asked 2026-10-03 at 00:13
      because it was built before asking (823 had said only at the moments it
      names): A, after every turn, where that turn's count ends (as built,
-     recommended); or B, only when it arrives, stops on a site or is
-     overtaken, the walk keeping its place and stamina in between. Both find
-     the same route and count every turn the same way, so every imagined game
-     comes out the same; B imagines about 1-2% more games per move, but needs
-     stamina kept in two places, a second way to end a turn, the old walk for
-     games where skills come back, and leaves positions stale for any later
-     rule that reads them. 01:34: *"there are no older games"*. 01:43:
-     **Answered:** A, *"Please proceed as recommended"*.
+     recommended). 01:43: **Answered:** A, *"Please proceed as recommended"*.
 
 Stage 1, as built: `bestRoute` and `bestRouteVia` (`packages/core`), from
 `RouteTable.routesFrom`, every route no other route beats on all three
@@ -3227,10 +2849,9 @@ changes (819 A). The computer's real move (`firstTurnOf`) walks it.
 Stage 2, as built: `bestRouteSteps` gives the best route's steps per terrain
 and score from the cached route lists, tracing nothing. The computer's search
 ranks its choices by it (`closestByBestRoute`), checks what it reaches this
-turn and which purchases to skip by those steps (`stepsReachability`,
-`buyBranches`), and walks the best route along its own tree edges
-(`MctsOptions.edgeRoute`). The games it imagines, and the other seats' turns
-inside a tree edge, still rank and walk the cheapest route (stage 3).
+turn by those steps (`stepsReachability`), and walks the best route along its
+own tree edges (`MctsOptions.edgeRoute`); its purchases are checked along that
+route (`buyBranches`, Q280).
 
 Tested (821 A), 20 games with the seats swapped at 3 s a move on ten maps
 (seeds stage2-0 to stage2-9), against the same computer with its search
@@ -3239,20 +2860,18 @@ gold a game for stage 2, within luck. Games imagined per move 5,647 against
 5,322, so counting the best route did not slow the search.
 
 Stage 3, as built: the players in the games the computer imagines, the other
-seats inside its own tree edges included, still pick among the 10 closest
-along the cheapest route (`closestBySpeeds`, 822 B) and walk the best route
-for their speeds, traced once when they pick (`bestRoute`). Each turn is
-counted along it by §7's rules (`countWalk`) and played with
-`applyCountedTurn`, which places the figure where the count ends and then does
-what a played turn does there: fight or take an unclaimed site, check for a
-win after gold, bring a short skill back, hand over. Counted along the
-cheapest route, an imagined game is exactly the one `applyAction` would play;
-600 of them on real maps came out identical, every claim, roll and rest. The
-route is not picked again on later turns, as the computer's real move does;
-the search's own walk along a tree edge is still played turn by turn (stage
-2). The figure is placed where every turn's count ends, not only at the
-moments 823 named (826 A): that costs little, and games where skills come back
-need every figure's place (824).
+seats inside its own tree edges included, still pick among the 10 closest along
+the cheapest route (`closestBySpeeds`, 822 B) and walk the best route for their
+speeds, traced once when they pick (`bestRoute`). Each turn is counted along it
+by §7's rules (`countWalk`) and played with `applyCountedTurn`, which places
+the figure where the count ends and then does what a played turn does there:
+fight or take an unclaimed site, check for a win after gold, hand over. Counted
+along the cheapest route, an imagined game is exactly the one `applyAction`
+would play; 600 of them on real maps came out identical, every claim, roll and
+rest. The route is not picked again on later turns, as the computer's real move
+does; the search's own walk along a tree edge is still played turn by turn
+(stage 2). The figure is placed where every turn's count ends, not only at the
+moments 823 named (826 A): that costs little.
 
 Tested (825 A), 20 games with the seats swapped at 3 s a move on ten maps
 (seeds stage3-0 to stage3-9), against the same computer with its imagined
@@ -3270,13 +2889,11 @@ ground and trees are a cooler grass green (hue about 96). The plains ground is
 sand, and its few tufts and bushes already share the rock's olive, so the
 forest's green is the map's only large green.
 
-830. **Which greens move:** the rock's halfway to the forest's; the rock's all
-     the way (recommended); or both halfway, every forest turning a little
-     more yellow. **Answered** at 23:19: *"I like "rock all the way" but I
+830. **Which greens move:** the rock's all the way to the forest's
+     (recommended). **Answered** at 23:19: *"I like "rock all the way" but I
      think the rock's green is too bright, it needs to be darker"*.
-831. **How much darker:** 15%, close to the forest ground; 25%, between the
-     ground and the trees (recommended); or 35%, as deep as the trees.
-     **Answered** at 00:00 on 10-03: 25% darker.
+831. **How much darker:** 25%, between the forest ground and the trees
+     (recommended). **Answered** at 00:00 on 10-03: 25% darker.
 
 The rock's greens turn 42 degrees of hue towards the forest's, keep three
 quarters of their saturation and are darkened by a quarter (`greens` in
@@ -3289,42 +2906,36 @@ At 02:21 he added: *"The colors blend really well now. Looking at the
 transition though I wonder if the stones underneath could be blurred where
 they show under the map as well, to create smoother trasition"*.
 
-832. **How strong a blur:** light, medium (recommended) or strong, the whole
-     strip where the stone tops fade over the map blurred evenly. **Answered**
-     at 02:47: *"No, this doesn't work at all. Somehow I see the edge of the
-     map as a line again, and that's pretty bad"*. Blurred stone met sharp
-     stone right on the ground's edge and drew it as a line.
-833. **A graded blur instead:** no blur, PR #65 going in with the greens
-     alone; graded, medium (recommended); or graded, strong. The stone stays
+832. **How strong a blur:** the whole strip where the stone tops fade over the
+     map blurred evenly. **Answered** at 02:47: *"No, this doesn't work at all.
+     Somehow I see the edge of the map as a line again, and that's pretty
+     bad"*. Blurred stone met sharp stone right on the ground's edge and drew
+     it as a line.
+833. **A graded blur instead:** graded, medium (recommended). The stone stays
      sharp on the ground's edge, as before, and is blurred more the higher it
      rises over the map, fully at the top of the fade. **Answered** at 03:12:
      graded, medium (`blur` 6 of the picture's pixels in `Art/manifest.json`).
 
-### Q227. ~~Where on the plains do players start?~~ — **answered 2026-10-03: on the deepest plains space whose sites within 5 steps average less than 0.1 remoteness, in games started from now on (873-878)**
+### Q227. ~~Where on the plains do players start?~~ — **answered 2026-10-03: on the deepest plains space whose sites within 5 steps average less than 0.1 remoteness (873-878)**
 
 Andrei, 2026-10-03 at 06:45, asked to start away from the forest and the
 mountains; at 13:46 he named the worry, big forest speed or magic stacks near
-the start. PR #66 tried a start in the forest's farther half, then a start and
-the remoteness walks deep in the plains, then half of remoteness the distance
-from the start ("simply unplayable", 14:43: the speeds piled up in a far
-corner). Each idea after that was measured rather than built. At 20:21 he
-asked for *"remoteness of a space as the average of all sites within 5 steps
-from it"*; on 200 maps per size, the deepest space below 0.1 by it lay 8.2
-road steps from the forest and mountains (10.2 on the larger map), and a
-forest speed stack of 3 or more lay within 5 steps of it on 10% of maps,
-against 22% (18%) for today's random start. At 20:46: *"change the starting
-place to go to the deepest plains space with remoteness less than 0.1. We
-don't need any changes in how remoteness is calculated etc. It would probably
-make sense to abandon #66 and make that change in a new PR"*. #66 was closed.
+the start. PR #66 tried other starts first. Each idea after that was measured
+rather than built. At 20:21 he asked for *"remoteness of a space as the average
+of all sites within 5 steps from it"*; on 200 maps per size, the deepest space
+below 0.1 by it lay 8.2 road steps from the forest and mountains (10.2 on the
+larger map), and a forest speed stack of 3 or more lay within 5 steps of it on
+10% of maps, against 22% (18%) for today's random start. At 20:46: *"change the
+starting place to go to the deepest plains space with remoteness less than 0.1.
+We don't need any changes in how remoteness is calculated etc. It would
+probably make sense to abandon #66 and make that change in a new PR"*.
 
 873. **Several spaces equally deep** (on about half the maps): the least
-     remote of them (recommended), or one at random from the map's seed.
-     **Answered** at 20:53: the least remote.
+     remote of them (recommended). **Answered** at 20:53: the least remote.
 874. **No space below 0.1** (none of 400 maps measured): the least remote
-     plains space (recommended), or a random one as before. **Answered**: the
-     least remote.
-875. **The rulebook:** drop "random" (recommended), or describe the rule.
-     **Answered**: drop "random"; the rule is §6 of GDD.md.
+     plains space (recommended). **Answered**: the least remote.
+875. **The rulebook:** drop "random" (recommended). **Answered**: drop
+     "random"; the rule is §6 of GDD.md.
 876. **A space's remoteness:** the average remoteness of the sites within 5
      road steps (recommended). **Answered**: yes.
 877. **Less than 0.1 or 0.1 or less:** **answered** *"does not matter"*; less
@@ -3334,8 +2945,7 @@ make sense to abandon #66 and make that change in a new PR"*. #66 was closed.
      **Answered**: yes.
 
 And *"please make 0.1 a config setting"*: `start.MAX_REMOTENESS` (0.1), with
-`start.NEARBY_STEPS` (5) beside it. Games started before keep the random start
-they began on.
+`start.NEARBY_STEPS` (5) beside it.
 
 ### Q230. ~~Should the swords stick out of their disc?~~ — **answered 2026-10-03: yes, as the 27 September option, just over the contour (880-882)**
 
@@ -3348,11 +2958,10 @@ anything was built, today's icon and two sizes were pictured side by side at
 the whole-map view, a middle zoom and the play zoom.
 
 880. **How far the swords stick out:** A, the 27 September option, as big as
-     the foot, tips and handles just over the contour (recommended); or B,
-     about 45% bigger than inside the disc, tips further out. **Answered** at
-     22:13: *"880 I actually prefer B"*; then, with B built, at 23:55: *"i am
-     comparing this with other icons, and you're right, it sticks out too
-     much. let us change the andwer of 880 to A"*.
+     the foot, tips and handles just over the contour (recommended).
+     **Answered** at 23:55, after a bigger version was built: *"i am comparing
+     this with other icons, and you're right, it sticks out too much. let us
+     change the andwer of 880 to A"*.
 881. **Stacks:** each disc is drawn over the tips of the swords on the disc
      before it, where they overlap (recommended). **Answered**: as
      recommended.
@@ -3360,10 +2969,10 @@ the whole-map view, a middle zoom and the play zoom.
      swords without a disc, so they stay as they are (recommended).
      **Answered**: as recommended.
 
-The smallest circle round the swords now spans 1.06 of their disc's width
-(`pictures` in `icons.backing`, `Art/manifest.json`), where every circled icon
-had 0.82, so the swords are 1.29 times as big as before, as big as the foot,
-and their tips reach 3% of the disc's width past its edge. The tips stay inside the disc's
+The smallest circle round the swords spans 1.06 of their disc's width
+(`pictures` in `icons.backing`, `Art/manifest.json`), where every other circled
+icon has 0.82, so the swords are as big as the foot, and their tips reach 3% of
+the disc's width past its edge. The tips stay inside the disc's
 square, so the icon takes the same room on the map and nothing moves. The
 disc, its contour, the foot and the mountain are unchanged.
 
@@ -3391,30 +3000,29 @@ look good please proceed"*:
 890. **Which page, and when:** only the page that thinks for the computers (the
      hot seat page, or online the game master's), from the moment setup has
      the map and at least one seat is a computer, nearest the starting place
-     first (recommended); or every page. **Answered:** as recommended.
+     first (recommended). **Answered:** as recommended.
 891. **If Start comes before it is done, or a game is opened part way
      through:** keep working between moves, nearest the figures first, the
      computer working out what it needs while it thinks, as today
-     (recommended); or only during setup. **Answered:** as recommended.
+     (recommended). **Answered:** as recommended.
 892. **Checking it:** the computer-against-computer games also work out every
      list before the first move, and the games imagined on the computer's
      first two moves are reported before and after, for 2 and 5 players
-     (recommended); or that and 20 games at 3 s. **Answered:** as recommended.
-893. **Anything shown while it runs:** nothing (recommended); or a line on the
-     setup screen. **Answered:** as recommended.
-894. **Phones:** the same as everywhere (recommended); or phones skip it.
-     **Answered:** as recommended.
-895. **Seats nobody holds** in an online game being set up, which the
-     computer plays if the game starts that way: they count as computer seats
-     for starting the lists (recommended), so nearly every online game's
-     game master works them out while setting up; or only seats set to
-     Computer. Asked 2026-10-04 at 04:58, after 890 was built. At 06:29 he
-     asked whether that means every online game; yes, on the game master's
-     page only, and if people fill every seat it stops, a few seconds of work
-     unused. At 06:31 he asked whether it is noticeable; each list takes
-     about 1 to 2 ms here and at most 28 ms, and runs only while the browser
-     is idle. **Answered** at 06:33: *"That sounds reasonable, Please proceed
-     with 895 as recommended"*.
+     (recommended). **Answered:** as recommended.
+893. **Anything shown while it runs:** nothing (recommended). **Answered:** as
+     recommended.
+894. **Phones:** the same as everywhere (recommended). **Answered:** as
+     recommended.
+895. **Seats nobody holds** in an online game being set up, which the computer
+     plays if the game starts that way: they count as computer seats for
+     starting the lists (recommended), so nearly every online game's game
+     master works them out while setting up. Asked 2026-10-04 at 04:58, after
+     890 was built. At 06:29 he asked whether that means every online game;
+     yes, on the game master's page only, and if people fill every seat it
+     stops, a few seconds of work unused. At 06:31 he asked whether it is
+     noticeable; each list takes about 1 to 2 ms here and at most 28 ms, and
+     runs only while the browser is idle. **Answered** at 06:33: *"That sounds
+     reasonable, Please proceed with 895 as recommended"*.
 
 As built: `workOutRouteLists` (`apps/web/src/modes/computer.ts`) works out one
 list at a time while the browser is idle, from the setup screen's map and from
@@ -3431,7 +3039,7 @@ went from 2,658 games on average (2,223 at worst) to 2,910 (2,686), +9%; with
 5 players from 1,019 (514 at worst) to 1,418 (1,277), +39%. Later moves were
 the same within noise. Results in `/mnt/project-files/best-route/route-lists/`.
 
-### Q240. ~~How do stamina sites come to the plains?~~ — **answered 2026-10-04: like every other plains reward, 5 sites and 10 units (7 and 14 on the larger map), each unit 5 stamina, pictures 0.45 of a road, in games started from now on (900-907)**
+### Q240. ~~How do stamina sites come to the plains?~~ — **answered 2026-10-04: like every other reward, each unit 5 stamina, pictures 0.45 of a road (900-907); the sites are the forest's, 4 with 8 units (6 with 11 on the larger map), by Q250 and Q270**
 
 Andrei, 2026-10-03 at 21:32, with a sheet of 12 pictures (a well, a fountain,
 an apple tree, a campfire, a barrel, a statue, a bench, a tent, a picnic
@@ -3442,40 +3050,34 @@ rewarding 10 stamina units total (and each stamina unit adds 5 stamina).
 details were asked at 22:18 with pictures and numbers from 600 maps per size,
 and answered at 00:03, 00:04 and 02:50 on 10-04.
 
-900. **Where the 5 sites go:** like every other plains reward, the plains
-     getting 30 sites instead of 25 and 5 drawn for stamina (recommended), or
-     only in the deep plains. **Answered**: A, like every other reward. A
-     stamina site lay within 5 steps of the start on 60% of maps (57% on the
-     larger map).
-901. **"Same rules":** unguarded; 1 unit a site and the other 5 leaning toward
-     the more remote sites, usually 3-2-2-2-1 or 3-3-2-1-1; one of the 12
-     pictures for each site, drawn from the seed (recommended). **Answered**: A.
-902. **4-5 player maps:** 7 sites with 14 units, the usual 1.4 × (recommended),
-     or 5 with 10. **Answered**: A.
+900. **Where the 5 sites go:** like every other reward of their terrain
+     (recommended). **Answered**: A, like every other reward.
+901. **"Same rules":** unguarded; 1 unit a site and the rest leaning toward
+     the more remote sites; one of the 12 pictures for each site, drawn from
+     the seed (recommended). **Answered**: A.
+902. **4-5 player maps:** the usual 1.4 × (recommended): 6 sites with 11
+     units (Q270, 960). **Answered**: A.
 903. **Spare dead ends** (each already a 1-unit stamina site, on 10 of 600
      maps, any terrain): stamina sites in every way, 5 stamina a unit and the
-     new pictures (recommended), or left at 1 stamina with a borrowed house.
-     **Answered**: A.
+     new pictures (recommended). **Answered**: A.
 904. **Picture size:** asked at 0.5 of a road's length, like the houses; he
      answered *"slightly smaller, so a bench or a campfire doesn't look as big
-     as a house"*, then asked between 0.5, 0.45, 0.4 (recommended) and 0.35.
-     **Answered** at 02:50: 0.45, a tenth smaller than the houses.
+     as a house"*. **Answered** at 02:50: 0.45, a tenth smaller than the
+     houses.
 905. **Hearts on the map:** one white heart a unit (recommended). **Answered**:
      A.
 906. **Words players read:** the stamina a site gives, "took 10 stamina", "the
-     10 stamina site (plains)" (recommended), or the units. **Answered**: A.
+     10 stamina site (plains)" (recommended). **Answered**: A.
 907. **Rulebook:** the stamina row reads "5 stamina for each heart, paid for
      steps beyond your free ones", and the quick reference gains "Stamina
      site | 5 stamina for each heart" (recommended). **Answered**: A.
 
-Stated without a choice, unchallenged: games already started keep the map
-they began with (their stamina units worth 1); 5 sites, 10 units and 5
-stamina a unit are named settings (the stamina row of `REWARD_TABLE`,
-`pois.STAMINA_PER_UNIT`); with 5 more plains sites a seed draws a different
-map than before; computer players take stamina sites by the same rules, and
-how they think does not change.
+Stated without a choice, unchallenged: the sites, the units and 5 stamina a
+unit are named settings (the stamina row of `REWARD_TABLE`,
+`pois.STAMINA_PER_UNIT`); computer players take stamina sites by the same
+rules, and how they think does not change.
 
-### Q245. How many seeds do the forest and the mountains grow from? — **answered 2026-10-04: 2 seeds for every terrain, the forest's and the mountains' areas kept apart by a gap each space draws between 1 and 3 spaces, the plains free to merge, no valleys, on both map sizes, in games started from now on (910-917)**
+### Q245. How many seeds do the forest and the mountains grow from? — **answered 2026-10-04: 2 seeds for every terrain, the forest's and the mountains' areas kept apart by a gap each space draws between 1 and 3 spaces, the plains free to merge, no valleys, on both map sizes (910-917)**
 
 Andrei, 2026-10-04 at 04:46: *"I noticed that games get more interesting when
 there are more than one area of forest and mountains. can we increase the
@@ -3486,102 +3088,72 @@ Measured on 300 maps per size before anything was built. With 1 or 2 seeds a
 forest had two or more separate areas on 38% of 2-3 player maps and the
 mountains on 44%; both did on 17%. More seeds alone help less than the count
 suggests, because a terrain's areas grow until they meet: with 2 seeds each,
-both terrains have two or more areas on 34% of maps; with 3, on 58%. Measured
-right after the fill with 3 seeds each, the 6 forest and mountain areas are
-still 5.3 apart by road but only 3.8 on the ground: most meet side by side,
-with no road between them, and read as one area (step 6b then puts a road
-between them). Keeping a terrain's areas from growing into touching each other
-gives 87% with 2 seeds and 99% with 3. The 45/30/25 shares, the start (#67)
-and site placement hold in every option. Asked at 05:22 with pictures; at
-06:20 he set the goal: *"a variety of different maps, with more than one
-forest in most, but not necessarily all of them. Numbers like 70% should work
-well"*, and at 06:24 asked how often 3 seeds for every terrain gives 3 or more
-areas of one terrain (61% of 2-3 player maps, 63% of 4-5) and of two terrains
-(15%, 11%), with pictures of the latter.
+both terrains have two or more areas on 34% of maps. Keeping a terrain's areas
+from growing into touching each other gives 87% with 2 seeds. The 45/30/25
+shares, the start (#67) and site placement hold in every option. Asked at
+05:22 with pictures; at 06:20 he set the goal: *"a variety of different maps,
+with more than one forest in most, but not necessarily all of them. Numbers
+like 70% should work well"*.
 
-910. **How the forest and mountains grow:** A, 2 seeds each; B, 3 seeds each;
-     C, 2 seeds each, and an area never grows into another area of its own
-     terrain (recommended); D, 3 seeds each, kept apart the same way.
-     **Answered** at 06:43: B, *"starting with 3 seeds for all 3 terrains but
-     doing nothing to prevent them from merging is a good move"*, after seeing
-     the pictures: *"A bit patchy but only a little."*
-911. **The plains:** keep 1 or 2 seeds (recommended), or the same count as the
-     forest and mountains. **Answered** at 06:43: the same, 3 seeds; then
-     2 seeds (915).
-912. **4-5 player maps:** the same count as smaller maps (recommended), or one
-     seed more each. **Answered** at 06:44: *"4-5 players get the same
-     count"*.
-913. **Games already started** keep the map they began with (recommended).
-     **Answered** at 06:44: *"Old maps are untouched"*.
+910. **How the forest and mountains grow:** C, 2 seeds each, and an area
+     never grows into another area of its own terrain (recommended).
+     **Answered** at 07:50: C, as below.
+911. **The plains:** 2 seeds, free to merge. **Answered** at 07:53, as below.
+912. **4-5 player maps:** the same count as smaller maps (recommended).
+     **Answered** at 06:44: *"4-5 players get the same count"*.
+913. **Games already started:** moot since Q265.
 914. **How far apart kept-apart areas stay** (his question at 05:32, "will
-     there be just a narrow passage between them?"): at least 1 space, as C was
-     first offered, which leaves 57% of pairs 1 space apart at their closest;
-     or at least 2 spaces (recommended), which leaves 17%, most of them across a
-     valley, for both terrains in 2+ areas on 83% of maps instead of 87%.
-     **Falls away** with 910 B: nothing keeps areas apart.
+     there be just a narrow passage between them?"): a gap each space draws
+     between 1 and 3 spaces (917 D).
 915. **The plains, again** (his question at 06:50, "the numbers for 3 seeds
      mountains, 3 seeds forests, and 2 seeds plains? It may be a slightly
-     better configuration"): plains from 2 seeds, forest and mountains from 3
-     (recommended): forest in 2+ areas on 75% / 76% of maps, plains on 43% /
-     49%, 3+ areas of two terrains on 10% / 12%, start 7.4 / 9.1 road steps
-     deep; or 3 for every terrain as built: 77% / 81%, 57% / 61%, 15% / 11%,
-     6.2 / 8.5. **Answered** at 07:06: plains 2.
+     better configuration"): plains from 2 seeds (recommended). **Answered**
+     at 07:06: plains 2.
 
-That was built (3 seeds for the forest and mountains, 2 for the plains,
-nothing keeping areas apart) and put on the preview. At 07:50 he wrote back:
-*"well, I flipped through a number of maps, and that doesn't quite work. Many
-second or third components are tiny, not adding much to the map structure. I
-have a different strategy to try - start with 2 seeds for forest and
-mountains, and don't let them merge - stop making "valleys", because now we are
-getting them for free"*, and at 07:53: *"1 space gap should be enough, like
-what we have for "valleys" width today. We can do 2 seeds for plains but we
-don't care if they merge or not. This applies to all map sizes"*. So 910 is
-now C, 914 is A (at least 1 space), 911 is 2 seeds for the plains, free to
-merge, 912 stays the same count on both sizes, 913 still holds, and no valleys
-are carved (`VALLEY_COUNT` 0).
+That configuration went on the preview. At 07:50 he wrote back: *"well, I
+flipped through a number of maps, and that doesn't quite work. Many second or
+third components are tiny, not adding much to the map structure. I have a
+different strategy to try - start with 2 seeds for forest and mountains, and
+don't let them merge - stop making "valleys", because now we are getting them
+for free"*, and at 07:53: *"1 space gap should be enough, like what we have for
+"valleys" width today. We can do 2 seeds for plains but we don't care if they
+merge or not. This applies to all map sizes"*. So 910 is C, 911 is 2 seeds for
+the plains, free to merge, 912 stays the same count on both sizes, and no
+valleys are carved (`VALLEY_COUNT` 0); the gap (914) is 917's.
 
-Measured on the same 300 maps per size with one gap of 1 space (2-3 / 4-5
-players; with 1 or 2 seeds and valleys in brackets): forest in 2 or more areas
-99% / 98% (38% / 31%), mountains 97% / 99% (44% / 47%), exactly 2 of each 94% /
-92% (12% / 10%). As built after 917, with the uneven gap: forest 87% / 89%,
-mountains 89% / 97%, exactly 2 of each 75% / 80%, 3 or more of either 5% / 7%
-(13% / 14%); second and third areas have a median of 21 / 27 spaces (16 / 19);
-plains in 2 or more areas 45% / 57% (31% / 32%). Of the pairs of areas of one
-terrain, 27% / 29% are 1 space apart at their closest, and a 1-space line 5 or
-more spaces long is left on 2% / 4% of maps. Two areas join for the shares on
-9% of maps (916). The start is about 7.7 / 10.0 road steps from the forest and
-mountains (7.9 / 10.5). Without valleys about 3.5 / 4.0 sites a map that sat
-in valleys are placed elsewhere by the same rules; the site count does not
-change.
+Measured on the same 300 maps per size as built after 917, with the uneven gap
+(2-3 / 4-5 players; with 1 or 2 seeds and valleys in brackets): forest in 2 or
+more areas 87% / 89% (38% / 31%), mountains 89% / 97% (44% / 47%), exactly 2 of
+each 75% / 80% (12% / 10%), 3 or more of either 5% / 7% (13% / 14%); second and
+third areas have a median of 21 / 27 spaces (16 / 19); plains in 2 or more
+areas 45% / 57% (31% / 32%). Of the pairs of areas of one terrain, 27% / 29%
+are 1 space apart at their closest, and a 1-space line 5 or more spaces long is
+left on 2% / 4% of maps. Two areas join for the shares on 9% of maps (916). The
+start is about 7.7 / 10.0 road steps from the forest and mountains (7.9 /
+10.5). Without valleys about 3.5 / 4.0 sites a map that sat in valleys are
+placed elsewhere by the same rules; the site count does not change.
 
 916. **When the shares need two areas to join:** on 3 of 300 maps per size the
      fill and the share balancing can reach 45/30/25 only by giving a terrain a
      space between two of its areas, which joins them. A, let them join on
-     those maps only (recommended); B, never join, and those maps end with a
-     share off (0.1 to 2.4 points on five of the six, 7 points on one: forest
-     23% on a 4-5 player map). **Answered** at 12:03: A, "Allow join".
+     those maps only (recommended). **Answered** at 12:03: A, "Allow join".
 917. **How far apart two areas stay** (his message at 12:06, "the batch-6
      picture lioks very ugly, to tell the truth", and 12:08, "it's line that
      separates two forests, straight and clearly artificial"): with one gap of
      1 space for the whole map, a 1-space plains line 5 or more spaces long
-     between two areas of one terrain is on 41% / 49% of maps. A, 1 space as
-     built; B, at least 2 spaces (forest in 2+ areas 94% / 93%); C, at least 3
-     (86% / 82%, recommended); D, uneven: every space draws its own gap of 1,
-     2 or 3, so the plains between two areas winds (89% / 87%). At 12:50:
+     between two areas of one terrain is on 41% / 49% of maps. D, uneven:
+     every space draws its own gap of 1, 2 or 3, so the plains between two
+     areas winds (forest in 2+ areas 89% / 87%). At 12:50:
      *"i really liked how uneven looks. Can you explain exactly how it's
      done"*; **answered** at 12:52: D, "Uneven 1-3".
 
 The seed count is a named setting, `map.TERRAIN_SEEDS`, per terrain; the
 kept-apart rule is `map.KEPT_APART` (terrains, `GAP`, the range each space
 draws its gap from, 1 to 3 spaces for 917, and `JOIN_FOR_SHARES` for 916).
-Every seed draws a different map than before. Games already started keep
-their map, valleys included: online because the map carries the config it was
-made with, on one device because the kept game records whether its map grew
-from `TERRAIN_SEEDS`.
 
 ---
 
-### Q250. ~~Which rewards go on which terrain?~~ — **answered 2026-10-04: as Andrei laid out, every reward keeping its amount and its sites; the moved magic gold guarded by the usual rule; every reward keeping its pictures; the rulebook's short line; the softer forest plan rerun, and no longer beating normal play over 24 games (920-924, 927-929); then forest stamina 6 sites with 10 units and plains magic gold 5 sites with 8 gold, his own numbers, and on 4-5 player maps 9 stamina sites with 14 units and 7 magic gold sites with 11 gold (925, 926)**
+### Q250. ~~Which rewards go on which terrain?~~ — **answered 2026-10-04: as Andrei laid out, every reward keeping its amount and its sites; the moved magic gold guarded by the usual rule; every reward keeping its pictures; the rulebook's short line; the softer forest plan rerun, and no longer beating normal play over 24 games (920-924, 927-929); then plains magic gold 5 sites with 8 gold, his own numbers, and 7 sites with 11 gold on 4-5 player maps (926); the forest's stamina is Q270's (925)**
 
 Andrei, 2026-10-04 at 08:08: *"we seem to have found a simple super strategy:
 buy forest speed +4 and go to the forest. We need to change the allocation of
@@ -3597,59 +3169,55 @@ normally. The details were asked at 08:20 with pictures and numbers from 300
 maps per size, and answered between 11:47 and 11:57.
 
 920. **Amounts:** every reward keeps its units and its number of sites and only
-     moves terrain, so the plains have 31 sites instead of 30 and the forest 19
-     instead of 20 (44 and 26 instead of 42 and 28 on the larger map)
-     (recommended), or some amounts change. **Answered**: A.
+     moves terrain (recommended). **Answered**: A.
 921. **Guards on the magic gold:** the rule all gold follows, bigger piles and
-     less remote sites guarded more strongly (recommended), or other
-     strengths. Plains sites are less remote than forest ones, so these guards
-     come out about 1 stronger: a 1 gold pile's mostly 3 instead of 2, a 2 gold
-     pile's 5 instead of 4. **Answered**: A.
+     less remote sites guarded more strongly (recommended). Plains sites are
+     less remote than forest ones, so these guards come out about 1 stronger: a
+     1 gold pile's mostly 3 instead of 2, a 2 gold pile's 5 instead of 4.
+     **Answered**: A.
 922. **Pictures:** each reward keeps its own on its new ground: the forts of
      mountains speed and the guardians of the magic gold on the plains, the
-     magic houses and the stamina pictures in the forest (recommended), or new
-     sheets from him later. **Answered**: A.
+     magic houses and the stamina pictures in the forest (recommended).
+     **Answered**: A.
 923. **Rulebook:** "Gold on plains is guarded by combat, in forests by magic,
      and in the mountains by either" becomes "There is no gold in forests. On
      the plains and in the mountains, gold is guarded by combat or magic."
-     (recommended), or a longer line saying the plains' big piles are guarded
-     by combat and their small ones by magic. **Answered**: A.
+     (recommended). **Answered**: A.
 924. **Checking it:** the Buying skills thread reruns the softer forest plan on
-     the new maps (recommended), or no runs. **Answered** in his words: *"i
+     the new maps (recommended). **Answered** in his words: *"i
      dont think the softer forest plan makes any sense in the new config, but
      yes, we can rerun it on a few games"*: 6 games, 2 maps from every seat.
 
 At 12:14, after the 11:48 reminder of the sites and units on the plains and in
 the forest: *"you know, we can fill forests up to their usual 20 sites, by
 changing stamina to 6/10. And on plains, gold with magic guards can grow to
-5/8"*. So the forest is back to 20 sites, the plains have 32, and a 2-3 player
-map has 48 gold instead of 45 (the rulebook's quick reference says so). He
-named the 2-3 player numbers only, so the 4-5 player ones were asked:
+5/8"*. So the plains have 32 sites and a 2-3 player map has 48 gold (the
+rulebook's quick reference says so); the forest's stamina is Q270's. He named
+the 2-3 player numbers only, so the 4-5 player ones were asked:
 
-925. **Stamina in the forest on 4-5 player maps:** 9 sites with 14 units, which
-     keeps the forest at its usual 28 sites (recommended), or 8 sites with 14
-     units, the plain 1.4 times, leaving it at 27. **Answered**: A.
+925. **Stamina in the forest on 4-5 player maps:** replaced by Q270: 11 hearts
+     on 6 sites (960).
 926. **Magic gold on the plains on 4-5 player maps:** 7 sites with 11 gold, 1.4
-     times as usual, so the plains have 45 sites and the map 67 gold instead of
-     63 (recommended), or other numbers. **Answered**: A.
+     times as usual, so the plains have 45 sites and the map 67 gold
+     (recommended). **Answered**: A.
 
 The softer forest plan (924), played by the Buying skills thread on this
 build: on 2 maps it won 4 of 6 games, as before the move, too few to tell.
 
 927. **A bigger check:** the plan from every seat on the 8 one-piece forest
-     maps that showed the super strategy, plus a normal game on each, 32
-     games (recommended), or stop. **Answered**: A. The plan seat won 8 of
-     24 and shared none; the same seats playing normally won 7 and shared 2
-     (before the move: 15 and 1 shared, against 8). Against its own normal
-     game it finished better 10 times, the same 5 and worse 9, and averaged
-     14.5 gold against 15.8. After the forest the plan seats mostly bought
-     mountains speed and took mountain gold.
+     maps that showed the super strategy, plus a normal game on each, 32 games
+     (recommended). **Answered**: A. The plan seat won 8 of 24 and shared none;
+     the same seats playing normally won 7 and shared 2 (before the move: 15
+     and 1 shared, against 8). Against its own normal game it finished better
+     10 times, the same 5 and worse 9, and averaged 14.5 gold against 15.8.
+     After the forest the plan seats mostly bought mountains speed and took
+     mountain gold.
 928. **Which maps:** asked when the terrain seeds change (Q245) merged while
      the games ran on the map shapes from before it; they finished before an
      answer, so it was moot.
 929. **Rerun on the merged maps:** stop here, since those maps nearly always
      split the forest, where the plan was weaker even before the move
-     (recommended, inferred), or 32 more games. **Answered**: A.
+     (recommended, inferred). **Answered**: A.
 
 Measured over 300 maps per size as built (in road steps from the start to the
 nearest site): magic 5 → 13, stamina 5 → 13, mountains speed 12 → 4,
@@ -3659,14 +3227,7 @@ pile 5.6 (4.1 before), and about one pile in twelve now holds 3 gold, guarded 8
 on average. The start rule (Q227) finds a plains space under 0.1 on 299 of 300
 2-3 player maps (297 before) and on every 4-5 player one.
 
-Stated without a choice, unchallenged: games already started keep the map
-they began with, online because the map carries its rules, on one device
-because the kept game records whether its rewards had moved; with the sites
-moved and added a seed draws a different map than before. Engine details:
-since no forest row has gold any more, `FOREST_MAGIC_GUARD_CHANCE` only
-reaches maps from before, through `REWARD_TABLE_BEFORE_MOVE`.
-
-### Q255. ~~How far apart are the plains' fortresses?~~ — **answered 2026-10-04: by road and on the map, every pair at least 12 road steps and 5 spaces in a straight line apart, the three on 4-5 player maps by the same numbers; games already started keep their maps; a map with no plains site far enough is drawn again (930 B, 931, 932 A, 933 A, 934 A)**
+### Q255. ~~How far apart are the plains' fortresses?~~ — **answered 2026-10-04: by road and on the map, every pair at least 12 road steps and 5 spaces in a straight line apart, the three on 4-5 player maps by the same numbers; a map with no plains site far enough is drawn again (930 B, 931, 932 A, 933 A, 934 A)**
 
 Andrei, 2026-10-04 at 19:29: *"I'd like to make sure that two large gold
 prises guarded by combat on plains are well separated from each other"*. The
@@ -3684,17 +3245,14 @@ and the screen can disagree, because a pruned map is nearly a tree: two sites
 12 or more road steps apart sit within 3 spaces of each other in a straight
 line on 1% of 2-3 player maps and 5% of 4-5 player ones.
 
-930. **How they are kept apart:** by road, at least a number of road steps,
-     one fortress swapping places with a random plains site far enough away
-     when they land closer; by road and on screen, the same plus never closer
-     than 5 spaces in a straight line (recommended); or as far apart as
-     possible, the two plains sites farthest apart by road, on every map.
-931. **How many road steps:** 10, 12 (recommended), 14 or 16. Today 1 map in 5,
-     3 in 10, 4 in 10 and half have them closer than that.
+930. **How they are kept apart:** by road and on screen: at least a number of
+     road steps, one fortress swapping places with a random plains site far
+     enough away when they land closer, and never closer than 5 spaces in a
+     straight line (recommended).
+931. **How many road steps:** 12 (recommended).
 932. **4-5 player maps, three fortresses:** every pair at least the same
-     number apart (recommended), or a bigger number, 14.
-933. **Games already started:** keep the maps they began with (recommended),
-     or not.
+     number apart (recommended).
+933. **Games already started:** moot since Q265.
 
 **Answered**, 2026-10-04 by card: 930 B, *"Road and screen"*; 931, *"12
 steps"* (*"Cool, 12 steps it is"*); 932 A, *"Same number"*; 933 A, *"Keep
@@ -3724,58 +3282,11 @@ guards are as before (10 on 94% and 85%). The rulebook is unchanged: it never
 said where the fortresses go, and the rule is an engine detail kept in GDD.md.
 
 934, asked after the build on the coordinator's note: when no plains site is
-far enough for a fortress, draw the map again (recommended, as built), or keep
-the map and put the fortress on the farthest site left even if it is under 12
-steps. Answered by card 2026-10-04: A, *"Draw again"*. It never happened on
-the 400 measured maps; players see only the map that comes out.
+far enough for a fortress, draw the map again (recommended, as built). Answered
+by card 2026-10-04: A, *"Draw again"*. It never happened on the 400 measured
+maps; players see only the map that comes out.
 
-### Q260. ~~How many hearts do the forest stamina sites hold?~~ — **answered 2026-10-05: 12 on the 6 sites, 17 on the 4-5 player map's 9, drawn like every reward; games already started keep theirs (940 A, 941 A, 942 A)**
-
-Andrei, 2026-10-04 at 21:25: *"Stamina sites with just one heart are not very
-attractive. I'd like to increase the # of stamina units offered in forests to
-12 but I'm afraid its going to be unbalancing. Can you run some simulations
-with that number and see if computers take them and if that helps them
-win?"* The forest's 6 stamina sites held 10 hearts (14 on 9 sites on the 4-5
-player map), usually 3-2-2-1-1-1 or 2-2-2-2-1-1, 2.7 one-heart sites a map.
-
-Measured with three computers at 3 s a move on 60 standard maps, each played
-with 10 hearts and with 12, the same map, seats, start and dice, the 2 extra
-hearts added to the same 6 sites by §4.3's rule (files in the project's
-stamina-12-sims folder): the computers took 4.0 of 10 hearts a game and 6.6 of
-12 (+2.6 ± 0.4 on the same map), stacks of 4 or more 14 times in 15, and left
-59% of the one-heart sites; the player who took the most hearts won 35% of the
-games with 10 and 36% with 12, against the 33% chance gives three players;
-the same seat taking more hearts on the same map did not end with more gold;
-seat wins, the winner's gold and lead stayed within luck, and games ran 0.9 ±
-0.5 rounds shorter. Players' stamina first drops under 5 around round 11 of 27,
-and they almost never rest. Nothing was changed for the study.
-
-Andrei, 2026-10-05 at 00:13: *"Very nice. let's change the total stamina units
-to 12."*
-
-940. **4-5 player maps:** 17 hearts, 1.4 × 12 rounded like every larger-map
-     reward (recommended); 16; or 14 as before.
-941. **Games already started:** keep the map they began with (recommended), or
-     get the extra hearts mid-game.
-942. **How new maps place the 12:** the usual draw, like every reward
-     (recommended), the same stack shapes as the study but a seed's mountain
-     gold drawn differently; or as in the study, the 10 first and then 2 more.
-
-**Answered**, 2026-10-05 by card: 940 A, *"17 hearts"*; 941 A, *"Keep
-today's"*; 942 A, *"Usual draw"*.
-
-Built as `FOREST_STAMINA_UNITS` 12 and `LARGER_MAP_FOREST_STAMINA_UNITS` 17 in
-`packages/config/src/content.ts`, with `EARLIER_FOREST_STAMINA_UNITS` 10 and
-`EARLIER_LARGER_MAP_FOREST_STAMINA_UNITS` 14 for a hot seat game kept from
-before (`withEarlierStaminaUnits`, `KeptGame.moreStaminaUnits`); online games
-carry their table. Measured on the build, 200 maps per size: one-heart sites a
-map 1.7 (mostly 3-3-2-2-1-1 or 3-2-2-2-2-1) and 3.1 on the 4-5 player map
-(mostly 3-3-2-2-2-2-1-1-1), the biggest stack 6; a seed's mountain gold comes
-out differently, and 11 of 200 standard seeds (1 of 200 larger) draw a
-different map altogether; drawn the way before, 40 maps per size are exactly
-main's. The rulebook gives no number of hearts and is unchanged.
-
-Changed the same day by Q270: 8 hearts on 4 sites, 11 on 6 on the 4-5 player map.
+### Q260. ~~How many hearts do the forest stamina sites hold?~~ — **replaced by Q270: 8 hearts on 4 sites, 11 on 6 on 4-5 player maps**
 
 ---
 
@@ -3799,17 +3310,15 @@ them), and accounts. The rulebook never mentioned older games and is
 unchanged.
 
 950. **Hot seat games saved before the cleanup:** dropped, the page opening on
-     a fresh New game screen, saves being kept under a new name (recommended);
-     or carried on today's map, its turns replayed, and dropped if they no
-     longer fit.
+     a fresh New game screen, saves being kept under a new name
+     (recommended).
 951. **The preview's old online games** (started before 4 October, test games,
      gone by 25 October): left as they are, an old one perhaps failing to open
-     (recommended); or closed when opened, as if their time ran out.
+     (recommended).
 952. **Speeds and skills coming back** (Q135), used only by games started before
-     buying: removed with its sound, map glide and log line (recommended); or
-     kept, used by no new game.
+     buying: removed with its sound, map glide and log line (recommended).
 953. **The forest gold's magic guard chance** (Q115, Q185), on no row since
-     Q250: removed (recommended); or kept at 1.
+     Q250: removed (recommended).
 
 **Answered**, 2026-10-05 by card: 950 A, *"Drop them"*; 951 A, *"Leave
 them"*; 952 A, *"Remove"*; 953 A, *"Remove"*.
@@ -3841,15 +3350,13 @@ Built as `FOREST_STAMINA_UNITS` 8 and `LARGER_MAP_FOREST_STAMINA_UNITS` 11 in
 `packages/config/src/content.ts`, the stamina rows on 4 and 6 sites, and
 `POI_COUNT` forest 18 and 25 in `defaults.ts`; every other row is as it was,
 and the 4-5 player map's sites are now exactly 1.4 × the standard map's,
-rounded, with no exception. Nothing keeps old games on 12 hearts (Q265). A seed
-draws a different map than before: the same roads and terrain, but 2 fewer
-forest sites, so the rewards land differently. Measured on the build, 200 maps
-per size: on the standard map 1.0 one-heart site a map, mostly 3-2-2-1 (67%)
-or 2-2-2-2 (17%), the biggest stack 3 on 75% of maps and at most 5; on the 4-5
-player map 2.0, mostly 3-2-2-2-1-1 (55%), the biggest at most 4. A forest
-dead end beyond its 18 sites, which §3 already makes a one-heart stamina site,
-came up on 2 of 400 standard maps and 1 of 400 larger ones. The rulebook gives
-no number of sites or hearts and is unchanged.
+rounded, with no exception. Measured on the build, 200 maps per size: on the
+standard map 1.0 one-heart site a map, mostly 3-2-2-1 (67%) or 2-2-2-2 (17%),
+the biggest stack 3 on 75% of maps and at most 5; on the 4-5 player map 2.0,
+mostly 3-2-2-2-1-1 (55%), the biggest at most 4. A forest dead end beyond its
+18 sites, which §3 already makes a one-heart stamina site, came up on 2 of 400
+standard maps and 1 of 400 larger ones. The rulebook gives no number of sites
+or hearts and is unchanged.
 
 ---
 
@@ -3880,10 +3387,9 @@ Built as `BIG_PILE_GUARD` in `packages/config/src/defaults.ts`:
 `{ FROM_UNITS: 6, MAX: 12, TYPES: ['fighting'] }`; 5+ is `FROM_UNITS: 5`.
 `GUARD_STRENGTH` stays 0–10 and the formula is unchanged; a pile of 6 gold or
 more guarded by combat is capped at 12 instead, and always gets it, on both map
-sizes. Nothing keeps old games on 10 (Q265); a seed draws the same map as
-before but for those guards' numbers. Measured on the build against main
-ed1c75d, 500 maps per size: every site, reward, pile and remoteness is the
-same, and only combat guards on 6 gold or more changed, from 10 to 12. On the
+sizes. Measured on the build against main ed1c75d, 500 maps per size: every
+site, reward, pile and remoteness is the same, and only combat guards on 6 gold
+or more changed, from 10 to 12. On the
 standard map one fortress holds 6 gold or more on 63% of maps (both never can:
 they share 10 gold), and in the mountains 1 guard of 5000 changed. On the 4-5
 player map 24% of fortresses, on 68% of maps, and 2 mountain guards of 7000.
@@ -3898,9 +3404,8 @@ as today vs computer players for whom buying skills is always an option (not
 only when such skill is not within reach), to see if latter by any chance
 yields stronger play"*. 120 two-player games at 3 s a move on 60 maps, each
 played twice with the seats swapped: buying at any time won 58, today's
-computer 59, 3 shared, with 0.75 ± 1.0 less gold a game. It bought 5.9 units a
-game against 3.8, and both used only about a third of them on the turn they
-bought them (29% and 37%).
+computer 59, 3 shared; both used only about a third of what they bought on the
+turn they bought it (29% and 37%).
 
 At 15:46: *"in reality it makes no sense to buy a skill without using it
 immediately"*, and at 16:09 his rule: *"After a computer buys (or makes a
@@ -3917,7 +3422,7 @@ guard's strength; resting is never a move below a purchase. 980-982 (an
 earlier "buy, then go" reading) were withdrawn for it.
 
 983. **Today's within-reach skip (759) under the new rule?** A: drop it
-     (recommended); B: keep it on top. **Answered:** A.
+     (recommended). **Answered:** A.
 984. **How the players it imagines buy:** **Answered** at 18:18: *"Deciding
      when imagined players can buy is much harder, if they buy with any
      significant probability they will likely waste all their gold (being as
@@ -3941,7 +3446,7 @@ everything bought, and below a purchase only such moves are branches.
 `usesFully` walks the route the move walks (`previewPath` along the best route
 for its speeds). An enumerator remembers the branches of a position it has
 worked out, since every pass through a node near the root brings the same one
-back. `ai.BUY_SKIP_STAMINA` is gone.
+back.
 
 **2026-10-10, purchases that lead nowhere.** Twice in the 600 games at 3 s of
 the exploration and hybrid tests, the computer's search picked a purchase
@@ -3975,15 +3480,13 @@ cannot make such a map: 600 maps checked in Node and 325 drawn in a browser.
 Nothing caught the drawing error, so the whole page went dark.
 
 990. **A page from before an update starting a game.** A: the server refuses a
-     map made with other rules than its own; B: a version check when a page
-     connects, with a reload message; C: leave it. Andrei: *"if 990 A is easy
-     to do, it is a good thing to implement. We'll have this situation sooner
-     or later."*
+     map made with other rules than its own. Andrei: *"if 990 A is easy to do,
+     it is a good thing to implement. We'll have this situation sooner or
+     later."*
 991. **A game that cannot be drawn.** A: keep the top bar with Games and show
-     "This game could not be shown. Reload the page to try again." with
-     Reload where the map goes; B: leave it. A.
-992. **The broken game.** A: leave it to expire; B: bring back the old
-     pictures so it can be played. A.
+     "This game could not be shown. Reload the page to try again." with Reload
+     where the map goes. A.
+992. **The broken game.** A: leave it to expire. A.
 
 Built: `startGame` in `packages/session/src/setup.ts` takes the server's own
 ruleset for the game's number of players and refuses a map whose ruleset
@@ -4002,29 +3505,24 @@ Andrei, 2026-10-09 at 05:55: *"when the computer players play imaginary games
 let us make them favor gold sites versus others based on the game progress
 calculated as the number of gold and skills taken as the proportion of all gold
 and skills. let us run a quick simulation and see if this idea has any merit"*.
-It is his idea 1 of 2026-09-30 (421 A), which then came out level over 20
-games against the computer of that day.
+It is his idea 1 of 2026-09-30 (421 A).
 
 How progress turns into a preference for gold: A, with chance = progress a
 random gold site among the 10 closest, otherwise any of the 10, any of them
-when none is gold (recommended); B, a weight on each gold site of
-1 + GOLD_PROGRESS_WEIGHT × progress; C, something else. At 06:03: *"for 290 I
-imagine that the result would be roughly the same so let's stick with a"*.
+when none is gold (recommended). At 06:03: *"for 290 I imagine that the result
+would be roughly the same so let's stick with a"*.
 
 Measured against today's computer, 60 maps each played twice with the seats
 swapped, 120 two-player games a run:
 
 | Progress counted by | Move | Wins (it, today's, shared) | Gold lead a game | By luck (wins / gold) |
 |---|---|---|---|---|
-| gold and skill units | 3 s | 65, 49, 6 | +2.42 ± 0.83 | 0.160 / 0.005 |
-| gold and skill units | 10 s | 64, 55, 1 | +1.94 ± 0.77 | 0.463 / 0.016 |
 | sites (Q291) | 3 s | 71, 46, 3 | +1.68 ± 0.80 | 0.026 / 0.041 |
 
 It takes about 3 fewer skill units a game and more gold, its first gold a few
 turns earlier. At 14:47: *"it's a strategy that makes more sense, so a human
-player will be less annoyed with the computer making seemingly random moves.
-And 65 to 55 is better than losing"*. At 17:01: *"Yes let us put the "sites
-version" into the game."*
+player will be less annoyed with the computer making seemingly random moves"*.
+At 17:01: *"Yes let us put the "sites version" into the game."*
 
 Built: `goldByProgressPicker` in `packages/sim/src/goldByProgress.ts`, which
 `computerSearchOptions` passes to its imagined games unless a caller gives
@@ -4033,30 +3531,24 @@ unchanged, and so is the remoteness walk (§5.1). The balancing tool's
 `+gold-later` now changes nothing, like `+speeds`. No rule, number, map or
 picture changed, and the rulebook needs no change.
 
-### Q291. ~~What counts as the game's progress?~~ — **answered 2026-10-09: the sites anyone has claimed over all the map's sites, every site alike; the count of gold and skill units claimed is gone, from the estimated evaluation too, and its larger-share variant with it**
+### Q291. ~~What counts as the game's progress?~~ — **answered 2026-10-09: the sites anyone has claimed over all the map's sites, every site alike, in the estimated evaluation too**
 
-Asked with Q290: A, the gold and skill units claimed over all of them, Q111's
-progress (recommended); B, the same with the stamina sites' units; C, sites
-claimed instead of units. At 06:00: *"it could be the proportion of claimed
-sites of all sides if this is easier to calculate"*; both were as easy, so the
-first runs kept A. At 14:49: *"can you run a quick simulation eith progress
-measured by the number of sites? I expect the result to be similar, but it's a
-simpler model so it will be better for further development"*: all 65 sites of a
-two-player map counted alike, its 4 stamina sites included (the third row of
-Q290's table). At 17:01: *"You can completely erase the code the hooks game
-progress to the number of skills and gold acquired, the number of sites
-claimed is a good enough indicator."*
+Asked with Q290: C, sites claimed instead of units. At 06:00: *"it could be the
+proportion of claimed sites of all sides if this is easier to calculate"*. At
+14:49: *"can you run a quick simulation eith progress measured by the number of
+sites? I expect the result to be similar, but it's a simpler model so it will
+be better for further development"*: all 65 sites of a two-player map counted
+alike, its 4 stamina sites included (Q290's table). At 17:01: *"You can
+completely erase the code the hooks game progress to the number of skills and
+gold acquired, the number of sites claimed is a good enough indicator."*
 
 The estimated evaluation (§9, Q111) counted the same units, so: switch it to
 sites claimed too, and drop the two `-max` variants that compare the gold and
-skill shares (recommended); leave it; or delete the estimated and hybrid
-evaluations. Answered: sites too.
+skill shares (recommended). Answered: sites too.
 
 Built: `sitesClaimedShare` in `packages/sim/src/goldByProgress.ts`, read by
-`goldByProgressPicker` and by `estimatedGoldAndSkillsEvaluator`.
-`rewardUnitsClaimedShare`, the estimate's `claimedProgress` and
-`ProgressMeasure` are gone, and with them the balancing tool's `estimated-max`
-and `hybrid-max` seats. The game's computer players never read the estimate.
+`goldByProgressPicker` and by `estimatedGoldAndSkillsEvaluator`. The game's
+computer players never read the estimate.
 
 ### Q295. ~~Should the computer skip guarded gold it cannot win?~~ — **answered 2026-10-09: yes, in its own choices and in its imagined games; it buys before it goes to a guard, its 10 choices are filled from the next closest, imagined players go by their skill alone, and with nothing left to win it rests; against the computer before, 70 wins to 46**
 
@@ -4079,9 +3571,7 @@ above its strength (§8). What was decided:
   a choice only when the skill it holds, after anything it bought this turn,
   could win; one further away when the units its gold could buy would let it
   win, since it can buy on the turn it gets there; and gold it could not win
-  even then is never a choice. The other options were the skill alone (it
-  could then never buy a win needing two units, since the search buys one at
-  a time) and counting the gold for every choice.
+  even then is never a choice.
 - **Fill up to 10** (17:41). At 17:40: *"do we want to add more site options
   if after not buying, or not buying enough, many sites are rules out"*. The
   next closest sites take the places of those left out. Purchases are still
@@ -4095,7 +3585,7 @@ above its strength (§8). What was decided:
   turns against 0.71 ms and 104. The other seats' turns inside a tree edge
   skip too.
 - **Imagined players by their skill alone** (17:37, confirmed at 17:42): they
-  never buy (984), and counting their gold took 0.69 ms and 103 turns a game.
+  never buy (984).
 - **Rest when nothing is left to win**, for the computer (17:24) and for its
   imagined players (17:37). In imagined games this came up about once in 50
   games.
@@ -4122,34 +3612,28 @@ changed, and the rulebook needs no change.
 ### Q300. ~~Can the site have a message board that keeps trolls out?~~ — **answered 2026-10-10: yes, on the game list page, beside the lists or below them, for logged-in players; Llama Guard and a check for slurs and insults, both on Cloudflare, see every post first, a flagged post is refused and so is every post while a check cannot run; Andrei's account has a moderator flag, deletes posts and stops accounts from posting; posts go after 14 days (1-15)**
 
 Andrei, 2026-10-10 at 17:24: *"I would like to add a message board to the main
-game site but I'm afraid that some trolls may post offensive content into it. is
-there a free service that would allow me to vet the content people post on this
-message board"*. Offered: OpenAI's moderation check (recommended: free, 5,000
-checks a day, flags harassment but not swearing, needs an OpenAI account);
-Google Cloud's text moderation (flags swearing and insults, the first 50,000
-units of 100 characters a month free); Llama Guard on Cloudflare's Workers AI,
-where the site already runs (no new account, 10,000 free neurons a day, but its
-list has no insults or swearing); Disqus (free with ads, its own logins) and
-giscus (GitHub logins, no filter); and not Perspective API, which shuts down on
-31 December 2026. At 20:13: *"i like llama guard, it would be nice to keep
-everything under one roof"*. Cloudflare's Llama Guard takes only the post and
-checks it against its own list; no documented way to add to the list was found.
+game site but I'm afraid that some trolls may post offensive content into it.
+is there a free service that would allow me to vet the content people post on
+this message board"*. Among the services offered was Llama Guard on
+Cloudflare's Workers AI, where the site already runs (no new account, 10,000
+free neurons a day, but its list has no insults or swearing). At 20:13: *"i
+like llama guard, it would be nice to keep everything under one roof"*.
+Cloudflare's Llama Guard takes only the post and checks it against its own
+list; no documented way to add to the list was found.
 
-1. **Where.** A: a Board button in the game list's top bar, opening a board
-   that works like a game's (500 characters, oldest at the top, no editing); B:
-   its own page. At 21:10: *"I would prefer to see the board right there on the
-   same page as the game lists, o[n] the side if space permits or below them"*.
-2. **Who.** A: logged-in players read and post; B: anyone reads. A.
-3. **A post Llama Guard flags.** A: refused, and its writer told; B: held until
-   Andrei approves it. A.
-4. **When the check cannot run.** A: refused with "try again later"; B: posted
-   unchecked. A.
-5. **Insults and swearing.** A: Llama Guard alone, deleted by hand; B: also ask
-   one of Cloudflare's general models. *"5A to start, keep B as an option"*.
+1. **Where.** A board that works like a game's (500 characters, oldest at the
+   top, no editing). At 21:10: *"I would prefer to see the board right there on
+   the same page as the game lists, o[n] the side if space permits or below
+   them"*.
+2. **Who.** A: logged-in players read and post. A.
+3. **A post Llama Guard flags.** A: refused, and its writer told. A.
+4. **When the check cannot run.** A: refused with "try again later". A.
+5. **Insults and swearing.** B: also ask one of Cloudflare's general models,
+   for slurs and insults (14).
 6. **Deleting.** Only a moderator. A: the post keeps its place and reads
-   "Deleted by the moderator.", as in a game; B: it disappears. A, and *"my
-   username is Andrei, we can add a "moderator" flag for accounts, to have a
-   mo[re] developed moderation scheme later if needed"*.
+   "Deleted by the moderator.", as in a game. A, and *"my username is Andrei,
+   we can add a "moderator" flag for accounts, to have a mo[re] developed
+   moderation scheme later if needed"*.
 7. **Stopping an account from posting.** *"yes, hopefully the UI will not grow
    too bulky"*.
 
@@ -4176,20 +3660,19 @@ At 21:28, *"all as recommended"*:
 14. **Slurs.** At 22:16, trying the preview, Andrei's test post with a
     homophobic slur aimed at the other players was put on the board: Llama
     Guard answered safe. Offered: A, a second check for slurs and insults, with
-    swearing in passing, like "damn, I lost", still posting; B, swearing
-    refused too; C, Llama Guard alone. At 22:20, A (*"Slurs and insults"*):
-    5 B, for slurs and insults only. A post either check flags is refused as in
-    9; one neither flags is refused as in 10 when either could not run.
+    swearing in passing, like "damn, I lost", still posting. At 22:20, A
+    (*"Slurs and insults"*): 5 B, for slurs and insults only. A post either
+    check flags is refused as in 9; one neither flags is refused as in 10 when
+    either could not run.
 15. **Teasing.** At 23:49 the second check refused even *"addressing my
-    potential opponents as chicken"*. Offered: keep it strict, or tell the
-    check that friendly game banter is fine. At 23:51: *"let us allow
-    teasing"*. Shown the full wording, at 23:53: *"please remove the phrase
-    about calling opponents chicken, but the rest looks good"*. The check is
-    told: "Answer "offensive" if the post contains a slur, or insults a person
-    or a group: their intelligence, looks, family, or who they are. Friendly
-    teasing about the game is fine, like saying opponents will lose, or
-    boasting that nobody can beat you." With the example gone, "saying they
-    will lose" became "saying opponents will lose".
+    potential opponents as chicken"*. Offered: tell the check that friendly
+    game banter is fine. At 23:51: *"let us allow teasing"*. Shown the full
+    wording, at 23:53: *"please remove the phrase about calling opponents
+    chicken, but the rest looks good"*. The check is told: "Answer "offensive"
+    if the post contains a slur, or insults a person or a group: their
+    intelligence, looks, family, or who they are. Friendly teasing about the
+    game is fine, like saying opponents will lose, or boasting that nobody can
+    beat you."
 
 Built: the board is kept by the lobby object (`apps/server/src/board.ts`,
 `SiteBoard` and its SQLite table) and travels on the game list's socket
@@ -4217,7 +3700,7 @@ the rulebook needs no change.
 
 ---
 
-### Q305. ~~How do the players stand out on the map?~~ — **answered 2026-10-11: one see-through gold ring on the ground under every figure, with no dark edge, 0.6 of a node spacing across and 0.8 with the whole map in view, under the roads and spaces so it hides nothing; it pulses on your turn and gets a thick yellow outline when selected, in place of the gold rings and the ripple (1-14); and now and then each figure drawn at least 24 px tall plays its idle animation once (15-19)**
+### Q305. ~~How do the players stand out on the map?~~ — **answered 2026-10-11: one see-through gold ring on the ground under every figure, with no dark edge, 0.6 of a node spacing across and 0.8 with the whole map in view, under the roads and spaces so it hides nothing; it pulses on your turn and gets a thick yellow outline when selected (1-14); and now and then each figure drawn at least 24 px tall plays its idle animation once (15-19)**
 
 Andrei, 2026-10-11 at 05:53: *"we need to highlight the players on the map
 better. One can click on the cards to see their locations, but it's important
@@ -4226,43 +3709,19 @@ Measured on a 4-player game after five rounds, a figure on the whole map is
 about 14 pixels tall on a laptop and about 6 on a phone, and at playing zoom
 about 35 on a laptop and 15 on a phone, smaller than most sites.
 
-Three designs were built or mocked up and dropped the same day:
+Portrait pins, large white rings, and animation up close with blinking
+zoomed out were built or mocked up first and dropped the same day. At 15:14:
+*"Let us try rings under, but much smaller ones, similar to those that appear
+when you select your figure. [...]"*. Mocked up at two sizes on a laptop and a
+phone.
 
-- **Portrait pins.** A pin with the player's portrait over every figure, 34
-  pixels across at any zoom, chosen at 07:00 together with Andrei's 8-frame
-  idle animations for the six figures (*"Let us try pins + animation from the
-  provided art, with the idea that we may throw the art away if it doesn't work
-  out visually"*), and built. At 07:19: *"I am still worried that pins will
-  cover important information"*: at playing zoom a pin hid about one space on a
-  phone, guard number and gold included. At 08:30: *"even on a laptop pins can
-  easily hide the next node. I don't see a good solution"*.
-- **Large rings.** A white ring on the ground round each figure, never under
-  34 pixels across. At 14:07: *"rings are ugly and pins hide important details,
-  even more so as you zoom out. let us do animation up close, and as you zoom
-  out substitute it with blinking figures"*.
-- **Animation up close, blinking zoomed out.** Built: the figures played their
-  idle loops while drawn at least 24 pixels tall and all blinked in step with
-  the player on turn's below that. At 15:14: *"honestly, the blinking snd
-  animation don't work. We need to completely scrape that idea"*. The animated
-  art, its packing tool and all of that code were removed; the player on
-  turn's own blink (Q34) is as it was.
-
-At 15:14: *"Let us try rings under, but much smaller ones, similar to those
-that appear when you select your figure. Maybe the rings that stay on are white
-similar to what you drew, about twice the size of the selection rings, and the
-selection rings appear on top of them"*. Mocked up at two sizes on a laptop and
-a phone.
-
-1. **Size.** A: 0.8 of a node spacing across, twice the gold ring under the
-   player on turn; B: 1.2, twice the larger ring of a figure picked up. Both
-   scale with the map, like the gold rings. A.
-2. **Look.** A see-through white disc with a white rim and a thin dark edge,
-   as in the mockup. A.
+1. **Size.** 0.6 of a node spacing across (13), scaling with the map. A.
+2. **Look.** A see-through disc with a rim, in gold (9) and with no dark edge
+   (13). A.
 3. **Layer.** Painted on the ground under the roads, spaces and sites, so it
-   hides nothing; the gold rings are drawn over it. A.
+   hides nothing. A.
 4. **Who.** Every player's figure, the player on turn's included. A.
-5. **Two players on one space.** A: a ring under each figure, overlapping;
-   B: one ring round both. A.
+5. **Two players on one space.** A: a ring under each figure, overlapping. A.
 6. **Walking.** The ring moves with a figure walking at End turn. A.
 7. **The final map.** The rings stay. A.
 
@@ -4270,11 +3729,10 @@ At 15:33: *"all as recommended"*. At 15:36: *"zoomed out, 1.2 rings look much
 more prominent. Perhaps we can go with 0.8 but cap their absolute size from
 below so on the whole map their actual size is 1.2x"*:
 
-8. **Zoomed out.** The ring is never smaller on screen than 1.2 spacings are
-   with the whole map in view, on whatever screen the map is shown: on the
-   whole map it is 1.2 across, and from 1.5 times that zoom in it is 0.8 across
-   and scales with the map. Its rim and dark edge stay as thick as in the
-   mockup.
+8. **Zoomed out.** The ring is never smaller on screen than 0.8 spacings are
+   with the whole map in view (14), on whatever screen the map is shown: on the
+   whole map it is 0.8 across, and from 0.8 / 0.6 times that zoom in it is 0.6
+   across and scales with the map. Its rim stays as thick as in the mockup.
 
 At 15:53, on the preview: *"the rings work on their own, but in conjunction
 with the selection mean and the pulsing yellow rings they create too much
@@ -4285,22 +3743,19 @@ At 16:09: *"so that will be only one ring I actually want it not white but a
 shade of gold, semi transparent as today. when the figure is selected that
 ring gets a thick yellow outline. on your turn the ripple is made by growing
 this circle and fading it at the same time"*. So the ring is the only one
-under a figure: the gold ring under the player on turn, the larger
-yellow-edged one of a figure being planned or found (Q56, Q120, Q145) and the
-yellow ripple (Q34) are gone. It is the same size in every state, plain while
-a turn plays out, and the whole-map floor (8) holds throughout.
+under a figure. It is the same size in every state, plain while a turn plays
+out, and the whole-map floor (8) holds throughout.
 
 9. **Look.** A: the ring of 2 in the gold of the ring that was under the
-   player on turn (`Prospect_ActiveRing`), with the same see-through disc, rim
-   and thin dark edge; B: that ring's picture, enlarged. A.
+   player on turn (`Prospect_ActiveRing`), with the same see-through disc and
+   rim. A.
 10. **Selected** (the player on turn planning, a player planning out of turn,
     or one just found from their card). A: the selection ring's thick yellow
-    outline replaces the thin dark edge; B: it is added outside it. A.
+    outline goes round it. A.
 11. **Pulsing** (the player on turn before they pick their figure up). A: the
     ring grows to twice its size as it fades out, then starts again at its
-    own size, once a second; B: it stays put and a copy grows and fades. A.
-12. **The figure's own blink.** A: it fades out and back as before; B: it
-    stops. A.
+    own size, once a second. A.
+12. **The figure's own blink.** A: it fades out and back as before. A.
 
 At 16:22: *"all as recommended. I'm sure we'll need to fine tune the looks,
 but it's a good start"*.
@@ -4308,9 +3763,8 @@ but it's a good start"*.
 13. **Smaller, no dark edge.** At 16:50, on the preview: *"let us try it
     without the black outlines, I'd like to see how it looks. And make
     everything a bit smaller, 0.8 -> 0.6, 1.2 -> 1.0"*. The ring is 0.6
-    spacings across up close and 1.0 on the whole map (1 and 8), scaling with
-    the map again from 1.0 / 0.6 times the whole map's zoom in, and its thin
-    dark edge is gone; a selected ring's yellow outline is as in 10.
+    spacings across up close (1) and has no dark edge; a selected ring's
+    yellow outline is as in 10.
 14. **Whole map.** At 17:08: *"please make them 0.8 across the whole map,
     maybe that's visible enough"*. On the whole map the ring is 0.8 spacings
     across (8), and 0.6 up close as in 13; it scales with the map again from
@@ -4327,17 +3781,17 @@ were. No rule, number or map changed, and the rulebook needs no change.
 
 At 21:10, after this was shipped: *"since we have the animations now let us
 make the characters perform them from time to time randomly if they are
-rendered big enough"*. Andrei's eight-frame strips, their sheet and atlas,
-`Art/tools/pack_animation.py` and `figurines.animation` came back from
-history as they were.
+rendered big enough"*. Andrei's eight-frame strips are packed into their
+sheet and atlas by `Art/tools/pack_animation.py` and named in
+`figurines.animation`.
 
 15. **How often.** A: each figure on its own waits a random 5 to 15 seconds
-    between plays; B: 15 to 45, rarer. A.
+    between plays. A.
 16. **Each time.** A: it plays its loop once, about 1.7 seconds, then stands
-    still again; B: twice through. A.
-17. **Big enough.** A: drawn at least 24 pixels tall, the number used for
-    the animation before: on a laptop at playing zoom but not on the whole
-    map, on a phone only zoomed in past playing zoom; B: another number. A.
+    still again. A.
+17. **Big enough.** A: drawn at least 24 pixels tall: on a laptop at playing
+    zoom but not on the whole map, on a phone only zoomed in past playing
+    zoom. A.
 18. **Exceptions.** A figure picked up to plan, on its turn or out of it, and
     one walking at End turn stand still; the final map animates. At 23:04:
     *"it makes no sense to animate a blinking figure. the rest is as
@@ -4345,9 +3799,8 @@ history as they were.
     blinks too.
 19. **Between plays.** The frames are a different drawing from the still
     figurines (another pose, the backpack showing). A: on the map a figure
-    always stands in its loop's first frame, so a play starts and ends
-    without a jump, while the cards and New game keep the figurines; B: the
-    figurine between plays, the frames only while playing. At 23:09: *"yes,
+    always stands in its loop's first frame, so a play starts and ends without
+    a jump, while the cards and New game keep the figurines. At 23:09: *"yes,
     let's go with A"*.
 
 Built: `Figure.loop` and `Figure.walking`, `IDLE_WAIT_MS`, `ANIMATE_FROM_PX`,
@@ -4373,18 +3826,15 @@ also a solo and a multiplayer game"*.
 1. **The page's own title.** "Skyholm Adventures". Answered at 00:14.
 2. **The notice and the /hotseat address.** They stay. Answered at 00:14.
 3. **The one-device page's tab.** A: "Skyholm Adventures", since solo games
-   against the computer start there too; B: it keeps "Skyholm Adventures Hot
-   Seat". A, at 00:17.
-4. **Where the icon goes.** A: the browser tab only; B: the tab and the top
-   bar; C: those and a phone's home screen. A, at 00:17.
+   against the computer start there too. A, at 00:17.
+4. **Where the icon goes.** A: the browser tab only. A, at 00:17.
 5. **The crop.** Two headshots of the cartographer were mocked up in round
    frames: head and shoulders, as on the player cards, and face and hat. At
    00:17: *"I'd prefer to see more than just the head. If it is clear that he
-   is reading a map that would make it much more thematic"*. C: head and the
-   top of the map; D: head and the whole map, to the waist; E: the whole
-   figure. At 00:19: *"D please"*.
-6. **A frame.** None, since a circle would cut off the ends of the map; or
-   round. D was mocked up unframed and chosen as it was.
+   is reading a map that would make it much more thematic"*. D: head and the
+   whole map, to the waist. At 00:19: *"D please"*.
+6. **A frame.** None, since a circle would cut off the ends of the map. D was
+   mocked up unframed and chosen as it was.
 
 Built: the title and the icon's `<link>` in `apps/web/index.html`; the icon,
 `apps/web/icon.png`, the figurine sheet's 290 px square at (16, 8) scaled to
@@ -4401,14 +3851,13 @@ Listed so you can veto any that read as design to you.
 |---|---|
 | `MAX_GENERATION_ATTEMPTS = 50` | §2.1 says "regenerate" with no bound; an unbounded loop hangs. Lives in `EngineeringConfig`, never merged into `GameConfig`. |
 | Separate server-side die stream from the public map seed | §1's no-hidden-information is about map, POIs and rewards, all of which clients get in full. A shared seed would let a client precompute rolls. |
-| Seats allocated in GM acceptance order | §6 explicitly delegates this: "whatever is most convenient to implement — expected default: order the game master accepts join requests". *Since [Q51](#q51) 22 an accepted person takes the first free Human seat the game master kept.* |
 | `PlayerStats` typed as `Record<RewardKind, number>` | §6's seven stats are exactly §4.1's seven kinds. Typing them as one thing makes claiming a reward a single addition and stops the lists drifting. |
 | Remoteness computed inside step 7, between POI placement and reward assignment | Forced by data flow: §4.3 step 3 consumes remoteness, and remoteness depends only on POI positions. |
 | sfc32 PRNG, string seeds | §1.3 requires reproducibility, not a specific algorithm. |
 | `Poi.artVariant` as an opaque stable index | §3 says a POI has an image and leaves which one to the art. Since phase 3 it picks sprite `artVariant mod count` from the sheet `Art/manifest.json` names for the POI, so no sheet's sprite count is baked into the generator. |
 | `POISSON_RADIUS_FACTOR` recalibrated 0.85 → 0.815 | An `EngineeringConfig` knob, documented as existing purely "for making step 1 hit its node budget". 0.85 was a guess made before there was a sampler; measured, it yields ~220 nodes against §11's `MAP_NODE_COUNT` of 240. 0.815 centres the yield on 240. No §11 value changed. |
 | `POISSON_RADIUS_FACTOR` 0.808 on the larger map (Q160) | The same knob, calibrated the same way: 0.815 yields about 333 spaces against the larger map's 336, 0.808 averages 336 over 400 seeds. |
-| Farthest-point seed placement in §2.1 step 4, on nodes of degree ≥ 3 | §2.1 fixes the seed *count* (1 or 2 per terrain; `TERRAIN_SEEDS`, 2 each, since Q245) and says nothing about placement. On a near-tree graph a seed down a branch is walled in after a few nodes and its terrain never reaches its share; measured, this choice cuts the share error from ~9 points per terrain to ~3. |
+| Farthest-point seed placement in §2.1 step 4, on nodes of degree ≥ 3 | §2.1 fixes the seed *count* (`TERRAIN_SEEDS`, 2 each, Q245) and says nothing about placement. On a near-tree graph a seed down a branch is walled in after a few nodes and its terrain never reaches its share; measured, this choice cuts the share error from ~9 points per terrain to ~3. |
 | Surplus leaves drawn by shuffle | §3 forces every leaf to be a POI and §4.2 fixes how many POIs a terrain's table rows get; nothing says *which* leaves fall inside the quota when a terrain has more leaves than it. Drawn from the map's own stream. |
 | Growing terrain by *trading* when a region is walled in (Q28) | §2.1 asks for the shares and says nothing about how to reach them. A region enclosed by a terrain already at its share cannot take a node without pushing that terrain under; the two-step trade keeps both at their targets and still reduces the total deviation, so the pass terminates. |
 | A `BoardPost`'s id and timestamp are stamped by the caller, not by `applyAction` | The engine is pure and has no clock — `Clock` is a session-layer port for exactly this reason — and a replayed game must rebuild the identical board. |

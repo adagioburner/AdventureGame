@@ -173,7 +173,7 @@ function secondsOption(args: readonly string[]): number | null {
   return seconds;
 }
 
-/** The map for `--players=<n>`: today's up to 3, the larger one from 4 (Q160); today's without it. */
+/** The map for `--players=<n>`: the standard one up to 3, the larger one from 4 (Q160); the standard one without it. */
 function playersRuleset(args: readonly string[]): Ruleset | null {
   const option = args.find((argument) => argument.startsWith('--players='));
   if (option === undefined) return DEFAULT_RULESET;

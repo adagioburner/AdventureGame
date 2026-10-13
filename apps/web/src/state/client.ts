@@ -22,7 +22,7 @@ export interface ClientGameStore {
 /**
  * The network seam. One interface, so the transport can be a WebSocket, a
  * Durable Object socket, long-polling or an in-memory loopback for hotseat and
- * tests — without the UI knowing. [OPEN §12.1] keeps this deliberately thin.
+ * tests — without the UI knowing.
  */
 export interface Transport {
   send(message: ClientMessage): void;

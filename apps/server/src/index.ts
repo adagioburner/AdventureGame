@@ -7,10 +7,9 @@ import { createMemoryBroadcaster, createMemoryGameStore, systemClock } from './a
  * composes the same ports from the Durable Object adapters instead, one object
  * per game (`adapters/durable-object.ts`).
  *
- * `maps`, `ai` and `dice` have no adapters yet: map generation and the AI run
- * on the game master's machine (§12.1), so those two are round trips over the
- * game's sockets and arrive with the setup flow and phase 8, and the server's
- * dice arrive with online turns in phase 7.
+ * Map generation and the AI run on the game master's machine (§12.1), so they
+ * are round trips over the game's sockets rather than ports. The server's dice
+ * are `createSecureDiceService` in `adapters/durable-object.ts`.
  */
 export function createSessionPorts(): Partial<SessionPorts> {
   return {

@@ -1,6 +1,6 @@
 /**
- * Marks a seam that is deliberately unimplemented in this architecture pass.
- * `gdd` points at the section the next session must implement against.
+ * Marks a seam that is deliberately unimplemented; `gdd` points at the section
+ * to implement it against. Nothing throws it.
  */
 export class NotImplementedError extends Error {
   readonly gdd: string;

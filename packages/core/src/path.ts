@@ -180,8 +180,7 @@ export interface RouteTable {
    * [SOURCE §9, review] Andrei, 2026-09-28 (Q65): "precompute and cache the
    * number of steps required to reach each POI from each node over each
    * terrain separately. (We will allow ourselves to be sloppy here and simply
-   * take the shortest path)"; 2026-09-30 (422): the cheapest route only, a
-   * second route postponed.
+   * take the shortest path)"; 2026-09-30 (422): the cheapest route only.
    */
   stepsFrom(from: NodeId): TerrainSteps;
   /**
@@ -527,7 +526,7 @@ export function routeVia(
 /**
  * [SOURCE §4] Path colouring: green = covered by the current skill allowance,
  * yellow = costs stamina, grey = unreachable. The UI puts no cost beside a
- * yellow step since Andrei's 2026-09-23 review (Q32); `staminaCost` is still
+ * yellow step (Andrei's 2026-09-23 review, Q32); `staminaCost` is still
  * reported, because the engine charges it.
  *
  * [SOURCE §4, chat] This reflects only what is achievable *this turn*, and is

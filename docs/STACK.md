@@ -5,8 +5,8 @@ with flexible architecture to swap it for something else if DO don't fit the
 bill. Everything else, i.e. map generation and player AI, runs on the game
 master's machine."
 
-The rest of this file is the reasoning that led there, what the decision costs,
-and the items still open for confirmation. The swap-out flexibility is real and
+The rest of this file is the reasoning that led there and what the decision
+costs. The swap-out flexibility is real and
 structural: engine packages import no runtime APIs, and the session layer
 reaches the outside world only through `SessionPorts`, of which the DO is one
 adapter.
@@ -16,8 +16,8 @@ adapter.
 ## 1. Language: TypeScript everywhere
 
 The deciding argument is in §7.1, not in any performance consideration. Path
-colouring — green for "covered by skill allowance", yellow for "costs stamina",
-labelled with the exact cost — *is* the server's movement accounting, rendered.
+colouring — green for "covered by skill allowance", yellow for "costs stamina"
+— *is* the server's movement accounting, rendered.
 If the client and the server compute it in two languages, they will eventually
 disagree, and the bug will look like cheating or desync to players.
 
@@ -40,8 +40,9 @@ anything else. I'd measure before doing either.
 
 Already set up: `packages/*` + `apps/*` + `tools/*`, one `tsconfig.base.json`,
 path-mapped `@adventure/*` imports, and `pnpm run typecheck` over everything —
-two `tsc` programs since phase 1, one for `packages/` and `apps/` and one for
-`tools/`, for the reason given in §3.
+five `tsc` programs: `tsconfig.json` for `packages/`, and one each for
+`apps/web`, `apps/server`, the server's tests and `tools/`, for the reasons
+given in §3.
 
 Engine packages carry **one runtime dependency**, which matters for determinism
 as much as portability — fewer places for a library update to change a generated
@@ -92,13 +93,13 @@ a dozen lines and stayed in-repo, as predicted.
   `@types/node` to every program — the engine packages run in a browser as well
   as on a server, and nothing in them may quietly reach for a Node API —
   `tsconfig.base.json` sets `"types": []` and `tools/tsconfig.json` opts back
-  in with `"types": ["node"]`. `pnpm run typecheck` runs both programs. This is
+  in with `"types": ["node"]`. `pnpm run typecheck` runs it with the others. This is
   a *typechecking* split only: there is still no build step, and Node 22 strips
   the types and runs the source either way.
-- **`apps/web` typechecks as a third program**, for the mirror-image reason:
+- **`apps/web` typechecks as its own program too**, for the mirror-image reason:
   it needs the DOM, JSX and Vite's `import.meta.glob` types, and the engine
   packages must never see those either. `apps/web/tsconfig.json` adds them and
-  `pnpm run typecheck` runs all three. Vitest runs the web app's tests with the
+  `pnpm run typecheck` runs it with the others. Vitest runs the web app's tests with the
   rest, including the ones that read `Art/` through `import.meta.glob`, so
   every art check is part of `pnpm test`.
 - **Vite, React and PixiJS entered the lockfile in phase 3**, in `apps/web`
@@ -126,8 +127,8 @@ Two components are CPU-bound, and they are very different:
 
 | Component | Cost | Where it should run |
 |---|---|---|
-| Map generation | Once per game. **Measured in phase 1: ~200 ms per map**, one attempt, over 40 seeds (`pnpm map:batch 40` → 7.8 s). The estimate held: Delaunay and flood fill are trivial at 240 nodes and the remoteness pass dominates — `REMOTENESS_SIMULATION_RUNS` (100) walks × ~60 legs, each leg a partial Dijkstra over 240 nodes. No seed has yet needed a second attempt. | **Decided (§12.1): the game master's machine.** |
-| MCTS | 10 s of CPU **per AI move** (§9). A 60-turn game with two AI players is on the order of 20 CPU-minutes. | **Decided (§12.1): the game master's machine**, in a Web Worker. |
+| Map generation | Once per game. **Measured in phase 1: ~200 ms per map**, one attempt, over 40 seeds (`pnpm map:batch 40` → 7.8 s). The estimate held: Delaunay and flood fill are trivial at 240 nodes and the remoteness pass dominates — `REMOTENESS_SIMULATION_RUNS` (100) walks × ~60 legs, each leg a partial Dijkstra over 240 nodes. | **Decided (§12.1): the game master's machine.** |
+| MCTS | 10 s of CPU **per AI move** (§9). A 60-turn game with two AI players is on the order of 20 CPU-minutes. | **Decided (§12.1): the game master's machine**, a slice a frame on the page's thread (`apps/web/src/modes/computer.ts`). |
 
 Because generation is deterministic in `(seed, ruleset)`, a store only ever has
 to persist the seed — the map can be regenerated on load instead of serialised.
@@ -138,8 +139,6 @@ That is worth taking advantage of whatever the host.
 ## 5. Durable Objects — the decision, and what it costs
 
 **Confirmed: DO for the session layer, GM's machine for map generation and AI.**
-That is the split this document argued for, with one change — the compute does
-not go to a second service, it goes to the game master's browser.
 
 ### What the DO gives us
 
@@ -160,9 +159,9 @@ not go to a second service, it goes to the game master's browser.
   in the DO, so it can neither block that game's other messages nor accrue
   Workers CPU billing. Map generation likewise.
 - `AiPlayer.chooseAction` was already async and behind a port, so the session
-  core is unchanged by this. The DO adapter implements `MapService` and
-  `AiService` as round trips to the GM's client (`gm.requestMapGeneration` /
-  `gm.mapGenerated`, `gm.requestAiMove` / `gm.aiMove`).
+  core is unchanged by this. `GameSession` asks the GM's client for both as
+  messages (`gm.requestMapGeneration` / `gm.mapGenerated`, `gm.requestAiMove` /
+  `gm.aiMove`); nothing implements the `MapService` and `AiService` ports.
 
 ### What it costs
 
@@ -172,8 +171,10 @@ not go to a second service, it goes to the game master's browser.
   map creation. An all-AI game cannot advance without the GM online. That is the
   two answers composed, and worth stating plainly because it is stronger than
   either alone.
-- **MCTS must not run on the GM's UI thread.** 10 s × the number of AI seats,
-  each turn, in the browser. A Web Worker is not optional here.
+- **MCTS must not freeze the GM's page.** 10 s × the number of AI seats,
+  each turn, in the browser. It thinks a slice a frame on the page's thread;
+  whether the game master's page can start a Web Worker is phase 8's to check
+  (`docs/IMPLEMENTATION_PLAN.md`).
 - **AI strength now varies with the GM's hardware.** A fixed 10-second budget
   buys very different search on a laptop than on a workstation, so AI difficulty
   is not reproducible across games. If that matters, the budget could be
@@ -192,15 +193,15 @@ exist to keep proving that. The nearest alternative remains a single long-lived
 Node service with an in-process queue keyed by `gameId` — same single-writer
 property, one deployment, no hibernation saving.
 
-## 6. Summary — decided, and still to confirm
+## 6. Summary
 
-| Choice | My recommendation | Reversibility |
+| Choice | Decision | Reversibility |
 |---|---|---|
 | Language | TypeScript, one shared engine | Hard to reverse — decide deliberately |
 | Client map rendering | PixiJS (canvas/WebGL) | Easy — behind `MapRenderer` |
 | Client chrome | React + Vite | Easy |
 | Delaunay | `delaunator` | Easy — one step |
 | Session host | **Decided: Durable Objects, one per game** | Easy — adapter only |
-| Map generation + AI host | **Decided: the game master's machine** | Easy — behind `MapService` / `AiService` |
-| MCTS off the GM's UI thread | Web Worker | Easy |
+| Map generation + AI host | **Decided: the game master's machine** | Easy — `MapService` / `AiService` keep the shape |
+| MCTS off the GM's UI thread | A slice a frame on the page's thread; a Web Worker is phase 8's to check | Easy |
 | AI budget in seconds vs. rollouts | Seconds, per §11 — but it makes AI strength hardware-dependent | Config |

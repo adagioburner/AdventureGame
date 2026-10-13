@@ -12,7 +12,6 @@ export type TargetPicker = (state: GameState, player: PlayerState, candidates: r
  * [SOURCE §9, chat] Andrei, 2026-10-09: "progress measured by the number of
  * sites [...] it's a simpler model so it will be better for further
  * development", and "the number of sites claimed is a good enough indicator".
- * It replaced the gold and skill units claimed (Q111's progress).
  */
 export function sitesClaimedShare(state: GameState): number {
   // Asked whenever a player in an imagined game picks a site, and the sites

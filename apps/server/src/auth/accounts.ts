@@ -7,8 +7,8 @@ import { hashPassword, newToken, verifyPassword, type PasswordHash } from './pas
  * §6.1's v1 authentication, username and password, as an `AuthProvider`.
  *
  * What a username or password may be, whether capitals make a different name,
- * and how long a login lasts are Andrei's to decide (phase 6 open details 2 to
- * 4), so they arrive as `AccountRules` and this file holds no values for them.
+ * and how long a login lasts are Andrei's rules ([Q48, 2 to 4], `rules.ts`), so
+ * they arrive as `AccountRules` and this file holds no values for them.
  *
  * Tokens are stored as their SHA-256, so a copy of the store does not hand out
  * logins; the token itself exists only in the browser that holds it.

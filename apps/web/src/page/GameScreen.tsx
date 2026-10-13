@@ -540,9 +540,9 @@ export function GameScreen({
   };
   /**
    * [Andrei, 2026-09-30] Q120: "clicking on a player's card finds this player
-   * on the map". The map jumps to their figure and zooms in as far as the
-   * Find button did (470), which the cards replace (475); Track unpresses
-   * (473), and the figure stands on a ring for a moment (471).
+   * on the map". The map jumps to their figure and zooms in to playing
+   * distance (470); Track unpresses (473), and the figure stands on a ring for
+   * a moment (471).
    */
   const findPlayer = (player: PlayerId): void => {
     setTracking(false);
@@ -645,7 +645,7 @@ export function GameScreen({
   // the route is saved from previous planning we can blink for a short while
   // and stop". A route brought back blinks for its first 2 seconds (574), then
   // stands on the ring of a route planned (575) without being picked up, so
-  // Track stays as it was; tapping the figure stops the blink as before (576).
+  // Track stays as it was; tapping the figure stops the blink (576, Q34).
   const routePlanned = engaged || (move.kind === 'previewing' && settledTurn === shown.turn.number);
   const cue: FigureCue =
     shown.status !== 'in_progress' || busy

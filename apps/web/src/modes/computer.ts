@@ -201,7 +201,7 @@ function whenIdle(next: (timeLeft: () => number) => void): void {
 /**
  * Run `next` once the page has drawn its next frame. Waiting on a message
  * alone is not enough: a browser may run message after message and put the
- * frame off, which is what a first try did. So the wait is for the frame's
+ * frame off. So the wait is for the frame's
  * callback, and then a message, which runs once that frame has been painted.
  * A hidden page draws no frames, and there (and outside a browser) it is the
  * message alone. A message rather than `setTimeout(0)`, which browsers hold

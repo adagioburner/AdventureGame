@@ -17,17 +17,16 @@ manifest, and never a code change.
 | Artist's sheets | `originals/<Name>.png` | Nothing directly: `tools/pack_sheets.py` packs each into `<Name>_sheet.png` and its atlas |
 | Figure animations | `originals/player_avatars_animated/<figure>-strip.png` | Nothing directly: `tools/pack_animation.py` packs them into `player_avatars_animated_sheet.png` and its atlas, the idle loop each figure plays on the map now and then (Q305) |
 | Island | `Island/underside.png`, `Island/sky.png` | The rock hanging under the map's two front edges, and the sky behind the map (Q170) |
-| Sound effect | `Sounds/<name>.wav` | A footstep, a reward picked up, a battle won or lost, a rest, a new message (Q63), a speed or skill coming back (Q135) |
+| Sound effect | `Sounds/<name>.wav` | A footstep, a reward picked up, a battle won or lost, a rest, a new message (Q63) |
 
 A sheet is paired with its atlas by file name, `<Name>_sheet.png` with
-`<Name>_atlas.json`. The atlas's own `"sheet"` field is not read: five of the
-supplied atlases name a file that was renamed after they were written.
+`<Name>_atlas.json`. The atlas's own `"sheet"` field is not read.
 
 The icons are named for the reward kind they stand for (`plains_move.png`,
 `forest_move.png`, `mountain_move.png`, `fighting.png`, `magic.png`, `gold.png`,
-`stamina.png`). They are matched by picture, not by the names they arrived
-with: the wagon wheel is plains movement, the green foot is forest movement,
-the black mountain is mountain movement.
+`stamina.png`). They are matched by picture: the wagon wheel is plains
+movement, the green foot is forest movement, the black mountain is mountain
+movement.
 
 ## Swapping a picture
 
@@ -51,13 +50,12 @@ the black mountain is mountain movement.
    sprite `variant mod count`, so a sheet of four and a sheet of twelve both
    work.
 2. **New name.** Drop the files, then change the one manifest line that names
-   the old sheet. A new POI sheet for forest gold, for example, replaces
-   `Mountains_GoldGuardedByFighting` in the forest-gold row and drops that
-   row's `borrowed` note.
+   the old sheet. A new POI sheet for forest magic, for example, replaces
+   `Plains_Magic` in the forest-magic row and drops that row's `borrowed`
+   note.
 3. **Real art replacing a placeholder.** Delete `"placeholder": true` from the
    new atlas. That flag, and the manifest's `borrowed` notes, are the one
-   record of which pictures are not final; the game page no longer lists
-   them.
+   record of which pictures are not final.
 4. **A sheet whose shadow is flat grey.** The first supplied sheets baked
    their drop shadow in as opaque flat grey (`#bbbbbb`); listing a sheet's
    shadow colours under `shadows` in the manifest has the loader turn them
@@ -125,7 +123,7 @@ there for people and ignored by the game.
   comes from the POI's actual guard, never from the row. Rows with a
   `borrowed` note have no sheet of their own yet: since the rewards moved
   terrain (Q250), mountains speed and magic gold on the plains and magic in
-  the forest, which keep the pictures they had (922 A). Stamina sites have their own since Q240, the spare dead
+  the forest, which keep the pictures they had (922 A). Stamina sites have their own (Q240), the spare dead
   ends in forest and mountains included (903 A). A row with `"on_node": true` (the guardians)
   stands its picture on the POI's node, feet across the back of it; every
   other picture stands beside its node, touching it (Q35).
@@ -146,8 +144,8 @@ there for people and ignored by the game.
   `color` round every picture on the sheet, behind the picture and over its
   shadow, `width` thick as a share of the sheet's typical sprite. A line for
   a sheet the manifest does not draw is reported as a problem.
-- `move_prospect`: which marker sprites draw §7.1's dots, crosses, waypoint
-  flag and active-player ring, and their sizes.
+- `move_prospect`: which marker sprites draw §7.1's dots, crosses and waypoint
+  flag, and their sizes; its `active` ring is not drawn (Q305).
 - `figurines`, `portraits`, `dice`: the player figures, their portrait crops
   and the die sheet. `figurines.animation` has each figure on the map play
   its idle loop once now and then, when it is drawn big enough (Q305): its
@@ -235,7 +233,7 @@ The plains texture's grass is drawn through the inverse of the isometric
 projection so it stands up on the map; anything a replacement texture shows
 standing up off the ground needs the same treatment, or it leans right. It
 writes the same bytes every run, so rerunning it after editing it changes only
-what was edited. `tools/make_sounds.py` makes the nine sound files flagged `"placeholder": true`
+what was edited. `tools/make_sounds.py` makes the eight sound files flagged `"placeholder": true`
 under `sounds`, from the samples Andrei picked by ear, the same bytes every
 run. `tools/make_portrait_crops.py` rederives the portrait boxes,
 `tools/pack_sheets.py` repacks the artist's sheets, and

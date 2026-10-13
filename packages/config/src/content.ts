@@ -11,17 +11,12 @@ import type { GameContent, RewardTable, SitesApart } from './types.ts';
  *   2. Per row, `totalUnits >= poiCount` — §4.3 step 2 gives every POI in the
  *      group one guaranteed unit before step 3 distributes the remainder.
  *
- * `stamina` had no row of §4.2 until [Q240]: "right now the configuration for
- * stamina is 0, but we may change the rewards balance and add a non-zero
- * default number of stamina rewards" (§4.2, chat), and the only stamina a map
- * carried was incidental, from surplus leaf nodes (§3/§9, chat). Andrei,
- * 2026-10-03: "I'd like to add stamina rewarding sites to plains [...] 5 sites,
- * rewarding 10 stamina units total (and each stamina unit adds 5 stamina).
- * [...] Stamina sites follow the same rules any other reward type does." So
- * the plains had a stamina row (900 A, 901 A), unguarded like the speeds, and
- * `POI_COUNT.plains` grew by its 5 sites, since invariant 1 below needs each
- * terrain's `poiCount` column to sum to it. What a unit gives is
- * `STAMINA_PER_UNIT` in defaults.ts. Since [Q250] the row is the forest's.
+ * [Q240] `stamina` has a row of §4.2. Andrei, 2026-10-03: "Stamina sites
+ * follow the same rules any other reward type does." So the row is unguarded
+ * like the speeds (901 A), and its sites count in its terrain's `POI_COUNT`,
+ * since invariant 1 above needs each terrain's `poiCount` column to sum to it.
+ * What a unit gives is `STAMINA_PER_UNIT` in defaults.ts. [Q250] The row is
+ * the forest's.
  */
 /**
  * [Q255] Andrei, 2026-10-04: "make sure that two large gold prises guarded by
@@ -41,12 +36,9 @@ export const FORTRESSES_APART: SitesApart = {
 };
 
 /**
- * [Q260] Andrei, 2026-10-05, after computer games on 60 maps with 10 and with
- * 12: "Stamina sites with just one heart are not very attractive [...] let's
- * change the total stamina units to 12." [Q270] Then, the same day: "12
- * stamina hearts in the forest make acquiring forest speed unattractive. We
- * need to change that to 8 hearts on 4 sites." The hearts on the forest's 4
- * stamina sites, drawn by §4.3 like every reward...
+ * [Q270] Andrei, 2026-10-05: "12 stamina hearts in the forest make acquiring
+ * forest speed unattractive. We need to change that to 8 hearts on 4 sites."
+ * The hearts on the forest's 4 stamina sites, drawn by §4.3 like every reward...
  */
 export const FOREST_STAMINA_UNITS = 8;
 
@@ -59,17 +51,13 @@ export const LARGER_MAP_FOREST_STAMINA_UNITS = 11;
 /**
  * [Q250] Andrei, 2026-10-04: "we seem to have found a simple super strategy:
  * buy forest speed +4 and go to the forest. We need to change the allocation
- * of resources between terrains." The plains get the three speeds, "the gold
- * guarded by magic that used to be in the forest before" and the two
- * fortresses; the forests get magic, combat and stamina; the mountains stay as
- * they were. Every row kept its units and its sites and only moved terrain
- * (920 A), and then, the same day: "we can fill forests up to their usual 20
- * sites, by changing stamina to 6/10. And on plains, gold with magic guards
- * can grow to 5/8". So the forest had 20 sites and the plains 32, and the map
- * 48 gold. [Q260] The stamina sites held 12 hearts from 2026-10-05, and
- * [Q270] 8 hearts on 4 sites since later that day, so the forest has 18
- * sites: "There will be fewer sites in the forest" (961). The magic gold's
- * guards follow §5.2 as all gold does (921 A).
+ * of resources between terrains." The plains get the three speeds, the gold
+ * guarded by magic and the two fortresses; the forests get magic, combat and
+ * stamina; the mountains get gold (920 A). Then, the same day: "on plains,
+ * gold with magic guards can grow to 5/8". [Q270] The forest's stamina is 8
+ * hearts on 4 sites, so the forest has 18 sites: "There will be fewer sites in
+ * the forest" (961). The plains have 32 sites and the map 48 gold. The magic
+ * gold's guards follow §5.2 as all gold does (921 A).
  */
 export const DEFAULT_REWARD_TABLE: RewardTable = {
   plains: [
@@ -78,13 +66,13 @@ export const DEFAULT_REWARD_TABLE: RewardTable = {
     { kind: 'mountain_move', guard: null, totalUnits: 15, poiCount: 8 },
     // [SOURCE §1.1] Informally "cities"; Andrei's "fortresses". [Q255] Kept apart.
     { kind: 'gold', guard: 'fighting', totalUnits: 10, poiCount: 2, apart: FORTRESSES_APART },
-    // [Q250] The forest's magic-guarded gold, moved, and grown from 5 gold on 4 sites.
+    // [Q250] Magic-guarded gold, 8 gold on 5 sites.
     { kind: 'gold', guard: 'magic', totalUnits: 8, poiCount: 5 },
   ],
   forest: [
     { kind: 'magic', guard: null, totalUnits: 10, poiCount: 6 },
     { kind: 'fighting', guard: null, totalUnits: 15, poiCount: 8 },
-    // [Q240] The stamina sites, moved here by [Q250]; [Q270] 8 hearts on 4 sites, 12 on 6 before.
+    // [Q240] The stamina sites, the forest's since [Q250]; [Q270] 8 hearts on 4 sites.
     { kind: 'stamina', guard: null, totalUnits: FOREST_STAMINA_UNITS, poiCount: 4 },
   ],
   mountain: [
@@ -100,15 +88,14 @@ export const DEFAULT_GAME_CONTENT: GameContent = {
 };
 
 /**
- * [Q160] The 4 and 5 player map's rewards: every row's units are 1.4 × today's
- * (gold 45 → 63, speeds and skills 75 → 105). Six rows' sites do not multiply
- * to a whole number; 630 A rounds them to the nearest (9.8 → 10, 8.4 → 8,
- * 2.8 → 3; 11.2 → 11 twice, 5.6 → 6), and each terrain still totals exactly
- * 1.4 × today's sites, 35 / 28 / 21. [Q250] Its rows moved terrain with the
- * standard map's, each keeping its sites (920 A); the magic gold is 1.4 × its
- * 8 gold on 5 sites, 11 on 7 (926 A). [Q270] The stamina is 11 units on 6
- * sites, 1.4 × the standard map's 8 on 4 (960), so the forest has 25 sites
- * (17 units on 9 sites and 28 before). The plains have 45 sites and the map 67 gold.
+ * [Q160] The 4 and 5 player map's rewards: every row is 1.4 × the standard
+ * map's (gold 48 → 67, speeds and skills 75 → 105). Six rows' sites do not
+ * multiply to a whole number; 630 A rounds them to the nearest (9.8 → 10,
+ * 8.4 → 8, 2.8 → 3; 11.2 → 11 twice, 5.6 → 6). [Q250] Its rows sit on the
+ * standard map's terrains (920 A); the magic gold is 1.4 × its 8 gold on 5
+ * sites, 11 on 7 (926 A). [Q270] The stamina is 11 units on 6 sites, 1.4 × the
+ * standard map's 8 on 4 (960), so the forest has 25 sites. The plains have 45
+ * sites, the mountains 21 and the map 67 gold.
  */
 export const LARGER_MAP_REWARD_TABLE: RewardTable = {
   plains: [

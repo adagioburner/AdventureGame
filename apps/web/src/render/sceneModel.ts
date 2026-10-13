@@ -79,8 +79,8 @@ export interface NodeMark {
   readonly radius: number;
   /**
    * [SOURCE §3] A guarded POI is marked in red (fighting) or purple (magic),
-   * as a ring round its node's black outline rather than round its picture
-   * since Andrei's 2026-09-23 review (Q31). `null` for every other node, and
+   * as a ring round its node's black outline (Andrei's 2026-09-23 review,
+   * Q31). `null` for every other node, and
    * for a claimed POI's.
    */
   readonly guard: GuardType | null;
@@ -345,9 +345,8 @@ export const PLAYER_RING_ACROSS = 0.6;
 /**
  * [Q305, 8, 13, 14] How wide the ring is with the whole map in view, in node
  * spacings: it never gets smaller on screen than that. Andrei: "cap their
- * absolute size from below so on the whole map their actual size is 1.2x",
- * then "1.2 -> 1.0", then "please make them 0.8 across the whole map, maybe
- * that's visible enough".
+ * absolute size from below [...]", then "please make them 0.8 across the whole
+ * map, maybe that's visible enough".
  */
 export const PLAYER_RING_ACROSS_WHOLE_MAP = 0.8;
 
@@ -480,8 +479,8 @@ export const IDLE_WAIT_MS = { min: 5000, max: 15000 } as const;
 
 /**
  * [Q305, 17] Figures drawn smaller than this on screen, in CSS pixels, stand
- * still: their movements would be too small to see. Andrei, of the same
- * number before: "we may need to fine tune the constant 24 px later". A figure
+ * still: their movements would be too small to see. Andrei: "we may need to
+ * fine tune the constant 24 px later". A figure
  * is its sheet's typical height, the figurines' manifest size, so all of them
  * start or stop at once.
  */
@@ -526,8 +525,8 @@ export interface PathScene {
  * takes the colour of the step it leads into, and nothing here re-derives a
  * cost or a reachability — the client computes no rules (ARCHITECTURE.md §9).
  *
- * A yellow step carries no number: since Andrei's 2026-09-23 review the
- * colour alone says a step costs stamina (Q32).
+ * A yellow step carries no number: the colour alone says a step costs
+ * stamina (Andrei's 2026-09-23 review, Q32).
  */
 export function buildPathScene(scene: MapScene, map: GameMap, from: NodeId, preview: PathPreview, catalog: ArtCatalog): PathScene {
   const prospect = catalog.manifest.moveProspect;

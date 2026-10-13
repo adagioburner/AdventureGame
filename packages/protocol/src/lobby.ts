@@ -4,9 +4,9 @@ import type { ControlMode } from '@adventure/core';
 /**
  * [SOURCE §3] What a logged-in user sees in the list of games.
  *
- * [Q48, 5] The list has two parts: the games you are in, waiting or started,
- * and the open games still waiting for players. Finished games are not listed.
- * A row is the same shape in both; `mine` says which part it belongs to.
+ * [Q48, 5] The list has two parts: the games you are in, waiting, started or
+ * finished ([Q55, 36]), and the open games still waiting for players. A row is
+ * the same shape in both; `mine` says which part it belongs to.
  */
 export interface GameSummary {
   readonly gameId: GameId;

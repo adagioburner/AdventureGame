@@ -14,7 +14,3 @@ did when it loaded them from Google. Each `@font-face` in `index.html` carries
 the `unicode-range` of its file, so a browser downloads only the alphabets a
 page uses. Both fonts are under the SIL Open Font License 1.1, which allows
 bundling them with the game as long as the licence text travels with them.
-
-Numbers used to be in JetBrains Mono, whose 0 has a dot inside that merges
-into an 8 at card size; question 512 moved them to Public Sans with tabular
-figures, so the game no longer uses that font.

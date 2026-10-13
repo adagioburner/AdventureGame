@@ -10,8 +10,8 @@ import { poiAt, type GameMap, type NodeId, type Poi } from '@adventure/core';
  * the generator's internals: remoteness above all, which decides §4.3's rewards
  * and §5.2's guards and which a *player* must never see. It lives in
  * `tools/balance` rather than `apps/web` so it cannot drift into the client.
- * The map players look at is drawn in phase 3 and shares nothing with this but
- * the `GameMap` it reads. See `docs/ARCHITECTURE.md` §9.
+ * The map players look at is drawn in `apps/web` and shares nothing with this
+ * but the `GameMap` it reads. See `docs/ARCHITECTURE.md` §9.
  *
  * Top-down, not isometric, for the same reason: the point is to inspect the
  * graph, not to preview the game.

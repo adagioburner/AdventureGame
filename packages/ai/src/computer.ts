@@ -85,8 +85,7 @@ export interface ComputerSettings {
 /**
  * How the game's computer players value a game they imagine (Q113): Andrei's
  * lead score, (lead / (|lead| + 1) + 1) / 2, where the lead is the player's
- * gold minus the richest other player's when the imagined game ends. It was
- * the player's own share of the map's gold (§9's simulated evaluation).
+ * gold minus the richest other player's when the imagined game ends.
  */
 export function computerEvaluator(): NodeEvaluator {
   return simulatedLeadEvaluator('soft');

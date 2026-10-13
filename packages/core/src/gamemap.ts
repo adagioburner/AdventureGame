@@ -51,11 +51,10 @@ export function totalSkillUnits(map: GameMap): number {
 }
 
 /**
- * [SOURCE §6, chat] "the players start at a random spot of the plains that is
- * not a POI. All players start from the same spot."
+ * [SOURCE §6, chat] "All players start from the same spot."
  *
- * [Q227] Not at random: the deepest plains space whose remoteness is below
- * `MAX_REMOTENESS` (see `StartConfig`), the least remote of equally deep ones
+ * [Q227] The deepest plains space that is not a POI and whose remoteness is
+ * below `MAX_REMOTENESS` (see `StartConfig`), the least remote of equally deep ones
  * (873), and with none below it the least remote space (874); the lowest node
  * id where those are equal too. A map with no site within `NEARBY_STEPS` of
  * any of its spaces, which no generated map has, draws one at random.

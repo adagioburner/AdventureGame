@@ -7,7 +7,7 @@ import type { GameRecord, GameResult, ServerMessage, SetupState } from '@adventu
  * The session layer's ports. Every one of these is an interface with no
  * implementation in this package.
  *
- * [SOURCE §12.1, chat] Hosting is now decided — Durable Objects — "with
+ * [SOURCE §12.1, chat] Hosting is decided — Durable Objects — "with
  * flexible architecture to swap it for something else if DO don't fit the
  * bill". These ports are that flexibility, so the rule here stays absolute:
  * this package imports nothing runtime-specific — no WebSocket, no KV, no SQL,
@@ -89,12 +89,12 @@ export interface Clock {
  * [SOURCE §12.1, chat] "Map generation and player AI run on the game master's
  * machine." So the server never executes the §2.1 pipeline.
  *
- * Phase 6 found that a Durable Object cannot hold this as an awaited promise:
- * while it waits for the game master's reply the object may hibernate, and the
- * promise goes with it. So `GameSession` does the round trip as two messages
- * instead — Start sends `gm.requestMapGeneration`, and `gm.mapGenerated`
- * finishes starting the game — and nothing implements this port. It stays as
- * the shape a server-side generator would take if generation ever moved back.
+ * A Durable Object cannot hold this as an awaited promise: while it waits for
+ * the game master's reply the object may hibernate, and the promise goes with
+ * it. So `GameSession` does the round trip as two messages instead — Start
+ * sends `gm.requestMapGeneration`, and `gm.mapGenerated` finishes starting the
+ * game — and nothing implements this port. It stays as the shape a
+ * server-side generator would take.
  */
 export interface MapService {
   generate(seed: Seed, ruleset: Ruleset): Promise<GameMap>;
@@ -107,10 +107,10 @@ export interface MapService {
  * `gm.aiMove` plays the move. Nothing implements this port; it stays as the
  * shape a server-side computer player would take.
  *
- * This is why `AiPlayer.chooseAction` was already async and behind a port: 10
- * seconds of CPU per move (§9) never belonged in a request handler, and it now
- * does not even run on the server. On the GM's machine it belongs in a Web
- * Worker so the search does not freeze that player's own UI.
+ * This is why `AiPlayer.chooseAction` is async and behind a port: 10 seconds
+ * of CPU per move (§9) never belongs in a request handler, and it does not run
+ * on the server. On the GM's machine it belongs in a Web Worker so the search
+ * does not freeze that player's own UI.
  */
 export interface AiService {
   playerFor(gameId: GameId, player: PlayerId): Promise<AiPlayer>;
@@ -136,9 +136,9 @@ export interface DiceService {
  * disconnects there is no one to force the next turn so the game stalls as
  * well."
  *
- * So there is no policy port here any more — nothing is configurable, because
- * nothing happens. A GM-only request with no game master connected is answered
- * `game_master_unavailable` and the game waits.
+ * So nothing is configurable, because nothing happens. A GM-only request with
+ * no game master connected is answered `game_master_unavailable` and the game
+ * waits.
  *
  * Note the reach of this, which follows from §12.1 rather than §12.4 itself:
  * with map generation and MCTS on the game master's machine, a disconnected GM
@@ -149,11 +149,8 @@ export interface DiceService {
 export const GAME_MASTER_ABSENCE_BEHAVIOUR = 'stall' as const;
 
 /**
- * What `GameSession` runs on. §12.3 removed `MessageBoardStore` (the board is
- * game state, so `GameStore` already covers it) and §12.4 removed
- * `GameMasterAbsencePolicy` (there is no fallback to configure); the map and
- * the computer's moves are messages to the game master rather than ports
- * (`MapService`, `AiService`).
+ * What `GameSession` runs on. The map and the computer's moves are messages to
+ * the game master rather than ports (`MapService`, `AiService`).
  */
 export interface SessionPorts {
   readonly games: GameStore;

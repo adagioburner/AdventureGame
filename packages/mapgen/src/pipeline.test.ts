@@ -156,7 +156,7 @@ describe('§4.2 — the reward table reconciles exactly', () => {
   it('accounts for every POI: table rows plus surplus-leaf stamina, nothing else', () => {
     const rows = TERRAINS.flatMap((terrain) => DEFAULT_RULESET.content.REWARD_TABLE[terrain]);
     const tabled = rows.reduce((sum, row) => sum + row.poiCount, 0);
-    // [Q240] The stamina row: in the forest since Q250, 8 units on 4 sites since Q270.
+    // [Q240] The forest's stamina row, 8 units on 4 sites (Q250, Q270).
     const staminaRows = rows.filter((row) => row.kind === 'stamina');
     const tabledStamina = staminaRows.reduce((sum, row) => sum + row.poiCount, 0);
     const tabledStaminaUnits = staminaRows.reduce((sum, row) => sum + row.totalUnits, 0);
@@ -280,14 +280,12 @@ describe('§5.2 — guard strengths', () => {
     //
     // Generated without §4.3 step 4, because step 4 is very nearly the rule
     // against this POI existing: the only way past the cap is a 1-unit stack at
-    // remoteness ≥ 0.5, and moving small stacks off remote POIs is exactly what
-    // step 4 does. Measured over 60 maps, unguarded gold falls from 3.3% of all
-    // gold POIs at 0 passes to 0.2% at the default 5, and 58 of those 60 maps
-    // have none at all — so asking the default seeds for one is asking for a
+    // remoteness ≥ 0.75, and moving small stacks off remote POIs is exactly
+    // what step 4 does — so asking the default seeds for one is asking for a
     // coincidence. The sealing path still has to work when it does happen.
-    // [Q250] Since the rewards moved terrain the small gold piles are on the
-    // plains, the least remote terrain, and these seeds no longer meet the cap
-    // at today's weights, so remoteness weighs more here.
+    // [Q250] The small gold piles are on the plains, the least remote terrain,
+    // and these seeds do not meet the cap at the default weights, so remoteness
+    // weighs more here.
     const noSwaps: Ruleset = {
       ...DEFAULT_RULESET,
       config: {
@@ -309,13 +307,12 @@ describe('§5.2 — guard strengths', () => {
   }, 30000);
 
   // The same statement the other way round, on the map a player actually gets:
-  // an unguarded gold POI is now the exception rather than a regular feature,
+  // an unguarded gold POI is the exception rather than a regular feature,
   // which pushes §4.4's "every gold POI is guarded, none are exempt" back
   // toward literally true. Registered for Andrei as part of Q29.
   //
   // Counted over the four seeds together, not per map: one unguarded gold POI
-  // is already 1 in 21 on a single map. Over 100 maps with step 6b (Q105) it
-  // is 10 in 2100 gold POIs (0.48%; 0.33% before step 6b).
+  // is already 1 in 22 on a single map.
   it('leaves almost no gold unguarded once §4.3 step 4 has run', () => {
     const gold = SEEDS.flatMap((seed) => mapOf(seed).pois.filter((poi) => poi.group.guard !== null));
     const unguarded = gold.filter((poi) => poi.guard === null);
@@ -325,9 +322,8 @@ describe('§5.2 — guard strengths', () => {
 
 describe('Q250 — the rewards by terrain since they moved', () => {
   // Andrei, 2026-10-04: the plains get the three speeds, the magic-guarded gold
-  // that was the forest's and the two fortresses; the forests magic, combat
-  // and stamina; the mountains stay as they were. Spare dead ends still hold
-  // stamina on any terrain (§3).
+  // and the two fortresses; the forests magic, combat and stamina; the
+  // mountains gold. Spare dead ends still hold stamina on any terrain (§3).
   const kindsOn: Record<Terrain, readonly string[]> = {
     plains: ['plains_move', 'forest_move', 'mountain_move', 'gold/fighting', 'gold/magic', 'stamina'],
     forest: ['magic', 'fighting', 'stamina'],
@@ -481,9 +477,8 @@ describe('terrain', () => {
   }, 30000);
 
   // [SOURCE §2.1, chat] The shares are a statement about the map a player is
-  // handed, so they are measured here on the sealed map — after step 6 has cut
-  // its valleys, not on the draft step 4 leaves behind. Before step 6 paid the
-  // valleys back, `adventure` finished 65 / 26 / 9 against 45 / 30 / 25.
+  // handed, so they are measured here on the sealed map — after step 6, not on
+  // the draft step 4 leaves behind.
   it('holds §2.1 step 4 area shares in the finished map, valleys and all', () => {
     const { TERRAIN_AREA_SHARE } = DEFAULT_RULESET.config.map;
     for (const seed of SEEDS) {

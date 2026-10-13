@@ -6,9 +6,8 @@ import { createMemoryAccountStore } from '../adapters/memory.ts';
 import { AccountError, PasswordAccounts, type AccountRules } from './accounts.ts';
 
 /**
- * Rules for these tests only. The real ones are Andrei's answers to phase 6
- * open details 2 to 4; these are picked to exercise each hook, not to propose
- * values.
+ * Rules for these tests only. The real ones are Andrei's ([Q48, 2 to 4],
+ * `rules.ts`); these are picked to exercise each hook, not to propose values.
  */
 const TEST_RULES: AccountRules = {
   canonicalUsername: (name) => name.toLowerCase(),

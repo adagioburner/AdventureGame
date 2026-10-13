@@ -19,8 +19,7 @@ import { Portrait, StatIcon } from './Sprites.tsx';
  *
  * [Andrei, 2026-09-30] Q120: "clicking on a player's card finds this player
  * on the map", every card, during the game and after it ends (474), by
- * `onFind`. On a laptop the pointer turns into a hand over a card, which
- * otherwise looks as before (472).
+ * `onFind`. On a laptop the pointer turns into a hand over a card (472).
  *
  * [Q190, 750 and 768] The card of a person on turn who could buy has a Buy
  * button in its top right corner, which opens the buy panel (`BuyPanel`).

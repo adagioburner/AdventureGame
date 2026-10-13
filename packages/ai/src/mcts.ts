@@ -14,7 +14,7 @@ import type { MctsBranch, MctsNode, MctsOptions } from './types.ts';
 /**
  * [SOURCE §5] "Implemented via MCTS."
  *
- * The four phases, now that §12.2 is decided:
+ * The four phases, as §12.2 decided them:
  *
  *   select    — descend via `treePolicy.select` (UCT) while every branch of a
  *               node is expanded.
@@ -206,11 +206,9 @@ function realise(cursor: RolloutCursor, branch: MctsBranch, options: MctsOptions
 /**
  * The move a branch makes this turn: the first turn of its macro-action.
  *
- * [Q210] Stage 1 of Andrei's plan, 2026-10-02: "Keep simulated games as they
- * are, but switch the actual paths players walk to the most efficient". The
- * real move walks the best route for the subject's speeds, after anything it
- * bought this turn. Since stage 2 the search that chose the target counts the
- * best route too, and since stage 3 the games it imagines walk it.
+ * [Q210] The real move walks the best route for the subject's speeds, after
+ * anything it bought this turn. The search that chose the target counts the
+ * best route too (stage 2), and the games it imagines walk it (stage 3).
  */
 export function firstTurnOf(state: GameState, branch: MctsBranch | null, options: MctsOptions): TurnAction {
   if (branch === null) throw new RangeError('the search found no branch to take');

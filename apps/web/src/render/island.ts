@@ -119,8 +119,7 @@ export function shapeUnderside(pixels: Uint8ClampedArray, width: number, corners
  * `corners` (the ground's front edges) and below it; above it, where
  * `shapeUnderside` fades the stone tops into the ground, it shades into a copy
  * blurred by `radius` pixels, all blurred `fade` pixels up, where the stone
- * tops are gone. Blurred evenly from the line up, the blurred stone met the
- * sharp stone on the line and drew the map's edge as a line again (02:47).
+ * tops are gone.
  */
 export function blurStoneTops(pixels: Uint8ClampedArray, width: number, corners: IslandCorners, fade: number, radius: number): void {
   if (radius <= 0) return;

@@ -18,10 +18,10 @@ import { generateMap } from '@adventure/mapgen';
 import { defaultRemotenessScorer } from '@adventure/sim';
 
 /**
- * A map generated from a seed, the two hotseat players (Q22) standing on their
- * shared starting node, and one sample move: what the scene tests draw.
+ * A map generated from a seed, two hotseat players standing on their shared
+ * starting node, and one sample move: what the scene tests draw.
  *
- * Not part of the app — the page plans real moves since phase 4 — and named
+ * Not part of the app — the page plans real moves — and named
  * `*.fixture.ts` so Vitest does not collect it while the typecheck still does.
  */
 export interface PreviewGame {
