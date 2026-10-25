@@ -396,13 +396,12 @@ export function staminaBeyondThisTurn(steps: PerTerrain<number>, free: PerTerrai
 }
 
 /**
- * [Q210, 820 A] "reachable in one turn" from the cached steps per terrain of
- * the route `stepsTo` counts, the best for the player's speeds in the game,
- * with no route traced: Andrei, 2026-10-02, "the first three items don't need
- * the path, and can use the distance provided by the formula". The walk
- * arrives this turn exactly when the player holds `staminaBeyondThisTurn` of
- * it, so this agrees with `previewPath` over the same route. Standing on the
- * target already counts.
+ * [Q210, 820 A] "reachable in one turn" from the steps per terrain of the
+ * route `stepsTo` counts. [Q308, 2 A] In the game that is the route the move
+ * walks (`walkedRouteSteps`), traced, rather than the formula's from the
+ * cached counts, which can differ from it. The walk arrives this turn exactly
+ * when the player holds `staminaBeyondThisTurn` of it, so this agrees with
+ * `previewPath` over the same route. Standing on the target already counts.
  */
 export function stepsReachability(stepsTo: RouteStepsFinder): TurnReachability {
   return {

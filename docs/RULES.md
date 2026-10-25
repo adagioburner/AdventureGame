@@ -122,9 +122,12 @@ the AI's POI targeting (§9) counts stamina with it, from
 `packages/core/src/path.ts`. There is no second cost function in the repo, and
 shortest-path ties break deterministically so two clients, the server and a
 replay all draw the identical path. The route drawn for a person, and the
-routes the computer walks, are the best for the player's speeds (Q210,
-`bestRoute`): free steps cost nothing and a turn counts as 5 stamina. It is picked as deterministically, and with no speeds it is the
-cheapest route.
+routes the computer walks, are the best for the player (Q210, Q308,
+`bestRoute`): of the routes no other route beats on every terrain's step
+count, the one that, walked turn after turn as End turn walks it from this
+turn's free steps left and the stamina held, scores least, at 5 a turn plus
+the stamina spent. It is picked as deterministically, and with no speeds and
+the stamina for the whole way it is the cheapest route.
 
 ### Arriving at a POI
 
@@ -219,8 +222,8 @@ over *unvisited* POIs), the rollout policy (§9, over *unclaimed* POIs) and tree
 expansion (also unclaimed; the game's computer leaves out guarded gold it
 cannot win, Q295). The game's computer ranks by its own speeds instead (Q112,
 `packages/sim/src/speeds.ts`): its rollout by `closestBySpeeds`, along the
-cheapest route, and its tree by `closestByBestRoute`, along the best route for
-its speeds (Q210). The rollout and the tree share the
+cheapest route, and its tree by `closestByBestRoute`, along the route the
+formula counts best for its speeds (Q210). The rollout and the tree share the
 one K, so tuning `CLOSE_CANDIDATE_COUNT` moves both together; the remoteness
 walk has its own, `REMOTENESS_CANDIDATE_COUNT` (Q66), so the computer player
 tunes without moving the maps. What differs is eligibility, and what each does

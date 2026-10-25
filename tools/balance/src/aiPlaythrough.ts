@@ -82,7 +82,7 @@ export function computerDriver(settings: ComputerSettings): PlaythroughDriver {
       const target = branch.target.node;
       const moving = buy === null ? state : applyAction(state, buy, dice).state;
       const player = activePlayer(moving);
-      const route = action?.kind === 'move' ? action.path : bestRoute(moving.map.graph, player.position, target, player.stats, config);
+      const route = action?.kind === 'move' ? action.path : bestRoute(moving.map.graph, player.position, target, player.stats, moving.turn.allowance, config);
       if (route === null) throw new Error(`node ${target} is unreachable from ${player.position}`);
       return {
         buy,

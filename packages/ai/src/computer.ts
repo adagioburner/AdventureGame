@@ -2,7 +2,6 @@ import type { GameConfig } from '@adventure/config';
 import type { DiceSource, GameState, PlayerId, Rng } from '@adventure/core';
 import {
   bestRouteForSpeeds,
-  bestRouteStepsFor,
   closestByBestRoute,
   closestBySpeeds,
   closestWinnableBySpeeds,
@@ -10,6 +9,7 @@ import {
   goldExhaustedTermination,
   restWhenStuck,
   turnCapTermination,
+  walkedRouteSteps,
   winnableBySkill,
 } from '@adventure/sim';
 import { planTurn, searchTree, startSearch, type SearchResult, type TurnPlan } from './mcts.ts';
@@ -48,11 +48,13 @@ export function computerEvaluator(): NodeEvaluator {
  * §9's computer player with the v1 setup: UCT with `MCTS_EXPLORATION_CONSTANT`
  * over the `CLOSE_CANDIDATE_COUNT` closest unclaimed POIs plus rest and the
  * purchases a move this turn would use up (Q190, Q280, `buyBranches`), closest
- * by the player's own speeds along the best route for them (Q112, Q210 stage
- * 2: `closestByBestRoute`), its resting and buying checks and its own walk
- * along that route too, the §9 rollout policy ranking by the speeds along the
- * cheapest route (`closestBySpeeds`, 822 B) and walking the best route for
- * them, counted (Q210 stage 3, 823 A), heading for gold more often as the
+ * by the player's own speeds along the route the formula counts best for them
+ * (Q112, Q210 stage 2: `closestByBestRoute`), its resting and buying checks
+ * and its own walk along the route it walks, scored as End turn walks it
+ * (Q308: `walkedRouteSteps`, `bestRouteForSpeeds`), the §9 rollout policy
+ * ranking by the speeds along the cheapest route (`closestBySpeeds`, 822 B)
+ * and walking the best route for them, counted (Q210 stage 3, 823 A), heading
+ * for gold more often as the
  * sites are claimed (Q290, `goldByProgressPicker`), and the lead score (Q113,
  * `computerEvaluator`). Guarded gold it cannot win is skipped (Q295): its own
  * choices skip a guard it reaches this turn unless the skill it holds could
@@ -81,7 +83,7 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
     subject,
     config,
     treePolicy: uctTreePolicy(config.ai.MCTS_EXPLORATION_CONSTANT),
-    actions: closestUnclaimedPoiEnumerator(config, stepsReachability(bestRouteStepsFor), closestByBestRoute, bestRouteForSpeeds),
+    actions: closestUnclaimedPoiEnumerator(config, stepsReachability(walkedRouteSteps), closestByBestRoute, bestRouteForSpeeds),
     edgeRoute: bestRouteForSpeeds,
     rollout: closestPoiRolloutPolicy({ config, termination, restRule, ...imaginedPlayers }),
     evaluator: settings.evaluator ?? computerEvaluator(),

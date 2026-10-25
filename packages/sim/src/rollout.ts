@@ -7,11 +7,13 @@ import {
   countWalk,
   poiRuntimeAt,
   previewPath,
+  refreshAllowance,
   routeTable,
   unclaimedGoldUnits,
   type DiceSource,
   type GameState,
   type Guard,
+  type MapNode,
   type NodeId,
   type PlayerId,
   type PlayerState,
@@ -23,7 +25,7 @@ import {
 } from '@adventure/core';
 import { chooseWalkTarget, closestPoiCandidates, type PoiCandidate } from './candidates.ts';
 import type { TargetPicker } from './goldByProgress.ts';
-import { siteOrderBySpeeds, type ClosestFinder } from './speeds.ts';
+import { siteOrderBySpeeds, type ClosestFinder, type RouteStepsFinder } from './speeds.ts';
 
 /**
  * [SOURCE §5, chat] §9's rollout policy: "choose a random target among the
@@ -307,9 +309,33 @@ export type RouteChoice = (state: GameState, player: PlayerState, target: NodeId
 export const cheapestRoute: RouteChoice = (state, player, target) =>
   routeTable(state.map.graph, state.map.ruleset.config).path(player.position, target);
 
-/** [Q210] The best route for the player's speeds (`bestRoute`). */
+/**
+ * [Q210] The best route for the player (`bestRoute`). [Q308] Scored as End
+ * turn walks it, from the free steps left this turn on the player's own turn,
+ * a fresh turn's otherwise.
+ */
 export const bestRouteForSpeeds: RouteChoice = (state, player, target) =>
-  bestRoute(state.map.graph, player.position, target, player.stats, state.map.ruleset.config);
+  bestRoute(
+    state.map.graph,
+    player.position,
+    target,
+    player.stats,
+    player.seat === state.turn.activeSeat ? state.turn.allowance : refreshAllowance(player.stats),
+    state.map.ruleset.config,
+  );
+
+/**
+ * [Q308] Andrei, 2026-10-25, 2 A: the computer's "reaches it this turn" check
+ * counts the route it walks. The steps per terrain along `bestRouteForSpeeds`,
+ * traced.
+ */
+export const walkedRouteSteps: RouteStepsFinder = (state, player, target) => {
+  const route = bestRouteForSpeeds(state, player, target);
+  if (route === null) return null;
+  const steps = { plains: 0, forest: 0, mountain: 0 };
+  for (const node of route) steps[(state.map.graph.nodes[node] as MapNode).terrain]++;
+  return steps;
+};
 
 /**
  * The active player's turn toward `target`: the whole route `routeOf` picks,

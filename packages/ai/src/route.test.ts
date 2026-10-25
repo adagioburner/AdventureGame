@@ -1,10 +1,21 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_GAME_CONFIG } from '@adventure/config';
-import { applyAction, asNodeId, createDiceSource, createRng, playerById, poiRuntimeAt, previewPath, routeTable, type GameState } from '@adventure/core';
+import {
+  applyAction,
+  asNodeId,
+  bestRouteSteps,
+  createDiceSource,
+  createRng,
+  playerById,
+  poiRuntimeAt,
+  previewPath,
+  routeTable,
+  type GameState,
+  type Terrain,
+} from '@adventure/core';
 import {
   bestRouteForSpeeds,
-  bestRouteStepsFor,
   cheapestRoute,
   cheapestRouteSteps,
   closestByBestRoute,
@@ -12,6 +23,8 @@ import {
   macroAdvanceToTarget,
   rolloutCursor,
   turnTowards,
+  walkedRouteSteps,
+  type RouteStepsFinder,
 } from '@adventure/sim';
 import { fixtureGame, fixtureMap, player, withStats } from '../../core/src/rules/scenario.fixture.ts';
 import { computerSearchOptions, type ComputerSettings } from './computer.ts';
@@ -120,11 +133,31 @@ describe('the computer search’s own choices (Q210, stage 2, 820 A)', () => {
     expect(closestBySpeeds(state, playerById(state, one), eligible, 1)).toEqual([{ node: n(3), cost: 3 }]);
   });
 
-  it('counts a site reached this turn along the best route, from its steps per terrain', () => {
+  it('counts a site reached this turn along the route it walks, from its steps per terrain', () => {
     const state = withStats(fixtureGame(sites, 0), one, { forest_move: 3, stamina: 1 });
     const magic = { node: n(5), cost: 5 };
-    expect(stepsReachability(bestRouteStepsFor).isReachableThisTurn(state, one, magic)).toBe(true);
+    expect(stepsReachability(walkedRouteSteps).isReachableThisTurn(state, one, magic)).toBe(true);
     expect(stepsReachability(cheapestRouteSteps).isReachableThisTurn(state, one, magic)).toBe(false);
+  });
+
+  it('counts the route it walks, not the one the formula counts best, where they differ (Q308, 2 A)', () => {
+    // Andrei's turn 13: nine forest steps arrive this turn for 14 stamina; the
+    // formula's loop of 5 forest, 9 mountain, 10 plains and 2 forest does not.
+    const terrains: Terrain[] = ['plains', ...Array<Terrain>(9).fill('forest'), ...Array<Terrain>(9).fill('mountain'), ...Array<Terrain>(10).fill('plains')];
+    const edges: [number, number][] = [];
+    for (let at = 0; at < 9; at++) edges.push([at, at + 1]);
+    edges.push([5, 10]);
+    for (let at = 10; at < 28; at++) edges.push([at, at + 1]);
+    edges.push([28, 8]);
+    const turn13 = fixtureMap({ terrains, edges, pois: [{ node: 9, kind: 'fighting', units: 1, guard: null }] });
+    const state = withStats(fixtureGame(turn13, 0), one, { plains_move: 11, forest_move: 2, mountain_move: 4, stamina: 21 });
+    const site = { node: n(9), cost: 18 };
+    const formulas: RouteStepsFinder = (at, player, target) =>
+      bestRouteSteps(at.map.graph, player.position, target, player.stats, at.map.ruleset.config)?.steps ?? null;
+    expect(formulas(state, playerById(state, one), n(9))).toEqual({ plains: 10, forest: 7, mountain: 9 });
+    expect(stepsReachability(formulas).isReachableThisTurn(state, one, site)).toBe(false);
+    expect(walkedRouteSteps(state, playerById(state, one), n(9))).toEqual({ plains: 0, forest: 9, mountain: 0 });
+    expect(stepsReachability(walkedRouteSteps).isReachableThisTurn(state, one, site)).toBe(true);
   });
 
   it('tells what is reached this turn from the steps per terrain exactly as walking the route does', () => {
@@ -148,7 +181,8 @@ describe('the computer search’s own choices (Q210, stage 2, 820 A)', () => {
 
   it('checks a purchase against the route the move walks (Q280)', () => {
     // Bought forest speed 3 is used up through the forest, the best route for it; the plains route walks none of it.
-    const state = withStats(fixtureGame(sites, 0), one, { forest_move: 2, stamina: 0, gold: 1 });
+    // [Q308] With no stamina at all, resting first and paying the plains would walk better.
+    const state = withStats(fixtureGame(sites, 0), one, { forest_move: 2, stamina: 1, gold: 1 });
     const after = applyAction(state, { kind: 'buy', player: one, skills: ['forest_move'] }, settings().dice).state;
     expect(usesFully(after, playerById(after, one), n(5), ['forest_move'], bestRouteForSpeeds)).toBe(true);
     expect(usesFully(after, playerById(after, one), n(5), ['forest_move'], cheapestRoute)).toBe(false);
