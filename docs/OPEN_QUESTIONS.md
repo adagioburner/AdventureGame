@@ -3914,7 +3914,13 @@ it arrived later on 32% of trips and sooner on 11%.
    which walked the formula's route: 9 wins to 10, one shared; +1.2 ± 2.2
    gold a game for the new one, within luck; each won both games on two maps.
    Games imagined per move 13,000 against 13,768, as tracing the routes it
-   weighs costs a little more.
+   weighs costs a little more. Andrei, 17:36: *"could you run 50 more games
+   to verify that this fix doesn't actually make the computer play more
+   poorly"*. 50 more, seeds walked-10 to walked-34, the same way: 26 wins to
+   21, three shared, +0.24 ± 1.07 gold a game; each won both games on 7 and 4
+   maps. All 70: 35 wins to 31, four shared, +0.51 ± 0.99 gold a game for the
+   new one, within luck (wins 0.71, gold 0.60), and 12,886 games imagined per
+   move against 14,039.
 
 Built: `walkTurnByTurn` and `walkedDistance` in
 `packages/core/src/rules/bestRoute.ts`. A route scores 5 for each turn until it
