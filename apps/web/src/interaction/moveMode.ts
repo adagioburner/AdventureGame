@@ -4,6 +4,7 @@ import {
   previewPath,
   refreshAllowance,
   type GameState,
+  type MovementAllowance,
   type NodeId,
   type PathPreview,
   type PlannedPath,
@@ -18,8 +19,8 @@ import type { UiModeConfig } from '../modes/hotseat.ts';
  * mode; clicking a destination node highlights the shortest path (weighted
  * terrain cost, §5.1) with a thick dotted line and an isometric cross at the
  * destination. Shift-click sets an intermediate waypoint when more than one
- * path exists." [Q210] The path highlighted is the best for the player's
- * speeds (`bestRouteVia`).
+ * path exists." [Q210] The path highlighted is the best for the player
+ * (`bestRouteVia`): since Q308, as End turn walks it.
  *
  * A small explicit state machine rather than scattered flags, because the same
  * states behave differently in the two modes (§7.1 vs §7.2).
@@ -152,20 +153,20 @@ export interface PlannedRoute {
 
 /**
  * Routes and colours for `player` in `game`: `bestRouteVia`'s route, the best
- * for the player's speeds through the waypoint, if any, a leg at a time
- * (Q210, 810 A to 812 A), and `previewPath`'s colours for it.
+ * for the player through the waypoint, if any, a leg at a time (Q210, 810 A
+ * to 812 A; Q308: as End turn walks it), and `previewPath`'s colours for it.
  *
  * The allowance is the turn's own for the player whose turn it is. A player
  * planning out of turn (§7.1, online only) will start their next turn with a
  * fresh allowance, `refreshAllowance` of their skills, so that is what their
- * preview is coloured against.
+ * route is picked from and their preview coloured against.
  */
 export function gamePreviewSource(game: GameState, player: PlayerId): PreviewSource {
   const planner = playerIn(game, player);
   const config = game.map.ruleset.config;
   return {
     previewFor(destination, waypoint) {
-      const path = bestRouteVia(game.map.graph, planner.position, waypoint, destination, planner.stats, config);
+      const path = bestRouteVia(game.map.graph, planner.position, waypoint, destination, planner.stats, allowanceFor(game, planner), config);
       if (path === null) return null;
       return { path, preview: previewFor(game, planner, path) };
     },
@@ -173,9 +174,12 @@ export function gamePreviewSource(game: GameState, player: PlayerId): PreviewSou
 }
 
 function previewFor(game: GameState, planner: PlayerState, path: readonly NodeId[]): PathPreview {
+  return previewPath(game.map.graph, planner.position, path, allowanceFor(game, planner), planner.stats.stamina, game.map.ruleset.config);
+}
+
+function allowanceFor(game: GameState, planner: PlayerState): MovementAllowance {
   const active = planner.seat === game.turn.activeSeat;
-  const allowance = active ? game.turn.allowance : refreshAllowance(planner.stats);
-  return previewPath(game.map.graph, planner.position, path, allowance, planner.stats.stamina, game.map.ruleset.config);
+  return active ? game.turn.allowance : refreshAllowance(planner.stats);
 }
 
 /** Whether `player`'s plains, forest or mountains speed differs between the two states. */

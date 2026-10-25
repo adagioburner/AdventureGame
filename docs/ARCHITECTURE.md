@@ -294,11 +294,15 @@ already exceeds what remains.
 per §8's worked example) is used by remoteness walks, the AI's targeting and
 imagined routes, and stamina charging. No second cost function exists. Since
 Q210 the route drawn for a person and the route a computer's real move walks
-are the best for the player's speeds (`bestRoute` in
-`core/rules/bestRoute.ts`), picked from `RouteTable.routesFrom`: every route
-that no other route beats on all three terrains' step counts, worked out the
-first time a node is asked for. A route only as good as the cheapest keeps the
-cheapest, so a player with no speeds is drawn the cheapest route.
+are the best for the player (`bestRoute` in `core/rules/bestRoute.ts`), picked
+from `RouteTable.routesFrom`: every route that no other route beats on all
+three terrains' step counts, worked out the first time a node is asked for.
+Since Q308 each is scored by walking it as End turn does (`walkTurnByTurn`,
+`walkedDistance`), from this turn's free steps left and the stamina held; the
+Q112 formula never counts a route above its walked score, so a route it
+already counts worse than the best walk found is not traced. A route only as good as the cheapest keeps the
+cheapest, so a player with no speeds and the stamina for the whole way is
+drawn the cheapest route.
 
 ---
 

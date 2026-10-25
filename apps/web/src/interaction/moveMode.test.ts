@@ -8,6 +8,7 @@ import {
   refreshAllowance,
   shortestPath,
   type GameState,
+  type MovementAllowance,
   type NodeId,
   type TurnAction,
 } from '@adventure/core';
@@ -99,7 +100,7 @@ describe('move mode (§7.1), idle → selecting → previewing', () => {
     controller.enter(player.id);
     controller.choose(target, false);
     controller.choose(off, true);
-    const via = bestRouteVia(map.graph, player.position, off, target, player.stats, config);
+    const via = bestRouteVia(map.graph, player.position, off, target, player.stats, freeSteps(game.state, 0), config);
     expect(controller.state.kind === 'previewing' && controller.state.path).toEqual(via);
     expect(controller.state.kind !== 'idle' && controller.state.waypoint).toBe(off);
     controller.choose(off, true);
@@ -485,14 +486,35 @@ describe('Track closes planning (Q57, 75)', () => {
   });
 });
 
-/** `state` with `player`'s three speeds set, as buying them would leave it. */
+/** `state` with `player`'s three speeds set, as buying them would leave it: on their turn, each speed bought is a free step more this turn. */
 function withSpeeds(state: GameState, player: GameState['players'][number]['id'], plains: number, forest: number, mountain: number): GameState {
+  const before = state.players.find((candidate) => candidate.id === player);
+  if (before === undefined) throw new Error(`no player ${player}`);
+  const { allowance } = state.turn;
+  const turn =
+    before.seat === state.turn.activeSeat
+      ? {
+          ...state.turn,
+          allowance: {
+            plains: allowance.plains + plains - before.stats.plains_move,
+            forest: allowance.forest + forest - before.stats.forest_move,
+            mountain: allowance.mountain + mountain - before.stats.mountain_move,
+          },
+        }
+      : state.turn;
   return {
     ...state,
+    turn,
     players: state.players.map((candidate) =>
       candidate.id === player ? { ...candidate, stats: { ...candidate.stats, plains_move: plains, forest_move: forest, mountain_move: mountain } } : candidate,
     ),
   };
+}
+
+/** The free steps the planner picks a route from (Q308): this turn's left for the seat on turn, a fresh turn's for the others. */
+function freeSteps(state: GameState, index: number): MovementAllowance {
+  const player = seat(state, index);
+  return player.seat === state.turn.activeSeat ? state.turn.allowance : refreshAllowance(player.stats);
 }
 
 /** `state` with `player`'s combat 1 higher, as buying it would leave it. */
@@ -509,7 +531,7 @@ function withFighting(state: GameState, player: GameState['players'][number]['id
 function siteWithBetterRoute(state: GameState): { target: NodeId; best: readonly NodeId[]; cheapest: readonly NodeId[] } {
   const player = seat(state, 0);
   for (const poi of map.pois) {
-    const best = bestRoute(map.graph, player.position, poi.node, player.stats, config) ?? [];
+    const best = bestRoute(map.graph, player.position, poi.node, player.stats, freeSteps(state, 0), config) ?? [];
     const cheapest = shortestPath(map.graph, player.position, poi.node, config) ?? [];
     if (best.length > 0 && best.join() !== cheapest.join()) return { target: poi.node, best, cheapest };
   }
@@ -542,7 +564,7 @@ describe('the route drawn is the best for the player’s speeds (Q210, 810 A to 
     expect(controller.state).toMatchObject({
       kind: 'previewing',
       waypoint,
-      path: bestRouteVia(map.graph, player.position, waypoint, target, stats, config),
+      path: bestRouteVia(map.graph, player.position, waypoint, target, stats, freeSteps(fast, 0), config),
     });
   });
 
