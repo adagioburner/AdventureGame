@@ -3909,7 +3909,12 @@ it arrived later on 32% of trips and sooner on 11%.
    guard: A, ignore it and count only the walk, as the formula did
    (recommended); B, count rewards taken there for the later turns.
    **Answered** at 15:59: A.
-4. **The comparison** (1 A): COMPARISON_RESULTS
+4. **The comparison** (1 A): 20 games with the seats swapped at 3 s a move
+   on ten maps (seeds walked-0 to walked-9), against the computer before it,
+   which walked the formula's route: 9 wins to 10, one shared; +1.2 ± 2.2
+   gold a game for the new one, within luck; each won both games on two maps.
+   Games imagined per move 13,000 against 13,768, as tracing the routes it
+   weighs costs a little more.
 
 Built: `walkTurnByTurn` and `walkedDistance` in
 `packages/core/src/rules/bestRoute.ts`. A route scores 5 for each turn until it
