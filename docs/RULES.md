@@ -222,8 +222,8 @@ over *unvisited* POIs), the rollout policy (§9, over *unclaimed* POIs) and tree
 expansion (also unclaimed; the game's computer leaves out guarded gold it
 cannot win, Q295). The game's computer ranks by its own speeds instead (Q112,
 `packages/sim/src/speeds.ts`): its rollout by `closestBySpeeds`, along the
-cheapest route, and its tree by `closestByBestRoute`, along the best route for
-its speeds (Q210). The rollout and the tree share the
+cheapest route, and its tree by `closestByBestRoute`, along the route the
+formula counts best for its speeds (Q210). The rollout and the tree share the
 one K, so tuning `CLOSE_CANDIDATE_COUNT` moves both together; the remoteness
 walk has its own, `REMOTENESS_CANDIDATE_COUNT` (Q66), so the computer player
 tunes without moving the maps. What differs is eligibility, and what each does

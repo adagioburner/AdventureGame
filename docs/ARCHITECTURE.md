@@ -409,17 +409,19 @@ every eligible POI's effective distance, the least over n turns of 5n plus the
 stamina still needed after n turns of free steps, from the steps per terrain
 along the cheapest route (`RouteTable.stepsFrom`, counted the first time a
 node is asked for). The remoteness walk ranks by weighted terrain cost. Its
-real move walks the best route for its speeds (Q210, stage 1: `firstTurnOf`
-passes `bestRouteForSpeeds` to `turnTowards`). Its search's own choices count
-that route too (stage 2): the tree ranks by `closestByBestRoute`, its rest check
-is `stepsReachability(bestRouteStepsFor)` and its buy check counts the same
-steps, all from the cached steps per terrain of the routes kept to each site
-(`bestRouteSteps`, no route traced; it keeps each answer per space and speeds,
-up to `BEST_ROUTE_MEMO_KEYS` of them per map, since the search asks the same
-ones every round), and its own walk along a tree edge is
+real move walks the best route for it (Q210, stage 1: `firstTurnOf`
+passes `bestRouteForSpeeds` to `turnTowards`; scored as End turn walks it
+since Q308). Its search's own choices count the best route too (stage 2): the
+tree ranks by `closestByBestRoute`, the formula along the route it counts best
+for the speeds, from the cached steps per terrain of the routes kept to each
+site (`bestRouteSteps`, no route traced; it keeps each answer per space and
+speeds, up to `BEST_ROUTE_MEMO_KEYS` of them per map, since the search asks the
+same ones every round). Its rest check is `stepsReachability(walkedRouteSteps)`
+and its buy check `usesFully` along `bestRouteForSpeeds`, both the route it
+walks, traced (Q308, 2 A), and its own walk along a tree edge is
 `MctsOptions.edgeRoute`, `bestRouteForSpeeds`. Its imagined games, the other
 seats' turns inside a tree edge included, rank by `closestBySpeeds`
-(822 B), and walk the best route for the player's speeds (stage 3),
+(822 B), and walk the best route for the player (stage 3),
 traced once when a player picks its site (`bestRoute`, picked afresh rather
 than from `bestRouteSteps`' answers, since imagined players stand on too many
 spaces with too many speeds for any store of them) and counted a turn at a
