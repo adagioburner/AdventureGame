@@ -4402,7 +4402,7 @@ number, map or picture changed, and the rulebook needs no change.
 
 ---
 
-### Q320. ~~How do you keep track of players out of view?~~ — **answered 2026-10-26: a marker just inside the map's edge for every player whose figure is wholly out of view, at any zoom: the portrait from their card in a round badge with an arrow pointing at them, 48 px across on a laptop and 40 on a phone; a tap finds them as their card does; markers slide apart, go round the map's buttons, and slide a little off reward icons, guard numbers, figures and the route, its turn bubbles too (1-9)**
+### Q320. ~~How do you keep track of players out of view?~~ — **answered 2026-10-26: a marker just inside the map's edge for every player whose figure is wholly out of view, at any zoom: the portrait from their card in a round badge with an arrow pointing at them, 48 px across on a laptop and 40 on a phone; a tap finds them as their card does; markers slide apart, go round the map's buttons, and slide a little off reward icons, guard numbers, figures and the route, its turn bubbles too; a walking figure passes under them, and they make room where its walk ends as it starts (1-11)**
 
 Andrei, 2026-10-26 at 06:47: *"when i zoom on, i lose track of where other
 players are. cN we vave small floaters with character figurines and arrows
@@ -4442,6 +4442,15 @@ of view, on a laptop and a 390 px phone.
 9. **Turn bubbles.** The numbered bubbles that mark where later turns end on a
    route being planned (Q315) came to main after 8: markers keep off them too
    (recommended), or may cover them. **Answered** at 14:39: keep off them too.
+10. **A walking figure.** Andrei, 16:16: *"it's a bit weird when aplayer
+    figure walks and pushes these floaters out of its way. Perhaps it would be
+    ok if a walking figure could go under the floater, as long on its final
+    destination its clear"*. So markers no longer keep off a figure, or its
+    ring, while it walks.
+11. **Where the walk ends.** Asked when a marker over that spot makes room: A,
+    as the walk starts, so the figure arrives at a spot already clear and
+    nothing moves because it came near (recommended); B, when the figure
+    arrives. **Answered** at 16:18: A.
 
 Built: `edgeMarkers` in `apps/web/src/interaction/offscreen.ts` lays the
 markers out: each where the line from the middle of the map's box to its
@@ -4454,8 +4463,11 @@ side to side as the map moves. `MapView` draws one per player and places them
 every frame, so they follow the map and a figure walking at End turn; what
 they keep off is the unclaimed sites' icons and numbers, the figures in view
 and their rings, and the route's dots, cross, turn bubbles and waypoint
-flag. `GameScreen`
-gives the map its card's find (`findPlayer`), so a game on this device and
+flag. While a figure walks they keep off neither it nor its ring but, from the
+walk's start, where it and whoever stands beside it there will stand at its
+end (`figuresAtWalkEnd` in `apps/web/src/render/sceneModel.ts`; the walk's
+`Walker` carries the node it ends on, as the map shows the turn's result only
+after the walk) (10, 11). `GameScreen` gives the map its card's find (`findPlayer`), so a game on this device and
 online both have them, during the game and after it ends as cards find
 players then too (Q120, 474); the New game screens have none. The look is
 `.edge-marker` in `apps/web/index.html`. No rule, number, map or picture

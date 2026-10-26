@@ -369,6 +369,8 @@ export interface Walker {
   readonly player: PlayerId;
   /** World units, anywhere along the road it is walking. */
   readonly at: Point;
+  /** [Q320, 11] The node the walk ends on, where the edge markers make room as it starts. */
+  readonly to?: NodeId;
 }
 
 /**
@@ -470,6 +472,23 @@ export function buildCharacters(
     });
   });
   return { characters, rings };
+}
+
+/**
+ * [Q320, 11] The figures as they will stand on the node a walk ends on, with
+ * their rings: the walker and whoever stands there beside it. The map shows
+ * the turn's result only after the walk, so `state` still has the walker where
+ * it set out.
+ */
+export function figuresAtWalkEnd(scene: MapScene, state: GameState, catalog: ArtCatalog, walker: Walker): { figure: Figure; ring: PlayerRing }[] {
+  const to = walker.to;
+  if (to === undefined) return [];
+  const arrived = { ...state, players: state.players.map((player) => (player.id === walker.player ? { ...player, position: to } : player)) };
+  const { characters, rings } = buildCharacters(scene, arrived, catalog);
+  return characters.flatMap((figure, index) => {
+    const ring = rings[index];
+    return figure.node === to && ring !== undefined ? [{ figure, ring }] : [];
+  });
 }
 
 /**

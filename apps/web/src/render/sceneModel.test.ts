@@ -15,6 +15,7 @@ import {
   buildTurnBubbles,
   buildWaypoint,
   figuresAnimate,
+  figuresAtWalkEnd,
   guardRing,
   ICON_TOUCH,
   IDLE_WAIT_MS,
@@ -609,6 +610,23 @@ describe("the figures' idle loops (Q305, 15-19)", () => {
     expect(mover?.walking).toBe(true);
     expect(other?.walking).toBe(false);
     expect(frameIds([mover?.sprite ?? { index: -1 }])).toEqual(['player_avatars_01_frame1']);
+  });
+
+  it('knows where a walk ends: the walker and whoever it will stand beside there, as they will stand once it arrives (Q320, 11)', () => {
+    const [walking, waiting] = game.state.players;
+    const there = game.map.graph.adjacency[walking?.position ?? 0]?.[0];
+    if (walking === undefined || waiting === undefined || there === undefined) throw new Error('no one to walk to');
+    const moved = (state: GameState, player: PlayerId): GameState => ({ ...state, players: state.players.map((one) => (one.id === player ? { ...one, position: there } : one)) });
+    const before = moved(game.state, waiting.id);
+    const from = position(game.map.graph, walking.position);
+    const arrived = buildStateScene(scene, moved(before, walking.id), catalog);
+    const end = figuresAtWalkEnd(scene, before, catalog, { player: walking.id, at: from, to: there });
+    expect(end.map(({ figure }) => figure.player)).toEqual([walking.id, waiting.id]);
+    expect(end.map(({ figure }) => figure.foot)).toEqual(arrived.characters.slice(0, 2).map((figure) => figure.foot));
+    expect(end.map(({ ring }) => ring.at)).toEqual(arrived.rings.slice(0, 2).map((ring) => ring.at));
+    // Side by side, not on top of each other.
+    expect(end[0]?.figure.foot.x).not.toBe(end[1]?.figure.foot.x);
+    expect(figuresAtWalkEnd(scene, before, catalog, { player: walking.id, at: from })).toEqual([]);
   });
 
   it('plays a loop once through, each frame for its own time (16)', () => {
