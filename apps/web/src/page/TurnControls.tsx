@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { guardToFightAt, type GameState } from '@adventure/core';
-import type { MoveModeState } from '../interaction/moveMode.ts';
+import { endTurnOutcome, type EndTurnOutcome, type MoveModeState } from '../interaction/moveMode.ts';
 
 interface TurnControlsProps {
   readonly state: GameState;
@@ -175,12 +175,15 @@ export function TurnControls(props: TurnControlsProps) {
           Rest
         </button>
         <button className="btn primary" type="button" disabled={busy || props.offline || props.buying === true} onClick={props.onEndTurn}>
-          End turn
+          {END_TURN_LABEL[endTurnOutcome(state, player.id, move)]}
         </button>
       </div>
     </section>
   );
 }
+
+/** [Andrei, 2026-10-26] End turn's button says what it will do (`endTurnOutcome`). */
+const END_TURN_LABEL: Record<EndTurnOutcome, string> = { go: 'Go', fight: 'Fight', rest: 'End turn' };
 
 /**
  * [Q85, 302 and 304-307] The game master's actions on another person's turn
