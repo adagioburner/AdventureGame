@@ -1,58 +1,9 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { poiAt, rewardAmount, unclaimedGoldUnits, type GameEvent, type GameState, type PlayerId, type Point } from '@adventure/core';
 import type { ArtCatalog } from '../art/catalog.ts';
 import type { PlayedTurn, Purchase } from '../modes/hotseat.ts';
 import { GUARD_LABEL, STAT_LABEL, STAT_ORDER } from './journal.ts';
 import { Die, Portrait, StatIcon } from './Sprites.tsx';
-
-/**
- * What a turn ended on, when it ended on a guarded POI (§8): the die, the skill
- * added to it and the guard strength it was compared against, whichever way
- * it went. It stays until OK. An unguarded claim shows a `ClaimNotice` instead.
- */
-export function ResultCard({ catalog, turn, rolling, onClose }: { catalog: ArtCatalog; turn: PlayedTurn; rolling: boolean; onClose: () => void }) {
-  const interacted = turn.events.find((event): event is Extract<GameEvent, { type: 'interacted' }> => event.type === 'interacted');
-  const reward = interacted?.resolution.reward ?? null;
-  if (interacted === undefined || reward === null) return null;
-  const { roll, skillUsed, claimed } = interacted.resolution;
-  const guard = poiAt(turn.after.map, interacted.resolution.node)?.guard ?? null;
-  if (roll === null || skillUsed === null || guard === null) return null;
-  const avatar = turn.after.players.find((player) => player.id === turn.player)?.avatarId ?? '';
-  const prize = `${rewardAmount(reward, turn.after.map.ruleset.config)} ${STAT_LABEL[reward.kind]}`;
-  const className = `card result${rolling ? ' rolling' : claimed ? ' took' : ' missed'}`;
-
-  return (
-    <div className={className} role="status" aria-live="polite">
-      <header>
-        <Portrait catalog={catalog} avatarId={avatar} size={40} label={turn.name} />
-        <h2>{`${turn.name} faces a ${GUARD_LABEL[guard.type]} guard of ${guard.strength}`}</h2>
-      </header>
-      <div className="roll">
-        <Die catalog={catalog} value={roll.value} rolling={rolling} size={72} />
-        {rolling ? (
-          <p className="sum">Rolling…</p>
-        ) : (
-          <p className="sum">
-            <b>{roll.value}</b> rolled + <b>{turn.statsBefore[skillUsed]}</b> {STAT_LABEL[skillUsed]} ={' '}
-            <b>{roll.value + turn.statsBefore[skillUsed]}</b> against <b>{guard.strength}</b>
-          </p>
-        )}
-      </div>
-      {rolling ? null : (
-        <p className="outcome">
-          {claimed
-            ? `More than ${guard.strength}: the guard is beaten. +${prize}.`
-            : `Not more than ${guard.strength}: the ${STAT_LABEL[reward.kind]} stays on the space.`}
-        </p>
-      )}
-      {rolling ? null : (
-        <button className="btn" type="button" onClick={onClose}>
-          OK
-        </button>
-      )}
-    </div>
-  );
-}
 
 /** How far a claim's notice drifts while it is up, in CSS pixels: from a little over the head to about 40 above it. */
 const NOTICE_RISE = { from: 6, to: -40 };
@@ -73,7 +24,46 @@ export function ClaimNotice({ turn, ...timing }: { turn: PlayedTurn } & NoticeTi
   const interacted = turn.events.find((event): event is Extract<GameEvent, { type: 'interacted' }> => event.type === 'interacted');
   const reward = interacted?.resolution.reward ?? null;
   if (reward === null) return null;
-  return <FloatingNotice player={turn.player} text={`${STAT_LABEL[reward.kind]} +${rewardAmount(reward, turn.after.map.ruleset.config)}`} {...timing} />;
+  return (
+    <FloatingNotice player={turn.player} {...timing}>
+      <h2>{`${STAT_LABEL[reward.kind]} +${rewardAmount(reward, turn.after.map.ruleset.config)}`}</h2>
+    </FloatingNotice>
+  );
+}
+
+/**
+ * [Andrei, 2026-10-26] Q314: "your own and other players fights pop up and
+ * disrupt your planning". A guard fight floats on the fighter's head as a
+ * claim's notice does, every player's fights, your own included, with no OK
+ * (3). Over the guard's kind and strength the die tumbles, then the notice
+ * says whether the guard was beaten, with the sum under it (1 A): green when
+ * it was, red when it held. It stays 3 seconds (2) and fades as a claim's
+ * notice does. `stayMs` counts from the start of the tumble.
+ */
+export function FightNotice({ catalog, turn, rolling, ...timing }: { catalog: ArtCatalog; turn: PlayedTurn; rolling: boolean } & NoticeTiming) {
+  const interacted = turn.events.find((event): event is Extract<GameEvent, { type: 'interacted' }> => event.type === 'interacted');
+  const reward = interacted?.resolution.reward ?? null;
+  if (interacted === undefined || reward === null) return null;
+  const { roll, skillUsed, claimed } = interacted.resolution;
+  const guard = poiAt(turn.after.map, interacted.resolution.node)?.guard ?? null;
+  if (roll === null || skillUsed === null || guard === null) return null;
+  const skill = turn.statsBefore[skillUsed];
+  const kind = GUARD_LABEL[guard.type];
+  return (
+    <FloatingNotice player={turn.player} className={rolling ? 'rolling' : claimed ? 'took' : 'missed'} {...timing}>
+      <div className="fight">
+        <Die catalog={catalog} value={roll.value} rolling={rolling} size={40} />
+        {rolling ? (
+          <h2>{`${kind.charAt(0).toUpperCase()}${kind.slice(1)} guard of ${guard.strength}`}</h2>
+        ) : (
+          <div>
+            <h2>{claimed ? `Guard beaten: ${STAT_LABEL[reward.kind]} +${rewardAmount(reward, turn.after.map.ruleset.config)}` : 'Guard holds'}</h2>
+            <p className="fight-sum">{`${roll.value} + ${skill} ${STAT_LABEL[skillUsed]} = ${roll.value + skill} against ${guard.strength}`}</p>
+          </div>
+        )}
+      </div>
+    </FloatingNotice>
+  );
 }
 
 /**
@@ -85,7 +75,11 @@ export function ClaimNotice({ turn, ...timing }: { turn: PlayedTurn } & NoticeTi
  * claim's notice, on the buyer's figure, with the claim's timing (775).
  */
 export function PurchaseNotice({ purchase, text, ...timing }: { purchase: Purchase; text: string } & NoticeTiming) {
-  return <FloatingNotice player={purchase.player} text={text} {...timing} />;
+  return (
+    <FloatingNotice player={purchase.player} {...timing}>
+      <h2>{text}</h2>
+    </FloatingNotice>
+  );
 }
 
 interface NoticeTiming {
@@ -97,7 +91,15 @@ interface NoticeTiming {
 }
 
 /** A small card on a player's figure that fades in, drifts up, and fades out. */
-function FloatingNotice({ player, text, locate, stayMs, appearMs, fadeMs }: { player: PlayerId; text: string } & NoticeTiming) {
+function FloatingNotice({
+  player,
+  className,
+  children,
+  locate,
+  stayMs,
+  appearMs,
+  fadeMs,
+}: { player: PlayerId; className?: string; children: ReactNode } & NoticeTiming) {
   const anchor = useRef<HTMLDivElement>(null);
   const card = useRef<HTMLDivElement>(null);
 
@@ -139,8 +141,8 @@ function FloatingNotice({ player, text, locate, stayMs, appearMs, fadeMs }: { pl
 
   return (
     <div ref={anchor} className="claim-anchor" role="status" aria-live="polite">
-      <div ref={card} className="claim">
-        <h2>{text}</h2>
+      <div ref={card} className={className === undefined ? 'claim' : `claim ${className}`}>
+        {children}
       </div>
     </div>
   );

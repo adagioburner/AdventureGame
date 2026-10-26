@@ -833,19 +833,7 @@
       .card > .btn {
         justify-self: end;
       }
-      .result {
-        top: 14px;
-        left: 50%;
-        transform: translateX(-50%);
-        width: min(400px, calc(100% - 32px));
-      }
-      .result.took {
-        border-top: 4px solid var(--took);
-      }
-      .result.missed {
-        border-top: 4px solid var(--missed);
-      }
-      /* [Andrei, 2026-09-24] An unguarded claim's notice: the result card's look, small, on the figure's head. */
+      /* [Andrei, 2026-09-24] An unguarded claim's notice: a card's look, small, on the figure's head. A purchase's (Q190) and a fight's (Q314) too. */
       .claim-anchor {
         position: absolute;
         z-index: 3;
@@ -865,17 +853,22 @@
       .claim h2 {
         font: 400 16px/1.2 var(--display);
       }
-      .roll {
+      /* [Q314] A fight's notice: plain while the die rolls, red when the guard holds. */
+      .claim.rolling {
+        border-top-color: var(--line);
+      }
+      .claim.missed {
+        border-top-color: var(--missed);
+      }
+      .claim .fight {
         display: flex;
         align-items: center;
-        gap: 14px;
+        gap: 8px;
       }
-      .sum {
-        font-size: 16px;
-      }
-      .sum b {
-        font: 700 20px var(--ui);
+      .fight-sum {
+        font: 600 13px/1.25 var(--ui);
         font-variant-numeric: tabular-nums;
+        color: var(--muted);
       }
       .outcome {
         font-weight: 600;
@@ -1241,9 +1234,6 @@
         .notice {
           max-width: calc(100% - 90px);
           bottom: 52px;
-        }
-        .result {
-          top: 8px;
         }
       }
       /* [Q58, 82] Wide enough, the line sits to the right of the buttons. */

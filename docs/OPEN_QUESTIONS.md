@@ -874,7 +874,7 @@ be postponed, because with multiplayer the game [state] will be persisted
 anyway."* [Q56](#q56) 66 built it: a game on one device is kept in that
 browser, so a reload picks it up where it was.
 
-### Q38. ~~How does the page show what a POI gave?~~ — **answered 2026-09-24: unguarded floats up from the figure and fades, a guard fight waits for OK**
+### Q38. ~~How does the page show what a POI gave?~~ — **answered 2026-09-24: unguarded floats up from the figure and fades, a guard fight waits for OK; since Q314 a fight floats up too**
 
 Phase 4 showed a card after every POI a turn ended on, and it stayed until OK,
 unguarded claims included. That was never put to Andrei; it was item 2 on the
@@ -933,7 +933,7 @@ each. He took all five recommendations:
 - A computer seat's name and figurine are chosen as a person's are, and
   nothing in the game marks it as a computer except its thinking.
 
-### Q42. ~~What shows during the computer's turn?~~ — **answered 2026-09-24: a filling bar, and its die card closes itself**
+### Q42. ~~What shows during the computer's turn?~~ — **answered 2026-09-24: a filling bar, and its die card closes itself; since Q314 every fight floats on the figure**
 
 - While it thinks, the line above the buttons reads "<name> is thinking…" over
   a bar that fills across its thinking time. Its player card is highlighted and
@@ -1000,8 +1000,9 @@ to him with a recommendation each:
   it stays that far out, centred on the figure.
 - **After the notice**, as recommended: when the move before ended with an
   unguarded claim, the map waits until that claim's notice has faded, since the
-  notice rides on the figure that made the claim. A guard fight's die card sits
-  at the top of the screen and does not hold it up.
+  notice rides on the figure that made the claim. A guard fight's die card sat
+  at the top of the screen and did not hold it up; since [Q314](#q314) a
+  fight's notice rides on the figure too, and the map waits for it.
 
 Panning or zooming while it glides stops it where it is.
 `glideTo` in `apps/web/src/page/MapView.tsx`, called from `GameScreen.tsx`.
@@ -1296,6 +1297,7 @@ the Track button's own details are 72 to 77, answered as [Q57](#q57).
     walk, the die, an unguarded claim floating up. Their fight card closes
     itself after 3 seconds as a computer's does (Q42); only your own waits for
     OK. A route you were planning steps aside while they walk and comes back.
+    Since [Q314](#q314) every fight, your own too, floats on the figure.
 52. **Changed:** an explicit Track toggle. While it is pressed the map
     follows the players on turn; panning, zooming or planning unpresses it;
     pressing it goes back to watching. The notice "Your turn" or
@@ -3876,6 +3878,47 @@ it plays out and to the other seats' turns along its tree's edges. On the
 eight-space test map in `packages/ai/src/mcts.test.ts` the computer's first
 move changes from the 2 gold next door to the guarded 3. No rule, number, map
 or picture changed, and the rulebook needs no change.
+
+<a id="q314"></a>
+### Q314. ~~How can fights stop interrupting planning?~~ — **answered 2026-10-26: every fight, your own included, floats on the fighter's head as a claim does, with no OK: the die, "Guard beaten: gold +1" or "Guard holds" and the sum under it, for 3 seconds once the die stops, and the map waits for it (1-4)**
+
+Andrei, 2026-10-26 at 05:47: *"your own and other players fights pop up and
+disrupt your planning. can we make them less dispruptive? E g. also like
+floaters above the players characters"*. Until then every fight put a card
+across the top of the map, 400 px wide on a laptop and the map's full width on
+a phone, which kept taps off the map under it. Your own waited for OK
+([Q38](#q38)); everyone else's closed after 3 seconds (Q42, [Q56](#q56) 51).
+
+Mocked up on a real game at 1280 and 340 px wide, beside the card it would
+replace: the claim notice's look, on the fighter's head, taking no taps. He
+picked each detail from a card at 07:12 and 07:13:
+
+1. **What it shows.** A: the die, "Guard beaten: gold +1" or "Guard holds",
+   and the sum under it, "4 + 0 magic = 4 against 3" (recommended); B: the die
+   and the outcome only, the sum left to the turn log. As in the mockup, while
+   the die tumbles the notice reads the guard's kind and strength, "Magic guard
+   of 3", with a plain top edge; once it stops the edge is green when the guard
+   was beaten and red when it held. **Answered:** A.
+2. **How long.** The die tumbles in the notice for 1.1 seconds, as it did on
+   the card. Then 3 seconds, the computer's card's time (recommended), or a
+   claim's 2; it fades over half a second and drifts up all the while, as a
+   claim's notice does. **Answered:** 3 seconds.
+3. **Your own fights.** The same notice with no OK (recommended), or your own
+   keeping the card with OK. With no OK, the end-of-game card comes up once the
+   winning fight's notice has faded. **Answered:** the same notice.
+4. **The map moving on.** The map waits for a claim's notice to fade before it
+   glides to the next player (Q46): for a fight's too (recommended), or at once
+   as it did past the card. A route saved from the turn before blinks from
+   then on, as Q145 574 times it. **Answered:** wait.
+
+Built: `FightNotice` in `apps/web/src/page/Cards.tsx`, on the floating notice
+the claim's and a purchase's use, replaces the result card;
+`apps/web/src/page/GameScreen.tsx` gives it `timing.fightMs` (3000, which was
+`computerCardMs`) and waits for any notice before the glide. As a claim's
+notice always has, it is taken away when someone starts planning or the next
+turn plays out, and like a claim's it is missed when the fighter's figure is
+out of view; the turn log keeps the whole fight. No rule, number, map or
+picture changed, and the rulebook's text needs no change.
 
 ---
 
