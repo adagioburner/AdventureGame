@@ -121,6 +121,10 @@ export function GameScreen({
   // stays where the viewer put it, and the Track button says which. It is
   // pressed when a game opens (76).
   const [tracking, setTracking] = useState(true);
+  // [Q316, 3] The turn this page's End turn committed, and whether its walk is
+  // playing: the map follows that walk, though Track stays as it is.
+  const endedTurn = useRef<number | null>(null);
+  const [ownWalk, setOwnWalk] = useState(false);
   // [Q120, 471] The player whose card was clicked last, while their figure
   // stands on its ring; `click` counts clicks, so clicking the same card again
   // starts the ring's time over.
@@ -314,10 +318,14 @@ export function GameScreen({
         ? mine.planned
         : { path: routeOf(before, turn.action), waypoint: turn.action.kind === 'move' ? (turn.action.waypoint ?? null) : null },
     );
+    const own = endedTurn.current === before.turn.number;
+    if (own) endedTurn.current = null;
+    setOwnWalk(own);
     // Whatever happens while it plays out, the turn has been played: the
     // page must end up showing it, never stuck part-way.
     await playOut(turn, before).catch(() => undefined);
     setWalker(null);
+    setOwnWalk(false);
     setShown(turn.after);
     setEntries((current) => [journalEntry(turn, before, movedOn), ...current]);
     setInFlight(null);
@@ -442,8 +450,7 @@ export function GameScreen({
   // glides there at the zoom it already has, from the first turn on. After an
   // unguarded claim it waits until the claim's notice has faded, since the
   // notice rides on the figure that made the claim. [Q57, 74] Only while Track
-  // is pressed; on one device it presses itself at the start of every turn,
-  // since a new person is at the screen (77).
+  // is pressed, on one device as online.
   const centeredTurn = useRef<number | null>(null);
   useEffect(() => {
     if (!mapReady || busy || shown.status !== 'in_progress') return;
@@ -452,10 +459,9 @@ export function GameScreen({
     const player = shown.players[shown.turn.activeSeat - 1];
     if (player === undefined) return;
     centeredTurn.current = shown.turn.number;
-    if (source.mode.allowOutOfTurnPlanning && !tracking) return;
-    setTracking(true);
+    if (!tracking) return;
     handle.current?.glideTo(player.position);
-  }, [mapReady, busy, shown, result, source, tracking]);
+  }, [mapReady, busy, shown, result, tracking]);
 
   const refuse = (why: EnterRefusal): void => {
     const active = shown.players[shown.turn.activeSeat - 1];
@@ -566,15 +572,14 @@ export function GameScreen({
     setTracking(true);
     handle.current?.track(active?.position ?? null);
   };
-  /** [Q57, 76] End turn and Rest press Track, without moving the map, so the walk and the turns after it are watched. */
   const endTurn = (rest: boolean): void => {
     // [Q311] Never from a game shown behind the page's own: a change has
     // arrived that is not on the screen yet.
     if (shown !== source.state) return;
     if (active !== undefined) setPressed({ turn: shown.turn.number, outcome: endTurnOutcome(shown, active.id, move) });
+    if (!rest) endedTurn.current = source.state.turn.number;
     if (rest) controller.rest();
     else controller.endTurn();
-    if (!controller.engaged) setTracking(true);
   };
   /** Cancel puts the route down, and online clears the saved one too ([Q56, 53]). */
   const cancel = useRef<() => void>(() => undefined);
@@ -712,6 +717,7 @@ export function GameScreen({
           found={found?.player ?? null}
           onTap={onTap}
           tracking={tracking}
+          follow={tracking || ownWalk}
           onTrack={shown.status === 'in_progress' ? pressTrack : undefined}
           // [Q63, 145] Sound stays after the game ends, where Track goes.
           sound={{ on: soundOn, onToggle: () => sounds.setOn(!soundOn) }}
