@@ -64,11 +64,14 @@ interface MapViewProps {
   readonly found?: PlayerId | null;
   /** A click or tap, as opposed to a drag; `shift` for a shift-click. */
   readonly onTap?: (target: Pick, shift: boolean) => void;
-  /**
-   * [Q57] Whether Track is pressed: a walking figure takes the map along only
-   * while it is (Q47). Pressed if omitted.
-   */
+  /** [Q57] Whether Track is pressed, as its button shows. Pressed if omitted. */
   readonly tracking?: boolean;
+  /**
+   * Whether a walking figure takes the map along (Q47): while Track is
+   * pressed, and [Q316, 3] during the walk of the player's own End turn. As
+   * `tracking` if omitted.
+   */
+  readonly follow?: boolean;
   /** [Q57, 72] Shows the Track button, above "+", which calls this. */
   readonly onTrack?: (() => void) | undefined;
   /** [Q63, 139] Shows the Sound button before Track: whether sound is on, and what pressing it does. */
@@ -120,6 +123,7 @@ export function MapView({
   found = null,
   onTap,
   tracking = true,
+  follow = tracking,
   onTrack,
   sound,
   onMoved,
@@ -135,9 +139,9 @@ export function MapView({
   const from = pathFrom ?? state.players[state.turn.activeSeat - 1]?.position ?? null;
   const latest = useRef({ state, path, from, waypoint, walker, cue, planner, found, onTap, onMoved, onReady });
   latest.current = { state, path, from, waypoint, walker, cue, planner, found, onTap, onMoved, onReady };
-  // Whether a walk takes the map along. It follows Track, and stops at once
+  // Whether a walk takes the map along. It follows `follow`, and stops at once
   // when the map is moved, before the page has unpressed Track.
-  const following = useRef(tracking);
+  const following = useRef(follow);
   // [Q86, 330 and 331] Counts up to build the map again after it failed to
   // start or lost its drawing surface; `broken` once that happened too often.
   const [build, setBuild] = useState(0);
@@ -486,8 +490,8 @@ export function MapView({
     renderer.current?.setFound(found);
   }, [found]);
   useEffect(() => {
-    following.current = tracking;
-  }, [tracking]);
+    following.current = follow;
+  }, [follow]);
   useEffect(() => {
     refit.current?.();
   }, [frame]);
