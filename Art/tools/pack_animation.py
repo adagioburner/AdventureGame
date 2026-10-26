@@ -16,7 +16,9 @@ Each frame keeps its place in its cell exactly as drawn, so the figure does not
 shift from frame to frame, and its atlas anchor is PIVOT. Its shadow is made
 dark and see-through as pack_sheets.py makes every other sheet's (Q59; Q305),
 each figure's shadow on its own since each strip draws its shadow a
-different grey. A frame's sprite is named for the figure it animates:
+different grey. The figures pack_sheets.py's MIRROR flips on the figurine
+sheet are flipped here too, every frame about PIVOT, shadow and all (Q313).
+A frame's sprite is named for the figure it animates:
 `player_avatars_01_frame1` is the first frame of the figurine sheet's
 `player_avatars_01`. The strips stay in Art/originals/ unchanged, and the same
 inputs always give byte-identical output.
@@ -29,7 +31,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from pack_sheets import ART, ORIGINALS, VISIBLE, darken_shadows, read_png, write_png  # noqa: E402
+from pack_sheets import ART, MIRROR, ORIGINALS, VISIBLE, darken_shadows, flipped, read_png, write_png  # noqa: E402
 
 NAME = "player_avatars_animated"
 SOURCE = os.path.join(ORIGINALS, NAME)
@@ -49,6 +51,8 @@ FRAME_WIDTH = 256
 FRAME_HEIGHT = 320
 # Where the figure stands in every frame, as the animations were drawn.
 PIVOT = (128, 288)
+# [Q313] The figurines flipped on their own sheet, whose animations are flipped too.
+MIRRORED = {"player_avatars_%02d" % n for n in MIRROR.get("player_avatars", ())}
 
 
 def visible_box(width, px, x0, x1, height):
@@ -75,10 +79,19 @@ def main():
         boxes = [visible_box(width, px, k * FRAME_WIDTH, (k + 1) * FRAME_WIDTH, height) for k in range(FRAMES)]
         shaded = darken_shadows(width, px, boxes)
         print("  %s: %d frames, %d shadow pixels darkened" % (strip, FRAMES, shaded))
+        mirror = figurine in MIRRORED
+        if mirror:
+            # Each frame is twice PIVOT wide, so flipping it keeps the figure on PIVOT.
+            if FRAME_WIDTH != 2 * PIVOT[0]:
+                raise SystemExit("a frame %d wide cannot be flipped about x = %d" % (FRAME_WIDTH, PIVOT[0]))
+            for y in range(height):
+                for k in range(FRAMES):
+                    start = (y * width + k * FRAME_WIDTH) * 4
+                    px[start:start + FRAME_WIDTH * 4] = flipped(px[start:start + FRAME_WIDTH * 4])
         stride = width * 4
         out[row * FRAME_HEIGHT * stride:(row + 1) * FRAME_HEIGHT * stride] = px
         for k in range(FRAMES):
-            sprites.append({
+            sprite = {
                 "id": "%s_frame%d" % (figurine, k + 1),
                 "x": k * FRAME_WIDTH,
                 "y": row * FRAME_HEIGHT,
@@ -86,7 +99,10 @@ def main():
                 "height": FRAME_HEIGHT,
                 "anchor": {"x": PIVOT[0], "y": PIVOT[1]},
                 "original": "%s/%s" % (NAME, strip),
-            })
+            }
+            if mirror:
+                sprite["mirrored"] = True
+            sprites.append(sprite)
 
     write_png(os.path.join(ART, "%s_sheet.png" % NAME), sheet_w, sheet_h, out)
     atlas = {
@@ -95,7 +111,8 @@ def main():
         "cell_height": FRAME_HEIGHT,
         "notes": ("Packed by Art/tools/pack_animation.py from Art/originals/%s/, one row per figure, "
                   "each frame where it was drawn, with each figure's grey shadow made black and "
-                  "see-through. Do not edit by hand: replace a strip and run the tool again." % NAME),
+                  "see-through%s. Do not edit by hand: replace a strip and run the tool again."
+                  % (NAME, ", and the frames marked mirrored flipped left to right" if MIRRORED else "")),
         "sprites": sprites,
     }
     with open(os.path.join(ART, "%s_atlas.json" % NAME), "w") as fh:

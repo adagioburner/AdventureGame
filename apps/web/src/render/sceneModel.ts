@@ -444,7 +444,10 @@ export function buildCharacters(
       foot,
       size,
       node: player.position,
-      depth: foot.y + 0.5,
+      // [Q313] Of the figures side by side, the one on the left stands in
+      // front: they all face right, so each one's front stays clear of its
+      // neighbour's back.
+      depth: foot.y + 0.5 + (together.length - 1 - slot) * 0.001,
       player: player.id,
       loop: frames === null || animation === null ? null : { frames, durationsMs: animation.durationsMs },
       walking,
@@ -553,6 +556,66 @@ export function buildPathScene(scene: MapScene, map: GameMap, from: NodeId, prev
     dots,
     cross: { at: position(map.graph, preview.destination), color: crossColor, size: prospect.crossSize * scene.spacing },
   };
+}
+
+/**
+ * [Q315] A turn bubble over the grey part of a route being planned (7 B):
+ * where the figure will be at the end of a later turn, standing above that
+ * space and pointing down at it (1 B).
+ */
+export interface TurnBubble {
+  /** The space's centre on screen, which the bubble's point touches. */
+  readonly at: Point;
+  /** The turn, counting this one as 1 (2 A): "3", or "3–4" with a rest (4 A). */
+  readonly text: string;
+}
+
+/**
+ * [Q315, 1 B] How a turn bubble is drawn, in node spacings on screen: a white
+ * rounded box `height` tall and at least `minWidth` wide, its text `padding`
+ * clear of each side, standing `lift` above the space's centre with a point
+ * `pointWidth` wide down to it, and a near-black edge `outline` wide round
+ * both; the turn in bold near-black `fontSize` type.
+ */
+export const TURN_BUBBLE = {
+  height: 0.24,
+  minWidth: 0.26,
+  padding: 0.07,
+  corner: 0.35,
+  lift: 0.12,
+  pointWidth: 0.1,
+  outline: 0.025,
+  fontSize: 0.18,
+  fill: '#ffffff',
+  ink: '#1b1b1b',
+} as const;
+
+/**
+ * [Q315] The turn bubbles for a route, from `turnStops`' ends of its turns
+ * (`stops`), which `@adventure/core` counts as End turn walks it (3 A, 6 A).
+ * Each later turn's end gets one; a turn End turn would rest shares the bubble
+ * of the turn before, so one reads "3–4" (4 A, 6 A). This turn's own end has
+ * none, being where the colours end, and neither has the destination, whose
+ * cross stays bare (5 B). Nor would a later turn that ends where the figure
+ * stands, which cannot happen: a rest pays for any step.
+ */
+export function buildTurnBubbles(scene: MapScene, map: GameMap, preview: PathPreview, stops: readonly number[]): TurnBubble[] {
+  const ends: { node: NodeId; first: number; last: number }[] = [];
+  stops.forEach((walked, index) => {
+    if (index === 0 || walked === 0 || walked >= preview.steps.length) return;
+    const turn = index + 1;
+    const before = ends[ends.length - 1];
+    if (before !== undefined && before.last === turn - 1 && stops[index - 1] === walked) {
+      before.last = turn;
+      return;
+    }
+    const node = preview.steps[walked - 1]?.node;
+    if (node !== undefined) ends.push({ node, first: turn, last: turn });
+  });
+  return ends.map((end) => ({
+    at: scene.projection.toScreen(position(map.graph, end.node)),
+    text: end.first === end.last ? String(end.first) : `${end.first}–${end.last}`,
+  }));
 }
 
 /** [SOURCE §4] The shift-click waypoint marker, standing on its node. */

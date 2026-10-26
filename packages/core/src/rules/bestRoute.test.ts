@@ -7,7 +7,7 @@ import { initialStats, type MovementAllowance, type PlayerStats } from '../playe
 import { createRng } from '../rng.ts';
 import { frontPath, routeTable, shortestPath } from '../path.ts';
 import { refreshAllowance } from './movement.ts';
-import { bestRoute, bestRouteSteps, bestRouteVia, effectiveDistance, walkTurnByTurn, walkedDistance } from './bestRoute.ts';
+import { bestRoute, bestRouteSteps, bestRouteVia, effectiveDistance, turnStops, walkTurnByTurn, walkedDistance } from './bestRoute.ts';
 
 const config = DEFAULT_GAME_CONFIG;
 
@@ -145,6 +145,48 @@ describe('walkTurnByTurn (Q308)', () => {
   it('is a turn and nothing spent for the empty route', () => {
     const fresh = { plains: 1, forest: 1, mountain: 1 };
     expect(walkedDistance(walkTurnByTurn(detour, [], fresh, 3, fresh, config), config)).toBe(5);
+  });
+});
+
+describe('turnStops (Q315)', () => {
+  const plains = [n(1), n(2), n(3), n(4), n(5)];
+  const none = { plains: 0, forest: 0, mountain: 0 };
+
+  it('ends this turn where the free steps and stamina run out, and each later turn on the full speeds', () => {
+    // Two free and one paid this turn, then two free a turn.
+    expect(turnStops(detour, plains, { plains: 2, forest: 0, mountain: 0 }, 1, { plains: 2, forest: 0, mountain: 0 }, config)).toEqual([3, 5]);
+  });
+
+  it('is one turn when the route arrives this turn', () => {
+    expect(turnStops(detour, plains, none, 10, none, config)).toEqual([5]);
+  });
+
+  it('counts a turn that walks nothing as a rest, repeating where the turn before ended', () => {
+    // One paid this turn; next turn rests for 5; then four.
+    expect(turnStops(detour, plains, none, 1, none, config)).toEqual([1, 1, 5]);
+    // Nothing paid this turn, so End turn rests now.
+    expect(turnStops(detour, plains, none, 0, none, config)).toEqual([0, 5]);
+  });
+
+  it('pays forest steps at their own price', () => {
+    // 6f costs 2 of the 3 held; 7f's 2 waits for a rest; then 7f, 8f and 5 for 5 of the 6.
+    expect(turnStops(detour, [n(6), n(7), n(8), n(5)], none, 3, none, config)).toEqual([1, 1, 4]);
+  });
+
+  it('has as many turns as walkTurnByTurn counts, on random routes', () => {
+    const grid = randomGrid('turn-stops', 7);
+    const rng = createRng('turn-stops-routes');
+    for (let trial = 0; trial < 200; trial++) {
+      const from = n(rng.nextIntInclusive(0, grid.nodes.length - 1));
+      const to = n(rng.nextIntInclusive(0, grid.nodes.length - 1));
+      const path = shortestPath(grid, from, to, config) ?? [];
+      const fresh = { plains: rng.nextIntInclusive(0, 2), forest: rng.nextIntInclusive(0, 2), mountain: rng.nextIntInclusive(0, 1) };
+      const left = { plains: rng.nextIntInclusive(0, fresh.plains), forest: rng.nextIntInclusive(0, fresh.forest), mountain: rng.nextIntInclusive(0, fresh.mountain) };
+      const stamina = rng.nextIntInclusive(0, 12);
+      const stops = turnStops(grid, path, left, stamina, fresh, config);
+      expect(stops.length).toBe(walkTurnByTurn(grid, path, left, stamina, fresh, config).turns);
+      expect(stops[stops.length - 1]).toBe(path.length);
+    }
   });
 });
 

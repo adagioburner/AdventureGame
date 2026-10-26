@@ -7,6 +7,7 @@ import {
   previewPath,
   refreshAllowance,
   shortestPath,
+  turnStops,
   type GameState,
   type MovementAllowance,
   type NodeId,
@@ -15,7 +16,7 @@ import {
 import { HotseatGame, HOTSEAT_MODE, type UiModeConfig } from '../modes/hotseat.ts';
 import { ONLINE_MODE } from '../modes/online.ts';
 import { mapFor } from '../page/seed.ts';
-import { createMoveModeController, endTurnOutcome, type MoveModeController, type MoveModeState } from './moveMode.ts';
+import { createMoveModeController, endsOffSite, endTurnOutcome, endTurnQuestion, type MoveModeController, type MoveModeState } from './moveMode.ts';
 
 const map = mapFor('adventure', 'standard');
 const config = map.ruleset.config;
@@ -74,7 +75,7 @@ describe('move mode (§7.1), idle → selecting → previewing', () => {
     expect(controller.state.kind).toBe('idle');
   });
 
-  it('draws the cheapest route with the colours previewPath gives it, and nothing of its own', () => {
+  it('draws the cheapest route with the colours previewPath gives it and the turns turnStops ends, and nothing of its own', () => {
     const { game, controller } = setup();
     const player = seat(game.state, 0);
     const { target } = nodeAlong(game.state, 12);
@@ -87,6 +88,7 @@ describe('move mode (§7.1), idle → selecting → previewing', () => {
       waypoint: null,
       path,
       preview: previewPath(map.graph, player.position, path, game.state.turn.allowance, player.stats.stamina, config),
+      stops: turnStops(map.graph, path, game.state.turn.allowance, player.stats.stamina, refreshAllowance(player.stats), config),
     });
   });
 
@@ -183,6 +185,7 @@ describe('move mode (§7.1), idle → selecting → previewing', () => {
       waypoint: saved?.waypoint ?? null,
       path,
       preview: previewPath(map.graph, now.position, path, refreshAllowance(now.stats), now.stats.stamina, config),
+      stops: turnStops(map.graph, path, refreshAllowance(now.stats), now.stats.stamina, refreshAllowance(now.stats), config),
     });
   });
 
@@ -280,7 +283,8 @@ describe('End turn’s button says what it will do (Andrei, 2026-10-26)', () => 
   function shown(state: GameState, path: readonly NodeId[]): MoveModeState {
     const player = seat(state, 0);
     const preview = previewPath(map.graph, player.position, path, state.turn.allowance, player.stats.stamina, config);
-    return { kind: 'previewing', destination: path[path.length - 1] as NodeId, waypoint: null, path, preview };
+    const stops = turnStops(map.graph, path, state.turn.allowance, player.stats.stamina, refreshAllowance(player.stats), config);
+    return { kind: 'previewing', destination: path[path.length - 1] as NodeId, waypoint: null, path, preview, stops };
   }
   const idle: MoveModeState = { kind: 'idle' };
   const selecting: MoveModeState = { kind: 'selecting', waypoint: null };
@@ -451,7 +455,7 @@ describe('move mode online (§7.1): planning out of turn (Q56, 49 to 53)', () =>
   });
 });
 
-describe('a space chosen on your own turn needs no tap on your figure first (Q145, 570 to 572)', () => {
+describe('a space chosen needs no tap on your figure first (Q145, 570 and 571; online out of turn too, Q310, 1)', () => {
   it('picks the figure up and chooses the space, as tapping the figure then the space does', () => {
     const { game, controller } = setup();
     const player = seat(game.state, 0);
@@ -487,14 +491,20 @@ describe('a space chosen on your own turn needs no tap on your figure first (Q14
     expect(controller.state).toMatchObject({ kind: 'previewing', destination: near });
   });
 
-  it('online, plans on this player’s own turn but not while another plays (572)', () => {
+  it('online, plans on this player’s own turn and, since Q310 1, while another plays', () => {
     const { game, controller, play } = onlineSetup();
     const ada = seat(game.state, 0);
     const bram = seat(game.state, 1);
     const near = map.graph.adjacency[bram.position]?.[0] as NodeId;
     controller.choose(near, false);
-    expect(controller.state.kind).toBe('idle');
-    expect(controller.engaged).toBe(false);
+    expect(controller.planner).toBe(bram.id);
+    expect(controller.engaged).toBe(true);
+    expect(controller.state).toMatchObject({ kind: 'previewing', destination: near });
+    const tapped = onlineSetup();
+    tapped.controller.enter(bram.id);
+    tapped.controller.choose(near, false);
+    expect(controller.state).toEqual(tapped.controller.state);
+    controller.cancel();
     play({ kind: 'rest', player: ada.id });
     controller.choose(near, false);
     expect(controller.planner).toBe(bram.id);
@@ -502,6 +512,18 @@ describe('a space chosen on your own turn needs no tap on your figure first (Q14
     expect(controller.state).toMatchObject({ kind: 'previewing', destination: near });
   });
 
+  it('online, a route chosen with a tap while another plays is carried into this player’s turn (Q310, 1)', () => {
+    const { game, controller, sent, play } = onlineSetup();
+    const ada = seat(game.state, 0);
+    const bram = seat(game.state, 1);
+    controller.choose(nodeAlong(game.state, 3).target, false);
+    const route = controller.state.kind === 'previewing' ? controller.state.path : null;
+    expect(route).not.toBeNull();
+    play({ kind: 'rest', player: ada.id });
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: route });
+    controller.endTurn();
+    expect(sent).toEqual([{ kind: 'move', player: bram.id, path: route, waypoint: null }]);
+  });
   it('does nothing once the game is over', () => {
     const { game, controller } = setup();
     controller.setGame({ ...game.state, status: 'finished' });
@@ -822,5 +844,128 @@ describe('a route put down with Track, or cancelled, stays as it is when somethi
     controller.setGame(planned(game.state, player.id, route));
     controller.putDown();
     expect(controller.unsaved).toBe(false);
+  });
+});
+
+describe('End turn asks first when the walk ends off a site (Q318)', () => {
+  /** Spaces by how many roads they are from the first seat's start, sites or not. */
+  function spaces(state: GameState, site: boolean, hops: (count: number) => boolean): NodeId[] {
+    const from = seat(state, 0).position;
+    const seen = new Map<NodeId, number>([[from, 0]]);
+    const queue: NodeId[] = [from];
+    for (let next = queue.shift(); next !== undefined; next = queue.shift()) {
+      for (const node of map.graph.adjacency[next] ?? []) {
+        if (seen.has(node)) continue;
+        seen.set(node, (seen.get(next) ?? 0) + 1);
+        queue.push(node);
+      }
+    }
+    return [...seen].filter(([node, count]) => hops(count) && map.poiByNode.has(node) === site).map(([node]) => node);
+  }
+
+  function chosen(controller: MoveModeController, node: NodeId) {
+    controller.choose(node, false);
+    if (controller.state.kind !== 'previewing') throw new Error(`no route to ${node}`);
+    return controller.state;
+  }
+
+  it('asks when the route ends this turn on a space with no site', () => {
+    const { game, controller } = setup();
+    const space = spaces(game.state, false, (count) => count === 3)[0] as NodeId;
+    expect(chosen(controller, space).preview.destinationReachable).toBe(true);
+    expect(endsOffSite(game.state, controller.state)).toBe(true);
+  });
+
+  it('does not ask when it ends this turn on an unclaimed site, guarded or not', () => {
+    const { game, controller } = setup();
+    const sites = spaces(game.state, true, (count) => count <= 4);
+    expect(sites.length).toBeGreaterThan(0);
+    for (const site of sites) {
+      expect(chosen(controller, site).preview.destinationReachable).toBe(true);
+      expect(endsOffSite(game.state, controller.state)).toBe(false);
+    }
+  });
+
+  it('asks when it ends on a claimed site, an ordinary space now (2 A)', () => {
+    const { game, controller } = setup();
+    const site = spaces(game.state, true, (count) => count <= 4)[0] as NodeId;
+    const index = map.poiByNode.get(site) as number;
+    const claimed: GameState = {
+      ...game.state,
+      poiRuntime: game.state.poiRuntime.map((runtime, at) => (at === index ? { claimedBy: seat(game.state, 1).id, claimedOnTurn: 1 } : runtime)),
+    };
+    controller.setGame(claimed);
+    chosen(controller, site);
+    expect(endsOffSite(claimed, controller.state)).toBe(true);
+  });
+
+  it('does not ask when the walk stops partway along a longer route (1 A)', () => {
+    const { game, controller } = setup();
+    const far = spaces(game.state, false, (count) => count >= 20);
+    const space = far.find((node) => !chosen(controller, node).preview.destinationReachable);
+    expect(space).toBeDefined();
+    expect(endsOffSite(game.state, controller.state)).toBe(false);
+  });
+
+  it('does not ask with no route, while choosing, or when the turn walks nothing', () => {
+    const { game, controller } = setup();
+    const player = seat(game.state, 0);
+    expect(endsOffSite(game.state, controller.state)).toBe(false);
+    controller.enter(player.id);
+    expect(endsOffSite(game.state, controller.state)).toBe(false);
+    const tired: GameState = {
+      ...game.state,
+      players: game.state.players.map((one) => (one.id === player.id ? { ...one, stats: { ...one.stats, stamina: 0 } } : one)),
+    };
+    controller.setGame(tired);
+    const space = spaces(tired, false, (count) => count === 3)[0] as NodeId;
+    expect(chosen(controller, space).preview.reachableStepCount).toBe(0);
+    expect(endsOffSite(tired, controller.state)).toBe(false);
+  });
+
+  it('does not ask once the game is over', () => {
+    const { game, controller } = setup();
+    chosen(controller, spaces(game.state, false, (count) => count === 3)[0] as NodeId);
+    expect(endsOffSite({ ...game.state, status: 'finished' }, controller.state)).toBe(false);
+    expect(endTurnQuestion({ ...game.state, status: 'finished' }, controller.state)).toBeNull();
+  });
+
+  it('asks about a walk off a site, and not one onto a site or one stopping partway', () => {
+    const { game, controller } = setup();
+    chosen(controller, spaces(game.state, false, (count) => count === 3)[0] as NodeId);
+    expect(endTurnQuestion(game.state, controller.state)).toBe('off_site');
+    chosen(controller, spaces(game.state, true, (count) => count <= 4)[0] as NodeId);
+    expect(endTurnQuestion(game.state, controller.state)).toBeNull();
+    const far = spaces(game.state, false, (count) => count >= 20);
+    expect(far.some((node) => !chosen(controller, node).preview.destinationReachable)).toBe(true);
+    expect(endTurnQuestion(game.state, controller.state)).toBeNull();
+  });
+
+  it('asks when End turn would rest: with no route, or one whose first step cannot be paid', () => {
+    const { game, controller } = setup();
+    const player = seat(game.state, 0);
+    expect(endTurnQuestion(game.state, controller.state)).toBe('rest');
+    controller.enter(player.id);
+    expect(endTurnQuestion(game.state, controller.state)).toBe('rest');
+    const tired: GameState = {
+      ...game.state,
+      players: game.state.players.map((one) => (one.id === player.id ? { ...one, stats: { ...one.stats, stamina: 0 } } : one)),
+    };
+    controller.setGame(tired);
+    chosen(controller, spaces(tired, false, (count) => count === 3)[0] as NodeId);
+    expect(endTurnQuestion(tired, controller.state)).toBe('rest');
+  });
+
+  it('does not ask on a guard, where End turn with no route fights it again', () => {
+    const { game, controller } = setup();
+    const player = seat(game.state, 0);
+    const guarded = map.pois.find((poi) => poi.guard !== null);
+    if (guarded === undefined) throw new Error('no guard on the map');
+    const onGuard: GameState = {
+      ...game.state,
+      players: game.state.players.map((one) => (one.id === player.id ? { ...one, position: guarded.node } : one)),
+    };
+    controller.setGame(onGuard);
+    expect(endTurnQuestion(onGuard, controller.state)).toBeNull();
   });
 });

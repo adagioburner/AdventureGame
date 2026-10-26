@@ -2,8 +2,11 @@ import {
   bestRouteVia,
   endTurnActionFor,
   guardToFightAt,
+  isClaimed,
+  poiRuntimeAt,
   previewPath,
   refreshAllowance,
+  turnStops,
   type GameState,
   type MovementAllowance,
   type NodeId,
@@ -36,6 +39,8 @@ export type MoveModeState =
       /** The route, excluding the player's own node: what End Turn sends. */
       readonly path: readonly NodeId[];
       readonly preview: PathPreview;
+      /** [Q315] Where each turn of the route ends, this one first (`turnStops`). */
+      readonly stops: readonly number[];
     };
 
 /** Why `enter()` said no, in words the page can show. */
@@ -88,8 +93,8 @@ export interface MoveModeController {
   /**
    * A node was clicked; `shift` for a shift-click. [Q145, 570] On the
    * planner's own turn their figure needs no tap first: with nothing up, the
-   * click picks it up as tapping it would, then chooses the node. Out of turn
-   * (online) it does nothing until the figure is picked up (572).
+   * click picks it up as tapping it would, then chooses the node. [Q310, 1]
+   * Online, so it does out of turn too.
    */
   choose(node: NodeId, shift: boolean): void;
   selectDestination(node: NodeId): void;
@@ -150,12 +155,14 @@ export interface PreviewSource {
 export interface PlannedRoute {
   readonly path: readonly NodeId[];
   readonly preview: PathPreview;
+  readonly stops: readonly number[];
 }
 
 /**
  * Routes and colours for `player` in `game`: `bestRouteVia`'s route, the best
  * for the player through the waypoint, if any, a leg at a time (Q210, 810 A
- * to 812 A; Q308: as End turn walks it), and `previewPath`'s colours for it.
+ * to 812 A; Q308: as End turn walks it), `previewPath`'s colours for it, and
+ * [Q315] `turnStops`' ends of its turns.
  *
  * The allowance is the turn's own for the player whose turn it is. A player
  * planning out of turn (§7.1, online only) will start their next turn with a
@@ -169,7 +176,7 @@ export function gamePreviewSource(game: GameState, player: PlayerId): PreviewSou
     previewFor(destination, waypoint) {
       const path = bestRouteVia(game.map.graph, planner.position, waypoint, destination, planner.stats, allowanceFor(game, planner), config);
       if (path === null) return null;
-      return { path, preview: previewFor(game, planner, path) };
+      return { path, ...shownFor(game, planner, path) };
     },
   };
 }
@@ -198,13 +205,51 @@ export function endTurnOutcome(game: GameState, player: PlayerId, state: MoveMod
   return walks || !guardToFightAt(game, playerIn(game, player).position) ? 'go' : 'fight';
 }
 
-function previewFor(game: GameState, planner: PlayerState, path: readonly NodeId[]): PathPreview {
-  return previewPath(game.map.graph, planner.position, path, allowanceFor(game, planner), planner.stats.stamina, game.map.ruleset.config);
+/** What is drawn for `path`: its colours and where its turns end. */
+function shownFor(game: GameState, planner: PlayerState, path: readonly NodeId[]): Omit<PlannedRoute, 'path'> {
+  const allowance = allowanceFor(game, planner);
+  const config = game.map.ruleset.config;
+  return {
+    preview: previewPath(game.map.graph, planner.position, path, allowance, planner.stats.stamina, config),
+    stops: turnStops(game.map.graph, path, allowance, planner.stats.stamina, refreshAllowance(planner.stats), config),
+  };
 }
 
 function allowanceFor(game: GameState, planner: PlayerState): MovementAllowance {
   const active = planner.seat === game.turn.activeSeat;
   return active ? game.turn.allowance : refreshAllowance(planner.stats);
+}
+
+/**
+ * [Q318] Andrei, 2026-10-26: "we need to a[s]k for a confirmation [w]hen a
+ * player ends their move not on a site. Players misclick way too often".
+ * Whether End turn with `move` shown asks first: the walk reaches the route's
+ * end this turn (1 A, not a stop partway along a longer route), and no
+ * unclaimed site stands there, a claimed one being an ordinary space (2 A). A
+ * turn that walks nothing, a rest or another roll at a guard, never asks.
+ */
+export function endsOffSite(game: GameState, move: MoveModeState): boolean {
+  if (game.status !== 'in_progress' || move.kind !== 'previewing') return false;
+  if (move.path.length === 0 || !move.preview.destinationReachable) return false;
+  const runtime = poiRuntimeAt(game, move.destination);
+  return runtime === undefined || isClaimed(runtime);
+}
+
+/** Why End turn asks first: its walk ends off a site, or it rests. */
+export type EndTurnQuestionKind = 'off_site' | 'rest';
+
+/**
+ * [Q318] What End turn asks before it plays for the player on turn, with
+ * `move` shown, if anything: Andrei, 2026-10-26, "if one clicks End turn to
+ * rest, we probably should confirm as well". End turn rests with no route, or
+ * with one whose first step cannot be paid, away from a guard (490,
+ * `endTurnActionOf`); a walk asks where `endsOffSite` does.
+ */
+export function endTurnQuestion(game: GameState, move: MoveModeState): EndTurnQuestionKind | null {
+  const active = game.players[game.turn.activeSeat - 1];
+  if (game.status !== 'in_progress' || active === undefined) return null;
+  if (endTurnActionOf(game, active.id, move).kind === 'rest') return 'rest';
+  return endsOffSite(game, move) ? 'off_site' : null;
 }
 
 /** Whether `player`'s plains, forest or mountains speed differs between the two states. */
@@ -258,7 +303,7 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
     if (game === null || planner === null) return IDLE;
     const route = gamePreviewSource(game, planner).previewFor(destination, waypoint);
     if (route === null) return { kind: 'selecting', waypoint };
-    return { kind: 'previewing', destination, waypoint, path: route.path, preview: route.preview };
+    return { kind: 'previewing', destination, waypoint, path: route.path, preview: route.preview, stops: route.stops };
   };
 
   /**
@@ -276,7 +321,7 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
       destination,
       waypoint: saved.waypoint,
       path: saved.path,
-      preview: previewFor(current, playerIn(current, planner), saved.path),
+      ...shownFor(current, playerIn(current, planner), saved.path),
     };
   };
 
@@ -361,7 +406,7 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
       if (!engaged && planner !== null) {
         if (unsaved !== null && samePlan(playerIn(next, planner).plannedPath, unsaved.over)) {
           if (state.kind !== 'previewing') return notify();
-          return set({ ...state, preview: previewFor(next, playerIn(next, planner), state.path) });
+          return set({ ...state, ...shownFor(next, playerIn(next, planner), state.path) });
         }
         unsaved = null;
         return set(resume(next));
@@ -371,7 +416,7 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
       // recomputed.
       if (state.kind === 'previewing') {
         const planned = playerIn(next, planner as PlayerId);
-        return set({ ...state, preview: previewFor(next, planned, state.path) });
+        return set({ ...state, ...shownFor(next, planned, state.path) });
       }
       notify();
     },
@@ -414,7 +459,7 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
 
     choose(node, shift) {
       if (state.kind === 'idle') {
-        if (planner === null || activePlanner() !== planner) return;
+        if (planner === null || (activePlanner() !== planner && !options.mode.allowOutOfTurnPlanning)) return;
         state = { kind: 'selecting', waypoint: null };
       }
       engaged = true;

@@ -647,6 +647,29 @@
         display: flex;
         gap: 8px;
       }
+      /* [Q318] End turn's question, just above the route's end cross. */
+      .end-question {
+        position: absolute;
+        z-index: 4;
+        width: min(340px, calc(100% - 16px));
+        padding: 10px 12px 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+      .end-question p {
+        margin: 0 0 4px;
+        font: 600 14px/1.4 var(--ui);
+      }
+      .end-question p + p {
+        margin-bottom: 10px;
+        font-weight: 400;
+      }
+      .end-question .acts {
+        display: flex;
+        gap: 8px;
+      }
       .controls {
         grid-area: controls;
         display: grid;
@@ -661,6 +684,24 @@
         display: flex;
         flex-wrap: wrap;
         gap: 6px;
+      }
+      /* [Q310, 4] The turn buttons are narrower, so with a route up Find me,
+         Cancel, Waypoint, Rest and End turn fit on one line on a laptop and
+         on a phone down to 340 px; where the row still wraps, Rest and End
+         turn go to the next line together. */
+      .controls > .buttons,
+      .controls .turn-end {
+        gap: 4px;
+      }
+      .controls > .buttons > .btn,
+      .controls > .buttons > .player-menu > .btn,
+      .controls .turn-end > .btn {
+        padding-left: 6px;
+        padding-right: 6px;
+        font-size: 13px;
+      }
+      .turn-end {
+        display: flex;
       }
       .thinking {
         display: grid;
