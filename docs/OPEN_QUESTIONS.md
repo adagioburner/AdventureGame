@@ -1777,7 +1777,8 @@ to 238).
      on this device, the login page, and an online game's setup for the game
      master and for players.
 231. **No Rules on the start screens** (replacing 221's title style there, and
-     229 and 230). They are as they were.
+     229 and 230). They are as they were. Since [Q309](#q309) the login page
+     has Rules at the right end of its top bar.
 232. **The rulebook is `docs/RULEBOOK.md`,** copied from his page as it stood,
      and from now on changes to the rules go through a PR like everything
      else. The game no longer opens his page or any other address. The first
@@ -3942,6 +3943,32 @@ walk this route (`bestRouteForSpeeds`), and its reach check counts it
 `closestByBestRoute` ranks sites by. On Andrei's turn 13 the 9 forest steps are
 drawn. No rule, number, map or picture changed, and the rulebook needs no
 change: it says the game draws the route it thinks is best for you (816).
+
+<a id="q309"></a>
+### Q309. ~~Where does Rules go on the login page?~~ — **answered 2026-10-26: at the right end of its top bar, shown as it is on a phone too, the same button and rulebook as in the game; the other start screens stay without it (1-2)**
+
+Andrei, 2026-10-26 at 02:28: *"we need to add the rules button to the main
+screen before registration"*. Since [Q71](#q71) 231 no screen before a game
+starts had Rules: the login page's top bar held only the game's name. The main
+screen before registration is the login page, where Log in, Register and Play
+on one device are.
+
+1. **Where.** Mocked up on the login page at 1280, 390 and 360 px wide: A, at
+   the right end of the top bar, shown as it is on a phone, where it would be
+   the bar's only button (recommended); B, the same on a desktop and in a Menu
+   on a phone, as on the other screens; C, in the login card under Play on one
+   device. In A and B the bar is as tall as the other screens' bars, 39 to 53
+   px on a desktop and 32 to 49 px on a phone, and keeps one row with Skyholm
+   Adventures in full down to 360 px. **Answered** at 02:34: A.
+2. **What it is.** The Rules button from the game, its word and look, opening
+   the same rulebook with Close; on the login page only, so the setup on this
+   device and an online game's setup stay as Q71 231 left them. Set out
+   alongside 1 and left as it was.
+
+Built: `RulesButton` in the login page's top bar in
+`apps/web/src/online/LoginScreen.tsx`, pushed to the bar's right end by
+`.bar.login .btn` in `apps/web/src/online/site.css`. No rule, number, map or
+picture changed, and the rulebook needs no change.
 
 ---
 
