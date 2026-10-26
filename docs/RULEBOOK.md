@@ -63,6 +63,8 @@ On your turn you do exactly one of two things:
 
 ![The turn buttons: Find me, Rest and End turn](rulebook/turn-buttons.png)
 
+'Find me' brings your figure into view, as tapping your own card does.
+
 Before you end your turn you can also buy speeds and skills with your gold: see *Buying speeds and skills*.
 
 Only the space where you stop counts. Walking through a site does not claim it.
@@ -84,6 +86,8 @@ Choose where you want to go. The game draws the route it thinks is best for you;
 On the grey part, numbered bubbles show where your figure will be at the end of each later turn, counting this turn as 1. A bubble such as '3–4' means you get there in turn 3 and stay through turn 4, when 'End turn' rests because you cannot pay for the next step.
 
 Pressing 'Go' walks the route. If it is longer than you can go this turn, your figure goes as far as it can and the rest of the route is saved for next turn, where you can still change it.
+
+If this turn's walk would end your route on a space that is not a site, the game asks for a confirmation before your figure walks. 'End turn' also asks for a confirmation before it rests; the Rest button does not.
 
 ## Movement and stamina
 
@@ -148,6 +152,12 @@ The rules are the same either way; the Play online switch on the setup screen ch
 **On one device**, everyone takes turns at the same screen. The ring under your figure pulses when it is your turn.
 
 **Online**, each player uses their own device. You can plan your next move while others play, and Go plays it when your turn comes. A message board lets players talk.
+
+Your own figure stands on a white ring: online always, on one device only when one person plays against the computer.
+
+While Track is pressed, the map follows the other players as they take their turns. Track starts pressed at the beginning of each game, and moving the map while someone else plays unpresses it. On your own turn the map stays where you put it while you plan, and always follows your walk.
+
+A player whose figure is out of view shows as their portrait with an arrow at the map's edge. Tap it to bring them into view.
 
 ### The game master
 

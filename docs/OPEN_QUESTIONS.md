@@ -4643,6 +4643,46 @@ there. No rule, number or map changed, and no word of the rules.
 
 ---
 
+<a id="q323"></a>
+### Q323. ~~What does the rulebook say about the day's new buttons and questions?~~ — **answered 2026-10-26: five passages, in the words he approved: the confirmations Go and End turn ask for, Find me, your own white ring, Track and the markers at the map's edge; the other two gaps not added (1-2)**
+
+Andrei, 2026-10-26 at 18:58, with the pictures ([Q322](#q322)): *"please
+review the changes made in the last 24 hours, and see if they have been
+properly reflected in the rulebook. Bring any discrepancies or omissions to my
+attention"*. Of the seven gaps found, at 19:44: *"please implement changes for
+items 1-5 from roolebook review. For the Track button, instead of "presses
+itself", say that it starts pressed at the beginning of each game"*.
+
+1. **The words.** Each passage set out word for word with where it goes, and
+   approved at 19:47 with one change: *"For 1, asks -> asks for a
+   confirmation"*, in both its sentences.
+   - [Q318](#q318), in *Planning a route* after "Pressing 'Go' walks the
+     route…": *"If this turn's walk would end your route on a space that is
+     not a site, the game asks for a confirmation before your figure walks.
+     'End turn' also asks for a confirmation before it rests; the Rest button
+     does not."*
+   - [Q310](#q310), in *Your turn* under the buttons' picture: *"'Find me'
+     brings your figure into view, as tapping your own card does."*
+   - At the end of *Playing online or on one device*, before *The game
+     master*: [Q312](#q312), *"Your own figure stands on a white ring: online
+     always, on one device only when one person plays against the
+     computer."*; [Q316](#q316), *"While Track is pressed, the map follows the
+     other players as they take their turns. Track starts pressed at the
+     beginning of each game, and moving the map while someone else plays
+     unpresses it. On your own turn the map stays where you put it while you
+     plan, and always follows your walk."*; and [Q320](#q320), *"A player
+     whose figure is out of view shows as their portrait with an arrow at the
+     map's edge. Tap it to bring them into view."*
+2. **Not added.** The review's other two gaps, players facing right and
+   guards left ([Q313](#q313)) and the count of unseen messages
+   ([Q319](#q319)), were not asked for, so the rulebook still does not
+   mention them.
+
+Built in `docs/RULEBOOK.md`: those five passages and nothing else. No rule,
+number, map or picture changed.
+
+---
+
 ## C. Decisions I made that are *implementation*, not design
 
 Listed so you can veto any that read as design to you.
