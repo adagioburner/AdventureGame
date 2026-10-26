@@ -27,7 +27,8 @@ It reads each original named in SHEETS below, and for every picture on it:
    (armour, stone) and no picture's own soft edge is touched. One picture
    defeats this: the amber slime's shadow is tinted by its own glow and ringed
    by it, so it keeps the shadow it was drawn with;
-3. stands it in a cell: its solid part (alpha at least SOLID_ALPHA, the same
+3. flips it left to right if MIRROR names it, shadow and all (Q313);
+4. stands it in a cell: its solid part (alpha at least SOLID_ALPHA, the same
    threshold the game measures sizes with) centred across the cell, its lowest
    visible pixel PAD above the cell's floor. The atlas `anchor` is the middle
    of that solid part's foot, which is where the game stands it.
@@ -70,6 +71,15 @@ SHEETS = {
         ("Mountains_GoldGuardedByFighting_2.png", 12),
     ],
     "Mountains_GoldGuardedByMagic": [("Mountains_GoldGuardedByMagic.png", 12)],
+}
+
+# Target sheet name -> the pictures on it, numbered as in its atlas from 1, that
+# are flipped left to right. [Q313] Every player figure faces right, so facing
+# tells them from the guards, which all face left: the five drawn facing left
+# are flipped, the fox already faces right. pack_animation.py flips the same
+# figures' animations.
+MIRROR = {
+    "player_avatars": {1, 2, 3, 5, 6},
 }
 
 COLUMNS = 4
@@ -370,6 +380,11 @@ def solid_box(width, px, box):
 
 # --- packing --------------------------------------------------------------------
 
+def flipped(row):
+    """A row of RGBA pixels, right to left."""
+    return b"".join(bytes(row[i:i + 4]) for i in range(len(row) - 4, -1, -4))
+
+
 def pack(name, sources):
     pieces = []
     for original, expected in sources:
@@ -397,10 +412,17 @@ def pack(name, sources):
     sheet_w, sheet_h = COLUMNS * cell_w, rows * cell_h
     out = bytearray(sheet_w * sheet_h * 4)
 
+    mirrored = MIRROR.get(name, set())
+    if not mirrored <= set(range(1, len(pieces) + 1)):
+        raise SystemExit("%s: MIRROR names pictures %r, but it has %d" % (name, sorted(mirrored), len(pieces)))
     sprites = []
     for index, (original, width, px, box, solid) in enumerate(pieces):
         x0, y0, x1, y1 = box
         sx0, _, sx1, sy1 = solid
+        mirror = index + 1 in mirrored
+        if mirror:
+            # The solid part is flipped with the picture.
+            sx0, sx1 = x0 + x1 - sx1, x0 + x1 - sx0
         cell_x, cell_y = (index % COLUMNS) * cell_w, (index // COLUMNS) * cell_h
         # Where the picture's top-left lands inside its cell.
         left = cell_w // 2 - (sx0 + sx1) // 2 + x0
@@ -408,8 +430,9 @@ def pack(name, sources):
         for y in range(y0, y1):
             src = (y * width + x0) * 4
             dst = ((cell_y + top + y - y0) * sheet_w + cell_x + left) * 4
-            out[dst:dst + (x1 - x0) * 4] = px[src:src + (x1 - x0) * 4]
-        sprites.append({
+            row = px[src:src + (x1 - x0) * 4]
+            out[dst:dst + (x1 - x0) * 4] = flipped(row) if mirror else row
+        sprite = {
             "id": "%s_%02d" % (name, index + 1),
             "x": cell_x,
             "y": cell_y,
@@ -418,7 +441,10 @@ def pack(name, sources):
             "anchor": {"x": cell_w // 2, "y": top + (sy1 - y0)},
             "original": original,
             "source_box_in_original": [x0, y0, x1 - x0, y1 - y0],
-        })
+        }
+        if mirror:
+            sprite["mirrored"] = True
+        sprites.append(sprite)
 
     write_png(os.path.join(ART, "%s_sheet.png" % name), sheet_w, sheet_h, out)
     atlas = {
@@ -426,7 +452,8 @@ def pack(name, sources):
         "cell_width": cell_w,
         "cell_height": cell_h,
         "notes": ("Packed by Art/tools/pack_sheets.py from Art/originals/, the artist's sheets as "
-                  "supplied, with each picture's grey drop shadow made black and see-through. "
+                  "supplied, with each picture's grey drop shadow made black and see-through"
+                  + (", and those marked mirrored flipped left to right" if mirrored else "") + ". "
                   "Do not edit by hand: replace the original and run the tool again."),
         "sprites": sprites,
     }

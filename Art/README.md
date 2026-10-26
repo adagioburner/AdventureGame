@@ -38,8 +38,13 @@ movement.
    see-through (Q59). A new version of one goes in by replacing its original
    and running the tool again; a new one by adding a line to the tool's
    `SHEETS` table, saying which original it comes from and how many pictures
-   are on it. Pictures are numbered row by row, left to right, as drawn. Then
-   carry on from step 1 or 2.
+   are on it. Pictures are numbered row by row, left to right, as drawn. The
+   tool's `MIRROR` table names pictures it flips left to right, shadow and
+   all: the five player figures drawn facing left, so that every player
+   figure faces right and the guards, which face left, are told from them by
+   that too (Q313). A new version of the figure sheet needs its `MIRROR` line
+   checked against which way each new figure faces. Then carry on from step 1
+   or 2.
 1. **Same name.** Drop the new `<Name>_sheet.png` and `<Name>_atlas.json` over
    the old ones. Nothing else changes. The sprites can be any size and any
    count: every sheet is scaled on load so its typical sprite (the median of
@@ -192,7 +197,9 @@ Andrei's animations arrive as one strip per figure, kept as supplied in
 frame. `python3 Art/tools/pack_animation.py` lays the strips one under
 another into `player_avatars_animated_sheet.png`, each frame where it was
 drawn so the figure does not shift between frames, makes their shadows dark
-and see-through as `pack_sheets.py` does (Q305), and writes the atlas. A
+and see-through as `pack_sheets.py` does (Q305), flips the strips of the
+figures `pack_sheets.py`'s `MIRROR` flips, every frame about the spot the
+figure stands on (Q313), and writes the atlas. A
 new version of a strip goes in by replacing it and running the tool again. A
 strip with a different number of frames needs the tool's `FRAMES` and the
 manifest's `durations_ms` changed with it; `pnpm test` reports any figurine

@@ -1384,7 +1384,8 @@ on the same page as details 72 to 77, each with a recommendation. Andrei:
 73. **What unpresses it:** anything that moves the map or starts planning:
     dragging the map, the mouse wheel, pinching, "+", "−", "Whole map",
     tapping your figure or "Plan a move". A tap on the map that
-    starts nothing leaves it pressed.
+    starts nothing leaves it pressed. **Changed by [Q316](#q316) 5:** on
+    your own turn nothing unpresses it.
 74. **While pressed** the map does what hot seat did: at the start of each
     turn it glides to the player on turn at the zoom it has (Q46), and it
     follows a walking figure that nears the edge (Q47). Pressing it glides
@@ -3848,7 +3849,8 @@ also a solo and a multiplayer game"*.
 Built: the title and the icon's `<link>` in `apps/web/index.html`; the icon,
 `apps/web/icon.png`, the figurine sheet's 290 px square at (16, 8) scaled to
 64 px; and the tab's title in `apps/web/src/online/Site.tsx`. No rule, number
-or map changed.
+or map changed. Since [Q313](#q313) the cartographer faces right, and the icon,
+cut again from the same square, with him.
 
 ### Q307. ~~Should the other seats along the computer's tree edges choose their sites as its imagined players do?~~ — **answered 2026-10-13: yes; they rank by their own speeds, skip guards they cannot win and favour gold as the game goes on, as in the games it plays out; against the computer before, 69 wins to 51 (1-2)**
 
@@ -4070,8 +4072,58 @@ of date; nothing on screen changes for it. A route drawn to a site that is
 then taken stays drawn, as before. The server is unchanged. No rule, number,
 map or picture changed, and the rulebook needs no change.
 
+<a id="q313"></a>
+### Q313. ~~Which way do the player figures face?~~ — **answered 2026-10-26: right, all six; the five drawn facing left are flipped whole, shadow included, wherever they are shown: on the map with their idle animations, on the New game panel, in the portraits and as the tab's icon (1-2); figures side by side on a space overlap with the one on the left in front (3)**
+
+Andrei, 2026-10-26 at 06:31: *"all guards are facing left. out of character
+figures, the fox faces right, and the rest look left. let us flip them so that
+it becoms another feature to tell player figures from guards"*. The
+cartographer, mechanic, botanist, tortoise and goblin were drawn facing left,
+the fox facing right. The same pictures are the figures on the map, whose idle
+animations come from strips of their own ([Q305](#q305)), the figures to pick
+on the New game panel, the head-and-shoulders portraits on the player cards and
+in the turn log ([Q26](#q26)), and the browser tab's icon, the cartographer
+([Q306](#q306)). Figures do not turn as they walk, so they face right all the
+time.
+
+1. **Where.** Everywhere these pictures show, or on the map only, with the
+   New game panel, the portraits and the icon left as they were. Mocked up
+   with the art swapped in; everywhere recommended. **Answered** at 07:31:
+   everywhere.
+2. **The shadows.** Each figure's shadow falls to its right, as every
+   guard's, tree's and building's does. A: the whole picture flipped, so its
+   shadow falls left; B: only the figure flipped, its shadow left falling right
+   and filled in where the figure had hidden it (recommended). Both mocked up,
+   on the six figures and in the game. **Answered** at 07:31: A.
+
+The idle animations flip with their figures, or a figure would turn back to
+the left each time it played; set out alongside 1 and 2.
+
+3. **Which figure is in front.** Andrei, at 09:06: *"should they now also
+   cover each other from left to right when they overlap"*. Figures sharing
+   a space stand side by side, and each was drawn over the one on its left:
+   facing left, each one's front lay over its neighbour's back; facing right,
+   each one's back now hid its neighbour's face and what it holds. Mocked up
+   with the left one in front (recommended), which a click on two overlapping
+   figures already picked. **Answered** at 13:48: the left one in front.
+
+Built: `MIRROR` in `Art/tools/pack_sheets.py` names the pictures flipped as the
+figurine sheet is packed, each after its shadow is made dark and before it is
+stood in its cell, centred as before; `Art/tools/pack_animation.py` flips the
+same figures' frames about the spot they stand on. Both mark the flipped
+sprites `"mirrored": true` in their atlases, which the game ignores. The
+portrait boxes were rederived by `Art/tools/make_portrait_crops.py` with its
+hand-set face positions flipped, framing each head as before, mirrored, to
+within 2 px; and `apps/web/icon.png` was cut again from the flipped sheet, the
+same square scaled the same way. The originals in `Art/originals/` are as
+supplied. For 3, each figure on a shared space counts a thousandth of a pixel
+nearer the front than the one on its right, in `buildCharacters` in
+`apps/web/src/render/sceneModel.ts`, so the left one is drawn in front and is
+still the one a click picks. The fox and every guard are as they were, and no
+rule, number or map changed.
+
 <a id="q316"></a>
-### Q316. ~~Should Track still press itself?~~ — **answered 2026-10-26: only when a game opens; after that only the player presses it, and on one device, as online, the turn's glide to the player on turn waits for Track to be pressed; the walk of your own End turn is followed with Track left off (1-3)**
+### Q316. ~~Should Track still press itself?~~ — **answered 2026-10-26: only when a game opens; after that only the player presses it, and on one device, as online, the turn's glide to the player on turn waits for Track to be pressed; Track only matters on other players' turns: on your own turn nothing unpresses it, and your own walk is always followed, Track or no Track, even when you move the map (1-6)**
 
 Andrei, 2026-10-26 at 05:36: *"The Track button logic is too complex. Let's
 not turn it on automatically"*. Since [Q57](#q57) 76 and 77 Track pressed
@@ -4096,13 +4148,42 @@ as it was.
    move; on one device, the move of whoever pressed End turn. **Answered** at
    08:44: A.
 
-Built: in `apps/web/src/page/GameScreen.tsx`, End turn and Rest no longer
-press Track, and the turn's glide (Q46) no longer presses it on one device
-and happens there only while it is pressed. `endedTurn` keeps the turn this
-page's End turn committed, and `ownWalk` is true while that turn plays out;
-`MapView`'s new `follow` prop, `tracking || ownWalk`, decides whether a walk
-takes the map along. No rule, number, map or picture changed, and the
-rulebook needs no change: it does not mention Track.
+Built 1 to 3 in PR #102: in `apps/web/src/page/GameScreen.tsx`, End turn
+and Rest no longer press Track, and the turn's glide (Q46) no longer presses
+it on one device and happens there only while it is pressed. `endedTurn`
+keeps the turn this page's End turn committed, and `ownWalk` is true while
+that turn plays out; `MapView`'s new `follow` prop, `tracking || ownWalk`,
+decides whether a walk takes the map along.
+
+Andrei, 13:36: *"During your own move, nothing should unpress track"*, and at
+13:39: *"when you're planning your move on your turn, the map always stays
+where you put it. At the end of your turn it always follows uour figure,
+track or no track. Track only affects the behavior during other players
+turns."* On one device every person's turn is their own, so there Track
+only matters on the computer's turns.
+
+4. **Moving the map during your own walk,** with Track pressed: A, the map
+   keeps taking your figure along, so a drag, a zoom or a player's card
+   only moves it until your figure nears the edge again (recommended); B,
+   it stops following until the walk ends, Track still pressed. His 13:39
+   message answers it: A, and with Track off too, which changes 3's "moving
+   the map stops it".
+5. **What unpresses Track on your own turn.** A, nothing: Track changes only
+   when you press it, and on other players' turns dragging, the wheel,
+   pinching, "+", "−", Whole map, a player's card, Find me, tapping your
+   figure and changing a route unpress it as before (recommended); B, as
+   before on every turn. **Answered** at 13:41: A.
+6. **The start of your own turn.** A, the map glides to your figure only if
+   Track is pressed, as before, so a route you were planning out of turn
+   stays in view (recommended); B, never; C, always. **Answered** at 13:41:
+   A.
+
+Built: `yourTurn` in `GameScreen.tsx`, the turn shown being this page's
+person's own, keeps Track as it is when the map is moved, a card or Find me
+is clicked, or a route is planned. `MapView`'s new `keepFollowing` prop,
+`yourTurn`, keeps a drag or a zoom from stopping the following of a walk,
+which on your turn is your own. No rule, number, map or picture changed, and
+the rulebook needs no change: it does not mention Track.
 
 <a id="q318"></a>
 ### Q318. ~~Should End turn ask first when the walk ends off a site?~~ — **answered 2026-10-26: yes, when the walk reaches the route's end this turn and no unclaimed site is there, and when End turn would rest; in a box drawn like the game's own panels, just above the end cross or the resting figure, which the map glides to the middle, with No and Yes; it always asks (1-11)**
