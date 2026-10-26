@@ -3848,7 +3848,8 @@ also a solo and a multiplayer game"*.
 Built: the title and the icon's `<link>` in `apps/web/index.html`; the icon,
 `apps/web/icon.png`, the figurine sheet's 290 px square at (16, 8) scaled to
 64 px; and the tab's title in `apps/web/src/online/Site.tsx`. No rule, number
-or map changed.
+or map changed. Since [Q313](#q313) the cartographer faces right, and the icon,
+cut again from the same square, with him.
 
 ### Q307. ~~Should the other seats along the computer's tree edges choose their sites as its imagined players do?~~ — **answered 2026-10-13: yes; they rank by their own speeds, skip guards they cannot win and favour gold as the game goes on, as in the games it plays out; against the computer before, 69 wins to 51 (1-2)**
 
@@ -4069,6 +4070,56 @@ that the screen does not show yet, so neither is played from a game shown out
 of date; nothing on screen changes for it. A route drawn to a site that is
 then taken stays drawn, as before. The server is unchanged. No rule, number,
 map or picture changed, and the rulebook needs no change.
+
+<a id="q313"></a>
+### Q313. ~~Which way do the player figures face?~~ — **answered 2026-10-26: right, all six; the five drawn facing left are flipped whole, shadow included, wherever they are shown: on the map with their idle animations, on the New game panel, in the portraits and as the tab's icon (1-2); figures side by side on a space overlap with the one on the left in front (3)**
+
+Andrei, 2026-10-26 at 06:31: *"all guards are facing left. out of character
+figures, the fox faces right, and the rest look left. let us flip them so that
+it becoms another feature to tell player figures from guards"*. The
+cartographer, mechanic, botanist, tortoise and goblin were drawn facing left,
+the fox facing right. The same pictures are the figures on the map, whose idle
+animations come from strips of their own ([Q305](#q305)), the figures to pick
+on the New game panel, the head-and-shoulders portraits on the player cards and
+in the turn log ([Q26](#q26)), and the browser tab's icon, the cartographer
+([Q306](#q306)). Figures do not turn as they walk, so they face right all the
+time.
+
+1. **Where.** Everywhere these pictures show, or on the map only, with the
+   New game panel, the portraits and the icon left as they were. Mocked up
+   with the art swapped in; everywhere recommended. **Answered** at 07:31:
+   everywhere.
+2. **The shadows.** Each figure's shadow falls to its right, as every
+   guard's, tree's and building's does. A: the whole picture flipped, so its
+   shadow falls left; B: only the figure flipped, its shadow left falling right
+   and filled in where the figure had hidden it (recommended). Both mocked up,
+   on the six figures and in the game. **Answered** at 07:31: A.
+
+The idle animations flip with their figures, or a figure would turn back to
+the left each time it played; set out alongside 1 and 2.
+
+3. **Which figure is in front.** Andrei, at 09:06: *"should they now also
+   cover each other from left to right when they overlap"*. Figures sharing
+   a space stand side by side, and each was drawn over the one on its left:
+   facing left, each one's front lay over its neighbour's back; facing right,
+   each one's back now hid its neighbour's face and what it holds. Mocked up
+   with the left one in front (recommended), which a click on two overlapping
+   figures already picked. **Answered** at 13:48: the left one in front.
+
+Built: `MIRROR` in `Art/tools/pack_sheets.py` names the pictures flipped as the
+figurine sheet is packed, each after its shadow is made dark and before it is
+stood in its cell, centred as before; `Art/tools/pack_animation.py` flips the
+same figures' frames about the spot they stand on. Both mark the flipped
+sprites `"mirrored": true` in their atlases, which the game ignores. The
+portrait boxes were rederived by `Art/tools/make_portrait_crops.py` with its
+hand-set face positions flipped, framing each head as before, mirrored, to
+within 2 px; and `apps/web/icon.png` was cut again from the flipped sheet, the
+same square scaled the same way. The originals in `Art/originals/` are as
+supplied. For 3, each figure on a shared space counts a thousandth of a pixel
+nearer the front than the one on its right, in `buildCharacters` in
+`apps/web/src/render/sceneModel.ts`, so the left one is drawn in front and is
+still the one a click picks. The fox and every guard are as they were, and no
+rule, number or map changed.
 
 <a id="q316"></a>
 ### Q316. ~~Should Track still press itself?~~ — **answered 2026-10-26: only when a game opens; after that only the player presses it, and on one device, as online, the turn's glide to the player on turn waits for Track to be pressed; the walk of your own End turn is followed with Track left off (1-3)**
