@@ -53,9 +53,12 @@ export interface MapHandle {
   /**
    * Slide a node to the middle over `GLIDE_MS`, at the zoom the view already
    * has. Panning, zooming or `centerOnFigure` while it slides stops it where it is,
-   * and so does a walk that has to take the map along (Q47).
+   * and so does a walk that has to take the map along (Q47). Nothing slides
+   * when the node is in the middle already.
    */
   glideTo(node: NodeId): void;
+  /** [Q318] Whether the map is still sliding somewhere (`glideTo`, `track`, `makeRoom`). */
+  gliding(): boolean;
   /**
    * [Q57, 74] Track was pressed: glide to the figure that is walking, if one
    * is, or else to `node`, and follow walks from now on.
@@ -607,10 +610,13 @@ export function MapView({
         },
         glideTo: (node) => {
           const to = planeOf(node);
-          glide = { from: camera.camera.center, to: () => to, start: performance.now(), chasing: false };
+          const from = camera.camera.center;
+          const there = Math.hypot(to.x - from.x, to.y - from.y) * camera.camera.zoom < 1;
+          glide = there ? null : { from, to: () => to, start: performance.now(), chasing: false };
           touched = true;
           aims.current++;
         },
+        gliding: () => glide !== null,
         track: (node) => {
           following.current = true;
           aims.current++;

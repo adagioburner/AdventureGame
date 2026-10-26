@@ -4323,7 +4323,7 @@ which on your turn is your own. No rule, number, map or picture changed, and
 the rulebook needs no change: it does not mention Track.
 
 <a id="q318"></a>
-### Q318. ~~Should End turn ask first when the walk ends off a site?~~ — **answered 2026-10-26: yes, when the walk reaches the route's end this turn and no unclaimed site is there, and when End turn would rest; in a box drawn like the game's own panels, just above the end cross or the resting figure, which the map glides to the middle, with No and Yes; it always asks (1-11)**
+### Q318. ~~Should End turn ask first when the walk ends off a site?~~ — **answered 2026-10-26: yes, when the walk reaches the route's end this turn and no unclaimed site is there, and when End turn would rest; in a box drawn like the game's own panels, just above the end cross or the resting figure, which the map glides to the middle, with No and Yes; it always asks (1-13)**
 
 Andrei, 2026-10-26 at 06:29: *"we need to adk for a confirmation ehen a
 player ends their move not on a site. Players misclick way too often"*; and at
@@ -4377,6 +4377,19 @@ well"*.
     at 13:36, of Track generally: *"During your own move, nothing should
     unpress track"*; so the glide to a route's end leaves Track as it was
     too.
+12. **The glide first.** Andrei, 16:11: *"we need some kind of question
+    mark sound when this dialog pops up. And I'd prefer that the map glude
+    first and then the dialog aooear, not two at the same time"*. The box
+    appears once the map has stopped: at once where the map needn't move, or
+    as the player stops the glide by moving the map. Rest and End turn wait
+    from the press, as before.
+13. **The sound.** Three samples to hear, made as the other placeholders
+    were (Q63, 126) and at the same level (140), none of them two rising
+    chimes, which is the pickup: A, two wooden notes, the second higher; B,
+    one soft tone sliding up a fifth, as a voice rises at a question
+    (recommended); C, two short horn notes going up. **Answered** at 16:24:
+    B. It plays each time the box appears, as it appears, and not while
+    Sound is off.
 
 Set out alongside and left as set out: only a person pressing End turn is
 asked, on one device and online; Rest, End turn fighting a guard again,
@@ -4395,7 +4408,12 @@ passing closes it as No does. The box sits 26 px above the middle of the
 cross, or 8 px above the top of the figure, and goes below the space where
 the map has been moved so there is no room above. Neither glide changes
 Track (11), and after Yes the walk is followed as any End turn's is
-([Q316](#q316)). Since End turn's button now
+([Q316](#q316)). The box waits for the glide (12): `MapView`'s new `gliding`,
+read by `EndTurnQuestion` each frame until it first appears, and `glideTo`
+no longer slides a node that is in the middle already. The sound (13) is
+`question` in `Art/manifest.json`, `Art/Sounds/question.wav`, made by
+`question()` in `Art/tools/make_sounds.py`, and a placeholder like the
+others. Since End turn's button now
 says Go for a walk (Andrei, 2026-10-26), the box's last line says what the
 button says: "Go anyway?" for a walk, "End turn anyway?" for a rest. No rule,
 number, map or picture changed, and the rulebook needs no change.
