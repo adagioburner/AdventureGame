@@ -1384,7 +1384,8 @@ on the same page as details 72 to 77, each with a recommendation. Andrei:
 73. **What unpresses it:** anything that moves the map or starts planning:
     dragging the map, the mouse wheel, pinching, "+", "−", "Whole map",
     tapping your figure or "Plan a move". A tap on the map that
-    starts nothing leaves it pressed.
+    starts nothing leaves it pressed. **Changed by [Q316](#q316) 5:** on
+    your own turn nothing unpresses it.
 74. **While pressed** the map does what hot seat did: at the start of each
     turn it glides to the player on turn at the zoom it has (Q46), and it
     follows a walking figure that nears the edge (Q47). Pressing it glides
@@ -4122,7 +4123,7 @@ still the one a click picks. The fox and every guard are as they were, and no
 rule, number or map changed.
 
 <a id="q316"></a>
-### Q316. ~~Should Track still press itself?~~ — **answered 2026-10-26: only when a game opens; after that only the player presses it, and on one device, as online, the turn's glide to the player on turn waits for Track to be pressed; the walk of your own End turn is followed with Track left off (1-3)**
+### Q316. ~~Should Track still press itself?~~ — **answered 2026-10-26: only when a game opens; after that only the player presses it, and on one device, as online, the turn's glide to the player on turn waits for Track to be pressed; Track only matters on other players' turns: on your own turn nothing unpresses it, and your own walk is always followed, Track or no Track, even when you move the map (1-6)**
 
 Andrei, 2026-10-26 at 05:36: *"The Track button logic is too complex. Let's
 not turn it on automatically"*. Since [Q57](#q57) 76 and 77 Track pressed
@@ -4147,13 +4148,42 @@ as it was.
    move; on one device, the move of whoever pressed End turn. **Answered** at
    08:44: A.
 
-Built: in `apps/web/src/page/GameScreen.tsx`, End turn and Rest no longer
-press Track, and the turn's glide (Q46) no longer presses it on one device
-and happens there only while it is pressed. `endedTurn` keeps the turn this
-page's End turn committed, and `ownWalk` is true while that turn plays out;
-`MapView`'s new `follow` prop, `tracking || ownWalk`, decides whether a walk
-takes the map along. No rule, number, map or picture changed, and the
-rulebook needs no change: it does not mention Track.
+Built 1 to 3 in PR #102: in `apps/web/src/page/GameScreen.tsx`, End turn
+and Rest no longer press Track, and the turn's glide (Q46) no longer presses
+it on one device and happens there only while it is pressed. `endedTurn`
+keeps the turn this page's End turn committed, and `ownWalk` is true while
+that turn plays out; `MapView`'s new `follow` prop, `tracking || ownWalk`,
+decides whether a walk takes the map along.
+
+Andrei, 13:36: *"During your own move, nothing should unpress track"*, and at
+13:39: *"when you're planning your move on your turn, the map always stays
+where you put it. At the end of your turn it always follows uour figure,
+track or no track. Track only affects the behavior during other players
+turns."* On one device every person's turn is their own, so there Track
+only matters on the computer's turns.
+
+4. **Moving the map during your own walk,** with Track pressed: A, the map
+   keeps taking your figure along, so a drag, a zoom or a player's card
+   only moves it until your figure nears the edge again (recommended); B,
+   it stops following until the walk ends, Track still pressed. His 13:39
+   message answers it: A, and with Track off too, which changes 3's "moving
+   the map stops it".
+5. **What unpresses Track on your own turn.** A, nothing: Track changes only
+   when you press it, and on other players' turns dragging, the wheel,
+   pinching, "+", "−", Whole map, a player's card, Find me, tapping your
+   figure and changing a route unpress it as before (recommended); B, as
+   before on every turn. **Answered** at 13:41: A.
+6. **The start of your own turn.** A, the map glides to your figure only if
+   Track is pressed, as before, so a route you were planning out of turn
+   stays in view (recommended); B, never; C, always. **Answered** at 13:41:
+   A.
+
+Built: `yourTurn` in `GameScreen.tsx`, the turn shown being this page's
+person's own, keeps Track as it is when the map is moved, a card or Find me
+is clicked, or a route is planned. `MapView`'s new `keepFollowing` prop,
+`yourTurn`, keeps a drag or a zoom from stopping the following of a walk,
+which on your turn is your own. No rule, number, map or picture changed, and
+the rulebook needs no change: it does not mention Track.
 
 ---
 
