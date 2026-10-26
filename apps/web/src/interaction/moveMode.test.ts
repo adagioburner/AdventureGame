@@ -7,6 +7,7 @@ import {
   previewPath,
   refreshAllowance,
   shortestPath,
+  turnStops,
   type GameState,
   type MovementAllowance,
   type NodeId,
@@ -74,7 +75,7 @@ describe('move mode (§7.1), idle → selecting → previewing', () => {
     expect(controller.state.kind).toBe('idle');
   });
 
-  it('draws the cheapest route with the colours previewPath gives it, and nothing of its own', () => {
+  it('draws the cheapest route with the colours previewPath gives it and the turns turnStops ends, and nothing of its own', () => {
     const { game, controller } = setup();
     const player = seat(game.state, 0);
     const { target } = nodeAlong(game.state, 12);
@@ -87,6 +88,7 @@ describe('move mode (§7.1), idle → selecting → previewing', () => {
       waypoint: null,
       path,
       preview: previewPath(map.graph, player.position, path, game.state.turn.allowance, player.stats.stamina, config),
+      stops: turnStops(map.graph, path, game.state.turn.allowance, player.stats.stamina, refreshAllowance(player.stats), config),
     });
   });
 
@@ -183,6 +185,7 @@ describe('move mode (§7.1), idle → selecting → previewing', () => {
       waypoint: saved?.waypoint ?? null,
       path,
       preview: previewPath(map.graph, now.position, path, refreshAllowance(now.stats), now.stats.stamina, config),
+      stops: turnStops(map.graph, path, refreshAllowance(now.stats), now.stats.stamina, refreshAllowance(now.stats), config),
     });
   });
 
@@ -280,7 +283,8 @@ describe('End turn’s button says what it will do (Andrei, 2026-10-26)', () => 
   function shown(state: GameState, path: readonly NodeId[]): MoveModeState {
     const player = seat(state, 0);
     const preview = previewPath(map.graph, player.position, path, state.turn.allowance, player.stats.stamina, config);
-    return { kind: 'previewing', destination: path[path.length - 1] as NodeId, waypoint: null, path, preview };
+    const stops = turnStops(map.graph, path, state.turn.allowance, player.stats.stamina, refreshAllowance(player.stats), config);
+    return { kind: 'previewing', destination: path[path.length - 1] as NodeId, waypoint: null, path, preview, stops };
   }
   const idle: MoveModeState = { kind: 'idle' };
   const selecting: MoveModeState = { kind: 'selecting', waypoint: null };

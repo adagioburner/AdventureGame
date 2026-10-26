@@ -44,8 +44,10 @@ export interface MapRenderer {
   /**
    * [SOURCE §4] The thick dotted path, its colours, and the destination
    * cross, starting at `from`: the node of the figure whose route it is.
+   * [Q315] With `turnStops`, `turnStops`' ends of its turns, the bubbles
+   * marking where later turns end; a route not being planned has none (7 B).
    */
-  setPathPreview(preview: PathPreview | null, from: NodeId | null): void;
+  setPathPreview(preview: PathPreview | null, from: NodeId | null, turnStops?: readonly number[] | null): void;
   /** [SOURCE §4] Shift-click waypoint marker. */
   setWaypoint(node: NodeId | null): void;
   /** Whether the current player's figure blinks, is highlighted, or neither. */

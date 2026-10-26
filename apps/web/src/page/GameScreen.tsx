@@ -716,6 +716,8 @@ export function GameScreen({
   }, [source, controller, shown, busy, active, tracking]);
 
   const path = inFlight !== null ? inFlight.path : move.kind === 'previewing' ? move.preview : null;
+  // [Q315, 7 B] Only a route being planned has turn bubbles, not one walking.
+  const turnStops = inFlight === null && move.kind === 'previewing' ? move.stops : null;
   // A committed or walking route is the player on turn's; a route being
   // planned is its planner's, online perhaps someone waiting for their turn
   // ([Q56, 49]), so it starts at their figure.
@@ -780,6 +782,7 @@ export function GameScreen({
           state={shown}
           path={path}
           pathFrom={pathFrom ?? null}
+          turnStops={turnStops}
           waypoint={waypoint}
           walker={walker}
           cue={cue}
