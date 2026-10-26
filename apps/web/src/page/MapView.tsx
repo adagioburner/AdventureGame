@@ -91,7 +91,7 @@ interface MapViewProps {
   readonly planner?: PlayerId | null;
   /** [Q120, 471] The player whose card was just clicked, whose figure is highlighted for a moment. */
   readonly found?: PlayerId | null;
-  /** [Q312] The player this page is for (`PlaySource.own`), whose figure's ring is filled orange; none if omitted. */
+  /** [Q312] The player this page is for (`PlaySource.own`), whose figure's ring is white; none if omitted. */
   readonly own?: PlayerId | null;
   /**
    * [Q320] Shows a marker at the edge of the map for every player whose

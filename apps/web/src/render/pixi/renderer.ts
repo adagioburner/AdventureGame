@@ -50,13 +50,12 @@ const CUE = {
  * [Q305, 9, 13] The ring under every figure, in node spacings: a see-through
  * gold disc (`color`), with a rim of it `rim` wide; a selected one's
  * outline goes round it `gap` out. Andrei: "let us try it without the black
- * outlines". [Q312, 1] The page's own player's disc is `own` inside the
- * gold rim, and nothing else differs. Andrei: "Can it be orange, different
- * from today's yellow but not entirely from a different palette", then "the
- * orange disks are much less visible than gold. Can you show me orange with a
- * gold outline".
+ * outlines". [Q312, 1] The page's own player's is `own` instead, disc and
+ * rim alike, and nothing else differs. Andrei, after orange inside the gold
+ * rim: "can you show me white disk instead of orange? maybe that's going to
+ * look better"; of the mockups, he picked white with a white rim.
  */
-const PLAYER_RING = { color: 0xffe878, own: 0xff9226, fillAlpha: 0.5, rim: 0.06, gap: 0.035 } as const;
+const PLAYER_RING = { color: 0xffe878, own: 0xffffff, fillAlpha: 0.5, rim: 0.06, gap: 0.035 } as const;
 
 /**
  * `MapRenderer` on PixiJS (docs/STACK.md §3). Everything it draws comes out
@@ -199,7 +198,7 @@ export class PixiMapRenderer implements MapRenderer {
     this.invalidate('characters');
   }
 
-  /** [Q312] The player this page is for, whose figure's ring is filled orange; `null` for none. */
+  /** [Q312] The player this page is for, whose figure's ring is white; `null` for none. */
   setOwn(own: PlayerId | null): void {
     if (own === this.own) return;
     this.own = own;
@@ -477,8 +476,7 @@ export class PixiMapRenderer implements MapRenderer {
    * figure blinks, and is outlined while they plan (10, 11), as is the ring of
    * a player planning out of turn [Q56, 49] or just found from their card
    * [Q120, 471]; while a turn plays out it is plain like the rest. [Q312] The
-   * page's own player's is orange inside its gold rim, over the rings it
-   * overlaps.
+   * page's own player's is white, over the rings it overlaps.
    */
   private drawPlayerRings(): void {
     this.ringsLayer.removeChildren().forEach((child) => child.destroy());
@@ -487,11 +485,12 @@ export class PixiMapRenderer implements MapRenderer {
     for (const { at, size, mark, own } of this.stateScene?.rings ?? []) {
       const radius = playerRingSize(size, spacing, this.zoom, this.wholeZoom) / 2;
       const outlined = mark === 'planning' || mark === 'found' || (mark === 'turn' && this.cue === 'selected');
+      const color = own ? PLAYER_RING.own : PLAYER_RING.color;
       // Drawn round its own origin, so a pulse grows it from its middle.
       const ring = new Graphics()
         .circle(0, 0, radius)
-        .fill({ color: own ? PLAYER_RING.own : PLAYER_RING.color, alpha: PLAYER_RING.fillAlpha })
-        .stroke({ color: PLAYER_RING.color, width: PLAYER_RING.rim * spacing });
+        .fill({ color, alpha: PLAYER_RING.fillAlpha })
+        .stroke({ color, width: PLAYER_RING.rim * spacing });
       if (outlined) ring.circle(0, 0, radius + PLAYER_RING.gap * spacing).stroke({ color: CUE.color, width: CUE.outline * spacing });
       ring.position.set(at.x, at.y);
       this.ringsLayer.addChild(ring);

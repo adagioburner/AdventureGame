@@ -338,7 +338,7 @@ export interface PlayerRing {
    * - `null`: everyone else.
    */
   readonly mark: 'turn' | 'planning' | 'found' | null;
-  /** [Q312] Under the figure of the player this page is for (`PlaySource.own`): their ring is filled orange. */
+  /** [Q312] Under the figure of the player this page is for (`PlaySource.own`): their ring is white. */
   readonly own: boolean;
 }
 

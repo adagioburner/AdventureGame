@@ -50,10 +50,10 @@ export interface PlaySource {
   /** The players this page plans for: every person's seat on one device, one's own online. */
   readonly localPlayers: ReadonlySet<PlayerId>;
   /**
-   * [Q312] The player this page is for, whose figure's ring is filled
-   * orange: online, the seat its user holds, even once the computer plays it
-   * (4); on one device, the one person playing, and `null` with two or more
-   * people there (2), or with none, or online for someone holding no seat.
+   * [Q312] The player this page is for, whose figure's ring is white:
+   * online, the seat its user holds, even once the computer plays it (4); on
+   * one device, the one person playing, and `null` with two or more people
+   * there (2), or with none, or online for someone holding no seat.
    */
   readonly own: PlayerId | null;
   /** The dice seed the turn log names, or `null` when there is none to show. */
