@@ -3973,7 +3973,7 @@ Built: `RulesButton` in the login page's top bar in
 picture changed, and the rulebook needs no change.
 
 <a id="q314"></a>
-### Q314. ~~How can fights stop interrupting planning?~~ — **answered 2026-10-26: every fight, your own included, floats on the fighter's head as a claim does, with no OK: the die, "Guard beaten: gold +1" or "Guard holds" and the sum under it, for 3 seconds once the die stops, and the map waits for it (1-4)**
+### Q314. ~~How can fights stop interrupting planning?~~ — **answered 2026-10-26: every fight, your own included, floats on the fighter's head as a claim does, with no OK: the die, "Guard beaten: gold +1" or "Guard holds" and the sum under it, for 3 seconds once the die stops, and the map waits for it (1-5)**
 
 Andrei, 2026-10-26 at 05:47: *"your own and other players fights pop up and
 disrupt your planning. can we make them less dispruptive? E g. also like
@@ -4003,6 +4003,12 @@ picked each detail from a card at 07:12 and 07:13:
    glides to the next player (Q46): for a fight's too (recommended), or at once
    as it did past the card. A route saved from the turn before blinks from
    then on, as Q145 574 times it. **Answered:** wait.
+5. **Near the map's edge.** Found while checking it on a 340 px phone: a
+   notice is centred over the figure's head, so beside the map's left or
+   right edge part of it is cut off, a fight's more often than a claim's
+   since it is wider. Put to him: every notice, or only a fight's, sliding
+   sideways to stay whole (all of them recommended), or left as it is.
+   **Answered** at 08:41: left as it is.
 
 Built: `FightNotice` in `apps/web/src/page/Cards.tsx`, on the floating notice
 the claim's and a purchase's use, replaces the result card;
