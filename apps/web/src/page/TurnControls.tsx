@@ -243,13 +243,17 @@ function PlayerMenu({ name, children }: { readonly name: string; readonly childr
  * next turn and says so.
  */
 function hint(move: MoveModeState, armed: boolean, name: string, rest: number, onGuard: boolean, later: boolean): string {
-  // [490] Away from a guard, End turn that walks nothing rests (`endTurnActionFor`).
-  const stay = onGuard ? 'End turn with no route stays here and fights the guard again' : `End turn with no route rests: +${rest} stamina`;
+  // [Andrei, 2026-10-26] A line names End turn's button as it is shown: Fight
+  // on a guard, where walking nothing fights it again, and End turn elsewhere,
+  // where it rests (490, `endTurnOutcome`). Rest is named with it.
+  const fight = 'Fight stays here and fights the guard again';
+  const gain = `Rest gains ${rest} stamina`;
+  const both = `Rest and End turn gain ${rest} stamina`;
   const when = later ? 'on your next turn' : 'this turn';
   switch (move.kind) {
     // [Q145, 571] On your own turn a tap on a space plans at once.
     case 'idle':
-      return onGuard ? `${name}: tap where to go. ${stay}. Rest gains ${rest} stamina.` : `${name}: tap where to go. ${stay}.`;
+      return onGuard ? `${name}: tap where to go. ${fight}. ${gain}.` : `${name}: tap where to go. ${both}.`;
     case 'selecting':
       return armed
         ? 'Tap the space to route through.'
@@ -260,15 +264,14 @@ function hint(move: MoveModeState, armed: boolean, name: string, rest: number, o
       const steps = preview.steps.length;
       if (steps === 0) {
         if (later) return 'No route: you stay where you are.';
-        // [495] Away from a guard: "End turn rests", without "with no route".
-        return onGuard ? `Staying here this turn. ${stay}.` : `Staying here this turn. End turn rests: +${rest} stamina.`;
+        return onGuard ? `${fight}. ${gain}.` : `${both}.`;
       }
       if (preview.reachableStepCount === 0) {
         const route = steps === 1 ? 'this step' : `the first of these ${steps} steps`;
         if (later) return `Not even ${route} is affordable on your next turn. Rest gains ${rest} stamina.`;
         return onGuard
-          ? `Not even ${route} is affordable this turn. Rest gains ${rest} stamina; End turn walks nothing and keeps the route for next turn.`
-          : `Not even ${route} is affordable this turn. End turn rests: +${rest} stamina, and keeps the route for next turn.`;
+          ? `Not even ${route} is affordable this turn. ${gain}; Fight stays here, fights the guard again and keeps the route for next turn.`
+          : `Not even ${route} is affordable this turn. ${both} and keep the route for next turn.`;
       }
       const cost = preview.totalStaminaCost === 0 ? 'no stamina' : `${preview.totalStaminaCost} stamina`;
       const reach = preview.destinationReachable
