@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { unstable_startWorker } from 'wrangler';
 
 import { DEFAULT_RULESET } from '@adventure/config';
-import { activePlayer } from '@adventure/core';
+import { activePlayer, poiAt } from '@adventure/core';
 import { generateMap } from '@adventure/mapgen';
 import {
   computerMoveRequestId,
@@ -323,8 +323,10 @@ describe('the server, in the local Workers runtime', () => {
     expect((await beaGame.next(played(1))).record).toMatchObject({ action: { kind: 'rest' }, by: gm.user.userId, rolls: [] });
 
     // Bea saves a route, then ends her turn with it; a second End turn for the same turn is refused.
+    // Onto a space without gold: the map is new every run, and gold taken
+    // there would leave Bea the only winner when the game ends below.
     const start = state.players[1]?.position ?? 0;
-    const step = map.graph.adjacency[start]?.[0];
+    const step = map.graph.adjacency[start]?.find((node) => poiAt(map, node)?.reward.kind !== 'gold');
     expect(step).toBeDefined();
     beaGame.send({ type: 'turn.plan', gameId, path: [step as never], waypoint: null });
     await gmGame.next(played(2));
