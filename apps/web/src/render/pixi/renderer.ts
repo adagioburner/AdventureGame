@@ -33,15 +33,14 @@ import { backdropTerrains } from '../dressing.ts';
 import type { LoadedArt } from './textures.ts';
 
 /**
- * The current player's cue, in node spacings and milliseconds. Blinking fades
- * the figure out and back once a period while its ring (Q305, 11) grows to
- * `pulseGrow` times its size as it fades out, then starts again at its own,
- * so it can be found even with the whole map in view; planning holds it
- * steady with a thick `color` outline `outline` wide round its ring (Q305, 10).
+ * The current player's cue, in node spacings and milliseconds. Pulsing grows
+ * their ring (Q305, 11) to `pulseGrow` times its size as it fades out, then
+ * starts it again at its own, once a period, so it can be found even with the
+ * whole map in view; the figure stays solid (Q321). Planning holds the ring
+ * steady with a thick `color` outline `outline` wide round it (Q305, 10).
  */
 const CUE = {
-  blinkMs: 1000,
-  dimAlpha: 0.15,
+  pulseMs: 1000,
   pulseGrow: 2,
   outline: 0.05,
   color: 0xffd84a,
@@ -95,8 +94,7 @@ export class PixiMapRenderer implements MapRenderer {
   private planner: PlayerId | null = null;
   private found: PlayerId | null = null;
   private own: PlayerId | null = null;
-  /** What the blink animates: the current player's figure, and (Q305, 11) its ring. */
-  private blinking: Sprite | null = null;
+  /** What the pulse animates: (Q305, 11) the current player's ring. */
   private pulsing: Graphics | null = null;
   /**
    * [Q305, 15-18] The figures drawn now that have an idle loop: its frames,
@@ -246,12 +244,11 @@ export class PixiMapRenderer implements MapRenderer {
     this.invalidate('characters');
   }
 
-  /** Advance the figures' idle loops and the blink; call once a frame. */
+  /** Advance the figures' idle loops and the pulse; call once a frame. */
   tick(now: number): void {
     this.playIdle(now);
-    if (this.cue !== 'blink') return;
-    const phase = (now % CUE.blinkMs) / CUE.blinkMs;
-    if (this.blinking !== null) this.blinking.alpha = CUE.dimAlpha + (1 - CUE.dimAlpha) * (0.5 + 0.5 * Math.cos(phase * 2 * Math.PI));
+    if (this.cue !== 'pulse') return;
+    const phase = (now % CUE.pulseMs) / CUE.pulseMs;
     if (this.pulsing !== null) {
       this.pulsing.scale.set(1 + (CUE.pulseGrow - 1) * phase);
       this.pulsing.alpha = 1 - phase;
@@ -440,7 +437,6 @@ export class PixiMapRenderer implements MapRenderer {
     this.characterSprites = [];
     this.waypointSprite?.destroy();
     this.waypointSprite = null;
-    this.blinking = null;
     this.figures = [];
     this.drawPlayerRings();
 
@@ -449,11 +445,10 @@ export class PixiMapRenderer implements MapRenderer {
     for (const item of this.stateScene?.characters ?? []) {
       const sprite = this.stand(item, 1);
       this.characterSprites.push(sprite);
-      const blinking = item.player === current && this.cue === 'blink';
-      if (blinking) this.blinking = sprite;
       if (item.loop !== null) {
-        // [Q305, 18] A figure walking at End turn, picked up to plan (on its
-        // turn or out of it, Q56) or blinking stands still.
+        // [Q305, 18] A figure walking at End turn or picked up to plan (on its
+        // turn or out of it, Q56) stands still; [Q321, 2] one on its turn
+        // with its ring pulsing plays its loop like the rest.
         const pickedUp = (item.player === current && this.cue === 'selected') || item.player === this.planner;
         this.figures.push({
           sprite,
@@ -461,7 +456,7 @@ export class PixiMapRenderer implements MapRenderer {
           size: item.size,
           frames: item.loop.frames.map((ref) => this.art.frame(ref)),
           durationsMs: item.loop.durationsMs,
-          still: item.walking || pickedUp || blinking,
+          still: item.walking || pickedUp,
           shown: 0,
         });
       }
@@ -473,9 +468,9 @@ export class PixiMapRenderer implements MapRenderer {
 
   /**
    * [Q305] The one ring under every figure (1), no smaller on screen than it
-   * is with the whole map in view (8). The player on turn's pulses while their
-   * figure blinks, and is outlined while they plan (10, 11), as is the ring of
-   * a player planning out of turn [Q56, 49] or just found from their card
+   * is with the whole map in view (8). The player on turn's pulses until they
+   * pick their figure up, and is outlined while they plan (10, 11), as is the
+   * ring of a player planning out of turn [Q56, 49] or just found from their card
    * [Q120, 471]; while a turn plays out it is plain like the rest. [Q312] The
    * page's own player's is white, over the rings it overlaps.
    */
@@ -495,7 +490,7 @@ export class PixiMapRenderer implements MapRenderer {
       if (outlined) ring.circle(0, 0, radius + PLAYER_RING.gap * spacing).stroke({ color: CUE.color, width: CUE.outline * spacing });
       ring.position.set(at.x, at.y);
       this.ringsLayer.addChild(ring);
-      if (mark === 'turn' && this.cue === 'blink') this.pulsing = ring;
+      if (mark === 'turn' && this.cue === 'pulse') this.pulsing = ring;
     }
   }
 

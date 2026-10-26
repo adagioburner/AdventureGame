@@ -822,7 +822,7 @@ since the rename is about what a player reads. GDD §6 carries the ruling as a
 
 ---
 
-### Q34. ~~How does the page show whose figure is whose turn?~~ — **answered 2026-09-23: it blinks, then is highlighted**
+### Q34. ~~How does the page show whose figure is whose turn?~~ — **answered 2026-09-23: it blinks, then is highlighted; since Q321 only its ring pulses, the figure staying solid**
 
 GDD §7.2 says the current player's "character is highlighted on the map", and
 phase 4 drew a ring under it that was easy to miss. Andrei: *"it is hard to
@@ -3812,7 +3812,8 @@ sheet and atlas by `Art/tools/pack_animation.py` and named in
     one walking at End turn stand still; the final map animates. At 23:04:
     *"it makes no sense to animate a blinking figure. the rest is as
     recommended"*, so the player on turn's figure stands still while it
-    blinks too.
+    blinks too. Since Q321 it no longer blinks, and plays its loop like the
+    rest (Q321, 2).
 19. **Between plays.** The frames are a different drawing from the still
     figurines (another pose, the backpack showing). A: on the map a figure
     always stands in its loop's first frame, so a play starts and ends without
@@ -4561,6 +4562,38 @@ online both have them, during the game and after it ends as cards find
 players then too (Q120, 474); the New game screens have none. The look is
 `.edge-marker` in `apps/web/index.html`. No rule, number, map or picture
 changed, and the rulebook needs no change.
+
+---
+
+### Q321. ~~Should the figure on turn still blink?~~ — **answered 2026-10-26: no; it stays solid while the ring under it pulses, and plays its idle animation now and then like every other figure; the rulebook says the ring pulses (1-3)**
+
+Andrei, 2026-10-26 at 17:38: *"I think with the pulsing disk underneath we
+don't need the hero figure blinking. It can stay solid and even be animated
+while the pulsing disk indicates that it's their turn to make"*. Since Q34 the
+figure on turn faded out and back once a second until its player picked it up,
+and since Q305 the ring under it pulses with it; while it blinked it stood
+still (Q305, 18).
+
+1. **The blink.** The figure on turn no longer fades: it stays solid, and only
+   its ring pulses, as before, once a second until the player picks the figure
+   up, over a route saved from the turn before for its first 2 seconds
+   (Q145, 574), and while a computer thinks (Q42).
+2. **Animation.** Asked: A, it plays its idle animation now and then like every
+   other figure, every 5 to 15 seconds when drawn at least 24 pixels tall
+   (recommended); B, it stands still; C, it plays it over and over until the
+   player picks it up or the turn ends. **Answered** at 18:13: A. A figure
+   picked up to plan or walking at End turn still stands still (Q305, 18).
+3. **Rulebook.** "Your figure blinks when it is your turn" no longer held.
+   Asked: A, "The ring under your figure pulses when it is your turn."
+   (recommended); B, drop the sentence. **Answered** at 18:13: A.
+
+Built: the cue `MapRenderer.setCue` takes is `pulse` rather than `blink`
+(`FigureCue` in `apps/web/src/render/sceneModel.ts`); in
+`apps/web/src/render/pixi/renderer.ts`, `tick` no longer fades the figure on
+turn and `drawCharacters` no longer holds it still (1, 2);
+`timing.savedRoutePulseMs` in `apps/web/src/page/GameScreen.tsx` is the 2
+seconds as before; the line is in `docs/RULEBOOK.md` (3). No rule, number, map
+or picture changed.
 
 ---
 

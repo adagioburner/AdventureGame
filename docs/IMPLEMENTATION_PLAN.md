@@ -890,7 +890,9 @@ figurines, then play it out on one screen until the engine declares a winner.
     move it stops blinking and its ring gets a thick yellow outline instead,
     until the turn is played (Q305). Cancel sets it blinking again.
     `MapRenderer.setCue` takes `blink`, `selected` or `none`; the page picks
-    one from the turn and the move mode, and the renderer animates it.
+    one from the turn and the move mode, and the renderer animates it. Since
+    Q321 the figure no longer blinks, only its ring pulses, and the cue is
+    `pulse`.
   - The page calls the moving skills **plains speed, forest speed and
     mountains speed**, and fighting **combat**: in the stats panel, the
     result card, the turn log and every hint. The engine's names

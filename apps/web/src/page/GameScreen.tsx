@@ -53,9 +53,9 @@ const FIGURE_GAP_PX = 8;
  * and an unguarded claim's notice takes to fade in, stays up (2 seconds, his
  * pick) and takes to fade out; how long a fight's notice stays up once the
  * die has stopped (3 seconds, [Q314, 2]); how long a figure found from its
- * card stands on its ring (2 seconds, [Q120, 471]); and how long the figure
- * on turn blinks over a route saved from the turn before (2 seconds, [Q145,
- * 574]).
+ * card stands on its ring (2 seconds, [Q120, 471]); and how long the ring of
+ * the figure on turn pulses over a route saved from the turn before (2
+ * seconds, [Q145, 574]; Q321).
  */
 export const timing = {
   stepMs: 220,
@@ -66,7 +66,7 @@ export const timing = {
   fadeMs: 500,
   fightMs: 3000,
   foundMs: 2000,
-  savedRouteBlinkMs: 2000,
+  savedRoutePulseMs: 2000,
 };
 
 interface GameScreenProps {
@@ -129,7 +129,7 @@ export function GameScreen({
   const [notice, setNotice] = useState<string | null>(null);
   const [endOpen, setEndOpen] = useState(true);
   // Whether the player planning has picked their figure up; until they do,
-  // the current player's figure blinks, even over a route saved from their
+  // the current player's ring pulses, even over a route saved from their
   // last turn.
   const [engaged, setEngaged] = useState(false);
   const [planner, setPlanner] = useState<PlayerId | null>(null);
@@ -169,15 +169,15 @@ export function GameScreen({
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  // [Q145, 574] The turn shown whose opening blink is over: from then on a
-  // route saved from the turn before shows as planned (575). The blink is
+  // [Q145, 574] The turn shown whose opening pulse is over: from then on a
+  // route saved from the turn before shows as planned (575). The pulse is
   // timed from when the map can glide to the player on turn (Q46): after a
   // claim's or a fight's notice ([Q314, 4]).
   const [settledTurn, setSettledTurn] = useState<number | null>(null);
   const turnShown = shown.status === 'in_progress' && !busy && result === null ? shown.turn.number : null;
   useEffect(() => {
     if (turnShown === null) return;
-    const timer = window.setTimeout(() => setSettledTurn(turnShown), timing.savedRouteBlinkMs);
+    const timer = window.setTimeout(() => setSettledTurn(turnShown), timing.savedRoutePulseMs);
     return () => window.clearTimeout(timer);
   }, [turnShown]);
 
@@ -438,7 +438,7 @@ export function GameScreen({
   };
 
   // [Andrei, 2026-09-24] Q42: a computer's turn starts with it thinking for its
-  // seat's time, while its figure blinks, and then plays out like a person's
+  // seat's time, while its ring pulses, and then plays out like a person's
   // End turn: its route drawn, the walk, the die. Leaving the game stops it.
   useEffect(() => {
     const computer = source.computer;
@@ -730,16 +730,17 @@ export function GameScreen({
   const waypoint = inFlight !== null ? inFlight.waypoint : move.kind === 'idle' ? null : move.waypoint;
   // [Andrei, 2026-10-01] Q145: "blink until there's a route planned [...] if
   // the route is saved from previous planning we can blink for a short while
-  // and stop". A route brought back blinks for its first 2 seconds (574), then
+  // and stop". A route brought back pulses for its first 2 seconds (574), then
   // stands on the ring of a route planned (575) without being picked up, so
-  // Track stays as it was; tapping the figure stops the blink (576, Q34).
+  // Track stays as it was; tapping the figure stops the pulse (576, Q34). Since
+  // Q321 only the ring pulses; the figure stays solid.
   const routePlanned = engaged || (move.kind === 'previewing' && settledTurn === shown.turn.number);
   const cue: FigureCue =
     shown.status !== 'in_progress' || busy
       ? 'none'
       : move.kind !== 'idle' && routePlanned && planner === active?.id
         ? 'selected'
-        : 'blink';
+        : 'pulse';
   // [Q56, 49] Online, a figure picked up out of turn is highlighted as on its own turn.
   const plannerShown =
     shown.status === 'in_progress' && !busy && move.kind !== 'idle' && engaged && planner !== active?.id ? planner : null;
