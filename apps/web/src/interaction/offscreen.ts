@@ -7,7 +7,7 @@ import type { Box } from '../render/placement.ts';
  * floating near the edge of the screen and pointing in the direction of where
  * those players are".
  *
- * [Q311] Every player whose figure is wholly out of the map's box, the
+ * [Q319] Every player whose figure is wholly out of the map's box, the
  * player on turn too, at any zoom (3, 4), gets a marker just inside its edge,
  * where the line from the middle of the view to the figure leaves it, with an
  * arrow from the marker to the figure. The markers run round the map's

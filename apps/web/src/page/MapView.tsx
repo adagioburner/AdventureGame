@@ -66,7 +66,7 @@ interface MapViewProps {
   /** [Q120, 471] The player whose card was just clicked, whose figure is highlighted for a moment. */
   readonly found?: PlayerId | null;
   /**
-   * [Q311] Shows a marker at the edge of the map for every player whose
+   * [Q319] Shows a marker at the edge of the map for every player whose
    * figure is out of view; tapping one calls this, as their card does (Q120).
    * No markers if omitted.
    */
@@ -100,7 +100,7 @@ const OVERHANG = { top: SPACING_PX * 1.2, side: SPACING_PX * 0.5, bottom: SPACIN
 const ISLAND_SKY_BELOW = SPACING_PX * 0.2;
 
 /**
- * [Q311] How far an edge marker's arrow reaches out of its badge and its rim
+ * [Q319] How far an edge marker's arrow reaches out of its badge and its rim
  * round it (index.html), the room left between the arrow's tip and the map's
  * edge, and between the rims of two markers side by side, in CSS pixels.
  */
@@ -148,7 +148,7 @@ export function MapView({
   const renderer = useRef<PixiMapRenderer | null>(null);
   const zoomButtons = useRef<((action: 'in' | 'out' | 'fit') => void) | null>(null);
   const buttons = useRef<HTMLDivElement>(null);
-  // [Q311] The edge markers, by player, which the map places every frame,
+  // [Q319] The edge markers, by player, which the map places every frame,
   // and how wide one is: 48 px, 40 on a phone (index.html).
   const markers = useRef(new Map<PlayerId, HTMLButtonElement>());
   const [markerSize, setMarkerSize] = useState(48);
@@ -315,7 +315,7 @@ export function MapView({
       app.ticker.add(onTick);
       cleanups.push(() => app.ticker.remove(onTick));
 
-      // [Q311] Every player whose figure is wholly out of view has a marker
+      // [Q319] Every player whose figure is wholly out of view has a marker
       // just inside the map's edge pointing at it, placed every frame as the
       // map and the figures move. How big a marker is and where the map's
       // buttons are, which they go round, is measured as the map's box changes.
@@ -612,7 +612,7 @@ export function MapView({
         </div>
       ) : null}
       {onFind === undefined ? null : (
-        // [Q311] Placed by the map every frame; hidden while their figure shows.
+        // [Q319] Placed by the map every frame; hidden while their figure shows.
         <div className="overlay edge-markers">
           {state.players.map((player) => (
             <button
@@ -663,7 +663,7 @@ export function MapView({
 }
 
 /**
- * [Q311, 8] What the route drawn covers, at zoom 1: each of its dots, the
+ * [Q319, 8] What the route drawn covers, at zoom 1: each of its dots, the
  * cross at its end and the waypoint's flag.
  */
 function routeBoxes(art: LoadedArt, map: GameMap, scene: MapScene, path: PathPreview | null, from: NodeId | null, waypoint: NodeId | null): Box[] {

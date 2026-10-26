@@ -3972,7 +3972,7 @@ picture changed, and the rulebook needs no change.
 
 ---
 
-### Q311. ~~How do you keep track of players out of view?~~ — **answered 2026-10-26: a marker just inside the map's edge for every player whose figure is wholly out of view, at any zoom: the portrait from their card in a round badge with an arrow pointing at them, 48 px across on a laptop and 40 on a phone; a tap finds them as their card does; markers slide apart, go round the map's buttons, and slide a little off reward icons, guard numbers, figures and the route (1-8)**
+### Q319. ~~How do you keep track of players out of view?~~ — **answered 2026-10-26: a marker just inside the map's edge for every player whose figure is wholly out of view, at any zoom: the portrait from their card in a round badge with an arrow pointing at them, 48 px across on a laptop and 40 on a phone; a tap finds them as their card does; markers slide apart, go round the map's buttons, and slide a little off reward icons, guard numbers, figures and the route (1-8)**
 
 Andrei, 2026-10-26 at 06:47: *"when i zoom on, i lose track of where other
 players are. cN we vave small floaters with character figurines and arrows

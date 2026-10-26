@@ -190,12 +190,12 @@ export class PixiMapRenderer implements MapRenderer {
     return this.stateScene?.characters ?? [];
   }
 
-  /** [Q311, 7] The sites whose reward is gone, drawn without their icons or number. */
+  /** [Q319, 7] The sites whose reward is gone, drawn without their icons or number. */
   get claimed(): ReadonlySet<NodeId> {
     return this.stateScene?.claimed ?? new Set();
   }
 
-  /** [Q311, 8] The rings under the figures as they stand now. */
+  /** [Q319, 8] The rings under the figures as they stand now. */
   get rings(): readonly PlayerRing[] {
     return this.stateScene?.rings ?? [];
   }
