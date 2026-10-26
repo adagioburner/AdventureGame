@@ -288,8 +288,10 @@ export function MapView({
         app.canvas.removeEventListener('webglcontextrestored', onRestored);
       });
 
-      // `chasing` for Track's glide to a walking figure, which the walk's
-      // own following waits for; it aims at wherever the figure is by then.
+      // `chasing` for a glide the walk's own following waits for: Track's to a
+      // walking figure, which aims at wherever the figure is by then, and the
+      // glide that makes room for a turn's notice (Q314, 6), which would
+      // otherwise stop as the following catches up with the walk's last step.
       let glide: { from: Point; to: () => Point; start: number; chasing: boolean } | null = null;
       // [Andrei, 2026-09-24] Q47: a walking figure that nears the edge of the
       // view takes the map along with it, while Track is pressed (Q57).
@@ -486,7 +488,7 @@ export function MapView({
           if (mark !== aims.current) return;
           const to = roomFor(camera.camera, viewport(), box, ROOM_MARGIN_PX);
           if (to.x === camera.camera.center.x && to.y === camera.camera.center.y) return;
-          glide = { from: camera.camera.center, to: () => to, start: performance.now(), chasing: false };
+          glide = { from: camera.camera.center, to: () => to, start: performance.now(), chasing: true };
           touched = true;
         },
       });
