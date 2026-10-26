@@ -65,6 +65,10 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
   // opens over the map, and neither while both are closed; [Q87, 309] closed
   // when the game opens, on desktop too.
   const [panel, setPanel] = useState<'log' | 'board' | null>(null);
+  // [Q311] Whether the page has every turn the server has played. The socket
+  // reopens before the turns missed while it was down arrive, so it is caught
+  // up only once they have: until then the game shown may be behind.
+  const [caughtUp, setCaughtUp] = useState(false);
   // The latest setup and started state, for the history that follows them.
   const latest = useRef<{ setup: SetupState | null; started: GameState | null; play: OnlinePlay | null }>({
     setup: null,
@@ -106,12 +110,13 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
             const next = onlinePlay({ setup: now, me: me.userId, ...opened, send: (sent) => channel.send(sent) });
             latest.current.play = next;
             setPlay(next);
+            setCaughtUp(true);
             return;
           }
           // [Q54, 32] Back after a dropped connection: the turns missed meanwhile.
           // A turn this page sent that is not among them never arrived: a
           // computer's move goes again, and a person's can be sent again.
-          receive(current, message.records, 'caught_up');
+          if (receive(current, message.records, 'caught_up')) setCaughtUp(true);
           current.reconnected();
           return;
         }
@@ -143,19 +148,29 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
     onRefused,
   );
 
-  /** Applies records the server sent, skipping any already applied; a gap means one was missed, and the game is loaded again. */
-  const receive = (current: OnlinePlay, records: readonly GameRecord[], shown: 'played' | 'caught_up'): void => {
+  /**
+   * Applies records the server sent, skipping any already applied; a gap means
+   * one was missed, and the game is loaded again. `false` when it is.
+   */
+  const receive = (current: OnlinePlay, records: readonly GameRecord[], shown: 'played' | 'caught_up'): boolean => {
     for (const record of records) {
       if (record.seq <= current.lastSeq) continue;
       try {
         current.receive(record, shown);
       } catch (error) {
         if (!(error instanceof MissedRecords)) throw error;
+        setCaughtUp(false);
         channel.restart();
-        return;
+        return false;
       }
     }
+    return true;
   };
+  // [Q311] A connection that drops leaves the page behind until the turns
+  // missed meanwhile have arrived.
+  useEffect(() => {
+    if (channel.status !== 'open') setCaughtUp(false);
+  }, [channel.status]);
 
   // The game as the server has it, as each change arrives: for the tab title,
   // the board and the top bar, which do not wait for a turn to play out.
@@ -331,7 +346,9 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
     );
 
   if (play !== null && status === null && art !== null && scene !== null && setup !== null) {
-    const offline = channel.status !== 'open';
+    // [Q56, 71] Reconnecting, and [Q311] until the turns missed meanwhile have
+    // arrived: nothing is played from a game shown behind the server's.
+    const offline = channel.status !== 'open' || !caughtUp;
     const longest = setup.createdAt + LONGEST_LIFETIME_DAYS * DAY_MS;
     return (
       <div className="shell playing">

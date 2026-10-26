@@ -1394,10 +1394,13 @@ on the same page as details 72 to 77, each with a recommendation. Andrei:
     opens it again for changes, which unpresses Track.
 76. **It presses itself** when you open a game and when you press End turn or
     Rest. Otherwise only you press it, so when your turn comes while you are
-    planning, the map stays on your route.
+    planning, the map stays on your route. **Changed by [Q316](#q316):** it
+    presses itself only when you open a game, and the walk of your own End
+    turn is followed without it.
 77. **A game on one device has it too.** There it also presses itself at the
     start of every turn, since a new person is at the screen, which keeps hot
-    seat moving the map as before.
+    seat moving the map as before. **Changed by [Q316](#q316):** it no longer
+    presses itself there, and the turn's glide waits for it, as online.
 
 `tracking` in `apps/web/src/page/GameScreen.tsx`; the button and the
 following in `MapView.tsx`; `putDown` in
@@ -2347,8 +2350,9 @@ answered 570 to 573 on their cards at 03:49 and 574 to 576 at 04:32.
      (recommended). Every tap on your turn does what it does once your figure
      is picked up, so a tap on another player's figure chooses their space
      instead of showing hot seat's notice. Track unpresses when a space is
-     chosen, as when a figure is picked up, and End turn presses it again.
-     **Answered:** A, in his 03:02 message and on its card.
+     chosen, as when a figure is picked up, and End turn presses it again
+     (until [Q316](#q316)). **Answered:** A, in his 03:02 message and on its
+     card.
 571. **The line above the buttons at turn start.** A: *"Bea: tap where to go.
      End turn with no route rests: +5 stamina."*, on a guarded site *"…End turn
      with no route stays here and fights the guard again. Rest gains 5
@@ -2356,7 +2360,8 @@ answered 570 to 573 on their cards at 03:49 and 574 to 576 at 04:32.
 572. **Online, on someone else's turn.** A: as before, planning your next move
      starts with your figure or Plan a move, and a tap on a space alone shows
      the notice, since a stray tap would save a route that the game master's
-     Move on would walk (recommended). **Answered:** A.
+     Move on would walk (recommended). **Answered:** A. Since [Q310](#q310) a tap on a
+     space plans at once there too, and Plan a move is Find me.
 573. **The rulebook,** under Planning a route. A: *"Choose where you want to
      go."* (recommended). **Answered:** A.
 574. **How long the figure blinks on a route saved from the turn before,**
@@ -3971,6 +3976,102 @@ Built: `RulesButton` in the login page's top bar in
 `.bar.login .btn` in `apps/web/src/online/site.css`. No rule, number, map or
 picture changed, and the rulebook needs no change.
 
+<a id="q310"></a>
+### Q310. ~~Does planning need Plan a move or a tap on your figure first?~~ — **answered 2026-10-26: no, online on someone else's turn a tap on a space plans at once too, and the line says so; Plan a move becomes Find me, which does what your own card does, first in the row whenever the buttons show, the row's buttons narrower so a route's five fit on one line, Rest and End turn wrapping together (1-4)**
+
+Andrei, 2026-10-26 at 05:43: *"one needs to click "plan move" or your hero to
+start planning. Is that necessary? why not start planning right away? The plan
+turn button can then be change to "find me" - it's hard to find yourself when
+one there are many players and one needs to scroll cards"*. On your own turn a
+tap on a space already planned at once ([Q145](#q145) 570); Plan a move there
+only stopped the blink, showed Waypoint and Cancel, and on a phone zoomed in on
+the figure. Online, on someone else's turn, planning still started with the
+figure or Plan a move (572), so that a stray tap would not save a route the
+game master's Move on would walk. He answered the three cards at 07:09 and
+07:10.
+
+1. **Online, on someone else's turn.** A: a tap on a space plans your next
+   move at once, as on your own turn, and the line reads *"Bea is playing. Tap
+   where to go on your next turn."* (recommended); B: the same with the line
+   unchanged, *"Bea is playing. You can plan your next move."*; C: your figure
+   is still tapped first, and the notice drops "or Plan a move".
+   **Answered:** A. A tap on another player's figure chooses their space, as on
+   your own turn; *"Tap your figure, or Plan a move, before choosing where to
+   go."* is no longer shown anywhere.
+2. **What Find me does.** A: what your own card does ([Q120](#q120)): the map
+   jumps to your figure and zooms in to playing distance, Track unpresses, and
+   the figure stands on its ring for a moment (recommended); B: the map glides
+   to the figure at the zoom it has; C: A, and the cards scroll to your card.
+   **Answered:** A. As with the card, a figure already marked, on turn or
+   picked up to plan, gets no ring, and Find me works while a figure walks.
+3. **Where Find me sits.** A: first in the row whenever the buttons show, with
+   Cancel, Waypoint and Clear waypoint after it once a route is up; on one
+   device it finds the player on turn, and on a computer's turn it is hidden
+   with the other buttons (Q42) (recommended); B: only until a route is up,
+   Cancel then taking its place; C: on the map, by Track. **Answered:** A. With
+   a route up the row was one button longer, so it took two lines on a laptop
+   (1280 px) and on phones at 390 and 340 px, which 4 settles.
+4. **Keeping the row on one line.** Andrei at 08:37: *"why do the buttons wrap
+   if we simply chaged one button for another"*: Plan a move used to turn
+   into Cancel once a route was up, while Find me stays beside it. At 08:38:
+   *"let's see how we can keep all buttons in one row"*. With a route up the
+   five buttons needed 381 to 401 px against 325 px on a laptop and 320 to
+   370 px on phones; with a waypoint set the row already wrapped before Find
+   me, and on a phone held sideways (279 px) with any route up. Mocked up at
+   1280, 390 and 340 px: A, narrower buttons, padding 6 px a side, gaps 4 px
+   and 13 px text instead of 14, so a route's five take 315 px (recommended);
+   B, Find me in the top bar, beside New game or Menu, the row as before; C,
+   A without Clear waypoint, so a waypoint set fits too. **Answered** at
+   13:08: A, *"can we make sure that Rest and End turn stay on the same line
+   in case they wrap"*. With a waypoint set, and on a phone held sideways,
+   Rest and End turn take the second line together.
+
+Built: `choose` in `apps/web/src/interaction/moveMode.ts` plans out of turn
+online, `GameScreen`'s `onTap` sends a tap on a space there, `findMe` in
+`GameScreen.tsx` calls the card's `findPlayer`, and the button and line are in
+`TurnControls.tsx`, Rest and End turn in its `.turn-end`, sized by the rules
+after `.buttons` in `apps/web/index.html`. No rule, number, map or picture
+changed, and the rulebook needs no change.
+
+<a id="q311"></a>
+### Q311. ~~Can a player end their turn before their page has caught up with the game?~~ — **answered 2026-10-26: no; after a dropped connection everything greyed while reconnecting stays greyed, under "Reconnecting to the server…", until the turns missed meanwhile have arrived (1-2)**
+
+Andrei, 2026-10-26 at 05:50: *"We saw a person move before their state got
+fully synched, and arrive at a site that was already taken. I think it's a
+bug. One should not start a turn before their state is fully synched"*; and
+at 07:22: *"the player clicked end turn while they were still seeing outdated
+state of the game"*.
+
+Found: the server refuses End turn, Rest and a purchase named for a turn that
+is over ([Q54](#q54) 35), and only the player on turn can take a site, so it
+never plays a turn from a page a turn or more behind. The page did not wait
+for the game, though. [Q56](#q56) 71 greyed Rest and End turn while it
+reconnected, but it counted the connection back as soon as the socket
+reopened, before the server sends the turns missed meanwhile
+(`game.history`). In between, the page showed the game from before the
+connection dropped, with End turn live. The server ran in Cloudflare's local
+runtime and the page in Chromium, with the catch-up held back: End turn was
+live on the old game, and pressed after the game master had moved the player
+on, it was refused.
+
+1. **What waits.** Everything Q56 71 greys while reconnecting (Rest, End
+   turn, Buy, and the game master's Move on, Resign, Add a day and End the
+   game) stays greyed until the turns missed have arrived. A route can still
+   be planned, as Q56 71 allows. Set out with 2, and taken as set out.
+2. **The line meanwhile.** A, "Reconnecting to the server…" as now, until
+   the missed turns have arrived (recommended); B, "Catching up with the
+   game…" from the moment the socket reopens. **Answered** at 07:21: A.
+
+Built: `caughtUp` in `apps/web/src/online/OnlineGameScreen.tsx`, false from
+a dropped connection, or a record found missing, until `game.history` has
+been applied, and part of `offline`. End turn and Rest in
+`apps/web/src/page/GameScreen.tsx` also do nothing while a change has arrived
+that the screen does not show yet, so neither is played from a game shown out
+of date; nothing on screen changes for it. A route drawn to a site that is
+then taken stays drawn, as before. The server is unchanged. No rule, number,
+map or picture changed, and the rulebook needs no change.
+
+<a id="q313"></a>
 ### Q313. ~~Which way do the player figures face?~~ — **answered 2026-10-26: right, all six; the five drawn facing left are flipped whole, shadow included, wherever they are shown: on the map with their idle animations, on the New game panel, in the portraits and as the tab's icon (1-2); figures side by side on a space overlap with the one on the left in front (3)**
 
 Andrei, 2026-10-26 at 06:31: *"all guards are facing left. out of character
@@ -4019,6 +4120,40 @@ nearer the front than the one on its right, in `buildCharacters` in
 `apps/web/src/render/sceneModel.ts`, so the left one is drawn in front and is
 still the one a click picks. The fox and every guard are as they were, and no
 rule, number or map changed.
+
+<a id="q316"></a>
+### Q316. ~~Should Track still press itself?~~ — **answered 2026-10-26: only when a game opens; after that only the player presses it, and on one device, as online, the turn's glide to the player on turn waits for Track to be pressed; the walk of your own End turn is followed with Track left off (1-3)**
+
+Andrei, 2026-10-26 at 05:36: *"The Track button logic is too complex. Let's
+not turn it on automatically"*. Since [Q57](#q57) 76 and 77 Track pressed
+itself in three places: when a game opens, at End turn and Rest, and on one
+device at the start of every turn. The last two go. What unpresses Track is
+as it was.
+
+1. **When a game opens.** A, it starts pressed, as before, so the first turn
+   glides to the player on turn (recommended); B, it starts unpressed and the
+   map stays where it opens until someone presses Track. **Answered** at
+   08:33: A.
+2. **The start of a turn on one device.** A, the map glides to the player on
+   turn only while Track is pressed, as online (recommended); B, it glides
+   anyway and Track stays unpressed. **Answered** at 07:03: A. Since planning
+   a move unpresses Track, after End turn the map goes to the next player
+   only once someone presses Track.
+3. **Your own walk.** Andrei, 08:40: *"when my own move is played, it's
+   always tracked, right?"* It had been, because End turn pressed Track. A,
+   the walk your End turn starts takes the map along as it nears the edge
+   (Q47), Track stays unpressed, and moving the map stops it as before
+   (recommended); B, only while Track is pressed. Online it is your player's
+   move; on one device, the move of whoever pressed End turn. **Answered** at
+   08:44: A.
+
+Built: in `apps/web/src/page/GameScreen.tsx`, End turn and Rest no longer
+press Track, and the turn's glide (Q46) no longer presses it on one device
+and happens there only while it is pressed. `endedTurn` keeps the turn this
+page's End turn committed, and `ownWalk` is true while that turn plays out;
+`MapView`'s new `follow` prop, `tracking || ownWalk`, decides whether a walk
+takes the map along. No rule, number, map or picture changed, and the
+rulebook needs no change: it does not mention Track.
 
 ---
 

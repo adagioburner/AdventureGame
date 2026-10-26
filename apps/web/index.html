@@ -230,6 +230,19 @@
         background: var(--accent);
         color: var(--accent-ink);
       }
+      /* [Andrei, 2026-10-26] End turn says Go, Fight or End turn, and stays
+         as wide as "End turn" whichever it says. */
+      .btn.end-turn {
+        display: inline-grid;
+        align-items: center;
+        justify-items: center;
+      }
+      .btn.end-turn > span {
+        grid-area: 1 / 1;
+      }
+      .btn.end-turn > .sizer {
+        visibility: hidden;
+      }
       .btn.ghost {
         border-color: transparent;
         background: transparent;
@@ -599,6 +612,24 @@
         display: flex;
         flex-wrap: wrap;
         gap: 6px;
+      }
+      /* [Q310, 4] The turn buttons are narrower, so with a route up Find me,
+         Cancel, Waypoint, Rest and End turn fit on one line on a laptop and
+         on a phone down to 340 px; where the row still wraps, Rest and End
+         turn go to the next line together. */
+      .controls > .buttons,
+      .controls .turn-end {
+        gap: 4px;
+      }
+      .controls > .buttons > .btn,
+      .controls > .buttons > .player-menu > .btn,
+      .controls .turn-end > .btn {
+        padding-left: 6px;
+        padding-right: 6px;
+        font-size: 13px;
+      }
+      .turn-end {
+        display: flex;
       }
       .thinking {
         display: grid;

@@ -19,17 +19,15 @@ export interface MapHandle {
   screenOf(node: NodeId): Point;
   /** Where the top of a player's figure shows in the map's box, as it is drawn right now. */
   screenOfFigure(player: PlayerId): Point | null;
-  /** Bring a node to the middle, zoomed in enough to play at. */
-  centerOn(node: NodeId): void;
   /**
-   * [Andrei, 2026-09-30] Q120, 470: a player's card was clicked. Bring their
-   * figure to the middle, wherever it has got to on a walk, zoomed in as
-   * `centerOn` does.
+   * [Andrei, 2026-09-30] Q120, 470: a player's card, or [Q310, 2] Find me,
+   * was clicked. Bring their figure to the middle, wherever it has got to on a
+   * walk, zoomed in enough to play at.
    */
   centerOnFigure(player: PlayerId): void;
   /**
    * Slide a node to the middle over `GLIDE_MS`, at the zoom the view already
-   * has. Panning, zooming or `centerOn` while it slides stops it where it is,
+   * has. Panning, zooming or `centerOnFigure` while it slides stops it where it is,
    * and so does a walk that has to take the map along (Q47).
    */
   glideTo(node: NodeId): void;
@@ -64,11 +62,14 @@ interface MapViewProps {
   readonly found?: PlayerId | null;
   /** A click or tap, as opposed to a drag; `shift` for a shift-click. */
   readonly onTap?: (target: Pick, shift: boolean) => void;
-  /**
-   * [Q57] Whether Track is pressed: a walking figure takes the map along only
-   * while it is (Q47). Pressed if omitted.
-   */
+  /** [Q57] Whether Track is pressed, as its button shows. Pressed if omitted. */
   readonly tracking?: boolean;
+  /**
+   * Whether a walking figure takes the map along (Q47): while Track is
+   * pressed, and [Q316, 3] during the walk of the player's own End turn. As
+   * `tracking` if omitted.
+   */
+  readonly follow?: boolean;
   /** [Q57, 72] Shows the Track button, above "+", which calls this. */
   readonly onTrack?: (() => void) | undefined;
   /** [Q63, 139] Shows the Sound button before Track: whether sound is on, and what pressing it does. */
@@ -93,11 +94,11 @@ const ISLAND_SKY_BELOW = SPACING_PX * 0.2;
 /** A press that travels less than this, in CSS pixels, is a click rather than a drag. */
 const TAP_TRAVEL_PX = 8;
 
-/** Zoom, relative to the whole-map view, that a player's card (Q120) and a phone's Plan a move bring the map to at least. */
+/** Zoom, relative to the whole-map view, that a player's card (Q120) and Find me (Q310) bring the map to at least. */
 const PLAY_ZOOM_OF_FIT = 2.2;
 
 /**
- * [Q160, 632 A] On the larger map a card and a phone's Plan a move come as
+ * [Q160, 632 A] On the larger map a card and Find me come as
  * close as on the standard map's: its whole-map view is smaller by the square
  * root of how many more spaces it has, so the zoom grows by as much. 1 on the
  * standard map.
@@ -120,6 +121,7 @@ export function MapView({
   found = null,
   onTap,
   tracking = true,
+  follow = tracking,
   onTrack,
   sound,
   onMoved,
@@ -135,9 +137,9 @@ export function MapView({
   const from = pathFrom ?? state.players[state.turn.activeSeat - 1]?.position ?? null;
   const latest = useRef({ state, path, from, waypoint, walker, cue, planner, found, onTap, onMoved, onReady });
   latest.current = { state, path, from, waypoint, walker, cue, planner, found, onTap, onMoved, onReady };
-  // Whether a walk takes the map along. It follows Track, and stops at once
+  // Whether a walk takes the map along. It follows `follow`, and stops at once
   // when the map is moved, before the page has unpressed Track.
-  const following = useRef(tracking);
+  const following = useRef(follow);
   // [Q86, 330 and 331] Counts up to build the map again after it failed to
   // start or lost its drawing surface; `broken` once that happened too often.
   const [build, setBuild] = useState(0);
@@ -417,7 +419,6 @@ export function MapView({
           const top = figureTop(map.characters, art.shape, player);
           return top === null ? null : planeToScreen(camera.camera, viewport(), top);
         },
-        centerOn: (node) => centerAt(planeOf(node)),
         centerOnFigure: (player) => {
           const walking = latest.current.walker;
           if (walking !== null && walking.player === player) return centerAt(scene.projection.toScreen(walking.at));
@@ -486,8 +487,8 @@ export function MapView({
     renderer.current?.setFound(found);
   }, [found]);
   useEffect(() => {
-    following.current = tracking;
-  }, [tracking]);
+    following.current = follow;
+  }, [follow]);
   useEffect(() => {
     refit.current?.();
   }, [frame]);

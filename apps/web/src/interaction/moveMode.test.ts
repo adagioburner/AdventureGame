@@ -15,7 +15,7 @@ import {
 import { HotseatGame, HOTSEAT_MODE, type UiModeConfig } from '../modes/hotseat.ts';
 import { ONLINE_MODE } from '../modes/online.ts';
 import { mapFor } from '../page/seed.ts';
-import { createMoveModeController, type MoveModeController } from './moveMode.ts';
+import { createMoveModeController, endTurnOutcome, type MoveModeController, type MoveModeState } from './moveMode.ts';
 
 const map = mapFor('adventure', 'standard');
 const config = map.ruleset.config;
@@ -259,6 +259,81 @@ describe('move mode (§7.1), idle → selecting → previewing', () => {
   });
 });
 
+describe('End turn’s button says what it will do (Andrei, 2026-10-26)', () => {
+  const guarded = map.pois.find((poi) => poi.guard !== null)?.node;
+  if (guarded === undefined) throw new Error('no guarded site on the map');
+  const none: MovementAllowance = { plains: 0, forest: 0, mountain: 0 };
+
+  /** The first seat, on turn, standing on `node`; `stuck` leaves them no free step and no stamina. */
+  function standing(node: NodeId, stuck = false): GameState {
+    const state = setup().game.state;
+    const one = seat(state, 0).id;
+    return {
+      ...state,
+      players: state.players.map((player) =>
+        player.id === one ? { ...player, position: node, stats: stuck ? { ...player.stats, stamina: 0 } : player.stats } : player,
+      ),
+      turn: stuck ? { ...state.turn, allowance: none } : state.turn,
+    };
+  }
+  /** `path` drawn as the controller draws it for the first seat in `state`. */
+  function shown(state: GameState, path: readonly NodeId[]): MoveModeState {
+    const player = seat(state, 0);
+    const preview = previewPath(map.graph, player.position, path, state.turn.allowance, player.stats.stamina, config);
+    return { kind: 'previewing', destination: path[path.length - 1] as NodeId, waypoint: null, path, preview };
+  }
+  const idle: MoveModeState = { kind: 'idle' };
+  const selecting: MoveModeState = { kind: 'selecting', waypoint: null };
+
+  it('says the turn rests away from a guard with nothing to walk', () => {
+    const state = setup().game.state;
+    const one = seat(state, 0).id;
+    expect(endTurnOutcome(state, one, idle)).toBe('rest');
+    expect(endTurnOutcome(state, one, selecting)).toBe('rest');
+    const stuck = standing(seat(state, 0).position, true);
+    const step = map.graph.adjacency[seat(stuck, 0).position]?.[0] as NodeId;
+    expect(endTurnOutcome(stuck, one, shown(stuck, [step]))).toBe('rest');
+  });
+
+  it('says the turn goes along a route it can start on, onto a guard too', () => {
+    const state = setup().game.state;
+    const one = seat(state, 0).id;
+    const { route } = nodeAlong(state, 3);
+    expect(endTurnOutcome(state, one, shown(state, route))).toBe('go');
+    const toGuard = shortestPath(map.graph, seat(state, 0).position, guarded, config) ?? [];
+    expect(toGuard.length).toBeGreaterThan(0);
+    expect(endTurnOutcome(state, one, shown(state, toGuard))).toBe('go');
+  });
+
+  it('says the turn fights on a guard when it walks nothing: no route, or a first step it cannot pay', () => {
+    const state = standing(guarded);
+    const one = seat(state, 0).id;
+    expect(endTurnOutcome(state, one, idle)).toBe('fight');
+    expect(endTurnOutcome(state, one, selecting)).toBe('fight');
+    const stuck = standing(guarded, true);
+    const step = map.graph.adjacency[guarded]?.[0] as NodeId;
+    expect(endTurnOutcome(stuck, one, shown(stuck, [step]))).toBe('fight');
+    expect(endTurnOutcome(state, one, shown(state, [step]))).toBe('go');
+  });
+
+  it('says what End turn then plays', () => {
+    const { game, controller, sent } = setup();
+    const ada = seat(game.state, 0);
+    const { target } = nodeAlong(game.state, 3);
+    controller.enter(ada.id);
+    controller.choose(target, false);
+    expect(endTurnOutcome(game.state, ada.id, controller.state)).toBe('go');
+    controller.endTurn();
+    expect(sent[0]?.kind).toBe('move');
+    expect(seat(game.state, 0).position).not.toBe(ada.position);
+
+    const bram = seat(game.state, 1);
+    expect(endTurnOutcome(game.state, bram.id, controller.state)).toBe('rest');
+    controller.endTurn();
+    expect(sent[1]).toEqual({ kind: 'rest', player: bram.id });
+  });
+});
+
 /** Online, seen from the page of the second seat's player: the engine plays every turn, as the server would. */
 function onlineSetup(): { game: HotseatGame; controller: MoveModeController; sent: TurnAction[]; play(action: TurnAction): void } {
   const game = new HotseatGame({
@@ -376,7 +451,7 @@ describe('move mode online (§7.1): planning out of turn (Q56, 49 to 53)', () =>
   });
 });
 
-describe('a space chosen on your own turn needs no tap on your figure first (Q145, 570 to 572)', () => {
+describe('a space chosen needs no tap on your figure first (Q145, 570 and 571; online out of turn too, Q310, 1)', () => {
   it('picks the figure up and chooses the space, as tapping the figure then the space does', () => {
     const { game, controller } = setup();
     const player = seat(game.state, 0);
@@ -412,14 +487,20 @@ describe('a space chosen on your own turn needs no tap on your figure first (Q14
     expect(controller.state).toMatchObject({ kind: 'previewing', destination: near });
   });
 
-  it('online, plans on this player’s own turn but not while another plays (572)', () => {
+  it('online, plans on this player’s own turn and, since Q310 1, while another plays', () => {
     const { game, controller, play } = onlineSetup();
     const ada = seat(game.state, 0);
     const bram = seat(game.state, 1);
     const near = map.graph.adjacency[bram.position]?.[0] as NodeId;
     controller.choose(near, false);
-    expect(controller.state.kind).toBe('idle');
-    expect(controller.engaged).toBe(false);
+    expect(controller.planner).toBe(bram.id);
+    expect(controller.engaged).toBe(true);
+    expect(controller.state).toMatchObject({ kind: 'previewing', destination: near });
+    const tapped = onlineSetup();
+    tapped.controller.enter(bram.id);
+    tapped.controller.choose(near, false);
+    expect(controller.state).toEqual(tapped.controller.state);
+    controller.cancel();
     play({ kind: 'rest', player: ada.id });
     controller.choose(near, false);
     expect(controller.planner).toBe(bram.id);
@@ -427,6 +508,18 @@ describe('a space chosen on your own turn needs no tap on your figure first (Q14
     expect(controller.state).toMatchObject({ kind: 'previewing', destination: near });
   });
 
+  it('online, a route chosen with a tap while another plays is carried into this player’s turn (Q310, 1)', () => {
+    const { game, controller, sent, play } = onlineSetup();
+    const ada = seat(game.state, 0);
+    const bram = seat(game.state, 1);
+    controller.choose(nodeAlong(game.state, 3).target, false);
+    const route = controller.state.kind === 'previewing' ? controller.state.path : null;
+    expect(route).not.toBeNull();
+    play({ kind: 'rest', player: ada.id });
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: route });
+    controller.endTurn();
+    expect(sent).toEqual([{ kind: 'move', player: bram.id, path: route, waypoint: null }]);
+  });
   it('does nothing once the game is over', () => {
     const { game, controller } = setup();
     controller.setGame({ ...game.state, status: 'finished' });
