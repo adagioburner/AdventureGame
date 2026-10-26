@@ -19,17 +19,15 @@ export interface MapHandle {
   screenOf(node: NodeId): Point;
   /** Where the top of a player's figure shows in the map's box, as it is drawn right now. */
   screenOfFigure(player: PlayerId): Point | null;
-  /** Bring a node to the middle, zoomed in enough to play at. */
-  centerOn(node: NodeId): void;
   /**
-   * [Andrei, 2026-09-30] Q120, 470: a player's card was clicked. Bring their
-   * figure to the middle, wherever it has got to on a walk, zoomed in as
-   * `centerOn` does.
+   * [Andrei, 2026-09-30] Q120, 470: a player's card, or [Q310, 2] Find me,
+   * was clicked. Bring their figure to the middle, wherever it has got to on a
+   * walk, zoomed in enough to play at.
    */
   centerOnFigure(player: PlayerId): void;
   /**
    * Slide a node to the middle over `GLIDE_MS`, at the zoom the view already
-   * has. Panning, zooming or `centerOn` while it slides stops it where it is,
+   * has. Panning, zooming or `centerOnFigure` while it slides stops it where it is,
    * and so does a walk that has to take the map along (Q47).
    */
   glideTo(node: NodeId): void;
@@ -96,11 +94,11 @@ const ISLAND_SKY_BELOW = SPACING_PX * 0.2;
 /** A press that travels less than this, in CSS pixels, is a click rather than a drag. */
 const TAP_TRAVEL_PX = 8;
 
-/** Zoom, relative to the whole-map view, that a player's card (Q120) and a phone's Plan a move bring the map to at least. */
+/** Zoom, relative to the whole-map view, that a player's card (Q120) and Find me (Q310) bring the map to at least. */
 const PLAY_ZOOM_OF_FIT = 2.2;
 
 /**
- * [Q160, 632 A] On the larger map a card and a phone's Plan a move come as
+ * [Q160, 632 A] On the larger map a card and Find me come as
  * close as on the standard map's: its whole-map view is smaller by the square
  * root of how many more spaces it has, so the zoom grows by as much. 1 on the
  * standard map.
@@ -421,7 +419,6 @@ export function MapView({
           const top = figureTop(map.characters, art.shape, player);
           return top === null ? null : planeToScreen(camera.camera, viewport(), top);
         },
-        centerOn: (node) => centerAt(planeOf(node)),
         centerOnFigure: (player) => {
           const walking = latest.current.walker;
           if (walking !== null && walking.player === player) return centerAt(scene.projection.toScreen(walking.at));
