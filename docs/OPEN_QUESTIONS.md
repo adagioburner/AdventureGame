@@ -1390,7 +1390,8 @@ on the same page as details 72 to 77, each with a recommendation. Andrei:
 73. **What unpresses it:** anything that moves the map or starts planning:
     dragging the map, the mouse wheel, pinching, "+", "−", "Whole map",
     tapping your figure or "Plan a move". A tap on the map that
-    starts nothing leaves it pressed.
+    starts nothing leaves it pressed. **Changed by [Q316](#q316) 5:** on
+    your own turn nothing unpresses it.
 74. **While pressed** the map does what hot seat did: at the start of each
     turn it glides to the player on turn at the zoom it has (Q46), and it
     follows a walking figure that nears the edge (Q47). Pressing it glides
@@ -2366,7 +2367,8 @@ answered 570 to 573 on their cards at 03:49 and 574 to 576 at 04:32.
 572. **Online, on someone else's turn.** A: as before, planning your next move
      starts with your figure or Plan a move, and a tap on a space alone shows
      the notice, since a stray tap would save a route that the game master's
-     Move on would walk (recommended). **Answered:** A.
+     Move on would walk (recommended). **Answered:** A. Since [Q310](#q310) a tap on a
+     space plans at once there too, and Plan a move is Find me.
 573. **The rulebook,** under Planning a route. A: *"Choose where you want to
      go."* (recommended). **Answered:** A.
 574. **How long the figure blinks on a route saved from the turn before,**
@@ -3853,7 +3855,8 @@ also a solo and a multiplayer game"*.
 Built: the title and the icon's `<link>` in `apps/web/index.html`; the icon,
 `apps/web/icon.png`, the figurine sheet's 290 px square at (16, 8) scaled to
 64 px; and the tab's title in `apps/web/src/online/Site.tsx`. No rule, number
-or map changed.
+or map changed. Since [Q313](#q313) the cartographer faces right, and the icon,
+cut again from the same square, with him.
 
 ### Q307. ~~Should the other seats along the computer's tree edges choose their sites as its imagined players do?~~ — **answered 2026-10-13: yes; they rank by their own speeds, skip guards they cannot win and favour gold as the game goes on, as in the games it plays out; against the computer before, 69 wins to 51 (1-2)**
 
@@ -3980,6 +3983,63 @@ Built: `RulesButton` in the login page's top bar in
 `.bar.login .btn` in `apps/web/src/online/site.css`. No rule, number, map or
 picture changed, and the rulebook needs no change.
 
+<a id="q310"></a>
+### Q310. ~~Does planning need Plan a move or a tap on your figure first?~~ — **answered 2026-10-26: no, online on someone else's turn a tap on a space plans at once too, and the line says so; Plan a move becomes Find me, which does what your own card does, first in the row whenever the buttons show, the row's buttons narrower so a route's five fit on one line, Rest and End turn wrapping together (1-4)**
+
+Andrei, 2026-10-26 at 05:43: *"one needs to click "plan move" or your hero to
+start planning. Is that necessary? why not start planning right away? The plan
+turn button can then be change to "find me" - it's hard to find yourself when
+one there are many players and one needs to scroll cards"*. On your own turn a
+tap on a space already planned at once ([Q145](#q145) 570); Plan a move there
+only stopped the blink, showed Waypoint and Cancel, and on a phone zoomed in on
+the figure. Online, on someone else's turn, planning still started with the
+figure or Plan a move (572), so that a stray tap would not save a route the
+game master's Move on would walk. He answered the three cards at 07:09 and
+07:10.
+
+1. **Online, on someone else's turn.** A: a tap on a space plans your next
+   move at once, as on your own turn, and the line reads *"Bea is playing. Tap
+   where to go on your next turn."* (recommended); B: the same with the line
+   unchanged, *"Bea is playing. You can plan your next move."*; C: your figure
+   is still tapped first, and the notice drops "or Plan a move".
+   **Answered:** A. A tap on another player's figure chooses their space, as on
+   your own turn; *"Tap your figure, or Plan a move, before choosing where to
+   go."* is no longer shown anywhere.
+2. **What Find me does.** A: what your own card does ([Q120](#q120)): the map
+   jumps to your figure and zooms in to playing distance, Track unpresses, and
+   the figure stands on its ring for a moment (recommended); B: the map glides
+   to the figure at the zoom it has; C: A, and the cards scroll to your card.
+   **Answered:** A. As with the card, a figure already marked, on turn or
+   picked up to plan, gets no ring, and Find me works while a figure walks.
+3. **Where Find me sits.** A: first in the row whenever the buttons show, with
+   Cancel, Waypoint and Clear waypoint after it once a route is up; on one
+   device it finds the player on turn, and on a computer's turn it is hidden
+   with the other buttons (Q42) (recommended); B: only until a route is up,
+   Cancel then taking its place; C: on the map, by Track. **Answered:** A. With
+   a route up the row was one button longer, so it took two lines on a laptop
+   (1280 px) and on phones at 390 and 340 px, which 4 settles.
+4. **Keeping the row on one line.** Andrei at 08:37: *"why do the buttons wrap
+   if we simply chaged one button for another"*: Plan a move used to turn
+   into Cancel once a route was up, while Find me stays beside it. At 08:38:
+   *"let's see how we can keep all buttons in one row"*. With a route up the
+   five buttons needed 381 to 401 px against 325 px on a laptop and 320 to
+   370 px on phones; with a waypoint set the row already wrapped before Find
+   me, and on a phone held sideways (279 px) with any route up. Mocked up at
+   1280, 390 and 340 px: A, narrower buttons, padding 6 px a side, gaps 4 px
+   and 13 px text instead of 14, so a route's five take 315 px (recommended);
+   B, Find me in the top bar, beside New game or Menu, the row as before; C,
+   A without Clear waypoint, so a waypoint set fits too. **Answered** at
+   13:08: A, *"can we make sure that Rest and End turn stay on the same line
+   in case they wrap"*. With a waypoint set, and on a phone held sideways,
+   Rest and End turn take the second line together.
+
+Built: `choose` in `apps/web/src/interaction/moveMode.ts` plans out of turn
+online, `GameScreen`'s `onTap` sends a tap on a space there, `findMe` in
+`GameScreen.tsx` calls the card's `findPlayer`, and the button and line are in
+`TurnControls.tsx`, Rest and End turn in its `.turn-end`, sized by the rules
+after `.buttons` in `apps/web/index.html`. No rule, number, map or picture
+changed, and the rulebook needs no change.
+
 <a id="q311"></a>
 ### Q311. ~~Can a player end their turn before their page has caught up with the game?~~ — **answered 2026-10-26: no; after a dropped connection everything greyed while reconnecting stays greyed, under "Reconnecting to the server…", until the turns missed meanwhile have arrived (1-2)**
 
@@ -4017,6 +4077,56 @@ that the screen does not show yet, so neither is played from a game shown out
 of date; nothing on screen changes for it. A route drawn to a site that is
 then taken stays drawn, as before. The server is unchanged. No rule, number,
 map or picture changed, and the rulebook needs no change.
+
+<a id="q313"></a>
+### Q313. ~~Which way do the player figures face?~~ — **answered 2026-10-26: right, all six; the five drawn facing left are flipped whole, shadow included, wherever they are shown: on the map with their idle animations, on the New game panel, in the portraits and as the tab's icon (1-2); figures side by side on a space overlap with the one on the left in front (3)**
+
+Andrei, 2026-10-26 at 06:31: *"all guards are facing left. out of character
+figures, the fox faces right, and the rest look left. let us flip them so that
+it becoms another feature to tell player figures from guards"*. The
+cartographer, mechanic, botanist, tortoise and goblin were drawn facing left,
+the fox facing right. The same pictures are the figures on the map, whose idle
+animations come from strips of their own ([Q305](#q305)), the figures to pick
+on the New game panel, the head-and-shoulders portraits on the player cards and
+in the turn log ([Q26](#q26)), and the browser tab's icon, the cartographer
+([Q306](#q306)). Figures do not turn as they walk, so they face right all the
+time.
+
+1. **Where.** Everywhere these pictures show, or on the map only, with the
+   New game panel, the portraits and the icon left as they were. Mocked up
+   with the art swapped in; everywhere recommended. **Answered** at 07:31:
+   everywhere.
+2. **The shadows.** Each figure's shadow falls to its right, as every
+   guard's, tree's and building's does. A: the whole picture flipped, so its
+   shadow falls left; B: only the figure flipped, its shadow left falling right
+   and filled in where the figure had hidden it (recommended). Both mocked up,
+   on the six figures and in the game. **Answered** at 07:31: A.
+
+The idle animations flip with their figures, or a figure would turn back to
+the left each time it played; set out alongside 1 and 2.
+
+3. **Which figure is in front.** Andrei, at 09:06: *"should they now also
+   cover each other from left to right when they overlap"*. Figures sharing
+   a space stand side by side, and each was drawn over the one on its left:
+   facing left, each one's front lay over its neighbour's back; facing right,
+   each one's back now hid its neighbour's face and what it holds. Mocked up
+   with the left one in front (recommended), which a click on two overlapping
+   figures already picked. **Answered** at 13:48: the left one in front.
+
+Built: `MIRROR` in `Art/tools/pack_sheets.py` names the pictures flipped as the
+figurine sheet is packed, each after its shadow is made dark and before it is
+stood in its cell, centred as before; `Art/tools/pack_animation.py` flips the
+same figures' frames about the spot they stand on. Both mark the flipped
+sprites `"mirrored": true` in their atlases, which the game ignores. The
+portrait boxes were rederived by `Art/tools/make_portrait_crops.py` with its
+hand-set face positions flipped, framing each head as before, mirrored, to
+within 2 px; and `apps/web/icon.png` was cut again from the flipped sheet, the
+same square scaled the same way. The originals in `Art/originals/` are as
+supplied. For 3, each figure on a shared space counts a thousandth of a pixel
+nearer the front than the one on its right, in `buildCharacters` in
+`apps/web/src/render/sceneModel.ts`, so the left one is drawn in front and is
+still the one a click picks. The fox and every guard are as they were, and no
+rule, number or map changed.
 
 <a id="q314"></a>
 ### Q314. ~~How can fights stop interrupting planning?~~ — **answered 2026-10-26: every fight, your own included, floats on the fighter's head as a claim does, with no OK: the die, "Guard beaten: gold +1" or "Guard holds" and the sum under it, for 3 seconds once the die stops, and the map waits for it; where the map followed the walk, it glides just far enough for a claim's or a fight's notice not to be cut off (1-7)**
@@ -4090,7 +4200,7 @@ drift, when it shows and whenever its size changes. No rule, number, map or
 picture changed, and the rulebook's text needs no change.
 
 <a id="q316"></a>
-### Q316. ~~Should Track still press itself?~~ — **answered 2026-10-26: only when a game opens; after that only the player presses it, and on one device, as online, the turn's glide to the player on turn waits for Track to be pressed; the walk of your own End turn is followed with Track left off (1-3)**
+### Q316. ~~Should Track still press itself?~~ — **answered 2026-10-26: only when a game opens; after that only the player presses it, and on one device, as online, the turn's glide to the player on turn waits for Track to be pressed; Track only matters on other players' turns: on your own turn nothing unpresses it, and your own walk is always followed, Track or no Track, even when you move the map (1-6)**
 
 Andrei, 2026-10-26 at 05:36: *"The Track button logic is too complex. Let's
 not turn it on automatically"*. Since [Q57](#q57) 76 and 77 Track pressed
@@ -4115,13 +4225,42 @@ as it was.
    move; on one device, the move of whoever pressed End turn. **Answered** at
    08:44: A.
 
-Built: in `apps/web/src/page/GameScreen.tsx`, End turn and Rest no longer
-press Track, and the turn's glide (Q46) no longer presses it on one device
-and happens there only while it is pressed. `endedTurn` keeps the turn this
-page's End turn committed, and `ownWalk` is true while that turn plays out;
-`MapView`'s new `follow` prop, `tracking || ownWalk`, decides whether a walk
-takes the map along. No rule, number, map or picture changed, and the
-rulebook needs no change: it does not mention Track.
+Built 1 to 3 in PR #102: in `apps/web/src/page/GameScreen.tsx`, End turn
+and Rest no longer press Track, and the turn's glide (Q46) no longer presses
+it on one device and happens there only while it is pressed. `endedTurn`
+keeps the turn this page's End turn committed, and `ownWalk` is true while
+that turn plays out; `MapView`'s new `follow` prop, `tracking || ownWalk`,
+decides whether a walk takes the map along.
+
+Andrei, 13:36: *"During your own move, nothing should unpress track"*, and at
+13:39: *"when you're planning your move on your turn, the map always stays
+where you put it. At the end of your turn it always follows uour figure,
+track or no track. Track only affects the behavior during other players
+turns."* On one device every person's turn is their own, so there Track
+only matters on the computer's turns.
+
+4. **Moving the map during your own walk,** with Track pressed: A, the map
+   keeps taking your figure along, so a drag, a zoom or a player's card
+   only moves it until your figure nears the edge again (recommended); B,
+   it stops following until the walk ends, Track still pressed. His 13:39
+   message answers it: A, and with Track off too, which changes 3's "moving
+   the map stops it".
+5. **What unpresses Track on your own turn.** A, nothing: Track changes only
+   when you press it, and on other players' turns dragging, the wheel,
+   pinching, "+", "−", Whole map, a player's card, Find me, tapping your
+   figure and changing a route unpress it as before (recommended); B, as
+   before on every turn. **Answered** at 13:41: A.
+6. **The start of your own turn.** A, the map glides to your figure only if
+   Track is pressed, as before, so a route you were planning out of turn
+   stays in view (recommended); B, never; C, always. **Answered** at 13:41:
+   A.
+
+Built: `yourTurn` in `GameScreen.tsx`, the turn shown being this page's
+person's own, keeps Track as it is when the map is moved, a card or Find me
+is clicked, or a route is planned. `MapView`'s new `keepFollowing` prop,
+`yourTurn`, keeps a drag or a zoom from stopping the following of a walk,
+which on your turn is your own. No rule, number, map or picture changed, and
+the rulebook needs no change: it does not mention Track.
 
 ---
 

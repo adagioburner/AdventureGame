@@ -32,9 +32,6 @@ import { Players } from './Players.tsx';
 import { TurnControls } from './TurnControls.tsx';
 import { TurnLog } from './TurnLog.tsx';
 
-/** The page's phone layout, as `index.html` switches to it. */
-export const PHONE = '(max-width: 899px)';
-
 /**
  * How long End Turn's walk takes per step, the die tumbles, a notice stays up,
  * and an unguarded claim's notice takes to fade in, stays up (2 seconds, his
@@ -128,6 +125,9 @@ export function GameScreen({
   // playing: the map follows that walk, though Track stays as it is.
   const endedTurn = useRef<number | null>(null);
   const [ownWalk, setOwnWalk] = useState(false);
+  // [Q316, 5] Whether the turn shown is this page's person's own; on it nothing
+  // unpresses Track. Read by the route's updates, which subscribe once.
+  const yourTurnNow = useRef(false);
   // [Q120, 471] The player whose card was clicked last, while their figure
   // stands on its ring; `click` counts clicks, so clicking the same card again
   // starts the ring's time over.
@@ -212,8 +212,9 @@ export function GameScreen({
       setArmed(controller.waypointArmed);
       setEngaged(controller.engaged);
       setPlanner(controller.planner);
-      // [Q57, 73] Picking a figure up, or changing its route, is planning: Track unpresses.
-      if (controller.engaged) setTracking(false);
+      // [Q57, 73] Picking a figure up, or changing its route, is planning: Track
+      // unpresses, though not on your own turn (Q316, 5).
+      if (controller.engaged && !yourTurnNow.current) setTracking(false);
       const save = source.savePlan;
       const who = controller.planner;
       if (save === null || who === null) return;
@@ -476,11 +477,20 @@ export function GameScreen({
   // [Q56, 48 and 49] Online, a turn that is not this page's player's: they
   // watch it, and can plan their own next move meanwhile.
   const othersTurn = online && active !== undefined && !source.localPlayers.has(active.id);
-  /** Who Plan a move plans for: the player on turn on one device, this page's own player online. */
+  /** Who this page plans for, and Find me finds: the player on turn on one device, this page's own player online. */
   const planFor = online ? shown.players.find((player) => source.localPlayers.has(player.id)) : active;
   const canPlan = online ? planFor !== undefined : active?.control !== 'ai';
   /** The turn is this page's to play: hot seat's player on turn, or online this page's own. */
   const ownTurn = !othersTurn && active !== undefined && source.localPlayers.has(active.id);
+  /**
+   * [Andrei, 2026-10-26] Q316, 4 to 6: "when you're planning your move on your
+   * turn, the map always stays where you put it. At the end of your turn it
+   * always follows your figure, track or no track. Track only affects the
+   * behavior during other players turns." On one device every person's turn
+   * is their own.
+   */
+  const yourTurn = ownTurn && active !== undefined && active.control === 'human';
+  yourTurnNow.current = yourTurn;
   // [Q190] The person on turn here can buy while they hold the gold for a unit
   // and nothing they did is still playing out. Only Done and Cancel close the
   // panel (766); a turn that moves on under it (the game master's Move on)
@@ -512,17 +522,15 @@ export function GameScreen({
         : (target.players.find((player) => player === active?.id) ?? target.players[0]);
       // [Q145, 570] On your own turn your figure needs no tap first: a tap
       // on a space, or on another player's figure, chooses that space as it
-      // would once your figure is picked up.
-      if (ownTurn && clicked !== active?.id) {
+      // would once your figure is picked up. [Q310, 1] Online, so it does on
+      // someone else's turn.
+      if ((ownTurn || (othersTurn && planFor !== undefined)) && clicked !== planFor?.id) {
         if (target.node === null) return;
         controller.choose(target.node, shift);
         setResult(null);
         return;
       }
-      if (clicked === undefined) {
-        if (target.node !== null && canPlan) say('Tap your figure, or Plan a move, before choosing where to go.');
-        return;
-      }
+      if (clicked === undefined) return;
       const refused = controller.enter(clicked);
       if (refused !== null) return refuse(refused);
       setResult(null);
@@ -540,26 +548,21 @@ export function GameScreen({
     controller.choose(node, shift);
   };
 
-  const plan = (): void => {
-    if (planFor === undefined) return;
-    const refused = controller.enter(planFor.id);
-    if (refused !== null) return refuse(refused);
-    setResult(null);
-    // A phone shows the whole map too small to find a figure or tap a node,
-    // so planning from the button there starts close in on the player.
-    if (window.matchMedia(PHONE).matches) handle.current?.centerOn(planFor.position);
-  };
   /**
    * [Andrei, 2026-09-30] Q120: "clicking on a player's card finds this player
    * on the map". The map jumps to their figure and zooms in to playing
-   * distance (470); Track unpresses (473), and the figure stands on a ring for
-   * a moment (471).
+   * distance (470); Track unpresses (473), except on your own turn (Q316, 5),
+   * and the figure stands on a ring for a moment (471).
    */
   const findPlayer = (player: PlayerId): void => {
-    setTracking(false);
+    if (!yourTurn) setTracking(false);
     handle.current?.centerOnFigure(player);
     clicks.current += 1;
     setFound({ player, click: clicks.current });
+  };
+  /** [Q310, 2] Find me does what this page's player's own card does. */
+  const findMe = (): void => {
+    if (planFor !== undefined) findPlayer(planFor.id);
   };
   /**
    * [Q57, 74 and 75] Pressing Track closes planning, keeping the route, and
@@ -695,7 +698,7 @@ export function GameScreen({
         offline={offline}
         onMoveOn={onMoveOn}
         onResign={onResign}
-        onPlan={plan}
+        onFindMe={findMe}
         onCancel={() => cancel.current()}
         onArmWaypoint={(on) => controller.armWaypoint(on)}
         onClearWaypoint={() => controller.clearWaypoint()}
@@ -721,10 +724,13 @@ export function GameScreen({
           onTap={onTap}
           tracking={tracking}
           follow={tracking || ownWalk}
+          keepFollowing={yourTurn}
           onTrack={shown.status === 'in_progress' ? pressTrack : undefined}
           // [Q63, 145] Sound stays after the game ends, where Track goes.
           sound={{ on: soundOn, onToggle: () => sounds.setOn(!soundOn) }}
-          onMoved={() => setTracking(false)}
+          onMoved={() => {
+            if (!yourTurn) setTracking(false);
+          }}
           onReady={(ready) => {
             handle.current = ready;
             setMapReady(ready !== null);
