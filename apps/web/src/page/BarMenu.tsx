@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 
 interface BarMenuProps {
   /** The Menu button's words: the online game's carries the count of unseen messages. */
-  readonly label?: string | undefined;
+  readonly label?: ReactNode;
   readonly children: ReactNode;
 }
 

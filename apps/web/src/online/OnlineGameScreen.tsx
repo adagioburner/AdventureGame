@@ -231,6 +231,8 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
   }, [panel, posts.length, seen, gameId]);
   // [Q85, 300] A deleted post is not counted.
   const unread = panel === 'board' ? 0 : posts.slice(seen).filter((post) => post.author !== mySeat?.playerId && post.deleted !== true).length;
+  // [Q319] Shown as a blue badge on the top right corner of Menu and Messages.
+  const unreadBadge = unread > 0 ? <span className="unread">{unread}</span> : null;
   // [Q63, 144] A message someone else posts is heard as it arrives, whether
   // the board is open or not. The posts already there when the game opened
   // make none, and several arriving together, as after a dropped connection,
@@ -393,7 +395,7 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
           )}
           {/* [Q58, 84] On a phone these share one Menu button, which carries the
               count of unseen messages; [Q72, 280] turned sideways too. */}
-          <BarMenu label={unread > 0 ? `Menu ${unread}` : 'Menu'}>
+          <BarMenu label={<>Menu{unreadBadge}</>}>
             {/* [Q56, 57] Anyone whose seat a person still plays can resign it to the computer. */}
             {inProgress && myPlayer !== undefined && myPlayer.control === 'human' ? (
               <button
@@ -429,7 +431,7 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
               aria-pressed={panel === 'board'}
               onClick={() => setPanel(panel === 'board' ? null : 'board')}
             >
-              {unread > 0 ? `Messages ${unread}` : 'Messages'}
+              Messages{unreadBadge}
             </button>
             <RulesButton />
           </BarMenu>

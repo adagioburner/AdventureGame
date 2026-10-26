@@ -4008,6 +4008,29 @@ of date; nothing on screen changes for it. A route drawn to a site that is
 then taken stays drawn, as before. The server is unchanged. No rule, number,
 map or picture changed, and the rulebook needs no change.
 
+<a id="q319"></a>
+### Q319. ~~How does the count of unseen messages look?~~ — **answered 2026-10-26: as a small badge in the game's blue on the top right corner of Menu and Messages, widening to fit a longer number; the buttons read just Menu and Messages (1)**
+
+Andrei, 2026-10-26 at 07:37, of "Menu 1" and "Messages 1" on his phone:
+*"we need to change how it looks. Right now it looks like a bug"*. The number
+is the count of posts on the game's board not yet seen on this device
+([Q56](#q56) 60), which Menu repeats on a phone ([Q58](#q58) 84). It was
+written after the word as plain text.
+
+1. **The look.** Mocked up in the game's dark screen at his phone's width
+   and on a laptop, with 1 and with 12 unseen: A, a red badge on the
+   button's top right corner (recommended); B, the same badge in the game's
+   blue; C, a red bubble inside the button after the word; D, the same
+   bubble in blue. **Answered** at 09:12: B.
+
+Built: `unreadBadge` in `apps/web/src/online/OnlineGameScreen.tsx`, on Menu
+and on Messages, drawn by `.unread` in `apps/web/src/online/site.css`: 18 px
+tall, 6 px out past the button's corner, in the accent blue with the
+accent's ink, as on a primary button, and as wide as two digits need.
+`BarMenu`'s label can carry it. What is counted, and when the count goes,
+are unchanged. No rule, number, map or picture changed, and the rulebook
+needs no change.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design

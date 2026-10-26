@@ -128,6 +128,29 @@
   display: inline-block;
 }
 
+/* [Q319] The count of unseen messages: a blue badge on the top right corner
+   of Menu and Messages, widening to fit a longer number. */
+.menu-toggle,
+.side-toggle {
+  position: relative;
+}
+.unread {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  box-sizing: border-box;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
 /* [Q56, 59] The message board: oldest post at the top, the box and Send at the bottom. */
 .log.board {
   display: flex;
