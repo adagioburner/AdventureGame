@@ -4009,7 +4009,7 @@ then taken stays drawn, as before. The server is unchanged. No rule, number,
 map or picture changed, and the rulebook needs no change.
 
 <a id="q315"></a>
-### Q315. ~~How are later turns marked on a long route?~~ — **answered 2026-10-26: a white bubble above the space where each later turn ends, counting this turn as 1; turns counted as End turn walks the route, its own rests included, so a walk then a rest reads "3–4"; none on the destination's cross, and only on a route being planned (1-7)**
+### Q315. ~~How are later turns marked on a long route?~~ — **answered 2026-10-26: a white bubble above the space where each later turn ends, counting this turn as 1; turns counted as End turn walks the route, its own rests included, so a walk then a rest reads "3–4"; none on the destination's cross, and only on a route being planned; the rulebook explains them, "3–4" included (1-8)**
 
 Andrei, 2026-10-26 at 06:46: *"when showing a long path to the destination, it
 would be helpful to mark the grey part with flags (bubbles? markers?) showing
@@ -4045,6 +4045,15 @@ where every walk is followed by a rest, and on one with plains 2 and forest 1.
    no bubbles past the first such turn. **Answered** at 07:43: A.
 7. **Which routes**: A, every route drawn, a computer's walk included
    (recommended); B, only a route being planned. **Answered** at 07:41: B.
+8. **The rulebook**, which did not mention the bubbles; at 09:10 Andrei: *"yes
+   let's add a line to the rulebook"*. Its wording, in "Planning a route"
+   after the colours: A, *"On the grey part, numbered bubbles show where your
+   figure will be at the end of each later turn, counting this turn as 1. A
+   bubble such as '3–4' means you get there in turn 3 and stay through turn 4,
+   when 'End turn' rests because you cannot pay for the next step."*
+   (recommended); B, *"Numbered bubbles on the grey part show where your
+   figure will be at the end of turn 2, 3 and so on, this turn being turn
+   1."* **Answered** at 13:13: A.
 
 Built: `turnStops` in `packages/core/src/rules/bestRoute.ts` counts where each
 turn of a route ends, one turn at a time by `countWalk`, the turns as many as
@@ -4056,7 +4065,8 @@ the page hands them to the map only while no walk is playing.
 each later turn's end but the destination, a turn End turn rests sharing the
 bubble before it; `TURN_BUBBLE` there holds the bubble's sizes and colours, as
 mocked up, and the renderer draws them over everything else. No rule, number,
-map or picture changed. The rulebook does not mention the bubbles.
+map or picture changed. The rulebook's two sentences (8 A) are in
+`docs/RULEBOOK.md`.
 
 ---
 

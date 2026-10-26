@@ -71,6 +71,8 @@ Choose where you want to go. The game draws the route it thinks is best for you;
 - **Yellow**: costs stamina.
 - **Grey**: out of reach this turn.
 
+On the grey part, numbered bubbles show where your figure will be at the end of each later turn, counting this turn as 1. A bubble such as '3–4' means you get there in turn 3 and stay through turn 4, when 'End turn' rests because you cannot pay for the next step.
+
 Pressing 'End turn' walks the route. If it is longer than you can go this turn, your figure goes as far as it can and the rest of the route is saved for next turn, where you can still change it.
 
 ## Movement and stamina
