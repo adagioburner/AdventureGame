@@ -4185,6 +4185,84 @@ is clicked, or a route is planned. `MapView`'s new `keepFollowing` prop,
 which on your turn is your own. No rule, number, map or picture changed, and
 the rulebook needs no change: it does not mention Track.
 
+<a id="q318"></a>
+### Q318. ~~Should End turn ask first when the walk ends off a site?~~ — **answered 2026-10-26: yes, when the walk reaches the route's end this turn and no unclaimed site is there, and when End turn would rest; in a box drawn like the game's own panels, just above the end cross or the resting figure, which the map glides to the middle, with No and Yes; it always asks (1-11)**
+
+Andrei, 2026-10-26 at 06:29: *"we need to adk for a confirmation ehen a
+player ends their move not on a site. Players misclick way too often"*; and at
+09:02: *"and if one clicks End turn to rest, we probably should confirm as
+well"*.
+
+1. **When it asks.** A, only when the walk reaches the end of its route this
+   turn and that end is not a site, a walk stopping partway along a longer
+   route not asking (recommended); B, every time this turn's walk stops off a
+   site, partway or not. **Answered** at 07:26: A.
+2. **Claimed sites.** A, a claimed site counts as an ordinary space, as the
+   rulebook says it becomes, so stopping on one asks (recommended); B, no site
+   asks, claimed or not. **Answered** at 07:26: A.
+3. **How it looks.** A, the browser's own OK / Cancel box, the kind Resign
+   and Delete use (recommended); B, a box drawn in the game's style. Asked
+   which questions use the browser's box: nine, all online and for rare
+   actions, none of them during ordinary turns or on one device. **Answered**
+   at 07:28: B.
+4. **Turning it off.** A, it always asks (recommended); B, a "Don't ask
+   again" option. **Answered** at 07:27: A.
+5. **Where.** Mocked up at 1280 × 800 and 390 × 844, the route ending one
+   space short of a fortress: A, in place of the line and buttons under the
+   cards (recommended); B, the middle of the map; C, where the buy panel
+   opens. **Answered** at 08:57: C; then at 08:59: *"actually can it appear in
+   the center, but above the end cross, so one vlcan see where they're
+   going"*.
+6. **The map.** A, the map glides the end cross to the middle and the box
+   sits just above it, moving with it (recommended); B, the map stays and the
+   box sits above the cross wherever it is. **Answered** at 09:00: A.
+7. **The buttons.** A, Go back / End turn (recommended); B, Cancel / End
+   turn; C, No / Yes. In each the first closes the box and keeps the route up
+   to change, and Escape does the same. **Answered** at 08:57: C.
+8. **The words.** At 09:01: *"we also need a different wording, something
+   like your turn wull end without claiming a reward or fighting for
+   treasure"*. A, his words (recommended); B, with the player's name; C,
+   "gold" for "treasure". **Answered** at 09:03: C, "Your turn will end
+   without claiming a reward or fighting for gold." over "End turn anyway?".
+9. **Where, for a rest.** A, the map glides the figure to the middle and the
+   box sits just above it (recommended); B, the middle of the map, the map
+   staying. **Answered** at 09:03: A.
+10. **The words, for a rest.** A, "Your turn will end with a rest, without
+    claiming a reward or fighting for gold." (recommended); B, "Your turn
+    will end with a rest: +5 stamina."; C, the walk's words. **Answered** at
+    09:03: B, over "End turn anyway?".
+11. **Track, for a rest.** Andrei, 13:32: *"does track stay unpressed once
+    the glide unpresses it?"* It did, since only the player presses it
+    ([Q316](#q316)), and so on one device the map stayed on the resting
+    figure after Yes instead of going on to the next player. A, the glide to
+    the figure leaves Track as it was, since Track follows that figure anyway
+    (recommended); B, it unpresses Track. **Answered** at 13:33: A. Then
+    at 13:36, of Track generally: *"During your own move, nothing should
+    unpress track"*; so the glide to a route's end leaves Track as it was
+    too.
+
+Set out alongside and left as set out: only a person pressing End turn is
+asked, on one device and online; Rest, End turn fighting a guard again,
+computer players and the game master's Move on are as they were; while the
+box is up the map can be moved, and choosing another space picks the new end
+and closes it; and if End turn's button is renamed, the box's last line uses
+its new name.
+
+Built: `endTurnQuestion` and `endsOffSite` in
+`apps/web/src/interaction/moveMode.ts`, `EndTurnQuestion` in
+`apps/web/src/page/EndTurnQuestion.tsx` with its look, `.end-question`, in
+`apps/web/index.html`, and End turn asking in
+`apps/web/src/page/GameScreen.tsx`. While the box is up Rest and End turn
+wait for it, as they do for the buy panel; Cancel, the buy panel or the turn
+passing closes it as No does. The box sits 26 px above the middle of the
+cross, or 8 px above the top of the figure, and goes below the space where
+the map has been moved so there is no room above. Neither glide changes
+Track (11), and after Yes the walk is followed as any End turn's is
+([Q316](#q316)). Since End turn's button now
+says Go for a walk (Andrei, 2026-10-26), the box's last line says what the
+button says: "Go anyway?" for a walk, "End turn anyway?" for a rest. No rule,
+number, map or picture changed, and the rulebook needs no change.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design

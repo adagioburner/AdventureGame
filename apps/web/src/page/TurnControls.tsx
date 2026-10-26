@@ -31,6 +31,8 @@ interface TurnControlsProps {
   readonly offline: boolean;
   /** [Q190, 768] The buy panel is open: Rest and End turn wait for its Done or Cancel. */
   readonly buying?: boolean;
+  /** [Q318] End turn's question is up: Rest and End turn wait for its No or Yes. */
+  readonly asking?: boolean;
   /**
    * [Andrei, 2026-10-26] What End turn's button said as this page committed
    * the turn shown, which it keeps while the turn plays out; `null` when this
@@ -182,10 +184,15 @@ export function TurnControls(props: TurnControlsProps) {
         {planButtons}
         {/* [Q310, 4] Where the row wraps, Rest and End turn go to the next line together. */}
         <div className="turn-end">
-          <button className="btn" type="button" disabled={busy || props.offline || props.buying === true} onClick={props.onRest}>
+          <button className="btn" type="button" disabled={busy || props.offline || props.buying === true || props.asking === true} onClick={props.onRest}>
             Rest
           </button>
-          <button className="btn primary end-turn" type="button" disabled={busy || props.offline || props.buying === true} onClick={props.onEndTurn}>
+          <button
+            className="btn primary end-turn"
+            type="button"
+            disabled={busy || props.offline || props.buying === true || props.asking === true}
+            onClick={props.onEndTurn}
+          >
             <span>{END_TURN_LABEL[ends]}</span>
             {/* As wide as "End turn" whatever it says, so nothing beside it moves. */}
             <span className="sizer" aria-hidden="true">
@@ -199,7 +206,7 @@ export function TurnControls(props: TurnControlsProps) {
 }
 
 /** [Andrei, 2026-10-26] End turn's button says what it will do (`endTurnOutcome`). */
-const END_TURN_LABEL: Record<EndTurnOutcome, string> = { go: 'Go', fight: 'Fight', rest: 'End turn' };
+export const END_TURN_LABEL: Record<EndTurnOutcome, string> = { go: 'Go', fight: 'Fight', rest: 'End turn' };
 
 /**
  * [Q85, 302 and 304-307] The game master's actions on another person's turn
