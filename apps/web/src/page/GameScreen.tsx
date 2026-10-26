@@ -827,7 +827,7 @@ export function GameScreen({
             locate={questionAt}
             ready={glided}
             offline={offline}
-            onShown={() => undefined}
+            onShown={() => sounds.play('question')}
             onNo={() => setAsked(null)}
             onYes={() => endTurnNow(false)}
           />

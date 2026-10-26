@@ -13,7 +13,9 @@ the recipes he heard:
 - a battle won, 129 B: four rising chimes;
 - a battle lost, 130 A: two falling horn notes, the second one sagging;
 - resting, 142 B: a soft breath out;
-- a new message, 143 B: two knocks on a wooden door.
+- a new message, 143 B: two knocks on a wooden door;
+- End turn's question, Q318 13 B: one soft tone that slides up, as a voice
+  rises at a question.
 
 They are placeholders, marked `"placeholder": true` in `Art/manifest.json`, and
 any of them can be replaced by dropping in a new file (`Art/README.md`).
@@ -263,6 +265,20 @@ def message() -> list[float]:
     return trim_tail(fade_edges(out))
 
 
+def question() -> list[float]:
+    """Q318 13 B: one soft round tone sliding up a fifth, C5 to G5, as a voice rises at a question."""
+    out = []
+    ph = 0.0
+    for i in range(int(0.42 * SR)):
+        t = i / SR
+        u = min(1.0, max(0.0, (t - 0.06) / 0.24))
+        f = 523.25 * (1 + 0.5 * u * u * (3 - 2 * u))
+        ph += 2 * math.pi * f / SR
+        env = min(1.0, t / 0.03) * (1.0 if t < 0.28 else math.exp(-(t - 0.28) / 0.05))
+        out.append(env * (math.sin(ph) + 0.18 * math.sin(2 * ph) + 0.05 * math.sin(3 * ph)))
+    return trim_tail(fade_edges(out))
+
+
 # File name under Art/Sounds/ -> (recipe, loudness). The manifest names these files.
 SOUNDS = {
     'step_1.wav': (lambda: step(0), STEP_LEVEL),
@@ -273,6 +289,7 @@ SOUNDS = {
     'battle_lost.wav': (battle_lost, EVENT_LEVEL),
     'rest.wav': (rest, EVENT_LEVEL),
     'message.wav': (message, EVENT_LEVEL),
+    'question.wav': (question, EVENT_LEVEL),
 }
 
 

@@ -37,8 +37,9 @@ function asks(kind: EndTurnQuestionKind): string {
  * it as the map moves, kept on the map, and going below it where there is no
  * room above. No closes it and keeps the route up to change, as Escape does;
  * Yes ends the turn (7 C). Andrei, 2026-10-26: "I'd prefer that the map
- * glide first and then the dialog appear, not two at the same time": it
- * waits for `ready`, and `onShown` hears it appear.
+ * gl[i]de first and then the dialog ap[p]ear, not two at the same time": it
+ * waits for `ready` (12); and "we need some kind of question mark sound when
+ * this dialog pops up", which `onShown` plays as it appears (13 B).
  */
 export function EndTurnQuestion({
   kind,

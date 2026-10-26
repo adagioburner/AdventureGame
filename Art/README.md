@@ -17,7 +17,7 @@ manifest, and never a code change.
 | Artist's sheets | `originals/<Name>.png` | Nothing directly: `tools/pack_sheets.py` packs each into `<Name>_sheet.png` and its atlas |
 | Figure animations | `originals/player_avatars_animated/<figure>-strip.png` | Nothing directly: `tools/pack_animation.py` packs them into `player_avatars_animated_sheet.png` and its atlas, the idle loop each figure plays on the map now and then (Q305) |
 | Island | `Island/underside.png`, `Island/sky.png` | The rock hanging under the map's two front edges, and the sky behind the map (Q170) |
-| Sound effect | `Sounds/<name>.wav` | A footstep, a reward picked up, a battle won or lost, a rest, a new message (Q63) |
+| Sound effect | `Sounds/<name>.wav` | A footstep, a reward picked up, a battle won or lost, a rest, a new message (Q63), End turn's question (Q318) |
 
 A sheet is paired with its atlas by file name, `<Name>_sheet.png` with
 `<Name>_atlas.json`. The atlas's own `"sheet"` field is not read.
