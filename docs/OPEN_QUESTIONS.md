@@ -4199,6 +4199,66 @@ mark holds; the floating notice reports where it will be, over its whole
 drift, when it shows and whenever its size changes. No rule, number, map or
 picture changed, and the rulebook's text needs no change.
 
+<a id="q315"></a>
+### Q315. ~~How are later turns marked on a long route?~~ — **answered 2026-10-26: a white bubble above the space where each later turn ends, counting this turn as 1; turns counted as End turn walks the route, its own rests included, so a walk then a rest reads "3–4"; none on the destination's cross, and only on a route being planned; the rulebook explains them, "3–4" included (1-8)**
+
+Andrei, 2026-10-26 at 06:46: *"when showing a long path to the destination, it
+would be helpful to mark the grey part with flags (bubbles? markers?) showing
+where they will be in two turns, three turns etc."* The grey part of a route is
+what this turn cannot reach (§7.1); nothing on it said how many turns it would
+take. Mocked up in the game on ember-fjord-280, on a route with no speeds,
+where every walk is followed by a rest, and on one with plains 2 and forest 1.
+
+1. **The look**: A, a grey disc with a black edge on the space, like the
+   route's dots (recommended); B, a white bubble standing above the space and
+   pointing down at it; C, a white flag on the space; D, a bare number beside
+   it, like a guard's strength. **Answered** at 07:39: B.
+2. **The numbers**: A, this turn counts as 1, so the first bubble reads 2, his
+   "in two turns" (recommended); B, the next turn counts as 1. The player
+   card's turn counts every player's turns, so either counts the player's own.
+   **Answered** at 07:40: A.
+3. **Later turns**: A, counted as End turn walks the route, the walk the best
+   route is picked by (Q308): full speeds each turn, the stamina held now, and
+   nothing taken at sites on the way (recommended); B, a rest assumed before
+   each turn. **Answered** at 07:40: A.
+4. **A turn spent resting on the way**: A, one bubble for both turns, "3–4"
+   (recommended); B, only the turn that walks there. **Answered** at 07:44:
+   A. At 07:42 he wrote: *"We should not assume any rest while the route is
+   walked, so any questions regarding resting along the route are idle"*,
+   which 6 settled.
+5. **The destination**: A, a bubble on the cross with the turn it is reached
+   on (recommended); B, the cross left bare. **Answered** at 07:40: B.
+6. **End turn's own rests**, after his 07:42 note: no rest the player chooses
+   is assumed, but End turn rests by itself when a turn cannot pay its first
+   step (490), nearly every other turn before any speeds. A, count them as End
+   turn plays them, one bubble reading "3–4" where the figure walks in turn 3
+   and is stuck in turn 4 (recommended); B, number the walking turns only; C,
+   no bubbles past the first such turn. **Answered** at 07:43: A.
+7. **Which routes**: A, every route drawn, a computer's walk included
+   (recommended); B, only a route being planned. **Answered** at 07:41: B.
+8. **The rulebook**, which did not mention the bubbles; at 09:10 Andrei: *"yes
+   let's add a line to the rulebook"*. Its wording, in "Planning a route"
+   after the colours: A, *"On the grey part, numbered bubbles show where your
+   figure will be at the end of each later turn, counting this turn as 1. A
+   bubble such as '3–4' means you get there in turn 3 and stay through turn 4,
+   when 'End turn' rests because you cannot pay for the next step."*
+   (recommended); B, *"Numbered bubbles on the grey part show where your
+   figure will be at the end of turn 2, 3 and so on, this turn being turn
+   1."* **Answered** at 13:13: A.
+
+Built: `turnStops` in `packages/core/src/rules/bestRoute.ts` counts where each
+turn of a route ends, one turn at a time by `countWalk`, the turns as many as
+`walkTurnByTurn` counts. The move controller
+(`apps/web/src/interaction/moveMode.ts`) keeps them with the route it shows,
+recounted whenever its colours are, from the same free steps and stamina, and
+the page hands them to the map only while no walk is playing.
+`buildTurnBubbles` in `apps/web/src/render/sceneModel.ts` puts a bubble on
+each later turn's end but the destination, a turn End turn rests sharing the
+bubble before it; `TURN_BUBBLE` there holds the bubble's sizes and colours, as
+mocked up, and the renderer draws them over everything else. No rule, number,
+map or picture changed. The rulebook's two sentences (8 A) are in
+`docs/RULEBOOK.md`.
+
 <a id="q316"></a>
 ### Q316. ~~Should Track still press itself?~~ — **answered 2026-10-26: only when a game opens; after that only the player presses it, and on one device, as online, the turn's glide to the player on turn waits for Track to be pressed; Track only matters on other players' turns: on your own turn nothing unpresses it, and your own walk is always followed, Track or no Track, even when you move the map (1-6)**
 
@@ -4261,6 +4321,145 @@ is clicked, or a route is planned. `MapView`'s new `keepFollowing` prop,
 `yourTurn`, keeps a drag or a zoom from stopping the following of a walk,
 which on your turn is your own. No rule, number, map or picture changed, and
 the rulebook needs no change: it does not mention Track.
+
+<a id="q318"></a>
+### Q318. ~~Should End turn ask first when the walk ends off a site?~~ — **answered 2026-10-26: yes, when the walk reaches the route's end this turn and no unclaimed site is there, and when End turn would rest; in a box drawn like the game's own panels, just above the end cross or the resting figure, which the map glides to the middle, with No and Yes; it always asks (1-11)**
+
+Andrei, 2026-10-26 at 06:29: *"we need to adk for a confirmation ehen a
+player ends their move not on a site. Players misclick way too often"*; and at
+09:02: *"and if one clicks End turn to rest, we probably should confirm as
+well"*.
+
+1. **When it asks.** A, only when the walk reaches the end of its route this
+   turn and that end is not a site, a walk stopping partway along a longer
+   route not asking (recommended); B, every time this turn's walk stops off a
+   site, partway or not. **Answered** at 07:26: A.
+2. **Claimed sites.** A, a claimed site counts as an ordinary space, as the
+   rulebook says it becomes, so stopping on one asks (recommended); B, no site
+   asks, claimed or not. **Answered** at 07:26: A.
+3. **How it looks.** A, the browser's own OK / Cancel box, the kind Resign
+   and Delete use (recommended); B, a box drawn in the game's style. Asked
+   which questions use the browser's box: nine, all online and for rare
+   actions, none of them during ordinary turns or on one device. **Answered**
+   at 07:28: B.
+4. **Turning it off.** A, it always asks (recommended); B, a "Don't ask
+   again" option. **Answered** at 07:27: A.
+5. **Where.** Mocked up at 1280 × 800 and 390 × 844, the route ending one
+   space short of a fortress: A, in place of the line and buttons under the
+   cards (recommended); B, the middle of the map; C, where the buy panel
+   opens. **Answered** at 08:57: C; then at 08:59: *"actually can it appear in
+   the center, but above the end cross, so one vlcan see where they're
+   going"*.
+6. **The map.** A, the map glides the end cross to the middle and the box
+   sits just above it, moving with it (recommended); B, the map stays and the
+   box sits above the cross wherever it is. **Answered** at 09:00: A.
+7. **The buttons.** A, Go back / End turn (recommended); B, Cancel / End
+   turn; C, No / Yes. In each the first closes the box and keeps the route up
+   to change, and Escape does the same. **Answered** at 08:57: C.
+8. **The words.** At 09:01: *"we also need a different wording, something
+   like your turn wull end without claiming a reward or fighting for
+   treasure"*. A, his words (recommended); B, with the player's name; C,
+   "gold" for "treasure". **Answered** at 09:03: C, "Your turn will end
+   without claiming a reward or fighting for gold." over "End turn anyway?".
+9. **Where, for a rest.** A, the map glides the figure to the middle and the
+   box sits just above it (recommended); B, the middle of the map, the map
+   staying. **Answered** at 09:03: A.
+10. **The words, for a rest.** A, "Your turn will end with a rest, without
+    claiming a reward or fighting for gold." (recommended); B, "Your turn
+    will end with a rest: +5 stamina."; C, the walk's words. **Answered** at
+    09:03: B, over "End turn anyway?".
+11. **Track, for a rest.** Andrei, 13:32: *"does track stay unpressed once
+    the glide unpresses it?"* It did, since only the player presses it
+    ([Q316](#q316)), and so on one device the map stayed on the resting
+    figure after Yes instead of going on to the next player. A, the glide to
+    the figure leaves Track as it was, since Track follows that figure anyway
+    (recommended); B, it unpresses Track. **Answered** at 13:33: A. Then
+    at 13:36, of Track generally: *"During your own move, nothing should
+    unpress track"*; so the glide to a route's end leaves Track as it was
+    too.
+
+Set out alongside and left as set out: only a person pressing End turn is
+asked, on one device and online; Rest, End turn fighting a guard again,
+computer players and the game master's Move on are as they were; while the
+box is up the map can be moved, and choosing another space picks the new end
+and closes it; and if End turn's button is renamed, the box's last line uses
+its new name.
+
+Built: `endTurnQuestion` and `endsOffSite` in
+`apps/web/src/interaction/moveMode.ts`, `EndTurnQuestion` in
+`apps/web/src/page/EndTurnQuestion.tsx` with its look, `.end-question`, in
+`apps/web/index.html`, and End turn asking in
+`apps/web/src/page/GameScreen.tsx`. While the box is up Rest and End turn
+wait for it, as they do for the buy panel; Cancel, the buy panel or the turn
+passing closes it as No does. The box sits 26 px above the middle of the
+cross, or 8 px above the top of the figure, and goes below the space where
+the map has been moved so there is no room above. Neither glide changes
+Track (11), and after Yes the walk is followed as any End turn's is
+([Q316](#q316)). Since End turn's button now
+says Go for a walk (Andrei, 2026-10-26), the box's last line says what the
+button says: "Go anyway?" for a walk, "End turn anyway?" for a rest. No rule,
+number, map or picture changed, and the rulebook needs no change.
+
+---
+
+### Q320. ~~How do you keep track of players out of view?~~ — **answered 2026-10-26: a marker just inside the map's edge for every player whose figure is wholly out of view, at any zoom: the portrait from their card in a round badge with an arrow pointing at them, 48 px across on a laptop and 40 on a phone; a tap finds them as their card does; markers slide apart, go round the map's buttons, and slide a little off reward icons, guard numbers, figures and the route, its turn bubbles too (1-9)**
+
+Andrei, 2026-10-26 at 06:47: *"when i zoom on, i lose track of where other
+players are. cN we vave small floaters with character figurines and arrows
+floating near the edge of the screen and pointing in the direction of where
+those players are"*. Mocked up from a working draft in a real game (seed
+adventure, 5 players, turn 61), zoomed in on one player with three others out
+of view, on a laptop and a 390 px phone.
+
+1. **Look.** A, the head and shoulders from the player cards in a round badge
+   (recommended); B, the whole figurine in a small tile. Both rimmed in the
+   yellow of a selected figure's outline (Q305, 10) with a thin dark line round
+   it, and an arrow on the rim pointing at the figure. **Answered** at 07:45: A.
+2. **Size.** 48 px across on a laptop and 40 on a phone (recommended), or 48
+   on both. **Answered** at 07:46: 48 and 40.
+3. **Whose.** Every player whose figure is out of view, the player on turn
+   too, all alike (recommended); or everyone but the player on turn.
+   **Answered** at 07:46: every player, all alike.
+4. **When.** Once the whole figure is out of view, at any zoom (recommended);
+   once the ring under it is; or only while zoomed in past the whole map.
+   **Answered** at 07:46: the whole figure, at any zoom.
+5. **Tapping one.** Finds that player as clicking their card does, Q120
+   (recommended); or nothing. **Answered** at 07:46: as the card does.
+6. **Crowding.** Markers that would overlap slide apart along the edge and go
+   round the map's buttons (recommended); or each sits exactly in its
+   player's direction, over another marker or under a button. **Answered** at
+   07:47: slide apart and go round.
+7. **What a marker keeps off.** Andrei at 07:48: *"it would also be nice to
+   adjust the marker positions slightly so they dont cover important things"*.
+   Put to him: a marker slides along the edge by at most its own width to the
+   nearest spot clear of them, and stays put when none that close is; of
+   figures, sites and the route, all three recommended. **Answered** at 08:04:
+   *"the site pictures are eye candy only, it's fone to cover them, but the
+   icons and guard numbers are important"*.
+8. **Figures and the route.** Not in that answer, so asked on their own:
+   figures and the route too (recommended); figures but not the route; or only
+   the icons and numbers. **Answered** at 08:27: figures and the route too.
+9. **Turn bubbles.** The numbered bubbles that mark where later turns end on a
+   route being planned (Q315) came to main after 8: markers keep off them too
+   (recommended), or may cover them. **Answered** at 14:39: keep off them too.
+
+Built: `edgeMarkers` in `apps/web/src/interaction/offscreen.ts` lays the
+markers out: each where the line from the middle of the map's box to its
+figure leaves the box, drawn in by the marker's half width, its arrow and 6 px;
+the edge steps round the map's buttons; markers closer than their width and
+12 px slide apart about where they wanted to be; and one over something it
+keeps off tries spots along the edge 2 px at a time, out to its own width,
+keeping last frame's side while that spot is clear so it does not jump from
+side to side as the map moves. `MapView` draws one per player and places them
+every frame, so they follow the map and a figure walking at End turn; what
+they keep off is the unclaimed sites' icons and numbers, the figures in view
+and their rings, and the route's dots, cross, turn bubbles and waypoint
+flag. `GameScreen`
+gives the map its card's find (`findPlayer`), so a game on this device and
+online both have them, during the game and after it ends as cards find
+players then too (Q120, 474); the New game screens have none. The look is
+`.edge-marker` in `apps/web/index.html`. No rule, number, map or picture
+changed, and the rulebook needs no change.
 
 ---
 

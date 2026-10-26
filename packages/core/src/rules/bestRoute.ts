@@ -3,7 +3,7 @@ import type { NodeId } from '../ids.ts';
 import type { MapGraph } from '../graph.ts';
 import type { MovementAllowance, PlayerStats } from '../player.ts';
 import { frontPath, pathCost, routeTable, terrainStepCost, type RouteTable } from '../path.ts';
-import { refreshAllowance } from './movement.ts';
+import { countWalk, refreshAllowance } from './movement.ts';
 
 /**
  * [SOURCE §9, review] Andrei, 2026-09-28 (Q65): "stamina(1) = max(P - p, 0) +
@@ -205,6 +205,44 @@ export function walkTurnByTurn(
     walked++;
   }
   return { turns, staminaSpent: spent, allowance: { plains, forest, mountain }, stamina: held };
+}
+
+/**
+ * [Q315] Andrei, 2026-10-26: "when showing a long path to the destination, it
+ * would be helpful to mark the grey part with flags (bubbles? markers?)
+ * showing where they will be in two turns, three turns etc." Where each turn
+ * of `path` ends as End turn walks it, turn after turn, as `walkTurnByTurn`
+ * counts it (3 A): this turn from the free steps `allowance` leaves and the
+ * `stamina` held, each later turn from the player's full `speeds`, a turn
+ * stopping at the first step it cannot pay, and a turn that walks nothing
+ * resting (490), which is counted as a turn (6 A). Nothing that happens where
+ * a turn ends on the way is counted (Q308, 3 A).
+ *
+ * One entry a turn, this one first: how many steps of `path` are walked by
+ * the end of it. A turn that rests repeats the entry before it, and the last
+ * entry is `path.length`.
+ */
+export function turnStops(
+  graph: MapGraph,
+  path: readonly NodeId[],
+  allowance: MovementAllowance,
+  stamina: number,
+  speeds: MovementAllowance,
+  config: GameConfig,
+): readonly number[] {
+  const stops: number[] = [];
+  let free = allowance;
+  let held = stamina;
+  let walked = 0;
+  do {
+    const turn = countWalk(graph, path, walked, free, held, config);
+    if (turn.steps === 0) held += config.movement.REST_STAMINA_GAIN;
+    held -= turn.staminaSpent;
+    walked += turn.steps;
+    stops.push(walked);
+    free = speeds;
+  } while (walked < path.length);
+  return stops;
 }
 
 /**
