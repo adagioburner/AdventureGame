@@ -793,6 +793,7 @@ export function GameScreen({
           cue={cue}
           planner={plannerShown}
           found={found?.player ?? null}
+          own={source.own}
           // [Q320] A marker at the map's edge for each player out of view finds them as their card does.
           onFind={findPlayer}
           onTap={onTap}

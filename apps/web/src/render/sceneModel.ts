@@ -298,7 +298,11 @@ export interface StateScene {
    */
   readonly nodes: readonly NodeMark[];
   readonly characters: readonly Figure[];
-  /** [Q305] The ring on the ground under every player's figure, one per figure, in the figures' order. */
+  /**
+   * [Q305] The ring on the ground under every player's figure, one per
+   * figure, in the figures' order, except that [Q312, 3] the page's own
+   * player's comes last, so it is drawn over the rings it overlaps.
+   */
   readonly rings: readonly PlayerRing[];
 }
 
@@ -334,6 +338,8 @@ export interface PlayerRing {
    * - `null`: everyone else.
    */
   readonly mark: 'turn' | 'planning' | 'found' | null;
+  /** [Q312] Under the figure of the player this page is for (`PlaySource.own`): their ring is white. */
+  readonly own: boolean;
 }
 
 /**
@@ -388,6 +394,7 @@ export function buildStateScene(
   walker: Walker | null = null,
   planner: PlayerId | null = null,
   found: PlayerId | null = null,
+  own: PlayerId | null = null,
 ): StateScene {
   const claimed = new Set<NodeId>();
   state.map.pois.forEach((poi, index) => {
@@ -399,13 +406,13 @@ export function buildStateScene(
       ? nodeMark(catalog, scene.spacing, { id: mark.node, position: mark.at, terrain: mark.terrain }, null, false)
       : mark,
   );
-  return { claimed, nodes, ...buildCharacters(scene, state, catalog, walker, planner, found) };
+  return { claimed, nodes, ...buildCharacters(scene, state, catalog, walker, planner, found, own) };
 }
 
 /**
  * The figures and the ring under each, marking the current player's (§7.2), a
- * player planning out of turn's and a player just found's. Split out so a
- * walking figure redraws only these.
+ * player planning out of turn's, a player just found's and [Q312] the page's
+ * own player's. Split out so a walking figure redraws only these.
  */
 export function buildCharacters(
   scene: MapScene,
@@ -414,6 +421,7 @@ export function buildCharacters(
   walker: Walker | null = null,
   planner: PlayerId | null = null,
   found: PlayerId | null = null,
+  own: PlayerId | null = null,
 ): Pick<StateScene, 'characters' | 'rings'> {
   const { manifest } = catalog;
   const figurines = atlasOf(catalog, manifest.figurines.sheet);
@@ -469,9 +477,11 @@ export function buildCharacters(
             : player.id === found
               ? 'found'
               : null,
+      own: player.id === own,
     });
   });
-  return { characters, rings };
+  // [Q312, 3] "Yours on top".
+  return { characters, rings: [...rings.filter((ring) => !ring.own), ...rings.filter((ring) => ring.own)] };
 }
 
 /**

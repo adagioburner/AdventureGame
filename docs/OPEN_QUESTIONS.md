@@ -4078,6 +4078,54 @@ of date; nothing on screen changes for it. A route drawn to a site that is
 then taken stays drawn, as before. The server is unchanged. No rule, number,
 map or picture changed, and the rulebook needs no change.
 
+<a id="q312"></a>
+### Q312. ~~How do you find your own figure on the map?~~ — **answered 2026-10-26: the ring under it is white, disc and rim, the other rings staying all gold; online it is the figure of the seat you hold, resigned or not; on one device only when one person plays there; it is drawn over the rings it overlaps (1-4)**
+
+Andrei, 2026-10-26 at 06:43: *"i think it makes sense to color the disk below
+your character differently from everyone else, so you can see where you are
+right away"*. Since Q305 every figure stands on the same see-through
+gold ring, so the map tells nobody which figure is theirs. Mocked up on a
+4-player game after seven rounds, on the whole map and at playing zoom on a
+laptop, with the figure moved onto plains, forest and mountains. Only the
+ring's colour changes: its size, how see-through it is, its rim's width, its
+pulse on your turn and the yellow outline when your figure is picked up or
+found stay as Q305 has them, and a spectator, who has no figure, sees every
+ring gold.
+
+1. **Colour.** First mocked up in blue (recommended), cyan and pink, with white
+   and red shown and left out, white fading into the plains and red reading as
+   a fighting guard's ring. At 07:35: *"i didn't like any of the colors. Can it
+   be orange, different from today's yellow but not entirely from a different
+   palette"*. Mocked up again in amber (`#ffb43a`), orange (`#ff9226`,
+   recommended) and deep orange (`#ff6f1a`), against today's gold. At 09:09:
+   *"the orange disks are much less visible than gold. Can you show me orange
+   with a gold outline"*. Mocked up a third time: the ring's own rim in
+   today's gold (`#ffe878`), as wide as before, round a see-through disc in
+   each of the three oranges, deep orange recommended. **Answered** at 13:12:
+   B, orange (`#ff9226`) inside a gold rim, and built so. At 16:42: *"can you
+   show me white disk instead of orange? maybe that's going to look better"*.
+   Mocked up beside today's gold and the orange built: A, a white disc inside
+   the gold rim; B, all white, its rim white too (recommended); C, orange
+   inside the gold rim kept. **Answered** at 17:00: B, white (`#ffffff`),
+   disc and rim.
+2. **One device.** Several people can share one screen, so there is no one
+   "you": A, the one person playing there against computers has the
+   coloured one, and with two or more people every ring stays gold
+   (recommended); B, every person's ring is coloured and the computers' gold;
+   C, the ring of the person on turn. **Answered** at 07:34: A.
+3. **Two figures on one space.** A, your ring is drawn over the gold rings it
+   overlaps (recommended); B, in seat order as before, so a gold ring can cover
+   part of yours. **Answered** at 07:34: A.
+4. **Resigned.** Online, once you resign or the game master resigns you and
+   the computer plays your seat: A, its figure keeps your coloured ring to
+   the end of the game (recommended); B, it turns all gold. **Answered** at 07:34: A.
+
+Built: `PlaySource.own` in `apps/web/src/modes/play.ts`, the player a page is
+for (2, 4); `PlayerRing.own` in `apps/web/src/render/sceneModel.ts`, its ring
+listed last (3); `PLAYER_RING.own` in `apps/web/src/render/pixi/renderer.ts`,
+its colour, disc and rim (1). No rule, number, map or picture changed, and the
+rulebook needs no change.
+
 <a id="q313"></a>
 ### Q313. ~~Which way do the player figures face?~~ — **answered 2026-10-26: right, all six; the five drawn facing left are flipped whole, shadow included, wherever they are shown: on the map with their idle animations, on the New game panel, in the portraits and as the tab's icon (1-2); figures side by side on a space overlap with the one on the left in front (3)**
 
