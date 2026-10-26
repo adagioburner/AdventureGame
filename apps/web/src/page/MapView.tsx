@@ -70,6 +70,8 @@ interface MapViewProps {
    * `tracking` if omitted.
    */
   readonly follow?: boolean;
+  /** [Q316, 4] Moving the map leaves the following on: on the player's own turn, whose walk it always follows. */
+  readonly keepFollowing?: boolean;
   /** [Q57, 72] Shows the Track button, above "+", which calls this. */
   readonly onTrack?: (() => void) | undefined;
   /** [Q63, 139] Shows the Sound button before Track: whether sound is on, and what pressing it does. */
@@ -122,6 +124,7 @@ export function MapView({
   onTap,
   tracking = true,
   follow = tracking,
+  keepFollowing = false,
   onTrack,
   sound,
   onMoved,
@@ -135,8 +138,8 @@ export function MapView({
   // Read when the renderer comes up, and by the pointer handlers, which are
   // bound once per map.
   const from = pathFrom ?? state.players[state.turn.activeSeat - 1]?.position ?? null;
-  const latest = useRef({ state, path, from, waypoint, walker, cue, planner, found, onTap, onMoved, onReady });
-  latest.current = { state, path, from, waypoint, walker, cue, planner, found, onTap, onMoved, onReady };
+  const latest = useRef({ state, path, from, waypoint, walker, cue, planner, found, keepFollowing, onTap, onMoved, onReady });
+  latest.current = { state, path, from, waypoint, walker, cue, planner, found, keepFollowing, onTap, onMoved, onReady };
   // Whether a walk takes the map along. It follows `follow`, and stops at once
   // when the map is moved, before the page has unpressed Track.
   const following = useRef(follow);
@@ -269,9 +272,14 @@ export function MapView({
         glide = null;
         following.current = false;
       };
+      /** [Q316, 4] On the player's own turn moving the map stops a glide, while a walk is followed still. */
+      const halt = (): void => {
+        if (latest.current.keepFollowing) glide = null;
+        else stopCamera();
+      };
       /** The viewer moved the map: [Q57, 73] Track unpresses. */
       const moved = (): void => {
-        stopCamera();
+        halt();
         latest.current.onMoved?.();
       };
       const onTick = (): void => {
@@ -408,7 +416,7 @@ export function MapView({
 
       const planeOf = (node: NodeId): Point => scene.projection.toScreen(position(gameMap.graph, node));
       const centerAt = (plane: Point): void => {
-        stopCamera();
+        halt();
         camera.centerOn(plane, fit().zoom * PLAY_ZOOM_OF_FIT * playZoomScale(gameMap));
         touched = true;
         apply();
