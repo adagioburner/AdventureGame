@@ -446,18 +446,17 @@ export class PixiMapRenderer implements MapRenderer {
       const sprite = this.stand(item, 1);
       this.characterSprites.push(sprite);
       if (item.loop !== null) {
-        // [Q305, 18] A figure walking at End turn, picked up to plan (on its
-        // turn or out of it, Q56) or on its turn with its ring pulsing stands
-        // still.
+        // [Q305, 18] A figure walking at End turn or picked up to plan (on its
+        // turn or out of it, Q56) stands still; [Q321, 2] one on its turn
+        // with its ring pulsing plays its loop like the rest.
         const pickedUp = (item.player === current && this.cue === 'selected') || item.player === this.planner;
-        const pulsing = item.player === current && this.cue === 'pulse';
         this.figures.push({
           sprite,
           player: item.player,
           size: item.size,
           frames: item.loop.frames.map((ref) => this.art.frame(ref)),
           durationsMs: item.loop.durationsMs,
-          still: item.walking || pickedUp || pulsing,
+          still: item.walking || pickedUp,
           shown: 0,
         });
       }

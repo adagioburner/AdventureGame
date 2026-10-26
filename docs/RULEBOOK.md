@@ -129,7 +129,7 @@ An online game lasts 1, 3, 7 or 14 days, chosen when it is created. When time ru
 
 The rules are the same either way; the Play online switch on the setup screen chooses.
 
-**On one device**, everyone takes turns at the same screen. Your figure blinks when it is your turn.
+**On one device**, everyone takes turns at the same screen. The ring under your figure pulses when it is your turn.
 
 **Online**, each player uses their own device. You can plan your next move while others play, and Go plays it when your turn comes. A message board lets players talk.
 
