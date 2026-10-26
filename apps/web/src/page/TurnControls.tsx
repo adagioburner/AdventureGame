@@ -180,16 +180,19 @@ export function TurnControls(props: TurnControlsProps) {
       </p>
       <div className="buttons">
         {planButtons}
-        <button className="btn" type="button" disabled={busy || props.offline || props.buying === true} onClick={props.onRest}>
-          Rest
-        </button>
-        <button className="btn primary end-turn" type="button" disabled={busy || props.offline || props.buying === true} onClick={props.onEndTurn}>
-          <span>{END_TURN_LABEL[ends]}</span>
-          {/* As wide as "End turn" whatever it says, so nothing beside it moves. */}
-          <span className="sizer" aria-hidden="true">
-            {END_TURN_LABEL.rest}
-          </span>
-        </button>
+        {/* [Q310, 4] Where the row wraps, Rest and End turn go to the next line together. */}
+        <div className="turn-end">
+          <button className="btn" type="button" disabled={busy || props.offline || props.buying === true} onClick={props.onRest}>
+            Rest
+          </button>
+          <button className="btn primary end-turn" type="button" disabled={busy || props.offline || props.buying === true} onClick={props.onEndTurn}>
+            <span>{END_TURN_LABEL[ends]}</span>
+            {/* As wide as "End turn" whatever it says, so nothing beside it moves. */}
+            <span className="sizer" aria-hidden="true">
+              {END_TURN_LABEL.rest}
+            </span>
+          </button>
+        </div>
       </div>
     </section>
   );

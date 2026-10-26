@@ -3972,7 +3972,7 @@ Built: `RulesButton` in the login page's top bar in
 picture changed, and the rulebook needs no change.
 
 <a id="q310"></a>
-### Q310. ~~Does planning need Plan a move or a tap on your figure first?~~ — **answered 2026-10-26: no, online on someone else's turn a tap on a space plans at once too, and the line says so; Plan a move becomes Find me, which does what your own card does, first in the row whenever the buttons show (1-3)**
+### Q310. ~~Does planning need Plan a move or a tap on your figure first?~~ — **answered 2026-10-26: no, online on someone else's turn a tap on a space plans at once too, and the line says so; Plan a move becomes Find me, which does what your own card does, first in the row whenever the buttons show, the row's buttons narrower so a route's five fit on one line, Rest and End turn wrapping together (1-4)**
 
 Andrei, 2026-10-26 at 05:43: *"one needs to click "plan move" or your hero to
 start planning. Is that necessary? why not start planning right away? The plan
@@ -4004,14 +4004,29 @@ game master's Move on would walk. He answered the three cards at 07:09 and
    device it finds the player on turn, and on a computer's turn it is hidden
    with the other buttons (Q42) (recommended); B: only until a route is up,
    Cancel then taking its place; C: on the map, by Track. **Answered:** A. With
-   a route up the row is one button longer, so it takes two lines on a laptop
-   (1280 px) and on phones at 390 and 340 px.
+   a route up the row was one button longer, so it took two lines on a laptop
+   (1280 px) and on phones at 390 and 340 px, which 4 settles.
+4. **Keeping the row on one line.** Andrei at 08:37: *"why do the buttons wrap
+   if we simply chaged one button for another"*: Plan a move used to turn
+   into Cancel once a route was up, while Find me stays beside it. At 08:38:
+   *"let's see how we can keep all buttons in one row"*. With a route up the
+   five buttons needed 381 to 401 px against 325 px on a laptop and 320 to
+   370 px on phones; with a waypoint set the row already wrapped before Find
+   me, and on a phone held sideways (279 px) with any route up. Mocked up at
+   1280, 390 and 340 px: A, narrower buttons, padding 6 px a side, gaps 4 px
+   and 13 px text instead of 14, so a route's five take 315 px (recommended);
+   B, Find me in the top bar, beside New game or Menu, the row as before; C,
+   A without Clear waypoint, so a waypoint set fits too. **Answered** at
+   13:08: A, *"can we make sure that Rest and End turn stay on the same line
+   in case they wrap"*. With a waypoint set, and on a phone held sideways,
+   Rest and End turn take the second line together.
 
 Built: `choose` in `apps/web/src/interaction/moveMode.ts` plans out of turn
 online, `GameScreen`'s `onTap` sends a tap on a space there, `findMe` in
 `GameScreen.tsx` calls the card's `findPlayer`, and the button and line are in
-`TurnControls.tsx`. No rule, number, map or picture changed, and the rulebook
-needs no change.
+`TurnControls.tsx`, Rest and End turn in its `.turn-end`, sized by the rules
+after `.buttons` in `apps/web/index.html`. No rule, number, map or picture
+changed, and the rulebook needs no change.
 
 <a id="q311"></a>
 ### Q311. ~~Can a player end their turn before their page has caught up with the game?~~ — **answered 2026-10-26: no; after a dropped connection everything greyed while reconnecting stays greyed, under "Reconnecting to the server…", until the turns missed meanwhile have arrived (1-2)**
