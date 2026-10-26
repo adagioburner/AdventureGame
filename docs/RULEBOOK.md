@@ -61,7 +61,7 @@ Only the space where you stop counts. Walking through a site does not claim it.
 
 You can also move zero steps: stay on a site and fight its guard again.
 
-Pressing 'End turn' when your figure would not move, because you have no route or cannot pay for its first step, rests instead, unless a guard stands on your space. A route you could not start on is kept for next turn.
+The button that ends your turn says what it will do. It says 'Go' when your figure will walk. When your figure would not move, because you have no route or cannot pay for its first step, it says 'End turn' and rests instead, unless a guard stands on your space: then it says 'Fight', and you stay and fight the guard again. A route you could not start on is kept for next turn.
 
 ### Planning a route
 
@@ -71,7 +71,7 @@ Choose where you want to go. The game draws the route it thinks is best for you;
 - **Yellow**: costs stamina.
 - **Grey**: out of reach this turn.
 
-Pressing 'End turn' walks the route. If it is longer than you can go this turn, your figure goes as far as it can and the rest of the route is saved for next turn, where you can still change it.
+Pressing 'Go' walks the route. If it is longer than you can go this turn, your figure goes as far as it can and the rest of the route is saved for next turn, where you can still change it.
 
 ## Movement and stamina
 
@@ -129,13 +129,13 @@ The rules are the same either way; the Play online switch on the setup screen ch
 
 **On one device**, everyone takes turns at the same screen. Your figure blinks when it is your turn.
 
-**Online**, each player uses their own device. You can plan your next move while others play, and End turn plays it when your turn comes. A message board lets players talk.
+**Online**, each player uses their own device. You can plan your next move while others play, and Go plays it when your turn comes. A message board lets players talk.
 
 ### The game master
 
 The person who creates an online game is its game master and sits in seat 1 unless the seats are shuffled. They choose the map, the number of players and which seats the computer plays, and accept or decline people who ask to join. Empty seats are played by the computer. During the game, the game master can:
 
-- **Move a player on** at any time: play their turn now as their own 'End turn' would, walking their saved route or resting if they have none.
+- **Move a player on** at any time: play their turn now, walking their saved route or resting if they have none.
 - **Resign a player**: the computer plays their seat from then on.
 - **Extend** the game a day at a time, up to 14 days from creation.
 - **End the game**.
