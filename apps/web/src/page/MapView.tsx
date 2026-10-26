@@ -21,7 +21,19 @@ import { pictureBox, type Box } from '../render/placement.ts';
 import { undersideDepth } from '../render/island.ts';
 import { PixiMapRenderer } from '../render/pixi/renderer.ts';
 import type { LoadedArt } from '../render/pixi/textures.ts';
-import { buildPathScene, buildWaypoint, labelBox, playerRingSize, SPACING_PX, type FigureCue, type MapScene, type Walker } from '../render/sceneModel.ts';
+import {
+  buildPathScene,
+  buildWaypoint,
+  figuresAtWalkEnd,
+  labelBox,
+  playerRingSize,
+  SPACING_PX,
+  type Figure,
+  type FigureCue,
+  type MapScene,
+  type PlayerRing,
+  type Walker,
+} from '../render/sceneModel.ts';
 import { MAP_RESTORE_WAIT_MS, MAP_RETRY_MS, noteMapTrouble } from './mapTrouble.ts';
 import { skyScale } from './sky.ts';
 import { Portrait } from './Sprites.tsx';
@@ -91,6 +103,8 @@ interface MapViewProps {
   readonly planner?: PlayerId | null;
   /** [Q120, 471] The player whose card was just clicked, whose figure is highlighted for a moment. */
   readonly found?: PlayerId | null;
+  /** [Q312] The player this page is for (`PlaySource.own`), whose figure's ring is white; none if omitted. */
+  readonly own?: PlayerId | null;
   /**
    * [Q320] Shows a marker at the edge of the map for every player whose
    * figure is out of view; tapping one calls this, as their card does (Q120).
@@ -166,6 +180,7 @@ export function MapView({
   cue = 'none',
   planner = null,
   found = null,
+  own = null,
   onFind,
   onTap,
   tracking = true,
@@ -189,8 +204,8 @@ export function MapView({
   // Read when the renderer comes up, and by the pointer handlers, which are
   // bound once per map.
   const from = pathFrom ?? state.players[state.turn.activeSeat - 1]?.position ?? null;
-  const latest = useRef({ state, path, from, turnStops, waypoint, walker, cue, planner, found, keepFollowing, onTap, onMoved, onReady });
-  latest.current = { state, path, from, turnStops, waypoint, walker, cue, planner, found, keepFollowing, onTap, onMoved, onReady };
+  const latest = useRef({ state, path, from, turnStops, waypoint, walker, cue, planner, found, own, keepFollowing, onTap, onMoved, onReady });
+  latest.current = { state, path, from, turnStops, waypoint, walker, cue, planner, found, own, keepFollowing, onTap, onMoved, onReady };
   // Whether a walk takes the map along. It follows `follow`, and stops at once
   // when the map is moved, before the page has unpressed Track.
   const following = useRef(follow);
@@ -263,6 +278,7 @@ export function MapView({
       map.setWalker(now.walker);
       map.setPlanner(now.planner);
       map.setFound(now.found);
+      map.setOwn(now.own);
       map.setState(now.state);
       map.setPathPreview(now.path, now.from, now.turnStops);
       map.setWaypoint(now.waypoint);
@@ -379,6 +395,15 @@ export function MapView({
         }
         return route.boxes;
       };
+      let arrival: { state: GameState; player: PlayerId; to: NodeId | undefined; standing: readonly { figure: Figure; ring: PlayerRing }[] } | null = null;
+      const arrivalNow = (): readonly { figure: Figure; ring: PlayerRing }[] => {
+        const { state, walker } = latest.current;
+        if (walker === null) return [];
+        if (arrival === null || arrival.state !== state || arrival.player !== walker.player || arrival.to !== walker.to) {
+          arrival = { state, player: walker.player, to: walker.to, standing: figuresAtWalkEnd(scene, state, art.catalog, walker) };
+        }
+        return arrival.standing;
+      };
       let markerLayout: Omit<EdgeMarkerLayout, 'avoid'> | null = null;
       let markerAcross = 0;
       const placed = new Map<PlayerId, string>();
@@ -416,10 +441,19 @@ export function MapView({
         );
         const claimed = map.claimed;
         const wholeZoom = fit().zoom;
+        // [Q320, 10] Andrei, 2026-10-26: "it would be ok if a walking figure
+        // could go under the floater, as long on its final destination its
+        // clear": a walking figure and its ring are not kept off, and (11) as
+        // the walk starts markers make room where it will stand at its end,
+        // with whoever stands beside it there.
+        const standing = [
+          ...map.characters.flatMap((figure, index) => (figure.walking ? [] : [{ figure, ring: map.rings[index] }])),
+          ...arrivalNow(),
+        ];
         const avoid = [
           ...labels.flatMap((label) => (claimed.has(label.node) ? [] : [label.box])),
-          ...map.characters.map((figure) => pictureBox(figure.foot, figure.size, art.shape(figure.sprite))),
-          ...map.rings.map((ring) => groundBox(scene, ring.at, playerRingSize(ring.size, scene.spacing, camera.camera.zoom, wholeZoom) / 2)),
+          ...standing.map(({ figure }) => pictureBox(figure.foot, figure.size, art.shape(figure.sprite))),
+          ...standing.flatMap(({ ring }) => (ring === undefined ? [] : [groundBox(scene, ring.at, playerRingSize(ring.size, scene.spacing, camera.camera.zoom, wholeZoom) / 2)])),
           ...routeNow(),
           ...map.turnBubbles,
         ]
@@ -652,6 +686,9 @@ export function MapView({
   useEffect(() => {
     renderer.current?.setFound(found);
   }, [found]);
+  useEffect(() => {
+    renderer.current?.setOwn(own);
+  }, [own]);
   useEffect(() => {
     following.current = follow;
   }, [follow]);

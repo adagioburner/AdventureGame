@@ -298,7 +298,11 @@ export interface StateScene {
    */
   readonly nodes: readonly NodeMark[];
   readonly characters: readonly Figure[];
-  /** [Q305] The ring on the ground under every player's figure, one per figure, in the figures' order. */
+  /**
+   * [Q305] The ring on the ground under every player's figure, one per
+   * figure, in the figures' order, except that [Q312, 3] the page's own
+   * player's comes last, so it is drawn over the rings it overlaps.
+   */
   readonly rings: readonly PlayerRing[];
 }
 
@@ -334,6 +338,8 @@ export interface PlayerRing {
    * - `null`: everyone else.
    */
   readonly mark: 'turn' | 'planning' | 'found' | null;
+  /** [Q312] Under the figure of the player this page is for (`PlaySource.own`): their ring is white. */
+  readonly own: boolean;
 }
 
 /**
@@ -369,6 +375,8 @@ export interface Walker {
   readonly player: PlayerId;
   /** World units, anywhere along the road it is walking. */
   readonly at: Point;
+  /** [Q320, 11] The node the walk ends on, where the edge markers make room as it starts. */
+  readonly to?: NodeId;
 }
 
 /**
@@ -386,6 +394,7 @@ export function buildStateScene(
   walker: Walker | null = null,
   planner: PlayerId | null = null,
   found: PlayerId | null = null,
+  own: PlayerId | null = null,
 ): StateScene {
   const claimed = new Set<NodeId>();
   state.map.pois.forEach((poi, index) => {
@@ -397,13 +406,13 @@ export function buildStateScene(
       ? nodeMark(catalog, scene.spacing, { id: mark.node, position: mark.at, terrain: mark.terrain }, null, false)
       : mark,
   );
-  return { claimed, nodes, ...buildCharacters(scene, state, catalog, walker, planner, found) };
+  return { claimed, nodes, ...buildCharacters(scene, state, catalog, walker, planner, found, own) };
 }
 
 /**
  * The figures and the ring under each, marking the current player's (§7.2), a
- * player planning out of turn's and a player just found's. Split out so a
- * walking figure redraws only these.
+ * player planning out of turn's, a player just found's and [Q312] the page's
+ * own player's. Split out so a walking figure redraws only these.
  */
 export function buildCharacters(
   scene: MapScene,
@@ -412,6 +421,7 @@ export function buildCharacters(
   walker: Walker | null = null,
   planner: PlayerId | null = null,
   found: PlayerId | null = null,
+  own: PlayerId | null = null,
 ): Pick<StateScene, 'characters' | 'rings'> {
   const { manifest } = catalog;
   const figurines = atlasOf(catalog, manifest.figurines.sheet);
@@ -467,9 +477,28 @@ export function buildCharacters(
             : player.id === found
               ? 'found'
               : null,
+      own: player.id === own,
     });
   });
-  return { characters, rings };
+  // [Q312, 3] "Yours on top".
+  return { characters, rings: [...rings.filter((ring) => !ring.own), ...rings.filter((ring) => ring.own)] };
+}
+
+/**
+ * [Q320, 11] The figures as they will stand on the node a walk ends on, with
+ * their rings: the walker and whoever stands there beside it. The map shows
+ * the turn's result only after the walk, so `state` still has the walker where
+ * it set out.
+ */
+export function figuresAtWalkEnd(scene: MapScene, state: GameState, catalog: ArtCatalog, walker: Walker): { figure: Figure; ring: PlayerRing }[] {
+  const to = walker.to;
+  if (to === undefined) return [];
+  const arrived = { ...state, players: state.players.map((player) => (player.id === walker.player ? { ...player, position: to } : player)) };
+  const { characters, rings } = buildCharacters(scene, arrived, catalog);
+  return characters.flatMap((figure, index) => {
+    const ring = rings[index];
+    return figure.node === to && ring !== undefined ? [{ figure, ring }] : [];
+  });
 }
 
 /**

@@ -4078,6 +4078,54 @@ of date; nothing on screen changes for it. A route drawn to a site that is
 then taken stays drawn, as before. The server is unchanged. No rule, number,
 map or picture changed, and the rulebook needs no change.
 
+<a id="q312"></a>
+### Q312. ~~How do you find your own figure on the map?~~ — **answered 2026-10-26: the ring under it is white, disc and rim, the other rings staying all gold; online it is the figure of the seat you hold, resigned or not; on one device only when one person plays there; it is drawn over the rings it overlaps (1-4)**
+
+Andrei, 2026-10-26 at 06:43: *"i think it makes sense to color the disk below
+your character differently from everyone else, so you can see where you are
+right away"*. Since Q305 every figure stands on the same see-through
+gold ring, so the map tells nobody which figure is theirs. Mocked up on a
+4-player game after seven rounds, on the whole map and at playing zoom on a
+laptop, with the figure moved onto plains, forest and mountains. Only the
+ring's colour changes: its size, how see-through it is, its rim's width, its
+pulse on your turn and the yellow outline when your figure is picked up or
+found stay as Q305 has them, and a spectator, who has no figure, sees every
+ring gold.
+
+1. **Colour.** First mocked up in blue (recommended), cyan and pink, with white
+   and red shown and left out, white fading into the plains and red reading as
+   a fighting guard's ring. At 07:35: *"i didn't like any of the colors. Can it
+   be orange, different from today's yellow but not entirely from a different
+   palette"*. Mocked up again in amber (`#ffb43a`), orange (`#ff9226`,
+   recommended) and deep orange (`#ff6f1a`), against today's gold. At 09:09:
+   *"the orange disks are much less visible than gold. Can you show me orange
+   with a gold outline"*. Mocked up a third time: the ring's own rim in
+   today's gold (`#ffe878`), as wide as before, round a see-through disc in
+   each of the three oranges, deep orange recommended. **Answered** at 13:12:
+   B, orange (`#ff9226`) inside a gold rim, and built so. At 16:42: *"can you
+   show me white disk instead of orange? maybe that's going to look better"*.
+   Mocked up beside today's gold and the orange built: A, a white disc inside
+   the gold rim; B, all white, its rim white too (recommended); C, orange
+   inside the gold rim kept. **Answered** at 17:00: B, white (`#ffffff`),
+   disc and rim.
+2. **One device.** Several people can share one screen, so there is no one
+   "you": A, the one person playing there against computers has the
+   coloured one, and with two or more people every ring stays gold
+   (recommended); B, every person's ring is coloured and the computers' gold;
+   C, the ring of the person on turn. **Answered** at 07:34: A.
+3. **Two figures on one space.** A, your ring is drawn over the gold rings it
+   overlaps (recommended); B, in seat order as before, so a gold ring can cover
+   part of yours. **Answered** at 07:34: A.
+4. **Resigned.** Online, once you resign or the game master resigns you and
+   the computer plays your seat: A, its figure keeps your coloured ring to
+   the end of the game (recommended); B, it turns all gold. **Answered** at 07:34: A.
+
+Built: `PlaySource.own` in `apps/web/src/modes/play.ts`, the player a page is
+for (2, 4); `PlayerRing.own` in `apps/web/src/render/sceneModel.ts`, its ring
+listed last (3); `PLAYER_RING.own` in `apps/web/src/render/pixi/renderer.ts`,
+its colour, disc and rim (1). No rule, number, map or picture changed, and the
+rulebook needs no change.
+
 <a id="q313"></a>
 ### Q313. ~~Which way do the player figures face?~~ — **answered 2026-10-26: right, all six; the five drawn facing left are flipped whole, shadow included, wherever they are shown: on the map with their idle animations, on the New game panel, in the portraits and as the tab's icon (1-2); figures side by side on a space overlap with the one on the left in front (3)**
 
@@ -4418,9 +4466,32 @@ says Go for a walk (Andrei, 2026-10-26), the box's last line says what the
 button says: "Go anyway?" for a walk, "End turn anyway?" for a rest. No rule,
 number, map or picture changed, and the rulebook needs no change.
 
+<a id="q319"></a>
+### Q319. ~~How does the count of unseen messages look?~~ — **answered 2026-10-26: as a small badge in the game's blue on the top right corner of Menu and Messages, widening to fit a longer number; the buttons read just Menu and Messages (1)**
+
+Andrei, 2026-10-26 at 07:37, of "Menu 1" and "Messages 1" on his phone:
+*"we need to change how it looks. Right now it looks like a bug"*. The number
+is the count of posts on the game's board not yet seen on this device
+([Q56](#q56) 60), which Menu repeats on a phone ([Q58](#q58) 84). It was
+written after the word as plain text.
+
+1. **The look.** Mocked up in the game's dark screen at his phone's width
+   and on a laptop, with 1 and with 12 unseen: A, a red badge on the
+   button's top right corner (recommended); B, the same badge in the game's
+   blue; C, a red bubble inside the button after the word; D, the same
+   bubble in blue. **Answered** at 09:12: B.
+
+Built: `unreadBadge` in `apps/web/src/online/OnlineGameScreen.tsx`, on Menu
+and on Messages, drawn by `.unread` in `apps/web/src/online/site.css`: 18 px
+tall, 6 px out past the button's corner, in the accent blue with the
+accent's ink, as on a primary button, and as wide as two digits need.
+`BarMenu`'s label can carry it. What is counted, and when the count goes,
+are unchanged. No rule, number, map or picture changed, and the rulebook
+needs no change.
+
 ---
 
-### Q320. ~~How do you keep track of players out of view?~~ — **answered 2026-10-26: a marker just inside the map's edge for every player whose figure is wholly out of view, at any zoom: the portrait from their card in a round badge with an arrow pointing at them, 48 px across on a laptop and 40 on a phone; a tap finds them as their card does; markers slide apart, go round the map's buttons, and slide a little off reward icons, guard numbers, figures and the route, its turn bubbles too (1-9)**
+### Q320. ~~How do you keep track of players out of view?~~ — **answered 2026-10-26: a marker just inside the map's edge for every player whose figure is wholly out of view, at any zoom: the portrait from their card in a round badge with an arrow pointing at them, 48 px across on a laptop and 40 on a phone; a tap finds them as their card does; markers slide apart, go round the map's buttons, and slide a little off reward icons, guard numbers, figures and the route, its turn bubbles too; a walking figure passes under them, and they make room where its walk ends as it starts (1-11)**
 
 Andrei, 2026-10-26 at 06:47: *"when i zoom on, i lose track of where other
 players are. cN we vave small floaters with character figurines and arrows
@@ -4460,6 +4531,15 @@ of view, on a laptop and a 390 px phone.
 9. **Turn bubbles.** The numbered bubbles that mark where later turns end on a
    route being planned (Q315) came to main after 8: markers keep off them too
    (recommended), or may cover them. **Answered** at 14:39: keep off them too.
+10. **A walking figure.** Andrei, 16:16: *"it's a bit weird when aplayer
+    figure walks and pushes these floaters out of its way. Perhaps it would be
+    ok if a walking figure could go under the floater, as long on its final
+    destination its clear"*. So markers no longer keep off a figure, or its
+    ring, while it walks.
+11. **Where the walk ends.** Asked when a marker over that spot makes room: A,
+    as the walk starts, so the figure arrives at a spot already clear and
+    nothing moves because it came near (recommended); B, when the figure
+    arrives. **Answered** at 16:18: A.
 
 Built: `edgeMarkers` in `apps/web/src/interaction/offscreen.ts` lays the
 markers out: each where the line from the middle of the map's box to its
@@ -4472,8 +4552,11 @@ side to side as the map moves. `MapView` draws one per player and places them
 every frame, so they follow the map and a figure walking at End turn; what
 they keep off is the unclaimed sites' icons and numbers, the figures in view
 and their rings, and the route's dots, cross, turn bubbles and waypoint
-flag. `GameScreen`
-gives the map its card's find (`findPlayer`), so a game on this device and
+flag. While a figure walks they keep off neither it nor its ring but, from the
+walk's start, where it and whoever stands beside it there will stand at its
+end (`figuresAtWalkEnd` in `apps/web/src/render/sceneModel.ts`; the walk's
+`Walker` carries the node it ends on, as the map shows the turn's result only
+after the walk) (10, 11). `GameScreen` gives the map its card's find (`findPlayer`), so a game on this device and
 online both have them, during the game and after it ends as cards find
 players then too (Q120, 474); the New game screens have none. The look is
 `.edge-marker` in `apps/web/index.html`. No rule, number, map or picture

@@ -22,6 +22,7 @@ import {
   SPACING_PX,
   TURN_BUBBLE,
   type Billboard,
+  type Figure,
   type FigureCue,
   type MapScene,
   type PlayerRing,
@@ -50,9 +51,12 @@ const CUE = {
  * [Q305, 9, 13] The ring under every figure, in node spacings: a see-through
  * gold disc (`color`), with a rim of it `rim` wide; a selected one's
  * outline goes round it `gap` out. Andrei: "let us try it without the black
- * outlines".
+ * outlines". [Q312, 1] The page's own player's is `own` instead, disc and
+ * rim alike, and nothing else differs. Andrei, after orange inside the gold
+ * rim: "can you show me white disk instead of orange? maybe that's going to
+ * look better"; of the mockups, he picked white with a white rim.
  */
-const PLAYER_RING = { color: 0xffe878, fillAlpha: 0.5, rim: 0.06, gap: 0.035 } as const;
+const PLAYER_RING = { color: 0xffe878, own: 0xffffff, fillAlpha: 0.5, rim: 0.06, gap: 0.035 } as const;
 
 /**
  * `MapRenderer` on PixiJS (docs/STACK.md §3). Everything it draws comes out
@@ -90,6 +94,7 @@ export class PixiMapRenderer implements MapRenderer {
   private cue: FigureCue = 'none';
   private planner: PlayerId | null = null;
   private found: PlayerId | null = null;
+  private own: PlayerId | null = null;
   /** What the blink animates: the current player's figure, and (Q305, 11) its ring. */
   private blinking: Sprite | null = null;
   private pulsing: Graphics | null = null;
@@ -164,7 +169,7 @@ export class PixiMapRenderer implements MapRenderer {
   setState(state: GameState): void {
     if (state.map !== this.map) throw new Error('this renderer draws one map; make a new one for another');
     this.state = state;
-    this.stateScene = buildStateScene(this.scene, state, this.art.catalog, this.walker, this.planner, this.found);
+    this.stateScene = buildStateScene(this.scene, state, this.art.catalog, this.walker, this.planner, this.found, this.own);
     for (const layer of ['nodes', 'pois', 'characters', 'ui', 'path-overlay'] as const) this.invalidate(layer);
   }
 
@@ -172,7 +177,7 @@ export class PixiMapRenderer implements MapRenderer {
   setWalker(walker: Walker | null): void {
     this.walker = walker;
     if (this.state === null || this.stateScene === null) return;
-    this.stateScene = { ...this.stateScene, ...buildCharacters(this.scene, this.state, this.art.catalog, walker, this.planner, this.found) };
+    this.stateScene = { ...this.stateScene, ...buildCharacters(this.scene, this.state, this.art.catalog, walker, this.planner, this.found, this.own) };
     this.invalidate('characters');
   }
 
@@ -181,7 +186,7 @@ export class PixiMapRenderer implements MapRenderer {
     if (planner === this.planner) return;
     this.planner = planner;
     if (this.state === null || this.stateScene === null) return;
-    this.stateScene = { ...this.stateScene, ...buildCharacters(this.scene, this.state, this.art.catalog, this.walker, planner, this.found) };
+    this.stateScene = { ...this.stateScene, ...buildCharacters(this.scene, this.state, this.art.catalog, this.walker, planner, this.found, this.own) };
     this.invalidate('characters');
   }
 
@@ -190,12 +195,21 @@ export class PixiMapRenderer implements MapRenderer {
     if (found === this.found) return;
     this.found = found;
     if (this.state === null || this.stateScene === null) return;
-    this.stateScene = { ...this.stateScene, ...buildCharacters(this.scene, this.state, this.art.catalog, this.walker, this.planner, found) };
+    this.stateScene = { ...this.stateScene, ...buildCharacters(this.scene, this.state, this.art.catalog, this.walker, this.planner, found, this.own) };
+    this.invalidate('characters');
+  }
+
+  /** [Q312] The player this page is for, whose figure's ring is white; `null` for none. */
+  setOwn(own: PlayerId | null): void {
+    if (own === this.own) return;
+    this.own = own;
+    if (this.state === null || this.stateScene === null) return;
+    this.stateScene = { ...this.stateScene, ...buildCharacters(this.scene, this.state, this.art.catalog, this.walker, this.planner, this.found, own) };
     this.invalidate('characters');
   }
 
   /** The figures as drawn now, for telling which one a click landed on. */
-  get characters(): readonly Billboard[] {
+  get characters(): readonly Figure[] {
     return this.stateScene?.characters ?? [];
   }
 
@@ -462,20 +476,22 @@ export class PixiMapRenderer implements MapRenderer {
    * is with the whole map in view (8). The player on turn's pulses while their
    * figure blinks, and is outlined while they plan (10, 11), as is the ring of
    * a player planning out of turn [Q56, 49] or just found from their card
-   * [Q120, 471]; while a turn plays out it is plain like the rest.
+   * [Q120, 471]; while a turn plays out it is plain like the rest. [Q312] The
+   * page's own player's is white, over the rings it overlaps.
    */
   private drawPlayerRings(): void {
     this.ringsLayer.removeChildren().forEach((child) => child.destroy());
     this.pulsing = null;
     const { spacing } = this.scene;
-    for (const { at, size, mark } of this.stateScene?.rings ?? []) {
+    for (const { at, size, mark, own } of this.stateScene?.rings ?? []) {
       const radius = playerRingSize(size, spacing, this.zoom, this.wholeZoom) / 2;
       const outlined = mark === 'planning' || mark === 'found' || (mark === 'turn' && this.cue === 'selected');
+      const color = own ? PLAYER_RING.own : PLAYER_RING.color;
       // Drawn round its own origin, so a pulse grows it from its middle.
       const ring = new Graphics()
         .circle(0, 0, radius)
-        .fill({ color: PLAYER_RING.color, alpha: PLAYER_RING.fillAlpha })
-        .stroke({ color: PLAYER_RING.color, width: PLAYER_RING.rim * spacing });
+        .fill({ color, alpha: PLAYER_RING.fillAlpha })
+        .stroke({ color, width: PLAYER_RING.rim * spacing });
       if (outlined) ring.circle(0, 0, radius + PLAYER_RING.gap * spacing).stroke({ color: CUE.color, width: CUE.outline * spacing });
       ring.position.set(at.x, at.y);
       this.ringsLayer.addChild(ring);
