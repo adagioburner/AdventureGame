@@ -874,7 +874,7 @@ be postponed, because with multiplayer the game [state] will be persisted
 anyway."* [Q56](#q56) 66 built it: a game on one device is kept in that
 browser, so a reload picks it up where it was.
 
-### Q38. ~~How does the page show what a POI gave?~~ — **answered 2026-09-24: unguarded floats up from the figure and fades, a guard fight waits for OK**
+### Q38. ~~How does the page show what a POI gave?~~ — **answered 2026-09-24: unguarded floats up from the figure and fades, a guard fight waits for OK; since Q314 a fight floats up too**
 
 Phase 4 showed a card after every POI a turn ended on, and it stayed until OK,
 unguarded claims included. That was never put to Andrei; it was item 2 on the
@@ -933,7 +933,7 @@ each. He took all five recommendations:
 - A computer seat's name and figurine are chosen as a person's are, and
   nothing in the game marks it as a computer except its thinking.
 
-### Q42. ~~What shows during the computer's turn?~~ — **answered 2026-09-24: a filling bar, and its die card closes itself**
+### Q42. ~~What shows during the computer's turn?~~ — **answered 2026-09-24: a filling bar, and its die card closes itself; since Q314 every fight floats on the figure**
 
 - While it thinks, the line above the buttons reads "<name> is thinking…" over
   a bar that fills across its thinking time. Its player card is highlighted and
@@ -1000,8 +1000,9 @@ to him with a recommendation each:
   it stays that far out, centred on the figure.
 - **After the notice**, as recommended: when the move before ended with an
   unguarded claim, the map waits until that claim's notice has faded, since the
-  notice rides on the figure that made the claim. A guard fight's die card sits
-  at the top of the screen and does not hold it up.
+  notice rides on the figure that made the claim. A guard fight's die card sat
+  at the top of the screen and did not hold it up; since [Q314](#q314) a
+  fight's notice rides on the figure too, and the map waits for it.
 
 Panning or zooming while it glides stops it where it is.
 `glideTo` in `apps/web/src/page/MapView.tsx`, called from `GameScreen.tsx`.
@@ -1024,6 +1025,10 @@ recommendation, and he took all three:
 
 `followInto` in `apps/web/src/interaction/camera.ts`, applied on each frame of
 a walk in `MapView.tsx`.
+
+Since [Q314](#q314) 6, a walk the map followed that ends in a claim's or a
+fight's notice also has the map glide just far enough for the notice to show
+whole.
 
 ### Q48. ~~What does phase 6 leave open?~~ — **answered 2026-09-24: computers fill empty seats at Start, the rest as recommended**
 
@@ -1296,6 +1301,7 @@ the Track button's own details are 72 to 77, answered as [Q57](#q57).
     walk, the die, an unguarded claim floating up. Their fight card closes
     itself after 3 seconds as a computer's does (Q42); only your own waits for
     OK. A route you were planning steps aside while they walk and comes back.
+    Since [Q314](#q314) every fight, your own too, floats on the figure.
 52. **Changed:** an explicit Track toggle. While it is pressed the map
     follows the players on turn; panning, zooming or planning unpresses it;
     pressing it goes back to watching. The notice "Your turn" or
@@ -4072,6 +4078,54 @@ of date; nothing on screen changes for it. A route drawn to a site that is
 then taken stays drawn, as before. The server is unchanged. No rule, number,
 map or picture changed, and the rulebook needs no change.
 
+<a id="q312"></a>
+### Q312. ~~How do you find your own figure on the map?~~ — **answered 2026-10-26: the ring under it is white, disc and rim, the other rings staying all gold; online it is the figure of the seat you hold, resigned or not; on one device only when one person plays there; it is drawn over the rings it overlaps (1-4)**
+
+Andrei, 2026-10-26 at 06:43: *"i think it makes sense to color the disk below
+your character differently from everyone else, so you can see where you are
+right away"*. Since Q305 every figure stands on the same see-through
+gold ring, so the map tells nobody which figure is theirs. Mocked up on a
+4-player game after seven rounds, on the whole map and at playing zoom on a
+laptop, with the figure moved onto plains, forest and mountains. Only the
+ring's colour changes: its size, how see-through it is, its rim's width, its
+pulse on your turn and the yellow outline when your figure is picked up or
+found stay as Q305 has them, and a spectator, who has no figure, sees every
+ring gold.
+
+1. **Colour.** First mocked up in blue (recommended), cyan and pink, with white
+   and red shown and left out, white fading into the plains and red reading as
+   a fighting guard's ring. At 07:35: *"i didn't like any of the colors. Can it
+   be orange, different from today's yellow but not entirely from a different
+   palette"*. Mocked up again in amber (`#ffb43a`), orange (`#ff9226`,
+   recommended) and deep orange (`#ff6f1a`), against today's gold. At 09:09:
+   *"the orange disks are much less visible than gold. Can you show me orange
+   with a gold outline"*. Mocked up a third time: the ring's own rim in
+   today's gold (`#ffe878`), as wide as before, round a see-through disc in
+   each of the three oranges, deep orange recommended. **Answered** at 13:12:
+   B, orange (`#ff9226`) inside a gold rim, and built so. At 16:42: *"can you
+   show me white disk instead of orange? maybe that's going to look better"*.
+   Mocked up beside today's gold and the orange built: A, a white disc inside
+   the gold rim; B, all white, its rim white too (recommended); C, orange
+   inside the gold rim kept. **Answered** at 17:00: B, white (`#ffffff`),
+   disc and rim.
+2. **One device.** Several people can share one screen, so there is no one
+   "you": A, the one person playing there against computers has the
+   coloured one, and with two or more people every ring stays gold
+   (recommended); B, every person's ring is coloured and the computers' gold;
+   C, the ring of the person on turn. **Answered** at 07:34: A.
+3. **Two figures on one space.** A, your ring is drawn over the gold rings it
+   overlaps (recommended); B, in seat order as before, so a gold ring can cover
+   part of yours. **Answered** at 07:34: A.
+4. **Resigned.** Online, once you resign or the game master resigns you and
+   the computer plays your seat: A, its figure keeps your coloured ring to
+   the end of the game (recommended); B, it turns all gold. **Answered** at 07:34: A.
+
+Built: `PlaySource.own` in `apps/web/src/modes/play.ts`, the player a page is
+for (2, 4); `PlayerRing.own` in `apps/web/src/render/sceneModel.ts`, its ring
+listed last (3); `PLAYER_RING.own` in `apps/web/src/render/pixi/renderer.ts`,
+its colour, disc and rim (1). No rule, number, map or picture changed, and the
+rulebook needs no change.
+
 <a id="q313"></a>
 ### Q313. ~~Which way do the player figures face?~~ — **answered 2026-10-26: right, all six; the five drawn facing left are flipped whole, shadow included, wherever they are shown: on the map with their idle animations, on the New game panel, in the portraits and as the tab's icon (1-2); figures side by side on a space overlap with the one on the left in front (3)**
 
@@ -4121,6 +4175,77 @@ nearer the front than the one on its right, in `buildCharacters` in
 `apps/web/src/render/sceneModel.ts`, so the left one is drawn in front and is
 still the one a click picks. The fox and every guard are as they were, and no
 rule, number or map changed.
+
+<a id="q314"></a>
+### Q314. ~~How can fights stop interrupting planning?~~ — **answered 2026-10-26: every fight, your own included, floats on the fighter's head as a claim does, with no OK: the die, "Guard beaten: gold +1" or "Guard holds" and the sum under it, for 3 seconds once the die stops, and the map waits for it; where the map followed the walk, it glides just far enough for a claim's or a fight's notice not to be cut off (1-7)**
+
+Andrei, 2026-10-26 at 05:47: *"your own and other players fights pop up and
+disrupt your planning. can we make them less dispruptive? E g. also like
+floaters above the players characters"*. Until then every fight put a card
+across the top of the map, 400 px wide on a laptop and the map's full width on
+a phone, which kept taps off the map under it. Your own waited for OK
+([Q38](#q38)); everyone else's closed after 3 seconds (Q42, [Q56](#q56) 51).
+
+Mocked up on a real game at 1280 and 340 px wide, beside the card it would
+replace: the claim notice's look, on the fighter's head, taking no taps. He
+picked each detail from a card at 07:12 and 07:13:
+
+1. **What it shows.** A: the die, "Guard beaten: gold +1" or "Guard holds",
+   and the sum under it, "4 + 0 magic = 4 against 3" (recommended); B: the die
+   and the outcome only, the sum left to the turn log. As in the mockup, while
+   the die tumbles the notice reads the guard's kind and strength, "Magic guard
+   of 3", with a plain top edge; once it stops the edge is green when the guard
+   was beaten and red when it held. **Answered:** A.
+2. **How long.** The die tumbles in the notice for 1.1 seconds, as it did on
+   the card. Then 3 seconds, the computer's card's time (recommended), or a
+   claim's 2; it fades over half a second and drifts up all the while, as a
+   claim's notice does. **Answered:** 3 seconds.
+3. **Your own fights.** The same notice with no OK (recommended), or your own
+   keeping the card with OK. With no OK, the end-of-game card comes up once the
+   winning fight's notice has faded. **Answered:** the same notice.
+4. **The map moving on.** The map waits for a claim's notice to fade before it
+   glides to the next player (Q46): for a fight's too (recommended), or at once
+   as it did past the card. A route saved from the turn before blinks from
+   then on, as Q145 574 times it. **Answered:** wait.
+5. **Near the map's edge.** Found while checking it on a 340 px phone: a
+   notice is centred over the figure's head, so beside the map's left or
+   right edge part of it is cut off, a fight's more often than a claim's
+   since it is wider. Put to him: every notice, or only a fight's, sliding
+   sideways to stay whole (all of them recommended), or left as it is.
+   **Answered** at 08:41: left as it is.
+6. **Room for the notice.** Andrei, 08:43: *"when we are tracking someone's
+   movement, and their turn ends with a floater, it makes sense to bring them
+   into view enough so that the floater is not cut off"*. Read as, and put to
+   him that way: only the notices that end a turn, a claim's and a fight's (a
+   purchase's floats before the walk); as one shows, if any of it would be cut
+   off at an edge of the map, counting the whole of its drift up, the map moves
+   just far enough for it to fit with a little room (8 px), at the zoom it
+   has; a fight's notice widens when the die stops, so the map may move again
+   then; taps still go through the notice. Then whether, with Track off, the
+   map also makes room after the walk of your own End turn, which it follows
+   since [Q316](#q316) 3: whenever the map followed the walk (recommended), or
+   only with Track pressed. **Answered** at 13:22: whenever the map followed.
+   A turn that walks nowhere has no walk to follow and moves nothing.
+7. **How it moves.** A glide over half a second with the turn start's easing
+   (Q46), stopping as soon as the viewer pans or zooms (recommended),
+   or a jump straight there. **Answered** at 13:23: glide, like the turn
+   start. As that glide does, a press on the map stops it too; once it is
+   stopped, or the map is panned, zoomed or taken to a player's card, it makes
+   no more room for that notice.
+
+Built: `FightNotice` in `apps/web/src/page/Cards.tsx`, on the floating notice
+the claim's and a purchase's use, replaces the result card;
+`apps/web/src/page/GameScreen.tsx` gives it `timing.fightMs` (3000, which was
+`computerCardMs`) and waits for any notice before the glide. As a claim's
+notice always has, it is taken away when someone starts planning or the next
+turn plays out, and like a claim's it is missed when the fighter's figure is
+out of view; the turn log keeps the whole fight. For 6 and 7, `roomFor` in
+`apps/web/src/interaction/camera.ts` works out the map's new centre, with
+`ROOM_MARGIN_PX` (8); `MapView`'s handle takes a mark with `followMark` as the
+walk ends, if the map is following, and glides with `makeRoom` only while the
+mark holds; the floating notice reports where it will be, over its whole
+drift, when it shows and whenever its size changes. No rule, number, map or
+picture changed, and the rulebook's text needs no change.
 
 <a id="q315"></a>
 ### Q315. ~~How are later turns marked on a long route?~~ — **answered 2026-10-26: a white bubble above the space where each later turn ends, counting this turn as 1; turns counted as End turn walks the route, its own rests included, so a walk then a rest reads "3–4"; none on the destination's cross, and only on a route being planned; the rulebook explains them, "3–4" included (1-8)**
@@ -4246,7 +4371,7 @@ which on your turn is your own. No rule, number, map or picture changed, and
 the rulebook needs no change: it does not mention Track.
 
 <a id="q318"></a>
-### Q318. ~~Should End turn ask first when the walk ends off a site?~~ — **answered 2026-10-26: yes, when the walk reaches the route's end this turn and no unclaimed site is there, and when End turn would rest; in a box drawn like the game's own panels, just above the end cross or the resting figure, which the map glides to the middle, with No and Yes; it always asks (1-11)**
+### Q318. ~~Should End turn ask first when the walk ends off a site?~~ — **answered 2026-10-26: yes, when the walk reaches the route's end this turn and no unclaimed site is there, and when End turn would rest; in a box drawn like the game's own panels, just above the end cross or the resting figure, which the map glides to the middle, with No and Yes; it always asks (1-13)**
 
 Andrei, 2026-10-26 at 06:29: *"we need to adk for a confirmation ehen a
 player ends their move not on a site. Players misclick way too often"*; and at
@@ -4300,6 +4425,19 @@ well"*.
     at 13:36, of Track generally: *"During your own move, nothing should
     unpress track"*; so the glide to a route's end leaves Track as it was
     too.
+12. **The glide first.** Andrei, 16:11: *"we need some kind of question
+    mark sound when this dialog pops up. And I'd prefer that the map glude
+    first and then the dialog aooear, not two at the same time"*. The box
+    appears once the map has stopped: at once where the map needn't move, or
+    as the player stops the glide by moving the map. Rest and End turn wait
+    from the press, as before.
+13. **The sound.** Three samples to hear, made as the other placeholders
+    were (Q63, 126) and at the same level (140), none of them two rising
+    chimes, which is the pickup: A, two wooden notes, the second higher; B,
+    one soft tone sliding up a fifth, as a voice rises at a question
+    (recommended); C, two short horn notes going up. **Answered** at 16:24:
+    B. It plays each time the box appears, as it appears, and not while
+    Sound is off.
 
 Set out alongside and left as set out: only a person pressing End turn is
 asked, on one device and online; Rest, End turn fighting a guard again,
@@ -4318,7 +4456,12 @@ passing closes it as No does. The box sits 26 px above the middle of the
 cross, or 8 px above the top of the figure, and goes below the space where
 the map has been moved so there is no room above. Neither glide changes
 Track (11), and after Yes the walk is followed as any End turn's is
-([Q316](#q316)). Since End turn's button now
+([Q316](#q316)). The box waits for the glide (12): `MapView`'s new `gliding`,
+read by `EndTurnQuestion` each frame until it first appears, and `glideTo`
+no longer slides a node that is in the middle already. The sound (13) is
+`question` in `Art/manifest.json`, `Art/Sounds/question.wav`, made by
+`question()` in `Art/tools/make_sounds.py`, and a placeholder like the
+others. Since End turn's button now
 says Go for a walk (Andrei, 2026-10-26), the box's last line says what the
 button says: "Go anyway?" for a walk, "End turn anyway?" for a rest. No rule,
 number, map or picture changed, and the rulebook needs no change.
@@ -4348,7 +4491,7 @@ needs no change.
 
 ---
 
-### Q320. ~~How do you keep track of players out of view?~~ — **answered 2026-10-26: a marker just inside the map's edge for every player whose figure is wholly out of view, at any zoom: the portrait from their card in a round badge with an arrow pointing at them, 48 px across on a laptop and 40 on a phone; a tap finds them as their card does; markers slide apart, go round the map's buttons, and slide a little off reward icons, guard numbers, figures and the route, its turn bubbles too (1-9)**
+### Q320. ~~How do you keep track of players out of view?~~ — **answered 2026-10-26: a marker just inside the map's edge for every player whose figure is wholly out of view, at any zoom: the portrait from their card in a round badge with an arrow pointing at them, 48 px across on a laptop and 40 on a phone; a tap finds them as their card does; markers slide apart, go round the map's buttons, and slide a little off reward icons, guard numbers, figures and the route, its turn bubbles too; a walking figure passes under them, and they make room where its walk ends as it starts (1-11)**
 
 Andrei, 2026-10-26 at 06:47: *"when i zoom on, i lose track of where other
 players are. cN we vave small floaters with character figurines and arrows
@@ -4388,6 +4531,15 @@ of view, on a laptop and a 390 px phone.
 9. **Turn bubbles.** The numbered bubbles that mark where later turns end on a
    route being planned (Q315) came to main after 8: markers keep off them too
    (recommended), or may cover them. **Answered** at 14:39: keep off them too.
+10. **A walking figure.** Andrei, 16:16: *"it's a bit weird when aplayer
+    figure walks and pushes these floaters out of its way. Perhaps it would be
+    ok if a walking figure could go under the floater, as long on its final
+    destination its clear"*. So markers no longer keep off a figure, or its
+    ring, while it walks.
+11. **Where the walk ends.** Asked when a marker over that spot makes room: A,
+    as the walk starts, so the figure arrives at a spot already clear and
+    nothing moves because it came near (recommended); B, when the figure
+    arrives. **Answered** at 16:18: A.
 
 Built: `edgeMarkers` in `apps/web/src/interaction/offscreen.ts` lays the
 markers out: each where the line from the middle of the map's box to its
@@ -4400,8 +4552,11 @@ side to side as the map moves. `MapView` draws one per player and places them
 every frame, so they follow the map and a figure walking at End turn; what
 they keep off is the unclaimed sites' icons and numbers, the figures in view
 and their rings, and the route's dots, cross, turn bubbles and waypoint
-flag. `GameScreen`
-gives the map its card's find (`findPlayer`), so a game on this device and
+flag. While a figure walks they keep off neither it nor its ring but, from the
+walk's start, where it and whoever stands beside it there will stand at its
+end (`figuresAtWalkEnd` in `apps/web/src/render/sceneModel.ts`; the walk's
+`Walker` carries the node it ends on, as the map shows the turn's result only
+after the walk) (10, 11). `GameScreen` gives the map its card's find (`findPlayer`), so a game on this device and
 online both have them, during the game and after it ends as cards find
 players then too (Q120, 474); the New game screens have none. The look is
 `.edge-marker` in `apps/web/index.html`. No rule, number, map or picture

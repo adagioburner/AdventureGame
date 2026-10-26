@@ -15,6 +15,7 @@ import {
   buildTurnBubbles,
   buildWaypoint,
   figuresAnimate,
+  figuresAtWalkEnd,
   guardRing,
   ICON_TOUCH,
   IDLE_WAIT_MS,
@@ -586,6 +587,39 @@ describe("the rings under the players' figures (Q305)", () => {
   });
 });
 
+describe("the ring under the page's own player's figure (Q312)", () => {
+  const owns = (state: ReturnType<typeof buildStateScene>) => state.rings.map((ring) => ring.own);
+
+  it('marks the ring under its own figure, and none on a page without its own player', () => {
+    const [, other] = game.state.players;
+    if (other === undefined) throw new Error('two players needed');
+    expect(owns(buildStateScene(scene, game.state, catalog, null, null, null, other.id))).toEqual([false, true]);
+    expect(owns(buildStateScene(scene, game.state, catalog))).toEqual([false, false]);
+  });
+
+  it('lists it last, so it is drawn over a ring it overlaps, keeping its cues (3)', () => {
+    const [onTurn] = game.state.players;
+    if (onTurn === undefined) throw new Error('two players needed');
+    const state = buildStateScene(scene, game.state, catalog, null, null, null, onTurn.id);
+    const [figure] = state.characters;
+    expect(owns(state)).toEqual([false, true]);
+    expect(state.rings.map((ring) => ring.mark)).toEqual([null, 'turn']);
+    expect(state.rings[1]?.at).toEqual(scene.projection.toWorld(figure?.foot ?? { x: 0, y: 0 }));
+  });
+
+  it('walks with its figure, and stays on the final map', () => {
+    const walking = game.state.players[0];
+    const neighbour = game.map.graph.adjacency[walking?.position ?? 0]?.[0];
+    if (walking === undefined || neighbour === undefined) throw new Error('no one to walk');
+    const from = position(game.map.graph, walking.position);
+    const to = position(game.map.graph, neighbour);
+    const moving = buildStateScene(scene, game.state, catalog, { player: walking.id, at: { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 } }, null, null, walking.id);
+    const [mover] = moving.characters;
+    expect(moving.rings.find((ring) => ring.own)?.at).toEqual(scene.projection.toWorld(mover?.foot ?? { x: 0, y: 0 }));
+    expect(owns(buildStateScene(scene, { ...game.state, status: 'finished' }, catalog, null, null, null, walking.id))).toEqual([false, true]);
+  });
+});
+
 describe("the figures' idle loops (Q305, 15-19)", () => {
   const frameIds = (sprites: readonly { index: number }[] | undefined) =>
     sprites?.map((ref) => atlasOf(catalog, 'player_avatars_animated').sprites[ref.index]?.id);
@@ -609,6 +643,23 @@ describe("the figures' idle loops (Q305, 15-19)", () => {
     expect(mover?.walking).toBe(true);
     expect(other?.walking).toBe(false);
     expect(frameIds([mover?.sprite ?? { index: -1 }])).toEqual(['player_avatars_01_frame1']);
+  });
+
+  it('knows where a walk ends: the walker and whoever it will stand beside there, as they will stand once it arrives (Q320, 11)', () => {
+    const [walking, waiting] = game.state.players;
+    const there = game.map.graph.adjacency[walking?.position ?? 0]?.[0];
+    if (walking === undefined || waiting === undefined || there === undefined) throw new Error('no one to walk to');
+    const moved = (state: GameState, player: PlayerId): GameState => ({ ...state, players: state.players.map((one) => (one.id === player ? { ...one, position: there } : one)) });
+    const before = moved(game.state, waiting.id);
+    const from = position(game.map.graph, walking.position);
+    const arrived = buildStateScene(scene, moved(before, walking.id), catalog);
+    const end = figuresAtWalkEnd(scene, before, catalog, { player: walking.id, at: from, to: there });
+    expect(end.map(({ figure }) => figure.player)).toEqual([walking.id, waiting.id]);
+    expect(end.map(({ figure }) => figure.foot)).toEqual(arrived.characters.slice(0, 2).map((figure) => figure.foot));
+    expect(end.map(({ ring }) => ring.at)).toEqual(arrived.rings.slice(0, 2).map((ring) => ring.at));
+    // Side by side, not on top of each other.
+    expect(end[0]?.figure.foot.x).not.toBe(end[1]?.figure.foot.x);
+    expect(figuresAtWalkEnd(scene, before, catalog, { player: walking.id, at: from })).toEqual([]);
   });
 
   it('plays a loop once through, each frame for its own time (16)', () => {
