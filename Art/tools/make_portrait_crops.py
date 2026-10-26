@@ -43,12 +43,13 @@ SIDE_FRACTION = 0.5
 HEADROOM = 0.06
 # Where the face is, cell-relative, for figures whose measured head centre
 # misses it: a backpack or basket beside the head widens what is measured, and
-# the face sits left of centre. Set by eye, between the eyes, for the figures
-# Andrei named (Q60, 107); check them again if the figures change.
+# the face sits right of centre. Set by eye, between the eyes, for the figures
+# Andrei named (Q60, 107), and flipped with the figures (Q313); check them again
+# if the figures change.
 FACE_X = {
-    "player_avatars_02": 124,
-    "player_avatars_03": 103,
-    "player_avatars_05": 123,
+    "player_avatars_02": 198,
+    "player_avatars_03": 219,
+    "player_avatars_05": 198,
 }
 ALPHA_FLOOR = 8
 

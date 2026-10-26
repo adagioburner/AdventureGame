@@ -2,7 +2,7 @@
   "sheet": "player_avatars_animated_sheet.png",
   "cell_width": 256,
   "cell_height": 320,
-  "notes": "Packed by Art/tools/pack_animation.py from Art/originals/player_avatars_animated/, one row per figure, each frame where it was drawn, with each figure's grey shadow made black and see-through. Do not edit by hand: replace a strip and run the tool again.",
+  "notes": "Packed by Art/tools/pack_animation.py from Art/originals/player_avatars_animated/, one row per figure, each frame where it was drawn, with each figure's grey shadow made black and see-through, and the frames marked mirrored flipped left to right. Do not edit by hand: replace a strip and run the tool again.",
   "sprites": [
     {
       "id": "player_avatars_01_frame1",
@@ -14,7 +14,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/cartographer-strip.png"
+      "original": "player_avatars_animated/cartographer-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_01_frame2",
@@ -26,7 +27,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/cartographer-strip.png"
+      "original": "player_avatars_animated/cartographer-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_01_frame3",
@@ -38,7 +40,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/cartographer-strip.png"
+      "original": "player_avatars_animated/cartographer-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_01_frame4",
@@ -50,7 +53,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/cartographer-strip.png"
+      "original": "player_avatars_animated/cartographer-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_01_frame5",
@@ -62,7 +66,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/cartographer-strip.png"
+      "original": "player_avatars_animated/cartographer-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_01_frame6",
@@ -74,7 +79,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/cartographer-strip.png"
+      "original": "player_avatars_animated/cartographer-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_01_frame7",
@@ -86,7 +92,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/cartographer-strip.png"
+      "original": "player_avatars_animated/cartographer-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_01_frame8",
@@ -98,7 +105,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/cartographer-strip.png"
+      "original": "player_avatars_animated/cartographer-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_02_frame1",
@@ -110,7 +118,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/mechanic-strip.png"
+      "original": "player_avatars_animated/mechanic-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_02_frame2",
@@ -122,7 +131,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/mechanic-strip.png"
+      "original": "player_avatars_animated/mechanic-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_02_frame3",
@@ -134,7 +144,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/mechanic-strip.png"
+      "original": "player_avatars_animated/mechanic-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_02_frame4",
@@ -146,7 +157,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/mechanic-strip.png"
+      "original": "player_avatars_animated/mechanic-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_02_frame5",
@@ -158,7 +170,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/mechanic-strip.png"
+      "original": "player_avatars_animated/mechanic-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_02_frame6",
@@ -170,7 +183,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/mechanic-strip.png"
+      "original": "player_avatars_animated/mechanic-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_02_frame7",
@@ -182,7 +196,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/mechanic-strip.png"
+      "original": "player_avatars_animated/mechanic-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_02_frame8",
@@ -194,7 +209,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/mechanic-strip.png"
+      "original": "player_avatars_animated/mechanic-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_03_frame1",
@@ -206,7 +222,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/botanist-strip.png"
+      "original": "player_avatars_animated/botanist-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_03_frame2",
@@ -218,7 +235,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/botanist-strip.png"
+      "original": "player_avatars_animated/botanist-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_03_frame3",
@@ -230,7 +248,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/botanist-strip.png"
+      "original": "player_avatars_animated/botanist-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_03_frame4",
@@ -242,7 +261,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/botanist-strip.png"
+      "original": "player_avatars_animated/botanist-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_03_frame5",
@@ -254,7 +274,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/botanist-strip.png"
+      "original": "player_avatars_animated/botanist-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_03_frame6",
@@ -266,7 +287,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/botanist-strip.png"
+      "original": "player_avatars_animated/botanist-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_03_frame7",
@@ -278,7 +300,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/botanist-strip.png"
+      "original": "player_avatars_animated/botanist-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_03_frame8",
@@ -290,7 +313,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/botanist-strip.png"
+      "original": "player_avatars_animated/botanist-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_04_frame1",
@@ -398,7 +422,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/tortoise-traveler-strip.png"
+      "original": "player_avatars_animated/tortoise-traveler-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_05_frame2",
@@ -410,7 +435,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/tortoise-traveler-strip.png"
+      "original": "player_avatars_animated/tortoise-traveler-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_05_frame3",
@@ -422,7 +448,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/tortoise-traveler-strip.png"
+      "original": "player_avatars_animated/tortoise-traveler-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_05_frame4",
@@ -434,7 +461,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/tortoise-traveler-strip.png"
+      "original": "player_avatars_animated/tortoise-traveler-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_05_frame5",
@@ -446,7 +474,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/tortoise-traveler-strip.png"
+      "original": "player_avatars_animated/tortoise-traveler-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_05_frame6",
@@ -458,7 +487,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/tortoise-traveler-strip.png"
+      "original": "player_avatars_animated/tortoise-traveler-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_05_frame7",
@@ -470,7 +500,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/tortoise-traveler-strip.png"
+      "original": "player_avatars_animated/tortoise-traveler-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_05_frame8",
@@ -482,7 +513,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/tortoise-traveler-strip.png"
+      "original": "player_avatars_animated/tortoise-traveler-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_06_frame1",
@@ -494,7 +526,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/goblin-courier-strip.png"
+      "original": "player_avatars_animated/goblin-courier-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_06_frame2",
@@ -506,7 +539,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/goblin-courier-strip.png"
+      "original": "player_avatars_animated/goblin-courier-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_06_frame3",
@@ -518,7 +552,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/goblin-courier-strip.png"
+      "original": "player_avatars_animated/goblin-courier-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_06_frame4",
@@ -530,7 +565,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/goblin-courier-strip.png"
+      "original": "player_avatars_animated/goblin-courier-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_06_frame5",
@@ -542,7 +578,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/goblin-courier-strip.png"
+      "original": "player_avatars_animated/goblin-courier-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_06_frame6",
@@ -554,7 +591,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/goblin-courier-strip.png"
+      "original": "player_avatars_animated/goblin-courier-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_06_frame7",
@@ -566,7 +604,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/goblin-courier-strip.png"
+      "original": "player_avatars_animated/goblin-courier-strip.png",
+      "mirrored": true
     },
     {
       "id": "player_avatars_06_frame8",
@@ -578,7 +617,8 @@
         "x": 128,
         "y": 288
       },
-      "original": "player_avatars_animated/goblin-courier-strip.png"
+      "original": "player_avatars_animated/goblin-courier-strip.png",
+      "mirrored": true
     }
   ]
 }
