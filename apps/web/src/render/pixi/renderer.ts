@@ -20,6 +20,7 @@ import {
   type Billboard,
   type FigureCue,
   type MapScene,
+  type PlayerRing,
   type StateScene,
   type Walker,
 } from '../sceneModel.ts';
@@ -187,6 +188,16 @@ export class PixiMapRenderer implements MapRenderer {
   /** The figures as drawn now, for telling which one a click landed on. */
   get characters(): readonly Billboard[] {
     return this.stateScene?.characters ?? [];
+  }
+
+  /** [Q311, 7] The sites whose reward is gone, drawn without their icons or number. */
+  get claimed(): ReadonlySet<NodeId> {
+    return this.stateScene?.claimed ?? new Set();
+  }
+
+  /** [Q311, 8] The rings under the figures as they stand now. */
+  get rings(): readonly PlayerRing[] {
+    return this.stateScene?.rings ?? [];
   }
 
   setPathPreview(preview: PathPreview | null, from: NodeId | null): void {
