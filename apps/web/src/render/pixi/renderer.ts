@@ -22,6 +22,7 @@ import {
   SPACING_PX,
   TURN_BUBBLE,
   type Billboard,
+  type Figure,
   type FigureCue,
   type MapScene,
   type PlayerRing,
@@ -195,7 +196,7 @@ export class PixiMapRenderer implements MapRenderer {
   }
 
   /** The figures as drawn now, for telling which one a click landed on. */
-  get characters(): readonly Billboard[] {
+  get characters(): readonly Figure[] {
     return this.stateScene?.characters ?? [];
   }
 
