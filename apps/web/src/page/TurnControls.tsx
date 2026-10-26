@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { guardToFightAt, type GameState } from '@adventure/core';
-import type { MoveModeState } from '../interaction/moveMode.ts';
+import { endTurnOutcome, type EndTurnOutcome, type MoveModeState } from '../interaction/moveMode.ts';
 
 interface TurnControlsProps {
   readonly state: GameState;
@@ -33,6 +33,12 @@ interface TurnControlsProps {
   readonly buying?: boolean;
   /** [Q318] End turn's question is up: Rest and End turn wait for its No or Yes. */
   readonly asking?: boolean;
+  /**
+   * [Andrei, 2026-10-26] What End turn's button said as this page committed
+   * the turn shown, which it keeps while the turn plays out; `null` when this
+   * page committed none.
+   */
+  readonly pressed?: EndTurnOutcome | null;
   /** [Q56, 54] The game master's Move on for the person on turn; `null` when there is none to offer. */
   readonly onMoveOn: (() => void) | null;
   /** [Q85, 295 and 302] The game master's Resign for the person on turn, with Move on; `null` when there is none to offer. */
@@ -164,6 +170,7 @@ export function TurnControls(props: TurnControlsProps) {
 
   // [Q56, 71] While the connection is down, a route can still be planned, and
   // Rest and End turn wait until it is back.
+  const ends = (busy ? props.pressed : null) ?? endTurnOutcome(state, player.id, move);
   return (
     <section className="controls" aria-label={`${player.name}’s turn`}>
       <p className="hint" aria-live="polite">
@@ -176,13 +183,25 @@ export function TurnControls(props: TurnControlsProps) {
         <button className="btn" type="button" disabled={busy || props.offline || props.buying === true || props.asking === true} onClick={props.onRest}>
           Rest
         </button>
-        <button className="btn primary" type="button" disabled={busy || props.offline || props.buying === true || props.asking === true} onClick={props.onEndTurn}>
-          End turn
+        <button
+          className="btn primary end-turn"
+          type="button"
+          disabled={busy || props.offline || props.buying === true || props.asking === true}
+          onClick={props.onEndTurn}
+        >
+          <span>{END_TURN_LABEL[ends]}</span>
+          {/* As wide as "End turn" whatever it says, so nothing beside it moves. */}
+          <span className="sizer" aria-hidden="true">
+            {END_TURN_LABEL.rest}
+          </span>
         </button>
       </div>
     </section>
   );
 }
+
+/** [Andrei, 2026-10-26] End turn's button says what it will do (`endTurnOutcome`). */
+export const END_TURN_LABEL: Record<EndTurnOutcome, string> = { go: 'Go', fight: 'Fight', rest: 'End turn' };
 
 /**
  * [Q85, 302 and 304-307] The game master's actions on another person's turn
@@ -231,13 +250,17 @@ function PlayerMenu({ name, children }: { readonly name: string; readonly childr
  * next turn and says so.
  */
 function hint(move: MoveModeState, armed: boolean, name: string, rest: number, onGuard: boolean, later: boolean): string {
-  // [490] Away from a guard, End turn that walks nothing rests (`endTurnActionFor`).
-  const stay = onGuard ? 'End turn with no route stays here and fights the guard again' : `End turn with no route rests: +${rest} stamina`;
+  // [Andrei, 2026-10-26] A line names End turn's button as it is shown: Fight
+  // on a guard, where walking nothing fights it again, and End turn elsewhere,
+  // where it rests (490, `endTurnOutcome`). Rest is named with it.
+  const fight = 'Fight stays here and fights the guard again';
+  const gain = `Rest gains ${rest} stamina`;
+  const both = `Rest and End turn gain ${rest} stamina`;
   const when = later ? 'on your next turn' : 'this turn';
   switch (move.kind) {
     // [Q145, 571] On your own turn a tap on a space plans at once.
     case 'idle':
-      return onGuard ? `${name}: tap where to go. ${stay}. Rest gains ${rest} stamina.` : `${name}: tap where to go. ${stay}.`;
+      return onGuard ? `${name}: tap where to go. ${fight}. ${gain}.` : `${name}: tap where to go. ${both}.`;
     case 'selecting':
       return armed
         ? 'Tap the space to route through.'
@@ -248,15 +271,14 @@ function hint(move: MoveModeState, armed: boolean, name: string, rest: number, o
       const steps = preview.steps.length;
       if (steps === 0) {
         if (later) return 'No route: you stay where you are.';
-        // [495] Away from a guard: "End turn rests", without "with no route".
-        return onGuard ? `Staying here this turn. ${stay}.` : `Staying here this turn. End turn rests: +${rest} stamina.`;
+        return onGuard ? `${fight}. ${gain}.` : `${both}.`;
       }
       if (preview.reachableStepCount === 0) {
         const route = steps === 1 ? 'this step' : `the first of these ${steps} steps`;
         if (later) return `Not even ${route} is affordable on your next turn. Rest gains ${rest} stamina.`;
         return onGuard
-          ? `Not even ${route} is affordable this turn. Rest gains ${rest} stamina; End turn walks nothing and keeps the route for next turn.`
-          : `Not even ${route} is affordable this turn. End turn rests: +${rest} stamina, and keeps the route for next turn.`;
+          ? `Not even ${route} is affordable this turn. ${gain}; Fight stays here, fights the guard again and keeps the route for next turn.`
+          : `Not even ${route} is affordable this turn. ${both} and keep the route for next turn.`;
       }
       const cost = preview.totalStaminaCost === 0 ? 'no stamina' : `${preview.totalStaminaCost} stamina`;
       const reach = preview.destinationReachable

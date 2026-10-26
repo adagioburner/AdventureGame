@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import type { EndTurnQuestionKind } from '../interaction/moveMode.ts';
+import { END_TURN_LABEL } from './TurnControls.tsx';
 
 /** The least room the box leaves at the map's edges, in CSS pixels. */
 const MARGIN_PX = 8;
@@ -17,6 +18,11 @@ export interface QuestionPlace {
 /** [Q318] What the box says (8 C, 10 B); `gain` is the stamina a rest gives. */
 function says(kind: EndTurnQuestionKind, gain: number): string {
   return kind === 'rest' ? `Your turn will end with a rest: +${gain} stamina.` : 'Your turn will end without claiming a reward or fighting for gold.';
+}
+
+/** [Q318] The box's last line, in what End turn's button says now: Go for a walk. */
+function asks(kind: EndTurnQuestionKind): string {
+  return `${END_TURN_LABEL[kind === 'rest' ? 'rest' : 'go']} anyway?`;
 }
 
 /**
@@ -77,7 +83,7 @@ export function EndTurnQuestion({
   return (
     <section className="end-question" ref={box} role="dialog" aria-label="End turn?" style={{ visibility: 'hidden' }}>
       <p>{says(kind, restGain)}</p>
-      <p>End turn anyway?</p>
+      <p>{asks(kind)}</p>
       <div className="acts">
         <button className="btn" type="button" onClick={onNo}>
           No

@@ -1,6 +1,7 @@
 import {
   bestRouteVia,
   endTurnActionFor,
+  guardToFightAt,
   isClaimed,
   poiRuntimeAt,
   previewPath,
@@ -175,6 +176,30 @@ export function gamePreviewSource(game: GameState, player: PlayerId): PreviewSou
   };
 }
 
+/** What End turn will do: walk, stay and fight the guard (§8), or rest (490). */
+export type EndTurnOutcome = 'go' | 'fight' | 'rest';
+
+/**
+ * What End turn plays for `player`, on turn in `game`, with `state` shown:
+ * `endTurnActionFor` of the route shown, or of none.
+ */
+export function endTurnActionOf(game: GameState, player: PlayerId, state: MoveModeState): TurnAction {
+  const path = state.kind === 'previewing' ? state.path : [];
+  const waypoint = state.kind === 'idle' || path.length === 0 ? null : state.waypoint;
+  return endTurnActionFor(game, player, path, waypoint);
+}
+
+/**
+ * [Andrei, 2026-10-26] What End turn will do, for its button to say: a walk
+ * goes, even onto a guard; a turn that walks nothing on a guard stays and
+ * fights it again; and anything else rests (`endTurnActionFor`).
+ */
+export function endTurnOutcome(game: GameState, player: PlayerId, state: MoveModeState): EndTurnOutcome {
+  if (endTurnActionOf(game, player, state).kind === 'rest') return 'rest';
+  const walks = state.kind === 'previewing' && state.preview.reachableStepCount > 0;
+  return walks || !guardToFightAt(game, playerIn(game, player).position) ? 'go' : 'fight';
+}
+
 function previewFor(game: GameState, planner: PlayerState, path: readonly NodeId[]): PathPreview {
   return previewPath(game.map.graph, planner.position, path, allowanceFor(game, planner), planner.stats.stamina, game.map.ruleset.config);
 }
@@ -207,14 +232,12 @@ export type EndTurnQuestionKind = 'off_site' | 'rest';
  * `move` shown, if anything: Andrei, 2026-10-26, "if one clicks End turn to
  * rest, we probably should confirm as well". End turn rests with no route, or
  * with one whose first step cannot be paid, away from a guard (490,
- * `endTurnActionFor`); a walk asks where `endsOffSite` does.
+ * `endTurnActionOf`); a walk asks where `endsOffSite` does.
  */
 export function endTurnQuestion(game: GameState, move: MoveModeState): EndTurnQuestionKind | null {
   const active = game.players[game.turn.activeSeat - 1];
   if (game.status !== 'in_progress' || active === undefined) return null;
-  const path = move.kind === 'previewing' ? move.path : [];
-  const waypoint = move.kind === 'idle' || path.length === 0 ? null : move.waypoint;
-  if (endTurnActionFor(game, active.id, path, waypoint).kind === 'rest') return 'rest';
+  if (endTurnActionOf(game, active.id, move).kind === 'rest') return 'rest';
   return endsOffSite(game, move) ? 'off_site' : null;
 }
 
@@ -473,14 +496,12 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
     endTurn() {
       const who = activePlanner();
       if (who === null || game === null) return;
-      const path = state.kind === 'previewing' ? state.path : [];
-      const waypoint = state.kind === 'idle' ? null : state.waypoint;
+      const action = endTurnActionOf(game, who, state);
       const kept = shownPlan(who);
       armed = false;
       engaged = false;
       unsaved = null;
       state = IDLE;
-      const action = endTurnActionFor(game, who, path, path.length === 0 ? null : waypoint);
       // [610] End turn's rest with nothing shown keeps no route on one device either.
       options.commit(action.kind === 'rest' && action.plan === undefined && kept !== null ? { ...action, plan: kept } : action);
     },
