@@ -50,7 +50,7 @@ export interface MapRenderer {
   setPathPreview(preview: PathPreview | null, from: NodeId | null, turnStops?: readonly number[] | null): void;
   /** [SOURCE §4] Shift-click waypoint marker. */
   setWaypoint(node: NodeId | null): void;
-  /** Whether the current player's figure blinks, is highlighted, or neither. */
+  /** Whether the current player's ring pulses, is highlighted, or neither. */
   setCue(cue: FigureCue): void;
   invalidate(layer: SceneLayer): void;
 }

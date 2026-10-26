@@ -381,11 +381,12 @@ export interface Walker {
 
 /**
  * How the current player's figure calls attention to itself (Andrei's review,
- * 2026-09-23: "hard to find your character"): it blinks while it is their
- * turn and they have not picked it up yet, and is highlighted, steady, while
- * they plan. `none` while a turn plays out and once the game is over.
+ * 2026-09-23: "hard to find your character"): its ring pulses while it is
+ * their turn and they have not picked it up yet, the figure itself staying
+ * solid (Q321), and is highlighted, steady, while they plan. `none` while a
+ * turn plays out and once the game is over.
  */
-export type FigureCue = 'blink' | 'selected' | 'none';
+export type FigureCue = 'pulse' | 'selected' | 'none';
 
 export function buildStateScene(
   scene: MapScene,
