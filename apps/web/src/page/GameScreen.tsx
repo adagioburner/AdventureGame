@@ -703,6 +703,7 @@ export function GameScreen({
           cue={cue}
           planner={plannerShown}
           found={found?.player ?? null}
+          own={source.own}
           onTap={onTap}
           tracking={tracking}
           onTrack={shown.status === 'in_progress' ? pressTrack : undefined}

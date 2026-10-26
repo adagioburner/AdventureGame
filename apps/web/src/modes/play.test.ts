@@ -3,8 +3,9 @@ import { describe, expect, it } from 'vitest';
 import { applyAction, asGameId, asNodeId, asPlayerId, asUserId, type GameAction, type GameState } from '@adventure/core';
 import { openingStateOf, type ClientMessage, type GameRecord, type SetupState } from '@adventure/protocol';
 import { fixtureMap, scriptedDice } from '../../../../packages/core/src/rules/scenario.fixture.ts';
+import { HotseatGame } from './hotseat.ts';
 import { OnlineGame } from './online.ts';
-import { onlinePlay, type PlayUpdate } from './play.ts';
+import { hotseatPlay, onlinePlay, type PlayUpdate } from './play.ts';
 
 /** 0(p) ── 1(p) ── 2(p) */
 const map = fixtureMap({
@@ -78,6 +79,9 @@ describe('onlinePlay', () => {
 
     const watcher = pageFor(bea).play;
     expect(watcher.localPlayers.size).toBe(0);
+    // [Q312] Only a page with a seat has a figure of its own.
+    expect(master.own).toBe(one);
+    expect(watcher.own).toBeNull();
     expect(watcher.computer).toBeNull();
     expect(watcher.thinksFor(watcher.state.players[1]!)).toBe(false);
   });
@@ -177,5 +181,24 @@ describe('onlinePlay', () => {
     expect(told(player.heard)).toEqual([true]);
     expect(told(master.heard)).toEqual([false]);
     expect([...player.play.localPlayers]).toEqual([]);
+    // [Q312, 4] Their figure's ring stays theirs.
+    expect(player.play.own).toBe(two);
+    expect(master.play.own).toBe(one);
+  });
+});
+
+describe('hotseatPlay', () => {
+  const person = (name: string) => ({ name, avatarId: 'f1', control: 'human' as const, thinkingSeconds: 10 });
+  const computer = (name: string) => ({ name, avatarId: 'f2', control: 'ai' as const, thinkingSeconds: 1 });
+  const ownOf = (seats: ConstructorParameters<typeof HotseatGame>[0]['seats']) => {
+    const game = new HotseatGame({ map, seats, diceSeed: 'own' });
+    const own = hotseatPlay(game).own;
+    return own === null ? null : game.state.players.find((player) => player.id === own)?.name;
+  };
+
+  it('has a figure of its own only with one person playing on the device (Q312, 2)', () => {
+    expect(ownOf([computer('C1'), person('Ada'), computer('C2')])).toBe('Ada');
+    expect(ownOf([person('Ada'), person('Bram'), computer('C1')])).toBeNull();
+    expect(ownOf([computer('C1'), computer('C2')])).toBeNull();
   });
 });

@@ -49,6 +49,13 @@ export interface PlaySource {
   readonly state: GameState;
   /** The players this page plans for: every person's seat on one device, one's own online. */
   readonly localPlayers: ReadonlySet<PlayerId>;
+  /**
+   * [Q312] The player this page is for, whose figure's ring is filled
+   * orange: online, the seat its user holds, even once the computer plays it
+   * (4); on one device, the one person playing, and `null` with two or more
+   * people there (2), or with none, or online for someone holding no seat.
+   */
+  readonly own: PlayerId | null;
   /** The dice seed the turn log names, or `null` when there is none to show. */
   readonly diceSeed: string | null;
   /** Changes already played when the screen opened, oldest first: the log starts with their turns. */
@@ -104,6 +111,7 @@ export function hotseatPlay(game: HotseatGame): PlaySource {
     const bought = game.buy(action);
     for (const listener of listeners) listener({ kind: 'change', change: { before, after: bought.after, turn: null, purchase: bought }, shown: 'played' });
   };
+  const people = game.state.players.filter((player) => player.control === 'human');
   return {
     mode: HOTSEAT_MODE,
     map: game.setup.map,
@@ -112,7 +120,8 @@ export function hotseatPlay(game: HotseatGame): PlaySource {
     },
     // A computer seat is not this screen's to plan for: its saved route
     // is never brought back as a preview, and its figure cannot be picked up.
-    localPlayers: new Set(game.state.players.filter((player) => player.control === 'human').map((player) => player.id)),
+    localPlayers: new Set(people.map((player) => player.id)),
+    own: people.length === 1 ? (people[0]?.id ?? null) : null,
     diceSeed: game.setup.diceSeed,
     // A game brought back after a reload ([Q56, 66]) opens with its turns in the log.
     history: hotseatHistory(game),
@@ -242,6 +251,7 @@ export function onlinePlay(options: OnlinePlayOptions): OnlinePlay {
       return game.lastSeq;
     },
     localPlayers,
+    own: setup.seats.find((seat) => seat.userId === me)?.playerId ?? null,
     diceSeed: null,
     history: options.applied.map(changeOf),
     computer,

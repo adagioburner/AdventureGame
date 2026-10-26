@@ -62,6 +62,8 @@ interface MapViewProps {
   readonly planner?: PlayerId | null;
   /** [Q120, 471] The player whose card was just clicked, whose figure is highlighted for a moment. */
   readonly found?: PlayerId | null;
+  /** [Q312] The player this page is for (`PlaySource.own`), whose figure's ring is filled orange; none if omitted. */
+  readonly own?: PlayerId | null;
   /** A click or tap, as opposed to a drag; `shift` for a shift-click. */
   readonly onTap?: (target: Pick, shift: boolean) => void;
   /**
@@ -118,6 +120,7 @@ export function MapView({
   cue = 'none',
   planner = null,
   found = null,
+  own = null,
   onTap,
   tracking = true,
   onTrack,
@@ -133,8 +136,8 @@ export function MapView({
   // Read when the renderer comes up, and by the pointer handlers, which are
   // bound once per map.
   const from = pathFrom ?? state.players[state.turn.activeSeat - 1]?.position ?? null;
-  const latest = useRef({ state, path, from, waypoint, walker, cue, planner, found, onTap, onMoved, onReady });
-  latest.current = { state, path, from, waypoint, walker, cue, planner, found, onTap, onMoved, onReady };
+  const latest = useRef({ state, path, from, waypoint, walker, cue, planner, found, own, onTap, onMoved, onReady });
+  latest.current = { state, path, from, waypoint, walker, cue, planner, found, own, onTap, onMoved, onReady };
   // Whether a walk takes the map along. It follows Track, and stops at once
   // when the map is moved, before the page has unpressed Track.
   const following = useRef(tracking);
@@ -204,6 +207,7 @@ export function MapView({
       map.setWalker(now.walker);
       map.setPlanner(now.planner);
       map.setFound(now.found);
+      map.setOwn(now.own);
       map.setState(now.state);
       map.setPathPreview(now.path, now.from);
       map.setWaypoint(now.waypoint);
@@ -485,6 +489,9 @@ export function MapView({
   useEffect(() => {
     renderer.current?.setFound(found);
   }, [found]);
+  useEffect(() => {
+    renderer.current?.setOwn(own);
+  }, [own]);
   useEffect(() => {
     following.current = tracking;
   }, [tracking]);
