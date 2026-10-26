@@ -417,7 +417,7 @@ export function GameScreen({
       // by the sound's own clock so the steps keep the walk's pace however
       // smoothly the map draws.
       for (let node = 1; node < nodes.length; node++) sounds.play('step', (node * timing.stepMs) / 1000);
-      await walk(turn.player, nodes, setWalker);
+      await walk(turn.player, nodes, moved.resolution.walked.at(-1) ?? moved.resolution.from, setWalker);
     }
     const interacted = find(turn.events, 'interacted');
     if (interacted === undefined || interacted.resolution.reward === null) return;
@@ -913,7 +913,7 @@ function thinkingMsOf(source: PlaySource, active: PlayerState | undefined): numb
 }
 
 /** Walk a figure along `nodes` (world units), one road at a time. */
-function walk(player: PlayerId, nodes: readonly Point[], show: (walker: Walker) => void): Promise<void> {
+function walk(player: PlayerId, nodes: readonly Point[], to: NodeId, show: (walker: Walker) => void): Promise<void> {
   const steps = nodes.length - 1;
   const total = steps * timing.stepMs;
   return new Promise((resolve) => {
@@ -930,7 +930,7 @@ function walk(player: PlayerId, nodes: readonly Point[], show: (walker: Walker) 
       const a = nodes[index] as Point;
       const b = nodes[index + 1] as Point;
       const f = along - index;
-      show({ player, at: { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f } });
+      show({ player, at: { x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f }, to });
       if (t < 1) requestAnimationFrame(frame);
       else resolve();
     };
