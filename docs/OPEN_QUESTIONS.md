@@ -3971,7 +3971,7 @@ Built: `RulesButton` in the login page's top bar in
 `.bar.login .btn` in `apps/web/src/online/site.css`. No rule, number, map or
 picture changed, and the rulebook needs no change.
 
-### Q313. ~~Which way do the player figures face?~~ — **answered 2026-10-26: right, all six; the five drawn facing left are flipped whole, shadow included, wherever they are shown: on the map with their idle animations, on the New game panel, in the portraits and as the tab's icon (1-2)**
+### Q313. ~~Which way do the player figures face?~~ — **answered 2026-10-26: right, all six; the five drawn facing left are flipped whole, shadow included, wherever they are shown: on the map with their idle animations, on the New game panel, in the portraits and as the tab's icon (1-2); figures side by side on a space overlap with the one on the left in front (3)**
 
 Andrei, 2026-10-26 at 06:31: *"all guards are facing left. out of character
 figures, the fox faces right, and the rest look left. let us flip them so that
@@ -3997,6 +3997,14 @@ time.
 The idle animations flip with their figures, or a figure would turn back to
 the left each time it played; set out alongside 1 and 2.
 
+3. **Which figure is in front.** Andrei, at 09:06: *"should they now also
+   cover each other from left to right when they overlap"*. Figures sharing
+   a space stand side by side, and each was drawn over the one on its left:
+   facing left, each one's front lay over its neighbour's back; facing right,
+   each one's back now hid its neighbour's face and what it holds. Mocked up
+   with the left one in front (recommended), which a click on two overlapping
+   figures already picked. **Answered** at 13:48: the left one in front.
+
 Built: `MIRROR` in `Art/tools/pack_sheets.py` names the pictures flipped as the
 figurine sheet is packed, each after its shadow is made dark and before it is
 stood in its cell, centred as before; `Art/tools/pack_animation.py` flips the
@@ -4006,8 +4014,11 @@ portrait boxes were rederived by `Art/tools/make_portrait_crops.py` with its
 hand-set face positions flipped, framing each head as before, mirrored, to
 within 2 px; and `apps/web/icon.png` was cut again from the flipped sheet, the
 same square scaled the same way. The originals in `Art/originals/` are as
-supplied. The fox and every guard are as they were, and no rule, number or map
-changed.
+supplied. For 3, each figure on a shared space counts a thousandth of a pixel
+nearer the front than the one on its right, in `buildCharacters` in
+`apps/web/src/render/sceneModel.ts`, so the left one is drawn in front and is
+still the one a click picks. The fox and every guard are as they were, and no
+rule, number or map changed.
 
 ---
 
