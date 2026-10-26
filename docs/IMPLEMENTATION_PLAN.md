@@ -1226,7 +1226,9 @@ came back with all 39 turns in its log.
   it, and pressing it closes planning with `putDown`, keeping the route. It
   is pressed when a game opens and otherwise only by the player (Q316), on
   one device as online. The walk this page's own End turn starts is followed
-  too, through `MapView`'s `follow` prop, without pressing Track.
+  too, through `MapView`'s `follow` prop, without pressing Track. On the
+  page's own turn (`yourTurn`) nothing unpresses Track, and `keepFollowing`
+  keeps moving the map from stopping the following (Q316 4 and 5).
 - **A computer's move survives a dropped connection.** `onlinePlay` keeps
   the move it could not send, and `reconnected()` sends it once the caught-up
   records show its turn still waiting; meanwhile the line reads

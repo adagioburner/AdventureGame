@@ -1384,7 +1384,8 @@ on the same page as details 72 to 77, each with a recommendation. Andrei:
 73. **What unpresses it:** anything that moves the map or starts planning:
     dragging the map, the mouse wheel, pinching, "+", "−", "Whole map",
     tapping your figure or "Plan a move". A tap on the map that
-    starts nothing leaves it pressed.
+    starts nothing leaves it pressed. **Changed by [Q316](#q316) 5:** on
+    your own turn nothing unpresses it.
 74. **While pressed** the map does what hot seat did: at the start of each
     turn it glides to the player on turn at the zoom it has (Q46), and it
     follows a walking figure that nears the edge (Q47). Pressing it glides
@@ -4182,7 +4183,7 @@ map or picture changed. The rulebook's two sentences (8 A) are in
 `docs/RULEBOOK.md`.
 
 <a id="q316"></a>
-### Q316. ~~Should Track still press itself?~~ — **answered 2026-10-26: only when a game opens; after that only the player presses it, and on one device, as online, the turn's glide to the player on turn waits for Track to be pressed; the walk of your own End turn is followed with Track left off (1-3)**
+### Q316. ~~Should Track still press itself?~~ — **answered 2026-10-26: only when a game opens; after that only the player presses it, and on one device, as online, the turn's glide to the player on turn waits for Track to be pressed; Track only matters on other players' turns: on your own turn nothing unpresses it, and your own walk is always followed, Track or no Track, even when you move the map (1-6)**
 
 Andrei, 2026-10-26 at 05:36: *"The Track button logic is too complex. Let's
 not turn it on automatically"*. Since [Q57](#q57) 76 and 77 Track pressed
@@ -4207,13 +4208,120 @@ as it was.
    move; on one device, the move of whoever pressed End turn. **Answered** at
    08:44: A.
 
-Built: in `apps/web/src/page/GameScreen.tsx`, End turn and Rest no longer
-press Track, and the turn's glide (Q46) no longer presses it on one device
-and happens there only while it is pressed. `endedTurn` keeps the turn this
-page's End turn committed, and `ownWalk` is true while that turn plays out;
-`MapView`'s new `follow` prop, `tracking || ownWalk`, decides whether a walk
-takes the map along. No rule, number, map or picture changed, and the
-rulebook needs no change: it does not mention Track.
+Built 1 to 3 in PR #102: in `apps/web/src/page/GameScreen.tsx`, End turn
+and Rest no longer press Track, and the turn's glide (Q46) no longer presses
+it on one device and happens there only while it is pressed. `endedTurn`
+keeps the turn this page's End turn committed, and `ownWalk` is true while
+that turn plays out; `MapView`'s new `follow` prop, `tracking || ownWalk`,
+decides whether a walk takes the map along.
+
+Andrei, 13:36: *"During your own move, nothing should unpress track"*, and at
+13:39: *"when you're planning your move on your turn, the map always stays
+where you put it. At the end of your turn it always follows uour figure,
+track or no track. Track only affects the behavior during other players
+turns."* On one device every person's turn is their own, so there Track
+only matters on the computer's turns.
+
+4. **Moving the map during your own walk,** with Track pressed: A, the map
+   keeps taking your figure along, so a drag, a zoom or a player's card
+   only moves it until your figure nears the edge again (recommended); B,
+   it stops following until the walk ends, Track still pressed. His 13:39
+   message answers it: A, and with Track off too, which changes 3's "moving
+   the map stops it".
+5. **What unpresses Track on your own turn.** A, nothing: Track changes only
+   when you press it, and on other players' turns dragging, the wheel,
+   pinching, "+", "−", Whole map, a player's card, Find me, tapping your
+   figure and changing a route unpress it as before (recommended); B, as
+   before on every turn. **Answered** at 13:41: A.
+6. **The start of your own turn.** A, the map glides to your figure only if
+   Track is pressed, as before, so a route you were planning out of turn
+   stays in view (recommended); B, never; C, always. **Answered** at 13:41:
+   A.
+
+Built: `yourTurn` in `GameScreen.tsx`, the turn shown being this page's
+person's own, keeps Track as it is when the map is moved, a card or Find me
+is clicked, or a route is planned. `MapView`'s new `keepFollowing` prop,
+`yourTurn`, keeps a drag or a zoom from stopping the following of a walk,
+which on your turn is your own. No rule, number, map or picture changed, and
+the rulebook needs no change: it does not mention Track.
+
+<a id="q318"></a>
+### Q318. ~~Should End turn ask first when the walk ends off a site?~~ — **answered 2026-10-26: yes, when the walk reaches the route's end this turn and no unclaimed site is there, and when End turn would rest; in a box drawn like the game's own panels, just above the end cross or the resting figure, which the map glides to the middle, with No and Yes; it always asks (1-11)**
+
+Andrei, 2026-10-26 at 06:29: *"we need to adk for a confirmation ehen a
+player ends their move not on a site. Players misclick way too often"*; and at
+09:02: *"and if one clicks End turn to rest, we probably should confirm as
+well"*.
+
+1. **When it asks.** A, only when the walk reaches the end of its route this
+   turn and that end is not a site, a walk stopping partway along a longer
+   route not asking (recommended); B, every time this turn's walk stops off a
+   site, partway or not. **Answered** at 07:26: A.
+2. **Claimed sites.** A, a claimed site counts as an ordinary space, as the
+   rulebook says it becomes, so stopping on one asks (recommended); B, no site
+   asks, claimed or not. **Answered** at 07:26: A.
+3. **How it looks.** A, the browser's own OK / Cancel box, the kind Resign
+   and Delete use (recommended); B, a box drawn in the game's style. Asked
+   which questions use the browser's box: nine, all online and for rare
+   actions, none of them during ordinary turns or on one device. **Answered**
+   at 07:28: B.
+4. **Turning it off.** A, it always asks (recommended); B, a "Don't ask
+   again" option. **Answered** at 07:27: A.
+5. **Where.** Mocked up at 1280 × 800 and 390 × 844, the route ending one
+   space short of a fortress: A, in place of the line and buttons under the
+   cards (recommended); B, the middle of the map; C, where the buy panel
+   opens. **Answered** at 08:57: C; then at 08:59: *"actually can it appear in
+   the center, but above the end cross, so one vlcan see where they're
+   going"*.
+6. **The map.** A, the map glides the end cross to the middle and the box
+   sits just above it, moving with it (recommended); B, the map stays and the
+   box sits above the cross wherever it is. **Answered** at 09:00: A.
+7. **The buttons.** A, Go back / End turn (recommended); B, Cancel / End
+   turn; C, No / Yes. In each the first closes the box and keeps the route up
+   to change, and Escape does the same. **Answered** at 08:57: C.
+8. **The words.** At 09:01: *"we also need a different wording, something
+   like your turn wull end without claiming a reward or fighting for
+   treasure"*. A, his words (recommended); B, with the player's name; C,
+   "gold" for "treasure". **Answered** at 09:03: C, "Your turn will end
+   without claiming a reward or fighting for gold." over "End turn anyway?".
+9. **Where, for a rest.** A, the map glides the figure to the middle and the
+   box sits just above it (recommended); B, the middle of the map, the map
+   staying. **Answered** at 09:03: A.
+10. **The words, for a rest.** A, "Your turn will end with a rest, without
+    claiming a reward or fighting for gold." (recommended); B, "Your turn
+    will end with a rest: +5 stamina."; C, the walk's words. **Answered** at
+    09:03: B, over "End turn anyway?".
+11. **Track, for a rest.** Andrei, 13:32: *"does track stay unpressed once
+    the glide unpresses it?"* It did, since only the player presses it
+    ([Q316](#q316)), and so on one device the map stayed on the resting
+    figure after Yes instead of going on to the next player. A, the glide to
+    the figure leaves Track as it was, since Track follows that figure anyway
+    (recommended); B, it unpresses Track. **Answered** at 13:33: A. Then
+    at 13:36, of Track generally: *"During your own move, nothing should
+    unpress track"*; so the glide to a route's end leaves Track as it was
+    too.
+
+Set out alongside and left as set out: only a person pressing End turn is
+asked, on one device and online; Rest, End turn fighting a guard again,
+computer players and the game master's Move on are as they were; while the
+box is up the map can be moved, and choosing another space picks the new end
+and closes it; and if End turn's button is renamed, the box's last line uses
+its new name.
+
+Built: `endTurnQuestion` and `endsOffSite` in
+`apps/web/src/interaction/moveMode.ts`, `EndTurnQuestion` in
+`apps/web/src/page/EndTurnQuestion.tsx` with its look, `.end-question`, in
+`apps/web/index.html`, and End turn asking in
+`apps/web/src/page/GameScreen.tsx`. While the box is up Rest and End turn
+wait for it, as they do for the buy panel; Cancel, the buy panel or the turn
+passing closes it as No does. The box sits 26 px above the middle of the
+cross, or 8 px above the top of the figure, and goes below the space where
+the map has been moved so there is no room above. Neither glide changes
+Track (11), and after Yes the walk is followed as any End turn's is
+([Q316](#q316)). Since End turn's button now
+says Go for a walk (Andrei, 2026-10-26), the box's last line says what the
+button says: "Go anyway?" for a walk, "End turn anyway?" for a rest. No rule,
+number, map or picture changed, and the rulebook needs no change.
 
 ---
 
