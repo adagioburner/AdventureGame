@@ -4683,6 +4683,32 @@ number, map or picture changed.
 
 ---
 
+<a id="q324"></a>
+### Q324. ~~How does the rulebook explain a bubble such as "3–4" before it has said what steps cost?~~ — **answered 2026-10-26: *Planning a route* moves after *Movement and stamina*, word for word, so the stamina a step costs is explained first; the sentence stays as it was (1)**
+
+Andrei, 2026-10-26 at 20:29, of *Planning a route* ([Q315](#q315)): *"A
+bubble such as '3–4' means you get there in turn 3 and stay through turn 4,
+when 'End turn' rests because you cannot pay for the next step." This is
+confusing because we don't yet know what resting is and have not been told
+that End Turn can rest*.
+
+1. **The fix.** Rest and 'End turn' resting were both already explained
+   above it, in *Your turn*; what was not yet explained is paying stamina for
+   a step, which came after, in *Movement and stamina*. A, the sentence stops
+   at "through turn 4" and *Movement and stamina* gains the reason: "That is
+   what a route's bubble such as '3–4' shows: your figure stops in turn 3
+   without the stamina for its next step, and in turn 4 'End turn' rests."
+   (recommended); B, *Planning a route* moves after *Movement and stamina*,
+   the sentence staying as it is; C, the sentence stops at "through turn 4"
+   with no reason given anywhere. **Answered** at 21:27: B.
+
+Built in `docs/RULEBOOK.md`: *Planning a route* moved whole, word for word
+and still a `###` heading, so it now sits at the end of *Movement and
+stamina*, before *Sites and fights*. No word, rule, number, map or picture
+changed.
+
+---
+
 ## C. Decisions I made that are *implementation*, not design
 
 Listed so you can veto any that read as design to you.

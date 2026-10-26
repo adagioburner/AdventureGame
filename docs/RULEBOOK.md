@@ -73,22 +73,6 @@ You can also move zero steps: stay on a site and fight its guard again.
 
 The button that ends your turn says what it will do. It says 'Go' when your figure will walk. When your figure would not move, because you have no route or cannot pay for its first step, it says 'End turn' and rests instead, unless a guard stands on your space: then it says 'Fight', and you stay and fight the guard again. A route you could not start on is kept for next turn.
 
-### Planning a route
-
-Choose where you want to go. The game draws the route it thinks is best for you; add a waypoint to go another way. Each step is colored for this turn:
-
-- **Green**: free, paid by your speed.
-- **Yellow**: costs stamina.
-- **Grey**: out of reach this turn.
-
-![A route: two green steps, two yellow steps, then grey ones past a bubble for turn 2 to the cross](rulebook/route.png)
-
-On the grey part, numbered bubbles show where your figure will be at the end of each later turn, counting this turn as 1. A bubble such as '3–4' means you get there in turn 3 and stay through turn 4, when 'End turn' rests because you cannot pay for the next step.
-
-Pressing 'Go' walks the route. If it is longer than you can go this turn, your figure goes as far as it can and the rest of the route is saved for next turn, where you can still change it.
-
-If this turn's walk would end your route on a space that is not a site, the game asks for a confirmation before your figure walks. 'End turn' also asks for a confirmation before it rests; the Rest button does not.
-
 ## Movement and stamina
 
 A speed of *N* in a terrain gives you *N* free steps onto that terrain's spaces every turn. Each terrain has its own allowance, and all three refill at the start of your turn. A step counts as the terrain of the space you step onto.
@@ -104,6 +88,22 @@ Once a terrain's free steps are used up, every further step onto it costs stamin
 | Mountains | 3 |
 
 If you cannot pay for the next step, your walk stops there. Stamina only comes back through sites that hold it or by resting (+5).
+
+### Planning a route
+
+Choose where you want to go. The game draws the route it thinks is best for you; add a waypoint to go another way. Each step is colored for this turn:
+
+- **Green**: free, paid by your speed.
+- **Yellow**: costs stamina.
+- **Grey**: out of reach this turn.
+
+![A route: two green steps, two yellow steps, then grey ones past a bubble for turn 2 to the cross](rulebook/route.png)
+
+On the grey part, numbered bubbles show where your figure will be at the end of each later turn, counting this turn as 1. A bubble such as '3–4' means you get there in turn 3 and stay through turn 4, when 'End turn' rests because you cannot pay for the next step.
+
+Pressing 'Go' walks the route. If it is longer than you can go this turn, your figure goes as far as it can and the rest of the route is saved for next turn, where you can still change it.
+
+If this turn's walk would end your route on a space that is not a site, the game asks for a confirmation before your figure walks. 'End turn' also asks for a confirmation before it rests; the Rest button does not.
 
 ## Sites and fights
 
