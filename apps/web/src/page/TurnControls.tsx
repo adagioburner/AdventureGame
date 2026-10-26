@@ -25,7 +25,7 @@ interface TurnControlsProps {
    * next move but not end the turn ([Q56, 48]). Never on one device.
    */
   readonly othersTurn: boolean;
-  /** Whether this page has a figure to plan for now. */
+  /** Whether this page has a figure to plan for, and Find me to find, now. */
   readonly canPlan: boolean;
   /** [Q56, 71] The connection is down: Rest and End turn wait for it. */
   readonly offline: boolean;
@@ -35,7 +35,8 @@ interface TurnControlsProps {
   readonly onMoveOn: (() => void) | null;
   /** [Q85, 295 and 302] The game master's Resign for the person on turn, with Move on; `null` when there is none to offer. */
   readonly onResign: (() => void) | null;
-  onPlan(): void;
+  /** [Q310, 2] Find me: what this page's player's own card does. */
+  onFindMe(): void;
   onCancel(): void;
   onArmWaypoint(armed: boolean): void;
   onClearWaypoint(): void;
@@ -44,8 +45,8 @@ interface TurnControlsProps {
 }
 
 /**
- * §7.1's controls for the player whose turn it is: plan a route, End Turn,
- * Rest. Hotseat shows them to one player at a time (§7.2).
+ * §7.1's controls for the player whose turn it is: Find me, plan a route, End
+ * Turn, Rest. Hotseat shows them to one player at a time (§7.2).
  *
  * The line above the buttons says what the next click does, and for a planned
  * route what it will cost — read off `previewPath`, never worked out here.
@@ -58,17 +59,17 @@ export function TurnControls(props: TurnControlsProps) {
   const planning = move.kind !== 'idle';
   const rest = state.map.ruleset.config.movement.REST_STAMINA_GAIN;
   const onGuard = guardToFightAt(state, player.position);
+  // [Q310, 3] Find me always comes first; Cancel and Waypoint follow it once a route is up.
   const planButtons = (
     <>
+      <button className="btn" type="button" onClick={props.onFindMe}>
+        Find me
+      </button>
       {planning ? (
         <button className="btn" type="button" disabled={busy} onClick={props.onCancel}>
           Cancel
         </button>
-      ) : (
-        <button className="btn" type="button" disabled={busy} onClick={props.onPlan}>
-          Plan a move
-        </button>
-      )}
+      ) : null}
       {planning ? (
         <button
           className="btn"
@@ -96,7 +97,8 @@ export function TurnControls(props: TurnControlsProps) {
 
   // [Q56, 48] Online, on someone else's turn: their name on the line, or the
   // computer thinking over its bar, as in hot seat; your own route can be
-  // planned meanwhile ([Q56, 49]), and Rest and End turn wait for your turn.
+  // planned meanwhile ([Q56, 49]), a tap on a space at once ([Q310, 1]), and
+  // Rest and End turn wait for your turn.
   if (props.othersTurn) {
     // [Q58, 86] A computer's move this page thought of waits for the connection.
     const line = busy
@@ -111,7 +113,7 @@ export function TurnControls(props: TurnControlsProps) {
             : props.offline
               ? 'Reconnecting to the server…'
               : props.canPlan
-                ? `${player.name} is playing. You can plan your next move.`
+                ? `${player.name} is playing. Tap where to go on your next turn.`
                 : `${player.name} is playing.`));
     return (
       <section className="controls" aria-label={`${player.name}’s turn`}>
@@ -143,8 +145,8 @@ export function TurnControls(props: TurnControlsProps) {
   }
 
   // [Andrei, 2026-09-24] Q42: while a computer thinks, its name and a bar that
-  // fills across its thinking time; Plan a move, Rest and End turn are hidden
-  // until it has moved.
+  // fills across its thinking time; the buttons (Find me since Q310, Rest and
+  // End turn) are hidden until it has moved.
   if (props.thinkingMs !== null) {
     return (
       <section className="controls" aria-label={`${player.name}’s turn`}>

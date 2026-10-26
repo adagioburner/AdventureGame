@@ -2356,7 +2356,8 @@ answered 570 to 573 on their cards at 03:49 and 574 to 576 at 04:32.
 572. **Online, on someone else's turn.** A: as before, planning your next move
      starts with your figure or Plan a move, and a tap on a space alone shows
      the notice, since a stray tap would save a route that the game master's
-     Move on would walk (recommended). **Answered:** A.
+     Move on would walk (recommended). **Answered:** A. Since [Q310](#q310) a tap on a
+     space plans at once there too, and Plan a move is Find me.
 573. **The rulebook,** under Planning a route. A: *"Choose where you want to
      go."* (recommended). **Answered:** A.
 574. **How long the figure blinks on a route saved from the turn before,**
@@ -3969,6 +3970,48 @@ Built: `RulesButton` in the login page's top bar in
 `apps/web/src/online/LoginScreen.tsx`, pushed to the bar's right end by
 `.bar.login .btn` in `apps/web/src/online/site.css`. No rule, number, map or
 picture changed, and the rulebook needs no change.
+
+<a id="q310"></a>
+### Q310. ~~Does planning need Plan a move or a tap on your figure first?~~ — **answered 2026-10-26: no, online on someone else's turn a tap on a space plans at once too, and the line says so; Plan a move becomes Find me, which does what your own card does, first in the row whenever the buttons show (1-3)**
+
+Andrei, 2026-10-26 at 05:43: *"one needs to click "plan move" or your hero to
+start planning. Is that necessary? why not start planning right away? The plan
+turn button can then be change to "find me" - it's hard to find yourself when
+one there are many players and one needs to scroll cards"*. On your own turn a
+tap on a space already planned at once ([Q145](#q145) 570); Plan a move there
+only stopped the blink, showed Waypoint and Cancel, and on a phone zoomed in on
+the figure. Online, on someone else's turn, planning still started with the
+figure or Plan a move (572), so that a stray tap would not save a route the
+game master's Move on would walk. He answered the three cards at 07:09 and
+07:10.
+
+1. **Online, on someone else's turn.** A: a tap on a space plans your next
+   move at once, as on your own turn, and the line reads *"Bea is playing. Tap
+   where to go on your next turn."* (recommended); B: the same with the line
+   unchanged, *"Bea is playing. You can plan your next move."*; C: your figure
+   is still tapped first, and the notice drops "or Plan a move".
+   **Answered:** A. A tap on another player's figure chooses their space, as on
+   your own turn; *"Tap your figure, or Plan a move, before choosing where to
+   go."* is no longer shown anywhere.
+2. **What Find me does.** A: what your own card does ([Q120](#q120)): the map
+   jumps to your figure and zooms in to playing distance, Track unpresses, and
+   the figure stands on its ring for a moment (recommended); B: the map glides
+   to the figure at the zoom it has; C: A, and the cards scroll to your card.
+   **Answered:** A. As with the card, a figure already marked, on turn or
+   picked up to plan, gets no ring, and Find me works while a figure walks.
+3. **Where Find me sits.** A: first in the row whenever the buttons show, with
+   Cancel, Waypoint and Clear waypoint after it once a route is up; on one
+   device it finds the player on turn, and on a computer's turn it is hidden
+   with the other buttons (Q42) (recommended); B: only until a route is up,
+   Cancel then taking its place; C: on the map, by Track. **Answered:** A. With
+   a route up the row is one button longer, so it takes two lines on a laptop
+   (1280 px) and on phones at 390 and 340 px.
+
+Built: `choose` in `apps/web/src/interaction/moveMode.ts` plans out of turn
+online, `GameScreen`'s `onTap` sends a tap on a space there, `findMe` in
+`GameScreen.tsx` calls the card's `findPlayer`, and the button and line are in
+`TurnControls.tsx`. No rule, number, map or picture changed, and the rulebook
+needs no change.
 
 ---
 

@@ -376,7 +376,7 @@ describe('move mode online (§7.1): planning out of turn (Q56, 49 to 53)', () =>
   });
 });
 
-describe('a space chosen on your own turn needs no tap on your figure first (Q145, 570 to 572)', () => {
+describe('a space chosen needs no tap on your figure first (Q145, 570 and 571; online out of turn too, Q310, 1)', () => {
   it('picks the figure up and chooses the space, as tapping the figure then the space does', () => {
     const { game, controller } = setup();
     const player = seat(game.state, 0);
@@ -412,14 +412,20 @@ describe('a space chosen on your own turn needs no tap on your figure first (Q14
     expect(controller.state).toMatchObject({ kind: 'previewing', destination: near });
   });
 
-  it('online, plans on this player’s own turn but not while another plays (572)', () => {
+  it('online, plans on this player’s own turn and, since Q310 1, while another plays', () => {
     const { game, controller, play } = onlineSetup();
     const ada = seat(game.state, 0);
     const bram = seat(game.state, 1);
     const near = map.graph.adjacency[bram.position]?.[0] as NodeId;
     controller.choose(near, false);
-    expect(controller.state.kind).toBe('idle');
-    expect(controller.engaged).toBe(false);
+    expect(controller.planner).toBe(bram.id);
+    expect(controller.engaged).toBe(true);
+    expect(controller.state).toMatchObject({ kind: 'previewing', destination: near });
+    const tapped = onlineSetup();
+    tapped.controller.enter(bram.id);
+    tapped.controller.choose(near, false);
+    expect(controller.state).toEqual(tapped.controller.state);
+    controller.cancel();
     play({ kind: 'rest', player: ada.id });
     controller.choose(near, false);
     expect(controller.planner).toBe(bram.id);
@@ -427,6 +433,18 @@ describe('a space chosen on your own turn needs no tap on your figure first (Q14
     expect(controller.state).toMatchObject({ kind: 'previewing', destination: near });
   });
 
+  it('online, a route chosen with a tap while another plays is carried into this player’s turn (Q310, 1)', () => {
+    const { game, controller, sent, play } = onlineSetup();
+    const ada = seat(game.state, 0);
+    const bram = seat(game.state, 1);
+    controller.choose(nodeAlong(game.state, 3).target, false);
+    const route = controller.state.kind === 'previewing' ? controller.state.path : null;
+    expect(route).not.toBeNull();
+    play({ kind: 'rest', player: ada.id });
+    expect(controller.state).toMatchObject({ kind: 'previewing', path: route });
+    controller.endTurn();
+    expect(sent).toEqual([{ kind: 'move', player: bram.id, path: route, waypoint: null }]);
+  });
   it('does nothing once the game is over', () => {
     const { game, controller } = setup();
     controller.setGame({ ...game.state, status: 'finished' });
