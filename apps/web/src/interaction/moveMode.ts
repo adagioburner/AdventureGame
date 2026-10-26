@@ -1,6 +1,8 @@
 import {
   bestRouteVia,
   endTurnActionFor,
+  isClaimed,
+  poiRuntimeAt,
   previewPath,
   refreshAllowance,
   type GameState,
@@ -180,6 +182,40 @@ function previewFor(game: GameState, planner: PlayerState, path: readonly NodeId
 function allowanceFor(game: GameState, planner: PlayerState): MovementAllowance {
   const active = planner.seat === game.turn.activeSeat;
   return active ? game.turn.allowance : refreshAllowance(planner.stats);
+}
+
+/**
+ * [Q316] Andrei, 2026-10-26: "we need to a[s]k for a confirmation [w]hen a
+ * player ends their move not on a site. Players misclick way too often".
+ * Whether End turn with `move` shown asks first: the walk reaches the route's
+ * end this turn (1 A, not a stop partway along a longer route), and no
+ * unclaimed site stands there, a claimed one being an ordinary space (2 A). A
+ * turn that walks nothing, a rest or another roll at a guard, never asks.
+ */
+export function endsOffSite(game: GameState, move: MoveModeState): boolean {
+  if (game.status !== 'in_progress' || move.kind !== 'previewing') return false;
+  if (move.path.length === 0 || !move.preview.destinationReachable) return false;
+  const runtime = poiRuntimeAt(game, move.destination);
+  return runtime === undefined || isClaimed(runtime);
+}
+
+/** Why End turn asks first: its walk ends off a site, or it rests. */
+export type EndTurnQuestionKind = 'off_site' | 'rest';
+
+/**
+ * [Q316] What End turn asks before it plays for the player on turn, with
+ * `move` shown, if anything: Andrei, 2026-10-26, "if one clicks End turn to
+ * rest, we probably should confirm as well". End turn rests with no route, or
+ * with one whose first step cannot be paid, away from a guard (490,
+ * `endTurnActionFor`); a walk asks where `endsOffSite` does.
+ */
+export function endTurnQuestion(game: GameState, move: MoveModeState): EndTurnQuestionKind | null {
+  const active = game.players[game.turn.activeSeat - 1];
+  if (game.status !== 'in_progress' || active === undefined) return null;
+  const path = move.kind === 'previewing' ? move.path : [];
+  const waypoint = move.kind === 'idle' || path.length === 0 ? null : move.waypoint;
+  if (endTurnActionFor(game, active.id, path, waypoint).kind === 'rest') return 'rest';
+  return endsOffSite(game, move) ? 'off_site' : null;
 }
 
 /** Whether `player`'s plains, forest or mountains speed differs between the two states. */

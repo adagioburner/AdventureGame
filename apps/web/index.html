@@ -585,6 +585,29 @@
         display: flex;
         gap: 8px;
       }
+      /* [Q316] End turn's question, just above the route's end cross. */
+      .end-question {
+        position: absolute;
+        z-index: 4;
+        width: min(340px, calc(100% - 16px));
+        padding: 10px 12px 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: var(--panel);
+        box-shadow: var(--shadow);
+      }
+      .end-question p {
+        margin: 0 0 4px;
+        font: 600 14px/1.4 var(--ui);
+      }
+      .end-question p + p {
+        margin-bottom: 10px;
+        font-weight: 400;
+      }
+      .end-question .acts {
+        display: flex;
+        gap: 8px;
+      }
       .controls {
         grid-area: controls;
         display: grid;

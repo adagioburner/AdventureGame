@@ -31,6 +31,8 @@ interface TurnControlsProps {
   readonly offline: boolean;
   /** [Q190, 768] The buy panel is open: Rest and End turn wait for its Done or Cancel. */
   readonly buying?: boolean;
+  /** [Q316] End turn's question is up: Rest and End turn wait for its No or Yes. */
+  readonly asking?: boolean;
   /** [Q56, 54] The game master's Move on for the person on turn; `null` when there is none to offer. */
   readonly onMoveOn: (() => void) | null;
   /** [Q85, 295 and 302] The game master's Resign for the person on turn, with Move on; `null` when there is none to offer. */
@@ -171,10 +173,10 @@ export function TurnControls(props: TurnControlsProps) {
       </p>
       <div className="buttons">
         {planButtons}
-        <button className="btn" type="button" disabled={busy || props.offline || props.buying === true} onClick={props.onRest}>
+        <button className="btn" type="button" disabled={busy || props.offline || props.buying === true || props.asking === true} onClick={props.onRest}>
           Rest
         </button>
-        <button className="btn primary" type="button" disabled={busy || props.offline || props.buying === true} onClick={props.onEndTurn}>
+        <button className="btn primary" type="button" disabled={busy || props.offline || props.buying === true || props.asking === true} onClick={props.onEndTurn}>
           End turn
         </button>
       </div>
