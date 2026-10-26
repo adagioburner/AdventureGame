@@ -31,6 +31,12 @@ interface TurnControlsProps {
   readonly offline: boolean;
   /** [Q190, 768] The buy panel is open: Rest and End turn wait for its Done or Cancel. */
   readonly buying?: boolean;
+  /**
+   * [Andrei, 2026-10-26] What End turn's button said as this page committed
+   * the turn shown, which it keeps while the turn plays out; `null` when this
+   * page committed none.
+   */
+  readonly pressed?: EndTurnOutcome | null;
   /** [Q56, 54] The game master's Move on for the person on turn; `null` when there is none to offer. */
   readonly onMoveOn: (() => void) | null;
   /** [Q85, 295 and 302] The game master's Resign for the person on turn, with Move on; `null` when there is none to offer. */
@@ -162,6 +168,7 @@ export function TurnControls(props: TurnControlsProps) {
 
   // [Q56, 71] While the connection is down, a route can still be planned, and
   // Rest and End turn wait until it is back.
+  const ends = (busy ? props.pressed : null) ?? endTurnOutcome(state, player.id, move);
   return (
     <section className="controls" aria-label={`${player.name}’s turn`}>
       <p className="hint" aria-live="polite">
@@ -174,8 +181,12 @@ export function TurnControls(props: TurnControlsProps) {
         <button className="btn" type="button" disabled={busy || props.offline || props.buying === true} onClick={props.onRest}>
           Rest
         </button>
-        <button className="btn primary" type="button" disabled={busy || props.offline || props.buying === true} onClick={props.onEndTurn}>
-          {END_TURN_LABEL[endTurnOutcome(state, player.id, move)]}
+        <button className="btn primary end-turn" type="button" disabled={busy || props.offline || props.buying === true} onClick={props.onEndTurn}>
+          <span>{END_TURN_LABEL[ends]}</span>
+          {/* As wide as "End turn" whatever it says, so nothing beside it moves. */}
+          <span className="sizer" aria-hidden="true">
+            {END_TURN_LABEL.rest}
+          </span>
         </button>
       </div>
     </section>

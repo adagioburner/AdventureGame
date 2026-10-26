@@ -14,7 +14,7 @@ import {
   type Point,
   type TurnAction,
 } from '@adventure/core';
-import { createMoveModeController, type EnterRefusal, type MoveModeState } from '../interaction/moveMode.ts';
+import { createMoveModeController, endTurnOutcome, type EndTurnOutcome, type EnterRefusal, type MoveModeState } from '../interaction/moveMode.ts';
 import type { Pick } from '../interaction/picking.ts';
 import type { PlayedTurn, Purchase } from '../modes/hotseat.ts';
 import type { PlayedChange, PlaySource, PlayUpdate } from '../modes/play.ts';
@@ -131,6 +131,8 @@ export function GameScreen({
   const busy = inFlight !== null;
   // Online, a turn this page committed that the server has not played yet.
   const [awaiting, setAwaiting] = useState(false);
+  // [Andrei, 2026-10-26] What End turn's button said as this page committed a turn.
+  const [pressed, setPressed] = useState<{ readonly turn: number; readonly outcome: EndTurnOutcome } | null>(null);
   // [Q63, 139] Whether sound is on on this device, as the map's Sound button shows it.
   const soundOn = useSyncExternalStore(sounds.subscribe, () => sounds.on);
   useEffect(() => sounds.load(soundTableOf(catalog)), [catalog]);
@@ -566,6 +568,7 @@ export function GameScreen({
   };
   /** [Q57, 76] End turn and Rest press Track, without moving the map, so the walk and the turns after it are watched. */
   const endTurn = (rest: boolean): void => {
+    if (active !== undefined) setPressed({ turn: shown.turn.number, outcome: endTurnOutcome(shown, active.id, move) });
     if (rest) controller.rest();
     else controller.endTurn();
     if (!controller.engaged) setTracking(true);
@@ -673,6 +676,7 @@ export function GameScreen({
         busy={busy}
         awaiting={awaiting}
         buying={buyOpen}
+        pressed={pressed !== null && pressed.turn === shown.turn.number ? pressed.outcome : null}
         thinkingMs={thinkingMsOf(source, active)}
         waiting={waitingOn?.(shown) ?? null}
         othersTurn={othersTurn}
