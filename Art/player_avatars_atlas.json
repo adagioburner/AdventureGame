@@ -2,7 +2,7 @@
   "sheet": "player_avatars_sheet.png",
   "cell_width": 322,
   "cell_height": 410,
-  "notes": "Packed by Art/tools/pack_sheets.py from Art/originals/, the artist's sheets as supplied, with each picture's grey drop shadow made black and see-through. Do not edit by hand: replace the original and run the tool again.",
+  "notes": "Packed by Art/tools/pack_sheets.py from Art/originals/, the artist's sheets as supplied, with each picture's grey drop shadow made black and see-through, and those marked mirrored flipped left to right. Do not edit by hand: replace the original and run the tool again.",
   "sprites": [
     {
       "id": "player_avatars_01",
@@ -20,7 +20,8 @@
         189,
         296,
         386
-      ]
+      ],
+      "mirrored": true
     },
     {
       "id": "player_avatars_02",
@@ -38,7 +39,8 @@
         244,
         279,
         327
-      ]
+      ],
+      "mirrored": true
     },
     {
       "id": "player_avatars_03",
@@ -56,7 +58,8 @@
         202,
         275,
         368
-      ]
+      ],
+      "mirrored": true
     },
     {
       "id": "player_avatars_04",
@@ -92,7 +95,8 @@
         835,
         260,
         338
-      ]
+      ],
+      "mirrored": true
     },
     {
       "id": "player_avatars_06",
@@ -110,7 +114,8 @@
         824,
         292,
         353
-      ]
+      ],
+      "mirrored": true
     }
   ]
 }
