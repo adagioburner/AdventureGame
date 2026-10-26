@@ -230,6 +230,19 @@
         background: var(--accent);
         color: var(--accent-ink);
       }
+      /* [Andrei, 2026-10-26] End turn says Go, Fight or End turn, and stays
+         as wide as "End turn" whichever it says. */
+      .btn.end-turn {
+        display: inline-grid;
+        align-items: center;
+        justify-items: center;
+      }
+      .btn.end-turn > span {
+        grid-area: 1 / 1;
+      }
+      .btn.end-turn > .sizer {
+        visibility: hidden;
+      }
       .btn.ghost {
         border-color: transparent;
         background: transparent;

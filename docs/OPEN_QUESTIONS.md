@@ -3972,6 +3972,44 @@ Built: `RulesButton` in the login page's top bar in
 `.bar.login .btn` in `apps/web/src/online/site.css`. No rule, number, map or
 picture changed, and the rulebook needs no change.
 
+<a id="q311"></a>
+### Q311. ~~Can a player end their turn before their page has caught up with the game?~~ — **answered 2026-10-26: no; after a dropped connection everything greyed while reconnecting stays greyed, under "Reconnecting to the server…", until the turns missed meanwhile have arrived (1-2)**
+
+Andrei, 2026-10-26 at 05:50: *"We saw a person move before their state got
+fully synched, and arrive at a site that was already taken. I think it's a
+bug. One should not start a turn before their state is fully synched"*; and
+at 07:22: *"the player clicked end turn while they were still seeing outdated
+state of the game"*.
+
+Found: the server refuses End turn, Rest and a purchase named for a turn that
+is over ([Q54](#q54) 35), and only the player on turn can take a site, so it
+never plays a turn from a page a turn or more behind. The page did not wait
+for the game, though. [Q56](#q56) 71 greyed Rest and End turn while it
+reconnected, but it counted the connection back as soon as the socket
+reopened, before the server sends the turns missed meanwhile
+(`game.history`). In between, the page showed the game from before the
+connection dropped, with End turn live. The server ran in Cloudflare's local
+runtime and the page in Chromium, with the catch-up held back: End turn was
+live on the old game, and pressed after the game master had moved the player
+on, it was refused.
+
+1. **What waits.** Everything Q56 71 greys while reconnecting (Rest, End
+   turn, Buy, and the game master's Move on, Resign, Add a day and End the
+   game) stays greyed until the turns missed have arrived. A route can still
+   be planned, as Q56 71 allows. Set out with 2, and taken as set out.
+2. **The line meanwhile.** A, "Reconnecting to the server…" as now, until
+   the missed turns have arrived (recommended); B, "Catching up with the
+   game…" from the moment the socket reopens. **Answered** at 07:21: A.
+
+Built: `caughtUp` in `apps/web/src/online/OnlineGameScreen.tsx`, false from
+a dropped connection, or a record found missing, until `game.history` has
+been applied, and part of `offline`. End turn and Rest in
+`apps/web/src/page/GameScreen.tsx` also do nothing while a change has arrived
+that the screen does not show yet, so neither is played from a game shown out
+of date; nothing on screen changes for it. A route drawn to a site that is
+then taken stays drawn, as before. The server is unchanged. No rule, number,
+map or picture changed, and the rulebook needs no change.
+
 <a id="q314"></a>
 ### Q314. ~~How can fights stop interrupting planning?~~ — **answered 2026-10-26: every fight, your own included, floats on the fighter's head as a claim does, with no OK: the die, "Guard beaten: gold +1" or "Guard holds" and the sum under it, for 3 seconds once the die stops, and the map waits for it (1-5)**
 
