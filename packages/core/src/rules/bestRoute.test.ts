@@ -3,10 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_GAME_CONFIG, TERRAINS, type Terrain } from '@adventure/config';
 import { asNodeId, type NodeId } from '../ids.ts';
 import { neighbours, type MapGraph } from '../graph.ts';
-import { initialStats, type PlayerStats } from '../player.ts';
+import { initialStats, type MovementAllowance, type PlayerStats } from '../player.ts';
 import { createRng } from '../rng.ts';
-import { routeTable, shortestPath } from '../path.ts';
-import { bestRoute, bestRouteSteps, bestRouteVia, effectiveDistance } from './bestRoute.ts';
+import { frontPath, routeTable, shortestPath } from '../path.ts';
+import { refreshAllowance } from './movement.ts';
+import { bestRoute, bestRouteSteps, bestRouteVia, effectiveDistance, walkTurnByTurn, walkedDistance } from './bestRoute.ts';
 
 const config = DEFAULT_GAME_CONFIG;
 
@@ -50,14 +51,19 @@ function stepsOf(graph: MapGraph, path: readonly NodeId[]): { plains: number; fo
   return steps;
 }
 
-/** The least effective distance over every route from `from` to `to` that visits no node twice. */
-function bruteForceBest(graph: MapGraph, from: NodeId, to: NodeId, stats: PlayerStats): number {
+/** `walkedDistance` of `path` for `stats`, from a fresh turn's free steps unless `allowance` says otherwise. */
+function walked(graph: MapGraph, path: readonly NodeId[], stats: PlayerStats, allowance: MovementAllowance = refreshAllowance(stats)): number {
+  return walkedDistance(walkTurnByTurn(graph, path, allowance, stats.stamina, refreshAllowance(stats), config), config);
+}
+
+/** The least of `measure` over every route from `from` to `to` that visits no node twice. */
+function bruteForceBest(graph: MapGraph, from: NodeId, to: NodeId, measure: (path: readonly NodeId[]) => number): number {
   let best = Number.POSITIVE_INFINITY;
   const visited = new Set<NodeId>([from]);
   const path: NodeId[] = [];
   const walk = (at: NodeId): void => {
     if (at === to) {
-      best = Math.min(best, effectiveDistance(stepsOf(graph, path), stats, config));
+      best = Math.min(best, measure(path));
       return;
     }
     for (const next of neighbours(graph, at)) {
@@ -90,64 +96,141 @@ const detour = graphOf(
   ],
 );
 
-describe('bestRoute (Q210, 810 A, 811 A)', () => {
-  it('takes the forest on free steps when the player has the forest speed for it', () => {
-    expect(shortestPath(detour, n(0), n(5), config)).toEqual([n(1), n(2), n(3), n(4), n(5)]);
-    expect(bestRoute(detour, n(0), n(5), speeds(0, 3, 0), config)).toEqual([n(6), n(7), n(8), n(5)]);
+//   0 ─ 1f ─ 2f ─ 3f ─ 4f ─ 5f ─ 6f ─ 7f ─ 8f ─ 9f    nine forest steps
+//                           └ 10m … 18m ─ 19p … 28p ┘   or five forest, nine mountain, ten plains, then 8f and 9f
+// Andrei's turn 13 (Q308), on ember-fjord-280: plains 11, forest 2 and mountain 4 a turn, and 21 stamina.
+const turn13 = (() => {
+  const terrains: Terrain[] = ['plains', ...Array<Terrain>(9).fill('forest'), ...Array<Terrain>(9).fill('mountain'), ...Array<Terrain>(10).fill('plains')];
+  const edges: [number, number][] = [];
+  for (let at = 0; at < 9; at++) edges.push([at, at + 1]);
+  edges.push([5, 10]);
+  for (let at = 10; at < 28; at++) edges.push([at, at + 1]);
+  edges.push([28, 8]);
+  return graphOf(terrains, edges);
+})();
+const turn13Stats: PlayerStats = { ...speeds(11, 2, 4), stamina: 21 };
+
+describe('walkTurnByTurn (Q308)', () => {
+  const plains = [n(1), n(2), n(3), n(4), n(5)];
+
+  it('arrives this turn when the free steps and stamina cover the route', () => {
+    expect(walkTurnByTurn(detour, plains, { plains: 2, forest: 0, mountain: 0 }, 10, { plains: 2, forest: 0, mountain: 0 }, config)).toEqual({
+      turns: 1,
+      staminaSpent: 3,
+      allowance: { plains: 0, forest: 0, mountain: 0 },
+      stamina: 7,
+    });
   });
 
-  it('keeps the cheapest route by terrain alone for a player with no speeds', () => {
-    expect(bestRoute(detour, n(0), n(5), speeds(0, 0, 0), config)).toEqual(shortestPath(detour, n(0), n(5), config));
+  it('goes on next turn from the step it could not pay, with the free steps refreshed', () => {
+    // Two free and one paid this turn, the last two free next turn.
+    expect(walkTurnByTurn(detour, plains, { plains: 2, forest: 0, mountain: 0 }, 1, { plains: 2, forest: 0, mountain: 0 }, config)).toEqual({
+      turns: 2,
+      staminaSpent: 1,
+      allowance: { plains: 0, forest: 0, mountain: 0 },
+      stamina: 0,
+    });
+  });
+
+  it('rests on a turn that would walk nothing', () => {
+    const none = { plains: 0, forest: 0, mountain: 0 };
+    expect(walkTurnByTurn(detour, [n(1)], none, 0, none, config)).toEqual({ turns: 2, staminaSpent: 1, allowance: none, stamina: 4 });
+  });
+
+  it('starts from the free steps left this turn', () => {
+    const fresh = { plains: 2, forest: 0, mountain: 0 };
+    expect(walkTurnByTurn(detour, plains, { plains: 0, forest: 0, mountain: 0 }, 10, fresh, config).staminaSpent).toBe(5);
+  });
+
+  it('is a turn and nothing spent for the empty route', () => {
+    const fresh = { plains: 1, forest: 1, mountain: 1 };
+    expect(walkedDistance(walkTurnByTurn(detour, [], fresh, 3, fresh, config), config)).toBe(5);
+  });
+});
+
+describe('bestRoute (Q210, 811 A; Q308)', () => {
+  it('takes the forest on free steps when the player has the forest speed for it', () => {
+    const stats = speeds(0, 3, 0);
+    expect(shortestPath(detour, n(0), n(5), config)).toEqual([n(1), n(2), n(3), n(4), n(5)]);
+    expect(bestRoute(detour, n(0), n(5), stats, refreshAllowance(stats), config)).toEqual([n(6), n(7), n(8), n(5)]);
+  });
+
+  it('walks nine forest steps this turn where the formula took a 26-step loop over two (Andrei’s turn 13)', () => {
+    const forest = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(n);
+    const loop = [1, 2, 3, 4, 5, ...Array.from({ length: 19 }, (_, at) => 10 + at), 8, 9].map(n);
+    // The formula counts the loop 17 and the forest 19, as the game drew it.
+    expect(bestRouteSteps(turn13, n(0), n(9), turn13Stats, config)).toMatchObject({ steps: stepsOf(turn13, loop), distance: 17 });
+    expect(walked(turn13, loop, turn13Stats)).toBe(5 * 2 + 21);
+    expect(walked(turn13, forest, turn13Stats)).toBe(5 + 14);
+    expect(bestRoute(turn13, n(0), n(9), turn13Stats, refreshAllowance(turn13Stats), config)).toEqual(forest);
+  });
+
+  it('picks from the free steps left this turn', () => {
+    const stats = speeds(0, 3, 0);
+    // With the forest steps spent, paying for the plains is cheaper.
+    expect(bestRoute(detour, n(0), n(5), stats, { plains: 0, forest: 0, mountain: 0 }, config)).toEqual([n(1), n(2), n(3), n(4), n(5)]);
+  });
+
+  it('picks by the stamina held', () => {
+    // With none, the forest's free steps stop a step short and two turns go before
+    // the last is paid; the plains rest once and are paid the next turn: 16 against 15.
+    const stats = { ...speeds(0, 3, 0), stamina: 0 };
+    expect(walked(detour, [n(6), n(7), n(8), n(5)], stats)).toBe(16);
+    expect(walked(detour, [n(1), n(2), n(3), n(4), n(5)], stats)).toBe(15);
+    expect(bestRoute(detour, n(0), n(5), stats, refreshAllowance(stats), config)).toEqual([n(1), n(2), n(3), n(4), n(5)]);
   });
 
   it('keeps today’s route when another is only as good, not better', () => {
-    // Plains speed 1 and forest speed 1 make both routes worth 9: 5 + 4 and 5 + 2 + 2.
+    // Plains speed 1 and forest speed 1 make both routes walk 9: 5 + 4 and 5 + 2 + 2.
     const stats = speeds(1, 1, 0);
-    expect(effectiveDistance({ plains: 5, forest: 0, mountain: 0 }, stats, config)).toBe(
-      effectiveDistance({ plains: 1, forest: 3, mountain: 0 }, stats, config),
-    );
-    expect(bestRoute(detour, n(0), n(5), stats, config)).toEqual([n(1), n(2), n(3), n(4), n(5)]);
+    expect(walked(detour, [n(1), n(2), n(3), n(4), n(5)], stats)).toBe(walked(detour, [n(6), n(7), n(8), n(5)], stats));
+    expect(bestRoute(detour, n(0), n(5), stats, refreshAllowance(stats), config)).toEqual([n(1), n(2), n(3), n(4), n(5)]);
   });
 
   it('is the empty route on the spot, and null where nothing reaches', () => {
-    expect(bestRoute(detour, n(3), n(3), speeds(1, 1, 1), config)).toEqual([]);
+    const stats = speeds(1, 1, 1);
+    expect(bestRoute(detour, n(3), n(3), stats, refreshAllowance(stats), config)).toEqual([]);
     const apart = graphOf(['plains', 'plains', 'plains'], [[0, 1]]);
-    expect(bestRoute(apart, n(0), n(2), speeds(1, 1, 1), config)).toBeNull();
+    expect(bestRoute(apart, n(0), n(2), stats, refreshAllowance(stats), config)).toBeNull();
   });
 
-  it('is exactly today’s route from every node to every node when the player has no speeds', () => {
+  it('is exactly today’s route from every node to every node when the player has no speeds and stamina for the whole way', () => {
     const graph = randomGrid('best-route-zero', 7);
     const routes = routeTable(graph, config);
+    const stats = { ...speeds(0, 0, 0), stamina: 1000 };
     for (let from = 0; from < graph.nodes.length; from += 5) {
       for (let to = 0; to < graph.nodes.length; to++) {
-        expect(bestRoute(graph, n(from), n(to), speeds(0, 0, 0), config)).toEqual(routes.path(n(from), n(to)));
+        expect(bestRoute(graph, n(from), n(to), stats, refreshAllowance(stats), config)).toEqual(routes.path(n(from), n(to)));
       }
     }
   });
 
-  it('is as good as the best of every route there is, on random terrain and speeds', () => {
-    const rng = createRng('best-route-brute-force');
-    for (let round = 0; round < 6; round++) {
-      const graph = randomGrid(`best-route-${round}`, 4);
-      const stats = speeds(rng.nextIntInclusive(0, 3), rng.nextIntInclusive(0, 3), rng.nextIntInclusive(0, 3));
+  it('walks as well as the best route it weighs, and no worse than the cheapest, on random terrain, speeds and stamina', () => {
+    const rng = createRng('best-route-weighed');
+    for (let round = 0; round < 8; round++) {
+      const graph = randomGrid(`best-route-${round}`, 6);
+      const stats = { ...speeds(rng.nextIntInclusive(0, 4), rng.nextIntInclusive(0, 3), rng.nextIntInclusive(0, 3)), stamina: rng.nextIntInclusive(0, 25) };
+      const front = routeTable(graph, config).routesFrom(n(0));
       for (let to = 1; to < graph.nodes.length; to++) {
-        const route = bestRoute(graph, n(0), n(to), stats, config) ?? [];
+        const route = bestRoute(graph, n(0), n(to), stats, refreshAllowance(stats), config) ?? [];
         const today = shortestPath(graph, n(0), n(to), config) ?? [];
-        const distance = effectiveDistance(stepsOf(graph, route), stats, config);
-        expect(distance).toBe(bruteForceBest(graph, n(0), n(to), stats));
-        expect(distance).toBeLessThanOrEqual(effectiveDistance(stepsOf(graph, today), stats, config));
+        let best = walked(graph, today, stats);
+        for (let entry = front.start[to] as number; entry < (front.start[to + 1] as number); entry++) {
+          best = Math.min(best, walked(graph, frontPath(front, entry), stats));
+        }
+        expect(walked(graph, route, stats)).toBe(best);
       }
     }
   });
 
-  it('draws the same route whatever order the adjacency lists are in', () => {
+  it('draws a route as good whatever order the adjacency lists are in', () => {
     const graph = randomGrid('best-route-order', 6);
     const reversed: MapGraph = { ...graph, adjacency: graph.adjacency.map((list) => [...list].reverse()) };
     const stats = speeds(1, 2, 2);
     for (let to = 0; to < graph.nodes.length; to++) {
-      const one = bestRoute(graph, n(0), n(to), stats, config) ?? [];
-      const other = bestRoute(reversed, n(0), n(to), stats, config) ?? [];
-      expect(effectiveDistance(stepsOf(reversed, other), stats, config)).toBe(effectiveDistance(stepsOf(graph, one), stats, config));
+      const one = bestRoute(graph, n(0), n(to), stats, refreshAllowance(stats), config) ?? [];
+      const other = bestRoute(reversed, n(0), n(to), stats, refreshAllowance(stats), config) ?? [];
+      expect(walked(reversed, other, stats)).toBe(walked(graph, one, stats));
     }
   });
 });
@@ -178,28 +261,40 @@ describe('RouteTable.routesFrom (Q210)', () => {
   });
 });
 
-describe('bestRouteVia (Q210, 812 A)', () => {
-  it('goes through the waypoint, each leg the best for the player’s speeds', () => {
+describe('bestRouteVia (Q210, 812 A; Q308)', () => {
+  it('goes through the waypoint, each leg the best for the player', () => {
     const stats = speeds(0, 3, 0);
-    expect(bestRouteVia(detour, n(0), n(7), n(3), stats, config)).toEqual([
-      ...(bestRoute(detour, n(0), n(7), stats, config) ?? []),
-      ...(bestRoute(detour, n(7), n(3), stats, config) ?? []),
+    const fresh = refreshAllowance(stats);
+    expect(bestRouteVia(detour, n(0), n(7), n(3), stats, fresh, config)).toEqual([
+      ...(bestRoute(detour, n(0), n(7), stats, fresh, config) ?? []),
+      ...(bestRoute(detour, n(7), n(3), stats, { plains: 0, forest: 1, mountain: 0 }, config) ?? []),
     ]);
-    expect(bestRouteVia(detour, n(0), null, n(5), stats, config)).toEqual(bestRoute(detour, n(0), n(5), stats, config));
+    expect(bestRouteVia(detour, n(0), null, n(5), stats, fresh, config)).toEqual(bestRoute(detour, n(0), n(5), stats, fresh, config));
+  });
+
+  it('picks the leg onward from where the first leaves the walk', () => {
+    //   0 ── 1f ── 2f ── 4p      the forest step is free on a fresh turn, not once the first leg has used it
+    //         └─── 3p ───┘
+    const graph = graphOf(['plains', 'forest', 'forest', 'plains', 'plains'], [[0, 1], [1, 2], [2, 4], [1, 3], [3, 4]]);
+    const stats = speeds(0, 1, 0);
+    const fresh = refreshAllowance(stats);
+    expect(bestRoute(graph, n(1), n(4), stats, fresh, config)).toEqual([n(2), n(4)]);
+    expect(bestRouteVia(graph, n(0), n(1), n(4), stats, fresh, config)).toEqual([n(1), n(3), n(4)]);
   });
 });
 
 describe('bestRouteSteps (Q210, 820 A)', () => {
-  it('gives the steps per terrain and the score of the route bestRoute traces, without tracing it', () => {
+  it('gives the least effective distance of every route there is, and the steps of a route with it', () => {
     const rng = createRng('best-route-steps');
-    for (let round = 0; round < 4; round++) {
-      const graph = randomGrid(`best-route-steps-${round}`, 6);
+    for (let round = 0; round < 6; round++) {
+      const graph = randomGrid(`best-route-steps-${round}`, 4);
       const stats = speeds(rng.nextIntInclusive(0, 3), rng.nextIntInclusive(0, 3), rng.nextIntInclusive(0, 3));
       for (let to = 1; to < graph.nodes.length; to++) {
-        const route = bestRoute(graph, n(0), n(to), stats, config) ?? [];
         const choice = bestRouteSteps(graph, n(0), n(to), stats, config);
-        expect(choice?.steps).toEqual(stepsOf(graph, route));
-        expect(choice?.distance).toBe(effectiveDistance(stepsOf(graph, route), stats, config));
+        const today = shortestPath(graph, n(0), n(to), config) ?? [];
+        expect(choice?.distance).toBe(bruteForceBest(graph, n(0), n(to), (path) => effectiveDistance(stepsOf(graph, path), stats, config)));
+        expect(choice?.distance).toBe(effectiveDistance(choice?.steps ?? stepsOf(graph, today), stats, config));
+        expect(choice?.distance).toBeLessThanOrEqual(effectiveDistance(stepsOf(graph, today), stats, config));
       }
     }
   });

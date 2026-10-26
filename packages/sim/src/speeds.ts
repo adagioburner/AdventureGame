@@ -74,10 +74,6 @@ export const cheapestRouteSteps: RouteStepsFinder = (state, player, target) => {
   return { plains, forest: steps.forest[target] as number, mountain: steps.mountain[target] as number };
 };
 
-/** [Q210, 820 A] Along the best route for the player's speeds, from the cached counts (`bestRouteSteps`). */
-export const bestRouteStepsFor: RouteStepsFinder = (state, player, target) =>
-  bestRouteSteps(state.map.graph, player.position, target, player.stats, state.map.ruleset.config)?.steps ?? null;
-
 /**
  * [Q210] Stage 2 of Andrei's plan, 2026-10-02: "Build MCTS nodes with the
  * most efficient paths"; 820 A: the first three of the search's uses "don't

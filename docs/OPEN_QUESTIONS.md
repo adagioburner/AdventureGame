@@ -1779,7 +1779,8 @@ to 238).
      on this device, the login page, and an online game's setup for the game
      master and for players.
 231. **No Rules on the start screens** (replacing 221's title style there, and
-     229 and 230). They are as they were.
+     229 and 230). They are as they were. Since [Q309](#q309) the login page
+     has Rules at the right end of its top bar.
 232. **The rulebook is `docs/RULEBOOK.md`,** copied from his page as it stood,
      and from now on changes to the rules go through a PR like everything
      else. The game no longer opens his page or any other address. The first
@@ -2846,7 +2847,9 @@ again would. A route brought back and not picked up stays down when that
 happens, so Track stays as it was, and online the page saves the new route
 (818 B). A route put down with Track, or nothing after Cancel, stays as it is
 when something is bought, until the turn ends or, online, the saved route
-changes (819 A). The computer's real move (`firstTurnOf`) walks it.
+changes (819 A). The computer's real move (`firstTurnOf`) walks it. Since
+[Q308](#q308) the route is scored as End turn walks it rather than by 810 A's
+formula.
 
 Stage 2, as built: `bestRouteSteps` gives the best route's steps per terrain
 and score from the cached route lists, tracing nothing. The computer's search
@@ -3878,6 +3881,96 @@ it plays out and to the other seats' turns along its tree's edges. On the
 eight-space test map in `packages/ai/src/mcts.test.ts` the computer's first
 move changes from the 2 gold next door to the guarded 3. No rule, number, map
 or picture changed, and the rulebook needs no change.
+
+### Q308. ~~Why does the route drawn take a long way round?~~ — **answered 2026-10-25: a route is scored as End turn walks it, turn after turn from the free steps left this turn and the stamina held, a turn still counting as 5 stamina; the computer walks it too and counts it when it checks what it reaches this turn, and still ranks sites by the formula; what happens where a turn ends on a site on the way is not counted (1-4)**
+
+Andrei, 2026-10-25 at 15:04, with a screenshot of his turn 13 of a game on the
+preview (seed ember-fjord-280): *"Something is very wrong with path
+calculation here"*. He stood on a forest dead end with plains 11, forest 2 and
+mountain 4 a turn and 21 stamina, heading for the fighting site 9 forest steps
+away. The route drawn was 26 steps, 5 forest, 9 mountain, 10 plains and 2
+forest: it spent all 21 stamina and still needed the next turn, where the 9
+forest steps arrived that turn for 14. 810 A's formula (Q210) counted the loop
+17, three turns paying for one forest step, and the forest 19: it pools every
+turn's free steps over the whole route whatever the order of its terrain,
+while End turn spends stamina rather than wait for free steps. On three maps
+with his speeds and stamina, where the route drawn differed from the cheapest,
+it arrived later on 32% of trips and sooner on 11%.
+
+1. **The fix.** A, score each route the way End turn walks it, from the free
+   steps left this turn and the stamina held, a turn still 5 stamina; the
+   computer walks the same route and keeps the formula to rank sites; the
+   20-game comparison with the computer before it first (recommended); B, the
+   same and the computer's ranking too; C, back to the cheapest route; D, no
+   change. **Answered** at 15:35: A.
+2. **The computer's "reaches it this turn" check**, which decides whether it
+   weighs resting and which guards it skips as unwinnable (Q295), and which
+   since 820 A counted the formula's route, the route it walked until now: A,
+   the route it walks (recommended); B, the formula's. **Answered** at 17:07:
+   A.
+3. **A turn that ends on a site on the way** takes its reward or rolls at its
+   guard: A, ignore it and count only the walk, as the formula did
+   (recommended); B, count rewards taken there for the later turns.
+   **Answered** at 15:59: A.
+4. **The comparison** (1 A): 20 games with the seats swapped at 3 s a move
+   on ten maps (seeds walked-0 to walked-9), against the computer before it,
+   which walked the formula's route: 9 wins to 10, one shared; +1.2 ± 2.2
+   gold a game for the new one, within luck; each won both games on two maps.
+   Games imagined per move 13,000 against 13,768, as tracing the routes it
+   weighs costs a little more. Andrei, 17:36: *"could you run 50 more games
+   to verify that this fix doesn't actually make the computer play more
+   poorly"*. 50 more, seeds walked-10 to walked-34, the same way: 26 wins to
+   21, three shared, +0.24 ± 1.07 gold a game; each won both games on 7 and 4
+   maps. All 70: 35 wins to 31, four shared, +0.51 ± 0.99 gold a game for the
+   new one, within luck (wins 0.71, gold 0.60), and 12,886 games imagined per
+   move against 14,039.
+
+Built: `walkTurnByTurn` and `walkedDistance` in
+`packages/core/src/rules/bestRoute.ts`. A route scores 5 for each turn until it
+arrives plus the stamina its steps cost: each turn's free steps go first on
+each terrain, stamina pays beyond them, a turn stops at the first step it
+cannot pay, and a turn that would walk nothing rests (490). `bestRoute` and
+`bestRouteVia` take the free steps left this turn; the stamina is the
+player's. The routes weighed are those `RouteTable.routesFrom` keeps, as
+before, and 811 A's ties stand. The formula never counts a route above its
+walked score, so a route it already counts worse than the best walk found is
+not traced. On small random maps, a longer route that is not weighed walked a
+little better on 0.15% of trips. With no speeds, every trip on three maps was
+drawn the cheapest route, at 30, 10 and 3 stamina. With a waypoint, the leg
+onward is scored from where the first leaves the walk; a player planning out of
+turn has the route picked from a fresh turn's free steps. The computer's real
+move, its walk along a tree edge, its purchase check and its imagined players
+walk this route (`bestRouteForSpeeds`), and its reach check counts it
+(`walkedRouteSteps`, 2 A). `bestRouteSteps` keeps the formula's pick, which
+`closestByBestRoute` ranks sites by. On Andrei's turn 13 the 9 forest steps are
+drawn. No rule, number, map or picture changed, and the rulebook needs no
+change: it says the game draws the route it thinks is best for you (816).
+
+<a id="q309"></a>
+### Q309. ~~Where does Rules go on the login page?~~ — **answered 2026-10-26: at the right end of its top bar, shown as it is on a phone too, the same button and rulebook as in the game; the other start screens stay without it (1-2)**
+
+Andrei, 2026-10-26 at 02:28: *"we need to add the rules button to the main
+screen before registration"*. Since [Q71](#q71) 231 no screen before a game
+starts had Rules: the login page's top bar held only the game's name. The main
+screen before registration is the login page, where Log in, Register and Play
+on one device are.
+
+1. **Where.** Mocked up on the login page at 1280, 390 and 360 px wide: A, at
+   the right end of the top bar, shown as it is on a phone, where it would be
+   the bar's only button (recommended); B, the same on a desktop and in a Menu
+   on a phone, as on the other screens; C, in the login card under Play on one
+   device. In A and B the bar is as tall as the other screens' bars, 39 to 53
+   px on a desktop and 32 to 49 px on a phone, and keeps one row with Skyholm
+   Adventures in full down to 360 px. **Answered** at 02:34: A.
+2. **What it is.** The Rules button from the game, its word and look, opening
+   the same rulebook with Close; on the login page only, so the setup on this
+   device and an online game's setup stay as Q71 231 left them. Set out
+   alongside 1 and left as it was.
+
+Built: `RulesButton` in the login page's top bar in
+`apps/web/src/online/LoginScreen.tsx`, pushed to the bar's right end by
+`.bar.login .btn` in `apps/web/src/online/site.css`. No rule, number, map or
+picture changed, and the rulebook needs no change.
 
 <a id="q314"></a>
 ### Q314. ~~How can fights stop interrupting planning?~~ — **answered 2026-10-26: every fight, your own included, floats on the fighter's head as a claim does, with no OK: the die, "Guard beaten: gold +1" or "Guard holds" and the sum under it, for 3 seconds once the die stops, and the map waits for it (1-4)**

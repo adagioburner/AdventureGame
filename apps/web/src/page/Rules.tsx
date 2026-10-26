@@ -8,7 +8,8 @@ const BLOCKS: readonly Block[] = parseRulebook(rulebook);
 /**
  * [Q71, 220, 221 and 231] Rules in a bar button's style: last in the top bar,
  * and last in the Menu on a phone held upright. Not on the screens before a
- * game starts (the setup on this device, login, and an online game's setup).
+ * game starts (the setup on this device and an online game's setup), except
+ * [Q309] the login page, at the right end of its top bar, on a phone too.
  *
  * [232 and 233] It opens the rulebook in the repository, `docs/RULEBOOK.md`,
  * over the whole game, with a Close button; the game stays as it is beneath.

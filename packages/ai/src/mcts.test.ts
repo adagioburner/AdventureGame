@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_GAME_CONFIG } from '@adventure/config';
 import { applyAction, createDiceSource, createRng, type GameState } from '@adventure/core';
-import { bestRouteStepsFor, goldExhaustedTermination, restWhenStuck, rolloutCursor, runRollout } from '@adventure/sim';
+import { goldExhaustedTermination, restWhenStuck, rolloutCursor, runRollout, walkedRouteSteps } from '@adventure/sim';
 import {
   fixtureGame,
   fixtureMap,
@@ -102,9 +102,9 @@ describe('closestUnclaimedPoiEnumerator', () => {
 });
 
 describe('stepsReachability', () => {
-  it('counts a target reachable when the best route for its speeds arrives this turn', () => {
+  it('counts a target reachable when the route it walks arrives this turn', () => {
     const state = withStats(withPosition(fixtureGame(star, 0), player('one'), 5), player('one'), { stamina: 3, forest_move: 0 });
-    const reach = stepsReachability(bestRouteStepsFor);
+    const reach = stepsReachability(walkedRouteSteps);
     expect(reach.isReachableThisTurn(state, player('one'), { node: n(7), cost: 4 })).toBe(false);
     const richer = withStats(state, player('one'), { stamina: 4 });
     expect(reach.isReachableThisTurn(richer, player('one'), { node: n(7), cost: 4 })).toBe(true);

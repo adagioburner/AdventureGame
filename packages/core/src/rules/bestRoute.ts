@@ -1,8 +1,8 @@
 import { TERRAINS, type GameConfig, type PerTerrain } from '@adventure/config';
 import type { NodeId } from '../ids.ts';
 import type { MapGraph } from '../graph.ts';
-import type { PlayerStats } from '../player.ts';
-import { frontPath, routeTable, type RouteTable } from '../path.ts';
+import type { MovementAllowance, PlayerStats } from '../player.ts';
+import { frontPath, pathCost, routeTable, terrainStepCost, type RouteTable } from '../path.ts';
 import { refreshAllowance } from './movement.ts';
 
 /**
@@ -20,8 +20,9 @@ import { refreshAllowance } from './movement.ts';
  * again, and once every terrain the player has a speed on is covered it only
  * climbs; the search over n stops at whichever comes first.
  *
- * The computer ranks sites by it (Q112), and a route's is what makes it the
- * best (Q210, 810 A).
+ * The computer ranks sites by it (Q112), along the route it counts best for
+ * the speeds (`bestRouteSteps`). The route drawn and walked is picked by how
+ * End turn walks it instead (`bestRoute`, Q308).
  */
 export function effectiveDistance(steps: PerTerrain<number>, stats: PlayerStats, config: GameConfig): number {
   if (!TERRAINS.every((terrain) => Number.isFinite(steps[terrain]))) return Number.POSITIVE_INFINITY;
@@ -65,10 +66,12 @@ export interface BestRouteSteps {
 }
 
 /**
- * [Q210, 820 A] What `bestRoute` picks, as the cached counts of steps per
- * terrain and its score, with no route traced: all the computer's search
- * needs to rank sites and to tell what it reaches this turn. `null` only if
- * `to` cannot be reached. On the spot it is no steps at all.
+ * [Q210, 820 A] The route with the least `effectiveDistance` for the player's
+ * speeds, as the cached counts of steps per terrain and its score, with no
+ * route traced: what the computer's search ranks sites by (Q308: the formula
+ * stays for that). Among routes equally good, the cheapest by weighted
+ * terrain cost, and the cheapest route whenever it is one of them (811 A).
+ * `null` only if `to` cannot be reached. On the spot it is no steps at all.
  *
  * Only the player's speeds count, and the search asks for the same space and
  * speeds over and over, once a round per position it weighs; so each answer
@@ -144,42 +147,114 @@ function pickBestRoute(routes: RouteTable, from: NodeId, to: NodeId, speeds: Per
 }
 
 /**
+ * [Q308] How End turn walks `path`, turn after turn (§7): this turn from the
+ * free steps `allowance` leaves and the `stamina` held, each later turn from
+ * the player's full `speeds`. Free steps go first on each terrain, stamina
+ * pays beyond them, and a turn stops at the first step it cannot pay; a turn
+ * that walks nothing rests instead (490). Nothing that happens where a turn
+ * ends on the way is counted.
+ */
+export interface TurnByTurnWalk {
+  /** The turns until it arrives, counting this one: 1 when it arrives this turn. */
+  readonly turns: number;
+  /** The stamina its steps cost. */
+  readonly staminaSpent: number;
+  /** The free steps left in the turn it arrives on. */
+  readonly allowance: MovementAllowance;
+  /** The stamina held when it arrives. */
+  readonly stamina: number;
+}
+
+export function walkTurnByTurn(
+  graph: MapGraph,
+  path: readonly NodeId[],
+  allowance: MovementAllowance,
+  stamina: number,
+  speeds: MovementAllowance,
+  config: GameConfig,
+): TurnByTurnWalk {
+  let plains = allowance.plains;
+  let forest = allowance.forest;
+  let mountain = allowance.mountain;
+  let held = stamina;
+  let spent = 0;
+  let turns = 1;
+  let walked = 0;
+  for (let at = 0; at < path.length; ) {
+    const terrain = graph.nodes[path[at] as NodeId]?.terrain;
+    if (terrain === undefined) throw new RangeError(`unknown node ${path[at]}`);
+    if (terrain === 'plains' && plains > 0) plains--;
+    else if (terrain === 'forest' && forest > 0) forest--;
+    else if (terrain === 'mountain' && mountain > 0) mountain--;
+    else {
+      const price = terrainStepCost(terrain, config);
+      if (price > held) {
+        // The turn ends here; one that walked nothing rests.
+        if (walked === 0) held += config.movement.REST_STAMINA_GAIN;
+        turns++;
+        walked = 0;
+        plains = speeds.plains;
+        forest = speeds.forest;
+        mountain = speeds.mountain;
+        continue;
+      }
+      held -= price;
+      spent += price;
+    }
+    at++;
+    walked++;
+  }
+  return { turns, staminaSpent: spent, allowance: { plains, forest, mountain }, stamina: held };
+}
+
+/**
+ * [Q308] Andrei, 2026-10-25: a route is scored as End turn walks it. The
+ * Q65 measure, a turn counting as 5 stamina (`REST_STAMINA_GAIN`), on the
+ * walk itself: 5 for each turn until it arrives plus the stamina it spends.
+ */
+export function walkedDistance(walk: TurnByTurnWalk, config: GameConfig): number {
+  return config.movement.REST_STAMINA_GAIN * walk.turns + walk.staminaSpent;
+}
+
+/**
  * [SOURCE §4, chat] Andrei, 2026-10-02 (Q210): "it bothers me that the game
  * shows to me the path that is not optimal based on my current skills. How
  * hard is it to make the players, including computer players, take the
  * optimal path by default"; 810 A to 815 A, and in stages, the first being
  * "switch the actual paths players walk to the most efficient".
  *
- * The route from `from` to `to` with the least `effectiveDistance` for
- * `stats`' speeds (810 A): free steps cost nothing, and a turn counts as 5
- * stamina. Among routes equally good, the cheapest by weighted terrain cost,
- * and the cheapest route, `shortestPath`, whenever it is one of them (811 A),
- * so a player with no speeds is drawn and walks the cheapest route.
- * `null` only if `to` cannot be reached. The route is traced only here, from
- * the entry `bestRouteSteps` would pick.
+ * [Q308] Andrei, 2026-10-25, on a 26-step loop drawn where 9 forest steps
+ * arrived this turn: "Something is very wrong with path calculation here".
+ * The route from `from` to `to` with the least `walkedDistance`: walked as
+ * End turn walks it, from this turn's free steps left, `allowance`, and the
+ * stamina in `stats`. 810 A's formula let every turn's free steps fall
+ * anywhere along a route, and End turn spends stamina rather than wait for
+ * them. Among routes equally good, the cheapest by weighted terrain cost, and
+ * the cheapest route, `shortestPath`, whenever it is one of them (811 A), so
+ * a player with no speeds is drawn and walks the cheapest route. `null` only
+ * if `to` cannot be reached.
  *
- * It picks that entry afresh rather than from `bestRouteSteps`' answers:
- * one site's few routes cost little to score, while the players in the games
- * the computer imagines pick their sites from more spaces and speeds than
- * any store of answers could keep (Q210, stage 3).
+ * The candidates are the routes `routesFrom` keeps, those no other route
+ * beats on all three terrains' step counts. Now and then a longer route walks
+ * a little better, its extra free steps ending a turn where the next turn's
+ * free steps take over; it is not weighed.
  */
 export function bestRoute(
   graph: MapGraph,
   from: NodeId,
   to: NodeId,
   stats: PlayerStats,
+  allowance: MovementAllowance,
   config: GameConfig,
 ): readonly NodeId[] | null {
-  if (from === to) return [];
-  const routes = routeTable(graph, config);
-  const choice = pickBestRoute(routes, from, to, refreshAllowance(stats), config);
-  if (choice === null) return null;
-  return choice.entry === -1 ? routes.path(from, to) : frontPath(routes.routesFrom(from), choice.entry);
+  return bestWalk(graph, from, to, stats, allowance, config)?.route ?? null;
 }
 
 /**
- * [Q210, 812 A] With a waypoint, each leg is the best for the player's speeds:
- * the best route to the waypoint followed by the best route onward.
+ * [Q210, 812 A] With a waypoint, each leg is the best for the player: the
+ * best route to the waypoint followed by the best route onward. [Q308] The
+ * leg onward is scored from where the first leaves the walk: the free steps
+ * left in the turn it reaches the waypoint, and the stamina then held.
  */
 export function bestRouteVia(
   graph: MapGraph,
@@ -187,12 +262,62 @@ export function bestRouteVia(
   waypoint: NodeId | null,
   to: NodeId,
   stats: PlayerStats,
+  allowance: MovementAllowance,
   config: GameConfig,
 ): readonly NodeId[] | null {
-  if (waypoint === null) return bestRoute(graph, from, to, stats, config);
-  const first = bestRoute(graph, from, waypoint, stats, config);
+  if (waypoint === null) return bestRoute(graph, from, to, stats, allowance, config);
+  const first = bestWalk(graph, from, waypoint, stats, allowance, config);
   if (first === null) return null;
-  const second = bestRoute(graph, waypoint, to, stats, config);
+  const second = bestWalk(graph, waypoint, to, { ...stats, stamina: first.walk.stamina }, first.walk.allowance, config);
   if (second === null) return null;
-  return [...first, ...second];
+  return [...first.route, ...second.route];
+}
+
+function bestWalk(
+  graph: MapGraph,
+  from: NodeId,
+  to: NodeId,
+  stats: PlayerStats,
+  allowance: MovementAllowance,
+  config: GameConfig,
+): { readonly route: readonly NodeId[]; readonly walk: TurnByTurnWalk } | null {
+  const speeds = refreshAllowance(stats);
+  const walkOf = (path: readonly NodeId[]): TurnByTurnWalk => walkTurnByTurn(graph, path, allowance, stats.stamina, speeds, config);
+  if (from === to) return { route: [], walk: walkOf([]) };
+  const routes = routeTable(graph, config);
+  const cheapest = routes.path(from, to);
+  if (cheapest === null) return null;
+
+  let route = cheapest;
+  let walk = walkOf(cheapest);
+  let distance = walkedDistance(walk, config);
+  let weight = pathCost(graph, cheapest, config);
+  // No route walks better than `effectiveDistance` counts it, for free steps
+  // that many a turn: so a route it counts worse than the best walk yet, or
+  // only as good and no cheaper, is never traced.
+  const most = {
+    plains: Math.max(speeds.plains, allowance.plains),
+    forest: Math.max(speeds.forest, allowance.forest),
+    mountain: Math.max(speeds.mountain, allowance.mountain),
+  };
+  const cost = config.movement.STAMINA_COST;
+  const front = routes.routesFrom(from);
+  const last = front.start[to + 1] as number;
+  for (let entry = front.start[to] as number; entry < last; entry++) {
+    const plains = front.plains[entry] as number;
+    const forest = front.forest[entry] as number;
+    const mountain = front.mountain[entry] as number;
+    const entryWeight = cost.plains * plains + cost.forest * forest + cost.mountain * mountain;
+    const bound = effectiveDistanceFor(plains, forest, mountain, most, config);
+    if (bound > distance || (bound === distance && entryWeight >= weight)) continue;
+    const candidate = frontPath(front, entry);
+    const candidateWalk = walkOf(candidate);
+    const candidateDistance = walkedDistance(candidateWalk, config);
+    if (candidateDistance > distance || (candidateDistance === distance && entryWeight >= weight)) continue;
+    route = candidate;
+    walk = candidateWalk;
+    distance = candidateDistance;
+    weight = entryWeight;
+  }
+  return { route, walk };
 }
