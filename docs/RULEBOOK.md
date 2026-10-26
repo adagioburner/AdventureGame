@@ -105,6 +105,8 @@ Pressing 'Go' walks the route. If it is longer than you can go this turn, your f
 
 If this turn's walk would end your route on a space that is not a site, the game asks for a confirmation before your figure walks. 'End turn' also asks for a confirmation before it rests; the Rest button does not.
 
+![The question before a walk that ends off a site: Go anyway?, with No and Yes, above the route's end cross](rulebook/confirm.png)
+
 ## Sites and fights
 
 Stop on an unguarded site and you claim its whole reward. Stop on a guarded one and you fight: roll one six-sided die and add your skill: combat against a combat guard, magic against a magic guard. If the total is **greater than** the guard's strength, you claim the reward. If not, the reward stays and the failed roll costs nothing else. Either way, your turn ends.
@@ -158,6 +160,8 @@ Your own figure stands on a white ring: online always, on one device only when o
 While Track is pressed, the map follows the other players as they take their turns. Track starts pressed at the beginning of each game, and moving the map while someone else plays unpresses it. On your own turn the map stays where you put it while you plan, and always follows your walk.
 
 A player whose figure is out of view shows as their portrait with an arrow at the map's edge. Tap it to bring them into view.
+
+![Two players out of view, shown as portraits with arrows at the map's left edge](rulebook/markers.png)
 
 ### The game master
 

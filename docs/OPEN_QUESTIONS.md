@@ -4709,6 +4709,31 @@ changed.
 
 ---
 
+<a id="q325"></a>
+### Q325. ~~Which of the day's new UI elements does the rulebook show?~~ — **answered 2026-10-26: the markers at the map's edge and the question Go asks, each right after its passage; not the white ring (1)**
+
+Andrei, 2026-10-26 at 21:44: *"do ee need pictures of new ui elements, eg the
+floating bubbles for players"*. The turn bubbles were already in the route's
+picture ([Q322](#q322)); three things [Q323](#q323) describes had none.
+
+1. **Which.** A, the markers for players out of view ([Q320](#q320)) and the
+   box Go opens to ask ([Q318](#q318)), which words describe least well
+   (recommended); B, the markers only; C, those two and your own figure on
+   its white ring ([Q312](#q312)) beside another player's gold ring; D, none.
+   **Answered** at 21:45: A.
+
+Built: two screenshots taken as in Q322, 3, at twice the page's resolution
+from a two-player game on the map "adventure": `docs/rulebook/confirm.png`,
+after the confirmation paragraph in *Planning a route*, the box over a route
+of three steps from both figures to its end cross, reading "Your turn will
+end without claiming a reward or fighting for gold." over "Go anyway?"; and
+`docs/rulebook/markers.png`, after the markers' sentence in *Playing online or
+on one device*, both players' markers at the map's left edge, the map moved
+away from their figures. No caption, and no word, rule, number or map
+changed.
+
+---
+
 ## C. Decisions I made that are *implementation*, not design
 
 Listed so you can veto any that read as design to you.
