@@ -31,9 +31,6 @@ import { Players } from './Players.tsx';
 import { TurnControls } from './TurnControls.tsx';
 import { TurnLog } from './TurnLog.tsx';
 
-/** The page's phone layout, as `index.html` switches to it. */
-export const PHONE = '(max-width: 899px)';
-
 /**
  * How long End Turn's walk takes per step, the die tumbles, a notice stays up,
  * and an unguarded claim's notice takes to fade in, stays up (2 seconds, his
@@ -473,7 +470,7 @@ export function GameScreen({
   // [Q56, 48 and 49] Online, a turn that is not this page's player's: they
   // watch it, and can plan their own next move meanwhile.
   const othersTurn = online && active !== undefined && !source.localPlayers.has(active.id);
-  /** Who Plan a move plans for: the player on turn on one device, this page's own player online. */
+  /** Who this page plans for, and Find me finds: the player on turn on one device, this page's own player online. */
   const planFor = online ? shown.players.find((player) => source.localPlayers.has(player.id)) : active;
   const canPlan = online ? planFor !== undefined : active?.control !== 'ai';
   /** The turn is this page's to play: hot seat's player on turn, or online this page's own. */
@@ -509,17 +506,15 @@ export function GameScreen({
         : (target.players.find((player) => player === active?.id) ?? target.players[0]);
       // [Q145, 570] On your own turn your figure needs no tap first: a tap
       // on a space, or on another player's figure, chooses that space as it
-      // would once your figure is picked up.
-      if (ownTurn && clicked !== active?.id) {
+      // would once your figure is picked up. [Q310, 1] Online, so it does on
+      // someone else's turn.
+      if ((ownTurn || (othersTurn && planFor !== undefined)) && clicked !== planFor?.id) {
         if (target.node === null) return;
         controller.choose(target.node, shift);
         setResult(null);
         return;
       }
-      if (clicked === undefined) {
-        if (target.node !== null && canPlan) say('Tap your figure, or Plan a move, before choosing where to go.');
-        return;
-      }
+      if (clicked === undefined) return;
       const refused = controller.enter(clicked);
       if (refused !== null) return refuse(refused);
       setResult(null);
@@ -537,15 +532,6 @@ export function GameScreen({
     controller.choose(node, shift);
   };
 
-  const plan = (): void => {
-    if (planFor === undefined) return;
-    const refused = controller.enter(planFor.id);
-    if (refused !== null) return refuse(refused);
-    setResult(null);
-    // A phone shows the whole map too small to find a figure or tap a node,
-    // so planning from the button there starts close in on the player.
-    if (window.matchMedia(PHONE).matches) handle.current?.centerOn(planFor.position);
-  };
   /**
    * [Andrei, 2026-09-30] Q120: "clicking on a player's card finds this player
    * on the map". The map jumps to their figure and zooms in to playing
@@ -557,6 +543,10 @@ export function GameScreen({
     handle.current?.centerOnFigure(player);
     clicks.current += 1;
     setFound({ player, click: clicks.current });
+  };
+  /** [Q310, 2] Find me does what this page's player's own card does. */
+  const findMe = (): void => {
+    if (planFor !== undefined) findPlayer(planFor.id);
   };
   /**
    * [Q57, 74 and 75] Pressing Track closes planning, keeping the route, and
@@ -692,7 +682,7 @@ export function GameScreen({
         offline={offline}
         onMoveOn={onMoveOn}
         onResign={onResign}
-        onPlan={plan}
+        onFindMe={findMe}
         onCancel={() => cancel.current()}
         onArmWaypoint={(on) => controller.armWaypoint(on)}
         onClearWaypoint={() => controller.clearWaypoint()}
