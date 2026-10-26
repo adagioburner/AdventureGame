@@ -36,13 +36,17 @@ function asks(kind: EndTurnQuestionKind): string {
  * or for a rest the figure (9 A), and the box sits just above it, following
  * it as the map moves, kept on the map, and going below it where there is no
  * room above. No closes it and keeps the route up to change, as Escape does;
- * Yes ends the turn (7 C).
+ * Yes ends the turn (7 C). Andrei, 2026-10-26: "I'd prefer that the map
+ * glide first and then the dialog appear, not two at the same time": it
+ * waits for `ready`, and `onShown` hears it appear.
  */
 export function EndTurnQuestion({
   kind,
   restGain,
   locate,
+  ready,
   offline,
+  onShown,
   onNo,
   onYes,
 }: {
@@ -51,19 +55,26 @@ export function EndTurnQuestion({
   restGain: number;
   /** Where the box goes for the end cross, or the figure that would rest, as the map shows it now; `null` while it cannot be found. */
   locate: () => QuestionPlace | null;
+  /** Whether the box may appear: the map has finished its glide. Once it has appeared it stays. */
+  ready: () => boolean;
   /** [Q56, 71] The connection is down: Yes waits for it, as End turn does. */
   offline: boolean;
+  /** The box has just appeared. */
+  onShown: () => void;
   onNo: () => void;
   onYes: () => void;
 }) {
   const box = useRef<HTMLElement | null>(null);
+  const shown = useRef(false);
+  const heard = useRef(onShown);
+  heard.current = onShown;
 
   useEffect(() => {
     let frame = 0;
     const follow = (): void => {
       const element = box.current;
       const stage = element?.offsetParent;
-      const at = locate();
+      const at = shown.current || ready() ? locate() : null;
       if (element !== null && element !== undefined && stage instanceof HTMLElement && at !== null) {
         const width = element.offsetWidth;
         const height = element.offsetHeight;
@@ -73,12 +84,16 @@ export function EndTurnQuestion({
         element.style.left = `${left}px`;
         element.style.top = `${Math.max(MARGIN_PX, Math.min(top, stage.clientHeight - height - MARGIN_PX))}px`;
         element.style.visibility = '';
+        if (!shown.current) {
+          shown.current = true;
+          heard.current();
+        }
       }
       frame = requestAnimationFrame(follow);
     };
     follow();
     return () => cancelAnimationFrame(frame);
-  }, [locate]);
+  }, [locate, ready]);
 
   return (
     <section className="end-question" ref={box} role="dialog" aria-label="End turn?" style={{ visibility: 'hidden' }}>
