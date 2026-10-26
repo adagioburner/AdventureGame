@@ -1223,9 +1223,10 @@ came back with all 39 turns in its log.
 - **Track** (Q57) is `tracking` in `GameScreen`: the turn's glide (Q46) and
   the following of a walk (Q47) happen only while it is pressed. `MapView`
   draws the button and reports the viewer moving the map; planning unpresses
-  it, and pressing it closes planning with `putDown`, keeping the route. On
-  one device it presses itself at every turn, so hot seat moves the map as
-  before.
+  it, and pressing it closes planning with `putDown`, keeping the route. It
+  is pressed when a game opens and otherwise only by the player (Q316), on
+  one device as online. The walk this page's own End turn starts is followed
+  too, through `MapView`'s `follow` prop, without pressing Track.
 - **A computer's move survives a dropped connection.** `onlinePlay` keeps
   the move it could not send, and `reconnected()` sends it once the caught-up
   records show its turn still waiting; meanwhile the line reads

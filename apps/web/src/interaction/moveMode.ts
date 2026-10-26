@@ -91,8 +91,8 @@ export interface MoveModeController {
   /**
    * A node was clicked; `shift` for a shift-click. [Q145, 570] On the
    * planner's own turn their figure needs no tap first: with nothing up, the
-   * click picks it up as tapping it would, then chooses the node. Out of turn
-   * (online) it does nothing until the figure is picked up (572).
+   * click picks it up as tapping it would, then chooses the node. [Q310, 1]
+   * Online, so it does out of turn too.
    */
   choose(node: NodeId, shift: boolean): void;
   selectDestination(node: NodeId): void;
@@ -425,7 +425,7 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
 
     choose(node, shift) {
       if (state.kind === 'idle') {
-        if (planner === null || activePlanner() !== planner) return;
+        if (planner === null || (activePlanner() !== planner && !options.mode.allowOutOfTurnPlanning)) return;
         state = { kind: 'selecting', waypoint: null };
       }
       engaged = true;

@@ -442,6 +442,8 @@ describe('what changes during play', () => {
     expect(second?.node).toBe(game.state.players[1]?.position);
     expect(first?.foot.y).toBe(second?.foot.y);
     expect(first?.foot.x).toBeLessThan(second?.foot.x ?? -Infinity);
+    // [Q313] The figure on the left stands in front of the one on its right.
+    expect(first?.depth).toBeGreaterThan(second?.depth ?? Infinity);
     const ids = atlasOf(catalog, 'player_avatars_animated').sprites;
     expect(ids[first?.sprite.index ?? -1]?.id).toBe('player_avatars_01_frame1');
     expect(ids[second?.sprite.index ?? -1]?.id).toBe('player_avatars_02_frame1');

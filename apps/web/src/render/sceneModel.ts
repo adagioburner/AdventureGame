@@ -444,7 +444,10 @@ export function buildCharacters(
       foot,
       size,
       node: player.position,
-      depth: foot.y + 0.5,
+      // [Q313] Of the figures side by side, the one on the left stands in
+      // front: they all face right, so each one's front stays clear of its
+      // neighbour's back.
+      depth: foot.y + 0.5 + (together.length - 1 - slot) * 0.001,
       player: player.id,
       loop: frames === null || animation === null ? null : { frames, durationsMs: animation.durationsMs },
       walking,
