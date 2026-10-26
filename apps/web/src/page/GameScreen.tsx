@@ -624,16 +624,14 @@ export function GameScreen({
   /**
    * [Q318] End turn whose walk ends this turn off a site, or that rests, asks
    * first: the map glides the route's end, or the figure, to the middle (6 A,
-   * 9 A), and the question comes up above it. The glide to the route's end
-   * unpresses Track, as finding a player does; the glide to the figure leaves
-   * it as it was (11 A).
+   * 9 A), and the question comes up above it. Neither glide changes Track
+   * (11 A): "During your own move, nothing should unpress track".
    */
   const endTurn = (rest: boolean): void => {
     const now = controller.state;
     const ask = rest || shown !== source.state ? null : endTurnQuestion(source.state, now);
     if (ask === null || active === undefined) return endTurnNow(rest);
     setAsked({ turn: shown.turn.number, route: shownRouteKey(now), kind: ask });
-    if (ask === 'off_site') setTracking(false);
     handle.current?.glideTo(ask === 'off_site' && now.kind === 'previewing' ? now.destination : active.position);
   };
   const endTurnNow = (rest: boolean): void => {

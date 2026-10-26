@@ -4097,7 +4097,10 @@ well"*.
     ([Q316](#q316)), and so on one device the map stayed on the resting
     figure after Yes instead of going on to the next player. A, the glide to
     the figure leaves Track as it was, since Track follows that figure anyway
-    (recommended); B, it unpresses Track. **Answered** at 13:33: A.
+    (recommended); B, it unpresses Track. **Answered** at 13:33: A. Then
+    at 13:36, of Track generally: *"During your own move, nothing should
+    unpress track"*; so the glide to a route's end leaves Track as it was
+    too.
 
 Set out alongside and left as set out: only a person pressing End turn is
 asked, on one device and online; Rest, End turn fighting a guard again,
@@ -4114,11 +4117,9 @@ Built: `endTurnQuestion` and `endsOffSite` in
 wait for it, as they do for the buy panel; Cancel, the buy panel or the turn
 passing closes it as No does. The box sits 26 px above the middle of the
 cross, or 8 px above the top of the figure, and goes below the space where
-the map has been moved so there is no room above. The glide to the route's
-end unpresses Track, as finding a player from their card does, and Yes leaves
-it so: the walk is followed as any End turn's is ([Q316](#q316)); picking the
-route has unpressed it already unless Track was pressed since. The glide to
-a resting figure leaves Track as it was (11). Since End turn's button now
+the map has been moved so there is no room above. Neither glide changes
+Track (11), and after Yes the walk is followed as any End turn's is
+([Q316](#q316)). Since End turn's button now
 says Go for a walk (Andrei, 2026-10-26), the box's last line says what the
 button says: "Go anyway?" for a walk, "End turn anyway?" for a rest. No rule,
 number, map or picture changed, and the rulebook needs no change.
