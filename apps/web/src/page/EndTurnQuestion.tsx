@@ -14,13 +14,13 @@ export interface QuestionPlace {
   readonly below: number;
 }
 
-/** [Q316] What the box says (8 C, 10 B); `gain` is the stamina a rest gives. */
+/** [Q318] What the box says (8 C, 10 B); `gain` is the stamina a rest gives. */
 function says(kind: EndTurnQuestionKind, gain: number): string {
   return kind === 'rest' ? `Your turn will end with a rest: +${gain} stamina.` : 'Your turn will end without claiming a reward or fighting for gold.';
 }
 
 /**
- * [Q316] Andrei, 2026-10-26: "we need to a[s]k for a confirmation [w]hen a
+ * [Q318] Andrei, 2026-10-26: "we need to a[s]k for a confirmation [w]hen a
  * player ends their move not on a site. Players misclick way too often", and
  * "if one clicks End turn to rest, we probably should confirm as well". End
  * turn whose walk ends this turn off a site, or that rests

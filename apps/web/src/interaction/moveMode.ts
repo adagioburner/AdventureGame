@@ -185,7 +185,7 @@ function allowanceFor(game: GameState, planner: PlayerState): MovementAllowance 
 }
 
 /**
- * [Q316] Andrei, 2026-10-26: "we need to a[s]k for a confirmation [w]hen a
+ * [Q318] Andrei, 2026-10-26: "we need to a[s]k for a confirmation [w]hen a
  * player ends their move not on a site. Players misclick way too often".
  * Whether End turn with `move` shown asks first: the walk reaches the route's
  * end this turn (1 A, not a stop partway along a longer route), and no
@@ -203,7 +203,7 @@ export function endsOffSite(game: GameState, move: MoveModeState): boolean {
 export type EndTurnQuestionKind = 'off_site' | 'rest';
 
 /**
- * [Q316] What End turn asks before it plays for the player on turn, with
+ * [Q318] What End turn asks before it plays for the player on turn, with
  * `move` shown, if anything: Andrei, 2026-10-26, "if one clicks End turn to
  * rest, we probably should confirm as well". End turn rests with no route, or
  * with one whose first step cannot be paid, away from a guard (490,

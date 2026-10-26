@@ -39,7 +39,7 @@ import { TurnControls } from './TurnControls.tsx';
 import { TurnLog } from './TurnLog.tsx';
 
 /**
- * [Q316] How far above the middle of the end cross, and above the top of a
+ * [Q318] How far above the middle of the end cross, and above the top of a
  * figure that would rest, End turn's question sits, in CSS pixels.
  */
 const CROSS_GAP_PX = 26;
@@ -145,7 +145,7 @@ export function GameScreen({
   const busy = inFlight !== null;
   // Online, a turn this page committed that the server has not played yet.
   const [awaiting, setAwaiting] = useState(false);
-  // [Q316] The turn and route End turn asked about, and why, while its question is up.
+  // [Q318] The turn and route End turn asked about, and why, while its question is up.
   const [asked, setAsked] = useState<{ readonly turn: number; readonly route: string; readonly kind: EndTurnQuestionKind } | null>(null);
   // [Q63, 139] Whether sound is on on this device, as the map's Sound button shows it.
   const soundOn = useSyncExternalStore(sounds.subscribe, () => sounds.on);
@@ -494,7 +494,7 @@ export function GameScreen({
   const buyOpen = buyable !== null && buyTurn === shown.turn.number;
   const canBuy = buyable !== null && buyable.kinds.length > 0 && shown === source.state && !busy && !purchasing && !offline;
   const buyFor = (canBuy || buyOpen) && active !== undefined ? active : null;
-  // [Q316] End turn's question stays up while the route it asked about is the
+  // [Q318] End turn's question stays up while the route it asked about is the
   // one shown, on the same turn, and still asks the same; a new route, Cancel,
   // the buy panel or the turn passing takes it away, as No does.
   const asking =
@@ -612,7 +612,7 @@ export function GameScreen({
     handle.current?.track(active?.position ?? null);
   };
   /**
-   * [Q316] End turn whose walk ends this turn off a site, or that rests, asks
+   * [Q318] End turn whose walk ends this turn off a site, or that rests, asks
    * first: the map glides the route's end, or the figure, to the middle (6 A,
    * 9 A), unpressing Track as finding a player does, and the question comes
    * up above it.
@@ -676,7 +676,7 @@ export function GameScreen({
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
       if (event.key !== 'Escape') return;
-      // [Q316, 7 C] Escape answers End turn's question No, keeping the route.
+      // [Q318, 7 C] Escape answers End turn's question No, keeping the route.
       if (askingNow.current) setAsked(null);
       else cancel.current();
     };
