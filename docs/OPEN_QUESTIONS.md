@@ -3970,6 +3970,56 @@ Built: `RulesButton` in the login page's top bar in
 `.bar.login .btn` in `apps/web/src/online/site.css`. No rule, number, map or
 picture changed, and the rulebook needs no change.
 
+<a id="q315"></a>
+### Q315. ~~How are later turns marked on a long route?~~ — **answered 2026-10-26: a white bubble above the space where each later turn ends, counting this turn as 1; turns counted as End turn walks the route, its own rests included, so a walk then a rest reads "3–4"; none on the destination's cross, and only on a route being planned (1-7)**
+
+Andrei, 2026-10-26 at 06:46: *"when showing a long path to the destination, it
+would be helpful to mark the grey part with flags (bubbles? markers?) showing
+where they will be in two turns, three turns etc."* The grey part of a route is
+what this turn cannot reach (§7.1); nothing on it said how many turns it would
+take. Mocked up in the game on ember-fjord-280, on a route with no speeds,
+where every walk is followed by a rest, and on one with plains 2 and forest 1.
+
+1. **The look**: A, a grey disc with a black edge on the space, like the
+   route's dots (recommended); B, a white bubble standing above the space and
+   pointing down at it; C, a white flag on the space; D, a bare number beside
+   it, like a guard's strength. **Answered** at 07:39: B.
+2. **The numbers**: A, this turn counts as 1, so the first bubble reads 2, his
+   "in two turns" (recommended); B, the next turn counts as 1. The player
+   card's turn counts every player's turns, so either counts the player's own.
+   **Answered** at 07:40: A.
+3. **Later turns**: A, counted as End turn walks the route, the walk the best
+   route is picked by (Q308): full speeds each turn, the stamina held now, and
+   nothing taken at sites on the way (recommended); B, a rest assumed before
+   each turn. **Answered** at 07:40: A.
+4. **A turn spent resting on the way**: A, one bubble for both turns, "3–4"
+   (recommended); B, only the turn that walks there. **Answered** at 07:44:
+   A. At 07:42 he wrote: *"We should not assume any rest while the route is
+   walked, so any questions regarding resting along the route are idle"*,
+   which 6 settled.
+5. **The destination**: A, a bubble on the cross with the turn it is reached
+   on (recommended); B, the cross left bare. **Answered** at 07:40: B.
+6. **End turn's own rests**, after his 07:42 note: no rest the player chooses
+   is assumed, but End turn rests by itself when a turn cannot pay its first
+   step (490), nearly every other turn before any speeds. A, count them as End
+   turn plays them, one bubble reading "3–4" where the figure walks in turn 3
+   and is stuck in turn 4 (recommended); B, number the walking turns only; C,
+   no bubbles past the first such turn. **Answered** at 07:43: A.
+7. **Which routes**: A, every route drawn, a computer's walk included
+   (recommended); B, only a route being planned. **Answered** at 07:41: B.
+
+Built: `turnStops` in `packages/core/src/rules/bestRoute.ts` counts where each
+turn of a route ends, one turn at a time by `countWalk`, the turns as many as
+`walkTurnByTurn` counts. The move controller
+(`apps/web/src/interaction/moveMode.ts`) keeps them with the route it shows,
+recounted whenever its colours are, from the same free steps and stamina, and
+the page hands them to the map only while no walk is playing.
+`buildTurnBubbles` in `apps/web/src/render/sceneModel.ts` puts a bubble on
+each later turn's end but the destination, a turn End turn rests sharing the
+bubble before it; `TURN_BUBBLE` there holds the bubble's sizes and colours, as
+mocked up, and the renderer draws them over everything else. No rule, number,
+map or picture changed. The rulebook does not mention the bubbles.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design
