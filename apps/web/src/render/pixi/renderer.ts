@@ -9,6 +9,7 @@ import {
   buildCharacters,
   buildPathScene,
   buildStateScene,
+  buildTurnBubbles,
   buildWaypoint,
   figuresAnimate,
   guardRing,
@@ -17,6 +18,8 @@ import {
   playerRingSize,
   playFrame,
   siteDot,
+  SPACING_PX,
+  TURN_BUBBLE,
   type Billboard,
   type FigureCue,
   type MapScene,
@@ -75,6 +78,8 @@ export class PixiMapRenderer implements MapRenderer {
   private readonly groundAbove = new Container();
   private readonly ui = new Container();
   private readonly labelsLayer = new Container();
+  /** [Q315] The turn bubbles over a route being planned, over everything else. */
+  private readonly bubblesLayer = new Container();
 
   private readonly dressingSprites: Sprite[] = [];
   private poiSprites: Sprite[] = [];
@@ -98,6 +103,7 @@ export class PixiMapRenderer implements MapRenderer {
   private stateScene: StateScene | null = null;
   private preview: PathPreview | null = null;
   private previewFrom: NodeId | null = null;
+  private turnStops: readonly number[] | null = null;
   private waypoint: NodeId | null = null;
   private walker: Walker | null = null;
   private viewport: Point = { x: 1, y: 1 };
@@ -116,7 +122,7 @@ export class PixiMapRenderer implements MapRenderer {
       ground.setFromMatrix(new Matrix(m.a, m.b, m.c, m.d, m.tx, m.ty));
     }
     this.groundBelow.addChild(this.ringsLayer, this.edgesLayer, this.nodesLayer);
-    this.ui.addChild(this.labelsLayer);
+    this.ui.addChild(this.labelsLayer, this.bubblesLayer);
     // The backdrop is painted on the ground, under the roads and nodes;
     // `scene.billboards` already lists it back to front.
     this.root.addChild(
@@ -189,9 +195,10 @@ export class PixiMapRenderer implements MapRenderer {
     return this.stateScene?.characters ?? [];
   }
 
-  setPathPreview(preview: PathPreview | null, from: NodeId | null): void {
+  setPathPreview(preview: PathPreview | null, from: NodeId | null, turnStops: readonly number[] | null = null): void {
     this.preview = preview;
     this.previewFrom = from;
+    this.turnStops = turnStops;
     this.invalidate('path-overlay');
   }
 
@@ -475,6 +482,7 @@ export class PixiMapRenderer implements MapRenderer {
 
   private drawPath(): void {
     this.groundAbove.removeChildren().forEach((child) => child.destroy());
+    this.bubblesLayer.removeChildren().forEach((child) => child.destroy());
     const preview = this.preview;
     const from = this.previewFrom;
     if (preview === null || from === null) return;
@@ -490,6 +498,38 @@ export class PixiMapRenderer implements MapRenderer {
     };
     for (const dot of path.dots) decal(prospect.dot[dot.color], dot.at, dot.size);
     decal(prospect.cross[path.cross.color], path.cross.at, path.cross.size);
+    if (this.turnStops !== null) {
+      for (const bubble of buildTurnBubbles(this.scene, this.map, preview, this.turnStops)) this.drawTurnBubble(bubble.at, bubble.text);
+    }
+  }
+
+  /** [Q315, 1 B] A white bubble standing above the space at `at`, pointing down at it, with the turn in it. */
+  private drawTurnBubble(at: Point, text: string): void {
+    const unit = SPACING_PX;
+    const type = new Text({
+      text,
+      resolution: 4,
+      style: {
+        fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
+        fontWeight: '900',
+        fontSize: TURN_BUBBLE.fontSize * unit,
+        fill: TURN_BUBBLE.ink,
+      },
+    });
+    const height = TURN_BUBBLE.height * unit;
+    const width = Math.max(TURN_BUBBLE.minWidth * unit, type.width + 2 * TURN_BUBBLE.padding * unit);
+    const bottom = at.y - TURN_BUBBLE.lift * unit;
+    const top = bottom - height;
+    const half = (TURN_BUBBLE.pointWidth * unit) / 2;
+    const edge = { color: TURN_BUBBLE.ink, width: TURN_BUBBLE.outline * unit };
+    const shape = new Graphics();
+    shape.roundRect(at.x - width / 2, top, width, height, height * TURN_BUBBLE.corner).fill(TURN_BUBBLE.fill).stroke(edge);
+    shape.poly([at.x - half, bottom, at.x, at.y, at.x + half, bottom]).fill(TURN_BUBBLE.fill).stroke({ ...edge, join: 'round' });
+    // Where the point meets the box, the box's edge is painted over.
+    shape.rect(at.x - half + edge.width / 2, bottom - edge.width * 1.2, 2 * half - edge.width, edge.width * 1.6).fill(TURN_BUBBLE.fill);
+    type.anchor.set(0.5);
+    type.position.set(at.x, top + height / 2);
+    this.bubblesLayer.addChild(shape, type);
   }
 
   private drawUi(): void {

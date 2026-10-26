@@ -3,6 +3,7 @@ import {
   endTurnActionFor,
   previewPath,
   refreshAllowance,
+  turnStops,
   type GameState,
   type MovementAllowance,
   type NodeId,
@@ -35,6 +36,8 @@ export type MoveModeState =
       /** The route, excluding the player's own node: what End Turn sends. */
       readonly path: readonly NodeId[];
       readonly preview: PathPreview;
+      /** [Q315] Where each turn of the route ends, this one first (`turnStops`). */
+      readonly stops: readonly number[];
     };
 
 /** Why `enter()` said no, in words the page can show. */
@@ -149,12 +152,14 @@ export interface PreviewSource {
 export interface PlannedRoute {
   readonly path: readonly NodeId[];
   readonly preview: PathPreview;
+  readonly stops: readonly number[];
 }
 
 /**
  * Routes and colours for `player` in `game`: `bestRouteVia`'s route, the best
  * for the player through the waypoint, if any, a leg at a time (Q210, 810 A
- * to 812 A; Q308: as End turn walks it), and `previewPath`'s colours for it.
+ * to 812 A; Q308: as End turn walks it), `previewPath`'s colours for it, and
+ * [Q315] `turnStops`' ends of its turns.
  *
  * The allowance is the turn's own for the player whose turn it is. A player
  * planning out of turn (§7.1, online only) will start their next turn with a
@@ -168,13 +173,19 @@ export function gamePreviewSource(game: GameState, player: PlayerId): PreviewSou
     previewFor(destination, waypoint) {
       const path = bestRouteVia(game.map.graph, planner.position, waypoint, destination, planner.stats, allowanceFor(game, planner), config);
       if (path === null) return null;
-      return { path, preview: previewFor(game, planner, path) };
+      return { path, ...shownFor(game, planner, path) };
     },
   };
 }
 
-function previewFor(game: GameState, planner: PlayerState, path: readonly NodeId[]): PathPreview {
-  return previewPath(game.map.graph, planner.position, path, allowanceFor(game, planner), planner.stats.stamina, game.map.ruleset.config);
+/** What is drawn for `path`: its colours and where its turns end. */
+function shownFor(game: GameState, planner: PlayerState, path: readonly NodeId[]): Omit<PlannedRoute, 'path'> {
+  const allowance = allowanceFor(game, planner);
+  const config = game.map.ruleset.config;
+  return {
+    preview: previewPath(game.map.graph, planner.position, path, allowance, planner.stats.stamina, config),
+    stops: turnStops(game.map.graph, path, allowance, planner.stats.stamina, refreshAllowance(planner.stats), config),
+  };
 }
 
 function allowanceFor(game: GameState, planner: PlayerState): MovementAllowance {
@@ -233,7 +244,7 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
     if (game === null || planner === null) return IDLE;
     const route = gamePreviewSource(game, planner).previewFor(destination, waypoint);
     if (route === null) return { kind: 'selecting', waypoint };
-    return { kind: 'previewing', destination, waypoint, path: route.path, preview: route.preview };
+    return { kind: 'previewing', destination, waypoint, path: route.path, preview: route.preview, stops: route.stops };
   };
 
   /**
@@ -251,7 +262,7 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
       destination,
       waypoint: saved.waypoint,
       path: saved.path,
-      preview: previewFor(current, playerIn(current, planner), saved.path),
+      ...shownFor(current, playerIn(current, planner), saved.path),
     };
   };
 
@@ -336,7 +347,7 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
       if (!engaged && planner !== null) {
         if (unsaved !== null && samePlan(playerIn(next, planner).plannedPath, unsaved.over)) {
           if (state.kind !== 'previewing') return notify();
-          return set({ ...state, preview: previewFor(next, playerIn(next, planner), state.path) });
+          return set({ ...state, ...shownFor(next, playerIn(next, planner), state.path) });
         }
         unsaved = null;
         return set(resume(next));
@@ -346,7 +357,7 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
       // recomputed.
       if (state.kind === 'previewing') {
         const planned = playerIn(next, planner as PlayerId);
-        return set({ ...state, preview: previewFor(next, planned, state.path) });
+        return set({ ...state, ...shownFor(next, planned, state.path) });
       }
       notify();
     },

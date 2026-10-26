@@ -12,6 +12,7 @@ import {
   buildMapScene,
   buildPathScene,
   buildStateScene,
+  buildTurnBubbles,
   buildWaypoint,
   figuresAnimate,
   guardRing,
@@ -699,6 +700,38 @@ describe('a prospective move', () => {
     };
     const path = buildPathScene(scene, game.map, asNodeId(0), unreachable, catalog);
     expect(path.cross.color).toBe('unreachable');
+  });
+
+  describe('turn bubbles (Q315)', () => {
+    const nodes = [1, 2, 3, 4, 5, 6].map((index) => game.map.graph.nodes[index]?.id ?? asNodeId(index));
+    const grey: PathPreview = {
+      steps: nodes.map((node, index) => ({ node, color: index < 1 ? 'free' : 'unreachable', staminaCost: 0 })),
+      destination: nodes[5] ?? asNodeId(6),
+      destinationReachable: false,
+      reachableStepCount: 1,
+      totalStaminaCost: 0,
+    };
+    const screenOf = (step: number) => scene.projection.toScreen(position(game.map.graph, nodes[step] ?? asNodeId(0)));
+
+    it('stands one on each later turn’s end, counting this turn as 1, with none on this turn’s end or the destination', () => {
+      expect(buildTurnBubbles(scene, game.map, grey, [1, 3, 5, 6])).toEqual([
+        { at: screenOf(2), text: '2' },
+        { at: screenOf(4), text: '3' },
+      ]);
+    });
+
+    it('gives a turn End turn would rest the bubble of the turn before', () => {
+      expect(buildTurnBubbles(scene, game.map, grey, [1, 1, 4, 4, 6])).toEqual([
+        { at: screenOf(0), text: '2' },
+        { at: screenOf(3), text: '3–4' },
+      ]);
+      // Resting this turn, the bubbles start on the turn after.
+      expect(buildTurnBubbles(scene, game.map, grey, [0, 2, 2, 6])).toEqual([{ at: screenOf(1), text: '2–3' }]);
+    });
+
+    it('has none for a route that arrives this turn', () => {
+      expect(buildTurnBubbles(scene, game.map, grey, [6])).toEqual([]);
+    });
   });
 
   it('stands the waypoint flag on its node', () => {

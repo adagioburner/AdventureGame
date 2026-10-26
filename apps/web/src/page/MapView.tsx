@@ -54,6 +54,8 @@ interface MapViewProps {
    * player's node if omitted.
    */
   readonly pathFrom?: NodeId | null;
+  /** [Q315] Where each turn of `path` ends, for its turn bubbles; `null`, as if omitted, for none. */
+  readonly turnStops?: readonly number[] | null;
   readonly waypoint: NodeId | null;
   readonly walker: Walker | null;
   /** How the current player's figure calls attention to itself; `none` if omitted. */
@@ -113,6 +115,7 @@ export function MapView({
   state,
   path,
   pathFrom,
+  turnStops = null,
   waypoint,
   walker,
   cue = 'none',
@@ -133,8 +136,8 @@ export function MapView({
   // Read when the renderer comes up, and by the pointer handlers, which are
   // bound once per map.
   const from = pathFrom ?? state.players[state.turn.activeSeat - 1]?.position ?? null;
-  const latest = useRef({ state, path, from, waypoint, walker, cue, planner, found, onTap, onMoved, onReady });
-  latest.current = { state, path, from, waypoint, walker, cue, planner, found, onTap, onMoved, onReady };
+  const latest = useRef({ state, path, from, turnStops, waypoint, walker, cue, planner, found, onTap, onMoved, onReady });
+  latest.current = { state, path, from, turnStops, waypoint, walker, cue, planner, found, onTap, onMoved, onReady };
   // Whether a walk takes the map along. It follows Track, and stops at once
   // when the map is moved, before the page has unpressed Track.
   const following = useRef(tracking);
@@ -205,7 +208,7 @@ export function MapView({
       map.setPlanner(now.planner);
       map.setFound(now.found);
       map.setState(now.state);
-      map.setPathPreview(now.path, now.from);
+      map.setPathPreview(now.path, now.from, now.turnStops);
       map.setWaypoint(now.waypoint);
       map.setCue(now.cue);
       app.stage.addChild(map.root);
@@ -471,8 +474,8 @@ export function MapView({
     renderer.current?.setWalker(walker);
   }, [walker]);
   useEffect(() => {
-    renderer.current?.setPathPreview(path, from);
-  }, [path, from]);
+    renderer.current?.setPathPreview(path, from, turnStops);
+  }, [path, from, turnStops]);
   useEffect(() => {
     renderer.current?.setWaypoint(waypoint);
   }, [waypoint]);
