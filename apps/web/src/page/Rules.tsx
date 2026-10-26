@@ -6,6 +6,18 @@ import { parseRulebook, type Block, type Span } from './rulebook.ts';
 const BLOCKS: readonly Block[] = parseRulebook(rulebook);
 
 /**
+ * [Q322] The pictures the rulebook shows, by the path `docs/RULEBOOK.md` names
+ * them with, from its own folder: its screenshots in `docs/rulebook/`, and the
+ * reward icons the map draws, `../Art/Icons/`.
+ */
+const DOCS = '../../../../docs/';
+const PICTURES = new Map(
+  Object.entries(
+    import.meta.glob<string>(['../../../../docs/rulebook/*.png', '../../../../Art/Icons/*.png'], { query: '?url', import: 'default', eager: true }),
+  ).map(([path, url]) => [path.startsWith(DOCS) ? path.slice(DOCS.length) : `../${path.slice('../../../../'.length)}`, url]),
+);
+
+/**
  * [Q71, 220, 221 and 231] Rules in a bar button's style: last in the top bar,
  * and last in the Menu on a phone held upright. Not on the screens before a
  * game starts (the setup on this device and an online game's setup), except
@@ -73,6 +85,12 @@ function blockOf(block: Block, key: number) {
     }
     case 'paragraph':
       return <p key={key}>{textOf(block.spans)}</p>;
+    case 'picture': {
+      // [Q322, 3] Taken at twice the page's resolution, so shown at half their size in pixels. With
+      // a `src` the browser would take that on a plain screen, at full size, so there is only the 2x.
+      const url = PICTURES.get(block.src);
+      return <img key={key} className="picture" srcSet={url === undefined ? undefined : `${url} 2x`} alt={block.alt} />;
+    }
     case 'list':
       return (
         <ul key={key}>
@@ -109,6 +127,14 @@ function blockOf(block: Block, key: number) {
 
 function textOf(spans: readonly Span[]) {
   return spans.map((span, index) =>
-    span.style === 'bold' ? <b key={index}>{span.text}</b> : span.style === 'italic' ? <i key={index}>{span.text}</i> : <Fragment key={index}>{span.text}</Fragment>,
+    span.style === 'picture' ? (
+      <img key={index} className="icon" src={PICTURES.get(span.src)} alt={span.text} />
+    ) : span.style === 'bold' ? (
+      <b key={index}>{span.text}</b>
+    ) : span.style === 'italic' ? (
+      <i key={index}>{span.text}</i>
+    ) : (
+      <Fragment key={index}>{span.text}</Fragment>
+    ),
   );
 }

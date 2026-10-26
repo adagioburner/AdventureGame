@@ -8,6 +8,8 @@ Win by collecting more gold than the other players.
 
 Every game has a new map: a network of spaces joined by roads. Every space is plains (light brown), forest (green) or mountains (grey).
 
+![Part of a map: forest, plains and mountains spaces joined by roads](rulebook/map.png)
+
 With 4 or 5 players the map is 40% larger, with 40% more spaces, sites, rewards and gold.
 
 Nothing is hidden: every player sees the whole map, every site and every reward from the first turn.
@@ -18,21 +20,25 @@ Some spaces are sites, each shown with a picture such as a mill, a well or a cas
 
 Each site holds exactly one kind of reward, often a stack of several units, shown as that many icons. Gold is guarded: its space carries a red ring (combat guard) or a purple ring (magic guard), with the guard's strength as a number.
 
+![Sites with their reward icons, and gold guarded by purple and red rings](rulebook/sites.png)
+
 ### Rewards
 
 | Reward | Icon | What it does |
 | --- | --- | --- |
-| Plains speed | Brown wagon wheel | 1 free plains step per turn for each point |
-| Forest speed | Green foot | 1 free forest step per turn for each point |
-| Mountains speed | Black mountain | 1 free mountain step per turn for each point |
-| Combat | Red crossed swords | Added to your roll against combat guards |
-| Magic | Purple orb | Added to your roll against magic guards |
-| Gold | Yellow coin | Wins the game, and buys speeds and skills |
-| Stamina | White heart | 5 stamina for each heart, paid for steps beyond your free ones |
+| Plains speed | ![](../Art/Icons/plains_move.png) Brown wagon wheel | 1 free plains step per turn for each point |
+| Forest speed | ![](../Art/Icons/forest_move.png) Green foot | 1 free forest step per turn for each point |
+| Mountains speed | ![](../Art/Icons/mountain_move.png) Black mountain | 1 free mountain step per turn for each point |
+| Combat | ![](../Art/Icons/fighting.png) Red crossed swords | Added to your roll against combat guards |
+| Magic | ![](../Art/Icons/magic.png) Purple orb | Added to your roll against magic guards |
+| Gold | ![](../Art/Icons/gold.png) Yellow coin | Wins the game, and buys speeds and skills |
+| Stamina | ![](../Art/Icons/stamina.png) White heart | 5 stamina for each heart, paid for steps beyond your free ones |
 
 ## Setting up
 
 A game takes 2 to 5 players, and any seat can be played by a person or by the computer. Each player picks a name and one of six figures; no two players share a figure.
+
+![A seat on the New game panel: person or computer, a name and a figure](rulebook/setup-seat.png)
 
 Turn order is fixed at the start and never changes. Seat 1 moves first. With Shuffle seats on, the seats are drawn at random when the game starts, and each player starts with the stamina of the seat they draw. Otherwise seats go in the order set up, and online the game master is in seat 1.
 
@@ -55,6 +61,10 @@ On your turn you do exactly one of two things:
 - **Move.** Walk a route. If your figure stops on a site at the end of your walk, you claim its reward or fight its guard automatically when your turn ends.
 - **Rest.** Gain 5 stamina. You do not move and do not interact with anything, not even the site you are standing on. Your route is kept for next turn.
 
+![The turn buttons: Find me, Rest and End turn](rulebook/turn-buttons.png)
+
+'Find me' brings your figure into view, as tapping your own card does.
+
 Before you end your turn you can also buy speeds and skills with your gold: see *Buying speeds and skills*.
 
 Only the space where you stop counts. Walking through a site does not claim it.
@@ -63,21 +73,11 @@ You can also move zero steps: stay on a site and fight its guard again.
 
 The button that ends your turn says what it will do. It says 'Go' when your figure will walk. When your figure would not move, because you have no route or cannot pay for its first step, it says 'End turn' and rests instead, unless a guard stands on your space: then it says 'Fight', and you stay and fight the guard again. A route you could not start on is kept for next turn.
 
-### Planning a route
-
-Choose where you want to go. The game draws the route it thinks is best for you; add a waypoint to go another way. Each step is colored for this turn:
-
-- **Green**: free, paid by your speed.
-- **Yellow**: costs stamina.
-- **Grey**: out of reach this turn.
-
-On the grey part, numbered bubbles show where your figure will be at the end of each later turn, counting this turn as 1. A bubble such as '3–4' means you get there in turn 3 and stay through turn 4, when 'End turn' rests because you cannot pay for the next step.
-
-Pressing 'Go' walks the route. If it is longer than you can go this turn, your figure goes as far as it can and the rest of the route is saved for next turn, where you can still change it.
-
 ## Movement and stamina
 
 A speed of *N* in a terrain gives you *N* free steps onto that terrain's spaces every turn. Each terrain has its own allowance, and all three refill at the start of your turn. A step counts as the terrain of the space you step onto.
+
+![A player card: stamina, the three speeds, combat, magic, gold and the free steps left](rulebook/card.png)
 
 Once a terrain's free steps are used up, every further step onto it costs stamina:
 
@@ -89,9 +89,29 @@ Once a terrain's free steps are used up, every further step onto it costs stamin
 
 If you cannot pay for the next step, your walk stops there. Stamina only comes back through sites that hold it or by resting (+5).
 
+### Planning a route
+
+Choose where you want to go. The game draws the route it thinks is best for you; add a waypoint to go another way. Each step is colored for this turn:
+
+- **Green**: free, paid by your speed.
+- **Yellow**: costs stamina.
+- **Grey**: out of reach this turn.
+
+![A route: two green steps, two yellow steps, then grey ones past a bubble for turn 2 to the cross](rulebook/route.png)
+
+On the grey part, numbered bubbles show where your figure will be at the end of each later turn, counting this turn as 1. A bubble such as '3–4' means you get there in turn 3 and stay through turn 4, when 'End turn' rests because you cannot pay for the next step.
+
+Pressing 'Go' walks the route. If it is longer than you can go this turn, your figure goes as far as it can and the rest of the route is saved for next turn, where you can still change it.
+
+If this turn's walk would end your route on a space that is not a site, the game asks for a confirmation before your figure walks. 'End turn' also asks for a confirmation before it rests; the Rest button does not.
+
+![The question before a walk that ends off a site: Go anyway?, with No and Yes, above the route's end cross](rulebook/confirm.png)
+
 ## Sites and fights
 
 Stop on an unguarded site and you claim its whole reward. Stop on a guarded one and you fight: roll one six-sided die and add your skill: combat against a combat guard, magic against a magic guard. If the total is **greater than** the guard's strength, you claim the reward. If not, the reward stays and the failed roll costs nothing else. Either way, your turn ends.
+
+![A fight against a magic guard of 3: 6 rolled, the guard is beaten](rulebook/fight.png)
 
 Bigger gold stacks have stronger guards, up to 10. A combat guard on 6 gold or more can reach 12.
 
@@ -115,6 +135,8 @@ Spent gold leaves the game. If spending it puts another player's lead past all t
 
 The Buy button on your card opens the buy panel. Each + there adds one unit, Done buys them, and Cancel puts everything back.
 
+![The buy panel with one plains speed added](rulebook/buy.png)
+
 ## Winning and ending the game
 
 The moment the leader is ahead of every other player by more than all the gold left on the map, the leader wins.
@@ -132,6 +154,14 @@ The rules are the same either way; the Play online switch on the setup screen ch
 **On one device**, everyone takes turns at the same screen. The ring under your figure pulses when it is your turn.
 
 **Online**, each player uses their own device. You can plan your next move while others play, and Go plays it when your turn comes. A message board lets players talk.
+
+Your own figure stands on a white ring: online always, on one device only when one person plays against the computer.
+
+While Track is pressed, the map follows the other players as they take their turns. Track starts pressed at the beginning of each game, and moving the map while someone else plays unpresses it. On your own turn the map stays where you put it while you plan, and always follows your walk.
+
+A player whose figure is out of view shows as their portrait with an arrow at the map's edge. Tap it to bring them into view.
+
+![Two players out of view, shown as portraits with arrows at the map's left edge](rulebook/markers.png)
 
 ### The game master
 

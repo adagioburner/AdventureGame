@@ -2,18 +2,19 @@
  * [Q71, 232] The rulebook is `docs/RULEBOOK.md`, Andrei's own page copied into
  * the repository, and the game shows that file. This reads the little Markdown
  * it uses: headings, paragraphs, bulleted lists and tables, with **bold** and
- * *italic* inside them. Anything else is kept as a plain paragraph.
+ * *italic* inside them, and [Q322] pictures, `![words](path)`, on a line of
+ * their own or in the text. Anything else is kept as a plain paragraph.
  */
 
-/** A run of text: plain, **bold** or *italic*. */
-export interface Span {
-  readonly text: string;
-  readonly style: 'plain' | 'bold' | 'italic';
-}
+/** A run of text: plain, **bold** or *italic*; or a picture, `![text](src)`, set in the line. */
+export type Span =
+  | { readonly text: string; readonly style: 'plain' | 'bold' | 'italic' }
+  | { readonly text: string; readonly style: 'picture'; readonly src: string };
 
 export type Block =
   | { readonly kind: 'heading'; readonly level: 1 | 2 | 3; readonly spans: readonly Span[] }
   | { readonly kind: 'paragraph'; readonly spans: readonly Span[] }
+  | { readonly kind: 'picture'; readonly src: string; readonly alt: string }
   | { readonly kind: 'list'; readonly items: readonly (readonly Span[])[] }
   | { readonly kind: 'table'; readonly head: readonly (readonly Span[])[]; readonly rows: readonly (readonly (readonly Span[])[])[] };
 
@@ -30,6 +31,12 @@ export function parseRulebook(markdown: string): Block[] {
     const heading = /^(#{1,3})\s+(.*)$/.exec(line);
     if (heading !== null) {
       blocks.push({ kind: 'heading', level: (heading[1] ?? '#').length as 1 | 2 | 3, spans: spansOf(heading[2] ?? '') });
+      i += 1;
+      continue;
+    }
+    const picture = /^!\[([^\]]*)\]\(([^)\s]+)\)$/.exec(line.trim());
+    if (picture !== null) {
+      blocks.push({ kind: 'picture', alt: picture[1] ?? '', src: picture[2] ?? '' });
       i += 1;
       continue;
     }
@@ -60,7 +67,7 @@ export function parseRulebook(markdown: string): Block[] {
     const text: string[] = [];
     while (i < lines.length) {
       const next = lines[i] ?? '';
-      if (next.trim().length === 0 || /^#{1,3}\s/.test(next) || /^\s*[-*]\s+/.test(next) || next.trimStart().startsWith('|')) break;
+      if (next.trim().length === 0 || /^#{1,3}\s/.test(next) || /^\s*[-*]\s+/.test(next) || next.trimStart().startsWith('|') || next.trimStart().startsWith('![')) break;
       text.push(next.trim());
       i += 1;
     }
@@ -79,15 +86,16 @@ function cellsOf(line: string): string[] {
     .map((cell) => cell.trim());
 }
 
-/** Splits text into plain, **bold** and *italic* runs. */
+/** Splits text into plain, **bold** and *italic* runs, and pictures. */
 export function spansOf(text: string): Span[] {
   const spans: Span[] = [];
-  const pattern = /\*\*(.+?)\*\*|\*(.+?)\*/g;
+  const pattern = /!\[([^\]]*)\]\(([^)\s]+)\)|\*\*(.+?)\*\*|\*(.+?)\*/g;
   let last = 0;
   for (let match = pattern.exec(text); match !== null; match = pattern.exec(text)) {
     if (match.index > last) spans.push({ text: text.slice(last, match.index), style: 'plain' });
-    if (match[1] !== undefined) spans.push({ text: match[1], style: 'bold' });
-    else spans.push({ text: match[2] ?? '', style: 'italic' });
+    if (match[2] !== undefined) spans.push({ text: match[1] ?? '', style: 'picture', src: match[2] });
+    else if (match[3] !== undefined) spans.push({ text: match[3], style: 'bold' });
+    else spans.push({ text: match[4] ?? '', style: 'italic' });
     last = match.index + match[0].length;
   }
   if (last < text.length) spans.push({ text: text.slice(last), style: 'plain' });
