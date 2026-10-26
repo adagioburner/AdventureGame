@@ -86,6 +86,7 @@ export function applyAction(state: GameState, action: GameAction, dice: DiceSour
         id: action.id,
         gameId: state.id,
         author: action.player,
+        ...(action.watcher === undefined ? {} : { watcher: action.watcher }),
         body: action.body,
         postedAt: action.postedAt,
       };

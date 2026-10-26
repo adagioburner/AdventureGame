@@ -231,6 +231,81 @@ describe('leaving', () => {
   });
 });
 
+describe('watching (Q317)', () => {
+  /** `by` asks to watch, going by `username` as their login has it. */
+  const watch = (state: SetupState, by: UserId, username: string): SetupState =>
+    applySetupAction(state, by, { type: 'setup.requestWatch', gameId: G }, limits, 100, username).state;
+  const refusedWatch = (state: SetupState, by: UserId, username: string): SetupError => {
+    try {
+      watch(state, by, username);
+    } catch (error) {
+      if (error instanceof SetupError) return error;
+      throw error;
+    }
+    throw new Error('expected asking to watch to be refused');
+  };
+
+  it('asks with the username and no figure, and the game master lets the watcher in with no seat free (1 and 2)', () => {
+    const full = play(fresh(), [bea, act.ask('Bea', 'fig_04')], [andrei, act.accept(bea)]);
+    const asked = watch(full, cal, 'Cal_99');
+    expect(asked.pending).toEqual([{ userId: cal, requestedName: 'Cal_99', requestedAvatarId: '', requestedAt: 100, watch: true }]);
+    const accepted = play(asked, [andrei, act.accept(cal)]);
+    expect(accepted.pending).toEqual([]);
+    expect(accepted.watchers).toEqual([{ userId: cal, name: 'Cal_99' }]);
+    expect(seatsOf(accepted)).toEqual(seatsOf(full));
+    expect(accepted.playerCount).toBe(2);
+  });
+
+  it('is declined, withdrawn and asked again as a request to join is (2)', () => {
+    const asked = watch(fresh(), cal, 'Cal');
+    const outcome = applySetupAction(asked, andrei, act.decline(cal), limits, 100);
+    expect(outcome.declined).toBe(cal);
+    expect(outcome.state.pending).toEqual([]);
+    expect(outcome.state.watchers ?? []).toEqual([]);
+    expect(play(asked, [cal, act.withdraw()]).pending).toEqual([]);
+    expect(watch(outcome.state, cal, 'Cal').pending).toHaveLength(1);
+    expect(refused(asked, cal, act.accept(cal)).code).toBe('not_game_master');
+  });
+
+  it('changes a waiting request to join into one to watch, and back, keeping its place', () => {
+    const joining = play(fresh(), [bea, act.ask('Bea', 'fig_04')], [cal, act.ask('Cal', 'fig_05')]);
+    const watching = watch(joining, bea, 'Bea');
+    expect(watching.pending.map((request) => [request.userId, request.watch === true])).toEqual([
+      [bea, true],
+      [cal, false],
+    ]);
+    expect(play(watching, [bea, act.ask('Bea', 'fig_04')]).pending[0]).toEqual({
+      userId: bea,
+      requestedName: 'Bea',
+      requestedAvatarId: 'fig_04',
+      requestedAt: 100,
+    });
+    expect(refused(watching, bea, act.change('B', 'fig_06')).message).toMatch(/asked to watch/);
+  });
+
+  it('is not for someone holding a seat, someone already watching, or a username that did not arrive', () => {
+    const watched = play(watch(fresh(), cal, 'Cal'), [andrei, act.accept(cal)]);
+    expect(refusedWatch(fresh(), andrei, 'Andrei').message).toMatch(/already hold a seat/);
+    expect(refusedWatch(watched, cal, 'Cal').message).toMatch(/already watching/);
+    expect(refusedWatch(fresh(), cal, '  ').code).toBe('invalid_action');
+  });
+
+  it('lets a watcher leave before the start, and play only by leaving and asking to join (3 and 4)', () => {
+    const watched = play(watch(fresh(), cal, 'Cal'), [andrei, act.accept(cal)]);
+    expect(refused(watched, cal, act.ask('Cal', 'fig_05')).message).toMatch(/leave it first/);
+    const left = play(watched, [cal, act.leave()]);
+    expect(left.watchers).toEqual([]);
+    expect(play(left, [cal, act.ask('Cal', 'fig_05')]).pending).toHaveLength(1);
+  });
+
+  it('keeps the watchers through the start, and takes no request once it has begun', () => {
+    const watched = play(watch(fresh(), cal, 'Cal'), [andrei, act.accept(cal)], [andrei, act.start()]);
+    expect(watched.phase).toBe('starting');
+    expect(watched.watchers).toEqual([{ userId: cal, name: 'Cal' }]);
+    expect(refusedWatch(watched, bea, 'Bea').message).toMatch(/not in setup/);
+  });
+});
+
 describe('changing a seat', () => {
   it('lets a person change their own name and figure, and the game master a computer’s', () => {
     const joined = play(fresh(), [andrei, act.count(3)], [andrei, act.control('open:2', 'ai')], [bea, act.ask('Bea', 'fig_04')], [andrei, act.accept(bea)]);

@@ -1,7 +1,16 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { DEFAULT_RULESET, startingStaminaForSeat } from '@adventure/config';
 import type { ControlMode } from '@adventure/core';
-import { DAY_MS, isOpenSeat, LIFETIME_DAYS, type ClientMessage, type Principal, type SetupSeat, type SetupState } from '@adventure/protocol';
+import {
+  DAY_MS,
+  isOpenSeat,
+  LIFETIME_DAYS,
+  watchersOf,
+  type ClientMessage,
+  type Principal,
+  type SetupSeat,
+  type SetupState,
+} from '@adventure/protocol';
 import { atlasOf, type ArtCatalog } from '../art/catalog.ts';
 import { Figurine } from '../page/Sprites.tsx';
 import type { LoadedArt } from '../render/pixi/textures.ts';
@@ -164,6 +173,9 @@ function OnlineSetupPanel({ art, panel }: { readonly art: LoadedArt; readonly pa
   const people = setup.seats.filter((seat) => seat.userId !== null);
   const seated = people.some((seat) => seat.userId === me.userId);
   const request = setup.pending.find((pending) => pending.userId === me.userId) ?? null;
+  // [Q317, 3] The people let in to watch, this person perhaps among them.
+  const watchers = watchersOf(setup);
+  const watching = watchers.some((watcher) => watcher.userId === me.userId);
   const starting = setup.phase !== 'setup';
   const idle = !panel.connected || starting;
   const openSeats = setup.seats.filter(isOpenSeat).length;
@@ -192,7 +204,7 @@ function OnlineSetupPanel({ art, panel }: { readonly art: LoadedArt; readonly pa
         </>
       ) : null}
 
-      {!seated && !isGameMaster ? (
+      {!seated && !isGameMaster && !watching ? (
         <JoinRequestForm
           catalog={catalog}
           figures={figures}
@@ -208,16 +220,19 @@ function OnlineSetupPanel({ art, panel }: { readonly art: LoadedArt; readonly pa
       {isGameMaster && setup.pending.length > 0 ? (
         <fieldset className="seat requests">
           <legend>Asking to join</legend>
-          {openSeats === 0 ? (
+          {openSeats === 0 && setup.pending.some((pending) => pending.watch !== true) ? (
             <p className="muted">No Human seat is free. Make a seat Human or raise the number of players to accept someone.</p>
           ) : null}
           {setup.pending.map((pending) => {
-            const holder = figureHolder(setup, pending.requestedAvatarId);
+            // [Q317, 2] Someone asking to watch has no figure and needs no free seat.
+            const watch = pending.watch === true;
+            const holder = watch ? null : figureHolder(setup, pending.requestedAvatarId);
             return (
               <div key={pending.userId} className="request">
-                <Figurine catalog={catalog} avatarId={pending.requestedAvatarId} size={40} />
+                {watch ? null : <Figurine catalog={catalog} avatarId={pending.requestedAvatarId} size={40} />}
                 <div className="who-asks">
                   <b>{pending.requestedName}</b>
+                  {watch ? <small className="asks-to-watch">wants to watch</small> : null}
                   {holder === null ? null : (
                     <small>
                       {holder.name} has taken this figure. Waiting for {pending.requestedName} to pick another.
@@ -228,7 +243,7 @@ function OnlineSetupPanel({ art, panel }: { readonly art: LoadedArt; readonly pa
                   <button
                     className="btn primary"
                     type="button"
-                    disabled={idle || openSeats === 0 || holder !== null}
+                    disabled={idle || (!watch && openSeats === 0) || holder !== null}
                     onClick={() => send({ type: 'setup.respondToJoin', gameId, userId: pending.userId, accept: true })}
                   >
                     Accept
@@ -313,6 +328,11 @@ function OnlineSetupPanel({ art, panel }: { readonly art: LoadedArt; readonly pa
         );
       })}
 
+      {/* [Q317, 3] Everyone on the setup screen sees who has been let in to watch. */}
+      {watchers.length === 0 ? null : (
+        <p className="watchers">Watching: {watchers.map((watcher) => watcher.name).join(', ')}</p>
+      )}
+
       {isGameMaster ? (
         <>
           <button className="btn primary start" type="button" disabled={idle} onClick={() => send({ type: 'setup.start', gameId })}>
@@ -330,7 +350,7 @@ function OnlineSetupPanel({ art, panel }: { readonly art: LoadedArt; readonly pa
             Cancel the game
           </button>
         </>
-      ) : seated ? (
+      ) : seated || watching ? (
         <button className="btn start" type="button" disabled={idle} onClick={() => send({ type: 'setup.leave', gameId })}>
           Leave the game
         </button>
@@ -727,7 +747,10 @@ function ThinkingTime({
   );
 }
 
-/** [Q48, 10 and 11] Asking to join, changing a request, or asking again after a no. */
+/**
+ * [Q48, 10 and 11] Asking to join, changing a request, or asking again after a
+ * no; [Q317, 1 and 2] or asking to watch, with no name or figure to pick.
+ */
 function JoinRequestForm({
   catalog,
   figures,
@@ -755,6 +778,18 @@ function JoinRequestForm({
     avatarId: figures.find((id) => !setup.seats.some((seat) => seat.avatarId === id)) ?? figures[0] ?? '',
   }));
   const gameId = setup.gameId;
+
+  if (request !== null && request.watch === true) {
+    return (
+      <fieldset className="seat">
+        <legend>Your request</legend>
+        <p className="waiting">Waiting for the game master to answer.</p>
+        <button className="btn start" type="button" disabled={disabled} onClick={() => send({ type: 'setup.withdraw', gameId })}>
+          Withdraw the request
+        </button>
+      </fieldset>
+    );
+  }
 
   if (request !== null) {
     const holder = figureHolder(setup, request.requestedAvatarId);
@@ -811,14 +846,19 @@ function JoinRequestForm({
         immediate
         onChange={(name, avatarId) => setDraft({ name, avatarId })}
       />
-      <button
-        className="btn primary start"
-        type="button"
-        disabled={disabled || !ready}
-        onClick={() => send({ type: 'setup.requestJoin', gameId, name: draft.name.trim(), avatarId: draft.avatarId })}
-      >
-        {declined ? 'Ask again' : 'Ask to join'}
-      </button>
+      <div className="ask-buttons">
+        <button
+          className="btn primary"
+          type="button"
+          disabled={disabled || !ready}
+          onClick={() => send({ type: 'setup.requestJoin', gameId, name: draft.name.trim(), avatarId: draft.avatarId })}
+        >
+          {declined ? 'Ask again' : 'Ask to join'}
+        </button>
+        <button className="btn" type="button" disabled={disabled} onClick={() => send({ type: 'setup.requestWatch', gameId })}>
+          Ask to watch
+        </button>
+      </div>
     </fieldset>
   );
 }

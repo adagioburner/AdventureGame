@@ -61,6 +61,8 @@ export interface GameListing {
   /** [Q55, 46] When the game's lifetime runs out. */
   readonly endsAt: number;
   readonly members: readonly UserId[];
+  /** [Q317, 6] The people let in to watch; absent on a row stored before there were watchers. */
+  readonly watchers?: readonly UserId[];
   /** [Q54, 34] The person whose turn it is; `null` on a computer's turn and outside play. */
   readonly turnOf: UserId | null;
   /** [Q55, 36] Set once the game has finished. */

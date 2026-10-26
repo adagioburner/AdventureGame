@@ -1280,7 +1280,8 @@ seat either way mid-game.
 
 ## Out of scope for v1
 
-Named so the plan is not read as having forgotten them: spectators, replay
+Named so the plan is not read as having forgotten them: spectators (since
+added as watchers, [Q317](./OPEN_QUESTIONS.md)), replay
 playback UI (the determinism that would support it is there either way),
 tournaments or ranking, internationalisation, GM role transfer (§6.1 rules it
 out for v1), and guarding any reward kind other than gold (an engine capability

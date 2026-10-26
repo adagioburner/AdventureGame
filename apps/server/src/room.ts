@@ -19,12 +19,17 @@ import {
   wasRemoved,
 } from './adapters/durable-object.ts';
 import { systemClock } from './adapters/memory.ts';
-import { lobbyOf, USER_HEADER, type Env } from './env.ts';
+import { lobbyOf, NAME_HEADER, USER_HEADER, type Env } from './env.ts';
 import { closeQuietly } from './lobby.ts';
 import { SETUP_LIMITS } from './limits.ts';
 
 interface RoomSocket {
   readonly userId: UserId;
+  /**
+   * The username, which a watcher goes by ([Q317, 1]); absent on a socket
+   * opened before sockets kept it.
+   */
+  readonly displayName?: string;
   /** When the socket opened, which counts as hearing from it until its first ping. */
   readonly openedAt: number;
 }
@@ -119,7 +124,7 @@ export class GameRoom extends DurableObject<Env> {
     }
     const pair = new WebSocketPair();
     const [client, server] = [pair[0], pair[1]];
-    const who: RoomSocket = { userId: asUserId(userId), openedAt: Date.now() };
+    const who: RoomSocket = { userId: asUserId(userId), displayName: request.headers.get(NAME_HEADER) ?? '', openedAt: Date.now() };
     this.ctx.acceptWebSocket(server, [userSocketTag(who.userId)]);
     server.serializeAttachment(who);
     void this.inTurn(async () => {
@@ -157,7 +162,7 @@ export class GameRoom extends DurableObject<Env> {
       }
       await this.ready(gameId);
       try {
-        await this.session(gameId).handle(who.userId, message);
+        await this.session(gameId).handle(who.userId, message, who.displayName);
       } catch (error) {
         // `handle` answers every refusal itself; this is anything else, and
         // the page should hear that its change did not happen.

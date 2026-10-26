@@ -12,7 +12,7 @@ interface MessageBoardProps {
   /** Whose posts they are: their names and figures. */
   readonly players: GameState['players'];
   readonly now: number;
-  /** Sends a post, returning `false` if it could not be sent; `null` for someone holding no seat, who only reads. */
+  /** Sends a post, returning `false` if it could not be sent; `null` for someone neither holding a seat nor watching, who only reads. */
   readonly onPost: ((body: string) => boolean) | null;
   /** [Q85, 298] Deletes a post, after asking; the game master's alone, `null` for everyone else. */
   readonly onDelete: ((post: BoardPost) => void) | null;
@@ -27,6 +27,9 @@ interface MessageBoardProps {
  * the game has ended too. Nobody edits a post. [Q85, 298 to 300] The game
  * master deletes one with the trash bin at the end of its name line, and it
  * stays in its place reading "Deleted by the game master."
+ *
+ * [Q317, 8] A watcher's post shows their username with "watching" after it,
+ * and no figure.
  */
 export function MessageBoard({ catalog, posts, players, now, onPost, onDelete, onClose }: MessageBoardProps) {
   const [draft, setDraft] = useState('');
@@ -55,19 +58,21 @@ export function MessageBoard({ catalog, posts, players, now, onPost, onDelete, o
       <ol className="posts" ref={list}>
         {posts.map((post) => {
           const author = players.find((player) => player.id === post.author);
+          const name = post.watcher?.name ?? author?.name;
           return (
             <li key={post.id} className="post">
               {author === undefined ? null : <Portrait catalog={catalog} avatarId={author.avatarId} size={32} label="" />}
               <div>
                 <p className="by">
                   <span>
-                    <b>{author?.name ?? 'Someone'}</b> · {postedLabel(post.postedAt, now)}
+                    <b>{name ?? 'Someone'}</b>
+                    {post.watcher === undefined ? null : ' · watching'} · {postedLabel(post.postedAt, now)}
                   </span>
                   {onDelete === null || post.deleted === true ? null : (
                     <button
                       className="btn ghost delete-post"
                       type="button"
-                      aria-label={`Delete ${author?.name ?? 'this'}’s message`}
+                      aria-label={`Delete ${name ?? 'this'}’s message`}
                       title="Delete"
                       onClick={() => onDelete(post)}
                     >

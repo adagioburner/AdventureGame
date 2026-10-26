@@ -2,7 +2,7 @@ import type { RewardKind } from '@adventure/config';
 import type { NodeId, PlayerId, Seat } from './ids.ts';
 import type { ControlMode, PlannedPath } from './player.ts';
 import type { Reward } from './reward.ts';
-import type { BoardPost } from './messageboard.ts';
+import type { BoardPost, BoardWatcher } from './messageboard.ts';
 
 /**
  * [SOURCE §2] "A turn is: move, then (if the turn ends on a POI) interact
@@ -127,7 +127,10 @@ export interface ForceTurnAction {
  */
 export interface PostMessageAction {
   readonly kind: 'post_message';
-  readonly player: PlayerId;
+  /** The player posting; `null` when `watcher` posts ([Q317, 8]). */
+  readonly player: PlayerId | null;
+  /** [Q317, 8] A watcher posting, by their username; absent when a player posts. */
+  readonly watcher?: BoardWatcher;
   readonly body: string;
   /**
    * The post's identity and timestamp are supplied by the caller, because the

@@ -4010,6 +4010,64 @@ map or picture changed, and the rulebook needs no change.
 
 ---
 
+### Q317. ~~Can people watch a game and talk on its board?~~ — **answered 2026-10-26: yes, the minimal way; before Start someone asks to watch and the game master lets them in as a player, and from Start they follow the game as a resigned player does and post on its board by their username (1-10)**
+
+Andrei, 2026-10-26 at 05:49: *"it would be nice to let people join as
+spectators who can watch and read/send messages"*. Found: anyone logged in
+who had a started game's link could already open it and watch, but could not
+post (the page had no box, and the server refused a post from someone with no
+seat), nobody else could tell they were there, and the game list showed no game
+they were not in. Five choices were put to him: how to find a game to watch,
+whether the game master decides, whether spectators' posts are checked as the
+site board's are, whether players see who is watching, and the rest as set
+out. He answered at 07:20: *"let us go for the minimal change here. Only games
+that have not started yet can be joined fir watching. The game master lets
+watchers in the same way they let in players"*. The minimal version went to
+him as ten points in two cards, each taken as set out at 08:47.
+
+1. **Asking.** Someone not in the game has Ask to watch beside Ask to join on
+   the setup screen. A watcher has no figure and goes by their username.
+2. **Letting in.** The game master sees the request with the others, marked
+   "wants to watch", with Accept and Decline. It needs no free seat. A no reads
+   "The game master declined your request.", as for a player.
+3. **Who watches.** Everyone on the setup screen reads "Watching: Dan, Eve"
+   under the seats. A watcher can leave before Start, as a player can, and the
+   game master cannot remove one, as with players. Cancelling the game tells
+   watchers too.
+4. **Playing instead.** A watcher leaves and asks to join.
+5. **Open games** is as it was: games with a free seat, Ask to join on the
+   row. A full game can be asked to watch only through its link.
+6. **Your games.** Once the game starts it is in a watcher's Your games,
+   reading "watching" where a player's reads "started", and never "Your turn".
+7. **What they see** is what a resigned player sees: the map, cards, Turn log,
+   Messages, Track and Rules, every turn playing out; no Plan a move, Buy,
+   Rest, End turn or Resign. They are never counted as away.
+8. **Posting.** They post as players do, from Start until the game is removed,
+   after it ends too, up to 500 characters, with no checks. A post shows their
+   username and time with "watching" after the name and no figure, counts in
+   "Messages 2" and plays the message sound, as anyone's. The game master
+   deletes it as anyone's.
+9. **No limit** on how many watch.
+10. **Unchanged:** games on one device, and the rulebook.
+
+Built: `setup.requestWatch` in `packages/protocol/src/messages.ts`, a
+`JoinRequest` marked `watch` and `SetupState.watchers` in
+`packages/protocol/src/lobby.ts`, and their rules in `applySetupAction`
+(`packages/session/src/setup.ts`); the username is the login's, which the game's
+Durable Object now keeps on each socket (`apps/server/src/room.ts`). A post's
+author is `null` on a watcher's post, which carries the watcher instead
+(`BoardPost.watcher` in `packages/core/src/messageboard.ts`); `board.post` in
+`packages/session/src/session.ts` takes one from a watcher. The game list's row
+carries the watchers (`apps/server/src/games.ts`). On the page: Ask to watch,
+the request and the Watching line in `apps/web/src/setup/SetupPanel.tsx`, the
+row's "watching" in `apps/web/src/online/GameListScreen.tsx`, and the post in
+`apps/web/src/online/MessageBoard.tsx`. Tried with three accounts in Chromium
+against the server in Cloudflare's local runtime, from asking to watch to a
+post on the board. No rule, number, map or picture changed, and the rulebook
+needs no change.
+
+---
+
 ## C. Decisions I made that are *implementation*, not design
 
 Listed so you can veto any that read as design to you.

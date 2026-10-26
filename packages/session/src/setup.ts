@@ -15,6 +15,7 @@ import {
   type ClientMessage,
   type JoinRequest,
   type NewGameSeat,
+  watchersOf,
   type ProtocolErrorCode,
   type SetupSeat,
   type SetupState,
@@ -49,6 +50,12 @@ import {
  * below names who holds the figure, and a request whose figure was taken
  * shows as such to its sender and to the game master (the panel reads it off
  * the state).
+ *
+ * [Q317] Watchers, Andrei's "minimal change": only a game that has not
+ * started can be asked to watch, and the game master lets a watcher in as a
+ * player, with Accept or Decline. A watcher holds no seat, no figure and no
+ * request's name, going by their username; they can leave before Start, and
+ * to play instead they leave and ask to join.
  *
  * [SOURCE §2, chat] Starting stamina is then `startingStaminaForSeat(seat)`
  * from `@adventure/config`, inside `createGameState`.
@@ -170,6 +177,7 @@ export type SetupAction = Extract<
     type:
       | 'setup.requestJoin'
       | 'setup.updateRequest'
+      | 'setup.requestWatch'
       | 'setup.withdraw'
       | 'setup.leave'
       | 'setup.updateSeat'
@@ -196,6 +204,7 @@ export interface SetupOutcome {
  * Applies one setup message from `by`, or throws `SetupError`. Start moves the
  * setup to `starting`; the game begins when the GM's browser sends the map
  * (`startGame`), since the server does not generate maps (§12.1).
+ * `username` is `by`'s, which a watcher goes by ([Q317, 1]).
  */
 export function applySetupAction(
   state: SetupState,
@@ -203,6 +212,7 @@ export function applySetupAction(
   action: SetupAction,
   limits: SetupLimits,
   now: number,
+  username = '',
 ): SetupOutcome {
   if (state.phase !== 'setup') throw new SetupError('invalid_action', `the game is ${state.phase}, not in setup`);
   const isGameMaster = by === state.gameMaster;
@@ -211,6 +221,8 @@ export function applySetupAction(
   };
   const people = peopleOf(state);
   const seated = people.some((seat) => seat.userId === by);
+  const watchers = watchersOf(state);
+  const watching = watchers.some((watcher) => watcher.userId === by);
 
   switch (action.type) {
     case 'setup.requestJoin':
@@ -224,14 +236,47 @@ export function applySetupAction(
             : 'you already hold a seat in this game',
         );
       }
+      // [Q317, 4] To play instead, a watcher leaves and asks to join.
+      if (watching) {
+        throw new SetupError(
+          'invalid_action',
+          action.type === 'setup.updateRequest'
+            ? 'the game master has just let you in to watch'
+            : 'you are watching this game; leave it first to ask to join',
+        );
+      }
       if (action.type === 'setup.updateRequest' && existing === undefined) {
         throw new SetupError('invalid_action', 'the game master has already answered your request');
+      }
+      if (action.type === 'setup.updateRequest' && existing?.watch === true) {
+        throw new SetupError('invalid_action', 'you asked to watch; a watcher has no name or figure to change');
       }
       const request: JoinRequest = {
         userId: by,
         requestedName: checkedText(action.name, limits.nameMaxLength, 'name'),
         requestedAvatarId: figureNoOneElseHolds(action.avatarId, people, limits),
         requestedAt: existing?.requestedAt ?? now,
+      };
+      const pending =
+        existing === undefined
+          ? [...state.pending, request]
+          : state.pending.map((other) => (other.userId === by ? request : other));
+      return { state: { ...state, pending } };
+    }
+
+    case 'setup.requestWatch': {
+      // [Q317, 1 and 2] No name or figure to pick: a watcher goes by their username.
+      if (seated) throw new SetupError('invalid_action', 'you already hold a seat in this game');
+      if (watching) throw new SetupError('invalid_action', 'you are already watching this game');
+      const name = username.trim();
+      if (name.length === 0) throw new SetupError('invalid_action', 'your username did not reach the server; reload the page');
+      const existing = state.pending.find((pending) => pending.userId === by);
+      const request: JoinRequest = {
+        userId: by,
+        requestedName: name,
+        requestedAvatarId: '',
+        requestedAt: existing?.requestedAt ?? now,
+        watch: true,
       };
       const pending =
         existing === undefined
@@ -249,6 +294,8 @@ export function applySetupAction(
 
     case 'setup.leave': {
       if (isGameMaster) throw new SetupError('invalid_action', 'the game master cannot leave; cancel the game instead');
+      // [Q317, 3] A watcher can leave before Start, as a player can.
+      if (watching) return { state: { ...state, watchers: watchers.filter((watcher) => watcher.userId !== by) } };
       if (!seated) throw new SetupError('invalid_action', 'you hold no seat in this game');
       // [Q51, 22] The seat stays Human, open for someone else.
       return replaceSeat(state, personSeatId(by), openSeat(state.nextSeatId, limits), limits, 1);
@@ -317,6 +364,10 @@ export function applySetupAction(
       if (request === undefined) throw new SetupError('invalid_action', 'there is no such request');
       const pending = state.pending.filter((other) => other.userId !== action.userId);
       if (!action.accept) return { state: { ...state, pending }, declined: action.userId };
+      // [Q317, 2] A watcher needs no free seat.
+      if (request.watch === true) {
+        return { state: { ...state, pending, watchers: [...watchers, { userId: request.userId, name: request.requestedName }] } };
+      }
       const open = state.seats.find(isOpenSeat);
       if (open === undefined) {
         throw new SetupError('game_full', 'no Human seat is free; make a seat Human or raise the number of players first');

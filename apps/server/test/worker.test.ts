@@ -383,6 +383,51 @@ describe('the server, in the local Workers runtime', () => {
     for (const client of [gmList, gmGame]) client.close();
   }, 60_000);
 
+  it('lets someone ask to watch, by their username, and once let in follow the game and post on its board (Q317)', async () => {
+    const gm = await register('Watch_gm');
+    const cal = await register('Watch_cal');
+    const gmList = await Client.open('/api/lobby', gm.token);
+    const calList = await Client.open('/api/lobby', cal.token);
+    gmList.send({ type: 'lobby.create', name: 'Watched' });
+    const { gameId } = await gmList.next((m): m is Extract<ServerMessage, { type: 'lobby.created' }> => m.type === 'lobby.created');
+    const gmGame = await Client.open(`/api/games/${gameId}`, gm.token);
+    const calGame = await Client.open(`/api/games/${gameId}`, cal.token);
+    await calGame.next(isSetup(() => true));
+
+    // [Q317, 1 and 2] The request carries the username from the login, and needs no seat.
+    calGame.send({ type: 'setup.requestWatch', gameId });
+    const asked = await gmGame.next(isSetup((setup) => setup.pending.length === 1));
+    expect(asked.setup.pending[0]).toMatchObject({ userId: cal.user.userId, requestedName: 'Watch_cal', watch: true });
+    gmGame.send({ type: 'setup.respondToJoin', gameId, userId: cal.user.userId, accept: true });
+    const watched = await calGame.next(isSetup((setup) => (setup.watchers ?? []).length === 1));
+    expect(watched.setup.watchers).toEqual([{ userId: cal.user.userId, name: 'Watch_cal' }]);
+    expect(watched.setup.seats.map((seat) => seat.userId)).toEqual([gm.user.userId, null]);
+
+    gmGame.send({ type: 'setup.start', gameId });
+    const request = await gmGame.next((m): m is Extract<ServerMessage, { type: 'gm.requestMapGeneration' }> => m.type === 'gm.requestMapGeneration');
+    gmGame.send({
+      type: 'gm.mapGenerated',
+      gameId,
+      map: generateMap({ seed: request.seed, ruleset: DEFAULT_RULESET, remotenessScorer: defaultRemotenessScorer }),
+    });
+    await calGame.next((m): m is Extract<ServerMessage, { type: 'game.state' }> => m.type === 'game.state');
+
+    // [Q317, 6] Once started, the game is in Cal's Your games, as watched.
+    await calList.next(
+      (m): m is ServerMessage =>
+        m.type === 'lobby.games' && m.games.some((game) => game.gameId === gameId && game.mine && game.watching && game.phase === 'in_progress'),
+    );
+
+    // [Q317, 8] Cal posts, by the username.
+    calGame.send({ type: 'board.post', gameId, body: 'good luck' });
+    const posted = await gmGame.next(
+      (m): m is Extract<ServerMessage, { type: 'game.played' }> => m.type === 'game.played' && m.record.action.kind === 'post_message',
+    );
+    expect(posted.record.action).toMatchObject({ player: null, watcher: { userId: cal.user.userId, name: 'Watch_cal' }, body: 'good luck' });
+
+    for (const client of [gmList, calList, gmGame, calGame]) client.close();
+  }, 60_000);
+
   it('lets the game master delete a finished game from the game list, for everyone at once (Q90)', async () => {
     const gm = await register('Delete_gm');
     const bea = await register('Delete_bea');

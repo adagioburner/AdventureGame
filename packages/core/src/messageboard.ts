@@ -1,4 +1,4 @@
-import type { GameId, PlayerId } from './ids.ts';
+import type { GameId, PlayerId, UserId } from './ids.ts';
 
 /**
  * [SOURCE §4] "A message board lets human players post messages visible to
@@ -18,11 +18,17 @@ import type { GameId, PlayerId } from './ids.ts';
  *    `applyAction`, the single writer of `GameState`.
  *
  * "human players post" — the engine never posts on an AI player's behalf.
+ *
+ * [Q317, 8] Someone the game master let in to watch posts too: such a post
+ * has no player for its author, and carries the watcher instead.
  */
 export interface BoardPost {
   readonly id: string;
   readonly gameId: GameId;
-  readonly author: PlayerId;
+  /** The player who posted; `null` for a watcher's post. */
+  readonly author: PlayerId | null;
+  /** [Q317, 8] The watcher who posted, by their username; absent on a player's post. */
+  readonly watcher?: BoardWatcher;
   /** The words; empty once the post is deleted. */
   readonly body: string;
   readonly postedAt: number;
@@ -31,4 +37,10 @@ export interface BoardPost {
    * and time, and its words are gone. Absent on every post that was not.
    */
   readonly deleted?: true;
+}
+
+/** [Q317, 1 and 8] Someone watching a game, who goes by their username. */
+export interface BoardWatcher {
+  readonly userId: UserId;
+  readonly name: string;
 }

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createGameState, mostGold, startingNodeFor, type GameId, type GameMap, type GameState, type PlayerId, type UserId } from '@adventure/core';
-import { DAY_MS, isOpenSeat, LONGEST_LIFETIME_DAYS, type GameRecord, type SetupState } from '@adventure/protocol';
+import { DAY_MS, isOpenSeat, LONGEST_LIFETIME_DAYS, watchersOf, type BoardPost, type GameRecord, type SetupState } from '@adventure/protocol';
 import { workOutRouteLists } from '../modes/computer.ts';
 import { MissedRecords, OnlineGame } from '../modes/online.ts';
 import { onlinePlay, type OnlinePlay } from '../modes/play.ts';
@@ -220,6 +220,14 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
   const mySeat = setup?.seats.find((seat) => seat.userId === me.userId) ?? null;
   const myPlayer = mySeat === null || live === null ? undefined : live.players.find((player) => player.id === mySeat.playerId);
   const inProgress = live !== null && live.status === 'in_progress';
+  // [Q317, 7 and 8] Someone let in to watch: they follow the game as a resigned player does, and post.
+  const watching = mySeat === null && setup !== null && watchersOf(setup).some((watcher) => watcher.userId === me.userId);
+  const myPlayerId = mySeat?.playerId ?? null;
+  /** Whether a post is this person's own: their player's, or as a watcher their account's. */
+  const ownPost = useCallback(
+    (post: BoardPost): boolean => (myPlayerId !== null ? post.author === myPlayerId : watching && post.watcher?.userId === me.userId),
+    [myPlayerId, watching, me.userId],
+  );
 
   // [Q56, 60] Posts not yet seen on this device, counted on the Messages button while the board is closed.
   const posts = live?.messageBoard ?? [];
@@ -230,7 +238,7 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
     writeSeen(gameId, posts.length);
   }, [panel, posts.length, seen, gameId]);
   // [Q85, 300] A deleted post is not counted.
-  const unread = panel === 'board' ? 0 : posts.slice(seen).filter((post) => post.author !== mySeat?.playerId && post.deleted !== true).length;
+  const unread = panel === 'board' ? 0 : posts.slice(seen).filter((post) => !ownPost(post) && post.deleted !== true).length;
   // [Q63, 144] A message someone else posts is heard as it arrives, whether
   // the board is open or not. The posts already there when the game opened
   // make none, and several arriving together, as after a dropped connection,
@@ -240,10 +248,10 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
     if (live === null) return;
     const known = postsKnown.current;
     postsKnown.current = live.messageBoard.length;
-    if (known !== null && live.messageBoard.length > known && newPostsHeard(live.messageBoard, known, mySeat?.playerId ?? null)) {
+    if (known !== null && live.messageBoard.length > known && newPostsHeard(live.messageBoard, known, ownPost)) {
       sounds.play('message');
     }
-  }, [live, mySeat?.playerId]);
+  }, [live, ownPost]);
 
   // [Q56, 56] The game master's panel under the end time.
   const [endsOpen, setEndsOpen] = useState(false);
@@ -450,11 +458,11 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
                 posts={posts}
                 players={live.players}
                 now={now}
-                onPost={mySeat === null ? null : (body) => channel.send({ type: 'board.post', gameId, body })}
+                onPost={mySeat === null && !watching ? null : (body) => channel.send({ type: 'board.post', gameId, body })}
                 onDelete={
                   isGameMaster
                     ? (post) => {
-                        const author = live.players.find((player) => player.id === post.author)?.name ?? 'this player';
+                        const author = post.watcher?.name ?? live.players.find((player) => player.id === post.author)?.name ?? 'this player';
                         if (!window.confirm(`Delete ${author}’s message? Its words are erased for everyone.`)) return;
                         channel.send({ type: 'gm.deletePost', gameId, postId: post.id });
                       }
@@ -537,6 +545,8 @@ export function OnlineGameScreen({ gameId, login, onBack, onRefused, onGoLocal }
                   const others = [
                     ...setup.seats.filter((seat) => seat.userId !== null && seat.userId !== me.userId).map((seat) => seat.name),
                     ...setup.pending.map((request) => request.requestedName),
+                    // [Q317, 3] Watchers are told too.
+                    ...watchersOf(setup).map((watcher) => watcher.name),
                   ];
                   if (
                     others.length > 0 &&

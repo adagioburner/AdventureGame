@@ -59,9 +59,25 @@ describe('gameListFor (Q48, 5)', () => {
       createdAt: 5,
       endsAt: 100,
       mine: false,
+      watching: false,
       yourTurn: false,
       result: null,
     });
+  });
+
+  it('puts a game someone was let in to watch in their Your games once it has started, marked as watched (Q317, 6)', () => {
+    const cal = asUserId('cal');
+    const rows = [
+      listing('watched-waiting', { watchers: [cal], createdAt: 1 }),
+      listing('watched-started', { phase: 'in_progress', watchers: [cal], turnOf: andrei, createdAt: 2 }),
+      listing('watched-finished', { phase: 'finished', watchers: [cal], result: { ending: 'won', winners: ['Andrei'] }, createdAt: 3 }),
+    ];
+    expect(gameListFor(cal, rows).map((row) => [row.gameId, row.mine, row.watching, row.yourTurn])).toEqual([
+      ['watched-finished', true, true, false],
+      ['watched-started', true, true, false],
+      ['watched-waiting', false, true, false],
+    ]);
+    expect(gameListFor(andrei, rows).map((row) => row.watching)).toEqual([false, false, false]);
   });
 
   it('keeps a finished game in its players’ list, and says whose turn it is (Q54 34, Q55 36)', () => {

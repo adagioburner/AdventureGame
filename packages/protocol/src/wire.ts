@@ -44,6 +44,7 @@ const CLIENT_MESSAGE_TYPE_RECORD: Record<ClientMessage['type'], true> = {
   'lobby.blockPoster': true,
   'setup.requestJoin': true,
   'setup.updateRequest': true,
+  'setup.requestWatch': true,
   'setup.withdraw': true,
   'setup.leave': true,
   'setup.updateSeat': true,

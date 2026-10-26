@@ -171,7 +171,12 @@ export function GameListScreen({ login, onOpen, onLogOut, onRefused }: GameListS
                               <>
                                 {game.yourTurn ? <span className="highlight">Your turn · </span> : null}
                                 {game.gameMaster === me.userId ? 'You are the game master' : `Game master: ${game.gameMasterName}`} ·{' '}
-                                {game.phase === 'setup' ? `waiting for players, ${game.seatsTaken} of ${game.seatsTotal}` : 'started'}
+                                {/* [Q317, 6] "watching" for a game this user was let in to watch. */}
+                                {game.watching
+                                  ? 'watching'
+                                  : game.phase === 'setup'
+                                    ? `waiting for players, ${game.seatsTaken} of ${game.seatsTotal}`
+                                    : 'started'}
                                 {endsOf(game)}
                               </>
                             )}

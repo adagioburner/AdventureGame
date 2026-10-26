@@ -23,6 +23,7 @@ import {
   RESIGNED_THINKING_SECONDS,
   isOpenSeat,
   KEPT_AFTER_END_DAYS,
+  watchersOf,
   LONGEST_LIFETIME_DAYS,
   type ClientMessage,
   type GameRecord,
@@ -121,17 +122,20 @@ export class GameSession {
    * nowhere else — the engine deliberately does not know who the GM is.
    * [SOURCE §3, chat] The GM is the game's creator and the role cannot be
    * transferred, so this check is against a value fixed at creation.
+   *
+   * `username` is the sender's, from their login, which a watcher goes by
+   * ([Q317, 1]); only asking to watch reads it.
    */
-  async handle(from: UserId, message: ClientMessage): Promise<void> {
+  async handle(from: UserId, message: ClientMessage, username = ''): Promise<void> {
     try {
-      await this.dispatch(from, message);
+      await this.dispatch(from, message, username);
     } catch (error) {
       if (!(error instanceof SetupError)) throw error;
       await this.ports.broadcaster.sendTo(from, { type: 'error', code: error.code, message: error.message });
     }
   }
 
-  private async dispatch(from: UserId, message: ClientMessage): Promise<void> {
+  private async dispatch(from: UserId, message: ClientMessage, username: string): Promise<void> {
     if (message.type === 'lobby.create') {
       throw new SetupError('invalid_action', 'games are created from the game list');
     }
@@ -148,6 +152,7 @@ export class GameSession {
     switch (message.type) {
       case 'setup.requestJoin':
       case 'setup.updateRequest':
+      case 'setup.requestWatch':
       case 'setup.withdraw':
       case 'setup.leave':
       case 'setup.updateSeat':
@@ -161,7 +166,7 @@ export class GameSession {
       case 'setup.start':
       case 'setup.setLifetime':
       case 'setup.setShuffleSeats': {
-        const applied = applySetupAction(setup, from, message, this.limits, this.ports.clock.now());
+        const applied = applySetupAction(setup, from, message, this.limits, this.ports.clock.now(), username);
         // [Q165, 650] Start draws the seats once, with Shuffle seats on.
         const outcome =
           message.type === 'setup.start' && applied.state.shuffleSeats === true
@@ -318,16 +323,22 @@ export class GameSession {
       case 'board.post': {
         // [Q56, 59] Anyone holding a seat, resigned or not, from Start until the
         // game is removed, after it ends too. The computer never posts.
+        // [Q317, 8] Anyone let in to watch, in the same way, by their username.
         const game = await this.ports.games.load(this.gameId);
         if (game === null) throw new SetupError('invalid_action', 'the board opens when the game starts');
         const seat = setup.seats.find((candidate) => candidate.userId === from);
-        if (seat === undefined) throw new SetupError('invalid_action', 'only the players in this game can post');
+        const watcher = watchersOf(setup).find((candidate) => candidate.userId === from);
+        if (seat === undefined && watcher === undefined) {
+          throw new SetupError('invalid_action', 'only the players and watchers in this game can post');
+        }
         const body = message.body.trim();
         if (body.length === 0) throw new SetupError('invalid_action', 'a post needs some words');
         if ([...body].length > BOARD_POST_MAX) throw new SetupError('invalid_action', `a post is at most ${BOARD_POST_MAX} characters`);
         const postedAt = this.ports.clock.now();
         const id = `post-${game.messageBoard.length + 1}`;
-        await this.play(setup, game, { kind: 'post_message', player: seat.playerId, body, id, postedAt }, from);
+        const author =
+          seat !== undefined ? { player: seat.playerId } : { player: null, watcher: { userId: from, name: watcher?.name ?? '' } };
+        await this.play(setup, game, { kind: 'post_message', ...author, body, id, postedAt }, from);
         return;
       }
 
@@ -540,6 +551,7 @@ export function listingOf(setup: SetupState, game: GameState | null): GameListin
     createdAt: setup.createdAt,
     endsAt: setup.endsAt,
     members: people.map((seat) => seat.userId).filter((id): id is UserId => id !== null),
+    watchers: watchersOf(setup).map((watcher) => watcher.userId),
     turnOf: active !== null && active.control === 'human' ? (setup.seats.find((seat) => seat.playerId === active.id)?.userId ?? null) : null,
     result:
       game === null || !finished || game.ending === null

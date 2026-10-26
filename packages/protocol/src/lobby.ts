@@ -24,6 +24,8 @@ export interface GameSummary {
   readonly endsAt: number | null;
   /** Whether the user this row was sent to holds a seat in the game. */
   readonly mine: boolean;
+  /** [Q317, 6] Whether the user this row was sent to watches the game rather than plays in it. */
+  readonly watching: boolean;
   /** [Q54, 34] Whether it is this user's turn. */
   readonly yourTurn: boolean;
   /** [Q55, 36] How a finished game ended and who won; `null` until then. */
@@ -50,6 +52,27 @@ export interface JoinRequest {
   readonly requestedName: string;
   readonly requestedAvatarId: string;
   readonly requestedAt: number;
+  /**
+   * [Q317, 1 and 2] Asking to watch rather than play: `requestedName` is the
+   * sender's username and `requestedAvatarId` is empty, since a watcher has
+   * no figure, and accepting it needs no free seat. Absent on a request to play.
+   */
+  readonly watch?: true;
+}
+
+/**
+ * [Q317, 1 to 3] Someone the game master let in to watch: no seat and no
+ * figure, going by their username. From Start they follow the game and post
+ * on its board (5 to 8).
+ */
+export interface SetupWatcher {
+  readonly userId: UserId;
+  readonly name: string;
+}
+
+/** [Q317, 3] The people let in to watch; none on a setup stored before there were watchers. */
+export function watchersOf(setup: SetupState): readonly SetupWatcher[] {
+  return setup.watchers ?? [];
 }
 
 /**
@@ -143,6 +166,11 @@ export interface SetupState {
   /** The `n` the next computer or open seat's `id` gets. */
   readonly nextSeatId: number;
   readonly pending: readonly JoinRequest[];
+  /**
+   * [Q317, 3] The people let in to watch, in the order they were let in. Absent
+   * on a setup stored before there were watchers; read it with `watchersOf`.
+   */
+  readonly watchers?: readonly SetupWatcher[];
   /** [SOURCE §1.3] The map seed, so the whole map is reproducible from it. */
   readonly mapSeed: string;
   /**

@@ -61,8 +61,17 @@ export type ClientMessage =
    * answered it, so an edit that crosses a "no" does not ask again.
    */
   | { readonly type: 'setup.updateRequest'; readonly gameId: GameId; readonly name: string; readonly avatarId: string }
+  /**
+   * [Q317, 1 and 2] Ask to watch: the game master accepts or declines it as a
+   * request to join, and the watcher goes by their username. Asking to watch
+   * with a request to join waiting changes that request, and the other way round.
+   */
+  | { readonly type: 'setup.requestWatch'; readonly gameId: GameId }
   | { readonly type: 'setup.withdraw'; readonly gameId: GameId }
-  /** A seated person other than the game master gives up their seat. */
+  /**
+   * A seated person other than the game master gives up their seat; [Q317, 3]
+   * a watcher stops watching.
+   */
   | { readonly type: 'setup.leave'; readonly gameId: GameId }
   /**
    * A person changes their own seat's name and figure, or the game master a
@@ -153,7 +162,8 @@ export type ClientMessage =
    * [SOURCE §12.3, chat] The board is game state, so a post is an ordinary
    * state change: it comes back to everyone as a `game.played` record.
    * [Q56, 59] Anyone holding a seat may post, from Start until the game is
-   * removed, up to `BOARD_POST_MAX` characters.
+   * removed, up to `BOARD_POST_MAX` characters; [Q317, 8] so may anyone the
+   * game master let in to watch.
    */
   | { readonly type: 'board.post'; readonly gameId: GameId; readonly body: string }
   /**

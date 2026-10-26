@@ -1,4 +1,4 @@
-import type { BoardPost, GameEvent, PlayerId } from '@adventure/core';
+import type { BoardPost, GameEvent } from '@adventure/core';
 import type { SoundName } from '../art/manifest.ts';
 
 /**
@@ -26,9 +26,10 @@ export function isRest(events: readonly GameEvent[]): boolean {
 
 /**
  * [Q63, 144] Whether posts that just arrived make the message sound: one
- * sound for any number of them, and none when all of them are `me`'s own.
+ * sound for any number of them, and none when all of them are this page's
+ * own, as `own` tells: its player's, or [Q317, 8] its watcher's.
  * `known` is how many posts were on the board before they came.
  */
-export function newPostsHeard(posts: readonly BoardPost[], known: number, me: PlayerId | null): boolean {
-  return posts.slice(known).some((post) => post.author !== me);
+export function newPostsHeard(posts: readonly BoardPost[], known: number, own: (post: BoardPost) => boolean): boolean {
+  return posts.slice(known).some((post) => !own(post));
 }

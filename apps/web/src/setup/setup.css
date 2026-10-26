@@ -80,6 +80,22 @@
   color: var(--missed);
   font-weight: 600;
 }
+/* [Q317, 2] A request to watch says so under the name, without the warning's colour. */
+.who-asks small.asks-to-watch {
+  color: var(--muted);
+  font-weight: 400;
+}
+/* [Q317, 1] Ask to join and Ask to watch, side by side. */
+.ask-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+/* [Q317, 3] "Watching: Dan, Eve" under the seats. */
+.watchers {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
 .request + .request {
   padding-top: 8px;
   border-top: 1px solid var(--line);

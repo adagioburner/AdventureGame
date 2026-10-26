@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { asGameId, asNodeId, asPlayerId, type BoardPost, type GameEvent, type InteractionResolution } from '@adventure/core';
+import { asGameId, asNodeId, asPlayerId, asUserId, type BoardPost, type GameEvent, type InteractionResolution } from '@adventure/core';
 import { endingSound, isRest, newPostsHeard } from './cues.ts';
 
 const player = asPlayerId('p1');
@@ -47,18 +47,28 @@ describe('the message sound (Q63, 144)', () => {
   const other = asPlayerId('p2');
   const post = (author: typeof player, n: number): BoardPost => ({ id: `m${n}`, gameId: asGameId('g'), author, body: 'hi', postedAt: n });
 
+  const byPlayer = (post: BoardPost): boolean => post.author === player;
+
   it('plays once for posts someone else made, however many arrive together', () => {
     const board = [post(player, 1), post(other, 2), post(other, 3), post(player, 4)];
-    expect(newPostsHeard(board, 1, player)).toBe(true);
+    expect(newPostsHeard(board, 1, byPlayer)).toBe(true);
   });
 
   it('is silent for one’s own posts and for posts already known', () => {
     const board = [post(other, 1), post(player, 2)];
-    expect(newPostsHeard(board, 1, player)).toBe(false);
-    expect(newPostsHeard(board, 2, player)).toBe(false);
+    expect(newPostsHeard(board, 1, byPlayer)).toBe(false);
+    expect(newPostsHeard(board, 2, byPlayer)).toBe(false);
   });
 
   it('hears every post for someone who holds no seat', () => {
-    expect(newPostsHeard([post(player, 1)], 0, null)).toBe(true);
+    expect(newPostsHeard([post(player, 1)], 0, () => false)).toBe(true);
+  });
+
+  it('is silent for a watcher’s own posts, and hears other watchers’ (Q317, 8)', () => {
+    const dan = asUserId('dan');
+    const watched = (userId: typeof dan, n: number): BoardPost => ({ ...post(player, n), author: null, watcher: { userId, name: userId } });
+    const byDan = (candidate: BoardPost): boolean => candidate.watcher?.userId === dan;
+    expect(newPostsHeard([watched(dan, 1)], 0, byDan)).toBe(false);
+    expect(newPostsHeard([watched(asUserId('eve'), 1)], 0, byDan)).toBe(true);
   });
 });

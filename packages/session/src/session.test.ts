@@ -430,10 +430,36 @@ describe('GameSession in play', () => {
       ['post-2', 'seat-1', 500, 5],
     ]);
     expect(h.take().filter(({ message }) => message.type === 'error').map(({ to, message }) => [to, message.type === 'error' && message.message])).toEqual([
-      ['cal', 'only the players in this game can post'],
+      ['cal', 'only the players and watchers in this game can post'],
       ['andrei', 'a post needs some words'],
       ['andrei', 'a post is at most 500 characters'],
     ]);
+  });
+
+  it('keeps posts from a watcher the game master let in, by their username, and lists the watchers (Q317, 6 and 8)', async () => {
+    const h = harness();
+    const cal = asUserId('cal');
+    const dan = asUserId('dan');
+    await h.session.create({ name: 'g', gameMaster: { userId: andrei, displayName: 'Andrei' }, mapSeed: 'fixture' });
+    await h.session.handle(cal, { type: 'setup.requestWatch', gameId: G }, 'Cal_99');
+    await h.session.handle(dan, { type: 'setup.requestWatch', gameId: G }, 'Dan');
+    await send(h.session, andrei, { type: 'setup.respondToJoin', gameId: G, userId: cal, accept: true });
+    expect(h.rows.get(G)?.watchers).toEqual([cal]);
+    expect(h.rows.get(G)?.members).toEqual([andrei]);
+    await send(h.session, andrei, { type: 'setup.start', gameId: G });
+    await send(h.session, andrei, { type: 'gm.mapGenerated', gameId: G, map: playMap });
+    h.take();
+    await send(h.session, cal, { type: 'board.post', gameId: G, body: 'go Andrei' });
+    // Dan asked but was not let in before the start.
+    await send(h.session, dan, { type: 'board.post', gameId: G, body: 'hi' });
+    expect(h.game()?.messageBoard).toEqual([
+      { id: 'post-1', gameId: G, author: null, watcher: { userId: cal, name: 'Cal_99' }, body: 'go Andrei', postedAt: 5 },
+    ]);
+    expect(h.take().filter(({ message }) => message.type === 'error').map(({ to }) => to)).toEqual([dan]);
+    // [Q85, 298] The game master deletes a watcher's post as anyone's.
+    await send(h.session, andrei, { type: 'gm.deletePost', gameId: G, postId: 'post-1' });
+    expect(h.game()?.messageBoard[0]).toMatchObject({ author: null, watcher: { name: 'Cal_99' }, body: '', deleted: true });
+    expect(h.records().find((record) => record.action.kind === 'post_message')?.action).toMatchObject({ body: '', player: null });
   });
 
   it('lets the game master end the game, the most gold winning, which closes it and marks the row finished (Q85, 291)', async () => {
