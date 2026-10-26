@@ -73,6 +73,11 @@
   font-weight: 600;
 }
 
+/* [Q309, 1] The login page's Rules at the right end of its top bar, on a phone too. */
+.bar.login .btn {
+  margin-left: auto;
+}
+
 /* [Q72, 282] In an online game the game's name and seed are cut short when the
    bar is full, rather than pushing its buttons to a second row. */
 .bar.online .seed-shown {
