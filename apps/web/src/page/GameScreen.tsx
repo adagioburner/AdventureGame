@@ -548,6 +548,8 @@ export function GameScreen({
       return { x: at.x, above: top, below: at.y + CROSS_GAP_PX };
     };
   }, [askedKind, askedAt, active]);
+  // [Q318] The question appears once the map has finished gliding there.
+  const glided = useCallback(() => !(handle.current?.gliding() ?? false), []);
   /** [768] Done: everything picked, bought at once; nothing if nothing was. */
   const finishBuying = (skills: BuyAction['skills']): void => {
     setBuyTurn(null);
@@ -823,7 +825,9 @@ export function GameScreen({
             kind={askedKind}
             restGain={shown.map.ruleset.config.movement.REST_STAMINA_GAIN}
             locate={questionAt}
+            ready={glided}
             offline={offline}
+            onShown={() => sounds.play('question')}
             onNo={() => setAsked(null)}
             onYes={() => endTurnNow(false)}
           />
