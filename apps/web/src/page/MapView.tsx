@@ -2,7 +2,17 @@ import { useEffect, useRef, useState } from 'react';
 import { Application } from 'pixi.js';
 import { DEFAULT_RULESET } from '@adventure/config';
 import type { GameMap, GameState, NodeId, PathPreview, PlayerId, Point } from '@adventure/core';
-import { createCameraController, FOLLOW_MARGIN_OF_VIEW, followInto, glideCenter, GLIDE_MS, type CameraController } from '../interaction/camera.ts';
+import {
+  createCameraController,
+  FOLLOW_MARGIN_OF_VIEW,
+  followInto,
+  glideCenter,
+  GLIDE_MS,
+  ROOM_MARGIN_PX,
+  roomFor,
+  type CameraController,
+  type ScreenBox,
+} from '../interaction/camera.ts';
 import { edgeMarkers, type EdgeMarkerLayout, type FigureOnScreen } from '../interaction/offscreen.ts';
 import { figureTop, pick, planeToScreen, screenToPlane, type Pick } from '../interaction/picking.ts';
 import { fitToViewport, type Camera } from '../render/isometric.ts';
@@ -39,6 +49,19 @@ export interface MapHandle {
    * is, or else to `node`, and follow walks from now on.
    */
   track(node: NodeId | null): void;
+  /**
+   * [Q314, 6] A mark for "the map is following now", or null when it is not.
+   * `makeRoom` with it does nothing once the viewer has pressed, panned or
+   * zoomed the map, or something else has taken the map somewhere, since.
+   */
+  followMark(): number | null;
+  /**
+   * [Andrei, 2026-10-26] Q314, 6 and 7: slide the map just far enough that
+   * `box`, in CSS pixels in the map's box, is not cut off by its edges, over
+   * `GLIDE_MS` at the zoom the view already has, as `glideTo` does. Nothing,
+   * if `mark` from `followMark` no longer holds.
+   */
+  makeRoom(box: ScreenBox, mark: number): void;
 }
 
 interface MapViewProps {
@@ -168,6 +191,9 @@ export function MapView({
   // Whether a walk takes the map along. It follows `follow`, and stops at once
   // when the map is moved, before the page has unpressed Track.
   const following = useRef(follow);
+  // [Q314, 6] Counts the times the viewer or the page took the map somewhere,
+  // so that a notice's room is made only while nothing has since.
+  const aims = useRef(0);
   // [Q86, 330 and 331] Counts up to build the map again after it failed to
   // start or lost its drawing surface; `broken` once that happened too often.
   const [build, setBuild] = useState(0);
@@ -288,8 +314,10 @@ export function MapView({
         app.canvas.removeEventListener('webglcontextrestored', onRestored);
       });
 
-      // `chasing` for Track's glide to a walking figure, which the walk's
-      // own following waits for; it aims at wherever the figure is by then.
+      // `chasing` for a glide the walk's own following waits for: Track's to a
+      // walking figure, which aims at wherever the figure is by then, and the
+      // glide that makes room for a turn's notice (Q314, 6), which would
+      // otherwise stop as the following catches up with the walk's last step.
       let glide: { from: Point; to: () => Point; start: number; chasing: boolean } | null = null;
       // [Andrei, 2026-09-24] Q47: a walking figure that nears the edge of the
       // view takes the map along with it, while Track is pressed (Q57).
@@ -299,6 +327,8 @@ export function MapView({
       };
       /** [Q316, 4] On the player's own turn moving the map stops a glide, while a walk is followed still. */
       const halt = (): void => {
+        // [Q314, 6] Either way the map has been taken somewhere: no more room is made for a notice on its way.
+        aims.current++;
         if (latest.current.keepFollowing) glide = null;
         else stopCamera();
       };
@@ -444,6 +474,7 @@ export function MapView({
         // A press stops the glide; only an actual drag or pinch counts as
         // moving the map, which stops the following too.
         glide = null;
+        aims.current++;
         element.setPointerCapture(event.pointerId);
         const at = local(event);
         pointers.set(event.pointerId, at);
@@ -548,9 +579,11 @@ export function MapView({
           const to = planeOf(node);
           glide = { from: camera.camera.center, to: () => to, start: performance.now(), chasing: false };
           touched = true;
+          aims.current++;
         },
         track: (node) => {
           following.current = true;
+          aims.current++;
           const walking = latest.current.walker;
           if (walking !== null) {
             // Wherever the figure has got to; once its walk is over, the node it stands on.
@@ -565,6 +598,14 @@ export function MapView({
             const to = planeOf(node);
             glide = { from: camera.camera.center, to: () => to, start: performance.now(), chasing: false };
           }
+          touched = true;
+        },
+        followMark: () => (following.current ? aims.current : null),
+        makeRoom: (box, mark) => {
+          if (mark !== aims.current) return;
+          const to = roomFor(camera.camera, viewport(), box, ROOM_MARGIN_PX);
+          if (to.x === camera.camera.center.x && to.y === camera.camera.center.y) return;
+          glide = { from: camera.camera.center, to: () => to, start: performance.now(), chasing: true };
           touched = true;
         },
       });

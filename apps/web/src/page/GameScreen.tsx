@@ -14,6 +14,7 @@ import {
   type Point,
   type TurnAction,
 } from '@adventure/core';
+import type { ScreenBox } from '../interaction/camera.ts';
 import {
   createMoveModeController,
   endTurnOutcome,
@@ -32,7 +33,7 @@ import type { FigureCue, MapScene, Walker } from '../render/sceneModel.ts';
 import { endingSound, isRest } from '../sound/cues.ts';
 import { soundTableOf, sounds } from '../sound/player.ts';
 import { BuyPanel } from './BuyPanel.tsx';
-import { ClaimNotice, EndCard, PurchaseNotice, ResultCard } from './Cards.tsx';
+import { ClaimNotice, EndCard, FightNotice, PurchaseNotice } from './Cards.tsx';
 import { EndTurnQuestion, type QuestionPlace } from './EndTurnQuestion.tsx';
 import { isUnguardedClaim, journalEntry, purchaseEntry, purchaseNotices, type JournalEntry } from './journal.ts';
 import { MapView, type MapHandle } from './MapView.tsx';
@@ -50,10 +51,11 @@ const FIGURE_GAP_PX = 8;
 /**
  * How long End Turn's walk takes per step, the die tumbles, a notice stays up,
  * and an unguarded claim's notice takes to fade in, stays up (2 seconds, his
- * pick) and takes to fade out; how long a computer's die card stays up
- * (3 seconds, Q42); how long a figure found from its card stands on its
- * ring (2 seconds, [Q120, 471]); and how long the figure on turn blinks over
- * a route saved from the turn before (2 seconds, [Q145, 574]).
+ * pick) and takes to fade out; how long a fight's notice stays up once the
+ * die has stopped (3 seconds, [Q314, 2]); how long a figure found from its
+ * card stands on its ring (2 seconds, [Q120, 471]); and how long the figure
+ * on turn blinks over a route saved from the turn before (2 seconds, [Q145,
+ * 574]).
  */
 export const timing = {
   stepMs: 220,
@@ -62,7 +64,7 @@ export const timing = {
   appearMs: 200,
   claimMs: 2000,
   fadeMs: 500,
-  computerCardMs: 3000,
+  fightMs: 3000,
   foundMs: 2000,
   savedRouteBlinkMs: 2000,
 };
@@ -121,7 +123,8 @@ export function GameScreen({
   const [armed, setArmed] = useState(false);
   const [walker, setWalker] = useState<Walker | null>(null);
   const [inFlight, setInFlight] = useState<{ path: PathPreview | null; waypoint: NodeId | null } | null>(null);
-  const [result, setResult] = useState<{ turn: PlayedTurn; rolling: boolean } | null>(null);
+  // `room`: [Q314, 6] the map's `followMark` as the walk ended, if it was following it.
+  const [result, setResult] = useState<{ turn: PlayedTurn; rolling: boolean; room: number | null } | null>(null);
   const [entries, setEntries] = useState<readonly JournalEntry[]>(() => journalOf(source.history));
   const [notice, setNotice] = useState<string | null>(null);
   const [endOpen, setEndOpen] = useState(true);
@@ -168,11 +171,10 @@ export function GameScreen({
 
   // [Q145, 574] The turn shown whose opening blink is over: from then on a
   // route saved from the turn before shows as planned (575). The blink is
-  // timed from when the map can glide to the player on turn (Q46): after an
-  // unguarded claim's notice.
+  // timed from when the map can glide to the player on turn (Q46): after a
+  // claim's or a fight's notice ([Q314, 4]).
   const [settledTurn, setSettledTurn] = useState<number | null>(null);
-  const turnShown =
-    shown.status === 'in_progress' && !busy && !(result !== null && isUnguardedClaim(result.turn)) ? shown.turn.number : null;
+  const turnShown = shown.status === 'in_progress' && !busy && result === null ? shown.turn.number : null;
   useEffect(() => {
     if (turnShown === null) return;
     const timer = window.setTimeout(() => setSettledTurn(turnShown), timing.savedRouteBlinkMs);
@@ -186,23 +188,18 @@ export function GameScreen({
   }, [found]);
 
   // [Andrei, 2026-09-24] "the unguarded poi should produce a card that fades
-  // itself. The guarded POI produce a card with a die roll that has an ok
-  // button": an unguarded claim's notice has no OK and goes once it has faded.
+  // itself": an unguarded claim's notice has no OK and goes once it has faded.
+  // [Q314, 3] So does a fight's, anyone's, once the die has stopped.
   useEffect(() => {
-    if (result === null || result.rolling || !isUnguardedClaim(result.turn)) return;
-    const timer = window.setTimeout(() => setResult(null), timing.claimMs + timing.fadeMs);
+    if (result === null || result.rolling) return;
+    const stayMs = isUnguardedClaim(result.turn) ? timing.claimMs : timing.fightMs;
+    const timer = window.setTimeout(() => setResult(null), stayMs + timing.fadeMs);
     return () => window.clearTimeout(timer);
   }, [result]);
-  // [Andrei, 2026-09-24] Q42: "the computer's die panel closes itself, pressing
-  // OK is not necessary". OK still closes it sooner. [Q56, 50] Online, so does every other player's:
-  // only a card of this page's own player waits for OK.
-  useEffect(() => {
-    if (result === null || result.rolling || isUnguardedClaim(result.turn)) return;
-    if (source.localPlayers.has(result.turn.player)) return;
-    const timer = window.setTimeout(() => setResult(null), timing.computerCardMs);
-    return () => window.clearTimeout(timer);
-  }, [result, source]);
   const locateFigure = useCallback((player: PlayerId) => handle.current?.screenOfFigure(player) ?? null, []);
+  /** [Q314, 6] A turn's notice makes room for itself on the map only if the map followed the walk. */
+  const makeRoom = (room: number | null): ((box: ScreenBox) => void) | undefined =>
+    room === null ? undefined : (box) => handle.current?.makeRoom(box, room);
 
   const commit = useRef<(action: TurnAction) => void>(() => undefined);
   /** Commit a turn to `play`, keeping `planned` to walk it along when it comes back, after what a computer `buy`s first. */
@@ -413,7 +410,8 @@ export function GameScreen({
     // stamina goes up on their card.
     if (isRest(turn.events)) sounds.play('rest');
     const moved = find(turn.events, 'moved');
-    if (moved !== undefined && moved.resolution.walked.length > 0) {
+    const walked = moved !== undefined && moved.resolution.walked.length > 0;
+    if (walked) {
       const nodes = [moved.resolution.from, ...moved.resolution.walked].map((node) => position(before.map.graph, node));
       // [Q63, 131] A footstep each time the figure reaches the next node, timed
       // by the sound's own clock so the steps keep the walk's pace however
@@ -423,13 +421,18 @@ export function GameScreen({
     }
     const interacted = find(turn.events, 'interacted');
     if (interacted === undefined || interacted.resolution.reward === null) return;
+    // [Andrei, 2026-10-26] Q314, 6: "when we are tracking someone's movement,
+    // and their turn ends with a floater, it makes sense to bring them into
+    // view enough so that the floater is not cut off". Whenever the map
+    // followed the walk, Track's or your own (Q316).
+    const room = walked ? (handle.current?.followMark() ?? null) : null;
     if (interacted.resolution.roll !== null) {
-      setResult({ turn, rolling: true });
+      setResult({ turn, rolling: true, room });
       await sleep(timing.tumbleMs);
     }
-    setResult({ turn, rolling: false });
+    setResult({ turn, rolling: false, room });
     // [Q63, 134 and 136] As an unguarded claim's notice appears, or as the die
-    // stops and the card shows whether the guard was beaten.
+    // stops and the fight's notice shows whether the guard was beaten.
     const ending = endingSound(turn.events);
     if (ending !== null) sounds.play(ending);
   };
@@ -466,14 +469,14 @@ export function GameScreen({
 
   // [Andrei, 2026-09-24] "we need to center the map on the current player's
   // figure at the beginning of each turn, both human and AI" (Q46): the map
-  // glides there at the zoom it already has, from the first turn on. After an
-  // unguarded claim it waits until the claim's notice has faded, since the
-  // notice rides on the figure that made the claim. [Q57, 74] Only while Track
+  // glides there at the zoom it already has, from the first turn on. After a
+  // claim or a fight it waits until the notice has faded, since the notice
+  // rides on the figure that made it ([Q314, 4]). [Q57, 74] Only while Track
   // is pressed, on one device as online.
   const centeredTurn = useRef<number | null>(null);
   useEffect(() => {
     if (!mapReady || busy || shown.status !== 'in_progress') return;
-    if (result !== null && isUnguardedClaim(result.turn)) return;
+    if (result !== null) return;
     if (centeredTurn.current === shown.turn.number) return;
     const player = shown.players[shown.turn.activeSeat - 1];
     if (player === undefined) return;
@@ -838,9 +841,20 @@ export function GameScreen({
             stayMs={timing.claimMs}
             appearMs={timing.appearMs}
             fadeMs={timing.fadeMs}
+            onPlaced={makeRoom(result.room)}
           />
         ) : (
-          <ResultCard catalog={catalog} turn={result.turn} rolling={result.rolling} onClose={() => setResult(null)} />
+          <FightNotice
+            key={result.turn.after.turn.number}
+            catalog={catalog}
+            turn={result.turn}
+            rolling={result.rolling}
+            locate={locateFigure}
+            stayMs={timing.tumbleMs + timing.fightMs}
+            appearMs={timing.appearMs}
+            fadeMs={timing.fadeMs}
+            onPlaced={makeRoom(result.room)}
+          />
         )}
         {bought === null ? null : (
           <PurchaseNotice
@@ -853,7 +867,7 @@ export function GameScreen({
             fadeMs={timing.fadeMs}
           />
         )}
-        {/* The winning turn's own card, or the purchase that won, comes first; OK on a card brings up the end. */}
+        {/* The winning turn's own notice, or the purchase that won, fades first, and then the end comes up. */}
         {shown.status === 'finished' && endOpen && inFlight === null && result === null && bought === null ? (
           <EndCard catalog={catalog} state={shown} newGameLabel={newGameLabel} onNewGame={onNewGame} onClose={() => setEndOpen(false)} />
         ) : null}

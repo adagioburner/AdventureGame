@@ -297,8 +297,7 @@ function victoryLine(winners: number, after: GameState): string {
  */
 /**
  * Whether the turn took an unguarded POI's reward. [Andrei, 2026-09-24] Its
- * result card has no OK and fades out by itself; a guard fight's card, with
- * its die, waits for OK.
+ * notice reads only what was taken; a guard fight's has the die ([Q314, 1]).
  */
 export function isUnguardedClaim(turn: PlayedTurn): boolean {
   const interacted = find(turn.events, 'interacted');
