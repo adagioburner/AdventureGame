@@ -63,7 +63,7 @@ interface GameScreenProps {
   readonly away?: ReadonlySet<PlayerId> | undefined;
   /** [Q54, 31 and 33] Online, what the game shown waits on when someone is away; `null` when nobody is. */
   readonly waitingOn?: ((state: GameState) => string | null) | undefined;
-  /** [Q56, 71] Online, the connection to the server is down and being brought back. */
+  /** [Q56, 71] Online, the connection to the server is down and being brought back; [Q311] until the turns missed meanwhile have arrived. */
   readonly offline?: boolean;
   /** [Q56, 58] Online, the message board, shown where the turn log is while it is open. */
   readonly board?: ReactNode;
@@ -568,6 +568,9 @@ export function GameScreen({
   };
   /** [Q57, 76] End turn and Rest press Track, without moving the map, so the walk and the turns after it are watched. */
   const endTurn = (rest: boolean): void => {
+    // [Q311] Never from a game shown behind the page's own: a change has
+    // arrived that is not on the screen yet.
+    if (shown !== source.state) return;
     if (active !== undefined) setPressed({ turn: shown.turn.number, outcome: endTurnOutcome(shown, active.id, move) });
     if (rest) controller.rest();
     else controller.endTurn();

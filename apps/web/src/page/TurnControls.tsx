@@ -27,7 +27,7 @@ interface TurnControlsProps {
   readonly othersTurn: boolean;
   /** Whether this page has a figure to plan for now. */
   readonly canPlan: boolean;
-  /** [Q56, 71] The connection is down: Rest and End turn wait for it. */
+  /** [Q56, 71] The connection is down, or [Q311] the turns missed meanwhile have not all arrived: Rest and End turn wait for them. */
   readonly offline: boolean;
   /** [Q190, 768] The buy panel is open: Rest and End turn wait for its Done or Cancel. */
   readonly buying?: boolean;
