@@ -4325,6 +4325,67 @@ number, map or picture changed, and the rulebook needs no change.
 
 ---
 
+### Q320. ~~How do you keep track of players out of view?~~ — **answered 2026-10-26: a marker just inside the map's edge for every player whose figure is wholly out of view, at any zoom: the portrait from their card in a round badge with an arrow pointing at them, 48 px across on a laptop and 40 on a phone; a tap finds them as their card does; markers slide apart, go round the map's buttons, and slide a little off reward icons, guard numbers, figures and the route, its turn bubbles too (1-9)**
+
+Andrei, 2026-10-26 at 06:47: *"when i zoom on, i lose track of where other
+players are. cN we vave small floaters with character figurines and arrows
+floating near the edge of the screen and pointing in the direction of where
+those players are"*. Mocked up from a working draft in a real game (seed
+adventure, 5 players, turn 61), zoomed in on one player with three others out
+of view, on a laptop and a 390 px phone.
+
+1. **Look.** A, the head and shoulders from the player cards in a round badge
+   (recommended); B, the whole figurine in a small tile. Both rimmed in the
+   yellow of a selected figure's outline (Q305, 10) with a thin dark line round
+   it, and an arrow on the rim pointing at the figure. **Answered** at 07:45: A.
+2. **Size.** 48 px across on a laptop and 40 on a phone (recommended), or 48
+   on both. **Answered** at 07:46: 48 and 40.
+3. **Whose.** Every player whose figure is out of view, the player on turn
+   too, all alike (recommended); or everyone but the player on turn.
+   **Answered** at 07:46: every player, all alike.
+4. **When.** Once the whole figure is out of view, at any zoom (recommended);
+   once the ring under it is; or only while zoomed in past the whole map.
+   **Answered** at 07:46: the whole figure, at any zoom.
+5. **Tapping one.** Finds that player as clicking their card does, Q120
+   (recommended); or nothing. **Answered** at 07:46: as the card does.
+6. **Crowding.** Markers that would overlap slide apart along the edge and go
+   round the map's buttons (recommended); or each sits exactly in its
+   player's direction, over another marker or under a button. **Answered** at
+   07:47: slide apart and go round.
+7. **What a marker keeps off.** Andrei at 07:48: *"it would also be nice to
+   adjust the marker positions slightly so they dont cover important things"*.
+   Put to him: a marker slides along the edge by at most its own width to the
+   nearest spot clear of them, and stays put when none that close is; of
+   figures, sites and the route, all three recommended. **Answered** at 08:04:
+   *"the site pictures are eye candy only, it's fone to cover them, but the
+   icons and guard numbers are important"*.
+8. **Figures and the route.** Not in that answer, so asked on their own:
+   figures and the route too (recommended); figures but not the route; or only
+   the icons and numbers. **Answered** at 08:27: figures and the route too.
+9. **Turn bubbles.** The numbered bubbles that mark where later turns end on a
+   route being planned (Q315) came to main after 8: markers keep off them too
+   (recommended), or may cover them. **Answered** at 14:39: keep off them too.
+
+Built: `edgeMarkers` in `apps/web/src/interaction/offscreen.ts` lays the
+markers out: each where the line from the middle of the map's box to its
+figure leaves the box, drawn in by the marker's half width, its arrow and 6 px;
+the edge steps round the map's buttons; markers closer than their width and
+12 px slide apart about where they wanted to be; and one over something it
+keeps off tries spots along the edge 2 px at a time, out to its own width,
+keeping last frame's side while that spot is clear so it does not jump from
+side to side as the map moves. `MapView` draws one per player and places them
+every frame, so they follow the map and a figure walking at End turn; what
+they keep off is the unclaimed sites' icons and numbers, the figures in view
+and their rings, and the route's dots, cross, turn bubbles and waypoint
+flag. `GameScreen`
+gives the map its card's find (`findPlayer`), so a game on this device and
+online both have them, during the game and after it ends as cards find
+players then too (Q120, 474); the New game screens have none. The look is
+`.edge-marker` in `apps/web/index.html`. No rule, number, map or picture
+changed, and the rulebook needs no change.
+
+---
+
 ## C. Decisions I made that are *implementation*, not design
 
 Listed so you can veto any that read as design to you.
