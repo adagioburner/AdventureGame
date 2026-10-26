@@ -14,7 +14,16 @@ import {
   type Point,
   type TurnAction,
 } from '@adventure/core';
-import { createMoveModeController, endTurnOutcome, type EndTurnOutcome, type EnterRefusal, type MoveModeState } from '../interaction/moveMode.ts';
+import type { ScreenBox } from '../interaction/camera.ts';
+import {
+  createMoveModeController,
+  endTurnOutcome,
+  endTurnQuestion,
+  type EndTurnOutcome,
+  type EndTurnQuestionKind,
+  type EnterRefusal,
+  type MoveModeState,
+} from '../interaction/moveMode.ts';
 import type { Pick } from '../interaction/picking.ts';
 import type { PlayedTurn, Purchase } from '../modes/hotseat.ts';
 import type { PlayedChange, PlaySource, PlayUpdate } from '../modes/play.ts';
@@ -24,23 +33,29 @@ import type { FigureCue, MapScene, Walker } from '../render/sceneModel.ts';
 import { endingSound, isRest } from '../sound/cues.ts';
 import { soundTableOf, sounds } from '../sound/player.ts';
 import { BuyPanel } from './BuyPanel.tsx';
-import { ClaimNotice, EndCard, PurchaseNotice, ResultCard } from './Cards.tsx';
+import { ClaimNotice, EndCard, FightNotice, PurchaseNotice } from './Cards.tsx';
+import { EndTurnQuestion, type QuestionPlace } from './EndTurnQuestion.tsx';
 import { isUnguardedClaim, journalEntry, purchaseEntry, purchaseNotices, type JournalEntry } from './journal.ts';
 import { MapView, type MapHandle } from './MapView.tsx';
 import { Players } from './Players.tsx';
 import { TurnControls } from './TurnControls.tsx';
 import { TurnLog } from './TurnLog.tsx';
 
-/** The page's phone layout, as `index.html` switches to it. */
-export const PHONE = '(max-width: 899px)';
+/**
+ * [Q318] How far above the middle of the end cross, and above the top of a
+ * figure that would rest, End turn's question sits, in CSS pixels.
+ */
+const CROSS_GAP_PX = 26;
+const FIGURE_GAP_PX = 8;
 
 /**
  * How long End Turn's walk takes per step, the die tumbles, a notice stays up,
  * and an unguarded claim's notice takes to fade in, stays up (2 seconds, his
- * pick) and takes to fade out; how long a computer's die card stays up
- * (3 seconds, Q42); how long a figure found from its card stands on its
- * ring (2 seconds, [Q120, 471]); and how long the figure on turn blinks over
- * a route saved from the turn before (2 seconds, [Q145, 574]).
+ * pick) and takes to fade out; how long a fight's notice stays up once the
+ * die has stopped (3 seconds, [Q314, 2]); how long a figure found from its
+ * card stands on its ring (2 seconds, [Q120, 471]); and how long the figure
+ * on turn blinks over a route saved from the turn before (2 seconds, [Q145,
+ * 574]).
  */
 export const timing = {
   stepMs: 220,
@@ -49,7 +64,7 @@ export const timing = {
   appearMs: 200,
   claimMs: 2000,
   fadeMs: 500,
-  computerCardMs: 3000,
+  fightMs: 3000,
   foundMs: 2000,
   savedRouteBlinkMs: 2000,
 };
@@ -108,7 +123,8 @@ export function GameScreen({
   const [armed, setArmed] = useState(false);
   const [walker, setWalker] = useState<Walker | null>(null);
   const [inFlight, setInFlight] = useState<{ path: PathPreview | null; waypoint: NodeId | null } | null>(null);
-  const [result, setResult] = useState<{ turn: PlayedTurn; rolling: boolean } | null>(null);
+  // `room`: [Q314, 6] the map's `followMark` as the walk ended, if it was following it.
+  const [result, setResult] = useState<{ turn: PlayedTurn; rolling: boolean; room: number | null } | null>(null);
   const [entries, setEntries] = useState<readonly JournalEntry[]>(() => journalOf(source.history));
   const [notice, setNotice] = useState<string | null>(null);
   const [endOpen, setEndOpen] = useState(true);
@@ -121,6 +137,13 @@ export function GameScreen({
   // stays where the viewer put it, and the Track button says which. It is
   // pressed when a game opens (76).
   const [tracking, setTracking] = useState(true);
+  // [Q316, 3] The turn this page's End turn committed, and whether its walk is
+  // playing: the map follows that walk, though Track stays as it is.
+  const endedTurn = useRef<number | null>(null);
+  const [ownWalk, setOwnWalk] = useState(false);
+  // [Q316, 5] Whether the turn shown is this page's person's own; on it nothing
+  // unpresses Track. Read by the route's updates, which subscribe once.
+  const yourTurnNow = useRef(false);
   // [Q120, 471] The player whose card was clicked last, while their figure
   // stands on its ring; `click` counts clicks, so clicking the same card again
   // starts the ring's time over.
@@ -131,6 +154,8 @@ export function GameScreen({
   const busy = inFlight !== null;
   // Online, a turn this page committed that the server has not played yet.
   const [awaiting, setAwaiting] = useState(false);
+  // [Q318] The turn and route End turn asked about, and why, while its question is up.
+  const [asked, setAsked] = useState<{ readonly turn: number; readonly route: string; readonly kind: EndTurnQuestionKind } | null>(null);
   // [Andrei, 2026-10-26] What End turn's button said as this page committed a turn.
   const [pressed, setPressed] = useState<{ readonly turn: number; readonly outcome: EndTurnOutcome } | null>(null);
   // [Q63, 139] Whether sound is on on this device, as the map's Sound button shows it.
@@ -146,11 +171,10 @@ export function GameScreen({
 
   // [Q145, 574] The turn shown whose opening blink is over: from then on a
   // route saved from the turn before shows as planned (575). The blink is
-  // timed from when the map can glide to the player on turn (Q46): after an
-  // unguarded claim's notice.
+  // timed from when the map can glide to the player on turn (Q46): after a
+  // claim's or a fight's notice ([Q314, 4]).
   const [settledTurn, setSettledTurn] = useState<number | null>(null);
-  const turnShown =
-    shown.status === 'in_progress' && !busy && !(result !== null && isUnguardedClaim(result.turn)) ? shown.turn.number : null;
+  const turnShown = shown.status === 'in_progress' && !busy && result === null ? shown.turn.number : null;
   useEffect(() => {
     if (turnShown === null) return;
     const timer = window.setTimeout(() => setSettledTurn(turnShown), timing.savedRouteBlinkMs);
@@ -164,23 +188,18 @@ export function GameScreen({
   }, [found]);
 
   // [Andrei, 2026-09-24] "the unguarded poi should produce a card that fades
-  // itself. The guarded POI produce a card with a die roll that has an ok
-  // button": an unguarded claim's notice has no OK and goes once it has faded.
+  // itself": an unguarded claim's notice has no OK and goes once it has faded.
+  // [Q314, 3] So does a fight's, anyone's, once the die has stopped.
   useEffect(() => {
-    if (result === null || result.rolling || !isUnguardedClaim(result.turn)) return;
-    const timer = window.setTimeout(() => setResult(null), timing.claimMs + timing.fadeMs);
+    if (result === null || result.rolling) return;
+    const stayMs = isUnguardedClaim(result.turn) ? timing.claimMs : timing.fightMs;
+    const timer = window.setTimeout(() => setResult(null), stayMs + timing.fadeMs);
     return () => window.clearTimeout(timer);
   }, [result]);
-  // [Andrei, 2026-09-24] Q42: "the computer's die panel closes itself, pressing
-  // OK is not necessary". OK still closes it sooner. [Q56, 50] Online, so does every other player's:
-  // only a card of this page's own player waits for OK.
-  useEffect(() => {
-    if (result === null || result.rolling || isUnguardedClaim(result.turn)) return;
-    if (source.localPlayers.has(result.turn.player)) return;
-    const timer = window.setTimeout(() => setResult(null), timing.computerCardMs);
-    return () => window.clearTimeout(timer);
-  }, [result, source]);
   const locateFigure = useCallback((player: PlayerId) => handle.current?.screenOfFigure(player) ?? null, []);
+  /** [Q314, 6] A turn's notice makes room for itself on the map only if the map followed the walk. */
+  const makeRoom = (room: number | null): ((box: ScreenBox) => void) | undefined =>
+    room === null ? undefined : (box) => handle.current?.makeRoom(box, room);
 
   const commit = useRef<(action: TurnAction) => void>(() => undefined);
   /** Commit a turn to `play`, keeping `planned` to walk it along when it comes back, after what a computer `buy`s first. */
@@ -211,8 +230,9 @@ export function GameScreen({
       setArmed(controller.waypointArmed);
       setEngaged(controller.engaged);
       setPlanner(controller.planner);
-      // [Q57, 73] Picking a figure up, or changing its route, is planning: Track unpresses.
-      if (controller.engaged) setTracking(false);
+      // [Q57, 73] Picking a figure up, or changing its route, is planning: Track
+      // unpresses, though not on your own turn (Q316, 5).
+      if (controller.engaged && !yourTurnNow.current) setTracking(false);
       const save = source.savePlan;
       const who = controller.planner;
       if (save === null || who === null) return;
@@ -314,10 +334,14 @@ export function GameScreen({
         ? mine.planned
         : { path: routeOf(before, turn.action), waypoint: turn.action.kind === 'move' ? (turn.action.waypoint ?? null) : null },
     );
+    const own = endedTurn.current === before.turn.number;
+    if (own) endedTurn.current = null;
+    setOwnWalk(own);
     // Whatever happens while it plays out, the turn has been played: the
     // page must end up showing it, never stuck part-way.
     await playOut(turn, before).catch(() => undefined);
     setWalker(null);
+    setOwnWalk(false);
     setShown(turn.after);
     setEntries((current) => [journalEntry(turn, before, movedOn), ...current]);
     setInFlight(null);
@@ -386,7 +410,8 @@ export function GameScreen({
     // stamina goes up on their card.
     if (isRest(turn.events)) sounds.play('rest');
     const moved = find(turn.events, 'moved');
-    if (moved !== undefined && moved.resolution.walked.length > 0) {
+    const walked = moved !== undefined && moved.resolution.walked.length > 0;
+    if (walked) {
       const nodes = [moved.resolution.from, ...moved.resolution.walked].map((node) => position(before.map.graph, node));
       // [Q63, 131] A footstep each time the figure reaches the next node, timed
       // by the sound's own clock so the steps keep the walk's pace however
@@ -396,13 +421,18 @@ export function GameScreen({
     }
     const interacted = find(turn.events, 'interacted');
     if (interacted === undefined || interacted.resolution.reward === null) return;
+    // [Andrei, 2026-10-26] Q314, 6: "when we are tracking someone's movement,
+    // and their turn ends with a floater, it makes sense to bring them into
+    // view enough so that the floater is not cut off". Whenever the map
+    // followed the walk, Track's or your own (Q316).
+    const room = walked ? (handle.current?.followMark() ?? null) : null;
     if (interacted.resolution.roll !== null) {
-      setResult({ turn, rolling: true });
+      setResult({ turn, rolling: true, room });
       await sleep(timing.tumbleMs);
     }
-    setResult({ turn, rolling: false });
+    setResult({ turn, rolling: false, room });
     // [Q63, 134 and 136] As an unguarded claim's notice appears, or as the die
-    // stops and the card shows whether the guard was beaten.
+    // stops and the fight's notice shows whether the guard was beaten.
     const ending = endingSound(turn.events);
     if (ending !== null) sounds.play(ending);
   };
@@ -439,23 +469,21 @@ export function GameScreen({
 
   // [Andrei, 2026-09-24] "we need to center the map on the current player's
   // figure at the beginning of each turn, both human and AI" (Q46): the map
-  // glides there at the zoom it already has, from the first turn on. After an
-  // unguarded claim it waits until the claim's notice has faded, since the
-  // notice rides on the figure that made the claim. [Q57, 74] Only while Track
-  // is pressed; on one device it presses itself at the start of every turn,
-  // since a new person is at the screen (77).
+  // glides there at the zoom it already has, from the first turn on. After a
+  // claim or a fight it waits until the notice has faded, since the notice
+  // rides on the figure that made it ([Q314, 4]). [Q57, 74] Only while Track
+  // is pressed, on one device as online.
   const centeredTurn = useRef<number | null>(null);
   useEffect(() => {
     if (!mapReady || busy || shown.status !== 'in_progress') return;
-    if (result !== null && isUnguardedClaim(result.turn)) return;
+    if (result !== null) return;
     if (centeredTurn.current === shown.turn.number) return;
     const player = shown.players[shown.turn.activeSeat - 1];
     if (player === undefined) return;
     centeredTurn.current = shown.turn.number;
-    if (source.mode.allowOutOfTurnPlanning && !tracking) return;
-    setTracking(true);
+    if (!tracking) return;
     handle.current?.glideTo(player.position);
-  }, [mapReady, busy, shown, result, source, tracking]);
+  }, [mapReady, busy, shown, result, tracking]);
 
   const refuse = (why: EnterRefusal): void => {
     const active = shown.players[shown.turn.activeSeat - 1];
@@ -467,11 +495,20 @@ export function GameScreen({
   // [Q56, 48 and 49] Online, a turn that is not this page's player's: they
   // watch it, and can plan their own next move meanwhile.
   const othersTurn = online && active !== undefined && !source.localPlayers.has(active.id);
-  /** Who Plan a move plans for: the player on turn on one device, this page's own player online. */
+  /** Who this page plans for, and Find me finds: the player on turn on one device, this page's own player online. */
   const planFor = online ? shown.players.find((player) => source.localPlayers.has(player.id)) : active;
   const canPlan = online ? planFor !== undefined : active?.control !== 'ai';
   /** The turn is this page's to play: hot seat's player on turn, or online this page's own. */
   const ownTurn = !othersTurn && active !== undefined && source.localPlayers.has(active.id);
+  /**
+   * [Andrei, 2026-10-26] Q316, 4 to 6: "when you're planning your move on your
+   * turn, the map always stays where you put it. At the end of your turn it
+   * always follows your figure, track or no track. Track only affects the
+   * behavior during other players turns." On one device every person's turn
+   * is their own.
+   */
+  const yourTurn = ownTurn && active !== undefined && active.control === 'human';
+  yourTurnNow.current = yourTurn;
   // [Q190] The person on turn here can buy while they hold the gold for a unit
   // and nothing they did is still playing out. Only Done and Cancel close the
   // panel (766); a turn that moves on under it (the game master's Move on)
@@ -480,6 +517,39 @@ export function GameScreen({
   const buyOpen = buyable !== null && buyTurn === shown.turn.number;
   const canBuy = buyable !== null && buyable.kinds.length > 0 && shown === source.state && !busy && !purchasing && !offline;
   const buyFor = (canBuy || buyOpen) && active !== undefined ? active : null;
+  // [Q318] End turn's question stays up while the route it asked about is the
+  // one shown, on the same turn, and still asks the same; a new route, Cancel,
+  // the buy panel or the turn passing takes it away, as No does.
+  const asking =
+    asked !== null &&
+    ownTurn &&
+    !busy &&
+    !buyOpen &&
+    asked.turn === shown.turn.number &&
+    asked.route === shownRouteKey(move) &&
+    endTurnQuestion(shown, move) === asked.kind;
+  useEffect(() => {
+    if (asked !== null && !asking) setAsked(null);
+  }, [asked, asking]);
+  const askingNow = useRef(false);
+  askingNow.current = asking;
+  // Where the question goes: just above the end cross, or above the figure
+  // that would rest; below the space where there is no room above.
+  const askedKind = asking ? (asked?.kind ?? null) : null;
+  const askedAt = askedKind === 'off_site' && move.kind === 'previewing' ? move.destination : active?.position;
+  const questionAt = useMemo(() => {
+    if (askedKind === null || askedAt === undefined || active === undefined) return null;
+    const figure = active.id;
+    return (): QuestionPlace | null => {
+      const map = handle.current;
+      if (map === null) return null;
+      const at = map.screenOf(askedAt);
+      const top = askedKind === 'rest' ? (map.screenOfFigure(figure)?.y ?? at.y) - FIGURE_GAP_PX : at.y - CROSS_GAP_PX;
+      return { x: at.x, above: top, below: at.y + CROSS_GAP_PX };
+    };
+  }, [askedKind, askedAt, active]);
+  // [Q318] The question appears once the map has finished gliding there.
+  const glided = useCallback(() => !(handle.current?.gliding() ?? false), []);
   /** [768] Done: everything picked, bought at once; nothing if nothing was. */
   const finishBuying = (skills: BuyAction['skills']): void => {
     setBuyTurn(null);
@@ -503,17 +573,15 @@ export function GameScreen({
         : (target.players.find((player) => player === active?.id) ?? target.players[0]);
       // [Q145, 570] On your own turn your figure needs no tap first: a tap
       // on a space, or on another player's figure, chooses that space as it
-      // would once your figure is picked up.
-      if (ownTurn && clicked !== active?.id) {
+      // would once your figure is picked up. [Q310, 1] Online, so it does on
+      // someone else's turn.
+      if ((ownTurn || (othersTurn && planFor !== undefined)) && clicked !== planFor?.id) {
         if (target.node === null) return;
         controller.choose(target.node, shift);
         setResult(null);
         return;
       }
-      if (clicked === undefined) {
-        if (target.node !== null && canPlan) say('Tap your figure, or Plan a move, before choosing where to go.');
-        return;
-      }
+      if (clicked === undefined) return;
       const refused = controller.enter(clicked);
       if (refused !== null) return refuse(refused);
       setResult(null);
@@ -531,26 +599,21 @@ export function GameScreen({
     controller.choose(node, shift);
   };
 
-  const plan = (): void => {
-    if (planFor === undefined) return;
-    const refused = controller.enter(planFor.id);
-    if (refused !== null) return refuse(refused);
-    setResult(null);
-    // A phone shows the whole map too small to find a figure or tap a node,
-    // so planning from the button there starts close in on the player.
-    if (window.matchMedia(PHONE).matches) handle.current?.centerOn(planFor.position);
-  };
   /**
    * [Andrei, 2026-09-30] Q120: "clicking on a player's card finds this player
    * on the map". The map jumps to their figure and zooms in to playing
-   * distance (470); Track unpresses (473), and the figure stands on a ring for
-   * a moment (471).
+   * distance (470); Track unpresses (473), except on your own turn (Q316, 5),
+   * and the figure stands on a ring for a moment (471).
    */
   const findPlayer = (player: PlayerId): void => {
-    setTracking(false);
+    if (!yourTurn) setTracking(false);
     handle.current?.centerOnFigure(player);
     clicks.current += 1;
     setFound({ player, click: clicks.current });
+  };
+  /** [Q310, 2] Find me does what this page's player's own card does. */
+  const findMe = (): void => {
+    if (planFor !== undefined) findPlayer(planFor.id);
   };
   /**
    * [Q57, 74 and 75] Pressing Track closes planning, keeping the route, and
@@ -566,15 +629,28 @@ export function GameScreen({
     setTracking(true);
     handle.current?.track(active?.position ?? null);
   };
-  /** [Q57, 76] End turn and Rest press Track, without moving the map, so the walk and the turns after it are watched. */
+  /**
+   * [Q318] End turn whose walk ends this turn off a site, or that rests, asks
+   * first: the map glides the route's end, or the figure, to the middle (6 A,
+   * 9 A), and the question comes up above it. Neither glide changes Track
+   * (11 A): "During your own move, nothing should unpress track".
+   */
   const endTurn = (rest: boolean): void => {
+    const now = controller.state;
+    const ask = rest || shown !== source.state ? null : endTurnQuestion(source.state, now);
+    if (ask === null || active === undefined) return endTurnNow(rest);
+    setAsked({ turn: shown.turn.number, route: shownRouteKey(now), kind: ask });
+    handle.current?.glideTo(ask === 'off_site' && now.kind === 'previewing' ? now.destination : active.position);
+  };
+  const endTurnNow = (rest: boolean): void => {
     // [Q311] Never from a game shown behind the page's own: a change has
     // arrived that is not on the screen yet.
     if (shown !== source.state) return;
+    setAsked(null);
     if (active !== undefined) setPressed({ turn: shown.turn.number, outcome: endTurnOutcome(shown, active.id, move) });
+    if (!rest) endedTurn.current = source.state.turn.number;
     if (rest) controller.rest();
     else controller.endTurn();
-    if (!controller.engaged) setTracking(true);
   };
   /** Cancel puts the route down, and online clears the saved one too ([Q56, 53]). */
   const cancel = useRef<() => void>(() => undefined);
@@ -616,7 +692,10 @@ export function GameScreen({
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') cancel.current();
+      if (event.key !== 'Escape') return;
+      // [Q318, 7 C] Escape answers End turn's question No, keeping the route.
+      if (askingNow.current) setAsked(null);
+      else cancel.current();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -642,6 +721,8 @@ export function GameScreen({
   }, [source, controller, shown, busy, active, tracking]);
 
   const path = inFlight !== null ? inFlight.path : move.kind === 'previewing' ? move.preview : null;
+  // [Q315, 7 B] Only a route being planned has turn bubbles, not one walking.
+  const turnStops = inFlight === null && move.kind === 'previewing' ? move.stops : null;
   // A committed or walking route is the player on turn's; a route being
   // planned is its planner's, online perhaps someone waiting for their turn
   // ([Q56, 49]), so it starts at their figure.
@@ -679,6 +760,7 @@ export function GameScreen({
         busy={busy}
         awaiting={awaiting}
         buying={buyOpen}
+        asking={asking}
         pressed={pressed !== null && pressed.turn === shown.turn.number ? pressed.outcome : null}
         thinkingMs={thinkingMsOf(source, active)}
         waiting={waitingOn?.(shown) ?? null}
@@ -687,7 +769,7 @@ export function GameScreen({
         offline={offline}
         onMoveOn={onMoveOn}
         onResign={onResign}
-        onPlan={plan}
+        onFindMe={findMe}
         onCancel={() => cancel.current()}
         onArmWaypoint={(on) => controller.armWaypoint(on)}
         onClearWaypoint={() => controller.clearWaypoint()}
@@ -705,18 +787,25 @@ export function GameScreen({
           state={shown}
           path={path}
           pathFrom={pathFrom ?? null}
+          turnStops={turnStops}
           waypoint={waypoint}
           walker={walker}
           cue={cue}
           planner={plannerShown}
           found={found?.player ?? null}
           own={source.own}
+          // [Q320] A marker at the map's edge for each player out of view finds them as their card does.
+          onFind={findPlayer}
           onTap={onTap}
           tracking={tracking}
+          follow={tracking || ownWalk}
+          keepFollowing={yourTurn}
           onTrack={shown.status === 'in_progress' ? pressTrack : undefined}
           // [Q63, 145] Sound stays after the game ends, where Track goes.
           sound={{ on: soundOn, onToggle: () => sounds.setOn(!soundOn) }}
-          onMoved={() => setTracking(false)}
+          onMoved={() => {
+            if (!yourTurn) setTracking(false);
+          }}
           onReady={(ready) => {
             handle.current = ready;
             setMapReady(ready !== null);
@@ -732,6 +821,18 @@ export function GameScreen({
             onCancel={() => setBuyTurn(null)}
           />
         ) : null}
+        {askedKind !== null && questionAt !== null ? (
+          <EndTurnQuestion
+            kind={askedKind}
+            restGain={shown.map.ruleset.config.movement.REST_STAMINA_GAIN}
+            locate={questionAt}
+            ready={glided}
+            offline={offline}
+            onShown={() => sounds.play('question')}
+            onNo={() => setAsked(null)}
+            onYes={() => endTurnNow(false)}
+          />
+        ) : null}
         {notice === null ? null : (
           <div className="notice" role="status">
             {notice}
@@ -745,9 +846,20 @@ export function GameScreen({
             stayMs={timing.claimMs}
             appearMs={timing.appearMs}
             fadeMs={timing.fadeMs}
+            onPlaced={makeRoom(result.room)}
           />
         ) : (
-          <ResultCard catalog={catalog} turn={result.turn} rolling={result.rolling} onClose={() => setResult(null)} />
+          <FightNotice
+            key={result.turn.after.turn.number}
+            catalog={catalog}
+            turn={result.turn}
+            rolling={result.rolling}
+            locate={locateFigure}
+            stayMs={timing.tumbleMs + timing.fightMs}
+            appearMs={timing.appearMs}
+            fadeMs={timing.fadeMs}
+            onPlaced={makeRoom(result.room)}
+          />
         )}
         {bought === null ? null : (
           <PurchaseNotice
@@ -760,7 +872,7 @@ export function GameScreen({
             fadeMs={timing.fadeMs}
           />
         )}
-        {/* The winning turn's own card, or the purchase that won, comes first; OK on a card brings up the end. */}
+        {/* The winning turn's own notice, or the purchase that won, fades first, and then the end comes up. */}
         {shown.status === 'finished' && endOpen && inFlight === null && result === null && bought === null ? (
           <EndCard catalog={catalog} state={shown} newGameLabel={newGameLabel} onNewGame={onNewGame} onClose={() => setEndOpen(false)} />
         ) : null}
@@ -776,6 +888,11 @@ function journalOf(history: readonly PlayedChange[]): JournalEntry[] {
       turn !== null ? [journalEntry(turn, before, movedOn)] : purchase !== null && after.status === 'finished' ? [purchaseEntry(purchase)] : [],
     )
     .reverse();
+}
+
+/** The route `move` shows, as `routeKey` writes it; no route while none is shown. */
+function shownRouteKey(move: MoveModeState): string {
+  return move.kind === 'previewing' ? routeKey(move.path, move.waypoint) : routeKey([], null);
 }
 
 /** A route as the page compares routes: its steps and its waypoint. */

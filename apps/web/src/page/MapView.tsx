@@ -2,16 +2,29 @@ import { useEffect, useRef, useState } from 'react';
 import { Application } from 'pixi.js';
 import { DEFAULT_RULESET } from '@adventure/config';
 import type { GameMap, GameState, NodeId, PathPreview, PlayerId, Point } from '@adventure/core';
-import { createCameraController, FOLLOW_MARGIN_OF_VIEW, followInto, glideCenter, GLIDE_MS, type CameraController } from '../interaction/camera.ts';
+import {
+  createCameraController,
+  FOLLOW_MARGIN_OF_VIEW,
+  followInto,
+  glideCenter,
+  GLIDE_MS,
+  ROOM_MARGIN_PX,
+  roomFor,
+  type CameraController,
+  type ScreenBox,
+} from '../interaction/camera.ts';
+import { edgeMarkers, type EdgeMarkerLayout, type FigureOnScreen } from '../interaction/offscreen.ts';
 import { figureTop, pick, planeToScreen, screenToPlane, type Pick } from '../interaction/picking.ts';
 import { fitToViewport, type Camera } from '../render/isometric.ts';
 import { position } from '../render/geometry.ts';
+import { pictureBox, type Box } from '../render/placement.ts';
 import { undersideDepth } from '../render/island.ts';
 import { PixiMapRenderer } from '../render/pixi/renderer.ts';
 import type { LoadedArt } from '../render/pixi/textures.ts';
-import { SPACING_PX, type FigureCue, type MapScene, type Walker } from '../render/sceneModel.ts';
+import { buildPathScene, buildWaypoint, labelBox, playerRingSize, SPACING_PX, type FigureCue, type MapScene, type Walker } from '../render/sceneModel.ts';
 import { MAP_RESTORE_WAIT_MS, MAP_RETRY_MS, noteMapTrouble } from './mapTrouble.ts';
 import { skyScale } from './sky.ts';
+import { Portrait } from './Sprites.tsx';
 
 /** What the page can ask of the map once it is up. */
 export interface MapHandle {
@@ -19,25 +32,39 @@ export interface MapHandle {
   screenOf(node: NodeId): Point;
   /** Where the top of a player's figure shows in the map's box, as it is drawn right now. */
   screenOfFigure(player: PlayerId): Point | null;
-  /** Bring a node to the middle, zoomed in enough to play at. */
-  centerOn(node: NodeId): void;
   /**
-   * [Andrei, 2026-09-30] Q120, 470: a player's card was clicked. Bring their
-   * figure to the middle, wherever it has got to on a walk, zoomed in as
-   * `centerOn` does.
+   * [Andrei, 2026-09-30] Q120, 470: a player's card, or [Q310, 2] Find me,
+   * was clicked. Bring their figure to the middle, wherever it has got to on a
+   * walk, zoomed in enough to play at.
    */
   centerOnFigure(player: PlayerId): void;
   /**
    * Slide a node to the middle over `GLIDE_MS`, at the zoom the view already
-   * has. Panning, zooming or `centerOn` while it slides stops it where it is,
-   * and so does a walk that has to take the map along (Q47).
+   * has. Panning, zooming or `centerOnFigure` while it slides stops it where it is,
+   * and so does a walk that has to take the map along (Q47). Nothing slides
+   * when the node is in the middle already.
    */
   glideTo(node: NodeId): void;
+  /** [Q318] Whether the map is still sliding somewhere (`glideTo`, `track`, `makeRoom`). */
+  gliding(): boolean;
   /**
    * [Q57, 74] Track was pressed: glide to the figure that is walking, if one
    * is, or else to `node`, and follow walks from now on.
    */
   track(node: NodeId | null): void;
+  /**
+   * [Q314, 6] A mark for "the map is following now", or null when it is not.
+   * `makeRoom` with it does nothing once the viewer has pressed, panned or
+   * zoomed the map, or something else has taken the map somewhere, since.
+   */
+  followMark(): number | null;
+  /**
+   * [Andrei, 2026-10-26] Q314, 6 and 7: slide the map just far enough that
+   * `box`, in CSS pixels in the map's box, is not cut off by its edges, over
+   * `GLIDE_MS` at the zoom the view already has, as `glideTo` does. Nothing,
+   * if `mark` from `followMark` no longer holds.
+   */
+  makeRoom(box: ScreenBox, mark: number): void;
 }
 
 interface MapViewProps {
@@ -54,6 +81,8 @@ interface MapViewProps {
    * player's node if omitted.
    */
   readonly pathFrom?: NodeId | null;
+  /** [Q315] Where each turn of `path` ends, for its turn bubbles; `null`, as if omitted, for none. */
+  readonly turnStops?: readonly number[] | null;
   readonly waypoint: NodeId | null;
   readonly walker: Walker | null;
   /** How the current player's figure calls attention to itself; `none` if omitted. */
@@ -64,13 +93,24 @@ interface MapViewProps {
   readonly found?: PlayerId | null;
   /** [Q312] The player this page is for (`PlaySource.own`), whose figure's ring is filled orange; none if omitted. */
   readonly own?: PlayerId | null;
+  /**
+   * [Q320] Shows a marker at the edge of the map for every player whose
+   * figure is out of view; tapping one calls this, as their card does (Q120).
+   * No markers if omitted.
+   */
+  readonly onFind?: ((player: PlayerId) => void) | undefined;
   /** A click or tap, as opposed to a drag; `shift` for a shift-click. */
   readonly onTap?: (target: Pick, shift: boolean) => void;
-  /**
-   * [Q57] Whether Track is pressed: a walking figure takes the map along only
-   * while it is (Q47). Pressed if omitted.
-   */
+  /** [Q57] Whether Track is pressed, as its button shows. Pressed if omitted. */
   readonly tracking?: boolean;
+  /**
+   * Whether a walking figure takes the map along (Q47): while Track is
+   * pressed, and [Q316, 3] during the walk of the player's own End turn. As
+   * `tracking` if omitted.
+   */
+  readonly follow?: boolean;
+  /** [Q316, 4] Moving the map leaves the following on: on the player's own turn, whose walk it always follows. */
+  readonly keepFollowing?: boolean;
   /** [Q57, 72] Shows the Track button, above "+", which calls this. */
   readonly onTrack?: (() => void) | undefined;
   /** [Q63, 139] Shows the Sound button before Track: whether sound is on, and what pressing it does. */
@@ -92,14 +132,21 @@ const OVERHANG = { top: SPACING_PX * 1.2, side: SPACING_PX * 0.5, bottom: SPACIN
 /** Sky left under the rock's lowest point when the whole island is framed. */
 const ISLAND_SKY_BELOW = SPACING_PX * 0.2;
 
+/**
+ * [Q320] How far an edge marker's arrow reaches out of its badge and its rim
+ * round it (index.html), the room left between the arrow's tip and the map's
+ * edge, and between the rims of two markers side by side, in CSS pixels.
+ */
+const MARKER = { arrow: 14, rim: 4, margin: 6, gap: 12 } as const;
+
 /** A press that travels less than this, in CSS pixels, is a click rather than a drag. */
 const TAP_TRAVEL_PX = 8;
 
-/** Zoom, relative to the whole-map view, that a player's card (Q120) and a phone's Plan a move bring the map to at least. */
+/** Zoom, relative to the whole-map view, that a player's card (Q120) and Find me (Q310) bring the map to at least. */
 const PLAY_ZOOM_OF_FIT = 2.2;
 
 /**
- * [Q160, 632 A] On the larger map a card and a phone's Plan a move come as
+ * [Q160, 632 A] On the larger map a card and Find me come as
  * close as on the standard map's: its whole-map view is smaller by the square
  * root of how many more spaces it has, so the zoom grows by as much. 1 on the
  * standard map.
@@ -115,14 +162,18 @@ export function MapView({
   state,
   path,
   pathFrom,
+  turnStops = null,
   waypoint,
   walker,
   cue = 'none',
   planner = null,
   found = null,
   own = null,
+  onFind,
   onTap,
   tracking = true,
+  follow = tracking,
+  keepFollowing = false,
   onTrack,
   sound,
   onMoved,
@@ -133,14 +184,22 @@ export function MapView({
   const sky = useRef<HTMLDivElement>(null);
   const renderer = useRef<PixiMapRenderer | null>(null);
   const zoomButtons = useRef<((action: 'in' | 'out' | 'fit') => void) | null>(null);
+  const buttons = useRef<HTMLDivElement>(null);
+  // [Q320] The edge markers, by player, which the map places every frame,
+  // and how wide one is: 48 px, 40 on a phone (index.html).
+  const markers = useRef(new Map<PlayerId, HTMLButtonElement>());
+  const [markerSize, setMarkerSize] = useState(48);
   // Read when the renderer comes up, and by the pointer handlers, which are
   // bound once per map.
   const from = pathFrom ?? state.players[state.turn.activeSeat - 1]?.position ?? null;
-  const latest = useRef({ state, path, from, waypoint, walker, cue, planner, found, own, onTap, onMoved, onReady });
-  latest.current = { state, path, from, waypoint, walker, cue, planner, found, own, onTap, onMoved, onReady };
-  // Whether a walk takes the map along. It follows Track, and stops at once
+  const latest = useRef({ state, path, from, turnStops, waypoint, walker, cue, planner, found, own, keepFollowing, onTap, onMoved, onReady });
+  latest.current = { state, path, from, turnStops, waypoint, walker, cue, planner, found, own, keepFollowing, onTap, onMoved, onReady };
+  // Whether a walk takes the map along. It follows `follow`, and stops at once
   // when the map is moved, before the page has unpressed Track.
-  const following = useRef(tracking);
+  const following = useRef(follow);
+  // [Q314, 6] Counts the times the viewer or the page took the map somewhere,
+  // so that a notice's room is made only while nothing has since.
+  const aims = useRef(0);
   // [Q86, 330 and 331] Counts up to build the map again after it failed to
   // start or lost its drawing surface; `broken` once that happened too often.
   const [build, setBuild] = useState(0);
@@ -209,7 +268,7 @@ export function MapView({
       map.setFound(now.found);
       map.setOwn(now.own);
       map.setState(now.state);
-      map.setPathPreview(now.path, now.from);
+      map.setPathPreview(now.path, now.from, now.turnStops);
       map.setWaypoint(now.waypoint);
       map.setCue(now.cue);
       app.stage.addChild(map.root);
@@ -262,8 +321,10 @@ export function MapView({
         app.canvas.removeEventListener('webglcontextrestored', onRestored);
       });
 
-      // `chasing` for Track's glide to a walking figure, which the walk's
-      // own following waits for; it aims at wherever the figure is by then.
+      // `chasing` for a glide the walk's own following waits for: Track's to a
+      // walking figure, which aims at wherever the figure is by then, and the
+      // glide that makes room for a turn's notice (Q314, 6), which would
+      // otherwise stop as the following catches up with the walk's last step.
       let glide: { from: Point; to: () => Point; start: number; chasing: boolean } | null = null;
       // [Andrei, 2026-09-24] Q47: a walking figure that nears the edge of the
       // view takes the map along with it, while Track is pressed (Q57).
@@ -271,9 +332,16 @@ export function MapView({
         glide = null;
         following.current = false;
       };
+      /** [Q316, 4] On the player's own turn moving the map stops a glide, while a walk is followed still. */
+      const halt = (): void => {
+        // [Q314, 6] Either way the map has been taken somewhere: no more room is made for a notice on its way.
+        aims.current++;
+        if (latest.current.keepFollowing) glide = null;
+        else stopCamera();
+      };
       /** The viewer moved the map: [Q57, 73] Track unpresses. */
       const moved = (): void => {
-        stopCamera();
+        halt();
         latest.current.onMoved?.();
       };
       const onTick = (): void => {
@@ -297,6 +365,89 @@ export function MapView({
       app.ticker.add(onTick);
       cleanups.push(() => app.ticker.remove(onTick));
 
+      // [Q320] Every player whose figure is wholly out of view has a marker
+      // just inside the map's edge pointing at it, placed every frame as the
+      // map and the figures move. How big a marker is and where the map's
+      // buttons are, which they go round, is measured as the map's box changes.
+      // They slide a little off what matters on the map (7, 8): the reward
+      // icons and guard numbers (Andrei: "the site pictures are eye candy
+      // only, it's fone to cover them, but the icons and guard numbers are
+      // important"), the figures in view with their rings, and the route,
+      // its turn bubbles too (9).
+      const labels = scene.labels.map((label) => ({ node: label.node, box: labelBox(label) }));
+      let route: { path: PathPreview | null; from: NodeId | null; waypoint: NodeId | null; boxes: readonly Box[] } | null = null;
+      const routeNow = (): readonly Box[] => {
+        const { path, from, waypoint } = latest.current;
+        if (route === null || route.path !== path || route.from !== from || route.waypoint !== waypoint) {
+          route = { path, from, waypoint, boxes: routeBoxes(art, gameMap, scene, path, from, waypoint) };
+        }
+        return route.boxes;
+      };
+      let markerLayout: Omit<EdgeMarkerLayout, 'avoid'> | null = null;
+      let markerAcross = 0;
+      const placed = new Map<PlayerId, string>();
+      const slid = new Map<PlayerId, number>();
+      const measureMarkers = (): void => {
+        const first = markers.current.values().next().value;
+        const controls = buttons.current;
+        if (first === undefined || controls === null) {
+          markerLayout = null;
+          return;
+        }
+        markerAcross = first.offsetWidth;
+        const box = element.getBoundingClientRect();
+        const clear = controls.getBoundingClientRect();
+        markerLayout = {
+          inset: markerAcross / 2 + MARKER.arrow + MARKER.margin,
+          spacing: markerAcross + MARKER.gap,
+          keepClear: [{ minX: clear.left - box.left, minY: clear.top - box.top, maxX: clear.right - box.left, maxY: clear.bottom - box.top }],
+          radius: markerAcross / 2 + MARKER.rim,
+          shift: markerAcross,
+        };
+        setMarkerSize(markerAcross);
+      };
+      const placeMarkers = (): void => {
+        if (markerLayout === null) return;
+        const size = viewport();
+        const onScreen = (box: Box): Box => {
+          const low = planeToScreen(camera.camera, size, { x: box.minX, y: box.minY });
+          const high = planeToScreen(camera.camera, size, { x: box.maxX, y: box.maxY });
+          return { minX: low.x, minY: low.y, maxX: high.x, maxY: high.y };
+        };
+        const shows = (box: Box): boolean => box.maxX > 0 && box.minX < size.x && box.maxY > 0 && box.minY < size.y;
+        const figures: FigureOnScreen[] = map.characters.flatMap((figure) =>
+          figure.player === undefined ? [] : [{ player: figure.player, box: onScreen(pictureBox(figure.foot, figure.size, art.shape(figure.sprite))) }],
+        );
+        const claimed = map.claimed;
+        const wholeZoom = fit().zoom;
+        const avoid = [
+          ...labels.flatMap((label) => (claimed.has(label.node) ? [] : [label.box])),
+          ...map.characters.map((figure) => pictureBox(figure.foot, figure.size, art.shape(figure.sprite))),
+          ...map.rings.map((ring) => groundBox(scene, ring.at, playerRingSize(ring.size, scene.spacing, camera.camera.zoom, wholeZoom) / 2)),
+          ...routeNow(),
+          ...map.turnBubbles,
+        ]
+          .map(onScreen)
+          .filter(shows);
+        const shown = edgeMarkers(size, figures, { ...markerLayout, avoid }, slid);
+        slid.clear();
+        for (const one of shown) slid.set(one.player, one.shift);
+        for (const [player, marker] of markers.current) {
+          const one = shown.find((candidate) => candidate.player === player);
+          const transform = one === undefined ? null : `translate(${(one.at.x - markerAcross / 2).toFixed(1)}px, ${(one.at.y - markerAcross / 2).toFixed(1)}px)`;
+          const angle = one === undefined ? null : `${one.angle.toFixed(3)}rad`;
+          const place = `${transform} ${angle}`;
+          if (placed.get(player) === place) continue;
+          placed.set(player, place);
+          marker.style.visibility = transform === null ? 'hidden' : 'visible';
+          if (transform !== null) marker.style.transform = transform;
+          if (angle !== null) marker.style.setProperty('--angle', angle);
+        }
+      };
+      measureMarkers();
+      app.ticker.add(placeMarkers);
+      cleanups.push(() => app.ticker.remove(placeMarkers));
+
       // Pixi's `resizeTo` follows the window only, and on a phone the map's
       // box also changes as the panels round it do, so resize the canvas here.
       const reframe = (): void => {
@@ -307,8 +458,11 @@ export function MapView({
       const observer = new ResizeObserver(() => {
         app.resize();
         reframe();
+        measureMarkers();
       });
       observer.observe(element);
+      // The map's buttons change as Track comes and goes.
+      if (buttons.current !== null) observer.observe(buttons.current);
       refit.current = reframe;
       cleanups.push(() => {
         observer.disconnect();
@@ -327,6 +481,7 @@ export function MapView({
         // A press stops the glide; only an actual drag or pinch counts as
         // moving the map, which stops the following too.
         glide = null;
+        aims.current++;
         element.setPointerCapture(event.pointerId);
         const at = local(event);
         pointers.set(event.pointerId, at);
@@ -410,7 +565,7 @@ export function MapView({
 
       const planeOf = (node: NodeId): Point => scene.projection.toScreen(position(gameMap.graph, node));
       const centerAt = (plane: Point): void => {
-        stopCamera();
+        halt();
         camera.centerOn(plane, fit().zoom * PLAY_ZOOM_OF_FIT * playZoomScale(gameMap));
         touched = true;
         apply();
@@ -421,7 +576,6 @@ export function MapView({
           const top = figureTop(map.characters, art.shape, player);
           return top === null ? null : planeToScreen(camera.camera, viewport(), top);
         },
-        centerOn: (node) => centerAt(planeOf(node)),
         centerOnFigure: (player) => {
           const walking = latest.current.walker;
           if (walking !== null && walking.player === player) return centerAt(scene.projection.toScreen(walking.at));
@@ -430,11 +584,16 @@ export function MapView({
         },
         glideTo: (node) => {
           const to = planeOf(node);
-          glide = { from: camera.camera.center, to: () => to, start: performance.now(), chasing: false };
+          const from = camera.camera.center;
+          const there = Math.hypot(to.x - from.x, to.y - from.y) * camera.camera.zoom < 1;
+          glide = there ? null : { from, to: () => to, start: performance.now(), chasing: false };
           touched = true;
+          aims.current++;
         },
+        gliding: () => glide !== null,
         track: (node) => {
           following.current = true;
+          aims.current++;
           const walking = latest.current.walker;
           if (walking !== null) {
             // Wherever the figure has got to; once its walk is over, the node it stands on.
@@ -449,6 +608,14 @@ export function MapView({
             const to = planeOf(node);
             glide = { from: camera.camera.center, to: () => to, start: performance.now(), chasing: false };
           }
+          touched = true;
+        },
+        followMark: () => (following.current ? aims.current : null),
+        makeRoom: (box, mark) => {
+          if (mark !== aims.current) return;
+          const to = roomFor(camera.camera, viewport(), box, ROOM_MARGIN_PX);
+          if (to.x === camera.camera.center.x && to.y === camera.camera.center.y) return;
+          glide = { from: camera.camera.center, to: () => to, start: performance.now(), chasing: true };
           touched = true;
         },
       });
@@ -475,8 +642,8 @@ export function MapView({
     renderer.current?.setWalker(walker);
   }, [walker]);
   useEffect(() => {
-    renderer.current?.setPathPreview(path, from);
-  }, [path, from]);
+    renderer.current?.setPathPreview(path, from, turnStops);
+  }, [path, from, turnStops]);
   useEffect(() => {
     renderer.current?.setWaypoint(waypoint);
   }, [waypoint]);
@@ -493,8 +660,8 @@ export function MapView({
     renderer.current?.setOwn(own);
   }, [own]);
   useEffect(() => {
-    following.current = tracking;
-  }, [tracking]);
+    following.current = follow;
+  }, [follow]);
   useEffect(() => {
     refit.current?.();
   }, [frame]);
@@ -512,7 +679,31 @@ export function MapView({
           </button>
         </div>
       ) : null}
-      <div className="overlay zoom">
+      {onFind === undefined ? null : (
+        // [Q320] Placed by the map every frame; hidden while their figure shows.
+        <div className="overlay edge-markers">
+          {state.players.map((player) => (
+            <button
+              key={player.id}
+              className="edge-marker"
+              type="button"
+              aria-label={`Find ${player.name} on the map`}
+              style={{ visibility: 'hidden' }}
+              onClick={() => onFind(player.id)}
+              ref={(element) => {
+                if (element === null) markers.current.delete(player.id);
+                else markers.current.set(player.id, element);
+              }}
+            >
+              <span className="edge-arrow" />
+              <span className="edge-face">
+                <Portrait catalog={art.catalog} avatarId={player.avatarId} size={markerSize} label={`${player.name}’s avatar`} />
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+      <div className="overlay zoom" ref={buttons}>
         {/* [Q63, 139] Pressed while sound is on, as Track is while it follows.
             [170 and 171] A speaker instead of the word: sound waves while on, a cross while off. */}
         {sound === undefined ? null : (
@@ -537,6 +728,32 @@ export function MapView({
       </div>
     </>
   );
+}
+
+/**
+ * [Q320, 8] What the route drawn covers, at zoom 1: each of its dots, the
+ * cross at its end and the waypoint's flag.
+ */
+function routeBoxes(art: LoadedArt, map: GameMap, scene: MapScene, path: PathPreview | null, from: NodeId | null, waypoint: NodeId | null): Box[] {
+  const boxes: Box[] = [];
+  if (path !== null && from !== null) {
+    const drawn = buildPathScene(scene, map, from, path, art.catalog);
+    for (const mark of [...drawn.dots, drawn.cross]) boxes.push(groundBox(scene, mark.at, mark.size / 2));
+  }
+  if (waypoint !== null) {
+    const flag = buildWaypoint(scene, map, waypoint, art.catalog);
+    boxes.push(pictureBox(flag.foot, flag.size, art.shape(flag.sprite)));
+  }
+  return boxes;
+}
+
+/** The box round a circle on the ground, its middle and radius in world units, at zoom 1. */
+function groundBox(scene: MapScene, at: Point, radius: number): Box {
+  const { a, b, c, d } = scene.projection.matrix;
+  const middle = scene.projection.toScreen(at);
+  const wide = radius * Math.hypot(a, c);
+  const high = radius * Math.hypot(b, d);
+  return { minX: middle.x - wide, minY: middle.y - high, maxX: middle.x + wide, maxY: middle.y + high };
 }
 
 /** Whether the map's WebGL drawing surface is lost; never for a map drawn without WebGL. */
