@@ -1,6 +1,7 @@
 import {
   bestRouteVia,
   endTurnActionFor,
+  guardToFightAt,
   previewPath,
   refreshAllowance,
   type GameState,
@@ -171,6 +172,30 @@ export function gamePreviewSource(game: GameState, player: PlayerId): PreviewSou
       return { path, preview: previewFor(game, planner, path) };
     },
   };
+}
+
+/** What End turn will do: walk, stay and fight the guard (§8), or rest (490). */
+export type EndTurnOutcome = 'go' | 'fight' | 'rest';
+
+/**
+ * What End turn plays for `player`, on turn in `game`, with `state` shown:
+ * `endTurnActionFor` of the route shown, or of none.
+ */
+export function endTurnActionOf(game: GameState, player: PlayerId, state: MoveModeState): TurnAction {
+  const path = state.kind === 'previewing' ? state.path : [];
+  const waypoint = state.kind === 'idle' || path.length === 0 ? null : state.waypoint;
+  return endTurnActionFor(game, player, path, waypoint);
+}
+
+/**
+ * [Andrei, 2026-10-26] What End turn will do, for its button to say: a walk
+ * goes, even onto a guard; a turn that walks nothing on a guard stays and
+ * fights it again; and anything else rests (`endTurnActionFor`).
+ */
+export function endTurnOutcome(game: GameState, player: PlayerId, state: MoveModeState): EndTurnOutcome {
+  if (endTurnActionOf(game, player, state).kind === 'rest') return 'rest';
+  const walks = state.kind === 'previewing' && state.preview.reachableStepCount > 0;
+  return walks || !guardToFightAt(game, playerIn(game, player).position) ? 'go' : 'fight';
 }
 
 function previewFor(game: GameState, planner: PlayerState, path: readonly NodeId[]): PathPreview {
@@ -437,14 +462,12 @@ export function createMoveModeController(options: MoveModeOptions): MoveModeCont
     endTurn() {
       const who = activePlanner();
       if (who === null || game === null) return;
-      const path = state.kind === 'previewing' ? state.path : [];
-      const waypoint = state.kind === 'idle' ? null : state.waypoint;
+      const action = endTurnActionOf(game, who, state);
       const kept = shownPlan(who);
       armed = false;
       engaged = false;
       unsaved = null;
       state = IDLE;
-      const action = endTurnActionFor(game, who, path, path.length === 0 ? null : waypoint);
       // [610] End turn's rest with nothing shown keeps no route on one device either.
       options.commit(action.kind === 'rest' && action.plan === undefined && kept !== null ? { ...action, plan: kept } : action);
     },
