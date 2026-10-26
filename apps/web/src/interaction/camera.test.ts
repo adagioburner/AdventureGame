@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createCameraController, followInto, glideCenter } from './camera.ts';
+import { createCameraController, followInto, glideCenter, roomFor } from './camera.ts';
 
 const fit = { zoom: 0.5, center: { x: 0, y: 0 } };
 const viewport = { x: 800, y: 600 };
@@ -65,5 +65,25 @@ describe('followInto', () => {
     // x -190 is at 20 px, 140 px short of 160: 70 units. y -140 is at 20 px,
     // 100 px short of 120: 50 units.
     expect(followInto(camera, viewport, { x: -190, y: -140 }, 0.2)).toEqual({ x: -70, y: -50 });
+  });
+});
+
+describe('roomFor', () => {
+  const camera = { zoom: 2, center: { x: 0, y: 0 } };
+
+  it('leaves the view alone while the box is inside the margin', () => {
+    expect(roomFor(camera, viewport, { left: 100, top: 100, right: 300, bottom: 150 }, 8)).toEqual(camera.center);
+  });
+
+  it('moves just enough to bring a box cut off at an edge inside the margin', () => {
+    // The box starts 20 px left of the view: the centre moves 28 px, 14 units, left.
+    expect(roomFor(camera, viewport, { left: -20, top: 100, right: 180, bottom: 150 }, 8)).toEqual({ x: -14, y: 0 });
+    // Its bottom is 40 px below the view: 48 px, 24 units, down.
+    expect(roomFor(camera, viewport, { left: 100, top: 560, right: 300, bottom: 640 }, 8)).toEqual({ x: 0, y: 24 });
+  });
+
+  it('centres on a box too big for the view along that axis', () => {
+    // 900 px wide, centred at 450 px: 50 px right of the view's middle, 25 units.
+    expect(roomFor(camera, viewport, { left: 0, top: 100, right: 900, bottom: 150 }, 8)).toEqual({ x: 25, y: 0 });
   });
 });

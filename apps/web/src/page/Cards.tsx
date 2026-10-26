@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { poiAt, rewardAmount, unclaimedGoldUnits, type GameEvent, type GameState, type PlayerId, type Point } from '@adventure/core';
 import type { ArtCatalog } from '../art/catalog.ts';
+import type { ScreenBox } from '../interaction/camera.ts';
 import type { PlayedTurn, Purchase } from '../modes/hotseat.ts';
 import { GUARD_LABEL, STAT_LABEL, STAT_ORDER } from './journal.ts';
 import { Die, Portrait, StatIcon } from './Sprites.tsx';
@@ -20,7 +21,7 @@ const NOTICE_GAP = 2;
  * keeps its size at any zoom and moves with the figure through a pan. The page
  * takes it away once it has faded.
  */
-export function ClaimNotice({ turn, ...timing }: { turn: PlayedTurn } & NoticeTiming) {
+export function ClaimNotice({ turn, ...timing }: { turn: PlayedTurn } & NoticeTiming & NoticeRoom) {
   const interacted = turn.events.find((event): event is Extract<GameEvent, { type: 'interacted' }> => event.type === 'interacted');
   const reward = interacted?.resolution.reward ?? null;
   if (reward === null) return null;
@@ -40,7 +41,12 @@ export function ClaimNotice({ turn, ...timing }: { turn: PlayedTurn } & NoticeTi
  * it was, red when it held. It stays 3 seconds (2) and fades as a claim's
  * notice does. `stayMs` counts from the start of the tumble.
  */
-export function FightNotice({ catalog, turn, rolling, ...timing }: { catalog: ArtCatalog; turn: PlayedTurn; rolling: boolean } & NoticeTiming) {
+export function FightNotice({
+  catalog,
+  turn,
+  rolling,
+  ...timing
+}: { catalog: ArtCatalog; turn: PlayedTurn; rolling: boolean } & NoticeTiming & NoticeRoom) {
   const interacted = turn.events.find((event): event is Extract<GameEvent, { type: 'interacted' }> => event.type === 'interacted');
   const reward = interacted?.resolution.reward ?? null;
   if (interacted === undefined || reward === null) return null;
@@ -90,6 +96,15 @@ interface NoticeTiming {
   fadeMs: number;
 }
 
+interface NoticeRoom {
+  /**
+   * [Q314, 6] Told where on the map the notice will be over its whole drift,
+   * as soon as it shows and again whenever its size changes, so the map can
+   * make room for it.
+   */
+  onPlaced?: ((box: ScreenBox) => void) | undefined;
+}
+
 /** A small card on a player's figure that fades in, drifts up, and fades out. */
 function FloatingNotice({
   player,
@@ -99,20 +114,36 @@ function FloatingNotice({
   stayMs,
   appearMs,
   fadeMs,
-}: { player: PlayerId; className?: string; children: ReactNode } & NoticeTiming) {
+  onPlaced,
+}: { player: PlayerId; className?: string; children: ReactNode } & NoticeTiming & NoticeRoom) {
   const anchor = useRef<HTMLDivElement>(null);
   const card = useRef<HTMLDivElement>(null);
+  const placed = useRef(onPlaced);
+  placed.current = onPlaced;
 
   useEffect(() => {
     let frame = 0;
+    let told = { width: 0, height: 0 };
     const follow = (): void => {
       const element = anchor.current;
       const at = locate(player);
       if (element !== null) {
+        const size = { width: element.offsetWidth, height: element.offsetHeight };
         element.style.visibility = at === null ? 'hidden' : '';
         if (at !== null) {
           element.style.left = `${at.x}px`;
           element.style.top = `${at.y - NOTICE_GAP}px`;
+          if (size.width > 0 && (size.width !== told.width || size.height !== told.height)) {
+            told = size;
+            // The anchor's bottom middle sits on the head; the card drifts from NOTICE_RISE.from to .to.
+            const bottom = at.y - NOTICE_GAP;
+            placed.current?.({
+              left: at.x - size.width / 2,
+              right: at.x + size.width / 2,
+              top: bottom - size.height + NOTICE_RISE.to,
+              bottom: bottom + NOTICE_RISE.from,
+            });
+          }
         }
       }
       frame = requestAnimationFrame(follow);

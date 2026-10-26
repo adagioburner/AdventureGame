@@ -1026,6 +1026,10 @@ recommendation, and he took all three:
 `followInto` in `apps/web/src/interaction/camera.ts`, applied on each frame of
 a walk in `MapView.tsx`.
 
+Since [Q314](#q314) 6, a walk the map followed that ends in a claim's or a
+fight's notice also has the map glide just far enough for the notice to show
+whole.
+
 ### Q48. ~~What does phase 6 leave open?~~ — **answered 2026-09-24: computers fill empty seats at Start, the rest as recommended**
 
 Phase 6 (the server, accounts, the game list and the setup screen) left
@@ -4015,7 +4019,7 @@ then taken stays drawn, as before. The server is unchanged. No rule, number,
 map or picture changed, and the rulebook needs no change.
 
 <a id="q314"></a>
-### Q314. ~~How can fights stop interrupting planning?~~ — **answered 2026-10-26: every fight, your own included, floats on the fighter's head as a claim does, with no OK: the die, "Guard beaten: gold +1" or "Guard holds" and the sum under it, for 3 seconds once the die stops, and the map waits for it (1-5)**
+### Q314. ~~How can fights stop interrupting planning?~~ — **answered 2026-10-26: every fight, your own included, floats on the fighter's head as a claim does, with no OK: the die, "Guard beaten: gold +1" or "Guard holds" and the sum under it, for 3 seconds once the die stops, and the map waits for it; where the map followed the walk, it glides just far enough for a claim's or a fight's notice not to be cut off (1-7)**
 
 Andrei, 2026-10-26 at 05:47: *"your own and other players fights pop up and
 disrupt your planning. can we make them less dispruptive? E g. also like
@@ -4051,6 +4055,25 @@ picked each detail from a card at 07:12 and 07:13:
    since it is wider. Put to him: every notice, or only a fight's, sliding
    sideways to stay whole (all of them recommended), or left as it is.
    **Answered** at 08:41: left as it is.
+6. **Room for the notice.** Andrei, 08:43: *"when we are tracking someone's
+   movement, and their turn ends with a floater, it makes sense to bring them
+   into view enough so that the floater is not cut off"*. Read as, and put to
+   him that way: only the notices that end a turn, a claim's and a fight's (a
+   purchase's floats before the walk); as one shows, if any of it would be cut
+   off at an edge of the map, counting the whole of its drift up, the map moves
+   just far enough for it to fit with a little room (8 px), at the zoom it
+   has; a fight's notice widens when the die stops, so the map may move again
+   then; taps still go through the notice. Then whether, with Track off, the
+   map also makes room after the walk of your own End turn, which it follows
+   since [Q316](#q316) 3: whenever the map followed the walk (recommended), or
+   only with Track pressed. **Answered** at 13:22: whenever the map followed.
+   A turn that walks nowhere has no walk to follow and moves nothing.
+7. **How it moves.** A glide over half a second with the turn start's easing
+   (Q46), stopping as soon as the viewer pans or zooms (recommended),
+   or a jump straight there. **Answered** at 13:23: glide, like the turn
+   start. As that glide does, a press on the map stops it too; once it is
+   stopped, or the map is panned, zoomed or taken to a player's card, it makes
+   no more room for that notice.
 
 Built: `FightNotice` in `apps/web/src/page/Cards.tsx`, on the floating notice
 the claim's and a purchase's use, replaces the result card;
@@ -4058,7 +4081,12 @@ the claim's and a purchase's use, replaces the result card;
 `computerCardMs`) and waits for any notice before the glide. As a claim's
 notice always has, it is taken away when someone starts planning or the next
 turn plays out, and like a claim's it is missed when the fighter's figure is
-out of view; the turn log keeps the whole fight. No rule, number, map or
+out of view; the turn log keeps the whole fight. For 6 and 7, `roomFor` in
+`apps/web/src/interaction/camera.ts` works out the map's new centre, with
+`ROOM_MARGIN_PX` (8); `MapView`'s handle takes a mark with `followMark` as the
+walk ends, if the map is following, and glides with `makeRoom` only while the
+mark holds; the floating notice reports where it will be, over its whole
+drift, when it shows and whenever its size changes. No rule, number, map or
 picture changed, and the rulebook's text needs no change.
 
 <a id="q316"></a>

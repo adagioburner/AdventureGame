@@ -2,7 +2,17 @@ import { useEffect, useRef, useState } from 'react';
 import { Application } from 'pixi.js';
 import { DEFAULT_RULESET } from '@adventure/config';
 import type { GameMap, GameState, NodeId, PathPreview, PlayerId, Point } from '@adventure/core';
-import { createCameraController, FOLLOW_MARGIN_OF_VIEW, followInto, glideCenter, GLIDE_MS, type CameraController } from '../interaction/camera.ts';
+import {
+  createCameraController,
+  FOLLOW_MARGIN_OF_VIEW,
+  followInto,
+  glideCenter,
+  GLIDE_MS,
+  ROOM_MARGIN_PX,
+  roomFor,
+  type CameraController,
+  type ScreenBox,
+} from '../interaction/camera.ts';
 import { figureTop, pick, planeToScreen, screenToPlane, type Pick } from '../interaction/picking.ts';
 import { fitToViewport, type Camera } from '../render/isometric.ts';
 import { position } from '../render/geometry.ts';
@@ -38,6 +48,19 @@ export interface MapHandle {
    * is, or else to `node`, and follow walks from now on.
    */
   track(node: NodeId | null): void;
+  /**
+   * [Q314, 6] A mark for "the map is following now", or null when it is not.
+   * `makeRoom` with it does nothing once the viewer has pressed, panned or
+   * zoomed the map, or something else has taken the map somewhere, since.
+   */
+  followMark(): number | null;
+  /**
+   * [Andrei, 2026-10-26] Q314, 6 and 7: slide the map just far enough that
+   * `box`, in CSS pixels in the map's box, is not cut off by its edges, over
+   * `GLIDE_MS` at the zoom the view already has, as `glideTo` does. Nothing,
+   * if `mark` from `followMark` no longer holds.
+   */
+  makeRoom(box: ScreenBox, mark: number): void;
 }
 
 interface MapViewProps {
@@ -142,6 +165,9 @@ export function MapView({
   // Whether a walk takes the map along. It follows `follow`, and stops at once
   // when the map is moved, before the page has unpressed Track.
   const following = useRef(follow);
+  // [Q314, 6] Counts the times the viewer or the page took the map somewhere,
+  // so that a notice's room is made only while nothing has since.
+  const aims = useRef(0);
   // [Q86, 330 and 331] Counts up to build the map again after it failed to
   // start or lost its drawing surface; `broken` once that happened too often.
   const [build, setBuild] = useState(0);
@@ -270,6 +296,7 @@ export function MapView({
       const stopCamera = (): void => {
         glide = null;
         following.current = false;
+        aims.current++;
       };
       /** The viewer moved the map: [Q57, 73] Track unpresses. */
       const moved = (): void => {
@@ -327,6 +354,7 @@ export function MapView({
         // A press stops the glide; only an actual drag or pinch counts as
         // moving the map, which stops the following too.
         glide = null;
+        aims.current++;
         element.setPointerCapture(event.pointerId);
         const at = local(event);
         pointers.set(event.pointerId, at);
@@ -432,9 +460,11 @@ export function MapView({
           const to = planeOf(node);
           glide = { from: camera.camera.center, to: () => to, start: performance.now(), chasing: false };
           touched = true;
+          aims.current++;
         },
         track: (node) => {
           following.current = true;
+          aims.current++;
           const walking = latest.current.walker;
           if (walking !== null) {
             // Wherever the figure has got to; once its walk is over, the node it stands on.
@@ -449,6 +479,14 @@ export function MapView({
             const to = planeOf(node);
             glide = { from: camera.camera.center, to: () => to, start: performance.now(), chasing: false };
           }
+          touched = true;
+        },
+        followMark: () => (following.current ? aims.current : null),
+        makeRoom: (box, mark) => {
+          if (mark !== aims.current) return;
+          const to = roomFor(camera.camera, viewport(), box, ROOM_MARGIN_PX);
+          if (to.x === camera.camera.center.x && to.y === camera.camera.center.y) return;
+          glide = { from: camera.camera.center, to: () => to, start: performance.now(), chasing: false };
           touched = true;
         },
       });

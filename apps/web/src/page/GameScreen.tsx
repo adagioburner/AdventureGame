@@ -14,6 +14,7 @@ import {
   type Point,
   type TurnAction,
 } from '@adventure/core';
+import type { ScreenBox } from '../interaction/camera.ts';
 import { createMoveModeController, endTurnOutcome, type EndTurnOutcome, type EnterRefusal, type MoveModeState } from '../interaction/moveMode.ts';
 import type { Pick } from '../interaction/picking.ts';
 import type { PlayedTurn, Purchase } from '../modes/hotseat.ts';
@@ -109,7 +110,8 @@ export function GameScreen({
   const [armed, setArmed] = useState(false);
   const [walker, setWalker] = useState<Walker | null>(null);
   const [inFlight, setInFlight] = useState<{ path: PathPreview | null; waypoint: NodeId | null } | null>(null);
-  const [result, setResult] = useState<{ turn: PlayedTurn; rolling: boolean } | null>(null);
+  // `room`: [Q314, 6] the map's `followMark` as the walk ended, if it was following it.
+  const [result, setResult] = useState<{ turn: PlayedTurn; rolling: boolean; room: number | null } | null>(null);
   const [entries, setEntries] = useState<readonly JournalEntry[]>(() => journalOf(source.history));
   const [notice, setNotice] = useState<string | null>(null);
   const [endOpen, setEndOpen] = useState(true);
@@ -177,6 +179,9 @@ export function GameScreen({
     return () => window.clearTimeout(timer);
   }, [result]);
   const locateFigure = useCallback((player: PlayerId) => handle.current?.screenOfFigure(player) ?? null, []);
+  /** [Q314, 6] A turn's notice makes room for itself on the map only if the map followed the walk. */
+  const makeRoom = (room: number | null): ((box: ScreenBox) => void) | undefined =>
+    room === null ? undefined : (box) => handle.current?.makeRoom(box, room);
 
   const commit = useRef<(action: TurnAction) => void>(() => undefined);
   /** Commit a turn to `play`, keeping `planned` to walk it along when it comes back, after what a computer `buy`s first. */
@@ -386,7 +391,8 @@ export function GameScreen({
     // stamina goes up on their card.
     if (isRest(turn.events)) sounds.play('rest');
     const moved = find(turn.events, 'moved');
-    if (moved !== undefined && moved.resolution.walked.length > 0) {
+    const walked = moved !== undefined && moved.resolution.walked.length > 0;
+    if (walked) {
       const nodes = [moved.resolution.from, ...moved.resolution.walked].map((node) => position(before.map.graph, node));
       // [Q63, 131] A footstep each time the figure reaches the next node, timed
       // by the sound's own clock so the steps keep the walk's pace however
@@ -396,11 +402,16 @@ export function GameScreen({
     }
     const interacted = find(turn.events, 'interacted');
     if (interacted === undefined || interacted.resolution.reward === null) return;
+    // [Andrei, 2026-10-26] Q314, 6: "when we are tracking someone's movement,
+    // and their turn ends with a floater, it makes sense to bring them into
+    // view enough so that the floater is not cut off". Whenever the map
+    // followed the walk, Track's or your own (Q316).
+    const room = walked ? (handle.current?.followMark() ?? null) : null;
     if (interacted.resolution.roll !== null) {
-      setResult({ turn, rolling: true });
+      setResult({ turn, rolling: true, room });
       await sleep(timing.tumbleMs);
     }
-    setResult({ turn, rolling: false });
+    setResult({ turn, rolling: false, room });
     // [Q63, 134 and 136] As an unguarded claim's notice appears, or as the die
     // stops and the fight's notice shows whether the guard was beaten.
     const ending = endingSound(turn.events);
@@ -742,6 +753,7 @@ export function GameScreen({
             stayMs={timing.claimMs}
             appearMs={timing.appearMs}
             fadeMs={timing.fadeMs}
+            onPlaced={makeRoom(result.room)}
           />
         ) : (
           <FightNotice
@@ -753,6 +765,7 @@ export function GameScreen({
             stayMs={timing.tumbleMs + timing.fightMs}
             appearMs={timing.appearMs}
             fadeMs={timing.fadeMs}
+            onPlaced={makeRoom(result.room)}
           />
         )}
         {bought === null ? null : (

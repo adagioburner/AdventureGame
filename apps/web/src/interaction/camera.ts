@@ -81,6 +81,39 @@ export function followInto(camera: Camera, viewport: Point, plane: Point, margin
   return { x: along(camera.center.x, plane.x, viewport.x), y: along(camera.center.y, plane.y, viewport.y) };
 }
 
+/** A box in the view, in CSS pixels from its top left corner. */
+export interface ScreenBox {
+  readonly left: number;
+  readonly top: number;
+  readonly right: number;
+  readonly bottom: number;
+}
+
+/** [Q314, 6] How far inside the view's edges the map makes room for a notice, in CSS pixels. */
+export const ROOM_MARGIN_PX = 8;
+
+/**
+ * [Andrei, 2026-10-26] Q314, 6: "when we are tracking someone's movement, and
+ * their turn ends with a floater, it makes sense to bring them into view
+ * enough so that the floater is not cut off". The view's centre, moved just
+ * enough that `box` sits at least `margin` inside every edge, or centred on
+ * it along an axis it is too big for. A box already inside leaves it where it is.
+ */
+export function roomFor(camera: Camera, viewport: Point, box: ScreenBox, margin: number): Point {
+  const along = (center: number, low: number, high: number, size: number): number => {
+    const shift =
+      high - low > size - 2 * margin
+        ? (low + high) / 2 - size / 2
+        : low < margin
+          ? low - margin
+          : high > size - margin
+            ? high - (size - margin)
+            : 0;
+    return center + shift / camera.zoom;
+  };
+  return { x: along(camera.center.x, box.left, box.right, viewport.x), y: along(camera.center.y, box.top, box.bottom, viewport.y) };
+}
+
 export function createCameraController(fit: Camera, viewport: Point): CameraController {
   let whole = fit;
   let size = viewport;
