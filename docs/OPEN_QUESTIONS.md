@@ -1800,7 +1800,8 @@ to 238).
 234. **The game's own fonts and colours,** with headings in the style of the
      game's name in the top bar.
 235. **The rewards table keeps his words** for each icon ("Brown wagon wheel"),
-     not the game's pictures.
+     not the game's pictures. Since [Q322](#q322) each icon stands in front of
+     its words.
 236. **Closing it:** the Close button, Esc, or on a desktop a click outside it.
      While it is open the game's own keys do nothing, so Esc does not also put
      down a planned route.
@@ -4594,6 +4595,51 @@ turn and `drawCharacters` no longer holds it still (1, 2);
 `timing.savedRoutePulseMs` in `apps/web/src/page/GameScreen.tsx` is the 2
 seconds as before; the line is in `docs/RULEBOOK.md` (3). No rule, number, map
 or picture changed.
+
+---
+
+<a id="q322"></a>
+### Q322. ~~Which pictures does the rulebook show?~~ — **answered 2026-10-26: nine, each right after the text it shows: a part of the map, sites and their guards, each reward's icon in front of its words in the Rewards table, a seat on the New game panel, the turn buttons, a route, a player card, a fight's notice and the buy panel; screenshots from the game, with no captions and no word of the rules changed (1-3)**
+
+Andrei, 2026-10-26 at 02:35: *"we need to add pictures to the rules.
+Definitely icons, screenshots of UI elements, paths and so on"*. The rulebook
+([Q71](#q71)) was words and tables only.
+
+1. **Which, and where.** Mocked up in the rulebook over the game on a laptop
+   and on a 390 px phone: A, nine pictures, each right after the text it shows
+   (recommended); B, those and a route bent through a waypoint, a site before
+   and after its claim, the end-of-game card, and the online message board and
+   the game master's buttons; C, only the icons and the route. Set out with it:
+   no captions, no word of the rules changed, and the pictures fixed
+   screenshots kept beside the rulebook, to be taken again when the game's
+   look changes, the sites from closer up than in the mockup so they read on a
+   phone. At 12:49 he held it until the day's other changes had landed
+   (Q310, Q313 to Q315 among them), and at 18:58: *"Please regenerate the
+   illustrations"*: A, taken from the game as it then was.
+2. **The icons.** In the Rewards table's Icon column each reward's icon, the
+   picture the map draws under a site (`Art/Icons/<kind>.png`), stands in
+   front of its words, which stay (Q71 235).
+3. **The screenshots.** From a game on this device on the map "adventure",
+   two people playing, at twice the page's resolution so they stay sharp on
+   fine screens, and shown at half that size: forest, plains and mountains
+   with their sites and guards; sites with their stacks of icons beside a
+   purple and a red guard ring; Seat 1 on the New game panel; Player 1's card
+   and the line and buttons under it at the start of the game; a route of two
+   green, two yellow and three grey steps with a bubble for turn 2 (Q315);
+   the notice of a fight won against a magic guard of 3 (Q314); and the buy
+   panel with one plains speed added.
+
+Built: `parseRulebook` in `apps/web/src/page/rulebook.ts` reads a line
+`![words](path)` as a picture, and the same inside a line or a table cell as a
+picture in the text; `Rules.tsx` finds each by the path `docs/RULEBOOK.md`
+names it with, from `docs/`, so the file shows them on GitHub too: the
+screenshots in `docs/rulebook/` and the icons in `Art/Icons/`. A picture is no
+wider than the text, with a thin border and rounded corners
+(`.rules-text img.picture` in `apps/web/index.html`); an icon is 18 px
+(`.rules-text img.icon`). The words in a picture's brackets are read out by a
+screen reader and shown only if it cannot load; an icon's are left empty, its
+words following it. A test checks that every picture the rulebook names is
+there. No rule, number or map changed, and no word of the rules.
 
 ---
 
