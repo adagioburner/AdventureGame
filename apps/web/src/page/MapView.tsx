@@ -335,7 +335,8 @@ export function MapView({
       // They slide a little off what matters on the map (7, 8): the reward
       // icons and guard numbers (Andrei: "the site pictures are eye candy
       // only, it's fone to cover them, but the icons and guard numbers are
-      // important"), the figures in view with their rings, and the route.
+      // important"), the figures in view with their rings, and the route,
+      // its turn bubbles too (9).
       const labels = scene.labels.map((label) => ({ node: label.node, box: labelBox(label) }));
       let route: { path: PathPreview | null; from: NodeId | null; waypoint: NodeId | null; boxes: readonly Box[] } | null = null;
       const routeNow = (): readonly Box[] => {
@@ -387,6 +388,7 @@ export function MapView({
           ...map.characters.map((figure) => pictureBox(figure.foot, figure.size, art.shape(figure.sprite))),
           ...map.rings.map((ring) => groundBox(scene, ring.at, playerRingSize(ring.size, scene.spacing, camera.camera.zoom, wholeZoom) / 2)),
           ...routeNow(),
+          ...map.turnBubbles,
         ]
           .map(onScreen)
           .filter(shows);

@@ -4,6 +4,7 @@ import { Container, Graphics, Matrix, Sprite, Text, TilingSprite, type Texture }
 import { spriteIndex } from '../../art/atlas.ts';
 import { atlasOf } from '../../art/catalog.ts';
 import type { Camera, Projection } from '../isometric.ts';
+import type { Box } from '../placement.ts';
 import type { MapRenderer, SceneLayer } from '../scene.ts';
 import {
   buildCharacters,
@@ -105,6 +106,8 @@ export class PixiMapRenderer implements MapRenderer {
   private preview: PathPreview | null = null;
   private previewFrom: NodeId | null = null;
   private turnStops: readonly number[] | null = null;
+  /** [Q320, 9] The turn bubbles as drawn, which the edge markers keep off. */
+  private bubbleBoxes: Box[] = [];
   private waypoint: NodeId | null = null;
   private walker: Walker | null = null;
   private viewport: Point = { x: 1, y: 1 };
@@ -204,6 +207,11 @@ export class PixiMapRenderer implements MapRenderer {
   /** [Q320, 8] The rings under the figures as they stand now. */
   get rings(): readonly PlayerRing[] {
     return this.stateScene?.rings ?? [];
+  }
+
+  /** [Q320, 9] The boxes the route's turn bubbles cover, point and edge included. */
+  get turnBubbles(): readonly Box[] {
+    return this.bubbleBoxes;
   }
 
   setPathPreview(preview: PathPreview | null, from: NodeId | null, turnStops: readonly number[] | null = null): void {
@@ -494,6 +502,7 @@ export class PixiMapRenderer implements MapRenderer {
   private drawPath(): void {
     this.groundAbove.removeChildren().forEach((child) => child.destroy());
     this.bubblesLayer.removeChildren().forEach((child) => child.destroy());
+    this.bubbleBoxes = [];
     const preview = this.preview;
     const from = this.previewFrom;
     if (preview === null || from === null) return;
@@ -541,6 +550,7 @@ export class PixiMapRenderer implements MapRenderer {
     type.anchor.set(0.5);
     type.position.set(at.x, top + height / 2);
     this.bubblesLayer.addChild(shape, type);
+    this.bubbleBoxes.push({ minX: at.x - width / 2 - edge.width / 2, minY: top - edge.width / 2, maxX: at.x + width / 2 + edge.width / 2, maxY: at.y + edge.width / 2 });
   }
 
   private drawUi(): void {
