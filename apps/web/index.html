@@ -647,12 +647,13 @@
         display: flex;
         gap: 8px;
       }
-      /* [Q318] End turn's question, just above the route's end cross. */
+      /* [Q318] End turn's question, just above the route's end cross; its
+         No and Yes at the right end of the question's own line (14 A). */
       .end-question {
         position: absolute;
         z-index: 4;
         width: min(340px, calc(100% - 16px));
-        padding: 10px 12px 12px;
+        padding: 10px 12px;
         border: 1px solid var(--line);
         border-radius: 10px;
         background: var(--panel);
@@ -662,8 +663,14 @@
         margin: 0 0 4px;
         font: 600 14px/1.4 var(--ui);
       }
-      .end-question p + p {
-        margin-bottom: 10px;
+      .end-question .ask {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .end-question .ask p {
+        margin: 0;
         font-weight: 400;
       }
       .end-question .acts {

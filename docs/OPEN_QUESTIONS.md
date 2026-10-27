@@ -4373,7 +4373,7 @@ which on your turn is your own. No rule, number, map or picture changed, and
 the rulebook needs no change: it does not mention Track.
 
 <a id="q318"></a>
-### Q318. ~~Should End turn ask first when the walk ends off a site?~~ — **answered 2026-10-26: yes, when the walk reaches the route's end this turn and no unclaimed site is there, and when End turn would rest; in a box drawn like the game's own panels, just above the end cross or the resting figure, which the map glides to the middle, with No and Yes; it always asks (1-13)**
+### Q318. ~~Should End turn ask first when the walk ends off a site?~~ — **answered 2026-10-26: yes, when the walk reaches the route's end this turn and no unclaimed site is there, and when End turn would rest; in a box drawn like the game's own panels, just above the end cross or the resting figure, which the map glides to the middle, with No and Yes; it always asks (1-15)**
 
 Andrei, 2026-10-26 at 06:29: *"we need to adk for a confirmation ehen a
 player ends their move not on a site. Players misclick way too often"*; and at
@@ -4440,6 +4440,16 @@ well"*.
     (recommended); C, two short horn notes going up. **Answered** at 16:24:
     B. It plays each time the box appears, as it appears, and not while
     Sound is off.
+14. **A smaller box.** Andrei, 27 October at 00:26: *"the confirmation
+    dialog for off site moves can be made much smaller by moving the buttons
+    to the right and up"*. Drawn at real size: A, No and Yes at the right end
+    of the "Go anyway?" line, under the explanation, the box losing a row
+    (133 to 101 px tall) (recommended); B, No and Yes in the top right
+    corner, the words down their left, the explanation wrapping onto three
+    lines (106 px). **Answered** at 00:37: A.
+15. **The rest box too.** A, the same layout, so the two boxes look alike
+    (recommended); B, only the off-site box. **Answered** at 00:36: A
+    (113 to 82 px tall).
 
 Set out alongside and left as set out: only a person pressing End turn is
 asked, on one device and online; Rest, End turn fighting a guard again,

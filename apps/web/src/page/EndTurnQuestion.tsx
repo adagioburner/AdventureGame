@@ -39,7 +39,10 @@ function asks(kind: EndTurnQuestionKind): string {
  * Yes ends the turn (7 C). Andrei, 2026-10-26: "I'd prefer that the map
  * gl[i]de first and then the dialog ap[p]ear, not two at the same time": it
  * waits for `ready` (12); and "we need some kind of question mark sound when
- * this dialog pops up", which `onShown` plays as it appears (13 B).
+ * this dialog pops up", which `onShown` plays as it appears (13 B). On 27
+ * October: "the confirmation dialog for off site moves can be made much
+ * smaller by moving the buttons to the right and up": No and Yes sit at the
+ * right end of the question's own line (14 A), in the rest box too (15).
  */
 export function EndTurnQuestion({
   kind,
@@ -99,14 +102,16 @@ export function EndTurnQuestion({
   return (
     <section className="end-question" ref={box} role="dialog" aria-label="End turn?" style={{ visibility: 'hidden' }}>
       <p>{says(kind, restGain)}</p>
-      <p>{asks(kind)}</p>
-      <div className="acts">
-        <button className="btn" type="button" onClick={onNo}>
-          No
-        </button>
-        <button className="btn primary" type="button" disabled={offline} onClick={onYes}>
-          Yes
-        </button>
+      <div className="ask">
+        <p>{asks(kind)}</p>
+        <div className="acts">
+          <button className="btn" type="button" onClick={onNo}>
+            No
+          </button>
+          <button className="btn primary" type="button" disabled={offline} onClick={onYes}>
+            Yes
+          </button>
+        </div>
       </div>
     </section>
   );
