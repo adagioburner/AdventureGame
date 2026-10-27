@@ -223,19 +223,21 @@ function allowanceFor(game: GameState, planner: PlayerState): MovementAllowance 
 /**
  * [Q318] Andrei, 2026-10-26: "we need to a[s]k for a confirmation [w]hen a
  * player ends their move not on a site. Players misclick way too often".
- * Whether End turn with `move` shown asks first: the walk reaches the route's
- * end this turn (1 A, not a stop partway along a longer route), and no
- * unclaimed site stands there, a claimed one being an ordinary space (2 A). A
- * turn that walks nothing, a rest or another roll at a guard, never asks.
+ * Whether End turn with `move` shown asks first: no unclaimed site stands at
+ * the route's end, a claimed one being an ordinary space (2 A), whether or not
+ * the walk gets there this turn. On 27 October: "about the destination only
+ * ... whether the user accidentally misclicked off a site. where they stop
+ * [partway] does not matter" (16; 1 A had a walk that stops partway not ask).
+ * A turn that walks nothing, a rest or another roll at a guard, never asks.
  */
 export function endsOffSite(game: GameState, move: MoveModeState): boolean {
   if (game.status !== 'in_progress' || move.kind !== 'previewing') return false;
-  if (move.path.length === 0 || !move.preview.destinationReachable) return false;
+  if (move.path.length === 0 || move.preview.reachableStepCount === 0) return false;
   const runtime = poiRuntimeAt(game, move.destination);
   return runtime === undefined || isClaimed(runtime);
 }
 
-/** Why End turn asks first: its walk ends off a site, or it rests. */
+/** Why End turn asks first: its route ends off a site, or it rests. */
 export type EndTurnQuestionKind = 'off_site' | 'rest';
 
 /**

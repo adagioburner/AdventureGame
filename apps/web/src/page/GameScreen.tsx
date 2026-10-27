@@ -630,10 +630,10 @@ export function GameScreen({
     handle.current?.track(active?.position ?? null);
   };
   /**
-   * [Q318] End turn whose walk ends this turn off a site, or that rests, asks
-   * first: the map glides the route's end, or the figure, to the middle (6 A,
-   * 9 A), and the question comes up above it. Neither glide changes Track
-   * (11 A): "During your own move, nothing should unpress track".
+   * [Q318] End turn whose route ends off a site, or that rests, asks first:
+   * the map glides the route's end, or the figure, to the middle (6 A, 9 A),
+   * and the question comes up above it. Neither glide changes Track (11 A):
+   * "During your own move, nothing should unpress track".
    */
   const endTurn = (rest: boolean): void => {
     const now = controller.state;

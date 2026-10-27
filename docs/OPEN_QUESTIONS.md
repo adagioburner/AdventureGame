@@ -4373,7 +4373,7 @@ which on your turn is your own. No rule, number, map or picture changed, and
 the rulebook needs no change: it does not mention Track.
 
 <a id="q318"></a>
-### Q318. ~~Should End turn ask first when the walk ends off a site?~~ — **answered 2026-10-26: yes, when the walk reaches the route's end this turn and no unclaimed site is there, and when End turn would rest; in a box drawn like the game's own panels, just above the end cross or the resting figure, which the map glides to the middle, with No and Yes; it always asks (1-15)**
+### Q318. ~~Should End turn ask first when the walk ends off a site?~~ — **answered 2026-10-26: yes, when no unclaimed site is at the route's end, reached this turn or not (16), and when End turn would rest; in a box drawn like the game's own panels, just above the end cross or the resting figure, which the map glides to the middle, with No and Yes; it always asks (1-17)**
 
 Andrei, 2026-10-26 at 06:29: *"we need to adk for a confirmation ehen a
 player ends their move not on a site. Players misclick way too often"*; and at
@@ -4450,6 +4450,25 @@ well"*.
 15. **The rest box too.** A, the same layout, so the two boxes look alike
     (recommended); B, only the off-site box. **Answered** at 00:36: A
     (113 to 82 px tall).
+16. **A destination out of reach this turn.** Andrei, 00:47: *"the computer
+    doesn't ask the question if where I'm going is not reachable"*. By 1 A
+    a walk stopping partway along a longer route did not ask. Asked whether
+    it should ask when this turn's walk stops partway off a site, he chose
+    at 00:54 to ask there too; then at 00:59: *"you probably got me wrong.
+    this morning about the destination only color whether the user
+    accidentally misclicked off a site. where they stop the parkway does
+    not matter"*. So End turn asks when no unclaimed site is at the route's
+    end, whether or not the walk gets there this turn, and where it stops
+    this turn is not looked at; the map glides to the end cross as before.
+    A route to an empty space planned over several turns asks at each End
+    turn on the way.
+17. **The words.** At 00:55: *"the warning needs to change some what I
+    think. for example arriving at your destination will not let you claim
+    a reward or fight from gold"*. The first line for a walk is now
+    "Arriving at your destination will not let you claim a reward or fight
+    for gold.", "from" read as "for", as it was before. The rest box's words
+    and the "Go anyway?" line are as they were. The wording asked for a
+    walk stopping partway was withdrawn with 16.
 
 Set out alongside and left as set out: only a person pressing End turn is
 asked, on one device and online; Rest, End turn fighting a guard again,

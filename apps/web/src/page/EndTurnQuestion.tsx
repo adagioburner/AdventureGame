@@ -15,9 +15,13 @@ export interface QuestionPlace {
   readonly below: number;
 }
 
-/** [Q318] What the box says (8 C, 10 B); `gain` is the stamina a rest gives. */
+/**
+ * [Q318] What the box says (10 B); `gain` is the stamina a rest gives. For a
+ * walk, Andrei, 27 October: "for example arriving at your destination will
+ * not let you claim a reward or fight [for] gold" (17).
+ */
 function says(kind: EndTurnQuestionKind, gain: number): string {
-  return kind === 'rest' ? `Your turn will end with a rest: +${gain} stamina.` : 'Your turn will end without claiming a reward or fighting for gold.';
+  return kind === 'rest' ? `Your turn will end with a rest: +${gain} stamina.` : 'Arriving at your destination will not let you claim a reward or fight for gold.';
 }
 
 /** [Q318] The box's last line, in what End turn's button says now: Go for a walk. */
@@ -29,10 +33,10 @@ function asks(kind: EndTurnQuestionKind): string {
  * [Q318] Andrei, 2026-10-26: "we need to a[s]k for a confirmation [w]hen a
  * player ends their move not on a site. Players misclick way too often", and
  * "if one clicks End turn to rest, we probably should confirm as well". End
- * turn whose walk ends this turn off a site, or that rests
- * (`endTurnQuestion`), asks first, in a box drawn like the game's own panels
- * (3 B): "can it appear in the center, but above the end cross, so one [can]
- * see where they're going" (5). The map glides the cross to the middle (6 A),
+ * turn whose route ends off a site, or that rests (`endTurnQuestion`), asks
+ * first, in a box drawn like the game's own panels (3 B): "can it appear in
+ * the center, but above the end cross, so one [can] see where they're going"
+ * (5). The map glides the cross to the middle (6 A),
  * or for a rest the figure (9 A), and the box sits just above it, following
  * it as the map moves, kept on the map, and going below it where there is no
  * room above. No closes it and keeps the route up to change, as Escape does;

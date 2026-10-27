@@ -847,7 +847,7 @@ describe('a route put down with Track, or cancelled, stays as it is when somethi
   });
 });
 
-describe('End turn asks first when the walk ends off a site (Q318)', () => {
+describe('End turn asks first when the route ends off a site (Q318)', () => {
   /** Spaces by how many roads they are from the first seat's start, sites or not. */
   function spaces(state: GameState, site: boolean, hops: (count: number) => boolean): NodeId[] {
     const from = seat(state, 0).position;
@@ -899,11 +899,18 @@ describe('End turn asks first when the walk ends off a site (Q318)', () => {
     expect(endsOffSite(claimed, controller.state)).toBe(true);
   });
 
-  it('does not ask when the walk stops partway along a longer route (1 A)', () => {
+  it('asks about a route ending off a site even when the walk stops partway this turn (16)', () => {
     const { game, controller } = setup();
     const far = spaces(game.state, false, (count) => count >= 20);
     const space = far.find((node) => !chosen(controller, node).preview.destinationReachable);
     expect(space).toBeDefined();
+    expect(endsOffSite(game.state, controller.state)).toBe(true);
+  });
+
+  it('does not ask about a route ending on an unclaimed site, reached this turn or not', () => {
+    const { game, controller } = setup();
+    const site = spaces(game.state, true, (count) => count >= 20).find((node) => !chosen(controller, node).preview.destinationReachable);
+    expect(site).toBeDefined();
     expect(endsOffSite(game.state, controller.state)).toBe(false);
   });
 
@@ -930,7 +937,7 @@ describe('End turn asks first when the walk ends off a site (Q318)', () => {
     expect(endTurnQuestion({ ...game.state, status: 'finished' }, controller.state)).toBeNull();
   });
 
-  it('asks about a walk off a site, and not one onto a site or one stopping partway', () => {
+  it('asks about a route ending off a site, reached this turn or not, and not one ending on a site', () => {
     const { game, controller } = setup();
     chosen(controller, spaces(game.state, false, (count) => count === 3)[0] as NodeId);
     expect(endTurnQuestion(game.state, controller.state)).toBe('off_site');
@@ -938,7 +945,7 @@ describe('End turn asks first when the walk ends off a site (Q318)', () => {
     expect(endTurnQuestion(game.state, controller.state)).toBeNull();
     const far = spaces(game.state, false, (count) => count >= 20);
     expect(far.some((node) => !chosen(controller, node).preview.destinationReachable)).toBe(true);
-    expect(endTurnQuestion(game.state, controller.state)).toBeNull();
+    expect(endTurnQuestion(game.state, controller.state)).toBe('off_site');
   });
 
   it('asks when End turn would rest: with no route, or one whose first step cannot be paid', () => {
