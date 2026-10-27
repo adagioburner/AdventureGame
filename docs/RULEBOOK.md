@@ -153,7 +153,7 @@ The rules are the same either way; the Play online switch on the setup screen ch
 
 **On one device**, everyone takes turns at the same screen. The ring under your figure pulses when it is your turn.
 
-**Online**, each player uses their own device. You can plan your next move while others play, and Go plays it when your turn comes. A message board lets players talk.
+**Online**, each player uses their own device. You can plan your next move while others play, and Go plays it when your turn comes. A message board lets players talk. Once a game has started, anyone logged in who has its link can open it to watch: they see the map, every turn and the messages, but can't play or post.
 
 Your own figure stands on a white ring: online always, on one device only when one person plays against the computer.
 
