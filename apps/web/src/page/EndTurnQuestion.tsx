@@ -15,9 +15,13 @@ export interface QuestionPlace {
   readonly below: number;
 }
 
-/** [Q318] What the box says (8 C, 10 B); `gain` is the stamina a rest gives. */
+/**
+ * [Q318] What the box says (10 B); `gain` is the stamina a rest gives. For a
+ * walk, Andrei, 27 October: "for example arriving at your destination will
+ * not let you claim a reward or fight [for] gold" (17).
+ */
 function says(kind: EndTurnQuestionKind, gain: number): string {
-  return kind === 'rest' ? `Your turn will end with a rest: +${gain} stamina.` : 'Your turn will end without claiming a reward or fighting for gold.';
+  return kind === 'rest' ? `Your turn will end with a rest: +${gain} stamina.` : 'Arriving at your destination will not let you claim a reward or fight for gold.';
 }
 
 /** [Q318] The box's last line, in what End turn's button says now: Go for a walk. */
@@ -29,17 +33,20 @@ function asks(kind: EndTurnQuestionKind): string {
  * [Q318] Andrei, 2026-10-26: "we need to a[s]k for a confirmation [w]hen a
  * player ends their move not on a site. Players misclick way too often", and
  * "if one clicks End turn to rest, we probably should confirm as well". End
- * turn whose walk ends this turn off a site, or that rests
- * (`endTurnQuestion`), asks first, in a box drawn like the game's own panels
- * (3 B): "can it appear in the center, but above the end cross, so one [can]
- * see where they're going" (5). The map glides the cross to the middle (6 A),
+ * turn whose route ends off a site, or that rests (`endTurnQuestion`), asks
+ * first, in a box drawn like the game's own panels (3 B): "can it appear in
+ * the center, but above the end cross, so one [can] see where they're going"
+ * (5). The map glides the cross to the middle (6 A),
  * or for a rest the figure (9 A), and the box sits just above it, following
  * it as the map moves, kept on the map, and going below it where there is no
  * room above. No closes it and keeps the route up to change, as Escape does;
  * Yes ends the turn (7 C). Andrei, 2026-10-26: "I'd prefer that the map
  * gl[i]de first and then the dialog ap[p]ear, not two at the same time": it
  * waits for `ready` (12); and "we need some kind of question mark sound when
- * this dialog pops up", which `onShown` plays as it appears (13 B).
+ * this dialog pops up", which `onShown` plays as it appears (13 B). On 27
+ * October: "the confirmation dialog for off site moves can be made much
+ * smaller by moving the buttons to the right and up": No and Yes sit at the
+ * right end of the question's own line (14 A), in the rest box too (15).
  */
 export function EndTurnQuestion({
   kind,
@@ -99,14 +106,16 @@ export function EndTurnQuestion({
   return (
     <section className="end-question" ref={box} role="dialog" aria-label="End turn?" style={{ visibility: 'hidden' }}>
       <p>{says(kind, restGain)}</p>
-      <p>{asks(kind)}</p>
-      <div className="acts">
-        <button className="btn" type="button" onClick={onNo}>
-          No
-        </button>
-        <button className="btn primary" type="button" disabled={offline} onClick={onYes}>
-          Yes
-        </button>
+      <div className="ask">
+        <p>{asks(kind)}</p>
+        <div className="acts">
+          <button className="btn" type="button" onClick={onNo}>
+            No
+          </button>
+          <button className="btn primary" type="button" disabled={offline} onClick={onYes}>
+            Yes
+          </button>
+        </div>
       </div>
     </section>
   );
