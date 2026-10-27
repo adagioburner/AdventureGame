@@ -4763,6 +4763,40 @@ changed.
 
 ---
 
+### Q317. ~~Can people watch a game and talk on its board?~~ — **answered 2026-10-27: watching by a started game's link, as the site already allowed, is enough for now; the rulebook says so, and the watchers who could post were left unmerged (1-3)**
+
+Andrei, 2026-10-26 at 05:49: *"it would be nice to let people join as
+spectators who can watch and read/send messages"*. Found: anyone logged in
+who opened a started game's link was already sent the game, and watched it as
+a player who resigned does, reading the messages but not posting (the page had
+no box, and the server refuses a post from someone holding no seat); nobody
+could tell they were there, and the game list showed no game they were not in.
+None of this was written down: not in GDD.md, not in the rulebook.
+
+1. **Watchers let in, who post.** At 07:20 he chose *"the minimal change here.
+   Only games that have not started yet can be joined fir watching. The game
+   master lets watchers in the same way they let in players"*, and took ten
+   points as set out: Ask to watch beside Ask to join, accepted or declined
+   as a join request with no seat needed, "Watching: Dan, Eve" under the
+   seats, the game in a watcher's Your games once started, and their posts on
+   the game's board by their username with "watching" after it. It was built
+   and passed CI as pull request 103. On 2026-10-27 at 07:56 he wrote *"I'm
+   thinking now that at the moment the ability to watch by shared link to the
+   game is probably good enough. Is that feature described in the
+   rulebook?"*, and chose to close it unmerged; its commit stays on that pull
+   request.
+2. **Watching by link** stays as it was: anyone logged in, from Start on, the
+   game finished too until it is removed, read-only.
+3. **The rulebook** says so, after "A message board lets players talk." in
+   *Playing online or on one device*: "Once a game has started, anyone logged
+   in who has its link can open it to watch: they see the map, every turn and
+   the messages, but can't play or post." Taken at 07:57 as proposed.
+
+Built: that sentence in `docs/RULEBOOK.md`, which the Rules button shows.
+Nothing in the game changed: no rule, number, map, picture or screen.
+
+---
+
 ## C. Decisions I made that are *implementation*, not design
 
 Listed so you can veto any that read as design to you.

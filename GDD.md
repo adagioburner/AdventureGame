@@ -254,6 +254,8 @@ The Buy button on the card of the player on turn opens the buy panel over the ma
 
 [SOURCE §4] A message board lets human players post messages visible to everyone. [SOURCE §12.3, chat] It is part of the game state and persists with the rest of the game (§12.3); the site's own board on the game list page keeps each post 14 days (§6.1, Q300).
 
+[SOURCE chat, review] **Watching by link.** Andrei, 2026-10-26: "it would be nice to let people join as spectators who can watch and read/send messages"; on 2026-10-27, once watchers the game master let in before Start, who could post, had been built and left unmerged: "at the moment the ability to watch by shared link to the game is probably good enough". Once a game has started, anyone logged in who has its link can open it and watch: the map, every turn and the messages, as a player who resigned sees them, but they can't play or post. The rulebook says so. Registered as Q317.
+
 ### 7.2 Hotseat mode
 
 [SOURCE §intro, chat] The same computer sequentially shows the game controls for all hotseat participants in turn order. The current player's name and avatar are prominently displayed, and their character is highlighted on the map. Unlike online play, there is **no out-of-turn planning** in hotseat mode — the §7.1 "plan your move while others play" feature does not apply.
