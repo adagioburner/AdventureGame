@@ -10,6 +10,7 @@ import { boxTouchesOval, grow, lengthInBox, ON_NODE_REACH, overlapArea, pictureB
 import {
   ANIMATE_FROM_PX,
   beamBrightness,
+  beamFade,
   buildMapScene,
   buildPathScene,
   buildStateScene,
@@ -26,6 +27,7 @@ import {
   nodeOutlineWidth,
   playFrame,
   PLAYER_BEAM,
+  PLAYER_BEAM_FADE,
   PLAYER_RING_ACROSS,
   PLAYER_RING_ACROSS_WHOLE_MAP,
   playerRingSize,
@@ -640,6 +642,24 @@ describe("the beam of light over the players' figures (Q326)", () => {
     expect(beamBrightness(0.5)).toBeCloseTo(0.5, 9);
     expect(beamBrightness(0.9)).toBeCloseTo(0.1, 9);
     expect(beamBrightness(1)).toBe(0);
+  });
+
+  it('goes out in 0.2 s as its figure sets off, and comes back in 0.5 s as it arrives (8)', () => {
+    expect(PLAYER_BEAM_FADE).toEqual({ outMs: 200, inMs: 500 });
+    expect(beamFade(1, 0, 0)).toBe(1);
+    expect(beamFade(1, 0, 100)).toBeCloseTo(0.5, 9);
+    expect(beamFade(1, 0, 200)).toBe(0);
+    expect(beamFade(1, 0, 1000)).toBe(0);
+    expect(beamFade(0, 1, 0)).toBe(0);
+    expect(beamFade(0, 1, 250)).toBeCloseTo(0.5, 9);
+    expect(beamFade(0, 1, 500)).toBe(1);
+    expect(beamFade(0, 1, 2000)).toBe(1);
+  });
+
+  it('turned round part way, goes back from where it was at the same pace (8)', () => {
+    expect(beamFade(0.5, 1, 250)).toBe(1);
+    expect(beamFade(0.5, 0, 50)).toBeCloseTo(0.25, 9);
+    expect(beamFade(0.5, 0, -10)).toBe(0.5);
   });
 });
 

@@ -8,6 +8,7 @@ import type { Box } from '../placement.ts';
 import type { MapRenderer, SceneLayer } from '../scene.ts';
 import {
   beamBrightness,
+  beamFade,
   buildCharacters,
   buildPathScene,
   buildStateScene,
@@ -117,8 +118,14 @@ export class PixiMapRenderer implements MapRenderer {
   private planner: PlayerId | null = null;
   private found: PlayerId | null = null;
   private own: PlayerId | null = null;
-  /** [Q326] The beam over each figure drawn now, one ring's width across on screen to a unit. */
-  private beams: Graphics[] = [];
+  /** [Q326] The beam over each figure drawn now, one ring's width across on screen to a unit, and whose it is. */
+  private beams: { beam: Graphics; player: PlayerId }[] = [];
+  /** [Q326, 8] The player whose beam is out, from before their figure sets off until it arrives; `null` for none. */
+  private unlit: PlayerId | null = null;
+  /** [Q326, 8] Each beam going out or coming back: how bright it was as it turned, which way it goes, and since when (`null` until the next frame). */
+  private readonly fades = new Map<PlayerId, { from: number; to: 0 | 1; start: number | null }>();
+  /** [Q326, 8] How bright each beam not at its brightest is now, as a share of that. */
+  private readonly light = new Map<PlayerId, number>();
   /** [Q326, 3] The beams' gradients: gold, white for the page's own player, and their white core. */
   private readonly beamFills = {
     gold: beamGradient(PLAYER_RING.color, BEAM.alpha),
@@ -276,9 +283,19 @@ export class PixiMapRenderer implements MapRenderer {
     this.invalidate('characters');
   }
 
-  /** Advance the figures' idle loops and the pulse; call once a frame. */
+  /** [Q326, 8] Puts out `player`'s beam, and brings back the one put out before; `null` puts none out. */
+  setUnlit(player: PlayerId | null): void {
+    if (player === this.unlit) return;
+    const before = this.unlit;
+    this.unlit = player;
+    if (before !== null) this.fades.set(before, { from: this.light.get(before) ?? 1, to: 1, start: null });
+    if (player !== null) this.fades.set(player, { from: this.light.get(player) ?? 1, to: 0, start: null });
+  }
+
+  /** Advance the figures' idle loops, the beams going out or coming back, and the pulse; call once a frame. */
   tick(now: number): void {
     this.playIdle(now);
+    this.fadeBeams(now);
     if (this.cue !== 'pulse') return;
     const phase = (now % CUE.pulseMs) / CUE.pulseMs;
     if (this.pulsing !== null) {
@@ -468,7 +485,7 @@ export class PixiMapRenderer implements MapRenderer {
   private drawCharacters(): void {
     for (const sprite of this.characterSprites) sprite.destroy();
     this.characterSprites = [];
-    for (const beam of this.beams) beam.destroy();
+    for (const { beam } of this.beams) beam.destroy();
     this.beams = [];
     this.waypointSprite?.destroy();
     this.waypointSprite = null;
@@ -506,8 +523,9 @@ export class PixiMapRenderer implements MapRenderer {
   /**
    * [Q326] A beam of light rising from where `figure` stands, behind it and
    * every figure beside it on its node, and in front of what stands behind
-   * them; it walks with a walking figure and stays on the final map (4). [Q312]
-   * Over the page's own player's figure it is white, like their ring (3).
+   * them; it walks with a walking figure, out while it does (8), and stays on
+   * the final map (6). [Q312] Over the page's own player's figure it is white,
+   * like their ring (3).
    */
   private raiseBeam(figure: Figure): void {
     const { across, tall } = PLAYER_BEAM;
@@ -520,15 +538,29 @@ export class PixiMapRenderer implements MapRenderer {
     beam.position.set(figure.foot.x, figure.foot.y);
     // Figures side by side on a node differ in depth by thousandths.
     beam.zIndex = figure.depth - 0.01;
+    beam.alpha = this.light.get(figure.player) ?? 1;
     this.standing.addChild(beam);
-    this.beams.push(beam);
+    this.beams.push({ beam, player: figure.player });
+  }
+
+  /** [Q326, 8] Each beam going out or coming back as bright as it is `now`. */
+  private fadeBeams(now: number): void {
+    if (this.fades.size === 0) return;
+    for (const [player, fade] of this.fades) {
+      fade.start ??= now;
+      const light = beamFade(fade.from, fade.to, now - fade.start);
+      if (light === 1) this.light.delete(player);
+      else this.light.set(player, light);
+      if (light === fade.to) this.fades.delete(player);
+    }
+    for (const { beam, player } of this.beams) beam.alpha = this.light.get(player) ?? 1;
   }
 
   /** [Q326, 5] The beams sized by the ring under their figure, which has a floor on the whole map (Q305, 8). */
   private sizeBeams(): void {
     const { spacing } = this.scene;
     const ring = (playerRingSize(PLAYER_RING_ACROSS * spacing, spacing, this.zoom, this.wholeZoom) * SPACING_PX) / spacing;
-    for (const beam of this.beams) beam.scale.set(ring);
+    for (const { beam } of this.beams) beam.scale.set(ring);
   }
 
   /**

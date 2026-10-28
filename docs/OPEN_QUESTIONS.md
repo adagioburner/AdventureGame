@@ -4764,7 +4764,7 @@ changed.
 ---
 
 <a id="q326"></a>
-### Q326. ~~What else makes the heroes easy to find on the map?~~ — **answered 2026-10-28: a beam of light rising behind every figure, see-through, gold, and white over your own, fading in from the feet and out to nothing at its top; the rings stay as they were (1-7)**
+### Q326. ~~What else makes the heroes easy to find on the map?~~ — **answered 2026-10-28: a beam of light rising behind every figure, see-through, gold, and white over your own, fading in from the feet and out to nothing at its top; the rings stay as they were; it goes out before a figure walks and comes back as it arrives (1-8)**
 
 Andrei, 2026-10-28 at 04:19: *"finding heroes on the map is still a
 challenge. The golden disks help, but only partly. I was wondering what else
@@ -4793,15 +4793,33 @@ recommended"*.
 5. **Size.** 0.65 of the ring under the figure wide and 4 rings tall, so it is
    never smaller on screen than that ring is (Q305, 8). A.
 6. **Walking and the final map.** It walks with a figure walking at End turn
-   and stays on the final map, as the rings do (Q305, 6 and 7). A.
+   and stays on the final map, as the rings do (Q305, 6 and 7). A. While the
+   figure walks it is out, since 8.
 7. **Rulebook.** Unchanged. A.
+8. **While a figure walks.** At 13:44: *"We need the column of light fade out
+   quickly when a hero starts walking. The heroes should ealk without light
+   shining on them. Then as they arrive at their destination, the light should
+   fade back in."* Asked how fast it goes out, where it goes as it fades, when
+   and how fast it comes back. At 13:48: *"Let it fade out quickly, but the
+   hero should not start moving before it's out. As for the comeback, yes, we
+   could do a slower return if it's done in parallel with showing the
+   notice."* So the beam goes out evenly over 0.2 s while the figure stands
+   where it is, and only then does the figure set off, its footsteps with it;
+   the turn plays out 0.2 s later for it. As the figure reaches the end of its
+   walk the beam comes back evenly over 0.5 s, while the die rolls and the
+   notice shows, which wait for nothing. Every figure that walks, a computer's
+   or another player's included; one that does not walk keeps its beam lit.
 
 Built: `PLAYER_BEAM` and `beamBrightness` in
 `apps/web/src/render/sceneModel.ts` (1, 5); in
 `apps/web/src/render/pixi/renderer.ts`, `raiseBeam` stands one behind each
 figure as `drawCharacters` draws it, behind every figure on the same space and
 in front of what stands behind them (2, 3, 6), and `sizeBeams` sizes them with
-the rings as the map zooms (5). Its look is `BEAM`: at its brightest 0.3
+the rings as the map zooms (5). `PLAYER_BEAM_FADE` and `beamFade` in
+`sceneModel.ts` are how fast a beam goes out and comes back (8); `playOut` in
+`apps/web/src/page/GameScreen.tsx` puts the walker's beam out and waits
+`timing.beamOutMs` before the walk, and lights it again as the walk ends;
+the renderer's `setUnlit` and `fadeBeams` fade it. Its look is `BEAM`: at its brightest 0.3
 see-through, gold or white, with a white core a third of its width at 0.32,
 which is 40% of the beam first shown, fading out evenly to nothing at its top.
 No rule, number, map or rulebook word changed.
