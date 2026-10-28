@@ -4764,7 +4764,7 @@ changed.
 ---
 
 <a id="q326"></a>
-### Q326. ~~What else makes the heroes easy to find on the map?~~ — **answered 2026-10-28: a light sweeping round every ring once every 3 seconds, as in the video shown, the disc under it a little more see-through; a ring that pulses is plain while it does (1-6)**
+### Q326. ~~What else makes the heroes easy to find on the map?~~ — **answered 2026-10-28: a light sweeping round every ring once every 3 seconds, as in the video shown, the disc under it a little more see-through; a ring that pulses is plain while it does; the light is the ring's own gold or white (1-7)**
 
 Andrei, 2026-10-28 at 04:19: *"finding heroes on the map is still a
 challenge. The golden disks help, but only partly. I was wondering what else
@@ -4781,9 +4781,10 @@ implements the sweeping light around the base idea. I need to try this in
 preview as well and see if it's as visible and feels more natural"*. This is
 that other one, built as video C showed it, without the beam.
 
-1. **The light.** A white wedge three eighths of the way round the ring,
+1. **The light.** A wedge three eighths of the way round the ring,
    brightest at its leading edge, 0.75 see-through there, fading behind it to
-   nothing at its trailing edge, under the ring's rim. As in video C.
+   nothing at its trailing edge, under the ring's rim. As in video C, where it
+   was white; its colour is now the ring's own (7).
 2. **The disc.** Under the light it is 0.3 see-through rather than 0.5, gold
    or [Q312](#q312) white as before. As in video C.
 3. **Speed.** Once round every 3 seconds, evenly. As in video C.
@@ -4795,12 +4796,20 @@ that other one, built as video C showed it, without the beam.
    light on it, while it pulses (recommended); B, the light shows on it,
    standing still. **Answered** at 07:31: A. Once its player picks the figure
    up and the pulse stops, it sweeps like the rest.
+7. **Its colour.** At 12:54: *"it's weird that the sweeping light is white
+   both for the white and gold discs"*. Asked, with pictures, what colour the
+   light on the gold rings should be: deep gold (recommended), the disk's own
+   gold, pale gold, or white as before; the page's own white ring keeps its
+   white light in all four. **Answered** at 13:29: the disk's own gold. So
+   each ring's light is its own colour, gold on the gold rings and white on
+   the page's own.
 
 Built: `PLAYER_RING_SWEEP_MS` and `ringSweep` in
 `apps/web/src/render/sceneModel.ts` (3); in
 `apps/web/src/render/pixi/renderer.ts`, `SWEEP` is the light's look and
 `PLAYER_RING.fillAlpha` the disc's (1, 2), `drawPlayerRings` draws the light
-on every ring but the one pulsing (4-6) and `tick` turns them. No rule,
+in each ring's own colour on every ring but the one pulsing (4-7) and `tick`
+turns them. No rule,
 number, map, rulebook word or picture changed.
 
 ---

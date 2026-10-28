@@ -62,12 +62,14 @@ const PLAYER_RING = { color: 0xffe878, own: 0xffffff, fillAlpha: 0.3, rim: 0.06,
 
 /**
  * [Q326] The light sweeping round every ring, as in the video Andrei was
- * shown: a `color` wedge `arc` radians round, drawn in `slices` steps, each
- * reaching a hair into the next so no seam shows; the step at its leading
- * edge is `peak` see-through and those behind it fade, by the power `fade`, to
- * nothing at its trailing edge.
+ * shown: a wedge `arc` radians round, drawn in `slices` steps, each reaching a
+ * hair into the next so no seam shows; the step at its leading edge is `peak`
+ * see-through and those behind it fade, by the power `fade`, to nothing at its
+ * trailing edge. It is the ring's own colour, gold or white (7). Andrei:
+ * "it's weird that the sweeping light is white both for the white and gold
+ * discs", then he picked the disk's own gold.
  */
-const SWEEP = { color: 0xffffff, arc: Math.PI * 0.75, slices: 16, peak: 0.75, fade: 1.5 } as const;
+const SWEEP = { arc: Math.PI * 0.75, slices: 16, peak: 0.75, fade: 1.5 } as const;
 
 /**
  * `MapRenderer` on PixiJS (docs/STACK.md §3). Everything it draws comes out
@@ -513,7 +515,7 @@ export class PixiMapRenderer implements MapRenderer {
           .moveTo(0, 0)
           .arc(0, 0, radius, from, to)
           .lineTo(0, 0)
-          .fill({ color: SWEEP.color, alpha: SWEEP.peak * ((i + 1) / SWEEP.slices) ** SWEEP.fade });
+          .fill({ color, alpha: SWEEP.peak * ((i + 1) / SWEEP.slices) ** SWEEP.fade });
       }
       ring.circle(0, 0, radius).stroke({ color, width: PLAYER_RING.rim * spacing });
       if (outlined) ring.circle(0, 0, radius + PLAYER_RING.gap * spacing).stroke({ color: CUE.color, width: CUE.outline * spacing });
