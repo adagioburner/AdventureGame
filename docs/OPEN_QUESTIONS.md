@@ -4763,6 +4763,51 @@ changed.
 
 ---
 
+<a id="q326"></a>
+### Q326. ~~What else makes the heroes easy to find on the map?~~ — **answered 2026-10-28: a beam of light rising behind every figure, see-through, gold, and white over your own, fading in from the feet and out to nothing at its top; the rings stay as they were (1-7)**
+
+Andrei, 2026-10-28 at 04:19: *"finding heroes on the map is still a
+challenge. The golden disks help, but only partly. I was wondering what else
+we can do to make them more visible. can we animate thedisks for example so
+that they appear rotating?"*. A plain disc looks the same while it turns, so
+three patterns were recorded turning once every 3 seconds (a dashed rim,
+light and dark slices, a light sweeping round), beside two other ideas: a
+soft glow round the ring, and a beam of light above each figure. At 05:55:
+*"i like the beam of light idea, but it seems too much. maybe if the beam is
+less intense this could work? [...] If we can't find the right balance here,
+we'll go back to rotating disks. The light sweeping around felt OK"*. Shown at
+100, 60, 40, 25, 15 and 8% of its first strength; at 06:41: *"I think 40%
+looks right. The only thing is that detail around the base, can we make it
+blend in more smoothly around the base"*. The base and the other details
+below were asked together, each with a recommendation; at 06:54: *"all as
+recommended"*.
+
+1. **The base.** Asked: A, it fades in from nothing at the feet over the
+   first 15% of its height (recommended); B, over a longer stretch; C, it
+   ends in a rounded base the shape of the ring. **Answered**: A.
+2. **Whose.** Every player's figure, the page's own included. A.
+3. **Colour.** Gold like the rings, and white over the page's own player's
+   figure, like its ring ([Q312](#q312)). A.
+4. **The rings.** They stay as they are, the pulse on your turn included; the
+   beam is added to them. A.
+5. **Size.** 0.65 of the ring under the figure wide and 4 rings tall, so it is
+   never smaller on screen than that ring is (Q305, 8). A.
+6. **Walking and the final map.** It walks with a figure walking at End turn
+   and stays on the final map, as the rings do (Q305, 6 and 7). A.
+7. **Rulebook.** Unchanged. A.
+
+Built: `PLAYER_BEAM` and `beamBrightness` in
+`apps/web/src/render/sceneModel.ts` (1, 5); in
+`apps/web/src/render/pixi/renderer.ts`, `raiseBeam` stands one behind each
+figure as `drawCharacters` draws it, behind every figure on the same space and
+in front of what stands behind them (2, 3, 6), and `sizeBeams` sizes them with
+the rings as the map zooms (5). Its look is `BEAM`: at its brightest 0.3
+see-through, gold or white, with a white core a third of its width at 0.32,
+which is 40% of the beam first shown, fading out evenly to nothing at its top.
+No rule, number, map or rulebook word changed.
+
+---
+
 ## C. Decisions I made that are *implementation*, not design
 
 Listed so you can veto any that read as design to you.

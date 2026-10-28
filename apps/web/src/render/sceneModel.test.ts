@@ -9,6 +9,7 @@ import { BACKDROP_STEP, CLUSTER_TOUCH, EDGE_TREES_KEPT, placeDressing, silhouett
 import { boxTouchesOval, grow, lengthInBox, ON_NODE_REACH, overlapArea, pictureBox, ROUGH_SHAPE } from './placement.ts';
 import {
   ANIMATE_FROM_PX,
+  beamBrightness,
   buildMapScene,
   buildPathScene,
   buildStateScene,
@@ -24,6 +25,7 @@ import {
   nextIdlePlay,
   nodeOutlineWidth,
   playFrame,
+  PLAYER_BEAM,
   PLAYER_RING_ACROSS,
   PLAYER_RING_ACROSS_WHOLE_MAP,
   playerRingSize,
@@ -617,6 +619,27 @@ describe("the ring under the page's own player's figure (Q312)", () => {
     const [mover] = moving.characters;
     expect(moving.rings.find((ring) => ring.own)?.at).toEqual(scene.projection.toWorld(mover?.foot ?? { x: 0, y: 0 }));
     expect(owns(buildStateScene(scene, { ...game.state, status: 'finished' }, catalog, null, null, null, walking.id))).toEqual([false, true]);
+  });
+});
+
+describe("the beam of light over the players' figures (Q326)", () => {
+  it('is 0.65 of its ring wide and 4 rings tall', () => {
+    expect(PLAYER_BEAM.across).toBe(0.65);
+    expect(PLAYER_BEAM.tall).toBe(4);
+  });
+
+  it('fades in from nothing at the feet over its first 15%, without a step (1)', () => {
+    expect(beamBrightness(0)).toBe(0);
+    expect(beamBrightness(0.01)).toBeLessThan(0.02);
+    expect(beamBrightness(PLAYER_BEAM.fadeIn / 2)).toBeCloseTo((1 - PLAYER_BEAM.fadeIn / 2) / 2, 9);
+    expect(beamBrightness(PLAYER_BEAM.fadeIn)).toBeCloseTo(1 - PLAYER_BEAM.fadeIn, 9);
+    for (let up = 0; up < PLAYER_BEAM.fadeIn; up += 0.01) expect(beamBrightness(up + 0.01)).toBeGreaterThan(beamBrightness(up));
+  });
+
+  it('then fades out evenly to nothing at its top', () => {
+    expect(beamBrightness(0.5)).toBeCloseTo(0.5, 9);
+    expect(beamBrightness(0.9)).toBeCloseTo(0.1, 9);
+    expect(beamBrightness(1)).toBe(0);
   });
 });
 
