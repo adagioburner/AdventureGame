@@ -4763,6 +4763,48 @@ changed.
 
 ---
 
+<a id="q326"></a>
+### Q326. ~~What else makes the heroes easy to find on the map?~~ — **answered 2026-10-28: a light sweeping round every ring once every 3 seconds, as in the video shown, the disc under it a little more see-through; a ring that pulses is plain while it does (1-6)**
+
+Andrei, 2026-10-28 at 04:19: *"finding heroes on the map is still a
+challenge. The golden disks help, but only partly. I was wondering what else
+we can do to make them more visible. can we animate thedisks for example so
+that they appear rotating?"*. A plain disc looks the same while it turns, so
+three patterns were recorded turning once every 3 seconds (a dashed rim,
+light and dark slices, C, a light sweeping round), beside two other ideas: a
+soft glow round the ring, and a beam of light above each figure. At 05:55:
+*"i like the beam of light idea, but it seems too much. [...] If we can't find
+the right balance here, we'll go back to rotating disks. The light sweeping
+around felt OK"*. The beam was built at the strength and base he chose (pull
+request #116); at 07:26: *"please keep this pr and make a different one that
+implements the sweeping light around the base idea. I need to try this in
+preview as well and see if it's as visible and feels more natural"*. This is
+that other one, built as video C showed it, without the beam.
+
+1. **The light.** A white wedge three eighths of the way round the ring,
+   brightest at its leading edge, 0.75 see-through there, fading behind it to
+   nothing at its trailing edge, under the ring's rim. As in video C.
+2. **The disc.** Under the light it is 0.3 see-through rather than 0.5, gold
+   or [Q312](#q312) white as before. As in video C.
+3. **Speed.** Once round every 3 seconds, evenly. As in video C.
+4. **Whose.** Every ring, the page's own white one included. As in video C.
+5. **Everywhere.** It goes on sweeping while a ring is outlined, walks with
+   its figure, and on the final map, as the rings are drawn there (Q305).
+6. **While it pulses.** At 07:31: *"it probably doesn't make sense to animate
+   the disks when they are pulsing"*. Asked: A, the ring is plain, with no
+   light on it, while it pulses (recommended); B, the light shows on it,
+   standing still. **Answered** at 07:31: A. Once its player picks the figure
+   up and the pulse stops, it sweeps like the rest.
+
+Built: `PLAYER_RING_SWEEP_MS` and `ringSweep` in
+`apps/web/src/render/sceneModel.ts` (3); in
+`apps/web/src/render/pixi/renderer.ts`, `SWEEP` is the light's look and
+`PLAYER_RING.fillAlpha` the disc's (1, 2), `drawPlayerRings` draws the light
+on every ring but the one pulsing (4-6) and `tick` turns them. No rule,
+number, map, rulebook word or picture changed.
+
+---
+
 ## C. Decisions I made that are *implementation*, not design
 
 Listed so you can veto any that read as design to you.

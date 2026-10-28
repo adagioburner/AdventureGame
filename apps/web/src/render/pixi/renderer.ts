@@ -18,6 +18,7 @@ import {
   nextIdlePlay,
   playerRingSize,
   playFrame,
+  ringSweep,
   siteDot,
   SPACING_PX,
   TURN_BUBBLE,
@@ -53,9 +54,20 @@ const CUE = {
  * outlines". [Q312, 1] The page's own player's is `own` instead, disc and
  * rim alike, and nothing else differs. Andrei, after orange inside the gold
  * rim: "can you show me white disk instead of orange? maybe that's going to
- * look better"; of the mockups, he picked white with a white rim.
+ * look better"; of the mockups, he picked white with a white rim. [Q326]
+ * Under the light sweeping round it, the disc is 0.3 see-through rather than
+ * 0.5, as in the video Andrei was shown.
  */
-const PLAYER_RING = { color: 0xffe878, own: 0xffffff, fillAlpha: 0.5, rim: 0.06, gap: 0.035 } as const;
+const PLAYER_RING = { color: 0xffe878, own: 0xffffff, fillAlpha: 0.3, rim: 0.06, gap: 0.035 } as const;
+
+/**
+ * [Q326] The light sweeping round every ring, as in the video Andrei was
+ * shown: a `color` wedge `arc` radians round, drawn in `slices` steps, each
+ * reaching a hair into the next so no seam shows; the step at its leading
+ * edge is `peak` see-through and those behind it fade, by the power `fade`, to
+ * nothing at its trailing edge.
+ */
+const SWEEP = { color: 0xffffff, arc: Math.PI * 0.75, slices: 16, peak: 0.75, fade: 1.5 } as const;
 
 /**
  * `MapRenderer` on PixiJS (docs/STACK.md §3). Everything it draws comes out
@@ -96,6 +108,9 @@ export class PixiMapRenderer implements MapRenderer {
   private own: PlayerId | null = null;
   /** What the pulse animates: (Q305, 11) the current player's ring. */
   private pulsing: Graphics | null = null;
+  /** [Q326] The rings drawn now that the light sweeps round, all but the one pulsing (6), and how far round it has swept. */
+  private sweeping: Graphics[] = [];
+  private sweep = 0;
   /**
    * [Q305, 15-18] The figures drawn now that have an idle loop: its frames,
    * the one showing, and whether the figure stands still whatever the zoom.
@@ -244,9 +259,11 @@ export class PixiMapRenderer implements MapRenderer {
     this.invalidate('characters');
   }
 
-  /** Advance the figures' idle loops and the pulse; call once a frame. */
+  /** Advance the figures' idle loops, the light round the rings and the pulse; call once a frame. */
   tick(now: number): void {
     this.playIdle(now);
+    this.sweep = ringSweep(now);
+    for (const ring of this.sweeping) ring.rotation = this.sweep;
     if (this.cue !== 'pulse') return;
     const phase = (now % CUE.pulseMs) / CUE.pulseMs;
     if (this.pulsing !== null) {
@@ -472,25 +489,42 @@ export class PixiMapRenderer implements MapRenderer {
    * pick their figure up, and is outlined while they plan (10, 11), as is the
    * ring of a player planning out of turn [Q56, 49] or just found from their card
    * [Q120, 471]; while a turn plays out it is plain like the rest. [Q312] The
-   * page's own player's is white, over the rings it overlaps.
+   * page's own player's is white, over the rings it overlaps. [Q326] A light
+   * sweeps round every one of them but the one pulsing, which is plain:
+   * Andrei, "it probably doesn't make sense to animate the disks when they are
+   * pulsing", then "Plain, with no light on it" (6).
    */
   private drawPlayerRings(): void {
     this.ringsLayer.removeChildren().forEach((child) => child.destroy());
     this.pulsing = null;
+    this.sweeping = [];
     const { spacing } = this.scene;
     for (const { at, size, mark, own } of this.stateScene?.rings ?? []) {
       const radius = playerRingSize(size, spacing, this.zoom, this.wholeZoom) / 2;
       const outlined = mark === 'planning' || mark === 'found' || (mark === 'turn' && this.cue === 'selected');
       const color = own ? PLAYER_RING.own : PLAYER_RING.color;
+      const pulsing = mark === 'turn' && this.cue === 'pulse';
       // Drawn round its own origin, so a pulse grows it from its middle.
-      const ring = new Graphics()
-        .circle(0, 0, radius)
-        .fill({ color, alpha: PLAYER_RING.fillAlpha })
-        .stroke({ color, width: PLAYER_RING.rim * spacing });
+      const ring = new Graphics().circle(0, 0, radius).fill({ color, alpha: PLAYER_RING.fillAlpha });
+      for (let i = 0; i < (pulsing ? 0 : SWEEP.slices); i++) {
+        const from = (i / SWEEP.slices) * SWEEP.arc;
+        const to = ((i + 1) / SWEEP.slices) * SWEEP.arc + 0.01;
+        ring
+          .moveTo(0, 0)
+          .arc(0, 0, radius, from, to)
+          .lineTo(0, 0)
+          .fill({ color: SWEEP.color, alpha: SWEEP.peak * ((i + 1) / SWEEP.slices) ** SWEEP.fade });
+      }
+      ring.circle(0, 0, radius).stroke({ color, width: PLAYER_RING.rim * spacing });
       if (outlined) ring.circle(0, 0, radius + PLAYER_RING.gap * spacing).stroke({ color: CUE.color, width: CUE.outline * spacing });
       ring.position.set(at.x, at.y);
       this.ringsLayer.addChild(ring);
-      if (mark === 'turn' && this.cue === 'pulse') this.pulsing = ring;
+      if (pulsing) {
+        this.pulsing = ring;
+      } else {
+        ring.rotation = this.sweep;
+        this.sweeping.push(ring);
+      }
     }
   }
 

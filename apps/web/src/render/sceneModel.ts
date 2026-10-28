@@ -367,6 +367,19 @@ export function playerRingSize(size: number, spacing: number, zoom: number, whol
 }
 
 /**
+ * [Q326] A light sweeps round every ring once every this many milliseconds,
+ * as in the video Andrei was shown. Andrei: "finding heroes on the map is
+ * still a challenge [...] can we animate thedisks for example so that they
+ * appear rotating?", then "The light sweeping around felt OK".
+ */
+export const PLAYER_RING_SWEEP_MS = 3000;
+
+/** [Q326] How far round, in radians from 0 to 2π, the light on every ring has swept at `nowMs`. */
+export function ringSweep(nowMs: number): number {
+  return ((nowMs % PLAYER_RING_SWEEP_MS) / PLAYER_RING_SWEEP_MS) * Math.PI * 2;
+}
+
+/**
  * A figure on its way between nodes while End Turn plays out (§7.1: "the
  * character walks to the destination or as far as it gets"). Where it stands is
  * animation, not state: the engine has already moved it.

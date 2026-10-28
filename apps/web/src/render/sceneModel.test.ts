@@ -26,7 +26,9 @@ import {
   playFrame,
   PLAYER_RING_ACROSS,
   PLAYER_RING_ACROSS_WHOLE_MAP,
+  PLAYER_RING_SWEEP_MS,
   playerRingSize,
+  ringSweep,
   siteDot,
   SPACING_PX,
   type MapScene,
@@ -584,6 +586,18 @@ describe("the rings under the players' figures (Q305)", () => {
     for (const zoom of [whole * 0.8, whole * 1.2]) {
       expect(playerRingSize(size, spacing, zoom, whole) * zoom).toBeCloseTo(0.8 * spacing * whole);
     }
+  });
+});
+
+describe('the light sweeping round the rings (Q326)', () => {
+  it('goes once round every 3 seconds, evenly', () => {
+    expect(PLAYER_RING_SWEEP_MS).toBe(3000);
+    expect(ringSweep(0)).toBe(0);
+    expect(ringSweep(750)).toBeCloseTo(Math.PI / 2, 9);
+    expect(ringSweep(1500)).toBeCloseTo(Math.PI, 9);
+    expect(ringSweep(2999)).toBeLessThan(Math.PI * 2);
+    expect(ringSweep(3000)).toBe(0);
+    expect(ringSweep(100_000 + 750)).toBeCloseTo(ringSweep(1_000 + 750), 9);
   });
 });
 
