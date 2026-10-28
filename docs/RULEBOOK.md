@@ -157,6 +157,8 @@ The rules are the same either way; the Play online switch on the setup screen ch
 
 Your own figure stands on a white ring: online always, on one device only when one person plays against the computer.
 
+A column of light rises from every figure, so you can find it at a glance.
+
 While Track is pressed, the map follows the other players as they take their turns. Track starts pressed at the beginning of each game, and moving the map while someone else plays unpresses it. On your own turn the map stays where you put it while you plan, and always follows your walk.
 
 A player whose figure is out of view shows as their portrait with an arrow at the map's edge. Tap it to bring them into view.

@@ -367,6 +367,51 @@ export function playerRingSize(size: number, spacing: number, zoom: number, whol
 }
 
 /**
+ * [Q326] The beam of light rising from where each figure stands, behind it,
+ * so a glance at the map finds every player. Andrei: "finding heroes on the
+ * map is still a challenge [...] what else we can do to make them more
+ * visible", then, of the beam of light: "I think 40% looks right". Measured
+ * in widths of the ring under the same figure as it is drawn
+ * (`playerRingSize`): `across` wide and `tall` tall, so it never gets smaller
+ * on screen than that ring does (5). Its brightness fades in over the first
+ * `fadeIn` of its height (1).
+ */
+export const PLAYER_BEAM = { across: 0.65, tall: 4, fadeIn: 0.15 } as const;
+
+/**
+ * [Q326, 1] How bright the beam is a share `up` of its height above the
+ * figure's feet, as a share of its brightest: it fades in from nothing at the
+ * feet over the first `PLAYER_BEAM.fadeIn` of its height, Andrei: "can we make
+ * it blend in more smoothly around the base", and out again evenly to nothing
+ * at its top.
+ */
+export function beamBrightness(up: number): number {
+  if (up <= 0 || up >= 1) return 0;
+  const t = Math.min(1, up / PLAYER_BEAM.fadeIn);
+  return (1 - up) * t * t * (3 - 2 * t);
+}
+
+/**
+ * [Q326, 8] A figure's beam goes out over `outMs` before it sets off, and it
+ * stands where it is until the beam is out; it comes back over `inMs` as the
+ * figure arrives, while the die rolls and the notice shows. Andrei: "Let it
+ * fade out quickly, but the hero should not start moving before it's out. As
+ * for the comeback, yes, we could do a slower return if it's done in parallel
+ * with showing the notice."
+ */
+export const PLAYER_BEAM_FADE = { outMs: 200, inMs: 500 } as const;
+
+/**
+ * [Q326, 8] How bright a beam is, as a share of its brightest, `ms` into
+ * going out (`to` 0) or coming back (`to` 1) from `from`: evenly, at the pace
+ * of a whole fade, so one turned round half way takes half as long.
+ */
+export function beamFade(from: number, to: 0 | 1, ms: number): number {
+  const step = Math.max(0, ms) / (to === 0 ? PLAYER_BEAM_FADE.outMs : PLAYER_BEAM_FADE.inMs);
+  return to === 0 ? Math.max(0, from - step) : Math.min(1, from + step);
+}
+
+/**
  * A figure on its way between nodes while End Turn plays out (§7.1: "the
  * character walks to the destination or as far as it gets"). Where it stands is
  * animation, not state: the engine has already moved it.

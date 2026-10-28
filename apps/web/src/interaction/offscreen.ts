@@ -17,7 +17,7 @@ import type { Box } from '../render/placement.ts';
  * cover something in `avoid` slides along the edge, by at most `shift`, to
  * the nearest spot clear of it, and stays put when there is none.
  *
- * [Q327] Andrei, 2026-10-28: "when the map glides, it looks like the portrait
+ * [Q328] Andrei, 2026-10-28: "when the map glides, it looks like the portrait
  * floaters keep adjusting, avoiding map features That makes them jumpy, and
  * is unnecessary. can we adjust them only once, when the gliding stops":
  * while the map glides each marker keeps the slide it had as the glide began
@@ -43,7 +43,7 @@ export interface EdgeMarker {
   /** How far along the edge it slid to keep off `avoid`, for the next frame's `previous`. */
   readonly shift: number;
   /**
-   * [Q327] How far along the edge it sits from where the line to its figure
+   * [Q328] How far along the edge it sits from where the line to its figure
    * leaves the view, after sliding apart and off `avoid`, for the next frame's
    * `held`.
    */
@@ -72,7 +72,7 @@ const SHIFT_STEP_PX = 2;
  * The markers for the figures out of view, in the order of `figures`.
  * `previous` is how far each slid last frame: a marker kept off something
  * stays on the same side of it while that spot is clear, rather than jumping
- * from side to side as the map moves. [Q327] While the map glides, `held` is
+ * from side to side as the map moves. [Q328] While the map glides, `held` is
  * each marker's `slide` from the frame before the glide began: each keeps it,
  * a marker that came since has none, and none looks at `avoid`.
  */

@@ -4763,8 +4763,126 @@ changed.
 
 ---
 
+<a id="q326"></a>
+### Q326. ~~What else makes the heroes easy to find on the map?~~ — **answered 2026-10-28: a beam of light rising behind every figure, see-through and white with a soft dark edge, fading in from the feet and out to nothing at its top; the rings stay as they were; it goes out before a figure walks and comes back as it arrives (1-10)**
+
+Andrei, 2026-10-28 at 04:19: *"finding heroes on the map is still a
+challenge. The golden disks help, but only partly. I was wondering what else
+we can do to make them more visible. can we animate thedisks for example so
+that they appear rotating?"*. A plain disc looks the same while it turns, so
+three patterns were recorded turning once every 3 seconds (a dashed rim,
+light and dark slices, a light sweeping round), beside two other ideas: a
+soft glow round the ring, and a beam of light above each figure. At 05:55:
+*"i like the beam of light idea, but it seems too much. maybe if the beam is
+less intense this could work? [...] If we can't find the right balance here,
+we'll go back to rotating disks. The light sweeping around felt OK"*. Shown at
+100, 60, 40, 25, 15 and 8% of its first strength; at 06:41: *"I think 40%
+looks right. The only thing is that detail around the base, can we make it
+blend in more smoothly around the base"*. The base and the other details
+below were asked together, each with a recommendation; at 06:54: *"all as
+recommended"*.
+
+1. **The base.** Asked: A, it fades in from nothing at the feet over the
+   first 15% of its height (recommended); B, over a longer stretch; C, it
+   ends in a rounded base the shape of the ring. **Answered**: A.
+2. **Whose.** Every player's figure, the page's own included. A.
+3. **Colour.** Gold like the rings, and white over the page's own player's
+   figure, like its ring ([Q312](#q312)). A. White over every figure since 9.
+4. **The rings.** They stay as they are, the pulse on your turn included; the
+   beam is added to them. A.
+5. **Size.** 0.65 of the ring under the figure wide and 4 rings tall, so it is
+   never smaller on screen than that ring is (Q305, 8). A.
+6. **Walking and the final map.** It walks with a figure walking at End turn
+   and stays on the final map, as the rings do (Q305, 6 and 7). A. While the
+   figure walks it is out, since 8.
+7. **Rulebook.** Unchanged. A. A sentence and three pictures since
+   [Q327](#q327).
+8. **While a figure walks.** At 13:44: *"We need the column of light fade out
+   quickly when a hero starts walking. The heroes should ealk without light
+   shining on them. Then as they arrive at their destination, the light should
+   fade back in."* Asked how fast it goes out, where it goes as it fades, when
+   and how fast it comes back. At 13:48: *"Let it fade out quickly, but the
+   hero should not start moving before it's out. As for the comeback, yes, we
+   could do a slower return if it's done in parallel with showing the
+   notice."* So the beam goes out evenly over 0.2 s while the figure stands
+   where it is, and only then does the figure set off, its footsteps with it;
+   the turn plays out 0.2 s later for it. As the figure reaches the end of its
+   walk the beam comes back evenly over 0.5 s, while the die rolls and the
+   notice shows, which wait for nothing. Every figure that walks, a computer's
+   or another player's included; one that does not walk keeps its beam lit.
+9. **White for all.** At 16:17: *"the golden beams of light are somewhat
+   lost on the plains background."* At 16:18: *"let us try changing the color
+   too white for all of them and do not bother making pictures just push it
+   into the preview and I'll check it out"*. So every beam is white, like the
+   page's own player's was; its strength, core and shape are as before, and
+   the rings keep their colours.
+10. **A soft dark edge.** At 16:45: *"to tell you the truth, it's still quite
+    hard to see against the plains background"*. Asked: A, a faint dark
+    shadow down both sides of the beam, which outlines it on pale sand and
+    hardly shows on grass or rock (recommended); B, stronger everywhere, 60%
+    of the first beam; C, 60% only while its figure stands on plains; D, a
+    pale blue light. **Answered** at 16:48: A. The edge is black, 0.12 of a
+    ring wide on each side, 0.22 see-through beside the beam and fading to
+    nothing outwards, as bright up its height as the beam is.
+
+Built: `PLAYER_BEAM` and `beamBrightness` in
+`apps/web/src/render/sceneModel.ts` (1, 5); in
+`apps/web/src/render/pixi/renderer.ts`, `raiseBeam` stands one behind each
+figure as `drawCharacters` draws it, behind every figure on the same space and
+in front of what stands behind them (2, 6, 9), and `sizeBeams` sizes them with
+the rings as the map zooms (5). `PLAYER_BEAM_FADE` and `beamFade` in
+`sceneModel.ts` are how fast a beam goes out and comes back (8); `playOut` in
+`apps/web/src/page/GameScreen.tsx` puts the walker's beam out and waits
+`timing.beamOutMs` before the walk, and lights it again as the walk ends;
+the renderer's `setUnlit` and `fadeBeams` fade it. Its look is `BEAM`: at its brightest 0.3
+see-through, white, with a white core a third of its width at 0.32,
+which is 40% of the beam first shown, fading out evenly to nothing at its top;
+its edge is `BEAM_EDGE` (10).
+No rule, number, map or rulebook word changed.
+
+---
+
 <a id="q327"></a>
-### Q327. ~~Should the markers at the map's edge keep sliding off things while the map glides?~~ — **answered 2026-10-28: no; while the map glides, or is carried along by a walking figure it follows, each keeps the slide it had as the glide began and slides off what it keeps off once, when the map stops (1-2)**
+### Q327. ~~What does the rulebook say and show of the beams of light?~~ — **answered 2026-10-28: one sentence, a paragraph of its own after your own white ring in *Playing online or on one device*: "A column of light rises from every figure, so you can find it at a glance."; the three pictures with figures in them taken again, the other seven as they were (1-3)**
+
+Andrei, 2026-10-28 at 17:28, the beam ([Q326](#q326)) merged: *"also I think
+we need to update the pictures in the rule book, and maybe add a sentence
+about hero figures being marked with columns of light"*. Q326, 7 had left the
+rulebook unchanged.
+
+1. **Where the sentence goes, and its words.** The rulebook calls a hero a
+   figure. Asked: A, in *Setting up*, after "Each player picks a name and one
+   of six figures": "On the map, a column of light rises from every figure,
+   so you can find it at a glance." (recommended); B, the same followed by
+   "It goes out while the figure walks."; C, in *Playing online or on one
+   device*, beside the rings: "A column of light rises from every figure, so
+   you can find it at a glance."; D, the Glossary's Figure becomes "Your piece
+   on the map, marked by a column of light." **Answered** at 17:52: C.
+2. **Where beside the rings.** The pulsing ring is in the paragraph on one
+   device only, so the sentence stands by your own white ring
+   ([Q312](#q312)). Asked: A, a paragraph of its own after the white ring's
+   (recommended); B, a paragraph of its own before it; C, at the end of the
+   white ring's paragraph. **Answered** at 18:29: A.
+3. **The pictures.** Of the ten pictures ([Q322](#q322), [Q325](#q325)),
+   three have figures in them and now show their beams: the route, the box Go
+   opens to ask, and the fight's notice. Each is taken again as before, from
+   a two-player game on the map "adventure" at twice the page's resolution,
+   the same scene at the same size: the route to the same end cross, the box
+   over the same route, the same fight won against a magic guard of 3. The
+   map in them is drawn a little smaller (the route and the box) or a little
+   larger (the fight) than before. The box shows the words it has asked with
+   since [Q318](#q318), 17. The other seven have no figure in them and stay
+   as they were.
+
+Built: the sentence in `docs/RULEBOOK.md` after "Your own figure stands on a
+white ring"; `docs/rulebook/route.png`, `confirm.png` and `fight.png` taken
+again. No other rulebook word, picture, rule, number or map changed, and no
+words in any picture's brackets.
+
+---
+
+<a id="q328"></a>
+### Q328. ~~Should the markers at the map's edge keep sliding off things while the map glides?~~ — **answered 2026-10-28: no; while the map glides, or is carried along by a walking figure it follows, each keeps the slide it had as the glide began and slides off what it keeps off once, when the map stops (1-2)**
 
 Andrei, 2026-10-28 at 15:27: *"when the map glides, it looks like the portrait
 floaters keep adjusting, avoiding map features That makes them jumpy, and is
