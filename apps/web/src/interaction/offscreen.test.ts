@@ -82,6 +82,58 @@ describe('edgeMarkers keeping off what matters', () => {
   });
 });
 
+describe('edgeMarkers while the map glides', () => {
+  // A figure straight below the middle: its marker wants to sit at (400, 560).
+  const below = at('a', 400, 2000);
+  const thing = (minX: number, maxX: number) => ({ minX, minY: 540, maxX, maxY: 580 });
+  // Where a figure at the bottom of the plane puts its marker's middle on the bottom edge.
+  const under = (x: number) => 400 + ((x - 400) * 1685) / 260;
+
+  it('keeps the slide it had as the glide began, over whatever comes under it, and slides off again once it stops', () => {
+    const [before] = edgeMarkers(viewport, [below], { ...layout, avoid: [thing(380, 410)] });
+    expect(before?.at.x).toBeCloseTo(438);
+    expect(before?.slide).toBeCloseTo(before?.shift ?? 0);
+    const previous = new Map([[below.player, before?.shift ?? 0]]);
+    const held = new Map([[below.player, before?.slide ?? 0]]);
+    const moved = at('a', under(420), 2000);
+    const avoid = [thing(440, 470)];
+    const [gliding] = edgeMarkers(viewport, [moved], { ...layout, avoid }, previous, held);
+    expect(gliding?.at.x).toBeCloseTo(458);
+    expect(gliding?.at.y).toBeCloseTo(560);
+    expect(gliding?.shift).toBe(before?.shift);
+    expect(gliding?.slide).toBe(before?.slide);
+    const [stopped] = edgeMarkers(viewport, [moved], { ...layout, avoid }, previous);
+    // Clear of 440 to 470 means a middle at 412 or less.
+    expect(stopped?.at.x).toBeCloseTo(412);
+  });
+
+  it('sits where it sat on the frame before the glide', () => {
+    const figures = [at('a', 390, 2000), at('b', 410, 2000), at('c', 2000, 285)];
+    const settled = { ...layout, avoid: [thing(330, 360), { minX: 740, minY: 250, maxX: 780, maxY: 300 }] };
+    const before = edgeMarkers(viewport, figures, settled);
+    const gliding = edgeMarkers(viewport, figures, layout, new Map(before.map((one) => [one.player, one.shift])), new Map(before.map((one) => [one.player, one.slide])));
+    expect(before.some((one) => one.slide !== 0)).toBe(true);
+    gliding.forEach((one, index) => {
+      expect(one.at.x).toBeCloseTo(before[index]?.at.x ?? 0);
+      expect(one.at.y).toBeCloseTo(before[index]?.at.y ?? 0);
+    });
+  });
+
+  it('puts a marker that came during the glide where the line to its figure leaves the view', () => {
+    const [marker] = edgeMarkers(viewport, [below], { ...layout, avoid: [thing(380, 410)] }, new Map(), new Map());
+    expect(marker?.at.x).toBeCloseTo(400);
+    expect(marker?.slide).toBe(0);
+  });
+
+  it('still keeps apart from the other markers', () => {
+    const b = at('b', 400, 2000);
+    const markers = edgeMarkers(viewport, [below, b], layout, new Map(), new Map([[b.player, -20]]));
+    expect(Math.abs((markers[0]?.at.x ?? 0) - (markers[1]?.at.x ?? 0))).toBeCloseTo(56);
+    expect(markers[0]?.at.x).toBeCloseTo(382);
+    expect(markers[1]?.at.x).toBeCloseTo(438);
+  });
+});
+
 describe('markerTrack', () => {
   it('is the view drawn in by the inset', () => {
     expect(markerTrack(viewport, layout)).toEqual([
