@@ -17,6 +17,13 @@ import type { Box } from '../render/placement.ts';
  * cover something in `avoid` slides along the edge, by at most `shift`, to
  * the nearest spot clear of it, and stays put when there is none.
  *
+ * [Q327] Andrei, 2026-10-28: "when the map glides, it looks like the portrait
+ * floaters keep adjusting, avoiding map features That makes them jumpy, and
+ * is unnecessary. can we adjust them only once, when the gliding stops":
+ * while the map glides each marker keeps the slide it had as the glide began
+ * (`held`), still keeping apart from the others and round the map's buttons,
+ * and slides off what it keeps off again once the map stops.
+ *
  * Plain geometry in the map's box, in CSS pixels, so it is tested headlessly;
  * `MapView` draws the markers.
  */
@@ -35,6 +42,12 @@ export interface EdgeMarker {
   readonly angle: number;
   /** How far along the edge it slid to keep off `avoid`, for the next frame's `previous`. */
   readonly shift: number;
+  /**
+   * [Q327] How far along the edge it sits from where the line to its figure
+   * leaves the view, after sliding apart and off `avoid`, for the next frame's
+   * `held`.
+   */
+  readonly slide: number;
 }
 
 export interface EdgeMarkerLayout {
@@ -59,13 +72,16 @@ const SHIFT_STEP_PX = 2;
  * The markers for the figures out of view, in the order of `figures`.
  * `previous` is how far each slid last frame: a marker kept off something
  * stays on the same side of it while that spot is clear, rather than jumping
- * from side to side as the map moves.
+ * from side to side as the map moves. [Q327] While the map glides, `held` is
+ * each marker's `slide` from the frame before the glide began: each keeps it,
+ * a marker that came since has none, and none looks at `avoid`.
  */
 export function edgeMarkers(
   viewport: Point,
   figures: readonly FigureOnScreen[],
   layout: EdgeMarkerLayout,
   previous: ReadonlyMap<PlayerId, number> = new Map(),
+  held: ReadonlyMap<PlayerId, number> | null = null,
 ): EdgeMarker[] {
   const track = markerTrack(viewport, layout);
   if (track.length === 0) return [];
@@ -76,9 +92,21 @@ export function edgeMarkers(
       const target = { x: (figure.box.minX + figure.box.maxX) / 2, y: (figure.box.minY + figure.box.maxY) / 2 };
       return { player: figure.player, target, along: alongTrack(track, castOnto(track, middle, target)) };
     });
+  const total = perimeter(track);
+  if (held !== null) {
+    const spread = spreadAlong(
+      out.map((one) => wrap(one.along + (held.get(one.player) ?? 0), total)),
+      total,
+      layout.spacing,
+    );
+    return out.map((one, index) => {
+      const at = pointAlong(track, spread[index] ?? one.along);
+      return { player: one.player, at, angle: Math.atan2(one.target.y - at.y, one.target.x - at.x), shift: previous.get(one.player) ?? 0, slide: held.get(one.player) ?? 0 };
+    });
+  }
   const spread = spreadAlong(
     out.map((one) => one.along),
-    perimeter(track),
+    total,
     layout.spacing,
   );
   const placed = out.map((one, index) => pointAlong(track, spread[index] ?? one.along));
@@ -98,8 +126,14 @@ export function edgeMarkers(
     const shift = tries.find(clearAt) ?? 0;
     const at = pointAlong(track, along + shift);
     placed[index] = at;
-    return { player: one.player, at, angle: Math.atan2(one.target.y - at.y, one.target.x - at.x), shift };
+    const slide = wrap(along + shift - one.along + total / 2, total) - total / 2;
+    return { player: one.player, at, angle: Math.atan2(one.target.y - at.y, one.target.x - at.x), shift, slide };
   });
+}
+
+/** `along` brought round into a loop `total` long. */
+function wrap(along: number, total: number): number {
+  return ((along % total) + total) % total;
 }
 
 /** Whether `box` shows at all in a map's box `viewport` across. */

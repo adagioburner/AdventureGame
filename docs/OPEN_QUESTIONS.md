@@ -4763,6 +4763,49 @@ changed.
 
 ---
 
+<a id="q327"></a>
+### Q327. ~~Should the markers at the map's edge keep sliding off things while the map glides?~~ — **answered 2026-10-28: no; while the map glides, or is carried along by a walking figure it follows, each keeps the slide it had as the glide began and slides off what it keeps off once, when the map stops (1-2)**
+
+Andrei, 2026-10-28 at 15:27: *"when the map glides, it looks like the portrait
+floaters keep adjusting, avoiding map features That makes them jumpy, and is
+unnecessary. can we adjust them only once, when the gliding stops"*. Since
+[Q320](#q320), 7 every marker looked for a clear spot again on every frame, so
+while the map moved under it, it hopped to and fro by up to its own width as
+icons, guard numbers, figures and the route passed beneath it.
+
+1. **Which moves.** A, the map's own glides only: at the start of a turn,
+   when Track is pressed, when End turn's question comes up, and to make room
+   for a notice; B, those and the map carried along by a walking figure it
+   follows, at End turn or with Track pressed, the markers adjusting once the
+   figure stops pushing the map (recommended: a followed walk looks like a
+   glide, and with Track the glide runs straight into the walk); C, every move
+   of the map, the viewer's own dragging and zooming too, adjusting once it
+   has been still for a moment. **Answered** at 15:37: B.
+2. **During the glide.** A, the markers keep moving along the edge with their
+   figures, each keeping the slide it had as the glide began, still keeping
+   apart and going round the map's buttons, and each makes its one
+   adjustment when the map stops, as it does today (recommended); B, the
+   same, but dropping their slides as the glide begins, so they sit right in
+   their figures' direction until it stops; C, they stand still, arrows and
+   all, and jump to their new spots when the map stops. In each, a marker
+   still comes and goes as its figure leaves or enters the view.
+   **Answered** at 15:37: A.
+
+Built: `edgeMarkers` in `apps/web/src/interaction/offscreen.ts` gives each
+marker its `slide`, how far along the edge it sits from where the line to its
+figure leaves the view, and takes `held`, the slides from the frame before the
+glide: given them, each marker sits its slide from that line, the markers
+spread apart as before, and none looks at what it keeps off; a marker that
+came during the glide has none, so it sits right in its figure's direction
+(2). `MapView` passes them on every frame on which the map took itself
+somewhere, by a glide or by following a walk (`carried`), but not when the
+viewer drags, pinches, wheels or presses a key or button to move or zoom it
+(1); on the first frame after, the markers keep off things again as in Q320,
+7, keeping to the side they had slid to before the glide while it is clear.
+No rule, number, map or picture changed, and the rulebook needs no change.
+
+---
+
 ## C. Decisions I made that are *implementation*, not design
 
 Listed so you can veto any that read as design to you.

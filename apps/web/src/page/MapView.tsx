@@ -13,7 +13,7 @@ import {
   type CameraController,
   type ScreenBox,
 } from '../interaction/camera.ts';
-import { edgeMarkers, type EdgeMarkerLayout, type FigureOnScreen } from '../interaction/offscreen.ts';
+import { edgeMarkers, type EdgeMarker, type EdgeMarkerLayout, type FigureOnScreen } from '../interaction/offscreen.ts';
 import { figureTop, pick, planeToScreen, screenToPlane, type Pick } from '../interaction/picking.ts';
 import { fitToViewport, type Camera } from '../render/isometric.ts';
 import { position } from '../render/geometry.ts';
@@ -356,7 +356,11 @@ export function MapView({
         halt();
         latest.current.onMoved?.();
       };
+      // [Q327] Whether the map took itself somewhere this frame, gliding or
+      // following a walk, which the edge markers hold their slides through.
+      let carried = false;
       const onTick = (): void => {
+        carried = false;
         const walker = latest.current.walker;
         if (walker !== null && following.current && glide?.chasing !== true) {
           const to = followInto(camera.camera, viewport(), scene.projection.toScreen(walker.at), FOLLOW_MARGIN_OF_VIEW);
@@ -365,10 +369,12 @@ export function MapView({
             glide = null;
             camera.lookAt(to);
             touched = true;
+            carried = true;
             apply();
           }
         }
         if (glide === null) return;
+        carried = true;
         const t = (performance.now() - glide.start) / GLIDE_MS;
         camera.lookAt(glideCenter(glide.from, glide.to(), t));
         if (t >= 1) glide = null;
@@ -385,7 +391,9 @@ export function MapView({
       // icons and guard numbers (Andrei: "the site pictures are eye candy
       // only, it's fone to cover them, but the icons and guard numbers are
       // important"), the figures in view with their rings, and the route,
-      // its turn bubbles too (9).
+      // its turn bubbles too (9). [Q327] While the map glides, or is carried
+      // along by a walk it follows, they keep the slides they had as it began
+      // and slide off those things again only once it stops.
       const labels = scene.labels.map((label) => ({ node: label.node, box: labelBox(label) }));
       let route: { path: PathPreview | null; from: NodeId | null; waypoint: NodeId | null; boxes: readonly Box[] } | null = null;
       const routeNow = (): readonly Box[] => {
@@ -408,6 +416,7 @@ export function MapView({
       let markerAcross = 0;
       const placed = new Map<PlayerId, string>();
       const slid = new Map<PlayerId, number>();
+      const slides = new Map<PlayerId, number>();
       const measureMarkers = (): void => {
         const first = markers.current.values().next().value;
         const controls = buttons.current;
@@ -439,6 +448,10 @@ export function MapView({
         const figures: FigureOnScreen[] = map.characters.flatMap((figure) =>
           figure.player === undefined ? [] : [{ player: figure.player, box: onScreen(pictureBox(figure.foot, figure.size, art.shape(figure.sprite))) }],
         );
+        if (carried) {
+          putMarkers(edgeMarkers(size, figures, { ...markerLayout, avoid: [] }, slid, slides));
+          return;
+        }
         const claimed = map.claimed;
         const wholeZoom = fit().zoom;
         // [Q320, 10] Andrei, 2026-10-26: "it would be ok if a walking figure
@@ -459,9 +472,15 @@ export function MapView({
         ]
           .map(onScreen)
           .filter(shows);
-        const shown = edgeMarkers(size, figures, { ...markerLayout, avoid }, slid);
+        putMarkers(edgeMarkers(size, figures, { ...markerLayout, avoid }, slid));
+      };
+      const putMarkers = (shown: readonly EdgeMarker[]): void => {
         slid.clear();
-        for (const one of shown) slid.set(one.player, one.shift);
+        slides.clear();
+        for (const one of shown) {
+          slid.set(one.player, one.shift);
+          slides.set(one.player, one.slide);
+        }
         for (const [player, marker] of markers.current) {
           const one = shown.find((candidate) => candidate.player === player);
           const transform = one === undefined ? null : `translate(${(one.at.x - markerAcross / 2).toFixed(1)}px, ${(one.at.y - markerAcross / 2).toFixed(1)}px)`;
