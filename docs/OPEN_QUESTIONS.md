@@ -4764,7 +4764,7 @@ changed.
 ---
 
 <a id="q326"></a>
-### Q326. ~~What else makes the heroes easy to find on the map?~~ — **answered 2026-10-28: a beam of light rising behind every figure, see-through, gold, and white over your own, fading in from the feet and out to nothing at its top; the rings stay as they were; it goes out before a figure walks and comes back as it arrives (1-8)**
+### Q326. ~~What else makes the heroes easy to find on the map?~~ — **answered 2026-10-28: a beam of light rising behind every figure, see-through and white, fading in from the feet and out to nothing at its top; the rings stay as they were; it goes out before a figure walks and comes back as it arrives (1-9)**
 
 Andrei, 2026-10-28 at 04:19: *"finding heroes on the map is still a
 challenge. The golden disks help, but only partly. I was wondering what else
@@ -4787,7 +4787,7 @@ recommended"*.
    ends in a rounded base the shape of the ring. **Answered**: A.
 2. **Whose.** Every player's figure, the page's own included. A.
 3. **Colour.** Gold like the rings, and white over the page's own player's
-   figure, like its ring ([Q312](#q312)). A.
+   figure, like its ring ([Q312](#q312)). A. White over every figure since 9.
 4. **The rings.** They stay as they are, the pulse on your turn included; the
    beam is added to them. A.
 5. **Size.** 0.65 of the ring under the figure wide and 4 rings tall, so it is
@@ -4809,18 +4809,24 @@ recommended"*.
    walk the beam comes back evenly over 0.5 s, while the die rolls and the
    notice shows, which wait for nothing. Every figure that walks, a computer's
    or another player's included; one that does not walk keeps its beam lit.
+9. **White for all.** At 16:17: *"the golden beams of light are somewhat
+   lost on the plains background."* At 16:18: *"let us try changing the color
+   too white for all of them and do not bother making pictures just push it
+   into the preview and I'll check it out"*. So every beam is white, like the
+   page's own player's was; its strength, core and shape are as before, and
+   the rings keep their colours.
 
 Built: `PLAYER_BEAM` and `beamBrightness` in
 `apps/web/src/render/sceneModel.ts` (1, 5); in
 `apps/web/src/render/pixi/renderer.ts`, `raiseBeam` stands one behind each
 figure as `drawCharacters` draws it, behind every figure on the same space and
-in front of what stands behind them (2, 3, 6), and `sizeBeams` sizes them with
+in front of what stands behind them (2, 6, 9), and `sizeBeams` sizes them with
 the rings as the map zooms (5). `PLAYER_BEAM_FADE` and `beamFade` in
 `sceneModel.ts` are how fast a beam goes out and comes back (8); `playOut` in
 `apps/web/src/page/GameScreen.tsx` puts the walker's beam out and waits
 `timing.beamOutMs` before the walk, and lights it again as the walk ends;
 the renderer's `setUnlit` and `fadeBeams` fade it. Its look is `BEAM`: at its brightest 0.3
-see-through, gold or white, with a white core a third of its width at 0.32,
+see-through, white, with a white core a third of its width at 0.32,
 which is 40% of the beam first shown, fading out evenly to nothing at its top.
 No rule, number, map or rulebook word changed.
 

@@ -63,12 +63,14 @@ const PLAYER_RING = { color: 0xffe878, own: 0xffffff, fillAlpha: 0.5, rim: 0.06,
 
 /**
  * [Q326] The beam of light over every figure: see-through, `alpha` at its
- * brightest, in its ring's colour (2, 3), with a white core `core` of its
+ * brightest, `color` over every figure (9), with a white core `core` of its
  * width, `coreAlpha` at its brightest; its brightness is `beamBrightness`,
  * drawn as a gradient of `stops` steps. Andrei, of the beam first shown at
- * 0.75 and 0.8 and then at weaker strengths: "I think 40% looks right".
+ * 0.75 and 0.8 and then at weaker strengths: "I think 40% looks right"; of
+ * the gold beams, "somewhat lost on the plains background", then "let us try
+ * changing the color too white for all of them".
  */
-const BEAM = { alpha: 0.3, core: 1 / 3, coreAlpha: 0.32, stops: 40 } as const;
+const BEAM = { color: 0xffffff, alpha: 0.3, core: 1 / 3, coreAlpha: 0.32, stops: 40 } as const;
 
 /**
  * [Q326, 1] A beam's fill, `color` up to `alpha` see-through, as bright as
@@ -126,10 +128,9 @@ export class PixiMapRenderer implements MapRenderer {
   private readonly fades = new Map<PlayerId, { from: number; to: 0 | 1; start: number | null }>();
   /** [Q326, 8] How bright each beam not at its brightest is now, as a share of that. */
   private readonly light = new Map<PlayerId, number>();
-  /** [Q326, 3] The beams' gradients: gold, white for the page's own player, and their white core. */
+  /** [Q326, 9] The beams' gradients: the beam, the same over every figure, and its white core. */
   private readonly beamFills = {
-    gold: beamGradient(PLAYER_RING.color, BEAM.alpha),
-    own: beamGradient(PLAYER_RING.own, BEAM.alpha),
+    beam: beamGradient(BEAM.color, BEAM.alpha),
     core: beamGradient(0xffffff, BEAM.coreAlpha),
   };
   /** What the pulse animates: (Q305, 11) the current player's ring. */
@@ -524,15 +525,15 @@ export class PixiMapRenderer implements MapRenderer {
    * [Q326] A beam of light rising from where `figure` stands, behind it and
    * every figure beside it on its node, and in front of what stands behind
    * them; it walks with a walking figure, out while it does (8), and stays on
-   * the final map (6). [Q312] Over the page's own player's figure it is white,
-   * like their ring (3).
+   * the final map (6). It is white over every figure, the page's own player's
+   * included (9).
    */
   private raiseBeam(figure: Figure): void {
     const { across, tall } = PLAYER_BEAM;
     const core = across * BEAM.core;
     const beam = new Graphics()
       .rect(-across / 2, -tall, across, tall)
-      .fill(figure.player === this.own ? this.beamFills.own : this.beamFills.gold)
+      .fill(this.beamFills.beam)
       .rect(-core / 2, -tall, core, tall)
       .fill(this.beamFills.core);
     beam.position.set(figure.foot.x, figure.foot.y);
