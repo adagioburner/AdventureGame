@@ -73,6 +73,16 @@ const PLAYER_RING = { color: 0xffe878, own: 0xffffff, fillAlpha: 0.5, rim: 0.06,
 const BEAM = { color: 0xffffff, alpha: 0.3, core: 1 / 3, coreAlpha: 0.32, stops: 40 } as const;
 
 /**
+ * [Q326, 10] The soft dark edge down both sides of every beam, so it shows on
+ * pale ground: `width` wide, in rings as `PLAYER_BEAM` is, `color` up to
+ * `alpha` see-through beside the beam and fading to nothing outwards over
+ * `strips` steps, as bright up its height as the beam is. Andrei, of the
+ * white beams: "it's still quite hard to see against the plains background";
+ * of the ways shown, he picked a soft dark edge.
+ */
+const BEAM_EDGE = { color: 0x000000, width: 0.12, alpha: 0.22, strips: 6 } as const;
+
+/**
  * [Q326, 1] A beam's fill, `color` up to `alpha` see-through, as bright as
  * `beamBrightness` says from the bottom of whatever it fills to the top.
  */
@@ -128,10 +138,11 @@ export class PixiMapRenderer implements MapRenderer {
   private readonly fades = new Map<PlayerId, { from: number; to: 0 | 1; start: number | null }>();
   /** [Q326, 8] How bright each beam not at its brightest is now, as a share of that. */
   private readonly light = new Map<PlayerId, number>();
-  /** [Q326, 9] The beams' gradients: the beam, the same over every figure, and its white core. */
+  /** [Q326, 9, 10] The beams' gradients: the beam, the same over every figure, its white core, and its edge's steps outwards. */
   private readonly beamFills = {
     beam: beamGradient(BEAM.color, BEAM.alpha),
     core: beamGradient(0xffffff, BEAM.coreAlpha),
+    edge: Array.from({ length: BEAM_EDGE.strips }, (_, k) => beamGradient(BEAM_EDGE.color, BEAM_EDGE.alpha * (1 - k / BEAM_EDGE.strips))),
   };
   /** What the pulse animates: (Q305, 11) the current player's ring. */
   private pulsing: Graphics | null = null;
@@ -363,7 +374,7 @@ export class PixiMapRenderer implements MapRenderer {
 
   destroy(): void {
     this.root.destroy({ children: true });
-    for (const fill of Object.values(this.beamFills)) fill.destroy();
+    for (const fill of Object.values(this.beamFills).flat()) fill.destroy();
   }
 
   // --- the ground -------------------------------------------------------------
@@ -526,7 +537,7 @@ export class PixiMapRenderer implements MapRenderer {
    * every figure beside it on its node, and in front of what stands behind
    * them; it walks with a walking figure, out while it does (8), and stays on
    * the final map (6). It is white over every figure, the page's own player's
-   * included (9).
+   * included (9), with a soft dark edge down both sides (10).
    */
   private raiseBeam(figure: Figure): void {
     const { across, tall } = PLAYER_BEAM;
@@ -536,6 +547,14 @@ export class PixiMapRenderer implements MapRenderer {
       .fill(this.beamFills.beam)
       .rect(-core / 2, -tall, core, tall)
       .fill(this.beamFills.core);
+    const strip = BEAM_EDGE.width / BEAM_EDGE.strips;
+    this.beamFills.edge.forEach((fill, k) => {
+      beam
+        .rect(-across / 2 - (k + 1) * strip, -tall, strip, tall)
+        .fill(fill)
+        .rect(across / 2 + k * strip, -tall, strip, tall)
+        .fill(fill);
+    });
     beam.position.set(figure.foot.x, figure.foot.y);
     // Figures side by side on a node differ in depth by thousandths.
     beam.zIndex = figure.depth - 0.01;

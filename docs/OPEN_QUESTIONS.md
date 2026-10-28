@@ -4764,7 +4764,7 @@ changed.
 ---
 
 <a id="q326"></a>
-### Q326. ~~What else makes the heroes easy to find on the map?~~ — **answered 2026-10-28: a beam of light rising behind every figure, see-through and white, fading in from the feet and out to nothing at its top; the rings stay as they were; it goes out before a figure walks and comes back as it arrives (1-9)**
+### Q326. ~~What else makes the heroes easy to find on the map?~~ — **answered 2026-10-28: a beam of light rising behind every figure, see-through and white with a soft dark edge, fading in from the feet and out to nothing at its top; the rings stay as they were; it goes out before a figure walks and comes back as it arrives (1-10)**
 
 Andrei, 2026-10-28 at 04:19: *"finding heroes on the map is still a
 challenge. The golden disks help, but only partly. I was wondering what else
@@ -4815,6 +4815,14 @@ recommended"*.
    into the preview and I'll check it out"*. So every beam is white, like the
    page's own player's was; its strength, core and shape are as before, and
    the rings keep their colours.
+10. **A soft dark edge.** At 16:45: *"to tell you the truth, it's still quite
+    hard to see against the plains background"*. Asked: A, a faint dark
+    shadow down both sides of the beam, which outlines it on pale sand and
+    hardly shows on grass or rock (recommended); B, stronger everywhere, 60%
+    of the first beam; C, 60% only while its figure stands on plains; D, a
+    pale blue light. **Answered** at 16:48: A. The edge is black, 0.12 of a
+    ring wide on each side, 0.22 see-through beside the beam and fading to
+    nothing outwards, as bright up its height as the beam is.
 
 Built: `PLAYER_BEAM` and `beamBrightness` in
 `apps/web/src/render/sceneModel.ts` (1, 5); in
@@ -4827,7 +4835,8 @@ the rings as the map zooms (5). `PLAYER_BEAM_FADE` and `beamFade` in
 `timing.beamOutMs` before the walk, and lights it again as the walk ends;
 the renderer's `setUnlit` and `fadeBeams` fade it. Its look is `BEAM`: at its brightest 0.3
 see-through, white, with a white core a third of its width at 0.32,
-which is 40% of the beam first shown, fading out evenly to nothing at its top.
+which is 40% of the beam first shown, fading out evenly to nothing at its top;
+its edge is `BEAM_EDGE` (10).
 No rule, number, map or rulebook word changed.
 
 ---
