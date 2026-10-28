@@ -1,12 +1,14 @@
 import { TERRAINS } from '@adventure/config';
 import type { GameMap, GameState, NodeId, PathPreview, PlayerId, Point } from '@adventure/core';
-import { Container, Graphics, Matrix, Sprite, Text, TilingSprite, type Texture } from 'pixi.js';
+import { Color, Container, FillGradient, Graphics, Matrix, Sprite, Text, TilingSprite, type Texture } from 'pixi.js';
 import { spriteIndex } from '../../art/atlas.ts';
 import { atlasOf } from '../../art/catalog.ts';
 import type { Camera, Projection } from '../isometric.ts';
 import type { Box } from '../placement.ts';
 import type { MapRenderer, SceneLayer } from '../scene.ts';
 import {
+  beamBrightness,
+  beamFade,
   buildCharacters,
   buildPathScene,
   buildStateScene,
@@ -16,6 +18,8 @@ import {
   guardRing,
   nodeOutlineWidth,
   nextIdlePlay,
+  PLAYER_BEAM,
+  PLAYER_RING_ACROSS,
   playerRingSize,
   playFrame,
   siteDot,
@@ -58,6 +62,38 @@ const CUE = {
 const PLAYER_RING = { color: 0xffe878, own: 0xffffff, fillAlpha: 0.5, rim: 0.06, gap: 0.035 } as const;
 
 /**
+ * [Q326] The beam of light over every figure: see-through, `alpha` at its
+ * brightest, `color` over every figure (9), with a white core `core` of its
+ * width, `coreAlpha` at its brightest; its brightness is `beamBrightness`,
+ * drawn as a gradient of `stops` steps. Andrei, of the beam first shown at
+ * 0.75 and 0.8 and then at weaker strengths: "I think 40% looks right"; of
+ * the gold beams, "somewhat lost on the plains background", then "let us try
+ * changing the color too white for all of them".
+ */
+const BEAM = { color: 0xffffff, alpha: 0.3, core: 1 / 3, coreAlpha: 0.32, stops: 40 } as const;
+
+/**
+ * [Q326, 10] The soft dark edge down both sides of every beam, so it shows on
+ * pale ground: `width` wide, in rings as `PLAYER_BEAM` is, `color` up to
+ * `alpha` see-through beside the beam and fading to nothing outwards over
+ * `strips` steps, as bright up its height as the beam is. Andrei, of the
+ * white beams: "it's still quite hard to see against the plains background";
+ * of the ways shown, he picked a soft dark edge.
+ */
+const BEAM_EDGE = { color: 0x000000, width: 0.12, alpha: 0.22, strips: 6 } as const;
+
+/**
+ * [Q326, 1] A beam's fill, `color` up to `alpha` see-through, as bright as
+ * `beamBrightness` says from the bottom of whatever it fills to the top.
+ */
+function beamGradient(color: number, alpha: number): FillGradient {
+  const gradient = new FillGradient({ type: 'linear', start: { x: 0, y: 0 }, end: { x: 0, y: 1 }, textureSpace: 'local' });
+  const { red, green, blue } = new Color(color);
+  for (let k = 0; k <= BEAM.stops; k++) gradient.addColorStop(k / BEAM.stops, [red, green, blue, alpha * beamBrightness(1 - k / BEAM.stops)]);
+  return gradient;
+}
+
+/**
  * `MapRenderer` on PixiJS (docs/STACK.md §3). Everything it draws comes out
  * of `sceneModel.ts`; this file decides only how a scene item becomes a
  * PixiJS object, which is why it has no tests of its own and the scene model
@@ -94,6 +130,20 @@ export class PixiMapRenderer implements MapRenderer {
   private planner: PlayerId | null = null;
   private found: PlayerId | null = null;
   private own: PlayerId | null = null;
+  /** [Q326] The beam over each figure drawn now, one ring's width across on screen to a unit, and whose it is. */
+  private beams: { beam: Graphics; player: PlayerId }[] = [];
+  /** [Q326, 8] The player whose beam is out, from before their figure sets off until it arrives; `null` for none. */
+  private unlit: PlayerId | null = null;
+  /** [Q326, 8] Each beam going out or coming back: how bright it was as it turned, which way it goes, and since when (`null` until the next frame). */
+  private readonly fades = new Map<PlayerId, { from: number; to: 0 | 1; start: number | null }>();
+  /** [Q326, 8] How bright each beam not at its brightest is now, as a share of that. */
+  private readonly light = new Map<PlayerId, number>();
+  /** [Q326, 9, 10] The beams' gradients: the beam, the same over every figure, its white core, and its edge's steps outwards. */
+  private readonly beamFills = {
+    beam: beamGradient(BEAM.color, BEAM.alpha),
+    core: beamGradient(0xffffff, BEAM.coreAlpha),
+    edge: Array.from({ length: BEAM_EDGE.strips }, (_, k) => beamGradient(BEAM_EDGE.color, BEAM_EDGE.alpha * (1 - k / BEAM_EDGE.strips))),
+  };
   /** What the pulse animates: (Q305, 11) the current player's ring. */
   private pulsing: Graphics | null = null;
   /**
@@ -161,6 +211,7 @@ export class PixiMapRenderer implements MapRenderer {
       this.zoom = camera.zoom;
       this.wholeZoom = whole.zoom;
       this.drawPlayerRings();
+      this.sizeBeams();
     }
   }
 
@@ -244,9 +295,19 @@ export class PixiMapRenderer implements MapRenderer {
     this.invalidate('characters');
   }
 
-  /** Advance the figures' idle loops and the pulse; call once a frame. */
+  /** [Q326, 8] Puts out `player`'s beam, and brings back the one put out before; `null` puts none out. */
+  setUnlit(player: PlayerId | null): void {
+    if (player === this.unlit) return;
+    const before = this.unlit;
+    this.unlit = player;
+    if (before !== null) this.fades.set(before, { from: this.light.get(before) ?? 1, to: 1, start: null });
+    if (player !== null) this.fades.set(player, { from: this.light.get(player) ?? 1, to: 0, start: null });
+  }
+
+  /** Advance the figures' idle loops, the beams going out or coming back, and the pulse; call once a frame. */
   tick(now: number): void {
     this.playIdle(now);
+    this.fadeBeams(now);
     if (this.cue !== 'pulse') return;
     const phase = (now % CUE.pulseMs) / CUE.pulseMs;
     if (this.pulsing !== null) {
@@ -313,6 +374,7 @@ export class PixiMapRenderer implements MapRenderer {
 
   destroy(): void {
     this.root.destroy({ children: true });
+    for (const fill of Object.values(this.beamFills).flat()) fill.destroy();
   }
 
   // --- the ground -------------------------------------------------------------
@@ -435,6 +497,8 @@ export class PixiMapRenderer implements MapRenderer {
   private drawCharacters(): void {
     for (const sprite of this.characterSprites) sprite.destroy();
     this.characterSprites = [];
+    for (const { beam } of this.beams) beam.destroy();
+    this.beams = [];
     this.waypointSprite?.destroy();
     this.waypointSprite = null;
     this.figures = [];
@@ -445,6 +509,7 @@ export class PixiMapRenderer implements MapRenderer {
     for (const item of this.stateScene?.characters ?? []) {
       const sprite = this.stand(item, 1);
       this.characterSprites.push(sprite);
+      this.raiseBeam(item);
       if (item.loop !== null) {
         // [Q305, 18] A figure walking at End turn or picked up to plan (on its
         // turn or out of it, Q56) stands still; [Q321, 2] one on its turn
@@ -464,6 +529,58 @@ export class PixiMapRenderer implements MapRenderer {
     if (this.waypoint !== null) {
       this.waypointSprite = this.stand(buildWaypoint(this.scene, this.map, this.waypoint, this.art.catalog), 1);
     }
+    this.sizeBeams();
+  }
+
+  /**
+   * [Q326] A beam of light rising from where `figure` stands, behind it and
+   * every figure beside it on its node, and in front of what stands behind
+   * them; it walks with a walking figure, out while it does (8), and stays on
+   * the final map (6). It is white over every figure, the page's own player's
+   * included (9), with a soft dark edge down both sides (10).
+   */
+  private raiseBeam(figure: Figure): void {
+    const { across, tall } = PLAYER_BEAM;
+    const core = across * BEAM.core;
+    const beam = new Graphics()
+      .rect(-across / 2, -tall, across, tall)
+      .fill(this.beamFills.beam)
+      .rect(-core / 2, -tall, core, tall)
+      .fill(this.beamFills.core);
+    const strip = BEAM_EDGE.width / BEAM_EDGE.strips;
+    this.beamFills.edge.forEach((fill, k) => {
+      beam
+        .rect(-across / 2 - (k + 1) * strip, -tall, strip, tall)
+        .fill(fill)
+        .rect(across / 2 + k * strip, -tall, strip, tall)
+        .fill(fill);
+    });
+    beam.position.set(figure.foot.x, figure.foot.y);
+    // Figures side by side on a node differ in depth by thousandths.
+    beam.zIndex = figure.depth - 0.01;
+    beam.alpha = this.light.get(figure.player) ?? 1;
+    this.standing.addChild(beam);
+    this.beams.push({ beam, player: figure.player });
+  }
+
+  /** [Q326, 8] Each beam going out or coming back as bright as it is `now`. */
+  private fadeBeams(now: number): void {
+    if (this.fades.size === 0) return;
+    for (const [player, fade] of this.fades) {
+      fade.start ??= now;
+      const light = beamFade(fade.from, fade.to, now - fade.start);
+      if (light === 1) this.light.delete(player);
+      else this.light.set(player, light);
+      if (light === fade.to) this.fades.delete(player);
+    }
+    for (const { beam, player } of this.beams) beam.alpha = this.light.get(player) ?? 1;
+  }
+
+  /** [Q326, 5] The beams sized by the ring under their figure, which has a floor on the whole map (Q305, 8). */
+  private sizeBeams(): void {
+    const { spacing } = this.scene;
+    const ring = (playerRingSize(PLAYER_RING_ACROSS * spacing, spacing, this.zoom, this.wholeZoom) * SPACING_PX) / spacing;
+    for (const { beam } of this.beams) beam.scale.set(ring);
   }
 
   /**

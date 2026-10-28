@@ -29,7 +29,7 @@ import type { PlayedTurn, Purchase } from '../modes/hotseat.ts';
 import type { PlayedChange, PlaySource, PlayUpdate } from '../modes/play.ts';
 import { position } from '../render/geometry.ts';
 import type { LoadedArt } from '../render/pixi/textures.ts';
-import type { FigureCue, MapScene, Walker } from '../render/sceneModel.ts';
+import { PLAYER_BEAM_FADE, type FigureCue, type MapScene, type Walker } from '../render/sceneModel.ts';
 import { endingSound, isRest } from '../sound/cues.ts';
 import { soundTableOf, sounds } from '../sound/player.ts';
 import { BuyPanel } from './BuyPanel.tsx';
@@ -53,9 +53,10 @@ const FIGURE_GAP_PX = 8;
  * and an unguarded claim's notice takes to fade in, stays up (2 seconds, his
  * pick) and takes to fade out; how long a fight's notice stays up once the
  * die has stopped (3 seconds, [Q314, 2]); how long a figure found from its
- * card stands on its ring (2 seconds, [Q120, 471]); and how long the ring of
+ * card stands on its ring (2 seconds, [Q120, 471]); how long the ring of
  * the figure on turn pulses over a route saved from the turn before (2
- * seconds, [Q145, 574]; Q321).
+ * seconds, [Q145, 574]; Q321); and how long a figure about to walk waits for
+ * its beam of light to go out ([Q326, 8]).
  */
 export const timing = {
   stepMs: 220,
@@ -67,6 +68,7 @@ export const timing = {
   fightMs: 3000,
   foundMs: 2000,
   savedRoutePulseMs: 2000,
+  beamOutMs: PLAYER_BEAM_FADE.outMs,
 };
 
 interface GameScreenProps {
@@ -122,6 +124,8 @@ export function GameScreen({
   const [move, setMove] = useState<MoveModeState>({ kind: 'idle' });
   const [armed, setArmed] = useState(false);
   const [walker, setWalker] = useState<Walker | null>(null);
+  // [Q326, 8] The player whose beam is out, from before their figure sets off until it arrives.
+  const [unlit, setUnlit] = useState<PlayerId | null>(null);
   const [inFlight, setInFlight] = useState<{ path: PathPreview | null; waypoint: NodeId | null } | null>(null);
   // `room`: [Q314, 6] the map's `followMark` as the walk ended, if it was following it.
   const [result, setResult] = useState<{ turn: PlayedTurn; rolling: boolean; room: number | null } | null>(null);
@@ -341,6 +345,7 @@ export function GameScreen({
     // page must end up showing it, never stuck part-way.
     await playOut(turn, before).catch(() => undefined);
     setWalker(null);
+    setUnlit(null);
     setOwnWalk(false);
     setShown(turn.after);
     setEntries((current) => [journalEntry(turn, before, movedOn), ...current]);
@@ -413,11 +418,17 @@ export function GameScreen({
     const walked = moved !== undefined && moved.resolution.walked.length > 0;
     if (walked) {
       const nodes = [moved.resolution.from, ...moved.resolution.walked].map((node) => position(before.map.graph, node));
+      // [Q326, 8] The figure's beam goes out before it sets off, and it waits
+      // until the beam is out; the beam comes back as it arrives, while the
+      // die rolls and the notice shows.
+      setUnlit(turn.player);
+      await sleep(timing.beamOutMs);
       // [Q63, 131] A footstep each time the figure reaches the next node, timed
       // by the sound's own clock so the steps keep the walk's pace however
       // smoothly the map draws.
       for (let node = 1; node < nodes.length; node++) sounds.play('step', (node * timing.stepMs) / 1000);
       await walk(turn.player, nodes, moved.resolution.walked.at(-1) ?? moved.resolution.from, setWalker);
+      setUnlit(null);
     }
     const interacted = find(turn.events, 'interacted');
     if (interacted === undefined || interacted.resolution.reward === null) return;
@@ -795,6 +806,7 @@ export function GameScreen({
           planner={plannerShown}
           found={found?.player ?? null}
           own={source.own}
+          unlit={unlit}
           // [Q320] A marker at the map's edge for each player out of view finds them as their card does.
           onFind={findPlayer}
           onTap={onTap}
