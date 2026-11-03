@@ -12,7 +12,7 @@ import {
   ANIMATE_FROM_PX,
   beamBrightness,
   beamFade,
-  beamOverRock,
+  beamOverGround,
   beamStrength,
   buildMapScene,
   buildPathScene,
@@ -31,11 +31,11 @@ import {
   playFrame,
   PLAYER_BEAM,
   PLAYER_BEAM_FADE,
-  PLAYER_BEAM_ROCK,
+  PLAYER_BEAM_GROUND,
   PLAYER_RING_ACROSS,
   PLAYER_RING_ACROSS_WHOLE_MAP,
   playerRingSize,
-  rockOf,
+  groundOf,
   siteDot,
   SPACING_PX,
   type MapScene,
@@ -668,55 +668,68 @@ describe("the beam of light over the players' figures (Q326)", () => {
   });
 });
 
-describe('the beam brighter over mountain ground (Q329)', () => {
-  // Screen and world the same: mountain ground from y 0 to 10, plains above it.
+describe('the beam brighter for the ground behind it (Q329)', () => {
+  // Screen and world the same: mountains from y 0 to 10, plains above them,
+  // forest to their right.
   const square = (x0: number, y0: number, x1: number, y1: number) => [
     { x: x0, y: y0 },
     { x: x1, y: y0 },
     { x: x1, y: y1 },
     { x: x0, y: y1 },
   ];
-  const rock = rockOf({
+  const ground = groundOf({
     projection: affineProjection({ a: 1, b: 0, c: 0, d: 1, tx: 0, ty: 0 }),
     terrain: [
       { node: asNodeId(0), terrain: 'mountain', polygon: square(0, 0, 10, 10) },
       { node: asNodeId(1), terrain: 'plains', polygon: square(0, -10, 10, 0) },
+      { node: asNodeId(2), terrain: 'forest', polygon: square(10, -10, 20, 10) },
     ],
   });
   const evenly = () => 1;
 
-  it('measures how much of a beam stands over mountain ground, and no other', () => {
-    expect(beamOverRock(rock, { x: 5, y: 10 }, 2, 8, evenly)).toBe(1);
-    expect(beamOverRock(rock, { x: 5, y: 4 }, 2, 8, evenly)).toBeCloseTo(0.5, 9);
-    expect(beamOverRock(rock, { x: 5, y: -1 }, 2, 8, evenly)).toBe(0);
-    expect(beamOverRock(rock, { x: 50, y: 50 }, 2, 8, evenly)).toBe(0);
+  it('measures how much of a beam stands over each terrain, the rest off the map', () => {
+    expect(beamOverGround(ground, { x: 5, y: 10 }, 2, 8, evenly)).toEqual({ plains: 0, forest: 0, mountain: 1 });
+    const half = beamOverGround(ground, { x: 5, y: 4 }, 2, 8, evenly);
+    expect(half.mountain).toBeCloseTo(0.5, 9);
+    expect(half.plains).toBeCloseTo(0.5, 9);
+    expect(half.forest).toBe(0);
+    expect(beamOverGround(ground, { x: 5, y: -2 }, 2, 8, evenly)).toEqual({ plains: 1, forest: 0, mountain: 0 });
+    expect(beamOverGround(ground, { x: 50, y: 50 }, 2, 8, evenly)).toEqual({ plains: 0, forest: 0, mountain: 0 });
   });
 
   it('across its width as well as up its height', () => {
-    const left = beamOverRock(rock, { x: 9.9, y: 10 }, 2, 8, evenly);
-    expect(left).toBeGreaterThan(0.5);
-    expect(left).toBeLessThan(1);
-    expect(beamOverRock(rock, { x: 10.1, y: 10 }, 2, 8, evenly)).toBeCloseTo(1 - left, 9);
+    const left = beamOverGround(ground, { x: 9.9, y: 10 }, 2, 8, evenly);
+    expect(left.mountain).toBeGreaterThan(0.5);
+    expect(left.mountain).toBeLessThan(1);
+    expect(left.forest).toBeCloseTo(1 - left.mountain, 9);
+    expect(beamOverGround(ground, { x: 10.1, y: 10 }, 2, 8, evenly).mountain).toBeCloseTo(1 - left.mountain, 9);
   });
 
   it('counts each part of the beam as much as it is weighed', () => {
-    expect(beamOverRock(rock, { x: 5, y: 4 }, 2, 8, (_, up) => (up < 0.5 ? 3 : 1))).toBeCloseTo(0.75, 9);
-    expect(beamOverRock(rock, { x: 5, y: 4 }, 2, 8, () => 0)).toBe(0);
+    const lowFirst = beamOverGround(ground, { x: 5, y: 4 }, 2, 8, (_, up) => (up < 0.5 ? 3 : 1));
+    expect(lowFirst.mountain).toBeCloseTo(0.75, 9);
+    expect(lowFirst.plains).toBeCloseTo(0.25, 9);
+    expect(beamOverGround(ground, { x: 5, y: 4 }, 2, 8, () => 0)).toEqual({ plains: 0, forest: 0, mountain: 0 });
   });
 
-  it('is as bright as before with none of it over rock, twice with all of it, and evenly between', () => {
-    expect(PLAYER_BEAM_ROCK.most).toBe(2);
-    expect(beamStrength(0)).toBe(1);
-    expect(beamStrength(0.5)).toBe(1.5);
-    expect(beamStrength(1)).toBe(2);
-    expect(beamStrength(-1)).toBe(1);
-    expect(beamStrength(2)).toBe(2);
+  it('is twice as bright over mountains, half as bright again over plains, and as before over forest and off the map (3)', () => {
+    expect(PLAYER_BEAM_GROUND.by).toEqual({ plains: 1.5, forest: 1, mountain: 2 });
+    expect(beamStrength({ mountain: 1 })).toBe(2);
+    expect(beamStrength({ plains: 1 })).toBe(1.5);
+    expect(beamStrength({ forest: 1 })).toBe(1);
+    expect(beamStrength({})).toBe(1);
+  });
+
+  it('over mixed ground, each terrain for its share', () => {
+    expect(beamStrength({ mountain: 0.5 })).toBe(1.5);
+    expect(beamStrength({ mountain: 0.5, plains: 0.5 })).toBe(1.75);
+    expect(beamStrength({ plains: 0.5, forest: 0.5 })).toBe(1.25);
   });
 
   it('in steps of a twentieth', () => {
-    expect(beamStrength(0.26)).toBe(1.25);
-    expect(beamStrength(0.24)).toBe(1.25);
-    expect(new Set(Array.from({ length: 101 }, (_, k) => beamStrength(k / 100))).size).toBe(PLAYER_BEAM_ROCK.steps + 1);
+    expect(beamStrength({ mountain: 0.26 })).toBe(1.25);
+    expect(beamStrength({ mountain: 0.24 })).toBe(1.25);
+    expect(new Set(Array.from({ length: 101 }, (_, k) => beamStrength({ mountain: k / 100 }))).size).toBe(PLAYER_BEAM_GROUND.steps + 1);
   });
 });
 

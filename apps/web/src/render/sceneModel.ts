@@ -1,4 +1,4 @@
-import type { GuardType, RewardKind, Terrain } from '@adventure/config';
+import { TERRAINS, type GuardType, type RewardKind, type Terrain } from '@adventure/config';
 import {
   isClaimed,
   type GameMap,
@@ -392,27 +392,34 @@ export function beamBrightness(up: number): number {
 }
 
 /**
- * [Q329] A beam is brighter the more of it stands over mountain ground, where
- * the grey rock hides a white beam: as bright as before with none of it over
- * rock, `most` times as bright with all of it, and evenly between, in `steps`
- * steps. How much is measured at `samples` points across and up the beam.
- * Andrei: "now it is not visible enough with the mountains in the
- * background"; of the ways shown, brighter on mountains, but "instead of
- * conditioning it upon the hero standing on mountains, calculate how much of
- * the beam is shown against the mountain background".
+ * [Q329] A beam is brighter for the ground behind it, `by` times as bright as
+ * first drawn over each terrain, as first drawn off the map; over mixed
+ * ground each part counts for its share, in steps of `1 / steps`. The shares
+ * are measured at `samples` points across and up the beam. Andrei: "now it is
+ * not visible enough with the mountains in the background"; of the ways
+ * shown, brighter on mountains, but "instead of conditioning it upon the hero
+ * standing on mountains, calculate how much of the beam is shown against the
+ * mountain background"; then "The beams aremost visible against the forest
+ * background and the sky, and less visible against plains [...] Let us start
+ * with x1.5 against plains (vs x2.0 against mountains)" (3).
  */
-export const PLAYER_BEAM_ROCK = { most: 2, steps: 20, samples: { across: 5, up: 24 } } as const;
+export const PLAYER_BEAM_GROUND = {
+  by: { plains: 1.5, forest: 1, mountain: 2 },
+  steps: 20,
+  samples: { across: 5, up: 24 },
+} as const satisfies { by: Record<Terrain, number>; steps: number; samples: { across: number; up: number } };
 
-/** [Q329] The mountain ground the map draws, each patch with the box round it to rule most points out quickly. */
-export interface Rock {
+/** [Q329] The ground the map draws, each patch with its terrain and the box round it, to rule most points out quickly. */
+export interface Ground {
   readonly projection: Projection;
-  readonly patches: readonly { readonly polygon: readonly Point[]; readonly box: Bounds }[];
+  readonly patches: readonly { readonly terrain: Terrain; readonly polygon: readonly Point[]; readonly box: Bounds }[];
 }
 
-export function rockOf(scene: Pick<MapScene, 'projection' | 'terrain'>): Rock {
+export function groundOf(scene: Pick<MapScene, 'projection' | 'terrain'>): Ground {
   const patches = scene.terrain
-    .filter((patch) => patch.terrain === 'mountain' && patch.polygon.length >= 3)
-    .map(({ polygon }) => ({
+    .filter((patch) => patch.polygon.length >= 3)
+    .map(({ terrain, polygon }) => ({
+      terrain,
       polygon,
       box: {
         min: { x: Math.min(...polygon.map((p) => p.x)), y: Math.min(...polygon.map((p) => p.y)) },
@@ -424,14 +431,20 @@ export function rockOf(scene: Pick<MapScene, 'projection' | 'terrain'>): Rock {
 
 /**
  * [Q329] How much of a beam `width` across and `height` tall, rising from
- * `foot` (screen pixels at zoom 1, as a figure's foot is), stands over `rock`,
- * from 0 (none) to 1 (all): each point measured counts as much as `weight`
- * says for it, by how far `across` the beam it is (-0.5 to 0.5) and how far
- * `up` (0 to 1).
+ * `foot` (screen pixels at zoom 1, as a figure's foot is), stands over each
+ * terrain of `ground`, from 0 (none) to 1 (all); what is left stands off the
+ * map. Each point measured counts as much as `weight` says for it, by how far
+ * `across` the beam it is (-0.5 to 0.5) and how far `up` (0 to 1).
  */
-export function beamOverRock(rock: Rock, foot: Point, width: number, height: number, weight: (across: number, up: number) => number): number {
-  const { across: columns, up: rows } = PLAYER_BEAM_ROCK.samples;
-  let over = 0;
+export function beamOverGround(
+  ground: Ground,
+  foot: Point,
+  width: number,
+  height: number,
+  weight: (across: number, up: number) => number,
+): Record<Terrain, number> {
+  const { across: columns, up: rows } = PLAYER_BEAM_GROUND.samples;
+  const over: Record<Terrain, number> = { plains: 0, forest: 0, mountain: 0 };
   let all = 0;
   for (let i = 0; i < columns; i++) {
     const across = (i + 0.5) / columns - 0.5;
@@ -440,21 +453,27 @@ export function beamOverRock(rock: Rock, foot: Point, width: number, height: num
       const counts = weight(across, up);
       if (counts <= 0) continue;
       all += counts;
-      const p = rock.projection.toWorld({ x: foot.x + across * width, y: foot.y - up * height });
-      const onRock = rock.patches.some(
+      const p = ground.projection.toWorld({ x: foot.x + across * width, y: foot.y - up * height });
+      const patch = ground.patches.find(
         ({ polygon, box }) => p.x >= box.min.x && p.x <= box.max.x && p.y >= box.min.y && p.y <= box.max.y && insidePolygon(p, polygon),
       );
-      if (onRock) over += counts;
+      if (patch !== undefined) over[patch.terrain] += counts;
     }
   }
-  return all === 0 ? 0 : over / all;
+  if (all > 0) for (const terrain of TERRAINS) over[terrain] /= all;
+  return over;
 }
 
-/** [Q329] How bright a beam with `share` of it over rock is, as a multiple of a beam with none: in `PLAYER_BEAM_ROCK.steps` steps from 1 to `most`. */
-export function beamStrength(share: number): number {
-  const { most, steps } = PLAYER_BEAM_ROCK;
-  const stepped = Math.round(Math.min(1, Math.max(0, share)) * steps) / steps;
-  return 1 + (most - 1) * stepped;
+/**
+ * [Q329] How bright a beam standing `shares` over each terrain is, as a
+ * multiple of the beam first drawn: each terrain's `PLAYER_BEAM_GROUND.by`
+ * for its share, 1 for the rest, rounded to a step.
+ */
+export function beamStrength(shares: Readonly<Partial<Record<Terrain, number>>>): number {
+  const { by, steps } = PLAYER_BEAM_GROUND;
+  let strength = 1;
+  for (const terrain of TERRAINS) strength += (by[terrain] - 1) * Math.min(1, Math.max(0, shares[terrain] ?? 0));
+  return Math.round(strength * steps) / steps;
 }
 
 /**

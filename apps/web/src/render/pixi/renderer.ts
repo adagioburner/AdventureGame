@@ -9,7 +9,7 @@ import type { MapRenderer, SceneLayer } from '../scene.ts';
 import {
   beamBrightness,
   beamFade,
-  beamOverRock,
+  beamOverGround,
   beamStrength,
   buildCharacters,
   buildPathScene,
@@ -24,7 +24,7 @@ import {
   PLAYER_RING_ACROSS,
   playerRingSize,
   playFrame,
-  rockOf,
+  groundOf,
   siteDot,
   SPACING_PX,
   TURN_BUBBLE,
@@ -33,7 +33,7 @@ import {
   type FigureCue,
   type MapScene,
   type PlayerRing,
-  type Rock,
+  type Ground,
   type StateScene,
   type Walker,
 } from '../sceneModel.ts';
@@ -72,8 +72,8 @@ const PLAYER_RING = { color: 0xffe878, own: 0xffffff, fillAlpha: 0.5, rim: 0.06,
  * drawn as a gradient of `stops` steps. Andrei, of the beam first shown at
  * 0.75 and 0.8 and then at weaker strengths: "I think 40% looks right"; of
  * the gold beams, "somewhat lost on the plains background", then "let us try
- * changing the color too white for all of them". [Q329] Over mountain
- * ground it is brighter, as `beamStrength` says.
+ * changing the color too white for all of them". [Q329] It is brighter
+ * for the ground behind it, as `beamStrength` says.
  */
 const BEAM = { color: 0xffffff, alpha: 0.3, core: 1 / 3, coreAlpha: 0.32, stops: 40 } as const;
 
@@ -90,7 +90,8 @@ const BEAM_EDGE = { color: 0x000000, width: 0.12, alpha: 0.22, strips: 6 } as co
 /**
  * [Q329] How much light a beam gives `across` its width (-0.5 to 0.5) and `up`
  * its height (0 to 1), as first drawn: its brightness up its height, its core's
- * added in the middle. The rock behind a beam counts for as much as it dims.
+ * added in the middle. The ground behind each part counts for as much as
+ * that part shows on it.
  */
 function beamLight(across: number, up: number): number {
   return beamBrightness(up) * (BEAM.alpha + (Math.abs(across) < BEAM.core / 2 ? BEAM.coreAlpha : 0));
@@ -147,11 +148,11 @@ export class PixiMapRenderer implements MapRenderer {
   /**
    * [Q326] The beam over each figure drawn now, one ring's width across on
    * screen to a unit, whose it is, where it rises from, and [Q329] how bright
-   * it is drawn for the rock behind it (0 until it is drawn).
+   * it is drawn for the ground behind it (0 until it is drawn).
    */
   private beams: { beam: Graphics; player: PlayerId; foot: Point; strength: number }[] = [];
-  /** [Q329] The mountain ground, which a beam standing over it is brighter for. */
-  private readonly rock: Rock;
+  /** [Q329] The ground, which a beam is brighter for as it stands over plains or mountains. */
+  private readonly ground: Ground;
   /** [Q326, 8] The player whose beam is out, from before their figure sets off until it arrives; `null` for none. */
   private unlit: PlayerId | null = null;
   /** [Q326, 8] Each beam going out or coming back: how bright it was as it turned, which way it goes, and since when (`null` until the next frame). */
@@ -197,7 +198,7 @@ export class PixiMapRenderer implements MapRenderer {
     private readonly scene: MapScene,
   ) {
     this.projection = scene.projection;
-    this.rock = rockOf(scene);
+    this.ground = groundOf(scene);
     const m = scene.projection.matrix;
     for (const ground of [this.terrainLayer, this.backdropGround, this.groundBelow, this.groundAbove]) {
       ground.setFromMatrix(new Matrix(m.a, m.b, m.c, m.d, m.tx, m.ty));
@@ -568,7 +569,7 @@ export class PixiMapRenderer implements MapRenderer {
    * included (9), with a soft dark edge down both sides (10).
    */
   private raiseBeam(figure: Figure): void {
-    // Drawn as `sizeBeams` sizes it, as bright as the rock behind it then asks.
+    // Drawn as `sizeBeams` sizes it, as bright as the ground behind it then asks.
     const beam = new Graphics();
     beam.position.set(figure.foot.x, figure.foot.y);
     // Figures side by side on a node differ in depth by thousandths.
@@ -619,16 +620,16 @@ export class PixiMapRenderer implements MapRenderer {
 
   /**
    * [Q326, 5] The beams sized by the ring under their figure, which has a
-   * floor on the whole map (Q305, 8), and [Q329] each as bright as the share
-   * of it then standing over mountain ground asks.
+   * floor on the whole map (Q305, 8), and [Q329] each as bright as the
+   * ground then behind it asks.
    */
   private sizeBeams(): void {
     const { spacing } = this.scene;
     const ring = (playerRingSize(PLAYER_RING_ACROSS * spacing, spacing, this.zoom, this.wholeZoom) * SPACING_PX) / spacing;
     for (const shown of this.beams) {
       shown.beam.scale.set(ring);
-      const share = beamOverRock(this.rock, shown.foot, PLAYER_BEAM.across * ring, PLAYER_BEAM.tall * ring, beamLight);
-      const strength = beamStrength(share);
+      const shares = beamOverGround(this.ground, shown.foot, PLAYER_BEAM.across * ring, PLAYER_BEAM.tall * ring, beamLight);
+      const strength = beamStrength(shares);
       if (strength === shown.strength) continue;
       this.drawBeam(shown.beam, strength);
       shown.strength = strength;

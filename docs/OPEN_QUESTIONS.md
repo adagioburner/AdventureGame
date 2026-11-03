@@ -4925,7 +4925,7 @@ No rule, number, map or picture changed, and the rulebook needs no change.
 ---
 
 <a id="q329"></a>
-### Q329. ~~How do the beams of light show against the mountains?~~ — **answered 2026-11-03: each beam is brighter the more of it stands over mountain ground, counted by its light: as before with none of it over rock, twice as bright with all of it, evenly between; its colour, edge and the rest as they were (1-2)**
+### Q329. ~~How do the beams of light show against the mountains?~~ — **answered 2026-11-03: each beam is brighter for the ground behind it, each part counted by its light: twice as bright over mountains, 1.5 times over plains, as before over forest and off the map, and over mixed ground each for its share; its colour, edge and the rest as they were (1-3)**
 
 Andrei, 2026-11-03 at 16:54: *"the column of light above the player
 characters works great but now it is not visible enough with the mountains in
@@ -4946,19 +4946,27 @@ rock's own dark streaks.
 2. **Counted by.** Asked: A, its light, the bright lower part counting for
    more than the faint top (recommended); B, its area, every part the same.
    **Answered** at 17:34: A.
+3. **The plains too.** Tried in the preview, at 18:08: *"that looks great,
+   but some adjustments are needed. The beams aremost visible against the
+   forest background and the sky, and less visible against plains. We need to
+   increase visibility against plains as well, not as drastically as against
+   mountains, but still. Let us start with x1.5 against plains (vs x2.0
+   against mountains)"*. So the share over plains is measured as the share
+   over mountains is: a beam is 1.5 times as bright with all of it over
+   plains, twice with all of it over mountains, as before over forest and off
+   the map, and over mixed ground each terrain counts for its share.
 
-Built: `PLAYER_BEAM_ROCK`, `rockOf`, `beamOverRock` and `beamStrength` in
-`apps/web/src/render/sceneModel.ts`: the map's cells of mountain ground, how
-much of a beam stands over them, measured at 5 points across it and 24 up it,
-and how bright that makes it, in twentieths of the way from as before to
-twice. Each point counts for as much light as the beam gives there
-(`beamLight` in `apps/web/src/render/pixi/renderer.ts`: its brightness up its
-height, its core's added in the middle). `sizeBeams` measures every beam as it
-is drawn and sized and draws its light and core that much brighter; its edge
-is as it was. Only mountain cells count: plains, forest and what lies off the
-map do not. A beam is measured where its figure stands; while the figure walks
-its beam is out (Q326, 8), and it comes back measured where the figure
-arrived. No rule, number, map or rulebook word changed.
+Built: `PLAYER_BEAM_GROUND`, `groundOf`, `beamOverGround` and `beamStrength`
+in `apps/web/src/render/sceneModel.ts`: the map's cells of ground with their
+terrain, how much of a beam stands over each terrain, measured at 5 points
+across it and 24 up it, and how bright that makes it, in twentieths. Each
+point counts for as much light as the beam gives there (`beamLight` in
+`apps/web/src/render/pixi/renderer.ts`: its brightness up its height, its
+core's added in the middle). `sizeBeams` measures every beam as it is drawn
+and sized and draws its light and core that much brighter; its edge is as it
+was. A beam is measured where its figure stands; while the figure walks its
+beam is out (Q326, 8), and it comes back measured where the figure arrived.
+No rule, number, map or rulebook word changed.
 
 ---
 
