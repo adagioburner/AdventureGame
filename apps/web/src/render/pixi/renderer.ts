@@ -9,6 +9,8 @@ import type { MapRenderer, SceneLayer } from '../scene.ts';
 import {
   beamBrightness,
   beamFade,
+  beamOverGround,
+  beamStrength,
   buildCharacters,
   buildPathScene,
   buildStateScene,
@@ -22,6 +24,7 @@ import {
   PLAYER_RING_ACROSS,
   playerRingSize,
   playFrame,
+  groundOf,
   siteDot,
   SPACING_PX,
   TURN_BUBBLE,
@@ -30,6 +33,7 @@ import {
   type FigureCue,
   type MapScene,
   type PlayerRing,
+  type Ground,
   type StateScene,
   type Walker,
 } from '../sceneModel.ts';
@@ -68,7 +72,8 @@ const PLAYER_RING = { color: 0xffe878, own: 0xffffff, fillAlpha: 0.5, rim: 0.06,
  * drawn as a gradient of `stops` steps. Andrei, of the beam first shown at
  * 0.75 and 0.8 and then at weaker strengths: "I think 40% looks right"; of
  * the gold beams, "somewhat lost on the plains background", then "let us try
- * changing the color too white for all of them".
+ * changing the color too white for all of them". [Q329] It is brighter
+ * for the ground behind it, as `beamStrength` says.
  */
 const BEAM = { color: 0xffffff, alpha: 0.3, core: 1 / 3, coreAlpha: 0.32, stops: 40 } as const;
 
@@ -81,6 +86,16 @@ const BEAM = { color: 0xffffff, alpha: 0.3, core: 1 / 3, coreAlpha: 0.32, stops:
  * of the ways shown, he picked a soft dark edge.
  */
 const BEAM_EDGE = { color: 0x000000, width: 0.12, alpha: 0.22, strips: 6 } as const;
+
+/**
+ * [Q329] How much light a beam gives `across` its width (-0.5 to 0.5) and `up`
+ * its height (0 to 1), as first drawn: its brightness up its height, its core's
+ * added in the middle. The ground behind each part counts for as much as
+ * that part shows on it.
+ */
+function beamLight(across: number, up: number): number {
+  return beamBrightness(up) * (BEAM.alpha + (Math.abs(across) < BEAM.core / 2 ? BEAM.coreAlpha : 0));
+}
 
 /**
  * [Q326, 1] A beam's fill, `color` up to `alpha` see-through, as bright as
@@ -130,18 +145,27 @@ export class PixiMapRenderer implements MapRenderer {
   private planner: PlayerId | null = null;
   private found: PlayerId | null = null;
   private own: PlayerId | null = null;
-  /** [Q326] The beam over each figure drawn now, one ring's width across on screen to a unit, and whose it is. */
-  private beams: { beam: Graphics; player: PlayerId }[] = [];
+  /**
+   * [Q326] The beam over each figure drawn now, one ring's width across on
+   * screen to a unit, whose it is, where it rises from, and [Q329] how bright
+   * it is drawn for the ground behind it (0 until it is drawn).
+   */
+  private beams: { beam: Graphics; player: PlayerId; foot: Point; strength: number }[] = [];
+  /** [Q329] The ground, which a beam is brighter for as it stands over plains or mountains. */
+  private readonly ground: Ground;
   /** [Q326, 8] The player whose beam is out, from before their figure sets off until it arrives; `null` for none. */
   private unlit: PlayerId | null = null;
   /** [Q326, 8] Each beam going out or coming back: how bright it was as it turned, which way it goes, and since when (`null` until the next frame). */
   private readonly fades = new Map<PlayerId, { from: number; to: 0 | 1; start: number | null }>();
   /** [Q326, 8] How bright each beam not at its brightest is now, as a share of that. */
   private readonly light = new Map<PlayerId, number>();
-  /** [Q326, 9, 10] The beams' gradients: the beam, the same over every figure, its white core, and its edge's steps outwards. */
+  /**
+   * [Q326, 9, 10] The beams' gradients: the beam, the same over every figure,
+   * and its white core, at each strength drawn so far (Q329), and its edge's
+   * steps outwards.
+   */
   private readonly beamFills = {
-    beam: beamGradient(BEAM.color, BEAM.alpha),
-    core: beamGradient(0xffffff, BEAM.coreAlpha),
+    lights: new Map<number, { beam: FillGradient; core: FillGradient }>(),
     edge: Array.from({ length: BEAM_EDGE.strips }, (_, k) => beamGradient(BEAM_EDGE.color, BEAM_EDGE.alpha * (1 - k / BEAM_EDGE.strips))),
   };
   /** What the pulse animates: (Q305, 11) the current player's ring. */
@@ -174,6 +198,7 @@ export class PixiMapRenderer implements MapRenderer {
     private readonly scene: MapScene,
   ) {
     this.projection = scene.projection;
+    this.ground = groundOf(scene);
     const m = scene.projection.matrix;
     for (const ground of [this.terrainLayer, this.backdropGround, this.groundBelow, this.groundAbove]) {
       ground.setFromMatrix(new Matrix(m.a, m.b, m.c, m.d, m.tx, m.ty));
@@ -374,7 +399,11 @@ export class PixiMapRenderer implements MapRenderer {
 
   destroy(): void {
     this.root.destroy({ children: true });
-    for (const fill of Object.values(this.beamFills).flat()) fill.destroy();
+    for (const { beam, core } of this.beamFills.lights.values()) {
+      beam.destroy();
+      core.destroy();
+    }
+    for (const fill of this.beamFills.edge) fill.destroy();
   }
 
   // --- the ground -------------------------------------------------------------
@@ -540,13 +569,22 @@ export class PixiMapRenderer implements MapRenderer {
    * included (9), with a soft dark edge down both sides (10).
    */
   private raiseBeam(figure: Figure): void {
+    // Drawn as `sizeBeams` sizes it, as bright as the ground behind it then asks.
+    const beam = new Graphics();
+    beam.position.set(figure.foot.x, figure.foot.y);
+    // Figures side by side on a node differ in depth by thousandths.
+    beam.zIndex = figure.depth - 0.01;
+    beam.alpha = this.light.get(figure.player) ?? 1;
+    this.standing.addChild(beam);
+    this.beams.push({ beam, player: figure.player, foot: figure.foot, strength: 0 });
+  }
+
+  /** [Q326] A beam drawn into `beam`, its light `strength` times as bright as first drawn (Q329); its edge stays as it is. */
+  private drawBeam(beam: Graphics, strength: number): void {
     const { across, tall } = PLAYER_BEAM;
     const core = across * BEAM.core;
-    const beam = new Graphics()
-      .rect(-across / 2, -tall, across, tall)
-      .fill(this.beamFills.beam)
-      .rect(-core / 2, -tall, core, tall)
-      .fill(this.beamFills.core);
+    const lights = this.beamLights(strength);
+    beam.clear().rect(-across / 2, -tall, across, tall).fill(lights.beam).rect(-core / 2, -tall, core, tall).fill(lights.core);
     const strip = BEAM_EDGE.width / BEAM_EDGE.strips;
     this.beamFills.edge.forEach((fill, k) => {
       beam
@@ -555,12 +593,16 @@ export class PixiMapRenderer implements MapRenderer {
         .rect(across / 2 + k * strip, -tall, strip, tall)
         .fill(fill);
     });
-    beam.position.set(figure.foot.x, figure.foot.y);
-    // Figures side by side on a node differ in depth by thousandths.
-    beam.zIndex = figure.depth - 0.01;
-    beam.alpha = this.light.get(figure.player) ?? 1;
-    this.standing.addChild(beam);
-    this.beams.push({ beam, player: figure.player });
+  }
+
+  /** [Q329] The beam's and its core's gradients at `strength` times their first brightness, made the first time they are asked for. */
+  private beamLights(strength: number): { beam: FillGradient; core: FillGradient } {
+    let lights = this.beamFills.lights.get(strength);
+    if (lights === undefined) {
+      lights = { beam: beamGradient(BEAM.color, BEAM.alpha * strength), core: beamGradient(0xffffff, BEAM.coreAlpha * strength) };
+      this.beamFills.lights.set(strength, lights);
+    }
+    return lights;
   }
 
   /** [Q326, 8] Each beam going out or coming back as bright as it is `now`. */
@@ -576,11 +618,22 @@ export class PixiMapRenderer implements MapRenderer {
     for (const { beam, player } of this.beams) beam.alpha = this.light.get(player) ?? 1;
   }
 
-  /** [Q326, 5] The beams sized by the ring under their figure, which has a floor on the whole map (Q305, 8). */
+  /**
+   * [Q326, 5] The beams sized by the ring under their figure, which has a
+   * floor on the whole map (Q305, 8), and [Q329] each as bright as the
+   * ground then behind it asks.
+   */
   private sizeBeams(): void {
     const { spacing } = this.scene;
     const ring = (playerRingSize(PLAYER_RING_ACROSS * spacing, spacing, this.zoom, this.wholeZoom) * SPACING_PX) / spacing;
-    for (const { beam } of this.beams) beam.scale.set(ring);
+    for (const shown of this.beams) {
+      shown.beam.scale.set(ring);
+      const shares = beamOverGround(this.ground, shown.foot, PLAYER_BEAM.across * ring, PLAYER_BEAM.tall * ring, beamLight);
+      const strength = beamStrength(shares);
+      if (strength === shown.strength) continue;
+      this.drawBeam(shown.beam, strength);
+      shown.strength = strength;
+    }
   }
 
   /**
