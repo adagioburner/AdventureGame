@@ -4924,6 +4924,44 @@ No rule, number, map or picture changed, and the rulebook needs no change.
 
 ---
 
+<a id="q329"></a>
+### Q329. ~~How do the beams of light show against the mountains?~~ — **answered 2026-11-03: each beam is brighter the more of it stands over mountain ground, counted by its light: as before with none of it over rock, twice as bright with all of it, evenly between; its colour, edge and the rest as they were (1-2)**
+
+Andrei, 2026-11-03 at 16:54: *"the column of light above the player
+characters works great but now it is not visible enough with the mountains in
+the background."* Over the grey rock a white beam at its strength since
+[Q326](#q326) all but vanishes, and its dark edge (Q326, 10) is lost among the
+rock's own dark streaks.
+
+1. **How.** Shown over a figure standing on the mountains: A, twice as bright
+   while its figure stands on a mountain space (recommended); B, twice as
+   bright everywhere; C, gold while its figure stands on a mountain space; D,
+   pale blue everywhere. At 17:20: *"can we do "brighter on mountains", but
+   instead of conditioning it upon the hero standing on mountains, calculate
+   how much of the beam is shown against the mountain background"*. So each
+   beam, wherever its figure stands, measures how much of it stands over
+   mountain ground and is brighter evenly with that share: as before with
+   none of it over rock, twice as bright with all of it, which is 80% of the
+   beam first shown.
+2. **Counted by.** Asked: A, its light, the bright lower part counting for
+   more than the faint top (recommended); B, its area, every part the same.
+   **Answered** at 17:34: A.
+
+Built: `PLAYER_BEAM_ROCK`, `rockOf`, `beamOverRock` and `beamStrength` in
+`apps/web/src/render/sceneModel.ts`: the map's cells of mountain ground, how
+much of a beam stands over them, measured at 5 points across it and 24 up it,
+and how bright that makes it, in twentieths of the way from as before to
+twice. Each point counts for as much light as the beam gives there
+(`beamLight` in `apps/web/src/render/pixi/renderer.ts`: its brightness up its
+height, its core's added in the middle). `sizeBeams` measures every beam as it
+is drawn and sized and draws its light and core that much brighter; its edge
+is as it was. Only mountain cells count: plains, forest and what lies off the
+map do not. A beam is measured where its figure stands; while the figure walks
+its beam is out (Q326, 8), and it comes back measured where the figure
+arrived. No rule, number, map or rulebook word changed.
+
+---
+
 ## C. Decisions I made that are *implementation*, not design
 
 Listed so you can veto any that read as design to you.

@@ -12,7 +12,7 @@ import {
 import { spriteIndex } from '../art/atlas.ts';
 import { atlasOf, figureFrames, poiArt, wrapIndex, type ArtCatalog, type SpriteRef } from '../art/catalog.ts';
 import { placeBackdrop, placeDressing } from './dressing.ts';
-import { distance, nodeBounds, nodeSpacing, position, voronoiCells } from './geometry.ts';
+import { distance, insidePolygon, nodeBounds, nodeSpacing, position, voronoiCells } from './geometry.ts';
 import { undersideMatrix } from './island.ts';
 import { isometricProjection, type Affine, type Bounds, type Projection } from './isometric.ts';
 import { pictureBands, placePoiPictures, ROUGH_SHAPE, type Box, type Oval, type PoiPicture, type ShapeOf } from './placement.ts';
@@ -389,6 +389,72 @@ export function beamBrightness(up: number): number {
   if (up <= 0 || up >= 1) return 0;
   const t = Math.min(1, up / PLAYER_BEAM.fadeIn);
   return (1 - up) * t * t * (3 - 2 * t);
+}
+
+/**
+ * [Q329] A beam is brighter the more of it stands over mountain ground, where
+ * the grey rock hides a white beam: as bright as before with none of it over
+ * rock, `most` times as bright with all of it, and evenly between, in `steps`
+ * steps. How much is measured at `samples` points across and up the beam.
+ * Andrei: "now it is not visible enough with the mountains in the
+ * background"; of the ways shown, brighter on mountains, but "instead of
+ * conditioning it upon the hero standing on mountains, calculate how much of
+ * the beam is shown against the mountain background".
+ */
+export const PLAYER_BEAM_ROCK = { most: 2, steps: 20, samples: { across: 5, up: 24 } } as const;
+
+/** [Q329] The mountain ground the map draws, each patch with the box round it to rule most points out quickly. */
+export interface Rock {
+  readonly projection: Projection;
+  readonly patches: readonly { readonly polygon: readonly Point[]; readonly box: Bounds }[];
+}
+
+export function rockOf(scene: Pick<MapScene, 'projection' | 'terrain'>): Rock {
+  const patches = scene.terrain
+    .filter((patch) => patch.terrain === 'mountain' && patch.polygon.length >= 3)
+    .map(({ polygon }) => ({
+      polygon,
+      box: {
+        min: { x: Math.min(...polygon.map((p) => p.x)), y: Math.min(...polygon.map((p) => p.y)) },
+        max: { x: Math.max(...polygon.map((p) => p.x)), y: Math.max(...polygon.map((p) => p.y)) },
+      },
+    }));
+  return { projection: scene.projection, patches };
+}
+
+/**
+ * [Q329] How much of a beam `width` across and `height` tall, rising from
+ * `foot` (screen pixels at zoom 1, as a figure's foot is), stands over `rock`,
+ * from 0 (none) to 1 (all): each point measured counts as much as `weight`
+ * says for it, by how far `across` the beam it is (-0.5 to 0.5) and how far
+ * `up` (0 to 1).
+ */
+export function beamOverRock(rock: Rock, foot: Point, width: number, height: number, weight: (across: number, up: number) => number): number {
+  const { across: columns, up: rows } = PLAYER_BEAM_ROCK.samples;
+  let over = 0;
+  let all = 0;
+  for (let i = 0; i < columns; i++) {
+    const across = (i + 0.5) / columns - 0.5;
+    for (let j = 0; j < rows; j++) {
+      const up = (j + 0.5) / rows;
+      const counts = weight(across, up);
+      if (counts <= 0) continue;
+      all += counts;
+      const p = rock.projection.toWorld({ x: foot.x + across * width, y: foot.y - up * height });
+      const onRock = rock.patches.some(
+        ({ polygon, box }) => p.x >= box.min.x && p.x <= box.max.x && p.y >= box.min.y && p.y <= box.max.y && insidePolygon(p, polygon),
+      );
+      if (onRock) over += counts;
+    }
+  }
+  return all === 0 ? 0 : over / all;
+}
+
+/** [Q329] How bright a beam with `share` of it over rock is, as a multiple of a beam with none: in `PLAYER_BEAM_ROCK.steps` steps from 1 to `most`. */
+export function beamStrength(share: number): number {
+  const { most, steps } = PLAYER_BEAM_ROCK;
+  const stepped = Math.round(Math.min(1, Math.max(0, share)) * steps) / steps;
+  return 1 + (most - 1) * stepped;
 }
 
 /**

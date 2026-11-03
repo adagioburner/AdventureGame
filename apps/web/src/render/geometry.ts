@@ -118,6 +118,17 @@ export function polygonArea(polygon: readonly Point[]): number {
   return Math.abs(twice) / 2;
 }
 
+/** Whether `p` lies inside `polygon` (even–odd rule, by a ray to the right). */
+export function insidePolygon(p: Point, polygon: readonly Point[]): boolean {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const a = polygon[i] as Point;
+    const b = polygon[j] as Point;
+    if (a.y > p.y !== b.y > p.y && p.x < a.x + ((p.y - a.y) * (b.x - a.x)) / (b.y - a.y)) inside = !inside;
+  }
+  return inside;
+}
+
 /** Whether segment `a`–`b` touches the axis-aligned box (Liang–Barsky clipping). */
 export function segmentTouchesBox(a: Point, b: Point, minX: number, minY: number, maxX: number, maxY: number): boolean {
   const dx = b.x - a.x;
