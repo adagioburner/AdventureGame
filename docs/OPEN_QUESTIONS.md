@@ -4971,7 +4971,7 @@ No rule, number, map or rulebook word changed.
 ---
 
 <a id="q330"></a>
-### Q330. Should a computer spend its stamina on a trip it would finish just as soon without it? — **1-3 answered 2026-11-04: on a trip it will not finish this turn it stops where walking on would not arrive any sooner, spending the least stamina this turn and of those the farthest; its real moves and its walk along its tree's edges, not the games it imagines; its route picked as before; its route drawn to its site with the steps left for later grey, and the turn log saying it stopped to save stamina. 4: 20 games against the computer before, 8 wins to 12; 50 more running**
+### Q330. ~~Should a computer spend its stamina on a trip it would finish just as soon without it?~~ — **answered 2026-11-04: no; on a trip it will not finish this turn it stops where walking on would not arrive any sooner, spending the least stamina this turn and of those the farthest; its real moves and its walk along its tree's edges, not the games it imagines; its route picked as before; its route drawn to its site with the steps left for later grey, and the turn log saying it stopped to save stamina; 70 games against the computer before it, 33 wins to 34 and 3 shared, within luck (1-4)**
 
 Andrei, 2026-11-04 at 14:49: *"Computer players seem to spend all their
 stamina as soon as they attempt to go to a site that's more than one turn
@@ -5017,8 +5017,13 @@ Andrei, 16:55: *"all as recommended"*.
    version of the rule that weighed every place even on a walk that arrives
    this turn and so imagined about a tenth fewer games, came out 7 to 13 and
    +0.35 ± 1.9 gold. Its real moves stopped to save stamina 4 times in each
-   run's 20 games. Put to him with 50 more games (saved-10 to saved-34)
-   running.
+   run's 20 games. Put to him at 17:44 with 50 more games running; at 17:46
+   he chose to wait for them. Seeds saved-10 to saved-34, the same way: 25
+   wins to 22 for the new one, 3 shared, +0.12 ± 1.1 gold a game; each won
+   both games on 5 and 4 maps; it stopped to save stamina 19 times. All 70 on
+   the code as built: 33 wins to 34, 3 shared, −0.69 ± 0.92 gold a game for
+   the new one, within luck, and 15,271 games imagined per move against
+   14,409.
 
 Built: `stepsWorthWalking` in `packages/core/src/rules/bestRoute.ts`, which
 weighs each place along this turn's walk by the turns the rest takes as End
