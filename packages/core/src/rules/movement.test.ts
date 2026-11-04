@@ -191,6 +191,27 @@ describe('previewPath', () => {
   });
 });
 
+describe('a stop along the path (Q330)', () => {
+  const path = [n(1), n(2), n(3), n(4), n(5)];
+
+  it('walks no further than the stop, the rest left as the remainder', () => {
+    const resolution = resolveMovement(worked.graph, n(0), path, workedAllowance, 14, config, 2);
+    expect(resolution).toMatchObject({ to: n(2), walked: [n(1), n(2)], remainder: [n(3), n(4), n(5)], staminaSpent: 0 });
+  });
+
+  it('draws the steps after the stop grey, the destination unreachable this turn', () => {
+    const preview = previewPath(worked.graph, n(0), path, workedAllowance, 14, config, 2);
+    expect(preview.steps.map((step) => step.color)).toEqual(['free', 'free', 'unreachable', 'unreachable', 'unreachable']);
+    expect(preview).toMatchObject({ destinationReachable: false, reachableStepCount: 2, totalStaminaCost: 0 });
+  });
+
+  it('changes nothing when the stop is at the path’s end', () => {
+    expect(resolveMovement(worked.graph, n(0), path, workedAllowance, 14, config, path.length)).toEqual(
+      resolveMovement(worked.graph, n(0), path, workedAllowance, 14, config),
+    );
+  });
+});
+
 describe('countWalk (Q210, stage 3)', () => {
   it('pays for the steps resolveMovement walks, from any step of the path on', () => {
     // The games the computer imagines count their walks with it, so it must

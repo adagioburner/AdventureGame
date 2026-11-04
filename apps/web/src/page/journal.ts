@@ -167,11 +167,26 @@ function describeWalk(
     for (const step of preview.steps) {
       if (step.color === 'free') left[terrainOf(map, step.node)]--;
     }
-    details.push(stoppedLine(resolution.remainder, turn, map, left, turn.statsBefore.stamina - preview.totalStaminaCost));
+    // [Q330] The computer stopped where walking on would not arrive any sooner.
+    const chose = turn.action.kind === 'move' && turn.action.stopAfter === resolution.walked.length;
+    details.push(
+      chose
+        ? savedLine(resolution.remainder)
+        : stoppedLine(resolution.remainder, turn, map, left, turn.statsBefore.stamina - preview.totalStaminaCost),
+    );
   }
 
   const walked = resolution.walked.length;
   return { headline: complete ? `Walked ${walked} step${walked === 1 ? '' : 's'}` : `Walked ${walked} of ${planned} steps`, details };
+}
+
+/**
+ * [Q330] Why a computer's walk ends early by its own choice: walking on, it
+ * would arrive no sooner, so it keeps its stamina.
+ */
+function savedLine(remainder: readonly NodeId[]): string {
+  const saved = remainder.length === 1 ? 'That last step is' : `Those ${remainder.length} steps are`;
+  return `Stopped to save stamina: going on would not arrive any sooner. ${saved} saved for next turn.`;
 }
 
 /** The one reason a walk ends early (§7): the next step is not free and costs more stamina than is left. */

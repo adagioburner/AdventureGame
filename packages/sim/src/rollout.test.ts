@@ -32,6 +32,7 @@ import {
   restWhenStuck,
   rolloutCursor,
   runRollout,
+  stopWhenNoSooner,
   turnCapTermination,
   turnTowards,
   unclaimedPoiNodes,
@@ -161,6 +162,54 @@ describe('turnTowards', () => {
     expect(turnTowards(stuckGame(), n(5), restRule)).toEqual({ kind: 'rest', player: player('one') });
     const able = withStats(stuckGame(), player('one'), { stamina: 1 });
     expect(turnTowards(able, n(5), restRule).kind).toBe('move');
+  });
+});
+
+describe('turnTowards with a stop (Q330)', () => {
+  // Plains 2 a turn and 2 stamina, five steps to the gold on 5: End turn pays
+  // for steps 3 and 4 and arrives next turn, as two free steps now do.
+  const twoTurns = () => withStats(fixtureGame(line, 0), player('one'), { plains_move: 2, stamina: 2 });
+
+  it('stops where walking on would not arrive any sooner', () => {
+    expect(turnTowards(twoTurns(), n(5), restRule, cheapestRoute, stopWhenNoSooner)).toEqual({
+      kind: 'move',
+      player: player('one'),
+      path: [n(1), n(2), n(3), n(4), n(5)],
+      waypoint: null,
+      stopAfter: 2,
+    });
+  });
+
+  it('walks as before when it arrives this turn', () => {
+    const state = withStats(twoTurns(), player('one'), { stamina: 3 });
+    expect(turnTowards(state, n(5), restRule, cheapestRoute, stopWhenNoSooner)).toEqual(turnTowards(state, n(5), restRule, cheapestRoute));
+  });
+
+  it('arrives on the same turn as the walk without it, with the stamina kept', () => {
+    // A map with nothing on the way, so the stop claims nothing.
+    const bare = fixtureMap({
+      terrains: ['plains', 'plains', 'plains', 'plains', 'plains', 'plains', 'plains'],
+      edges: [
+        [0, 1],
+        [1, 2],
+        [2, 3],
+        [3, 4],
+        [4, 5],
+        [5, 6],
+      ],
+      pois: [
+        { node: 5, kind: 'gold', units: 1, guard: null },
+        { node: 6, kind: 'gold', units: 3, guard: null },
+      ],
+    });
+    const state = withStats(withStats(fixtureGame(bare, 0), player('two'), { stamina: 0 }), player('one'), { plains_move: 2, stamina: 2 });
+    const kept = macroAdvanceToTarget(rolloutCursor(state, player('one')), n(5), options(), cheapestRoute, stopWhenNoSooner);
+    const spent = macroAdvanceToTarget(rolloutCursor(state, player('one')), n(5), options(), cheapestRoute);
+    expect(kept.outcome).toBe('arrived');
+    expect(spent.outcome).toBe('arrived');
+    expect(kept.cursor.state.turn.number).toBe(spent.cursor.state.turn.number);
+    expect(kept.cursor.state.players[0]?.stats.stamina).toBe(1);
+    expect(spent.cursor.state.players[0]?.stats.stamina).toBe(0);
   });
 });
 

@@ -6,8 +6,17 @@ import { neighbours, type MapGraph } from '../graph.ts';
 import { initialStats, type MovementAllowance, type PlayerStats } from '../player.ts';
 import { createRng } from '../rng.ts';
 import { frontPath, routeTable, shortestPath } from '../path.ts';
-import { refreshAllowance } from './movement.ts';
-import { bestRoute, bestRouteSteps, bestRouteVia, effectiveDistance, turnStops, walkTurnByTurn, walkedDistance } from './bestRoute.ts';
+import { countWalk, refreshAllowance } from './movement.ts';
+import {
+  bestRoute,
+  bestRouteSteps,
+  bestRouteVia,
+  effectiveDistance,
+  stepsWorthWalking,
+  turnStops,
+  walkTurnByTurn,
+  walkedDistance,
+} from './bestRoute.ts';
 
 const config = DEFAULT_GAME_CONFIG;
 
@@ -145,6 +154,102 @@ describe('walkTurnByTurn (Q308)', () => {
   it('is a turn and nothing spent for the empty route', () => {
     const fresh = { plains: 1, forest: 1, mountain: 1 };
     expect(walkedDistance(walkTurnByTurn(detour, [], fresh, 3, fresh, config), config)).toBe(5);
+  });
+});
+
+describe('walkTurnByTurn from a step along the route (Q330)', () => {
+  it('counts the walk from that step as the walk of the rest of the route', () => {
+    const grid = randomGrid('walk-from', 6);
+    const routes = routeTable(grid, config);
+    const rng = createRng('walk-from-routes');
+    for (let trip = 0; trip < 200; trip++) {
+      const path = routes.path(n(0), n(rng.nextInt(36))) ?? [];
+      const start = rng.nextInt(path.length + 1);
+      const free = { plains: rng.nextInt(3), forest: rng.nextInt(3), mountain: rng.nextInt(3) };
+      const stamina = rng.nextInt(12);
+      expect(walkTurnByTurn(grid, path, free, stamina, free, config, start)).toEqual(
+        walkTurnByTurn(grid, path.slice(start), free, stamina, free, config),
+      );
+    }
+  });
+});
+
+/** A straight line of `terrains` from node 0, and the route along it to its far end. */
+function line(terrains: readonly Terrain[]): { readonly graph: MapGraph; readonly path: readonly NodeId[] } {
+  const graph = graphOf(['plains', ...terrains], terrains.map((_terrain, at) => [at, at + 1] as const));
+  return { graph, path: terrains.map((_terrain, at) => n(at + 1)) };
+}
+
+describe('stepsWorthWalking (Q330)', () => {
+  const worth = (terrains: readonly Terrain[], stats: PlayerStats): number => {
+    const { graph, path } = line(terrains);
+    return stepsWorthWalking(graph, path, refreshAllowance(stats), stats.stamina, refreshAllowance(stats), config);
+  };
+  const plains = (count: number): Terrain[] => Array<Terrain>(count).fill('plains');
+
+  it('keeps the stamina when the free steps arrive on the same turn anyway', () => {
+    // 15 plains at 3 a turn and 10 stamina: End turn walks 13, spending all
+    // 10, and arrives next turn; 3 free steps now and 12 next turn arrive then too.
+    const stats = { ...speeds(3, 0, 0), stamina: 10 };
+    const { graph, path } = line(plains(15));
+    expect(countWalk(graph, path, 0, refreshAllowance(stats), 10, config)).toEqual({ steps: 13, staminaSpent: 10 });
+    expect(walkTurnByTurn(graph, path, refreshAllowance(stats), 10, refreshAllowance(stats), config).turns).toBe(2);
+    expect(worth(plains(15), stats)).toBe(3);
+  });
+
+  it('walks the whole route when it arrives this turn', () => {
+    expect(worth(plains(8), { ...speeds(3, 0, 0), stamina: 10 })).toBe(8);
+  });
+
+  it('spends the stamina when keeping it would arrive a turn later', () => {
+    // Plains 2 and forest 2 a turn, 2 stamina: paying for plains steps 3 and 4
+    // now puts the forest's free steps to use this turn as well as the next.
+    const stats = { ...speeds(2, 2, 0), stamina: 2 };
+    expect(worth([...plains(4), 'forest', 'forest', 'forest', 'forest'], stats)).toBe(6);
+  });
+
+  it('stops at the farthest of the places that arrive as soon for as little stamina', () => {
+    // Plains 2 and forest 1 a turn, 2 stamina: End turn pays 1 for plains step
+    // 3, and arrives on turn 4. One free step or two arrive then too and keep
+    // all 2: it walks the two.
+    expect(worth([...plains(3), 'forest', 'forest', 'forest', 'forest', 'plains'], { ...speeds(2, 1, 0), stamina: 2 })).toBe(2);
+  });
+
+  it('arrives sooner than End turn when walking on would leave it stuck before a mountain', () => {
+    // Plains 2 a turn and 3 stamina: End turn pays for plains 3 and 4, then
+    // cannot pay the mountain, rests, and arrives on turn 3. Stopping after the
+    // free steps keeps the 3 the mountain needs next turn.
+    const stats = { ...speeds(2, 0, 0), stamina: 3 };
+    const terrains: Terrain[] = [...plains(4), 'mountain'];
+    const { graph, path } = line(terrains);
+    expect(walkTurnByTurn(graph, path, refreshAllowance(stats), 3, refreshAllowance(stats), config).turns).toBe(3);
+    expect(worth(terrains, stats)).toBe(2);
+  });
+
+  it('is no steps when the turn cannot start the walk', () => {
+    expect(worth(['mountain', 'plains'], { ...speeds(0, 0, 0), stamina: 2 })).toBe(0);
+  });
+
+  it('never arrives later than End turn, and never spends more this turn, on random routes', () => {
+    const grid = randomGrid('worth', 7);
+    const routes = routeTable(grid, config);
+    const rng = createRng('worth-routes');
+    for (let trip = 0; trip < 300; trip++) {
+      const path = routes.path(n(rng.nextInt(49)), n(rng.nextInt(49)));
+      if (path === null || path.length === 0) continue;
+      const fresh = { plains: rng.nextInt(4), forest: rng.nextInt(3), mountain: rng.nextInt(2) };
+      const stamina = rng.nextInt(15);
+      const greedy = countWalk(grid, path, 0, fresh, stamina, config);
+      const steps = stepsWorthWalking(grid, path, fresh, stamina, fresh, config);
+      expect(steps).toBeLessThanOrEqual(greedy.steps);
+      if (greedy.steps > 0) expect(steps).toBeGreaterThanOrEqual(1);
+      if (greedy.steps === path.length) expect(steps).toBe(path.length);
+      const now = countWalk(grid, path.slice(0, steps), 0, fresh, stamina, config);
+      expect(now.staminaSpent).toBeLessThanOrEqual(greedy.staminaSpent);
+      if (steps === 0 || steps === path.length) continue;
+      const turns = 1 + walkTurnByTurn(grid, path, fresh, stamina - now.staminaSpent, fresh, config, steps).turns;
+      expect(turns).toBeLessThanOrEqual(walkTurnByTurn(grid, path, fresh, stamina, fresh, config).turns);
+    }
   });
 });
 

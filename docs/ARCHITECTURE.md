@@ -432,6 +432,18 @@ it. `RolloutCursor.walks` carries each seat's route and how far along it the
 seat is. Counted along the cheapest route, an imagined game is exactly the one
 `applyAction` plays (a test holds them equal).
 
+**On a trip it will not finish this turn, it stops where walking on would not
+arrive any sooner** ([Q330](./OPEN_QUESTIONS.md#q330)). `stepsWorthWalking`
+(`packages/core/src/rules/bestRoute.ts`) weighs every place along this turn's
+walk by the turns the rest takes as End turn walks it (`walkTurnByTurn` from a
+step along the route), then by the stamina spent this turn, then the farthest.
+`stopWhenNoSooner` (`packages/sim/src/rollout.ts`) is that as a `WalkStop`,
+which `turnTowards` takes and turns into `MoveAction.stopAfter`; the engine
+walks no further than it (`resolveMovement` and `previewPath` take the stop
+too, so the steps after it are grey). `MctsOptions.walkStop` gives it to the
+real move (`firstTurnOf`) and the walk along a tree edge
+(`macroAdvanceToTarget`); the imagined games count their walks as before.
+
 **Routes are searched once per map in a game** (Andrei, 2026-09-28):
 `routeTable` in `packages/core/src/path.ts` runs the whole Dijkstra from every
 node the first time a map is asked for, and keeps them. The enumerator, the

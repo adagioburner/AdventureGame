@@ -126,7 +126,7 @@ function applyTurnAction(state: GameState, action: TurnAction, dice: DiceSource)
 
   const next =
     action.kind === 'move'
-      ? applyMove(state, player, action.path, action.waypoint, events)
+      ? applyMove(state, player, action.path, action.waypoint, events, action.stopAfter)
       : applyRest(state, player, action, events);
   return { state: finishTurn(next, player.id, action.kind === 'move', dice, events), events };
 }
@@ -151,7 +151,12 @@ function applyMove(
   path: readonly NodeId[],
   plannedWaypoint: NodeId | null | undefined,
   events: GameEvent[],
+  stopAfter: number | undefined,
 ): GameState {
+  // [Q330] The computer's stop, somewhere along the path.
+  if (stopAfter !== undefined && !(Number.isInteger(stopAfter) && stopAfter >= 1 && stopAfter <= path.length)) {
+    throw new RuleViolationError(`a move of ${path.length} steps cannot stop after ${stopAfter}`);
+  }
   const resolution = resolveMovement(
     state.map.graph,
     player.position,
@@ -159,6 +164,7 @@ function applyMove(
     state.turn.allowance,
     player.stats.stamina,
     state.map.ruleset.config,
+    stopAfter,
   );
 
   // [SOURCE §4] "An unfinished path is saved for the next turn and can still be

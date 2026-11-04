@@ -9,6 +9,7 @@ import {
   previewPath,
   refreshAllowance,
   routeTable,
+  stepsWorthWalking,
   unclaimedGoldUnits,
   type DiceSource,
   type GameState,
@@ -338,6 +339,31 @@ export const walkedRouteSteps: RouteStepsFinder = (state, player, target) => {
 };
 
 /**
+ * [Q330] How many steps of `route` the active player walks this turn, of
+ * those the turn pays for; without one, all of them, as End turn walks. The
+ * game's computer stops where walking on would not arrive any sooner
+ * (`stopWhenNoSooner`), on its real moves and along its tree's edges; the
+ * games it imagines walk as far as the turn pays for.
+ */
+export type WalkStop = (state: GameState, player: PlayerState, route: readonly NodeId[]) => number;
+
+/**
+ * [Q330] Andrei, 2026-11-04: "if they reach the site in two turns anyway, why
+ * spend the stamina?" The place along this turn's walk from which the player
+ * still arrives soonest, spending the least stamina this turn, and of those
+ * the farthest (`stepsWorthWalking`).
+ */
+export const stopWhenNoSooner: WalkStop = (state, player, route) =>
+  stepsWorthWalking(
+    state.map.graph,
+    route,
+    state.turn.allowance,
+    player.stats.stamina,
+    refreshAllowance(player.stats),
+    state.map.ruleset.config,
+  );
+
+/**
  * The active player's turn toward `target`: the whole route `routeOf` picks,
  * which §7 walks as far as this turn affords. Standing on the target already
  * is the empty path, which §8 makes another roll at its guard. Otherwise
@@ -347,8 +373,17 @@ export const walkedRouteSteps: RouteStepsFinder = (state, player, target) => {
  * best route for its speeds (Q210, stage 1: `bestRouteForSpeeds`), and so
  * does its own walk along a tree edge (stage 2). The games it imagines count
  * their walks instead (stage 3, `playRolloutTurn`).
+ *
+ * [Q330] With `stop`, a walk that would go further than `stop` says stops
+ * there (`MoveAction.stopAfter`), the rest of the route saved for next turn.
  */
-export function turnTowards(state: GameState, target: NodeId, restRule: RestRule, routeOf: RouteChoice = cheapestRoute): TurnAction {
+export function turnTowards(
+  state: GameState,
+  target: NodeId,
+  restRule: RestRule,
+  routeOf: RouteChoice = cheapestRoute,
+  stop?: WalkStop,
+): TurnAction {
   const player = activePlayer(state);
   const config = state.map.ruleset.config;
   const route = routeOf(state, player, target);
@@ -357,6 +392,9 @@ export function turnTowards(state: GameState, target: NodeId, restRule: RestRule
 
   const preview = previewPath(state.map.graph, player.position, route, state.turn.allowance, player.stats.stamina, config);
   if (restRule.restsInstead(state, player, preview.reachableStepCount)) return { kind: 'rest', player: player.id };
+  // A walk that arrives this turn needs no stop.
+  const steps = stop === undefined || preview.destinationReachable ? preview.reachableStepCount : stop(state, player, route);
+  if (steps >= 1 && steps < preview.reachableStepCount) return { kind: 'move', player: player.id, path: route, waypoint: null, stopAfter: steps };
   return { kind: 'move', player: player.id, path: route, waypoint: null };
 }
 
@@ -456,14 +494,14 @@ function restedTurn(cursor: RolloutCursor, index: number, next: GameState): Roll
  * along the cheapest route, to hold `playRolloutTurn`'s counted walks to
  * what `applyAction` plays.
  */
-export function playWalkedTurn(cursor: RolloutCursor, options: RolloutOptions, routeOf: RouteChoice): RolloutCursor {
+export function playWalkedTurn(cursor: RolloutCursor, options: RolloutOptions, routeOf: RouteChoice, stop?: WalkStop): RolloutCursor {
   const state = cursor.state;
   const player = activePlayer(state);
   const index = player.seat - 1;
   const target = committedTarget(cursor, player, options);
   if (target === null) return restedTurn(cursor, index, applyAction(state, { kind: 'rest', player: player.id }, options.dice).state);
 
-  const action = turnTowards(state, target, options.restRule, routeOf);
+  const action = turnTowards(state, target, options.restRule, routeOf, stop);
   const next = applyAction(state, action, options.dice).state;
   const arrived = action.kind === 'move' && next.players[index]?.position === target;
   const walks = cursor.walks.map((walk, at) => (at === index ? null : walk));
@@ -570,13 +608,15 @@ function afterClaims(
  * The mover walks the route `moverRoute` picks, the cheapest when absent,
  * turn by turn through `applyAction` (Q210, 820 A: the search's own walk is
  * the best route for its speeds); the other seats play the rollout's turns,
- * counted along theirs since stage 3.
+ * counted along theirs since stage 3. [Q330] With `moverStop`, the mover
+ * stops each turn where it says (the game's computer: `stopWhenNoSooner`).
  */
 export function macroAdvanceToTarget(
   cursor: RolloutCursor,
   target: NodeId,
   options: RolloutOptions,
   moverRoute: RouteChoice = cheapestRoute,
+  moverStop?: WalkStop,
 ): { readonly cursor: RolloutCursor; readonly outcome: MacroAdvanceOutcome } {
   const mover = activePlayer(cursor.state);
   const index = mover.seat - 1;
@@ -588,7 +628,7 @@ export function macroAdvanceToTarget(
   for (let turns = 0; ; turns++) {
     if (options.termination.isTerminal(current, turns)) return { cursor: current, outcome: 'terminal' };
     const moving = activePlayer(current.state).id === mover.id;
-    current = moving ? playWalkedTurn(current, options, moverRoute) : playRolloutTurn(current, options);
+    current = moving ? playWalkedTurn(current, options, moverRoute, moverStop) : playRolloutTurn(current, options);
     if (current.targets[index] !== null) continue;
     const claimedBy = poiRuntimeAt(current.state, target)?.claimedBy ?? null;
     if (claimedBy !== null && claimedBy !== mover.id) return { cursor: current, outcome: 'target_claimed_by_other' };

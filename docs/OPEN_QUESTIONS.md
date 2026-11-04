@@ -4970,6 +4970,76 @@ No rule, number, map or rulebook word changed.
 
 ---
 
+<a id="q330"></a>
+### Q330. Should a computer spend its stamina on a trip it would finish just as soon without it? — **1-3 answered 2026-11-04: on a trip it will not finish this turn it stops where walking on would not arrive any sooner, spending the least stamina this turn and of those the farthest; its real moves and its walk along its tree's edges, not the games it imagines; its route picked as before; its route drawn to its site with the steps left for later grey, and the turn log saying it stopped to save stamina. 4: 20 games against the computer before, 8 wins to 12; 50 more running**
+
+Andrei, 2026-11-04 at 14:49: *"Computer players seem to spend all their
+stamina as soon as they attempt to go to a site that's more than one turn
+away. I guess they can be more frugal. For example if they reach the site in
+two turns anyway, why spend the stamina?"* A computer's move was its whole
+route, which §7 walks as far as the turn pays for, so on any trip longer than
+a turn it spent whatever stamina the walk could use. In 14 computer-only games
+(2 players, 0.2 to 0.3 s a move), 9 of the 34 trips longer than a turn spent
+stamina, and on 8 of them it could have kept all of it and still arrived on
+the same turn: 40 of the 44 stamina spent. On one 25-step trip it spent all 9
+of its stamina walking 17 steps, where 8 free steps arrived on the same next
+turn.
+
+The rule put to him: of the places along this turn's walk, it stops at the
+one from which it still arrives soonest, the later turns counted as End turn
+walks them (Q308); among those, at the one that spends the least stamina this
+turn, and then the farthest. It never arrives later than today. Arriving is
+ending a turn on the site; fights use no stamina, so guards do not come into
+it. A trip it finishes this turn, and a person's End turn, stay as they were.
+Andrei, 16:55: *"all as recommended"*.
+
+1. **Where it applies.** A, its real moves and its own walk along the choices
+   its search weighs, which share one function, so the search judges a choice
+   by the walk it would really make; the games it imagines as they were, since
+   they run tens of thousands of times a move (recommended); B, those and the
+   games it imagines, as Q308 did for routes; C, its real moves only.
+   **Answered**: A.
+2. **Which route.** A, picked as End turn walks it (Q308), as before, only
+   stopping earlier along it (recommended); B, scored by the new walk, so it
+   might pick a route that saves more. **Answered**: A.
+3. **What people see when it stops early.** A, its route still drawn to its
+   site while it walks, the part left for later grey like a part it cannot pay
+   for; the turn log still says "Heading for …", and the usual stopped line
+   becomes "Stopped to save stamina: going on would not arrive any sooner.
+   Those 9 steps are saved for next turn." (recommended); B, its move cut off
+   where it stops, the drawn route and the log going only that far.
+   **Answered**: A.
+4. **A check first.** A, before it goes in, 20 games against today's computer
+   on ten maps, seats swapped, 3 s a move (recommended); B, none.
+   **Answered**: A. Seeds saved-0 to saved-9: 8 wins to 12 for the new one,
+   none shared, −2.7 ± 1.5 gold a game, within luck (wins 0.50); 16,166 games
+   imagined per move against 14,854. A first run of the same games, on a
+   version of the rule that weighed every place even on a walk that arrives
+   this turn and so imagined about a tenth fewer games, came out 7 to 13 and
+   +0.35 ± 1.9 gold. Its real moves stopped to save stamina 4 times in each
+   run's 20 games. Put to him with 50 more games (saved-10 to saved-34)
+   running.
+
+Built: `stepsWorthWalking` in `packages/core/src/rules/bestRoute.ts`, which
+weighs each place along this turn's walk by the turns the rest takes as End
+turn walks it (`walkTurnByTurn`, which now takes the step to start from),
+then by the stamina spent this turn, then the farthest; a walk that arrives
+this turn, or cannot start, is as End turn walks it. `MoveAction.stopAfter`
+in `packages/core/src/action.ts`: the engine walks no further than it
+(`resolveMovement`), saves the rest as a walk cut short, and refuses a stop
+that is not a step along the path; `previewPath` draws the steps after it
+grey. `WalkStop` and `stopWhenNoSooner` in `packages/sim/src/rollout.ts`,
+which `turnTowards`, `playWalkedTurn` and `macroAdvanceToTarget` take, and
+`MctsOptions.walkStop`, which `computerSearchOptions` sets for the real move
+(`firstTurnOf`) and the walk along a tree edge. The page draws a computer's
+route with its stop (`routeOf` in `apps/web/src/page/GameScreen.tsx`), and the
+turn log's `savedLine` in `apps/web/src/page/journal.ts` says why it stopped;
+the balancing harness's transcript says "chose to stop, N stamina kept". No
+rule for people, number, map or picture changed, and the rulebook needs no
+change: it says computer players follow the same rules.
+
+---
+
 ## C. Decisions I made that are *implementation*, not design
 
 Listed so you can veto any that read as design to you.

@@ -152,6 +152,30 @@ describe('applyAction — movement', () => {
   });
 });
 
+describe('applyAction — a computer stopping to keep its stamina (Q330)', () => {
+  it('walks no further than its stop, keeps the stamina and saves the rest of the route', () => {
+    const start = withStats(fixtureGame(map, 0), one, { stamina: 10, plains_move: 2 });
+    const { state, events } = applyAction(start, { kind: 'move', player: one, path: [n(1), n(2), n(3), n(4)], stopAfter: 2 }, noDice);
+    expect(state.players[0]?.position).toBe(n(2));
+    expect(state.players[0]?.stats.stamina).toBe(10);
+    expect(state.players[0]?.plannedPath).toEqual({ path: [n(3), n(4)], waypoint: null });
+    expect(events[0]).toMatchObject({ type: 'moved', resolution: { walked: [n(1), n(2)], remainder: [n(3), n(4)], staminaSpent: 0 } });
+  });
+
+  it('still stops where the turn cannot pay, before its stop', () => {
+    const start = withStats(fixtureGame(map, 0), one, { stamina: 0, plains_move: 1 });
+    const { state } = applyAction(start, { kind: 'move', player: one, path: [n(1), n(2), n(3)], stopAfter: 2 }, noDice);
+    expect(state.players[0]?.position).toBe(n(1));
+  });
+
+  it('refuses a stop that is not a step along the path', () => {
+    const start = withStats(fixtureGame(map, 0), one, { stamina: 10 });
+    for (const stopAfter of [0, 3, 1.5, -1]) {
+      expect(() => applyAction(start, { kind: 'move', player: one, path: [n(1), n(2)], stopAfter }, noDice)).toThrow(RuleViolationError);
+    }
+  });
+});
+
 describe('applyAction — rest', () => {
   it('grants REST_STAMINA_GAIN and moves nothing', () => {
     const start = fixtureGame(map, 0);

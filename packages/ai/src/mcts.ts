@@ -198,7 +198,7 @@ function realise(cursor: RolloutCursor, branch: MctsBranch, options: MctsOptions
     const rested = applyAction(cursor.state, { kind: 'rest', player: options.subject }, options.dice).state;
     after = { ...cursor, state: rested };
   } else {
-    after = macroAdvanceToTarget(cursor, branch.target.node, rules, options.edgeRoute).cursor;
+    after = macroAdvanceToTarget(cursor, branch.target.node, rules, options.edgeRoute, options.walkStop).cursor;
   }
   return playUntilTurnOf(after, options.subject, rules);
 }
@@ -209,12 +209,14 @@ function realise(cursor: RolloutCursor, branch: MctsBranch, options: MctsOptions
  * [Q210] The real move walks the best route for the subject's speeds, after
  * anything it bought this turn. The search that chose the target counts the
  * best route too (stage 2), and the games it imagines walk it (stage 3).
+ * [Q330] It stops where `options.walkStop` says, as its walk along a tree
+ * edge does.
  */
 export function firstTurnOf(state: GameState, branch: MctsBranch | null, options: MctsOptions): TurnAction {
   if (branch === null) throw new RangeError('the search found no branch to take');
   if (branch.kind === 'buy') throw new RangeError('a purchase is not a move: plan the turn with planTurn');
   if (branch.kind === 'rest') return { kind: 'rest', player: options.subject };
-  return turnTowards(state, branch.target.node, options.restRule, bestRouteForSpeeds);
+  return turnTowards(state, branch.target.node, options.restRule, bestRouteForSpeeds, options.walkStop);
 }
 
 /** What the subject does this turn: its purchases first, as one (`null` for none), then the move. */

@@ -152,7 +152,8 @@ function pickBestRoute(routes: RouteTable, from: NodeId, to: NodeId, speeds: Per
  * the player's full `speeds`. Free steps go first on each terrain, stamina
  * pays beyond them, and a turn stops at the first step it cannot pay; a turn
  * that walks nothing rests instead (490). Nothing that happens where a turn
- * ends on the way is counted.
+ * ends on the way is counted. With `start`, the walk begins that many steps
+ * along `path`.
  */
 export interface TurnByTurnWalk {
   /** The turns until it arrives, counting this one: 1 when it arrives this turn. */
@@ -172,6 +173,7 @@ export function walkTurnByTurn(
   stamina: number,
   speeds: MovementAllowance,
   config: GameConfig,
+  start = 0,
 ): TurnByTurnWalk {
   let plains = allowance.plains;
   let forest = allowance.forest;
@@ -180,7 +182,7 @@ export function walkTurnByTurn(
   let spent = 0;
   let turns = 1;
   let walked = 0;
-  for (let at = 0; at < path.length; ) {
+  for (let at = start; at < path.length; ) {
     const terrain = graph.nodes[path[at] as NodeId]?.terrain;
     if (terrain === undefined) throw new RangeError(`unknown node ${path[at]}`);
     if (terrain === 'plains' && plains > 0) plains--;
@@ -205,6 +207,61 @@ export function walkTurnByTurn(
     walked++;
   }
   return { turns, staminaSpent: spent, allowance: { plains, forest, mountain }, stamina: held };
+}
+
+/**
+ * [Q330] Andrei, 2026-11-04: "Computer players seem to spend all their
+ * stamina as soon as they attempt to go to a site that's more than one turn
+ * away. I guess they can be more frugal. For example if they reach the site
+ * in two turns anyway, why spend the stamina?"
+ *
+ * How many steps of `path` a computer walks this turn. Of the places along
+ * this turn's walk (§7: from the free steps `allowance` leaves and the
+ * `stamina` held, stopping at the first step it cannot pay), it stops at the
+ * one from which it still arrives soonest, the later turns counted as End
+ * turn walks them (`walkTurnByTurn`, each from the player's full `speeds`);
+ * among those, at the one that spends the least stamina this turn, and of
+ * those the farthest. So it never arrives later than End turn's walk, which
+ * is one of the places weighed. A walk that arrives this turn is the whole
+ * path, and a walk the turn cannot start is no steps.
+ */
+export function stepsWorthWalking(
+  graph: MapGraph,
+  path: readonly NodeId[],
+  allowance: MovementAllowance,
+  stamina: number,
+  speeds: MovementAllowance,
+  config: GameConfig,
+): number {
+  // A walk that arrives this turn, or cannot start, is as End turn walks it.
+  const reach = countWalk(graph, path, 0, allowance, stamina, config).steps;
+  if (reach === path.length || reach === 0) return reach;
+  let plains = allowance.plains;
+  let forest = allowance.forest;
+  let mountain = allowance.mountain;
+  let spent = 0;
+  let best = 0;
+  let bestTurns = Number.POSITIVE_INFINITY;
+  let bestSpent = 0;
+  for (let at = 0; at < reach; ) {
+    const terrain = graph.nodes[path[at] as NodeId]?.terrain;
+    if (terrain === undefined) throw new RangeError(`unknown node ${path[at]}`);
+    if (terrain === 'plains' && plains > 0) plains--;
+    else if (terrain === 'forest' && forest > 0) forest--;
+    else if (terrain === 'mountain' && mountain > 0) mountain--;
+    else spent += terrainStepCost(terrain, config);
+    at++;
+    // Stopping here: this turn, then the rest from the next.
+    const turns = 1 + walkTurnByTurn(graph, path, speeds, stamina - spent, speeds, config, at).turns;
+    // The stamina spent only grows along the walk, so a place as soon and as
+    // cheap as the best yet is farther than it.
+    if (turns < bestTurns || (turns === bestTurns && spent === bestSpent)) {
+      best = at;
+      bestTurns = turns;
+      bestSpent = spent;
+    }
+  }
+  return best;
 }
 
 /**

@@ -45,6 +45,15 @@ export interface MoveAction {
    * player's already-saved waypoint is kept, which is what a forced move wants.
    */
   readonly waypoint?: NodeId | null;
+  /**
+   * [Q330] How many steps of `path` the walk takes this turn at most, from 1
+   * to the path's length; the rest is saved for next turn as a walk cut short
+   * saves its remainder. Only the computer sets it, to keep its stamina when
+   * walking on would not arrive any sooner (`stepsWorthWalking`); a person's
+   * End turn never does. Omitted, the walk goes as far as the turn pays for
+   * (§7).
+   */
+  readonly stopAfter?: number;
 }
 
 export interface RestAction {

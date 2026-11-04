@@ -8,6 +8,7 @@ import {
   goldByProgressPicker,
   goldExhaustedTermination,
   restWhenStuck,
+  stopWhenNoSooner,
   turnCapTermination,
   walkedRouteSteps,
   winnableBySkill,
@@ -64,7 +65,11 @@ export function computerEvaluator(): NodeEvaluator {
  * nothing left either rests. The other seats' turns along its tree's edges
  * choose their sites as its imagined players do (Q307). The games it plays in
  * its head rest when stuck (Q43) and stop when the gold is gone, the game is
- * won, or `SIMULATION_TURN_CAP` turns have passed since `state` (Q44).
+ * won, or `SIMULATION_TURN_CAP` turns have passed since `state` (Q44). On a
+ * trip it will not finish this turn, its real moves and its walk along its
+ * tree's edges stop where walking on would not arrive any sooner, keeping the
+ * stamina (Q330: `stopWhenNoSooner`); the games it imagines walk as far as
+ * the turn pays for.
  */
 export function computerSearchOptions(state: GameState, subject: PlayerId, settings: ComputerSettings): MctsOptions {
   const { config } = settings;
@@ -85,6 +90,7 @@ export function computerSearchOptions(state: GameState, subject: PlayerId, setti
     treePolicy: uctTreePolicy(config.ai.MCTS_EXPLORATION_CONSTANT),
     actions: closestUnclaimedPoiEnumerator(config, stepsReachability(walkedRouteSteps), closestByBestRoute, bestRouteForSpeeds),
     edgeRoute: bestRouteForSpeeds,
+    walkStop: stopWhenNoSooner,
     rollout: closestPoiRolloutPolicy({ config, termination, restRule, ...imaginedPlayers }),
     evaluator: settings.evaluator ?? computerEvaluator(),
     termination,

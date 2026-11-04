@@ -77,12 +77,15 @@ function dice(...values: number[]): DiceSource {
   return { roll: () => ({ value: values.shift() ?? 1, sides: 6 }), pick: () => 0 };
 }
 
-type Plan = { readonly kind: 'move'; readonly path: readonly NodeId[] } | { readonly kind: 'rest' };
+type Plan = { readonly kind: 'move'; readonly path: readonly NodeId[]; readonly stopAfter?: number } | { readonly kind: 'rest' };
 
 /** Play `plan` from `before` for the player whose turn it is, and describe it. */
 function describeTurn(before: GameState, plan: Plan, roll: DiceSource = dice()) {
   const player = before.players[before.turn.activeSeat - 1] as PlayerState;
-  const action: TurnAction = plan.kind === 'move' ? { kind: 'move', player: player.id, path: plan.path } : { kind: 'rest', player: player.id };
+  const action: TurnAction =
+    plan.kind === 'move'
+      ? { kind: 'move', player: player.id, path: plan.path, ...(plan.stopAfter === undefined ? {} : { stopAfter: plan.stopAfter }) }
+      : { kind: 'rest', player: player.id };
   const outcome = applyAction(before, action, roll);
   const turn: PlayedTurn = {
     number: before.turn.number,
@@ -136,6 +139,17 @@ describe('the turn log, in words that can be checked by hand', () => {
       'Steps: plains 1 stamina ×2.',
       'Stamina 2 → 0.',
       'Stopped: the next step, into plains, costs 1 stamina and 0 are left (plains speed is 0). Those 4 steps are saved for next turn.',
+    ]);
+  });
+
+  it('says a computer stopped to save stamina, where going on would not arrive sooner (Q330)', () => {
+    const entry = describeTurn(game({ stamina: 4, plains_move: 2 }), { kind: 'move', path: path(1, 2, 3, 4, 5, 6), stopAfter: 2 });
+    expect(entry.headline).toBe('Walked 2 of 6 steps');
+    expect(entry.details).toEqual([
+      'Heading for the 5 gold site (mountain).',
+      'Steps: plains free ×2.',
+      'Every step was free (a terrain\'s speed makes that many steps onto it free each turn). Stamina stays 4.',
+      'Stopped to save stamina: going on would not arrive any sooner. Those 4 steps are saved for next turn.',
     ]);
   });
 
