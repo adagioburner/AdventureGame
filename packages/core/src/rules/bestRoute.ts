@@ -154,6 +154,10 @@ function pickBestRoute(routes: RouteTable, from: NodeId, to: NodeId, speeds: Per
  * that walks nothing rests instead (490). Nothing that happens where a turn
  * ends on the way is counted. With `start`, the walk begins that many steps
  * along `path`.
+ *
+ * [Q331, 4 A] Each turn here walks as far as it pays, as End turn did before
+ * it stopped where walking on would not save a turn: routes are picked as
+ * they were, and that stop never changes the turn a walk arrives.
  */
 export interface TurnByTurnWalk {
   /** The turns until it arrives, counting this one: 1 when it arrives this turn. */
@@ -215,15 +219,22 @@ export function walkTurnByTurn(
  * away. I guess they can be more frugal. For example if they reach the site
  * in two turns anyway, why spend the stamina?"
  *
- * How many steps of `path` a computer walks this turn. Of the places along
- * this turn's walk (§7: from the free steps `allowance` leaves and the
- * `stamina` held, stopping at the first step it cannot pay), it stops at the
- * one from which it still arrives soonest, the later turns counted as End
- * turn walks them (`walkTurnByTurn`, each from the player's full `speeds`);
- * among those, at the one that spends the least stamina this turn, and of
- * those the farthest. So it never arrives later than End turn's walk, which
- * is one of the places weighed. A walk that arrives this turn is the whole
- * path, and a walk the turn cannot start is no steps.
+ * [Q331] Andrei, 2026-11-04: "saving stamina in case you would still arrive
+ * in the same number of turns makes sense for both computer and human
+ * players. When I play today, I often break my two-turn trips in the middle
+ * to avoid burning stamina for nothing." So a person's Go and the game
+ * master's Move on stop here too (`frugalStop`, `endTurnActionFor`).
+ *
+ * How many steps of `path`, from step `start` on, a player walks this turn.
+ * Of the places along this turn's walk (§7: from the free steps `allowance`
+ * leaves and the `stamina` held, stopping at the first step it cannot pay),
+ * it stops at the one from which it still arrives soonest, the later turns
+ * counted as a walk as far as each turn pays (`walkTurnByTurn`, each from the
+ * player's full `speeds`); among those, at the one that spends the least
+ * stamina this turn, and of those the farthest. So it never arrives later
+ * than a walk as far as the turn pays, which is one of the places weighed. A
+ * walk that arrives this turn is the whole rest of the path, and a walk the
+ * turn cannot start is no steps.
  */
 export function stepsWorthWalking(
   graph: MapGraph,
@@ -232,10 +243,11 @@ export function stepsWorthWalking(
   stamina: number,
   speeds: MovementAllowance,
   config: GameConfig,
+  start = 0,
 ): number {
-  // A walk that arrives this turn, or cannot start, is as End turn walks it.
-  const reach = countWalk(graph, path, 0, allowance, stamina, config).steps;
-  if (reach === path.length || reach === 0) return reach;
+  // A walk that arrives this turn, or cannot start, goes as far as it pays.
+  const reach = countWalk(graph, path, start, allowance, stamina, config).steps;
+  if (start + reach === path.length || reach === 0) return reach;
   let plains = allowance.plains;
   let forest = allowance.forest;
   let mountain = allowance.mountain;
@@ -243,7 +255,7 @@ export function stepsWorthWalking(
   let best = 0;
   let bestTurns = Number.POSITIVE_INFINITY;
   let bestSpent = 0;
-  for (let at = 0; at < reach; ) {
+  for (let at = start; at < start + reach; ) {
     const terrain = graph.nodes[path[at] as NodeId]?.terrain;
     if (terrain === undefined) throw new RangeError(`unknown node ${path[at]}`);
     if (terrain === 'plains' && plains > 0) plains--;
@@ -256,7 +268,7 @@ export function stepsWorthWalking(
     // The stamina spent only grows along the walk, so a place as soon and as
     // cheap as the best yet is farther than it.
     if (turns < bestTurns || (turns === bestTurns && spent === bestSpent)) {
-      best = at;
+      best = at - start;
       bestTurns = turns;
       bestSpent = spent;
     }
@@ -265,15 +277,37 @@ export function stepsWorthWalking(
 }
 
 /**
+ * [Q331] Where a walk along `path` stops this turn when it stops short of
+ * where the turn pays for (`stepsWorthWalking`), as `MoveAction.stopAfter`;
+ * `undefined` when it walks as far as the turn pays (§7): to the end of the
+ * path, to the first step it cannot pay, or not at all.
+ */
+export function frugalStop(
+  graph: MapGraph,
+  path: readonly NodeId[],
+  allowance: MovementAllowance,
+  stamina: number,
+  speeds: MovementAllowance,
+  config: GameConfig,
+): number | undefined {
+  const reach = countWalk(graph, path, 0, allowance, stamina, config).steps;
+  if (reach === path.length || reach === 0) return undefined;
+  const steps = stepsWorthWalking(graph, path, allowance, stamina, speeds, config);
+  return steps < reach ? steps : undefined;
+}
+
+/**
  * [Q315] Andrei, 2026-10-26: "when showing a long path to the destination, it
  * would be helpful to mark the grey part with flags (bubbles? markers?)
  * showing where they will be in two turns, three turns etc." Where each turn
- * of `path` ends as End turn walks it, turn after turn, as `walkTurnByTurn`
- * counts it (3 A): this turn from the free steps `allowance` leaves and the
- * `stamina` held, each later turn from the player's full `speeds`, a turn
- * stopping at the first step it cannot pay, and a turn that walks nothing
- * resting (490), which is counted as a turn (6 A). Nothing that happens where
- * a turn ends on the way is counted (Q308, 3 A).
+ * of `path` ends as End turn walks it, turn after turn (3 A): this turn from
+ * the free steps `allowance` leaves and the `stamina` held, each later turn
+ * from the player's full `speeds`, a turn stopping at the first step it
+ * cannot pay, and a turn that walks nothing resting (490), which is counted
+ * as a turn (6 A). Nothing that happens where a turn ends on the way is
+ * counted (Q308, 3 A). [Q331, 3 A] Each turn that would not arrive stops
+ * where walking on would not save a turn (`stepsWorthWalking`), as Go stops
+ * it, so a bubble stands where that turn's Go will leave the player.
  *
  * One entry a turn, this one first: how many steps of `path` are walked by
  * the end of it. A turn that rests repeats the entry before it, and the last
@@ -294,8 +328,10 @@ export function turnStops(
   do {
     const turn = countWalk(graph, path, walked, free, held, config);
     if (turn.steps === 0) held += config.movement.REST_STAMINA_GAIN;
-    held -= turn.staminaSpent;
-    walked += turn.steps;
+    const steps = turn.steps === 0 ? 0 : stepsWorthWalking(graph, path, free, held, speeds, config, walked);
+    // A turn that stops short spends only what its steps up to the stop cost.
+    held -= steps === turn.steps ? turn.staminaSpent : countWalk(graph, path.slice(0, walked + steps), walked, free, held, config).staminaSpent;
+    walked += steps;
     stops.push(walked);
     free = speeds;
   } while (walked < path.length);

@@ -95,7 +95,7 @@ Choose where you want to go. The game draws the route it thinks is best for you;
 
 - **Green**: free, paid by your speed.
 - **Yellow**: costs stamina.
-- **Grey**: out of reach this turn.
+- **Grey**: out of reach this turn, or left for a later turn to save stamina.
 
 ![A route: two green steps, two yellow steps, then grey ones past a bubble for turn 2 to the cross](rulebook/route.png)
 

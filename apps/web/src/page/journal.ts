@@ -167,7 +167,7 @@ function describeWalk(
     for (const step of preview.steps) {
       if (step.color === 'free') left[terrainOf(map, step.node)]--;
     }
-    // [Q330] The computer stopped where walking on would not arrive any sooner.
+    // [Q330, Q331] The walk stopped where walking on would not arrive any sooner.
     const chose = turn.action.kind === 'move' && turn.action.stopAfter === resolution.walked.length;
     details.push(
       chose
@@ -181,8 +181,8 @@ function describeWalk(
 }
 
 /**
- * [Q330] Why a computer's walk ends early by its own choice: walking on, it
- * would arrive no sooner, so it keeps its stamina.
+ * [Q330] Why a walk ends early by choice, the computer's or [Q331, 3 A] a
+ * person's Go: walking on, it would arrive no sooner, so it keeps its stamina.
  */
 function savedLine(remainder: readonly NodeId[]): string {
   const saved = remainder.length === 1 ? 'That last step is' : `Those ${remainder.length} steps are`;

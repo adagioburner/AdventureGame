@@ -20,6 +20,7 @@ import { isClaimed, type PoiRuntimeState } from '../poi.ts';
 import { rewardAmount } from '../reward.ts';
 import { activePlayer, playerById, playerBySeat, poiRuntimeAt, type GameState } from '../state.ts';
 import { assertWalkable, refreshAllowance, resolveMovement } from './movement.ts';
+import { frugalStop } from './bestRoute.ts';
 import { resolveInteraction } from './interaction.ts';
 import { checkVictory, mostGold } from './victory.ts';
 
@@ -153,7 +154,7 @@ function applyMove(
   events: GameEvent[],
   stopAfter: number | undefined,
 ): GameState {
-  // [Q330] The computer's stop, somewhere along the path.
+  // [Q330, Q331] The stop where walking on would not save a turn, somewhere along the path.
   if (stopAfter !== undefined && !(Number.isInteger(stopAfter) && stopAfter >= 1 && stopAfter <= path.length)) {
     throw new RuleViolationError(`a move of ${path.length} steps cannot stop after ${stopAfter}`);
   }
@@ -370,20 +371,32 @@ export function plannedTurnActionFor(state: GameState, playerId: PlayerId): Turn
   return { kind: 'move', player: playerId, path: planned.path };
 }
 
-/** The turn a Move on plays: a rest when [491] it carries `rest`, else `plannedTurnActionFor`'s. */
+/**
+ * The turn a Move on plays: a rest when [491] it carries `rest`, else
+ * `plannedTurnActionFor`'s, [Q331] stopping where it carries `stopAfter`.
+ */
 export function forcedTurnAction(state: GameState, action: ForceTurnAction): TurnAction {
-  return action.rest === true ? { kind: 'rest', player: action.player } : plannedTurnActionFor(state, action.player);
+  if (action.rest === true) return { kind: 'rest', player: action.player };
+  const planned = plannedTurnActionFor(state, action.player);
+  if (action.stopAfter === undefined) return planned;
+  if (planned.kind !== 'move') throw new RuleViolationError('a Move on with no saved route cannot stop along it');
+  return { ...planned, stopAfter: action.stopAfter };
 }
 
 /**
  * [Andrei, 2026-09-30, 491] The game master's Move on plays what the player's
  * own End turn would with their saved route (`endTurnActionFor`), so a route
- * whose first step cannot be paid, away from a guard, rests.
+ * whose first step cannot be paid, away from a guard, rests, and [Q331, 1 A]
+ * a walk stops where walking on would not save a turn.
  */
 export function moveOnActionFor(state: GameState, playerId: PlayerId): ForceTurnAction {
   const planned = plannedTurnActionFor(state, playerId);
-  const rests = planned.kind === 'move' && endTurnActionFor(state, playerId, planned.path).kind === 'rest';
-  return rests ? { kind: 'force_turn', player: playerId, rest: true } : { kind: 'force_turn', player: playerId };
+  if (planned.kind !== 'move') return { kind: 'force_turn', player: playerId };
+  const turn = endTurnActionFor(state, playerId, planned.path);
+  if (turn.kind === 'rest') return { kind: 'force_turn', player: playerId, rest: true };
+  return turn.stopAfter === undefined
+    ? { kind: 'force_turn', player: playerId }
+    : { kind: 'force_turn', player: playerId, stopAfter: turn.stopAfter };
 }
 
 /**
@@ -399,6 +412,12 @@ export function guardToFightAt(state: GameState, node: NodeId): boolean {
 /**
  * What End turn plays for `playerId` with the route `path` drawn through
  * `waypoint`: the route, walked as far as this turn affords (§7).
+ *
+ * [Q331] Andrei, 2026-11-04: "saving stamina in case you would still arrive
+ * in the same number of turns makes sense for both computer and human
+ * players." On a route it will not finish this turn, the walk stops where
+ * walking on would not save a turn (`frugalStop`), as the computer's does
+ * (Q330), and the rest of the route is saved for next turn.
  *
  * [Andrei, 2026-09-30, 490] "Clicking End turn with no guard to fight makes no
  * sense. Let us make it rest automatically in this case." A turn that would
@@ -422,16 +441,21 @@ export function endTurnActionFor(
   const move: MoveAction = waypoint === undefined ? { kind: 'move', player: playerId, path } : { kind: 'move', player: playerId, path, waypoint };
   if (state.status !== 'in_progress' || activePlayer(state).id !== playerId) return move;
   const player = playerById(state, playerId);
-  if (guardToFightAt(state, player.position)) return move;
+  const config = state.map.ruleset.config;
 
   let walked: number;
   try {
-    walked = resolveMovement(state.map.graph, player.position, path, state.turn.allowance, player.stats.stamina, state.map.ruleset.config).walked.length;
+    walked = resolveMovement(state.map.graph, player.position, path, state.turn.allowance, player.stats.stamina, config).walked.length;
   } catch (error) {
     if (error instanceof RuleViolationError) return move;
     throw error;
   }
-  if (walked > 0) return move;
+  if (walked > 0) {
+    // [Q331] Stop where walking on would not save a turn.
+    const stopAfter = frugalStop(state.map.graph, path, state.turn.allowance, player.stats.stamina, refreshAllowance(player.stats), config);
+    return stopAfter === undefined ? move : { ...move, stopAfter };
+  }
+  if (guardToFightAt(state, player.position)) return move;
   if (path.length === 0) return { kind: 'rest', player: playerId };
   const kept = waypoint !== undefined && waypoint !== null && path.includes(waypoint) ? waypoint : null;
   return { kind: 'rest', player: playerId, plan: { path, waypoint: kept } };

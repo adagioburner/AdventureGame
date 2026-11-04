@@ -12,6 +12,7 @@ import {
   bestRouteSteps,
   bestRouteVia,
   effectiveDistance,
+  frugalStop,
   stepsWorthWalking,
   turnStops,
   walkTurnByTurn,
@@ -253,13 +254,59 @@ describe('stepsWorthWalking (Q330)', () => {
   });
 });
 
-describe('turnStops (Q315)', () => {
+describe('stepsWorthWalking from a step along the route, and frugalStop (Q331)', () => {
+  it('counts from a step along the route as from the rest of it', () => {
+    const grid = randomGrid('worth-start', 7);
+    const routes = routeTable(grid, config);
+    const rng = createRng('worth-start-routes');
+    for (let trip = 0; trip < 200; trip++) {
+      const path = routes.path(n(rng.nextInt(49)), n(rng.nextInt(49)));
+      if (path === null || path.length === 0) continue;
+      const start = rng.nextInt(path.length);
+      const fresh = { plains: rng.nextInt(4), forest: rng.nextInt(3), mountain: rng.nextInt(2) };
+      const stamina = rng.nextInt(15);
+      expect(stepsWorthWalking(grid, path, fresh, stamina, fresh, config, start)).toBe(stepsWorthWalking(grid, path.slice(start), fresh, stamina, fresh, config));
+    }
+  });
+
+  it('is the stop only where it falls short of where the turn pays', () => {
+    const stats = { ...speeds(3, 0, 0), stamina: 10 };
+    const fresh = refreshAllowance(stats);
+    const long = line(Array<Terrain>(15).fill('plains'));
+    expect(frugalStop(long.graph, long.path, fresh, 10, fresh, config)).toBe(3);
+    const short = line(Array<Terrain>(8).fill('plains'));
+    expect(frugalStop(short.graph, short.path, fresh, 10, fresh, config)).toBeUndefined();
+    // No stamina: the free steps take it to the first step it cannot pay.
+    expect(frugalStop(long.graph, long.path, fresh, 0, fresh, config)).toBeUndefined();
+    // Nothing free and no stamina: the walk cannot start.
+    expect(frugalStop(long.graph, long.path, { plains: 0, forest: 0, mountain: 0 }, 0, fresh, config)).toBeUndefined();
+  });
+});
+
+describe('turnStops (Q315, Q331)', () => {
   const plains = [n(1), n(2), n(3), n(4), n(5)];
   const none = { plains: 0, forest: 0, mountain: 0 };
 
-  it('ends this turn where the free steps and stamina run out, and each later turn on the full speeds', () => {
-    // Two free and one paid this turn, then two free a turn.
-    expect(turnStops(detour, plains, { plains: 2, forest: 0, mountain: 0 }, 1, { plains: 2, forest: 0, mountain: 0 }, config)).toEqual([3, 5]);
+  it('ends a turn where walking on would not save a turn, as Go stops it (Q331)', () => {
+    // Two free and one paid this turn, then two free, arrives next turn: the
+    // two free steps now do too, and keep the 1.
+    const two = { plains: 2, forest: 0, mountain: 0 };
+    expect(turnStops(detour, plains, two, 1, two, config)).toEqual([2, 5]);
+  });
+
+  it('ends this turn where the free steps and stamina run out when that saves a turn, and each later turn on the full speeds', () => {
+    // Paying for plains 3 and 4 now puts the forest's free steps to use this
+    // turn as well as the next (Q331).
+    const stats = { ...speeds(2, 2, 0), stamina: 2 };
+    const { graph, path } = line(['plains', 'plains', 'plains', 'plains', 'forest', 'forest', 'forest', 'forest']);
+    expect(turnStops(graph, path, refreshAllowance(stats), 2, refreshAllowance(stats), config)).toEqual([6, 8]);
+  });
+
+  it('arrives a turn sooner where walking on would spend what a mountain needs next turn (Q331)', () => {
+    const stats = { ...speeds(2, 0, 0), stamina: 3 };
+    const { graph, path } = line(['plains', 'plains', 'plains', 'plains', 'mountain']);
+    expect(turnStops(graph, path, refreshAllowance(stats), 3, refreshAllowance(stats), config)).toEqual([2, 5]);
+    expect(walkTurnByTurn(graph, path, refreshAllowance(stats), 3, refreshAllowance(stats), config).turns).toBe(3);
   });
 
   it('is one turn when the route arrives this turn', () => {
@@ -278,7 +325,7 @@ describe('turnStops (Q315)', () => {
     expect(turnStops(detour, [n(6), n(7), n(8), n(5)], none, 3, none, config)).toEqual([1, 1, 4]);
   });
 
-  it('has as many turns as walkTurnByTurn counts, on random routes', () => {
+  it('has no more turns than walkTurnByTurn counts, this one ending where Go stops, on random routes', () => {
     const grid = randomGrid('turn-stops', 7);
     const rng = createRng('turn-stops-routes');
     for (let trial = 0; trial < 200; trial++) {
@@ -289,8 +336,11 @@ describe('turnStops (Q315)', () => {
       const left = { plains: rng.nextIntInclusive(0, fresh.plains), forest: rng.nextIntInclusive(0, fresh.forest), mountain: rng.nextIntInclusive(0, fresh.mountain) };
       const stamina = rng.nextIntInclusive(0, 12);
       const stops = turnStops(grid, path, left, stamina, fresh, config);
-      expect(stops.length).toBe(walkTurnByTurn(grid, path, left, stamina, fresh, config).turns);
+      expect(stops.length).toBeLessThanOrEqual(walkTurnByTurn(grid, path, left, stamina, fresh, config).turns);
       expect(stops[stops.length - 1]).toBe(path.length);
+      const reach = countWalk(grid, path, 0, left, stamina, config).steps;
+      expect(stops[0]).toBe(frugalStop(grid, path, left, stamina, fresh, config) ?? reach);
+      for (let turn = 1; turn < stops.length; turn++) expect(stops[turn]).toBeGreaterThanOrEqual(stops[turn - 1] as number);
     }
   });
 });

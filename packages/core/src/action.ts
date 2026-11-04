@@ -48,10 +48,11 @@ export interface MoveAction {
   /**
    * [Q330] How many steps of `path` the walk takes this turn at most, from 1
    * to the path's length; the rest is saved for next turn as a walk cut short
-   * saves its remainder. Only the computer sets it, to keep its stamina when
-   * walking on would not arrive any sooner (`stepsWorthWalking`); a person's
-   * End turn never does. Omitted, the walk goes as far as the turn pays for
-   * (§7).
+   * saves its remainder. Set to keep the stamina when walking on would not
+   * arrive any sooner (`stepsWorthWalking`): by the computer, and [Q331] by a
+   * person's End turn (`endTurnActionFor`). Omitted, the walk goes as far as
+   * the turn pays for (§7), as every move did before, so games played before
+   * replay as they were played.
    */
   readonly stopAfter?: number;
 }
@@ -127,6 +128,13 @@ export interface ForceTurnAction {
    * replay as they were played.
    */
   readonly rest?: true;
+  /**
+   * [Q331] Set when Move on stops the saved route where walking on would not
+   * save a turn, as End turn would (`moveOnActionFor`): `MoveAction.stopAfter`
+   * for the walk it plays. Carried on the action for the same reason as
+   * `rest`, so that games played before replay as they were played.
+   */
+  readonly stopAfter?: number;
 }
 
 /**

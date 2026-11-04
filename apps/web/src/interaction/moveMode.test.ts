@@ -3,6 +3,7 @@ import {
   applyAction,
   bestRoute,
   bestRouteVia,
+  frugalStop,
   pathCost,
   previewPath,
   refreshAllowance,
@@ -16,7 +17,7 @@ import {
 import { HotseatGame, HOTSEAT_MODE, type UiModeConfig } from '../modes/hotseat.ts';
 import { ONLINE_MODE } from '../modes/online.ts';
 import { mapFor } from '../page/seed.ts';
-import { createMoveModeController, endsOffSite, endTurnOutcome, endTurnQuestion, type MoveModeController, type MoveModeState } from './moveMode.ts';
+import { createMoveModeController, endsOffSite, endTurnActionOf, endTurnOutcome, endTurnQuestion, type MoveModeController, type MoveModeState } from './moveMode.ts';
 
 const map = mapFor('adventure', 'standard');
 const config = map.ruleset.config;
@@ -60,6 +61,29 @@ function nodeAlong(state: GameState, hops: number): { target: NodeId; route: rea
   const target = far[hops - 1] as NodeId;
   return { target, route: far.slice(0, hops) };
 }
+
+describe('Go stops where walking on would not save a turn (Q331)', () => {
+  it('greys the steps past the stop, ends this turn’s bubble there, and End turn stops there', () => {
+    const { game, controller } = setup();
+    const player = seat(game.state, 0);
+    const fast = withSpeeds(game.state, player.id, 2, 2, 0);
+    const state: GameState = {
+      ...fast,
+      players: fast.players.map((candidate) => (candidate.id === player.id ? { ...candidate, stats: { ...candidate.stats, stamina: 1 } } : candidate)),
+    };
+    controller.setGame(state);
+    controller.enter(player.id);
+    controller.selectDestination(nodeAlong(state, 12).target);
+    const shown = controller.state;
+    if (shown.kind !== 'previewing') throw new Error('no route drawn');
+    const stop = frugalStop(map.graph, shown.path, state.turn.allowance, 1, { plains: 2, forest: 2, mountain: 0 }, config);
+    if (stop === undefined) throw new Error('this walk does not stop short');
+    expect(shown.preview.reachableStepCount).toBe(stop);
+    expect(shown.preview.steps.slice(stop).every((step) => step.color === 'unreachable')).toBe(true);
+    expect(shown.stops[0]).toBe(stop);
+    expect(endTurnActionOf(state, player.id, shown)).toMatchObject({ kind: 'move', path: shown.path, stopAfter: stop });
+  });
+});
 
 describe('move mode (§7.1), idle → selecting → previewing', () => {
   it('starts idle and enters moving mode when the player whose turn it is is clicked', () => {
@@ -705,7 +729,8 @@ describe('the route drawn is the best for the player’s speeds (Q210, 810 A to 
     expect(controller.state).toMatchObject({ kind: 'previewing', path: best });
     expect(controller.engaged).toBe(false);
     controller.endTurn();
-    expect(sent).toEqual([{ kind: 'move', player: player.id, path: best, waypoint: null }]);
+    // [Q331] Wherever along it the walk stops to keep the stamina.
+    expect(sent).toMatchObject([{ kind: 'move', player: player.id, path: best, waypoint: null }]);
     expect(controller.unsaved).toBe(false);
   });
 
