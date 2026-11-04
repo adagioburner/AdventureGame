@@ -5046,7 +5046,7 @@ change: it says computer players follow the same rules.
 ---
 
 <a id="q331"></a>
-### Q331. Should people's Go stop where walking on would not save a turn, as the computer's does? — **1-4 answered 2026-11-04: yes; a person's Go and the game master's Move on stop where walking on would not arrive any sooner, as the computer does (Q330); no button to walk on anyway; the steps left for later grey and the turn bubbles where each turn will stop; the route picked as before. 5: the rulebook's sentence "stops early where walking on would not get you there in fewer turns"; its route picture a new scene, plains paid to reach free forest steps; the hint under the cards asked**
+### Q331. ~~Should people's Go stop where walking on would not save a turn, as the computer's does?~~ — **answered 2026-11-04: yes; a person's Go and the game master's Move on stop where walking on would not arrive any sooner, as the computer does (Q330); no button to walk on anyway; the steps left for later grey and the turn bubbles where each turn will stop; the route picked as before; the rulebook's sentence "stops early where walking on would not get you there in fewer turns"; its route picture a new scene, plains paid to reach free forest steps (5); the hint under the cards "grey is planned for future turns" (6)**
 
 Andrei, 2026-11-04 at 21:29, after Q330: *"I am thinking that saving stamina
 in case you would still arrive in the same number of turns makes sense for
@@ -5108,7 +5108,12 @@ is shared code too, and only the planning view uses it.
    which calls steps that could be paid for out of reach when Go stops to save
    stamina. A, its last words "grey is out of reach this turn or left for a
    later turn to save stamina", only when Go stops so (recommended); B, as it
-   is.
+   is. Andrei, 23:50: *"perhaps the hint for the grey should simply say
+   'planned for the future turns' or 'saved for the future' without going
+   into the detail why"*. Put to him again: A, "grey is planned for future
+   turns" on every route, since every grey step is walked on a later turn
+   (recommended); B, "grey is saved for the future" on every route; C, the
+   new words only when Go stops early. **Answered** at 23:52: A.
 
 Built: `frugalStop` in `packages/core/src/rules/bestRoute.ts`,
 `stepsWorthWalking` as a `MoveAction.stopAfter`, `undefined` when the walk
@@ -5124,7 +5129,9 @@ the steps after the stop (`gamePreviewSource` in
 route being planned where Go will stop it. The turn log's `savedLine` says
 why, for a person's walk as for a computer's. `docs/RULEBOOK.md`: the
 sentence on how far Go walks, the Grey line, and `docs/rulebook/route.png`
-with its words. Routes are still scored by
+with its words. The hint above the buttons while a route is planned
+(`hint` in `apps/web/src/page/TurnControls.tsx`) ends "grey is planned for
+future turns". Routes are still scored by
 `walkTurnByTurn`, each turn walking as far as it pays. The games the
 computer imagines are as they were.
 
