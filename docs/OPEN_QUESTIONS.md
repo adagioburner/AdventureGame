@@ -5046,7 +5046,7 @@ change: it says computer players follow the same rules.
 ---
 
 <a id="q331"></a>
-### Q331. Should people's Go stop where walking on would not save a turn, as the computer's does? — **1-4 answered 2026-11-04: yes; a person's Go and the game master's Move on stop where walking on would not arrive any sooner, as the computer does (Q330); no button to walk on anyway; the steps left for later grey and the turn bubbles where each turn will stop; the route picked as before. 5: the rulebook's sentence "stops early where walking on would not get you there in fewer turns"; its route picture asked**
+### Q331. Should people's Go stop where walking on would not save a turn, as the computer's does? — **1-4 answered 2026-11-04: yes; a person's Go and the game master's Move on stop where walking on would not arrive any sooner, as the computer does (Q330); no button to walk on anyway; the steps left for later grey and the turn bubbles where each turn will stop; the route picked as before. 5: the rulebook's sentence "stops early where walking on would not get you there in fewer turns"; its route picture a new scene, plains paid to reach free forest steps; the hint under the cards asked**
 
 Andrei, 2026-11-04 at 21:29, after Q330: *"I am thinking that saving stamina
 in case you would still arrive in the same number of turns makes sense for
@@ -5098,7 +5098,17 @@ is shared code too, and only the planning view uses it.
    steps are the same each turn. Put to him: a scene where two plains steps
    paid reach free forest steps this turn, then grey past a turn-2 bubble to
    the cross, all three colours kept (recommended); or the same kind of route
-   as Go now walks it, two green steps then grey, no yellow.
+   as Go now walks it, two green steps then grey, no yellow. Shown with the
+   scene found for it: three green plains steps, one plains step paid, two
+   free forest steps, then grey past a turn-2 bubble to the cross.
+   **Answered** at 23:49: the forest scene. Taken from a two-player game on
+   the map "adventure" at twice the page's resolution, 960 by 560 as before,
+   Player 1 on turn 23 with plains speed 3, forest speed 2 and 1 stamina.
+6. **The hint under the cards.** It says "grey is out of reach this turn",
+   which calls steps that could be paid for out of reach when Go stops to save
+   stamina. A, its last words "grey is out of reach this turn or left for a
+   later turn to save stamina", only when Go stops so (recommended); B, as it
+   is.
 
 Built: `frugalStop` in `packages/core/src/rules/bestRoute.ts`,
 `stepsWorthWalking` as a `MoveAction.stopAfter`, `undefined` when the walk
@@ -5112,7 +5122,9 @@ Move on recorded before replays as it was played. The planning view greys
 the steps after the stop (`gamePreviewSource` in
 `apps/web/src/interaction/moveMode.ts`), and `turnStops` ends each turn of a
 route being planned where Go will stop it. The turn log's `savedLine` says
-why, for a person's walk as for a computer's. Routes are still scored by
+why, for a person's walk as for a computer's. `docs/RULEBOOK.md`: the
+sentence on how far Go walks, the Grey line, and `docs/rulebook/route.png`
+with its words. Routes are still scored by
 `walkTurnByTurn`, each turn walking as far as it pays. The games the
 computer imagines are as they were.
 
