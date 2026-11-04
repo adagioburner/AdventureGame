@@ -5046,7 +5046,7 @@ change: it says computer players follow the same rules.
 ---
 
 <a id="q331"></a>
-### Q331. Should people's Go stop where walking on would not save a turn, as the computer's does? — **1-4 answered 2026-11-04: yes; a person's Go and the game master's Move on stop where walking on would not arrive any sooner, as the computer does (Q330); no button to walk on anyway; the steps left for later grey and the turn bubbles where each turn will stop; the route picked as before. 5: the rulebook's sentence and route picture asked**
+### Q331. Should people's Go stop where walking on would not save a turn, as the computer's does? — **1-4 answered 2026-11-04: yes; a person's Go and the game master's Move on stop where walking on would not arrive any sooner, as the computer does (Q330); no button to walk on anyway; the steps left for later grey and the turn bubbles where each turn will stop; the route picked as before. 5: the rulebook's sentence "stops early where walking on would not get you there in fewer turns"; its route picture asked**
 
 Andrei, 2026-11-04 at 21:29, after Q330: *"I am thinking that saving stamina
 in case you would still arrive in the same number of turns makes sense for
@@ -5091,7 +5091,8 @@ is shared code too, and only the planning view uses it.
    **Answered**: A, but for the wording of the sentence: put to him again as
    "but stops where walking on would not save a turn, to keep your stamina"
    (recommended) or "but stops early where walking on would not get you there
-   in fewer turns, to keep your stamina". And the picture cannot be taken in
+   in fewer turns, to keep your stamina". **Answered** at 23:48: "in fewer
+   turns". And the picture cannot be taken in
    the same game: with a plains speed alone, paying for plains never arrives
    sooner, since a step paid now costs what it costs next turn and the free
    steps are the same each turn. Put to him: a scene where two plains steps
