@@ -5135,6 +5135,19 @@ future turns". Routes are still scored by
 `walkTurnByTurn`, each turn walking as far as it pays. The games the
 computer imagines are as they were.
 
+Andrei, 2026-11-05 at 00:57: *"Is there anything else we can do to make sure
+this change doesn't break anything?"* Checked: 60 games played on the code
+before Q330 (2 to 4 players, people by End turn and Move on, the computer
+for the rest; 9,482 actions) replay on the new code to the same position
+after every action, since a move recorded without a stop walks as far as
+the turn paid; 5 of 6 games played on the new code do not replay on the old,
+which ignores the stop, so a way back is to stop choosing the stop, not to
+undo the change. `routeAgreement.test.ts` in `apps/web/src/interaction/`
+plays three maps by End turn and checks 4,287 routes drawn while planning,
+987 of them stopping early, against what End turn then plays, step for step
+and stamina for stamina; a session test checks the server's End turn and
+Move on stop where the page's End turn does.
+
 ---
 
 ## C. Decisions I made that are *implementation*, not design
