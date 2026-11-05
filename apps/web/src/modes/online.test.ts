@@ -91,6 +91,18 @@ describe('OnlineGame', () => {
     expect(applied[1]?.after.players[0]?.plannedPath).toEqual({ path: [n(1)], waypoint: null });
   });
 
+  it('shows a Move on that stopped to save stamina (Q331) as the move it played, stopping there', () => {
+    const stopped: GameAction[] = [
+      { kind: 'plan', player: one, path: [n(1), n(2)], waypoint: null },
+      { kind: 'force_turn', player: one, stopAfter: 1 },
+    ];
+    const { state, records } = serverPlays(stopped, []);
+    const { applied } = OnlineGame.open(setup, state, records);
+    expect(applied[1]?.turn?.action).toEqual({ kind: 'move', player: one, path: [n(1), n(2)], stopAfter: 1 });
+    expect(applied[1]?.after.players[0]?.position).toBe(n(1));
+    expect(applied[1]?.after.players[0]?.plannedPath).toEqual({ path: [n(2)], waypoint: null });
+  });
+
   it('follows the next record, and refuses one that skips or repeats', () => {
     const { state, records } = serverPlays(actions, [6]);
     const { game } = OnlineGame.open(setup, serverPlays(actions.slice(0, 2), []).state, records.slice(0, 2));

@@ -95,13 +95,13 @@ Choose where you want to go. The game draws the route it thinks is best for you;
 
 - **Green**: free, paid by your speed.
 - **Yellow**: costs stamina.
-- **Grey**: out of reach this turn.
+- **Grey**: out of reach this turn, or left for a later turn to save stamina.
 
-![A route: two green steps, two yellow steps, then grey ones past a bubble for turn 2 to the cross](rulebook/route.png)
+![A route: three green steps, a yellow one, two green ones in the forest, then grey ones past a bubble for turn 2 to the cross](rulebook/route.png)
 
 On the grey part, numbered bubbles show where your figure will be at the end of each later turn, counting this turn as 1. A bubble such as '3–4' means you get there in turn 3 and stay through turn 4, when 'End turn' rests because you cannot pay for the next step.
 
-Pressing 'Go' walks the route. If it is longer than you can go this turn, your figure goes as far as it can and the rest of the route is saved for next turn, where you can still change it.
+Pressing 'Go' walks the route. If it is longer than you can go this turn, your figure goes as far as it can, but stops early where walking on would not get you there in fewer turns, to keep your stamina. The rest of the route is saved for next turn, where you can still change it.
 
 If this turn's walk would end your route on a space that is not a site, the game asks for a confirmation before your figure walks. 'End turn' also asks for a confirmation before it rests; the Rest button does not.
 

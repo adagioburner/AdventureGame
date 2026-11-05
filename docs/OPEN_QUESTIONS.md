@@ -4970,6 +4970,186 @@ No rule, number, map or rulebook word changed.
 
 ---
 
+<a id="q330"></a>
+### Q330. ~~Should a computer spend its stamina on a trip it would finish just as soon without it?~~ — **answered 2026-11-04: no; on a trip it will not finish this turn it stops where walking on would not arrive any sooner, spending the least stamina this turn and of those the farthest; its real moves and its walk along its tree's edges, not the games it imagines; its route picked as before; its route drawn to its site with the steps left for later grey, and the turn log saying it stopped to save stamina; 70 games against the computer before it, 33 wins to 34 and 3 shared, within luck (1-4)**
+
+Andrei, 2026-11-04 at 14:49: *"Computer players seem to spend all their
+stamina as soon as they attempt to go to a site that's more than one turn
+away. I guess they can be more frugal. For example if they reach the site in
+two turns anyway, why spend the stamina?"* A computer's move was its whole
+route, which §7 walks as far as the turn pays for, so on any trip longer than
+a turn it spent whatever stamina the walk could use. In 14 computer-only games
+(2 players, 0.2 to 0.3 s a move), 9 of the 34 trips longer than a turn spent
+stamina, and on 8 of them it could have kept all of it and still arrived on
+the same turn: 40 of the 44 stamina spent. On one 25-step trip it spent all 9
+of its stamina walking 17 steps, where 8 free steps arrived on the same next
+turn.
+
+The rule put to him: of the places along this turn's walk, it stops at the
+one from which it still arrives soonest, the later turns counted as End turn
+walks them (Q308); among those, at the one that spends the least stamina this
+turn, and then the farthest. It never arrives later than today. Arriving is
+ending a turn on the site; fights use no stamina, so guards do not come into
+it. A trip it finishes this turn, and a person's End turn, stay as they were.
+Andrei, 16:55: *"all as recommended"*.
+
+1. **Where it applies.** A, its real moves and its own walk along the choices
+   its search weighs, which share one function, so the search judges a choice
+   by the walk it would really make; the games it imagines as they were, since
+   they run tens of thousands of times a move (recommended); B, those and the
+   games it imagines, as Q308 did for routes; C, its real moves only.
+   **Answered**: A.
+2. **Which route.** A, picked as End turn walks it (Q308), as before, only
+   stopping earlier along it (recommended); B, scored by the new walk, so it
+   might pick a route that saves more. **Answered**: A.
+3. **What people see when it stops early.** A, its route still drawn to its
+   site while it walks, the part left for later grey like a part it cannot pay
+   for; the turn log still says "Heading for …", and the usual stopped line
+   becomes "Stopped to save stamina: going on would not arrive any sooner.
+   Those 9 steps are saved for next turn." (recommended); B, its move cut off
+   where it stops, the drawn route and the log going only that far.
+   **Answered**: A.
+4. **A check first.** A, before it goes in, 20 games against today's computer
+   on ten maps, seats swapped, 3 s a move (recommended); B, none.
+   **Answered**: A. Seeds saved-0 to saved-9: 8 wins to 12 for the new one,
+   none shared, −2.7 ± 1.5 gold a game, within luck (wins 0.50); 16,166 games
+   imagined per move against 14,854. A first run of the same games, on a
+   version of the rule that weighed every place even on a walk that arrives
+   this turn and so imagined about a tenth fewer games, came out 7 to 13 and
+   +0.35 ± 1.9 gold. Its real moves stopped to save stamina 4 times in each
+   run's 20 games. Put to him at 17:44 with 50 more games running; at 17:46
+   he chose to wait for them. Seeds saved-10 to saved-34, the same way: 25
+   wins to 22 for the new one, 3 shared, +0.12 ± 1.1 gold a game; each won
+   both games on 5 and 4 maps; it stopped to save stamina 19 times. All 70 on
+   the code as built: 33 wins to 34, 3 shared, −0.69 ± 0.92 gold a game for
+   the new one, within luck, and 15,271 games imagined per move against
+   14,409.
+
+Built: `stepsWorthWalking` in `packages/core/src/rules/bestRoute.ts`, which
+weighs each place along this turn's walk by the turns the rest takes as End
+turn walks it (`walkTurnByTurn`, which now takes the step to start from),
+then by the stamina spent this turn, then the farthest; a walk that arrives
+this turn, or cannot start, is as End turn walks it. `MoveAction.stopAfter`
+in `packages/core/src/action.ts`: the engine walks no further than it
+(`resolveMovement`), saves the rest as a walk cut short, and refuses a stop
+that is not a step along the path; `previewPath` draws the steps after it
+grey. `WalkStop` and `stopWhenNoSooner` in `packages/sim/src/rollout.ts`,
+which `turnTowards`, `playWalkedTurn` and `macroAdvanceToTarget` take, and
+`MctsOptions.walkStop`, which `computerSearchOptions` sets for the real move
+(`firstTurnOf`) and the walk along a tree edge. The page draws a computer's
+route with its stop (`routeOf` in `apps/web/src/page/GameScreen.tsx`), and the
+turn log's `savedLine` in `apps/web/src/page/journal.ts` says why it stopped;
+the balancing harness's transcript says "chose to stop, N stamina kept". No
+rule for people, number, map or picture changed, and the rulebook needs no
+change: it says computer players follow the same rules.
+
+---
+
+<a id="q331"></a>
+### Q331. ~~Should people's Go stop where walking on would not save a turn, as the computer's does?~~ — **answered 2026-11-04: yes; a person's Go and the game master's Move on stop where walking on would not arrive any sooner, as the computer does (Q330); no button to walk on anyway; the steps left for later grey and the turn bubbles where each turn will stop; the route picked as before; the rulebook's sentence "stops early where walking on would not get you there in fewer turns"; its route picture a new scene, plains paid to reach free forest steps (5); the hint under the cards "grey is planned for future turns" (6)**
+
+Andrei, 2026-11-04 at 21:29, after Q330: *"I am thinking that saving stamina
+in case you would still arrive in the same number of turns makes sense for
+both computer and human players. When I play today, I often break my
+two-turn trips in the middle to avoid burning stamina for nothing."*
+
+The rule put to him: on a route a person will not finish this turn, Go stops
+at the place along this turn's walk from which they still arrive soonest;
+among those, at the one that spends the least stamina this turn, and then
+the farthest; the computer's rule (Q330). A route finished this turn walks
+as before. Andrei, 22:04: *"all as recommended looks good [w]ith two
+reservations: first, are you going to change the shared code that plans
+routes [f]or both human players and the computer? and then, in 5, I'm
+slightly bothered by the word sooner app[e]aring twice on the same line with
+different meanings"*. To the first: the code that picks which route is drawn
+stays as it is (4); where to stop along it is one shared function, which the
+computer already used and which Go and Move on now call, so a person and the
+computer stop at the same place on the same route; the turn bubbles' function
+is shared code too, and only the planning view uses it.
+
+1. **Which moves.** A, a person's Go and the game master's Move on, which
+   plays what Go would (491), in hot seat and online (recommended); B, Go
+   only. **Answered**: A.
+2. **Walking farther anyway.** A, no new button: to end the turn farther
+   along, a player draws the route only that far, as today (recommended); B,
+   the box before the walk asks "Save stamina" or "Walk on". **Answered**: A.
+3. **Planning.** A, the steps after the stop grey like the computer's; the
+   turn bubbles where each later turn will really stop, since later turns
+   stop early too; the turn log the computer's line (recommended); B, the
+   same grey steps, the bubbles counting each turn as far as it pays.
+   **Answered**: A.
+4. **Which route is drawn.** A, picked as today, as for the computer (Q330,
+   2 A); only the stop is new (recommended); B, routes scored by the new
+   walk, which may draw a different route. **Answered**: A.
+5. **Rulebook.** A, "goes as far as it can" gains "but stops sooner where
+   walking on would not get you there any sooner, to keep your stamina"; the
+   Grey line adds "or left for a later turn to save stamina"; the route
+   picture, which pays 2 stamina on a trip it finishes on turn 3 either way
+   and so would lose its yellow steps, taken again in the same game with a
+   destination where paying gets there sooner (recommended); B, the same
+   words, the picture taken again as it is, with no yellow steps.
+   **Answered**: A, but for the wording of the sentence: put to him again as
+   "but stops where walking on would not save a turn, to keep your stamina"
+   (recommended) or "but stops early where walking on would not get you there
+   in fewer turns, to keep your stamina". **Answered** at 23:48: "in fewer
+   turns". And the picture cannot be taken in
+   the same game: with a plains speed alone, paying for plains never arrives
+   sooner, since a step paid now costs what it costs next turn and the free
+   steps are the same each turn. Put to him: a scene where two plains steps
+   paid reach free forest steps this turn, then grey past a turn-2 bubble to
+   the cross, all three colours kept (recommended); or the same kind of route
+   as Go now walks it, two green steps then grey, no yellow. Shown with the
+   scene found for it: three green plains steps, one plains step paid, two
+   free forest steps, then grey past a turn-2 bubble to the cross.
+   **Answered** at 23:49: the forest scene. Taken from a two-player game on
+   the map "adventure" at twice the page's resolution, 960 by 560 as before,
+   Player 1 on turn 23 with plains speed 3, forest speed 2 and 1 stamina.
+6. **The hint under the cards.** It says "grey is out of reach this turn",
+   which calls steps that could be paid for out of reach when Go stops to save
+   stamina. A, its last words "grey is out of reach this turn or left for a
+   later turn to save stamina", only when Go stops so (recommended); B, as it
+   is. Andrei, 23:50: *"perhaps the hint for the grey should simply say
+   'planned for the future turns' or 'saved for the future' without going
+   into the detail why"*. Put to him again: A, "grey is planned for future
+   turns" on every route, since every grey step is walked on a later turn
+   (recommended); B, "grey is saved for the future" on every route; C, the
+   new words only when Go stops early. **Answered** at 23:52: A.
+
+Built: `frugalStop` in `packages/core/src/rules/bestRoute.ts`,
+`stepsWorthWalking` as a `MoveAction.stopAfter`, `undefined` when the walk
+goes as far as the turn pays; `stepsWorthWalking` now takes the step to
+start from. `endTurnActionFor` in `packages/core/src/rules/turn.ts` puts the
+stop on the move it builds, so the page's End turn and the server's
+`turn.end` stop there; `moveOnActionFor` carries it on the
+`ForceTurnAction` as `stopAfter`, as it carries `rest`, and
+`forcedTurnAction` hands it to the move, refusing it with no route saved; a
+Move on recorded before replays as it was played. The planning view greys
+the steps after the stop (`gamePreviewSource` in
+`apps/web/src/interaction/moveMode.ts`), and `turnStops` ends each turn of a
+route being planned where Go will stop it. The turn log's `savedLine` says
+why, for a person's walk as for a computer's. `docs/RULEBOOK.md`: the
+sentence on how far Go walks, the Grey line, and `docs/rulebook/route.png`
+with its words. The hint above the buttons while a route is planned
+(`hint` in `apps/web/src/page/TurnControls.tsx`) ends "grey is planned for
+future turns". Routes are still scored by
+`walkTurnByTurn`, each turn walking as far as it pays. The games the
+computer imagines are as they were.
+
+Andrei, 2026-11-05 at 00:57: *"Is there anything else we can do to make sure
+this change doesn't break anything?"* Checked: 60 games played on the code
+before Q330 (2 to 4 players, people by End turn and Move on, the computer
+for the rest; 9,482 actions) replay on the new code to the same position
+after every action, since a move recorded without a stop walks as far as
+the turn paid; 5 of 6 games played on the new code do not replay on the old,
+which ignores the stop, so a way back is to stop choosing the stop, not to
+undo the change. `routeAgreement.test.ts` in `apps/web/src/interaction/`
+plays three maps by End turn and checks 4,287 routes drawn while planning,
+987 of them stopping early, against what End turn then plays, step for step
+and stamina for stamina; a session test checks the server's End turn and
+Move on stop where the page's End turn does.
+
+---
+
 ## C. Decisions I made that are *implementation*, not design
 
 Listed so you can veto any that read as design to you.

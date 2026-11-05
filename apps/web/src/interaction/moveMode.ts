@@ -1,6 +1,7 @@
 import {
   bestRouteVia,
   endTurnActionFor,
+  frugalStop,
   guardToFightAt,
   isClaimed,
   poiRuntimeAt,
@@ -205,13 +206,19 @@ export function endTurnOutcome(game: GameState, player: PlayerId, state: MoveMod
   return walks || !guardToFightAt(game, playerIn(game, player).position) ? 'go' : 'fight';
 }
 
-/** What is drawn for `path`: its colours and where its turns end. */
+/**
+ * What is drawn for `path`: its colours and where its turns end. [Q331, 3 A]
+ * The steps after where Go stops to keep the stamina, walking on not saving a
+ * turn, are grey like those it cannot pay for (`frugalStop`).
+ */
 function shownFor(game: GameState, planner: PlayerState, path: readonly NodeId[]): Omit<PlannedRoute, 'path'> {
   const allowance = allowanceFor(game, planner);
+  const speeds = refreshAllowance(planner.stats);
   const config = game.map.ruleset.config;
+  const stopAfter = frugalStop(game.map.graph, path, allowance, planner.stats.stamina, speeds, config);
   return {
-    preview: previewPath(game.map.graph, planner.position, path, allowance, planner.stats.stamina, config),
-    stops: turnStops(game.map.graph, path, allowance, planner.stats.stamina, refreshAllowance(planner.stats), config),
+    preview: previewPath(game.map.graph, planner.position, path, allowance, planner.stats.stamina, config, stopAfter),
+    stops: turnStops(game.map.graph, path, allowance, planner.stats.stamina, speeds, config),
   };
 }
 

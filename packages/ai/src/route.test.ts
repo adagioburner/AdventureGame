@@ -83,6 +83,19 @@ describe('the route the computer walks (Q210, stage 1)', () => {
     });
   });
 
+  it('stops where walking on would not arrive any sooner, keeping its stamina (Q330)', () => {
+    // Plains 2 a turn and 2 stamina: paying for plains 3 and 4 now arrives
+    // next turn, and so do two free steps now and three next turn.
+    const state = withStats(fixtureGame(detour, 0), one, { plains_move: 2, stamina: 2 });
+    expect(firstTurnOf(state, target, computerSearchOptions(state, one, settings()))).toEqual({
+      kind: 'move',
+      player: one,
+      path: [n(1), n(2), n(3), n(4), n(5)],
+      waypoint: null,
+      stopAfter: 2,
+    });
+  });
+
   it('has the players in the games it imagines walk the best route for their speeds too (stage 3)', () => {
     // Through the forest seat one arrives on its first turn; along the plains
     // its stamina would not have taken it past node 1.

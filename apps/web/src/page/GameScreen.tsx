@@ -970,11 +970,16 @@ const NO_DICE: DiceSource = {
   },
 };
 
-/** The computer's route as a person's End turn would show it: §7's colours for this turn. */
+/**
+ * The computer's route as a person's End turn would show it: §7's colours for
+ * this turn. [Q330] The steps after where it stops to keep its stamina are
+ * grey, like those it cannot pay for.
+ */
 function routeOf(state: GameState, action: TurnAction): PathPreview | null {
   const player = state.players[state.turn.activeSeat - 1];
   if (action.kind !== 'move' || action.path.length === 0 || player === undefined) return null;
-  return previewPath(state.map.graph, player.position, action.path, state.turn.allowance, player.stats.stamina, state.map.ruleset.config);
+  const config = state.map.ruleset.config;
+  return previewPath(state.map.graph, player.position, action.path, state.turn.allowance, player.stats.stamina, config, action.stopAfter);
 }
 
 function sleep(ms: number): Promise<void> {

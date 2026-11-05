@@ -55,7 +55,8 @@ interface PathWalk {
  *  - beyond it, `STAMINA_COST` is spent — 1 plains / 2 forest / 3 mountain;
  *  - the walk stops at the first step it cannot pay for. It stops there rather
  *    than skipping on: a player cannot step over a node they cannot afford, so
- *    a later step being free does not make it reachable this turn.
+ *    a later step being free does not make it reachable this turn;
+ *  - [Q330] and after `stopAfter` steps, where the computer chose to stop.
  *
  * The whole path is validated before any of it is charged: a path that is not a
  * walk in the graph is a malformed request whether or not this turn would have
@@ -68,6 +69,7 @@ function walkPath(
   allowance: MovementAllowance,
   stamina: number,
   config: GameConfig,
+  stopAfter: number = path.length,
 ): PathWalk {
   assertWalkable(graph, from, path);
 
@@ -78,6 +80,7 @@ function walkPath(
   let staminaSpent = 0;
 
   for (const node of path) {
+    if (charges.length >= stopAfter) break;
     const terrain = terrainOf(graph, node);
     if (remainingAllowance[terrain] > 0) {
       remainingAllowance[terrain]--;
@@ -180,6 +183,10 @@ export function assertWalkable(graph: MapGraph, from: NodeId, path: readonly Nod
  * step is free. Note the allowance is consumed in path order, per terrain, and
  * the forest step is free because forest-move is 1 — the terrain charged is
  * that of the node being *entered*.
+ *
+ * [Q330] With `stopAfter`, the walk goes no further than that many steps,
+ * the computer's stop when walking on would not arrive any sooner; the rest
+ * is the remainder, saved as for a walk cut short.
  */
 export function resolveMovement(
   graph: MapGraph,
@@ -188,8 +195,9 @@ export function resolveMovement(
   allowance: MovementAllowance,
   stamina: number,
   config: GameConfig,
+  stopAfter?: number,
 ): MovementResolution {
-  const walk = walkPath(graph, from, path, allowance, stamina, config);
+  const walk = walkPath(graph, from, path, allowance, stamina, config, stopAfter);
   const taken = walk.charges.length;
   const last = walk.charges[taken - 1];
 
@@ -220,6 +228,9 @@ export function resolveMovement(
  * `totalStaminaCost` is therefore what this turn spends — the sum over the
  * reachable prefix, equal by construction to `resolveMovement`'s
  * `staminaSpent` for the same arguments.
+ *
+ * [Q330] With `stopAfter`, the steps after the computer's stop are grey too,
+ * left for a later turn like the steps it cannot pay for.
  */
 export function previewPath(
   graph: MapGraph,
@@ -228,8 +239,9 @@ export function previewPath(
   allowance: MovementAllowance,
   stamina: number,
   config: GameConfig,
+  stopAfter?: number,
 ): PathPreview {
-  const walk = walkPath(graph, from, path, allowance, stamina, config);
+  const walk = walkPath(graph, from, path, allowance, stamina, config, stopAfter);
   const reachableStepCount = walk.charges.length;
 
   const steps: PathStep[] = path.map((node, index) => {

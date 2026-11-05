@@ -289,7 +289,11 @@ function hint(move: MoveModeState, armed: boolean, name: string, rest: number, o
       const reach = preview.destinationReachable
         ? `All ${steps} step${steps === 1 ? '' : 's'} ${when}, for ${cost}.`
         : `${preview.reachableStepCount} of ${steps} steps ${when}, for ${cost}; the rest waits for ${later ? 'the turn after' : 'next turn'}.`;
-      return `${reach} Green is free, yellow costs stamina, grey is out of reach ${when}.`;
+      // [Q331, 6] Andrei, 2026-11-04: "perhaps the hint for the grey should
+      // simply say 'planned for the future turns' [...] without going into the
+      // detail why": a grey step is walked on a later turn, whether this turn
+      // cannot pay for it or Go stops before it to keep the stamina.
+      return `${reach} Green is free, yellow costs stamina, grey is planned for future turns.`;
     }
   }
 }

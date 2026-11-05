@@ -102,6 +102,8 @@ export interface PlayedTurn {
   readonly allowanceBefore: MovementAllowance;
   /** The acting player's stats as the move began, after any purchase, so a roll can be read back. */
   readonly statsBefore: PlayerStats;
+  /** [Q330] Where the move chose to stop (`MoveAction.stopAfter`), or `null` for a walk as far as the turn paid for. */
+  readonly stopAfter: number | null;
   /** Every player's stats once the turn resolved, in seat order. */
   readonly standings: readonly PlayerStanding[];
   /**
@@ -210,6 +212,7 @@ export function playGame(
       positionBefore: player.position,
       allowanceBefore,
       statsBefore,
+      stopAfter: action?.kind === 'move' ? (action.stopAfter ?? null) : null,
       standings: state.players.map((current) => ({ name: current.name, stats: current.stats })),
       heading: chosen?.heading ?? null,
       why: chosen?.why ?? [],
@@ -506,8 +509,13 @@ function moveLines(resolution: MovementResolution, turn: PlayedTurn, run: Playth
   }
 
   if (resolution.remainder.length > 0) {
+    // [Q330] The computer stopped where walking on would not arrive any sooner.
+    const why =
+      turn.stopAfter === resolution.walked.length
+        ? `chose to stop, ${stamina} stamina kept: walking on would not arrive any sooner`
+        : `next step ${blockedStep(resolution.to, resolution.remainder, turn, run, left, stamina)}`;
     lines.push(
-      `  move    stopped at node ${resolution.to}: next step ${blockedStep(resolution.to, resolution.remainder, turn, run, left, stamina)}`,
+      `  move    stopped at node ${resolution.to}: ${why}`,
       `          ${resolution.remainder.length} step${resolution.remainder.length === 1 ? '' : 's'} saved as next turn's planned path`,
     );
   }

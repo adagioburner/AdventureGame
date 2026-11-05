@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { DEFAULT_RULESET } from '@adventure/config';
-import { activePlayer, asGameId, asNodeId, asUserId, type GameId, type GameState, type UserId } from '@adventure/core';
+import { activePlayer, asGameId, asNodeId, asUserId, endTurnActionFor, type GameId, type GameState, type UserId } from '@adventure/core';
 import { computerMoveRequestId, DAY_MS, type ClientMessage, type GameRecord, type ServerMessage, type SetupState } from '@adventure/protocol';
 import { fixtureMap, scriptedDice } from '../../core/src/rules/scenario.fixture.ts';
 import type { GameListing, GameStore } from './ports.ts';
@@ -314,6 +314,28 @@ describe('GameSession in play', () => {
     expect(h.game()?.players.map((player) => [player.position, player.stats.stamina, player.plannedPath])).toEqual([
       [0, 5, { path: [1, 2], waypoint: 1 }],
       [0, 5, { path: [1], waypoint: null }],
+    ]);
+  });
+
+  it('stops End turn and Move on where walking on would not get there in fewer turns, as the page’s End turn does (Q331)', async () => {
+    const h = await started();
+    // Plains speed 1 and 2 stamina: paying for plains 2 now leaves too little
+    // for the forest, a rest and a turn later; one free step now and the
+    // forest paid next turn arrives a turn sooner.
+    const game = h.game() as GameState;
+    const slow = { ...game, players: game.players.map((player) => ({ ...player, stats: { ...player.stats, stamina: 2, plains_move: 1, forest_move: 0 } })) };
+    const ready = { ...slow, turn: { ...slow.turn, allowance: { plains: 1, forest: 0, mountain: 0 } } };
+    h.put(ready);
+    const route = [n(1), n(2), n(3)];
+    await send(h.session, andrei, { type: 'turn.end', gameId: G, turn: 1, path: route, waypoint: null });
+    expect(h.records()[0]?.action).toEqual(endTurnActionFor(ready, 'seat-1' as never, route, null));
+    expect(h.records()[0]?.action).toMatchObject({ kind: 'move', stopAfter: 1 });
+    await send(h.session, bea, { type: 'turn.plan', gameId: G, path: route, waypoint: null });
+    await send(h.session, andrei, { type: 'gm.forceTurn', gameId: G, player: 'seat-2' as never, turn: 2 });
+    expect(h.records().map((record) => record.action)[2]).toEqual({ kind: 'force_turn', player: 'seat-2', stopAfter: 1 });
+    expect(h.game()?.players.map((player) => [player.position, player.stats.stamina, player.plannedPath])).toEqual([
+      [1, 2, { path: [2, 3], waypoint: null }],
+      [1, 2, { path: [2, 3], waypoint: null }],
     ]);
   });
 

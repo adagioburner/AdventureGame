@@ -152,6 +152,30 @@ describe('applyAction — movement', () => {
   });
 });
 
+describe('applyAction — a computer stopping to keep its stamina (Q330)', () => {
+  it('walks no further than its stop, keeps the stamina and saves the rest of the route', () => {
+    const start = withStats(fixtureGame(map, 0), one, { stamina: 10, plains_move: 2 });
+    const { state, events } = applyAction(start, { kind: 'move', player: one, path: [n(1), n(2), n(3), n(4)], stopAfter: 2 }, noDice);
+    expect(state.players[0]?.position).toBe(n(2));
+    expect(state.players[0]?.stats.stamina).toBe(10);
+    expect(state.players[0]?.plannedPath).toEqual({ path: [n(3), n(4)], waypoint: null });
+    expect(events[0]).toMatchObject({ type: 'moved', resolution: { walked: [n(1), n(2)], remainder: [n(3), n(4)], staminaSpent: 0 } });
+  });
+
+  it('still stops where the turn cannot pay, before its stop', () => {
+    const start = withStats(fixtureGame(map, 0), one, { stamina: 0, plains_move: 1 });
+    const { state } = applyAction(start, { kind: 'move', player: one, path: [n(1), n(2), n(3)], stopAfter: 2 }, noDice);
+    expect(state.players[0]?.position).toBe(n(1));
+  });
+
+  it('refuses a stop that is not a step along the path', () => {
+    const start = withStats(fixtureGame(map, 0), one, { stamina: 10 });
+    for (const stopAfter of [0, 3, 1.5, -1]) {
+      expect(() => applyAction(start, { kind: 'move', player: one, path: [n(1), n(2)], stopAfter }, noDice)).toThrow(RuleViolationError);
+    }
+  });
+});
+
 describe('applyAction — rest', () => {
   it('grants REST_STAMINA_GAIN and moves nothing', () => {
     const start = fixtureGame(map, 0);
@@ -424,6 +448,64 @@ describe('End turn that would walk nothing (Andrei, 2026-09-30, 490 and 491)', (
     const { state, events } = applyAction(start, { kind: 'force_turn', player: one }, noDice);
     expect(events.map((event) => event.type)).toEqual(['moved', 'turn_ended']);
     expect(state.players[0]?.stats.stamina).toBe(0);
+  });
+});
+
+describe('End turn and Move on stop where walking on would not save a turn (Q331)', () => {
+  /** Seat 1 with plains speed 2 and 1 stamina: [1..4] arrives next turn whether or not it pays for step 3. */
+  function frugal(node = 0): GameState {
+    return withStats(withPosition(fixtureGame(map, 0), one, node), one, { stamina: 1, plains_move: 2, forest_move: 0, mountain_move: 0 });
+  }
+  function withSavedRoute(state: GameState, path: readonly number[]): GameState {
+    return {
+      ...state,
+      players: state.players.map((current) => (current.id === one ? { ...current, plannedPath: { path: path.map(n), waypoint: null } } : current)),
+    };
+  }
+  const trip = [n(1), n(2), n(3), n(4)];
+
+  it('End turn stops after the free steps, keeps the stamina and saves the rest of the route', () => {
+    const start = frugal();
+    const action = endTurnActionFor(start, one, trip, null);
+    expect(action).toEqual({ kind: 'move', player: one, path: trip, waypoint: null, stopAfter: 2 });
+
+    const { state } = applyAction(start, action, noDice);
+    expect(state.players[0]?.position).toBe(n(2));
+    expect(state.players[0]?.stats.stamina).toBe(1);
+    expect(state.players[0]?.plannedPath).toEqual({ path: [n(3), n(4)], waypoint: null });
+  });
+
+  it('End turn walks the whole route when it arrives this turn, and to the first step it cannot pay when no place keeps more', () => {
+    const rich = withStats(frugal(), one, { stamina: 10 });
+    expect(endTurnActionFor(rich, one, trip, null)).toEqual({ kind: 'move', player: one, path: trip, waypoint: null });
+    // One paid step and nothing free: the one step is the only place.
+    const poor = withStats(frugal(), one, { stamina: 1, plains_move: 0 });
+    expect(endTurnActionFor(poor, one, trip, null)).toEqual({ kind: 'move', player: one, path: trip, waypoint: null });
+  });
+
+  it('End turn stops on a route away from a guard too', () => {
+    expect(endTurnActionFor(frugal(5), one, [n(4), n(3), n(2), n(1)], null)).toMatchObject({ kind: 'move', stopAfter: 2 });
+  });
+
+  it('Move on stops where End turn would, and replays so', () => {
+    const start = withSavedRoute(frugal(), [1, 2, 3, 4]);
+    const action = moveOnActionFor(start, one);
+    expect(action).toEqual({ kind: 'force_turn', player: one, stopAfter: 2 });
+
+    const { state } = applyAction(start, action, noDice);
+    expect(state.players[0]?.position).toBe(n(2));
+    expect(state.players[0]?.stats.stamina).toBe(1);
+    expect(state.players[0]?.plannedPath).toEqual({ path: [n(3), n(4)], waypoint: null });
+  });
+
+  it('a Move on recorded before it still walks as far as the turn pays', () => {
+    const { state } = applyAction(withSavedRoute(frugal(), [1, 2, 3, 4]), { kind: 'force_turn', player: one }, noDice);
+    expect(state.players[0]?.position).toBe(n(3));
+    expect(state.players[0]?.stats.stamina).toBe(0);
+  });
+
+  it('refuses a Move on that stops along a route when none is saved', () => {
+    expect(() => applyAction(frugal(), { kind: 'force_turn', player: one, stopAfter: 1 }, noDice)).toThrow(RuleViolationError);
   });
 });
 

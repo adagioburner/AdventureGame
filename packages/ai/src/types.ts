@@ -1,6 +1,6 @@
 import type { GameConfig, RewardKind } from '@adventure/config';
 import type { DiceSource, GameState, PlayerId, Rng } from '@adventure/core';
-import type { PoiCandidate, RestRule, RolloutCursor, RolloutOptions, RolloutTermination, RouteChoice } from '@adventure/sim';
+import type { PoiCandidate, RestRule, RolloutCursor, RolloutOptions, RolloutTermination, RouteChoice, WalkStop } from '@adventure/sim';
 
 /**
  * One branch of the search tree.
@@ -194,6 +194,13 @@ export interface MctsOptions {
    * (`bestRouteForSpeeds`); the other seats' turns walk the rollout's.
    */
   readonly edgeRoute?: RouteChoice;
+  /**
+   * [Q330] Where the subject stops along its route on its own turns, along a
+   * tree edge and in the move `search()` returns; as far as the turn pays for
+   * when absent. The game's computer stops where walking on would not arrive
+   * any sooner (`stopWhenNoSooner`); the games it imagines are unchanged.
+   */
+  readonly walkStop?: WalkStop;
   /** [Q280] What the subject has already bought this turn at the root; nothing when absent. */
   readonly rootBought?: readonly RewardKind[];
   /**
